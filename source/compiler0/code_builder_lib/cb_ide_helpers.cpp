@@ -145,50 +145,50 @@ Type CodeBuilder::GetStubTemplateArgType()
 	return *stub_template_param_type_;
 }
 
-NamesScope* CodeBuilder::GetNamesScopeForCompletion( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
+NamesScopePtr CodeBuilder::GetNamesScopeForCompletion( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
 {
-	NamesScope& root_names_scope= *compiled_sources_.front().names_map;
+	const NamesScopePtr& root_names_scope= compiled_sources_.front().names_map;
 	return EvaluateCompletionRequestPrefix_r( root_names_scope, prefix );
 }
 
-NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
+NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePtr& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
 {
-	if( prefix.empty() )
-		return &start_scope;
+	if( prefix.empty() || start_scope == nullptr )
+		return start_scope;
 
 	const CompletionRequestPrefixComponent& prefix_head= prefix.front();
 	const auto prefix_tail= prefix.drop_front();
 
 	if( const auto namespace_= std::get_if<const Synt::Namespace*>( &prefix_head ) )
 	{
-		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*namespace_)->name ) )
+		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*namespace_)->name ) )
 		{
 			if( const auto names_scope= value->value.GetNamespace() )
-				return EvaluateCompletionRequestPrefix_r( *names_scope, prefix_tail );
+				return EvaluateCompletionRequestPrefix_r( names_scope, prefix_tail );
 		}
 	}
 	else if( const auto class_= std::get_if<const Synt::Class*>( &prefix_head ) )
 	{
-		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*class_)->name ) )
+		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*class_)->name ) )
 		{
 			if( const auto type_name= value->value.GetTypeName() )
 			{
 				if( const auto class_type= type_name->GetClassType() )
-					return EvaluateCompletionRequestPrefix_r( *class_type->members, prefix_tail );
+					return EvaluateCompletionRequestPrefix_r( class_type->members, prefix_tail );
 			}
 		}
 	}
 	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
 	{
 		TypeTemplatesSet temp_type_templates_set;
-		PrepareTypeTemplate( **type_template, temp_type_templates_set, start_scope );
+		PrepareTypeTemplate( **type_template, temp_type_templates_set, *start_scope );
 		if( temp_type_templates_set.type_templates.empty() )
 			return nullptr;
 		const TypeTemplatePtr& prepared_type_template= temp_type_templates_set.type_templates.front();
 
 		// Try to found existing type template with same signature and provess completion inside it.
 		// It is faster to existing type template, rather than creating new one for each completion request.
-		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*type_template)->name ) )
+		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*type_template)->name ) )
 		{
 			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 			{
@@ -197,15 +197,15 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 					if( prepared_type_template->signature_params == existing_type_template->signature_params )
 					{
 						// Found this type template.
-						if( const auto type_template_space= BuildTypeTemplateForCompletion( start_scope, existing_type_template ) )
-							return EvaluateCompletionRequestPrefix_r( *type_template_space, prefix_tail );
+						if( const auto type_template_space= BuildTypeTemplateForCompletion( *start_scope, existing_type_template ) )
+							return EvaluateCompletionRequestPrefix_r( type_template_space, prefix_tail );
 					}
 				}
 			}
 		}
 
-		if( const auto type_template_space= BuildTypeTemplateForCompletion( start_scope, prepared_type_template ) )
-			return EvaluateCompletionRequestPrefix_r( *type_template_space, prefix_tail );
+		if( const auto type_template_space= BuildTypeTemplateForCompletion( *start_scope, prepared_type_template ) )
+			return EvaluateCompletionRequestPrefix_r( type_template_space, prefix_tail );
 	}
 	else U_ASSERT(false);
 
@@ -534,7 +534,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)class_visibility_label;
 }
 
-NamesScope* CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template )
+NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template )
 {
 	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
 
@@ -573,8 +573,7 @@ NamesScope* CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_scope
 		}
 	}
 
-	// It is ok to return raw pointer here, since template args scope is stored inside generated_template_things_storage_.
-	return template_args_scope.get();
+	return template_args_scope;
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )

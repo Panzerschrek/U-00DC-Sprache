@@ -117,7 +117,7 @@ public: // IDE helpers.
 	template<typename T>
 	std::vector<CompletionItem> Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
 	{
-		NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
 			return {};
 
@@ -130,7 +130,7 @@ public: // IDE helpers.
 	{
 		// Use same routines for completion and signature help.
 
-		NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
 			return {};
 
@@ -160,7 +160,7 @@ private:
 	using ClassesMembersNamespacesTable= std::unordered_map<ClassPtr, std::shared_ptr<const NamesScope>>;
 	struct SourceBuildResult
 	{
-		std::unique_ptr<NamesScope> names_map;
+		NamesScopePtr names_map;
 		ClassesMembersNamespacesTable classes_members_namespaces_table;
 	};
 
@@ -199,8 +199,8 @@ private:
 
 	Type GetStubTemplateArgType();
 
-	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
-	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScopePtr GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScopePtr EvaluateCompletionRequestPrefix_r( const NamesScopePtr& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
@@ -218,7 +218,7 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
-	NamesScope* BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template );
+	NamesScopePtr BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template );
 
 	void RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
