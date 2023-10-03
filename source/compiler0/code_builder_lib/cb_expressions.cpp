@@ -381,30 +381,31 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( names.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
 		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, class_type->members->GetThisNamespaceName() );
 
-	if( OverloadedFunctionsSetConstPtr functions_set= class_member->value.GetFunctionsSet() )
+	if( const OverloadedFunctionsSetConstPtr functions_set= class_member->value.GetFunctionsSet() )
 	{
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= functions_set;
+
 		if( member_access_operator.template_parameters != std::nullopt )
 		{
 			if( functions_set->template_functions.empty() )
 				REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc );
 			else
 			{
-				const NamesScopeValue* const inserted_value=
+				const OverloadedFunctionsSetPtr parametrized_functions=
 					ParametrizeFunctionTemplate(
 						member_access_operator.src_loc,
 						functions_set,
 						*member_access_operator.template_parameters,
 						names,
 						function_context );
-				if( inserted_value == nullptr )
-					return ErrorValue();
 
-				functions_set= inserted_value->value.GetFunctionsSet();
+				if( parametrized_functions != nullptr )
+					this_overloaded_methods_set.overloaded_methods_set= parametrized_functions;
 			}
 		}
-		ThisOverloadedMethodsSet this_overloaded_methods_set;
-		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.overloaded_methods_set= functions_set;
+
 		return std::move(this_overloaded_methods_set);
 	}
 

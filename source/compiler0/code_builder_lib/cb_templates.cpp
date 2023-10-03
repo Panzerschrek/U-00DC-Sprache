@@ -1097,7 +1097,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	return &function_variable;
 }
 
-NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
+OverloadedFunctionsSetPtr CodeBuilder::ParametrizeFunctionTemplate(
 	const SrcLoc& src_loc,
 	const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -1116,10 +1116,10 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	ParametrizedFunctionTemplateKey template_key{ functions_set_ptr, arguments_calculated };
 
 	if( const auto it= parametrized_template_functions_cache_.find( template_key ); it != parametrized_template_functions_cache_.end() )
-		return &it->second; // Already generated.
+		return it->second; // Already generated.
 
-	OverloadedFunctionsSet result;
-	result.base_class= functions_set_ptr->base_class;
+	auto result= std::make_shared<OverloadedFunctionsSet>();
+	result->base_class= functions_set_ptr->base_class;
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
 	{
 		const FunctionTemplate& function_template= *function_template_ptr;
@@ -1150,20 +1150,18 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		new_template->parent= function_template_ptr;
 		new_template->known_template_args.insert( new_template->known_template_args.end(), arguments_calculated.begin(), arguments_calculated.end() );
 
-		result.template_functions.push_back( new_template );
+		result->template_functions.push_back( new_template );
 	} // for function templates
 
-	if( result.template_functions.empty() )
+	if( result->template_functions.empty() )
 	{
 		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), src_loc, function_templates.front()->syntax_element->function->name.back().name );
 		return nullptr;
 	}
 
 	return
-		& parametrized_template_functions_cache_.insert(
-			std::make_pair(
-				std::move(template_key),
-				NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) ) ).first->second;
+		parametrized_template_functions_cache_.insert(
+			std::make_pair( std::move(template_key), std::move(result) ) ).first->second;
 }
 
 void CodeBuilder::EvaluateTemplateArgs(
