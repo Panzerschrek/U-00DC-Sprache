@@ -3,8 +3,9 @@ compiler. Features are grouped and sorted by priority inside each group.
 Delete the features from the list as soon as they are implemented.
 
 General:
+*) by value this parameter
 *) build-in "for" for array types.
-*) Disassembly operator - declare variables with initializer as members of value of structure type.
+*) Disassembly operator - declare variables with initializer as members of value of composite type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
@@ -46,7 +47,6 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Optimize typeinfo - avoid calculating mangled name for typeinfo types, avoid building lists if it's not necessary (buld them lazily)
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Imporve TBAA - use struct path-based TBAA.
@@ -84,8 +84,8 @@ Language server
 *) SignatureHelp - filter suggested functions based on already provided arguments
 *) SignatureHelp - return ranges of arguments and active range
 *) Avoid infinite calculations in constexpr functions executiong during compilation in the LanguageServer
-*) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
-*) Go to definition for non-value names - loop labels, reference tags, imports, etc.
+*) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
+*) Go to definition for non-value names - loop labels, reference tags, etc.
 *) Go to definition for macros
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
