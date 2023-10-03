@@ -831,14 +831,6 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	return result;
 }
 
-std::string CodeBuilder::EncodeTypeTemplateInstantiation( const TypeTemplate& type_template, const TemplateArgs& signature_args )
-{
-	// Encode name for caching. Name must be unique for each template and its parameters.
-	return
-		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		mangler_->MangleTemplateArgs( signature_args );
-}
-
 NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	const SrcLoc& src_loc,
 	NamesScope& arguments_names_scope,
@@ -848,16 +840,16 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	const TypeTemplate& type_template= *type_template_ptr;
 	const NamesScopePtr& template_args_namespace= template_type_preparation_result.template_args_namespace;
 
-	const std::string name_encoded= EncodeTypeTemplateInstantiation( type_template, template_type_preparation_result.signature_args );
+	const TemplateKey template_key{ type_template_ptr, template_type_preparation_result.signature_args };
 
 	// Check, if type already generated.
-	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 	{
 		const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
 		return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 	}
-	AddNewTemplateThing( name_encoded, NamesScopeValue( template_args_namespace, type_template.syntax_element->src_loc ) );
+	AddNewTemplateThing( template_key, NamesScopeValue( template_args_namespace, type_template.syntax_element->src_loc ) );
 
 	CreateTemplateErrorsContext(
 		arguments_names_scope.GetErrors(),
@@ -870,7 +862,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	{
 		U_ASSERT( (*class_ptr)->name == Class::c_template_class_name );
 
-		if( const auto cache_class_it= template_classes_cache_.find( name_encoded ); cache_class_it != template_classes_cache_.end() )
+		if( const auto cache_class_it= template_classes_cache_.find( template_key ); cache_class_it != template_classes_cache_.end() )
 		{
 			return
 				template_args_namespace->AddName(
@@ -886,7 +878,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 		// Save in class info about its base template.
 		the_class.generated_class_data= Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args };
 
-		template_classes_cache_[name_encoded]= class_type;
+		template_classes_cache_.insert( std::make_pair( template_key, class_type ) );
 
 		class_type->llvm_type->setName( mangler_->MangleType( class_type ) ); // Update llvm type name after setting base template.
 
@@ -999,14 +991,6 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 	return FinishTemplateFunctionGeneration( errors_container, src_loc, result );
 }
 
-std::string CodeBuilder::EncodeFunctionTemplateInstantiation( const FunctionTemplate& function_template, const llvm::ArrayRef<TemplateArg> template_args )
-{
-	// Encode name for caching. Name must be unique for each template and its parameters.
-	return
-		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		mangler_->MangleTemplateArgs( template_args );
-}
-
 const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -1019,7 +1003,8 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 
 	const NamesScopePtr& template_args_namespace= template_function_preparation_result.template_args_namespace;
 
-	llvm::SmallVector<TemplateArg, 8> template_args;
+	TemplateArgs template_args;
+	template_args.reserve( function_template.template_params.size() );
 	for( const auto& template_param : function_template.template_params )
 	{
 		const NamesScopeValue* const value= template_args_namespace->GetThisScopeValue( template_param.name );
@@ -1037,9 +1022,9 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		return nullptr;
 	}
 
-	const std::string name_encoded= EncodeFunctionTemplateInstantiation( function_template, template_args );
+	TemplateKey template_key{ function_template_ptr, template_args };
 
-	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 	{
 		//Function for this template arguments already generated.
 		const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
@@ -1050,7 +1035,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
 	}
-	AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( template_args_namespace, function_declaration.src_loc ) );
+	AddNewTemplateThing( std::move(template_key), NamesScopeValue( template_args_namespace, function_declaration.src_loc ) );
 
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
@@ -1127,22 +1112,24 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	const std::vector<FunctionTemplatePtr>& function_templates= functions_set.template_functions;
 	U_ASSERT( !function_templates.empty() );
 
-	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
+	TemplateArgs arguments_calculated;
 	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, arguments_calculated );
 
 	if( arguments_calculated.size() != template_arguments.size() )
 		return nullptr;
 
-	// We needs unique name here, so use for it address of function templates set and template parameters.
-	std::string name_encoded= "</.../>";
+	// We need unique name here, so use for it all function templates and provided template args.
+	TemplateKey template_key;
 	for( const FunctionTemplatePtr& template_ : function_templates )
 	{
-		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
-		name_encoded+= "_";
+		if( template_key.template_ == nullptr )
+			template_key.template_= template_;
+		else
+			template_key.additional_templates.push_back( template_ );
 	}
-	name_encoded+= mangler_->MangleTemplateArgs( arguments_calculated );
+	template_key.args= arguments_calculated;
 
-	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 		return &it->second; // Already generated.
 
 	OverloadedFunctionsSet result;
@@ -1186,7 +1173,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		return nullptr;
 	}
 
-	return AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
+	return AddNewTemplateThing( std::move(template_key), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
 }
 
 void CodeBuilder::EvaluateTemplateArgs(
@@ -1294,12 +1281,11 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 	}
 }
 
-NamesScopeValue* CodeBuilder::AddNewTemplateThing( std::string key, NamesScopeValue thing )
+NamesScopeValue* CodeBuilder::AddNewTemplateThing( TemplateKey key, NamesScopeValue thing )
 {
 	generated_template_things_sequence_.push_back( key );
 	return & generated_template_things_storage_.insert( std::make_pair( std::move(key), std::move(thing) ) ).first->second;
 }
-
 
 void CodeBuilder::CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,

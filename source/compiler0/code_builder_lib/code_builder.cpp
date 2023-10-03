@@ -280,8 +280,8 @@ void CodeBuilder::FinalizeProgram()
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
-	for( auto& name_value_pair : generated_template_things_storage_ )
-		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
+	for( auto& key_value_pair : generated_template_things_storage_ )
+		if( const auto names_scope= key_value_pair.second.value.GetNamespace() )
 			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
 
 	global_function_context_->function->eraseFromParent(); // Kill global function.

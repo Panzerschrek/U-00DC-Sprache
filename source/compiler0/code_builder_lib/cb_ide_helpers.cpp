@@ -504,8 +504,8 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 		signature_args.push_back( CreateDummyTemplateSignatureArg( *type_template, *template_args_scope, signature_param ) );
 
 	{
-		const std::string name_encoded= EncodeTypeTemplateInstantiation( *type_template, signature_args );
-		if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+		const TemplateKey template_key{ type_template, signature_args };
+		if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 		{
 			// If this is not first instantiation, return previous namespace, where inserted type is really located.
 			const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
@@ -546,13 +546,13 @@ void CodeBuilder::InstantiateFunctionTemplateWithDummyArgs( const FunctionTempla
 
 	// Since it is not always possible to calculate template args from signature args for function template,
 	// perform direct args filling.
-	llvm::SmallVector<TemplateArg, 8> template_args;
+	TemplateArgs template_args;
 	template_args.reserve( function_template->template_params.size() );
 	for( const TemplateBase::TemplateParameter& param : function_template->template_params )
 		template_args.push_back( CreateDummyTemplateSignatureArgForTemplateParam( *function_template, *template_args_scope, param ) );
 
 	// HACK! Clear previous instantiation of this function template in order to perform completion properly.
-	generated_template_things_storage_.erase( EncodeFunctionTemplateInstantiation( *function_template, template_args ) );
+	generated_template_things_storage_.erase( TemplateKey{ function_template, template_args } );
 
 	// Do not care here about signature params filling.
 	// For function templates they are used mostly for overloaded resolition.

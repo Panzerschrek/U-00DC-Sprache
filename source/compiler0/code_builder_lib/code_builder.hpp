@@ -539,8 +539,6 @@ private:
 		const TypeTemplatePtr& type_template_ptr,
 		llvm::ArrayRef<TemplateArg> template_arguments );
 
-	std::string EncodeTypeTemplateInstantiation( const TypeTemplate& type_template, const TemplateArgs& signature_args );
-
 	NamesScopeValue* FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
 		NamesScope& arguments_names_scope,
@@ -557,8 +555,6 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr );
-
-	std::string EncodeFunctionTemplateInstantiation( const FunctionTemplate& function_template, llvm::ArrayRef<TemplateArg> template_args );
 
 	const FunctionVariable* FinishTemplateFunctionGeneration(
 		CodeBuilderErrorsContainer& errors_container,
@@ -587,7 +583,7 @@ private:
 		const FunctionTemplate& function_template,
 		NamesScope& target_namespace );
 
-	NamesScopeValue* AddNewTemplateThing( std::string key, NamesScopeValue thing );
+	NamesScopeValue* AddNewTemplateThing( TemplateKey key, NamesScopeValue thing );
 
 	void CreateTemplateErrorsContext(
 		CodeBuilderErrorsContainer& errors_container,
@@ -1405,7 +1401,7 @@ private:
 	// Cache needs for generating same classes as template instantiation result in different source files.
 	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
 	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
-	ProgramStringMap< ClassPtr > template_classes_cache_;
+	std::unordered_map< TemplateKey, ClassPtr, TemplateKeyHasher > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, TypeinfoCacheElement, TypeHasher > typeinfo_cache_;
@@ -1414,9 +1410,9 @@ private:
 	std::vector<Type> non_sync_expression_stack_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	ProgramStringMap<NamesScopeValue> generated_template_things_storage_;
+	std::unordered_map<TemplateKey, NamesScopeValue, TemplateKeyHasher> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
-	std::vector<std::string> generated_template_things_sequence_;
+	std::vector<TemplateKey> generated_template_things_sequence_;
 
 	std::vector<GlobalThing> global_things_stack_;
 

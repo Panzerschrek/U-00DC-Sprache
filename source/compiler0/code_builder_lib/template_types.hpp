@@ -25,6 +25,9 @@ struct TemplateVariableArg
 	TemplateVariableArg& operator=( TemplateVariableArg&& )= default;
 };
 
+bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r );
+bool operator!=( const TemplateVariableArg& l, const TemplateVariableArg& r );
+
 using TemplateArg= std::variant< TemplateVariableArg, Type >;
 using TemplateArgs= llvm::SmallVector<TemplateArg, 2>;
 
@@ -71,6 +74,28 @@ struct FunctionTemplate final : public TemplateBase
 	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
 	TemplateArgs known_template_args;
 	FunctionTemplatePtr parent;
+};
+
+struct TemplateKey
+{
+	// Type or function template (for instantiation).
+	std::shared_ptr<const TemplateBase> template_;
+
+	// Signature args for type templates, template args for function templates.
+	TemplateArgs args;
+
+	// Container for additional templates in case of function templates set parametrization.
+	std::vector< std::shared_ptr<const TemplateBase> > additional_templates = {};
+
+	size_t Hash() const;
+};
+
+bool operator==( const TemplateKey& l, const TemplateKey& r );
+bool operator!=( const TemplateKey& l, const TemplateKey& r );
+
+struct TemplateKeyHasher
+{
+	size_t operator()( const TemplateKey& k ) const { return k.Hash(); }
 };
 
 } // namespace U
