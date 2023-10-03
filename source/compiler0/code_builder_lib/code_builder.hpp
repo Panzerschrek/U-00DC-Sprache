@@ -117,7 +117,7 @@ public: // IDE helpers.
 	template<typename T>
 	std::vector<CompletionItem> Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
 	{
-		NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
 			return {};
 
@@ -130,7 +130,7 @@ public: // IDE helpers.
 	{
 		// Use same routines for completion and signature help.
 
-		NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
 			return {};
 
@@ -160,7 +160,7 @@ private:
 	using ClassesMembersNamespacesTable= std::unordered_map<ClassPtr, std::shared_ptr<const NamesScope>>;
 	struct SourceBuildResult
 	{
-		std::unique_ptr<NamesScope> names_map;
+		NamesScopePtr names_map;
 		ClassesMembersNamespacesTable classes_members_namespaces_table;
 	};
 
@@ -197,8 +197,8 @@ private:
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 	void CollectFunctionDefinition( const FunctionVariable& function_variable, const SrcLoc& src_loc );
 
-	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
-	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScopePtr GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScopePtr EvaluateCompletionRequestPrefix_r( const NamesScopePtr& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
@@ -214,6 +214,32 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
+
+	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
+	// May reuse value, created during previous dummy-instantiation.
+	NamesScopePtr InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template );
+
+	void InstantiateFunctionTemplateWithDummyArgs( const FunctionTemplatePtr& function_template );
+
+	// This function is basically reverse of "MatchTemplateArg".
+	TemplateArg CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeParam& type_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::VariableParam& variable_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::ArrayParam& array_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TupleParam& tuple_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::RawPointerParam& raw_pointer_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::FunctionParam& function_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::CoroutineParam& coroutine_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param );
+
+	TemplateArg CreateDummyTemplateSignatureArgForTemplateParam( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateBase::TemplateParameter& param );
+
+	Type GetStubTemplateArgType();
+
+	NamesScopePtr EnsureDummyTemplateInstantiationArgsScopeCreated();
+	void DummyInstantiateTemplates();
+	void DummyInstantiateTemplates_r( NamesScope& names_scope );
 
 	void RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
@@ -513,6 +539,8 @@ private:
 		const TypeTemplatePtr& type_template_ptr,
 		llvm::ArrayRef<TemplateArg> template_arguments );
 
+	std::string EncodeTypeTemplateInstantiation( const TypeTemplate& type_template, const TemplateArgs& signature_args );
+
 	NamesScopeValue* FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
 		NamesScope& arguments_names_scope,
@@ -529,6 +557,8 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr );
+
+	std::string EncodeFunctionTemplateInstantiation( const FunctionTemplate& function_template, llvm::ArrayRef<TemplateArg> template_args );
 
 	const FunctionVariable* FinishTemplateFunctionGeneration(
 		CodeBuilderErrorsContainer& errors_container,
@@ -1300,7 +1330,7 @@ private:
 	const bool generate_tbaa_metadata_;
 	const bool report_about_unused_names_;
 	const bool collect_definition_points_;
-	const bool skip_building_generated_functions_;
+	bool skip_building_generated_functions_;
 
 	struct
 	{
@@ -1402,6 +1432,11 @@ private:
 	};
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
+
+	std::optional<Type> stub_template_param_type_;
+
+	// Use dummy namespace as source point for dummy instantiations of templates.
+	NamesScopePtr dummy_template_instantiation_args_scope_;
 
 	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;

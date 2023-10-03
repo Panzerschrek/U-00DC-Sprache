@@ -434,7 +434,8 @@ std::pair<NamesScopeValue*, ClassMemberVisibility> CodeBuilder::ResolveClassValu
 		else if(
 			value->value.GetVariable() != nullptr ||
 			value->value.GetStaticAssert() != nullptr ||
-			value->value.GetYetNotDeducedTemplateArg() != nullptr )
+			value->value.GetYetNotDeducedTemplateArg() != nullptr ||
+			value->value.GetErrorValue() != nullptr )
 		{}
 		else U_ASSERT(false);
 

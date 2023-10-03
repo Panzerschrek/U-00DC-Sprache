@@ -821,6 +821,160 @@ U_TEST( DocumentCompletion_Test17 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test18 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete inside function template.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "template</ type T /> fn Foo( T t_param ){par}" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 44 } );
+	const CompletionItemsNormalized expected_completion_result{ "t_param" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test19 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</ type Qwerty /> struct Box{ }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete inside struct template.
+	document.UpdateText( DocumentRange{ { 1, 37 }, { 1, 37 } }, "Qw" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 39 } );
+	const CompletionItemsNormalized expected_completion_result{ "Qwerty" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test20 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete inside struct template with whole type template added after compilation.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "template</ type Qwerty /> struct Box{we }" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 39 } );
+	const CompletionItemsNormalized expected_completion_result{ "Qwerty" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test21 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</ type Qwerty /> struct Box {}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete inside struct template, but outside struct itslef (inside non-sync tag).
+	document.UpdateText( DocumentRange{ { 1, 37 }, { 1, 37 } }, "non_sync( Qw )" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 49 } );
+	const CompletionItemsNormalized expected_completion_result{ "Qwerty" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test22 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete inside type template.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "template</ type Qwerty /> type Arr= [ Q " );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 39 } );
+	const CompletionItemsNormalized expected_completion_result{ "Qwerty" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test23 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</ type T, T value_arg /> struct Box</ value_arg /> {}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should properly handle template with complex signature.
+	document.UpdateText( DocumentRange{ { 1, 61 }, { 1, 61 } }, "auto x= arg" );
+
+	const CompletionItemsNormalized expected_completion_result{ "value_arg" };
+	for( size_t i= 0; i < 2; ++i )
+	{
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 72 } );
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test24 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</ type T, size_type S /> fn foo( [ T, S ]& arr_arg ) {} " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should properly handle template with complex signature.
+	document.UpdateText( DocumentRange{ { 1, 63 }, { 1, 63 } }, "arr" );
+
+	const CompletionItemsNormalized expected_completion_result{ "arr_arg" };
+	for( size_t i= 0; i < 2; ++i )
+	{
+		// Should complete properly more then once.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 66 } );
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
