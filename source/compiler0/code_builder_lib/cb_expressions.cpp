@@ -392,7 +392,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				const NamesScopeValue* const inserted_value=
 					ParametrizeFunctionTemplate(
 						member_access_operator.src_loc,
-						*functions_set,
+						functions_set,
 						*member_access_operator.template_parameters,
 						names,
 						function_context );

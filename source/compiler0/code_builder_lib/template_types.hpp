@@ -78,14 +78,11 @@ struct FunctionTemplate final : public TemplateBase
 
 struct TemplateKey
 {
-	// Type or function template (for instantiation).
+	// Type or function template.
 	std::shared_ptr<const TemplateBase> template_;
 
 	// Signature args for type templates, template args for function templates.
 	TemplateArgs args;
-
-	// Container for templates in case of function templates set parametrization.
-	llvm::SmallVector< FunctionTemplatePtr, 2 > function_templates = {};
 
 	size_t Hash() const;
 };
@@ -96,6 +93,22 @@ bool operator!=( const TemplateKey& l, const TemplateKey& r );
 struct TemplateKeyHasher
 {
 	size_t operator()( const TemplateKey& k ) const { return k.Hash(); }
+};
+
+struct ParametrizedFunctionTemplateKey
+{
+	OverloadedFunctionsSetConstPtr functions_set;
+	TemplateArgs args;
+
+	size_t Hash() const;
+};
+
+bool operator==( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r );
+bool operator!=( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r );
+
+struct ParametrizedFunctionTemplateKeyHasher
+{
+	size_t operator()( const ParametrizedFunctionTemplateKey& k ) const { return k.Hash(); }
 };
 
 } // namespace U

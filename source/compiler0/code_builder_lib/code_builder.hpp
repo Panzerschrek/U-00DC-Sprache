@@ -563,7 +563,7 @@ private:
 
 	NamesScopeValue* ParametrizeFunctionTemplate(
 		const SrcLoc& src_loc,
-		const OverloadedFunctionsSet& functions_set,
+		const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
@@ -1408,6 +1408,9 @@ private:
 	std::unordered_map<TemplateKey, NamesScopeValue, TemplateKeyHasher> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<TemplateKey> generated_template_things_sequence_;
+
+	// Cache results of template functions parametrization.
+	std::unordered_map<ParametrizedFunctionTemplateKey, NamesScopeValue, ParametrizedFunctionTemplateKeyHasher> parametrized_template_functions_cache_;
 
 	std::vector<GlobalThing> global_things_stack_;
 

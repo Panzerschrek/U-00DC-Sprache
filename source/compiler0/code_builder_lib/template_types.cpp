@@ -52,9 +52,6 @@ size_t TemplateKey::Hash() const
 {
 	size_t hash= size_t( reinterpret_cast<uintptr_t>( template_.get() ) );
 
-	for( const auto& t : function_templates )
-		hash= llvm::hash_combine( hash, size_t( reinterpret_cast<uintptr_t>( t.get() ) ) );
-
 	for( const TemplateArg& arg : args )
 		hash= llvm::hash_combine( hash, TemplateArgHash(arg) );
 
@@ -63,10 +60,30 @@ size_t TemplateKey::Hash() const
 
 bool operator==( const TemplateKey& l, const TemplateKey& r )
 {
-	return l.template_ == r.template_ && l.args == r.args && l.function_templates == r.function_templates;
+	return l.template_ == r.template_ && l.args == r.args;
 }
 
 bool operator!=( const TemplateKey& l, const TemplateKey& r )
+{
+	return !( l == r );
+}
+
+size_t ParametrizedFunctionTemplateKey::Hash() const
+{
+	size_t hash= size_t( reinterpret_cast<uintptr_t>( functions_set.get() ) );
+
+	for( const TemplateArg& arg : args )
+		hash= llvm::hash_combine( hash, TemplateArgHash(arg) );
+
+	return hash;
+}
+
+bool operator==( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r )
+{
+	return l.functions_set == r.functions_set && l.args == r.args;
+}
+
+bool operator!=( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r )
 {
 	return !( l == r );
 }

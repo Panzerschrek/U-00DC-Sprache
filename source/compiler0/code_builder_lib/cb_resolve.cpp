@@ -196,7 +196,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 			value=
 				ParametrizeFunctionTemplate(
 					template_parametrization.src_loc,
-					*functions_set,
+					functions_set,
 					template_parametrization.template_args,
 					names_scope,
 					function_context );
@@ -212,7 +212,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		auto parametrization_result=
 			ParametrizeFunctionTemplate(
 				template_parametrization.src_loc,
-				*this_overloaded_methods_set->overloaded_methods_set,
+				this_overloaded_methods_set->overloaded_methods_set,
 				template_parametrization.template_args,
 				names_scope,
 				function_context );

@@ -1099,12 +1099,12 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 
 NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	const SrcLoc& src_loc,
-	const OverloadedFunctionsSet& functions_set,
+	const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
-	const std::vector<FunctionTemplatePtr>& function_templates= functions_set.template_functions;
+	const std::vector<FunctionTemplatePtr>& function_templates= functions_set_ptr->template_functions;
 	U_ASSERT( !function_templates.empty() );
 
 	TemplateArgs arguments_calculated;
@@ -1113,18 +1113,13 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	if( arguments_calculated.size() != template_arguments.size() )
 		return nullptr;
 
-	// We need unique name here, so use for it all function templates and provided template args.
-	// Do not fill template_ field in order to make difference between template parametrization and template instantiation keys.
-	TemplateKey template_key;
-	for( const FunctionTemplatePtr& template_ : function_templates )
-		template_key.function_templates.push_back( template_ );
-	template_key.args= arguments_calculated;
+	ParametrizedFunctionTemplateKey template_key{ functions_set_ptr, arguments_calculated };
 
-	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
+	if( const auto it= parametrized_template_functions_cache_.find( template_key ); it != parametrized_template_functions_cache_.end() )
 		return &it->second; // Already generated.
 
 	OverloadedFunctionsSet result;
-	result.base_class= functions_set.base_class;
+	result.base_class= functions_set_ptr->base_class;
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
 	{
 		const FunctionTemplate& function_template= *function_template_ptr;
@@ -1164,7 +1159,11 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		return nullptr;
 	}
 
-	return AddNewTemplateThing( std::move(template_key), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
+	return
+		& parametrized_template_functions_cache_.insert(
+			std::make_pair(
+				std::move(template_key),
+				NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) ) ).first->second;
 }
 
 void CodeBuilder::EvaluateTemplateArgs(
