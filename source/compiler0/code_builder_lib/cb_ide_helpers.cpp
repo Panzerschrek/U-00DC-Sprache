@@ -511,21 +511,18 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
 	skip_building_generated_functions_= false;
 
-	const NamesScopeValue* names_scope_value=
+	const std::optional<Type> type=
 		FinishTemplateTypeGeneration(
 			SrcLoc(),
 			*EnsureDummyTemplateInstantiationArgsScopeCreated(),
 			TemplateTypePreparationResult{ type_template, template_args_scope, signature_args } );
 
-	if( names_scope_value != nullptr )
+	if( type != std::nullopt )
 	{
-		if( const auto type= names_scope_value->value.GetTypeName() )
+		if( const auto class_type= type->GetClassType() )
 		{
-			if( const auto class_type= type->GetClassType() )
-			{
-				GlobalThingBuildClass( class_type );
-				GlobalThingBuildNamespace( *class_type->members );
-			}
+			GlobalThingBuildClass( class_type );
+			GlobalThingBuildNamespace( *class_type->members );
 		}
 	}
 

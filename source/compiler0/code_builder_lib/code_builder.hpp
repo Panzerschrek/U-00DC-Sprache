@@ -526,8 +526,8 @@ private:
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
-	// Returns nullptr in case of fail.
-	NamesScopeValue* GenTemplateType(
+	// Returns none in case of fail.
+	std::optional<Type> GenTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatesSet& type_templates_set,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -539,7 +539,7 @@ private:
 		const TypeTemplatePtr& type_template_ptr,
 		llvm::ArrayRef<TemplateArg> template_arguments );
 
-	NamesScopeValue* FinishTemplateTypeGeneration(
+	std::optional<Type> FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
 		NamesScope& arguments_names_scope,
 		const TemplateTypePreparationResult& template_type_preparation_result );

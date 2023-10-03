@@ -178,16 +178,19 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 {
 	const Value base= ResolveValue( names_scope, function_context, template_parametrization.base );
 
-	NamesScopeValue* value= nullptr;
-
 	if( const TypeTemplatesSet* const type_templates_set= base.GetTypeTemplatesSet() )
-		value=
+	{
+		if( auto type=
 			GenTemplateType(
 				template_parametrization.src_loc,
 				*type_templates_set,
 				template_parametrization.template_args,
 				names_scope,
-				function_context );
+				function_context ) )
+			return Value( std::move(*type) );
+		else
+			return ErrorValue();
+	}
 	else if( const OverloadedFunctionsSetPtr functions_set= base.GetFunctionsSet() )
 	{
 		if( functions_set->template_functions.empty() )
@@ -231,14 +234,10 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		return ThisOverloadedMethodsSet{ this_overloaded_methods_set->this_, parametrized_functions };
 	}
 	else
+	{
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
-
-	if( value == nullptr )
 		return ErrorValue();
-
-	value->referenced= true;
-
-	return ContextualizeValueInResolve( names_scope, function_context, value->value, template_parametrization.src_loc );;
+	}
 }
 
 void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* const value )

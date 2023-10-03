@@ -747,7 +747,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	return false;
 }
 
-NamesScopeValue* CodeBuilder::GenTemplateType(
+std::optional<Type> CodeBuilder::GenTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatesSet& type_templates_set,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -760,7 +760,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	if( arguments_calculated.size() != template_arguments.size() )
 	{
 		REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), src_loc );
-		return nullptr;
+		return std::nullopt;
 	}
 
 	llvm::SmallVector<TemplateTypePreparationResult, 4> prepared_types;
@@ -774,7 +774,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	if( prepared_types.empty() )
 	{
 		REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), src_loc );
-		return nullptr;
+		return std::nullopt;
 	}
 
 	if( const auto selected_template= SelectTemplateType( prepared_types, template_arguments.size() ) )
@@ -784,7 +784,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	}
 
 	REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), src_loc );
-	return nullptr;
+	return std::nullopt;
 }
 
 CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
@@ -831,7 +831,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	return result;
 }
 
-NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
+std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 	const SrcLoc& src_loc,
 	NamesScope& arguments_names_scope,
 	const TemplateTypePreparationResult& template_type_preparation_result )
@@ -848,7 +848,13 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 		{
 			const NamesScopePtr template_parameters_space= it->second;
 			U_ASSERT( template_parameters_space != nullptr );
-			return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
+			if( const auto value= template_parameters_space->GetThisScopeValue( Class::c_template_class_name ) )
+			{
+				if( const auto type= value->value.GetTypeName() )
+					return *type;
+			}
+			else
+				return std::nullopt;
 		}
 		AddNewTemplateThing( std::move(template_key), template_args_namespace );
 	}
@@ -866,27 +872,24 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 
 		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr );
 		if( class_type == nullptr )
-			return nullptr;
+			return std::nullopt;
 
 		// Save in class info about its base template.
 		class_type->generated_class_data= Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args };
 
 		class_type->llvm_type->setName( mangler_->MangleType( class_type ) ); // Update llvm type name after setting base template.
 
-		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
+		return Type(class_type);
 	}
 	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )
 	{
 		const Type type= PrepareType( (*type_alias)->value, *template_args_namespace, *global_function_context_ );
-
-		if( type == invalid_type_ )
-			return nullptr;
-
-		return template_args_namespace->AddName( Class::c_template_class_name, NamesScopeValue( type, src_loc /* TODO - check src_loc */ ) );
+		template_args_namespace->AddName( Class::c_template_class_name, NamesScopeValue( type, src_loc /* TODO - check src_loc */ ) );
+		return type;
 	}
 	else U_ASSERT(false);
 
-	return nullptr;
+	return std::nullopt;
 }
 
 CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunction(
