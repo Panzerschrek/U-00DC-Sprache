@@ -1398,11 +1398,6 @@ private:
 	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
 	std::vector< std::unique_ptr<Enum> > enums_table_;
 
-	// Cache needs for generating same classes as template instantiation result in different source files.
-	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
-	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
-	std::unordered_map< TemplateKey, ClassPtr, TemplateKeyHasher > template_classes_cache_;
-
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, TypeinfoCacheElement, TypeHasher > typeinfo_cache_;
 	std::vector<std::unique_ptr<Class>> typeinfo_class_table_;

@@ -840,16 +840,18 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	const TypeTemplate& type_template= *type_template_ptr;
 	const NamesScopePtr& template_args_namespace= template_type_preparation_result.template_args_namespace;
 
-	const TemplateKey template_key{ type_template_ptr, template_type_preparation_result.signature_args };
-
-	// Check, if type already generated.
-	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 	{
-		const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
-		U_ASSERT( template_parameters_space != nullptr );
-		return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
+		TemplateKey template_key{ type_template_ptr, template_type_preparation_result.signature_args };
+
+		// Check, if type already generated.
+		if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
+		{
+			const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
+			U_ASSERT( template_parameters_space != nullptr );
+			return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
+		}
+		AddNewTemplateThing( std::move(template_key), NamesScopeValue( template_args_namespace, type_template.syntax_element->src_loc ) );
 	}
-	AddNewTemplateThing( template_key, NamesScopeValue( template_args_namespace, type_template.syntax_element->src_loc ) );
 
 	CreateTemplateErrorsContext(
 		arguments_names_scope.GetErrors(),
@@ -862,23 +864,12 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	{
 		U_ASSERT( (*class_ptr)->name == Class::c_template_class_name );
 
-		if( const auto cache_class_it= template_classes_cache_.find( template_key ); cache_class_it != template_classes_cache_.end() )
-		{
-			return
-				template_args_namespace->AddName(
-					Class::c_template_class_name,
-					NamesScopeValue( Type( cache_class_it->second ), type_template.syntax_element->src_loc /* TODO - check src_loc */ ) );
-		}
-
 		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr );
 		if( class_type == nullptr )
 			return nullptr;
 
-		Class& the_class= *class_type;
 		// Save in class info about its base template.
-		the_class.generated_class_data= Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args };
-
-		template_classes_cache_.insert( std::make_pair( template_key, class_type ) );
+		class_type->generated_class_data= Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args };
 
 		class_type->llvm_type->setName( mangler_->MangleType( class_type ) ); // Update llvm type name after setting base template.
 
