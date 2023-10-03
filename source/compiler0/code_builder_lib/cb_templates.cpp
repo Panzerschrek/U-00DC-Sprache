@@ -1013,7 +1013,11 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		return nullptr;
 	}
 
-	TemplateKey template_key{ function_template_ptr, template_args };
+	TemplateKey template_key
+	{
+		function_template_ptr->parent != nullptr ? function_template_ptr->parent : function_template_ptr,
+		template_args,
+	};
 
 	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 	{
@@ -1110,14 +1114,10 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		return nullptr;
 
 	// We need unique name here, so use for it all function templates and provided template args.
+	// Do not fill template_ field in order to make difference between template parametrization and template instantiation keys.
 	TemplateKey template_key;
 	for( const FunctionTemplatePtr& template_ : function_templates )
-	{
-		if( template_key.template_ == nullptr )
-			template_key.template_= template_;
-		else
-			template_key.additional_templates.push_back( template_ );
-	}
+		template_key.function_templates.push_back( template_ );
 	template_key.args= arguments_calculated;
 
 	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )

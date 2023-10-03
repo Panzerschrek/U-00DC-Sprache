@@ -52,7 +52,7 @@ size_t TemplateKey::Hash() const
 {
 	size_t hash= size_t( reinterpret_cast<uintptr_t>( template_.get() ) );
 
-	for( const auto& t : additional_templates )
+	for( const auto& t : function_templates )
 		hash= llvm::hash_combine( hash, size_t( reinterpret_cast<uintptr_t>( t.get() ) ) );
 
 	for( const TemplateArg& arg : args )
@@ -63,7 +63,7 @@ size_t TemplateKey::Hash() const
 
 bool operator==( const TemplateKey& l, const TemplateKey& r )
 {
-	return l.template_ == r.template_ && l.args == r.args && l.additional_templates == r.additional_templates;
+	return l.template_ == r.template_ && l.args == r.args && l.function_templates == r.function_templates;
 }
 
 bool operator!=( const TemplateKey& l, const TemplateKey& r )

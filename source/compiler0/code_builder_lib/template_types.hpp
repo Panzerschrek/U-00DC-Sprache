@@ -84,8 +84,8 @@ struct TemplateKey
 	// Signature args for type templates, template args for function templates.
 	TemplateArgs args;
 
-	// Container for additional templates in case of function templates set parametrization.
-	std::vector< std::shared_ptr<const TemplateBase> > additional_templates = {};
+	// Container for templates in case of function templates set parametrization.
+	llvm::SmallVector< FunctionTemplatePtr, 2 > function_templates = {};
 
 	size_t Hash() const;
 };
