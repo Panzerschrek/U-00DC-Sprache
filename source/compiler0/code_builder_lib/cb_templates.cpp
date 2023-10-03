@@ -846,11 +846,11 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 		// Check, if type already generated.
 		if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 		{
-			const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
+			const NamesScopePtr template_parameters_space= it->second;
 			U_ASSERT( template_parameters_space != nullptr );
 			return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 		}
-		AddNewTemplateThing( std::move(template_key), NamesScopeValue( template_args_namespace, type_template.syntax_element->src_loc ) );
+		AddNewTemplateThing( std::move(template_key), template_args_namespace );
 	}
 
 	CreateTemplateErrorsContext(
@@ -1022,7 +1022,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 	{
 		//Function for this template arguments already generated.
-		const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
+		const NamesScopePtr template_parameters_space= it->second;
 		U_ASSERT( template_parameters_space != nullptr );
 		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->value.GetFunctionsSet();
 		if( !result_functions_set.functions.empty() )
@@ -1030,7 +1030,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
 	}
-	AddNewTemplateThing( std::move(template_key), NamesScopeValue( template_args_namespace, function_declaration.src_loc ) );
+	AddNewTemplateThing( std::move(template_key), template_args_namespace );
 
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
@@ -1269,10 +1269,10 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 	}
 }
 
-NamesScopeValue* CodeBuilder::AddNewTemplateThing( TemplateKey key, NamesScopeValue thing )
+void CodeBuilder::AddNewTemplateThing( TemplateKey key, NamesScopePtr thing )
 {
 	generated_template_things_sequence_.push_back( key );
-	return & generated_template_things_storage_.insert( std::make_pair( std::move(key), std::move(thing) ) ).first->second;
+	generated_template_things_storage_.insert( std::make_pair( std::move(key), std::move(thing) ) );
 }
 
 void CodeBuilder::CreateTemplateErrorsContext(

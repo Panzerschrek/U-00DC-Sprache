@@ -54,8 +54,7 @@ void CodeBuilder::DeleteFunctionsBodies()
 
 	// Delete bodies of template functions / functions inside templates.
 	for( auto& name_value_pair : generated_template_things_storage_ )
-		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
-			DeleteFunctionsBodies_r( *names_scope );
+		DeleteFunctionsBodies_r( *name_value_pair.second );
 
 	// Delete destructors of typeinfo classes.
 	for( const auto& typeinfo_class : typeinfo_class_table_ )
@@ -503,7 +502,7 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 		if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 		{
 			// If this is not first instantiation, return previous namespace, where inserted type is really located.
-			const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
+			const NamesScopePtr template_parameters_space= it->second;
 			U_ASSERT( template_parameters_space != nullptr );
 			return template_parameters_space;
 		}
@@ -826,8 +825,8 @@ void CodeBuilder::DummyInstantiateTemplates()
 	// use index-based for because this array may be modified during iteration.
 	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
 	{
-		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
-			DummyInstantiateTemplates_r( *namespace_ );
+		const NamesScopePtr namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]];
+		DummyInstantiateTemplates_r( *namespace_ );
 	}
 
 	skip_building_generated_functions_= prev_skip_building_generated_functions;

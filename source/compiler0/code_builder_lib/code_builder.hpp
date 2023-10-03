@@ -584,7 +584,7 @@ private:
 		const FunctionTemplate& function_template,
 		NamesScope& target_namespace );
 
-	NamesScopeValue* AddNewTemplateThing( TemplateKey key, NamesScopeValue thing );
+	void AddNewTemplateThing( TemplateKey key, NamesScopePtr thing );
 
 	void CreateTemplateErrorsContext(
 		CodeBuilderErrorsContainer& errors_container,
@@ -1406,7 +1406,7 @@ private:
 	std::vector<Type> non_sync_expression_stack_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	std::unordered_map<TemplateKey, NamesScopeValue, TemplateKeyHasher> generated_template_things_storage_;
+	std::unordered_map<TemplateKey, NamesScopePtr, TemplateKeyHasher> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<TemplateKey> generated_template_things_sequence_;
 
