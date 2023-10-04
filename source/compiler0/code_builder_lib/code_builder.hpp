@@ -1233,7 +1233,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
+	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );

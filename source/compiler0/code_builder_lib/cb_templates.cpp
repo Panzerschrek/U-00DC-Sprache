@@ -870,14 +870,9 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 	{
 		U_ASSERT( (*class_ptr)->name == Class::c_template_class_name );
 
-		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr );
+		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr, Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args } );
 		if( class_type == nullptr )
 			return std::nullopt;
-
-		// Save in class info about its base template.
-		class_type->generated_class_data= Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args };
-
-		class_type->llvm_type->setName( mangler_->MangleType( class_type ) ); // Update llvm type name after setting base template.
 
 		return Type(class_type);
 	}

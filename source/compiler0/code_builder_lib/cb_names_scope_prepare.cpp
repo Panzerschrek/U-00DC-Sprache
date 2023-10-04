@@ -151,7 +151,7 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration )
+ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template )
 {
 	const std::string& class_name= class_declaration.name;
 	if( IsKeyword( class_name ) )
@@ -168,14 +168,16 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	classes_table_.push_back( std::move(class_type_ptr) );
 
 	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration.src_loc ) );
+
 	class_type->syntax_element= &class_declaration;
 	class_type->src_loc= class_declaration.src_loc;
+	if( base_template != std::nullopt )
+		class_type->generated_class_data= std::move(*base_template);
+
 	class_type->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_type ) );
 
 	class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
 	class_type->members->SetClass( class_type );
-
-	class_type->syntax_element= &class_declaration;
 
 	struct Visitor final
 	{

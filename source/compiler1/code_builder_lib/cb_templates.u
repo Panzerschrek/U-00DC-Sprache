@@ -861,25 +861,17 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 
 	if_var( &class_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::Class /> />() )
 	{
-		auto class_type= NamesScopeAddClass( args_names_scope, class_syntax_element );
+		var ClassType::BaseTemplate mut base_template
+		{
+			.class_template= type_template_ptr,
+			.signature_args= template_args_evaluation_result.signature_args,
+		};
+
+		auto class_type= NamesScopeAddClass( args_names_scope, class_syntax_element, move(base_template) );
 		if( class_type.empty() )
 		{
 			return ust::null_optional;
 		}
-
-		with( mut lock : class_type.try_lock_mut() )
-		{
-			var ClassType::BaseTemplate mut base_template
-			{
-				.class_template= type_template_ptr,
-				.signature_args= template_args_evaluation_result.signature_args,
-			};
-
-			lock.deref().generated_class_data= move(base_template);
-		}
-
-		auto mangled_llvm_type_name= mangler_.deref().MangleType( class_type.try_to_non_nullable() );
-		unsafe( U1_SetStructName( class_type.try_lock_imut().deref().llvm_type, mangled_llvm_type_name.front() ) );
 
 		AddNewTemplateThing( move(template_key), args_names_scope );
 		return Type( class_type.try_to_non_nullable() );

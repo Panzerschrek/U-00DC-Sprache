@@ -210,7 +210,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
 {
-	NamesScopeAddClass( names_scope_ptr, class_ );
+	NamesScopeAddClass( names_scope_ptr, class_, ust::null_optional );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
@@ -647,7 +647,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 	}
 }
 
-fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ ) : ust::shared_ptr_nullable_mut</ClassType/>
+fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::optional</ ClassType::BaseTemplate /> mut base_template ) : ust::shared_ptr_nullable_mut</ClassType/>
 {
 	auto& class_name= class_.deref().name;
 	if( IsKeyword( class_name ) )
@@ -664,6 +664,11 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
 	var ClassType mut class_type{ .members= class_members, .members_initial= class_members, .syntax_element= class_ };
+
+	if( !base_template.empty() )
+	{
+		class_type.generated_class_data= base_template.try_take();
+	}
 
 	var NamesScopeValue mut names_scope_value( move(class_type) );
 	auto class_type_ptr= names_scope_value.Get</ClassType/>().try_to_non_nullable();
