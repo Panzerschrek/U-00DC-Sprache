@@ -1609,14 +1609,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	auto functions_set_ptr= class_member[0].Get</FunctionsSet/>();
 	if( !functions_set_ptr.empty() )
 	{
-		BuildFunctionsSet( class_member[2], functions_set_ptr.try_to_non_nullable(), false );
+		var FunctionsSetPtr functions_set_non_null= functions_set_ptr.try_to_non_nullable();
+		BuildFunctionsSet( class_member[2], functions_set_non_null, false );
 
 		if( !member_access_operator.template_args.empty() )
 		{
-			auto functions_set_lock= functions_set_ptr.try_lock_imut();
-			var FunctionsSet& functions_set= functions_set_lock.deref();
-
-			if( functions_set.function_templates.empty() )
+			if( functions_set_non_null.lock_imut().deref().function_templates.empty() )
 			{
 				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
 				return ErrorValue();
@@ -1634,22 +1632,21 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			function_context.references_graph.AddNode( variable_lock_node );
 			function_context.references_graph.AddLink( variable_ptr, variable_lock_node );
 
-			auto val= ParametrizeTemplateFunctions(
+			auto parametrization_result= ParametrizeTemplateFunctions(
 				names_scope,
 				function_context,
-				functions_set,
-				functions_set_lock.deref().class_,
+				functions_set_non_null,
 				member_access_operator.template_args.try_deref(),
 				member_access_operator.src_loc );
 
 			function_context.references_graph.RemoveNode( variable_lock_node );
 
-			if( val.empty() )
+			if( parametrization_result.empty() )
 			{
 				return ErrorValue();
 			}
 
-			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= val.try_deref().Get</FunctionsSet/>().try_to_non_nullable() };
+			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= parametrization_result.try_to_non_nullable() };
 			return move(this_methods_set);
 		}
 		else

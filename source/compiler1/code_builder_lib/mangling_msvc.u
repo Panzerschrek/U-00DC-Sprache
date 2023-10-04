@@ -30,7 +30,6 @@ public:
 
 	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual override MangleType( mut this, Type& t ) : ust::string8;
-	fn virtual override MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8;
 	fn virtual override MangleVirtualTable( mut this, Type& t ) : ust::string8;
 
 private:
@@ -98,13 +97,6 @@ fn ManglerMSVC::MangleType( mut this, Type& t ) : ust::string8
 {
 	var ManglerState mut mangler_state;
 	EncodeType( mangler_state, t );
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
-}
-
-fn ManglerMSVC::MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8
-{
-	var ManglerState mut mangler_state;
-	EncodeTemplateArgs( mangler_state, template_args );
 	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 

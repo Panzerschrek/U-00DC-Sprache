@@ -626,7 +626,7 @@ class FunctionTemplate final : TemplateBase
 	{}
 }
 
-type FunctionTemplatePtr= ust::shared_ptr_final</FunctionTemplate/>;
+type FunctionTemplatePtr= ust::shared_ptr_imut</FunctionTemplate/>;
 
 struct ParametrizedFunctionTemplate
 {
@@ -754,6 +754,36 @@ private:
 		] />;
 
 	Container something_;
+}
+
+struct TemplateKey
+{
+	ust::shared_ptr_imut</ TemplateBase /> template_;
+	TemplateArgsFinished template_args;
+
+	type hasher= TemplateKeyHasher;
+
+	op==( TemplateKey& l, TemplateKey& r ) : bool;
+}
+
+struct TemplateKeyHasher
+{
+	fn hash( TemplateKey& k ) : size_type;
+}
+
+struct ParametrizedFunctionTemplateKey
+{
+	FunctionsSetPtr functions_set;
+	TemplateArgsFinished template_args;
+
+	type hasher= ParametrizedFunctionTemplateKeyHasher;
+
+	op==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool;
+}
+
+struct ParametrizedFunctionTemplateKeyHasher
+{
+	fn hash( ParametrizedFunctionTemplateKey& k ) : size_type;
 }
 
 //

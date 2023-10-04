@@ -1232,6 +1232,108 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 	halt;
 }
 
+op TemplateKey::==( TemplateKey& l, TemplateKey& r ) : bool
+{
+	return l.template_ == r.template_ && TemplateArgsEquals( l.template_args, r.template_args );
+}
+
+fn TemplateKeyHasher::hash( TemplateKey& k ) : size_type
+{
+	return TypeHasher::hash_combine( ust::default_hasher::hash( k.template_ ), HashTemplateArgs( k.template_args ) );
+}
+
+op ParametrizedFunctionTemplateKey::==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool
+{
+	return l.functions_set == r.functions_set && TemplateArgsEquals( l.template_args, r.template_args );
+}
+
+fn ParametrizedFunctionTemplateKeyHasher::hash( ParametrizedFunctionTemplateKey& k ) : size_type
+{
+	return TypeHasher::hash_combine( ust::default_hasher::hash( k.functions_set ), HashTemplateArgs( k.template_args ) );
+}
+
+fn TemplateArgsEquals( TemplateArgsFinished& l, TemplateArgsFinished& r ) : bool
+{
+	if( l.size() != r.size() )
+	{
+		return false;
+	}
+
+	for( var size_type mut i= 0s; i < l.size(); ++i )
+	{
+		if( !TemplateArgEquals( l[i], r[i] ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// Use custom comparator, since default comparator compares shared pointer values of VariablePtr.
+// But we need to compare constexpr values intself.
+fn TemplateArgEquals( TemplateArgFinished& l, TemplateArgFinished& r ) : bool
+{
+	if_var( &l_type : l.get</Type/>() )
+	{
+		if_var( &r_type : r.get</Type/>() )
+		{
+			return l_type == r_type;
+		}
+	}
+
+	if_var( &l_variable_ptr : l.get</VariablePtr/>() )
+	{
+		if_var( &r_variable_ptr : r.get</VariablePtr/>() )
+		{
+			with( &l_variable : l_variable_ptr.lock_imut().deref() )
+			{
+				with( &r_variable : r_variable_ptr.lock_imut().deref() )
+				{
+					if( l_variable.t != r_variable.t )
+					{
+						return false;
+					}
+
+					if( l_variable.constexpr_value == LLVMValueRef::Null || r_variable.constexpr_value == LLVMValueRef::Null )
+					{
+						return false;
+					}
+					return unsafe( LLVMConstIntGetZExtValue( l_variable.constexpr_value ) ) == unsafe( LLVMConstIntGetZExtValue( r_variable.constexpr_value ) );
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+fn HashTemplateArgs( TemplateArgsFinished& args ) : size_type
+{
+	var size_type mut hash= 0s;
+
+	foreach( &arg : args )
+	{
+		if_var( &t : arg.get</Type/>() )
+		{
+			hash= TypeHasher::hash_combine( hash, TypeHasher::hash( t ) );
+		}
+		else if_var( &varible_ptr : arg.get</VariablePtr/>() )
+		{
+			with( & variable : varible_ptr.lock_imut().deref() )
+			{
+				if( variable.constexpr_value != LLVMValueRef::Null )
+				{
+					hash= TypeHasher::hash_combine( hash, size_type( unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) ) ) );
+				}
+			}
+		}
+		else{ halt; }
+	}
+
+	return hash;
+}
+
 //
 // NamesScope
 //

@@ -1098,7 +1098,9 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 		foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
 		{
-			if( parametrized_function_template.known_args.size() != parametrized_function_template.base_template.deref().params.size() )
+			auto function_template_lock= parametrized_function_template.base_template.lock_imut();
+			var FunctionTemplate& function_template= function_template_lock.deref();
+			if( parametrized_function_template.known_args.size() != function_template.params.size() )
 			{
 				continue;
 			}
@@ -1118,7 +1120,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 		foreach( &function_template : functions_set.function_templates )
 		{
-			if( !function_template.deref().params.empty() )
+			if( !function_template.lock_imut().deref().params.empty() )
 			{
 				continue;
 			}

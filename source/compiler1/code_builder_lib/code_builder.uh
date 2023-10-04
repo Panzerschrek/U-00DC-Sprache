@@ -669,14 +669,14 @@ private:
 		NamesScopePtr& instantiation_point_names_scope,
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
+	// Returns nullptr on error.
 	fn ParametrizeTemplateFunctions(
 		mut this,
 		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
-		FunctionsSet& functions_set,
-		ust::shared_ptr_nullable_mut</ClassType/> functions_set_class,
+		FunctionsSetPtr& functions_set,
 		Synt::TemplateArgs& template_args,
-		SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>;
+		SrcLoc& src_loc ) : ust::shared_ptr_nullable_mut</FunctionsSet/>;
 
 	// Returns true if ok
 	fn MatchTemplateArgument(
@@ -765,7 +765,7 @@ private:
 		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		NamesScopeMutPtr& target_namespace );
 
-	fn AddNewTemplateThing( mut this, ust::string8 key, NamesScopePtr& thing );
+	fn AddNewTemplateThing( mut this, TemplateKey key, NamesScopePtr thing );
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
@@ -1125,9 +1125,11 @@ private:
 	ust::vector</ ClassTypePtr /> class_table_;
 
 	// Store template things in global container to use same things for same template arguments.
-	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
+	ust::unordered_map</ TemplateKey, NamesScopePtr /> generated_template_things_;
 	// Template things for current source graph node added sequentialy into this vector too.
-	ust::vector</ ust::string8 /> generated_template_things_sequence_;
+	ust::vector</ TemplateKey /> generated_template_things_sequence_;
+
+	ust::unordered_map</ ParametrizedFunctionTemplateKey, FunctionsSetPtr /> parametrized_template_functions_cache_;
 
 	ust::unordered_map</Type, TypeinfoCacheElement /> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;

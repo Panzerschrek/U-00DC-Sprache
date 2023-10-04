@@ -54,8 +54,7 @@ void CodeBuilder::DeleteFunctionsBodies()
 
 	// Delete bodies of template functions / functions inside templates.
 	for( auto& name_value_pair : generated_template_things_storage_ )
-		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
-			DeleteFunctionsBodies_r( *names_scope );
+		DeleteFunctionsBodies_r( *name_value_pair.second );
 
 	// Delete destructors of typeinfo classes.
 	for( const auto& typeinfo_class : typeinfo_class_table_ )
@@ -437,8 +436,6 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
 {
-	// TODO - fix this. Avoid further destruction of TypeTemplatePtr.
-	// We need to keep it alive, since some internal structures may contain raw reference to it.
 	TypeTemplatesSet temp_type_templates_set;
 	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );
 	if( !temp_type_templates_set.type_templates.empty() )
@@ -448,9 +445,6 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
 {
 	// Prepare function template and instantiate it with dummy template args in order to produce some sort of usefull completion result.
-
-	// TODO - fix this. Avoid further destruction of FunctionTemplatePtr.
-	// We need to keep it alive, since some internal structures may contain raw reference to it.
 
 	OverloadedFunctionsSet functions_set;
 	PrepareFunctionTemplate( function_template_syntax_element, functions_set, names_scope, names_scope.GetClass() );
@@ -504,11 +498,11 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 		signature_args.push_back( CreateDummyTemplateSignatureArg( *type_template, *template_args_scope, signature_param ) );
 
 	{
-		const std::string name_encoded= EncodeTypeTemplateInstantiation( *type_template, signature_args );
-		if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+		const TemplateKey template_key{ type_template, signature_args };
+		if( const auto it= generated_template_things_storage_.find( template_key ); it != generated_template_things_storage_.end() )
 		{
 			// If this is not first instantiation, return previous namespace, where inserted type is really located.
-			const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
+			const NamesScopePtr template_parameters_space= it->second;
 			U_ASSERT( template_parameters_space != nullptr );
 			return template_parameters_space;
 		}
@@ -517,21 +511,18 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
 	skip_building_generated_functions_= false;
 
-	const NamesScopeValue* names_scope_value=
+	const std::optional<Type> type=
 		FinishTemplateTypeGeneration(
 			SrcLoc(),
 			*EnsureDummyTemplateInstantiationArgsScopeCreated(),
 			TemplateTypePreparationResult{ type_template, template_args_scope, signature_args } );
 
-	if( names_scope_value != nullptr )
+	if( type != std::nullopt )
 	{
-		if( const auto type= names_scope_value->value.GetTypeName() )
+		if( const auto class_type= type->GetClassType() )
 		{
-			if( const auto class_type= type->GetClassType() )
-			{
-				GlobalThingBuildClass( class_type );
-				GlobalThingBuildNamespace( *class_type->members );
-			}
+			GlobalThingBuildClass( class_type );
+			GlobalThingBuildNamespace( *class_type->members );
 		}
 	}
 
@@ -546,13 +537,10 @@ void CodeBuilder::InstantiateFunctionTemplateWithDummyArgs( const FunctionTempla
 
 	// Since it is not always possible to calculate template args from signature args for function template,
 	// perform direct args filling.
-	llvm::SmallVector<TemplateArg, 8> template_args;
+	TemplateArgs template_args;
 	template_args.reserve( function_template->template_params.size() );
 	for( const TemplateBase::TemplateParameter& param : function_template->template_params )
 		template_args.push_back( CreateDummyTemplateSignatureArgForTemplateParam( *function_template, *template_args_scope, param ) );
-
-	// HACK! Clear previous instantiation of this function template in order to perform completion properly.
-	generated_template_things_storage_.erase( EncodeFunctionTemplateInstantiation( *function_template, template_args ) );
 
 	// Do not care here about signature params filling.
 	// For function templates they are used mostly for overloaded resolition.
@@ -834,8 +822,8 @@ void CodeBuilder::DummyInstantiateTemplates()
 	// use index-based for because this array may be modified during iteration.
 	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
 	{
-		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
-			DummyInstantiateTemplates_r( *namespace_ );
+		const NamesScopePtr namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]];
+		DummyInstantiateTemplates_r( *namespace_ );
 	}
 
 	skip_building_generated_functions_= prev_skip_building_generated_functions;

@@ -526,8 +526,8 @@ private:
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
-	// Returns nullptr in case of fail.
-	NamesScopeValue* GenTemplateType(
+	// Returns none in case of fail.
+	std::optional<Type> GenTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatesSet& type_templates_set,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -539,9 +539,7 @@ private:
 		const TypeTemplatePtr& type_template_ptr,
 		llvm::ArrayRef<TemplateArg> template_arguments );
 
-	std::string EncodeTypeTemplateInstantiation( const TypeTemplate& type_template, const TemplateArgs& signature_args );
-
-	NamesScopeValue* FinishTemplateTypeGeneration(
+	std::optional<Type> FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
 		NamesScope& arguments_names_scope,
 		const TemplateTypePreparationResult& template_type_preparation_result );
@@ -558,16 +556,15 @@ private:
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr );
 
-	std::string EncodeFunctionTemplateInstantiation( const FunctionTemplate& function_template, llvm::ArrayRef<TemplateArg> template_args );
-
 	const FunctionVariable* FinishTemplateFunctionGeneration(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const TemplateFunctionPreparationResult& template_function_preparation_result );
 
-	NamesScopeValue* ParametrizeFunctionTemplate(
+	// Returns nullptr on fail.
+	OverloadedFunctionsSetPtr ParametrizeFunctionTemplate(
 		const SrcLoc& src_loc,
-		const OverloadedFunctionsSet& functions_set,
+		const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
@@ -587,7 +584,7 @@ private:
 		const FunctionTemplate& function_template,
 		NamesScope& target_namespace );
 
-	NamesScopeValue* AddNewTemplateThing( std::string key, NamesScopeValue thing );
+	void AddNewTemplateThing( TemplateKey key, NamesScopePtr thing );
 
 	void CreateTemplateErrorsContext(
 		CodeBuilderErrorsContainer& errors_container,
@@ -1402,11 +1399,6 @@ private:
 	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
 	std::vector< std::unique_ptr<Enum> > enums_table_;
 
-	// Cache needs for generating same classes as template instantiation result in different source files.
-	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
-	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
-	ProgramStringMap< ClassPtr > template_classes_cache_;
-
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, TypeinfoCacheElement, TypeHasher > typeinfo_cache_;
 	std::vector<std::unique_ptr<Class>> typeinfo_class_table_;
@@ -1414,9 +1406,12 @@ private:
 	std::vector<Type> non_sync_expression_stack_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	ProgramStringMap<NamesScopeValue> generated_template_things_storage_;
+	std::unordered_map<TemplateKey, NamesScopePtr, TemplateKeyHasher> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
-	std::vector<std::string> generated_template_things_sequence_;
+	std::vector<TemplateKey> generated_template_things_sequence_;
+
+	// Cache results of template functions parametrization.
+	std::unordered_map<ParametrizedFunctionTemplateKey, OverloadedFunctionsSetPtr, ParametrizedFunctionTemplateKeyHasher> parametrized_template_functions_cache_;
 
 	std::vector<GlobalThing> global_things_stack_;
 

@@ -178,28 +178,39 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 {
 	const Value base= ResolveValue( names_scope, function_context, template_parametrization.base );
 
-	NamesScopeValue* value= nullptr;
-
 	if( const TypeTemplatesSet* const type_templates_set= base.GetTypeTemplatesSet() )
-		value=
+	{
+		if( auto type=
 			GenTemplateType(
 				template_parametrization.src_loc,
 				*type_templates_set,
 				template_parametrization.template_args,
 				names_scope,
-				function_context );
+				function_context ) )
+			return Value( std::move(*type) );
+		else
+			return ErrorValue();
+	}
 	else if( const OverloadedFunctionsSetPtr functions_set= base.GetFunctionsSet() )
 	{
 		if( functions_set->template_functions.empty() )
+		{
 			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
-		else
-			value=
-				ParametrizeFunctionTemplate(
-					template_parametrization.src_loc,
-					*functions_set,
-					template_parametrization.template_args,
-					names_scope,
-					function_context );
+			return ErrorValue();
+		}
+
+		const OverloadedFunctionsSetPtr parametrized_functions=
+			ParametrizeFunctionTemplate(
+				template_parametrization.src_loc,
+				functions_set,
+				template_parametrization.template_args,
+				names_scope,
+				function_context );
+
+		if( parametrized_functions == nullptr )
+			return ErrorValue();
+
+		return parametrized_functions;
 	}
 	else if( const auto this_overloaded_methods_set= base.GetThisOverloadedMethodsSet() )
 	{
@@ -209,28 +220,24 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 			return ErrorValue();
 		}
 
-		auto parametrization_result=
+		const OverloadedFunctionsSetPtr parametrized_functions=
 			ParametrizeFunctionTemplate(
 				template_parametrization.src_loc,
-				*this_overloaded_methods_set->overloaded_methods_set,
+				this_overloaded_methods_set->overloaded_methods_set,
 				template_parametrization.template_args,
 				names_scope,
 				function_context );
-		if( parametrization_result == nullptr )
+
+		if( parametrized_functions == nullptr )
 			return ErrorValue();
 
-		if( const auto parametrization_result_funtions_set= parametrization_result->value.GetFunctionsSet() )
-			return ThisOverloadedMethodsSet{ this_overloaded_methods_set->this_, parametrization_result_funtions_set };
+		return ThisOverloadedMethodsSet{ this_overloaded_methods_set->this_, parametrized_functions };
 	}
 	else
+	{
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
-
-	if( value == nullptr )
 		return ErrorValue();
-
-	value->referenced= true;
-
-	return ContextualizeValueInResolve( names_scope, function_context, value->value, template_parametrization.src_loc );;
+	}
 }
 
 void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* const value )

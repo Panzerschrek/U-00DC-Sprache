@@ -68,7 +68,7 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 
 			if( !functions_set.function_templates.empty() )
 			{
-				return functions_set.function_templates.front().deref().syntax_element.deref().name;
+				return functions_set.function_templates.front().lock_imut().deref().syntax_element.deref().name;
 			}
 		}
 	}
@@ -919,7 +919,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 								}
 								else if( !result_functions_set.function_templates.empty() )
 								{
-									src_loc= result_functions_set.function_templates.front().deref().syntax_element.deref().src_loc;
+									src_loc= result_functions_set.function_templates.front().lock_imut().deref().syntax_element.deref().src_loc;
 								}
 								REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
 							}

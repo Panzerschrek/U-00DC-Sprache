@@ -58,7 +58,6 @@ public:
 		std::optional<llvm::ArrayRef<TemplateArg>> template_args ) override;
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
-	std::string MangleTemplateArgs( llvm::ArrayRef<TemplateArg> template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
@@ -723,12 +722,6 @@ std::string ManglerItaniumABI::MangleGlobalVariable( const NamesScope& parent_sc
 std::string ManglerItaniumABI::MangleType( const Type& type )
 {
 	EncodeTypeName( state_, type );
-	return state_.TakeResult();
-}
-
-std::string ManglerItaniumABI::MangleTemplateArgs( const llvm::ArrayRef<TemplateArg> template_parameters )
-{
-	EncodeTemplateArgs( state_, template_parameters );
 	return state_.TakeResult();
 }
 

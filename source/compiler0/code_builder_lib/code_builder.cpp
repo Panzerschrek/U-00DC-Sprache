@@ -280,9 +280,8 @@ void CodeBuilder::FinalizeProgram()
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
-	for( auto& name_value_pair : generated_template_things_storage_ )
-		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
-			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
+	for( auto& key_value_pair : generated_template_things_storage_ )
+		SetupDereferenceableFunctionParamsAndRetAttributes_r( *key_value_pair.second );
 
 	global_function_context_->function->eraseFromParent(); // Kill global function.
 
@@ -355,8 +354,8 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 		// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
 		for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
 		{
-			if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
-				GlobalThingBuildNamespace( *namespace_ );
+			const NamesScopePtr namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]];
+			GlobalThingBuildNamespace( *namespace_ );
 		}
 	}
 	generated_template_things_sequence_.clear();

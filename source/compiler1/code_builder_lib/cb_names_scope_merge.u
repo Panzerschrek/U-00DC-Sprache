@@ -449,7 +449,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 			}
 			foreach( &function_template_ptr : functions_set.function_templates )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), function_template_ptr.deref().syntax_element.deref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), function_template_ptr.lock_imut().deref().syntax_element.deref().src_loc );
 			}
 
 			return min_src_loc;

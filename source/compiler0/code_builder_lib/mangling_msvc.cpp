@@ -211,7 +211,6 @@ public: // IMangler
 		std::optional<llvm::ArrayRef<TemplateArg>> template_args ) override;
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
-	std::string MangleTemplateArgs( llvm::ArrayRef<TemplateArg> template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
@@ -306,14 +305,6 @@ std::string ManglerMSVC::MangleType( const Type& type )
 	std::string res;
 	ManglerState mangler_state( res );
 	EncodeType( mangler_state, type );
-	return res;
-}
-
-std::string ManglerMSVC::MangleTemplateArgs( const llvm::ArrayRef<TemplateArg> template_args )
-{
-	std::string res;
-	ManglerState mangler_state( res );
-	EncodeTemplateArgs( mangler_state, template_args );
 	return res;
 }
 
