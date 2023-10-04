@@ -24,7 +24,6 @@ public:
 
 	fn virtual pure MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual pure MangleType( mut this, Type& t ) : ust::string8;
-	fn virtual pure MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8;
 	fn virtual pure MangleVirtualTable( mut this, Type& t ) : ust::string8;
 }
 

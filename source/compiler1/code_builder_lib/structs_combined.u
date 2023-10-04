@@ -1234,19 +1234,34 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 
 op TemplateKey::==( TemplateKey& l, TemplateKey& r ) : bool
 {
-	if( l.template_ != r.template_ )
+	return l.template_ == r.template_ && TemplateArgsEquals( l.template_args, r.template_args );
+}
+
+fn TemplateKeyHasher::hash( TemplateKey& k ) : size_type
+{
+	return TypeHasher::hash_combine( ust::ref_to_int( k.template_.lock_imut().deref() ), HashTemplateArgs( k.template_args ) );
+}
+
+op ParametrizedFunctionTemplateKey::==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool
+{
+	return l.functions_set == r.functions_set && TemplateArgsEquals( l.template_args, r.template_args );
+}
+
+fn ParametrizedFunctionTemplateKeyHasher::hash( ParametrizedFunctionTemplateKey& k ) : size_type
+{
+	return TypeHasher::hash_combine( ust::ref_to_int( k.functions_set.lock_imut().deref() ), HashTemplateArgs( k.template_args ) );
+}
+
+fn TemplateArgsEquals( TemplateArgsFinished& l, TemplateArgsFinished& r ) : bool
+{
+	if( l.size() != r.size() )
 	{
 		return false;
 	}
 
-	if( l.template_args.size() != r.template_args.size() )
+	for( var size_type mut i= 0s; i < l.size(); ++i )
 	{
-		return false;
-	}
-
-	for( var size_type mut i= 0s; i < l.template_args.size(); ++i )
-	{
-		if( !TemplateArgEquals( l.template_args[i], r.template_args[i] ) )
+		if( !TemplateArgEquals( l[i], r[i] ) )
 		{
 			return false;
 		}
@@ -1293,11 +1308,11 @@ fn TemplateArgEquals( TemplateArgFinished& l, TemplateArgFinished& r ) : bool
 	return false;
 }
 
-fn TemplateKeyHasher::hash( TemplateKey& k ) : size_type
+fn HashTemplateArgs( TemplateArgsFinished& args ) : size_type
 {
-	var size_type mut hash= ust::ref_to_int( k.template_.lock_imut().deref() );
+	var size_type mut hash= 0s;
 
-	foreach( &arg : k.template_args )
+	foreach( &arg : args )
 	{
 		if_var( &t : arg.get</Type/>() )
 		{

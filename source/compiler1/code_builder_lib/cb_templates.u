@@ -1140,8 +1140,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	mut this,
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
-	FunctionsSet& functions_set,
-	ust::shared_ptr_nullable_mut</ClassType/> mut functions_set_class,
+	FunctionsSetPtr& functions_set_ptr,
 	Synt::TemplateArgs& template_args,
 	SrcLoc& src_loc ) : ust::shared_ptr_nullable_mut</FunctionsSet/>
 {
@@ -1151,23 +1150,18 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
-	var ust::string8 mut cache_key= "_parametrized_";
-	foreach( &function_template_ptr : functions_set.function_templates )
-	{
-		cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.lock_imut().deref() ) );
-		cache_key+= "_";
-	}
-	cache_key+= mangler_.deref().MangleTemplateArgs( template_args_finished );
-
-	var ust::string8 names_scope_value_key= "_";
+	var ParametrizedFunctionTemplateKey mut cache_key{ .functions_set= functions_set_ptr, .template_args= template_args_finished };
 
 	if_var( &prev_value : parametrized_template_functions_cache_.find( cache_key ) )
 	{
 		return prev_value;
 	}
 
+	auto functions_set_lock= functions_set_ptr.lock_imut();
+	var FunctionsSet& functions_set= functions_set_lock.deref();
+
 	var FunctionsSet mut result_functions_set;
-	result_functions_set.class_= move(functions_set_class);
+	result_functions_set.class_= functions_set.class_;
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
 		auto function_template_lock= function_template_ptr.lock_imut();

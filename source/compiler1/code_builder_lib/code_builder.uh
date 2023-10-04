@@ -674,8 +674,7 @@ private:
 		mut this,
 		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
-		FunctionsSet& functions_set,
-		ust::shared_ptr_nullable_mut</ClassType/> functions_set_class,
+		FunctionsSetPtr& functions_set,
 		Synt::TemplateArgs& template_args,
 		SrcLoc& src_loc ) : ust::shared_ptr_nullable_mut</FunctionsSet/>;
 
@@ -1130,7 +1129,7 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	ust::vector</ TemplateKey /> generated_template_things_sequence_;
 
-	ust::unordered_map</ ust::string8, ust::shared_ptr_mut</FunctionsSet/> /> parametrized_template_functions_cache_;
+	ust::unordered_map</ ParametrizedFunctionTemplateKey, FunctionsSetPtr /> parametrized_template_functions_cache_;
 
 	ust::unordered_map</Type, TypeinfoCacheElement /> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;

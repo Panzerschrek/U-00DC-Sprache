@@ -771,6 +771,21 @@ struct TemplateKeyHasher
 	fn hash( TemplateKey& k ) : size_type;
 }
 
+struct ParametrizedFunctionTemplateKey
+{
+	FunctionsSetPtr functions_set;
+	TemplateArgsFinished template_args;
+
+	type hasher= ParametrizedFunctionTemplateKeyHasher;
+
+	op==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool;
+}
+
+struct ParametrizedFunctionTemplateKeyHasher
+{
+	fn hash( ParametrizedFunctionTemplateKey& k ) : size_type;
+}
+
 //
 // Other global stuff
 //
