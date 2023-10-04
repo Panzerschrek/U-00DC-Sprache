@@ -1914,6 +1914,68 @@ U_TEST( TemplateClass_UseLocalVariableForTemplateArgumentUsedAsReference_Test2 )
 	engine->runFunction( function, {} );
 }
 
+U_TEST( ClassTemplateWithZeroParams_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		// struct template with zero args is lazy.
+		template<//> struct Stupid
+		{
+			UnknownTypeName field; // No error is generated, since this class template is not instantiated.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ClassTemplateWithZeroParams_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> struct Box
+		{
+			i32 x;
+		}
+		fn Foo() : i32
+		{
+			var Box<//> b { .x= 678 }; // Instantiate zero-args struct template here.
+			return b.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(678) );
+}
+
+U_TEST( ClassTemplateWithZeroParams_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> struct Box</ f64 /> // Zero params, but non-zero signature args.
+		{
+			i32 x;
+		}
+		fn Foo() : i32
+		{
+			var Box</ f64 /> b { .x= 876 }; // Instantiate zero-params struct template here.
+			return b.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(876) );
+}
+
 } // namespace
 
 } // namespace U

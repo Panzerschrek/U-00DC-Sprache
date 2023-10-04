@@ -1126,3 +1126,148 @@ def TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test0():
+	c_program_text= """
+		// Function template with zero params still must be instantiated in order to be compiled.
+		template<//> fn Foo()
+		{
+			CallUnknownFunction(); // Should not get error here, because it is not compiled.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test1():
+	c_program_text= """
+		template<//> fn Bar() : i32
+		{
+			return 654;
+		}
+		fn Foo() : i32
+		{
+			return Bar(); // Instantiate function template with zero template params by calling it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3Foov" )
+	assert( call_res == 654 )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test2():
+	c_program_text= """
+		template<//> fn Bar( i32 x ) : i32
+		{
+			return x - 66;
+		}
+		fn Foo() : i32
+		{
+			return Bar( 766 ); // Instantiate function template with zero template params and non-zero function params by calling it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3Foov" )
+	assert( call_res == 700 )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test3():
+	c_program_text= """
+		template<//> fn Bar() : i32
+		{
+			return 354;
+		}
+		fn Foo() : i32
+		{
+			return Bar<//>(); // Instantiate function template with zero template params by providing template args.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3Foov" )
+	assert( call_res == 354 )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test4():
+	c_program_text= """
+		template<//> fn Bar( i32 x ) : i32
+		{
+			return x - 77;
+		}
+		fn Foo() : i32
+		{
+			return Bar<//>( 377 ); // Instantiate function template with zero template params and non-zero function params by providing template args.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3Foov" )
+	assert( call_res == 300 )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test5():
+	c_program_text= """
+		template<//> fn Bar() : i32
+		{
+			return 776655;
+		}
+		fn Foo() : i32
+		{
+			var (fn() : i32) ptr= Bar; // Instantiate function template with zero template params by initialization of function pointer.
+			return ptr();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3Foov" )
+	assert( call_res == 776655 )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test6():
+	c_program_text= """
+		template<//> fn Bar( i32 x ) : i32
+		{
+			return x - 44;
+		}
+		fn Foo() : i32
+		{
+			var (fn( i32 x ) : i32 ) ptr( Bar<//> );
+			return ptr( 944 ); // Instantiate function template with zero template params by initialization of function pointer.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3Foov" )
+	assert( call_res == 900 )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test7():
+	c_program_text= """
+		template</type T/>
+		struct Box
+		{
+			T t;
+
+			type ThisType= Box</T/>;
+
+			// This function causes infinite recurion of this template.
+			// Make it lazy via zero-params template in order to make this function lazy and prevent recurison.
+			template<//> fn MakeBoxBox(this) : Box</ ThisType />
+			{
+				var Box</ ThisType /> b{ .t= this };
+				return b;
+			}
+		}
+		type IntBox= Box</i32/>;
+		fn BoxBox( IntBox& b ) : Box</IntBox/>
+		{
+			return b.MakeBoxBox();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionTemplate_WithZeroTemplateParams_Test8():
+	c_program_text= """
+		template<//> fn Foo() : i32 { return 1323; }
+		fn Bar() { Foo(); } // Instantiate zero-params template function in order to generate its code.
+	"""
+	tests_lib.build_program( c_program_text )
+	call_res= tests_lib.run_function( "_Z3FooIEvv" ) # Call template function itself.
+	assert( call_res == 1323 )
