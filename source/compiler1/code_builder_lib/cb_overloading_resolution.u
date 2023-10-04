@@ -486,7 +486,10 @@ fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, Overloa
 	}
 	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
 	{
-		auto& params= template_function.function_template.deref().syntax_element.deref().function.deref().function_type.params;
+		auto function_template_lock= template_function.function_template.lock_imut();
+		var FunctionTemplate& function_template= function_template_lock.deref();
+
+		auto& params= function_template.syntax_element.deref().function.deref().function_type.params;
 		var Synt::FunctionType::Param& param= params[param_index];
 
 		var bool is_this= param.name == KeywordToString( Keyword::this_ );
@@ -500,7 +503,7 @@ fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, Overloa
 		var Type mut t;
 		if( is_this )
 		{
-			auto& class_type_opt= template_function.function_template.deref().class_;
+			auto& class_type_opt= function_template.class_;
 			if( !class_type_opt.empty() )
 			{
 				t= class_type_opt.try_to_non_nullable();
@@ -530,7 +533,7 @@ fn CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( mut this, Ov
 	}
 	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
 	{
-		return template_function.function_template.deref().signature_params[param_index];
+		return template_function.function_template.lock_imut().deref().signature_params[param_index];
 	}
 	halt;
 }
@@ -543,8 +546,10 @@ fn CodeBuilder::OverloadingResolutionItemIsThisCall( mut this, OverloadingResolu
 	}
 	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
 	{
-		auto& params= template_function.function_template.deref().syntax_element.deref().function.deref().function_type.params;
-		return !params.empty() && params.front().name == KeywordToString( Keyword::this_ );
+		with( & params : template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().function_type.params )
+		{
+			return !params.empty() && params.front().name == KeywordToString( Keyword::this_ );
+		}
 	}
 	halt;
 }
@@ -557,7 +562,7 @@ fn CodeBuilder::OverloadingResolutionItemIsConversionConstructor( mut this, Over
 	}
 	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
 	{
-		return template_function.function_template.deref().syntax_element.deref().function.deref().is_conversion_constructor;
+		return template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().is_conversion_constructor;
 	}
 	halt;
 }

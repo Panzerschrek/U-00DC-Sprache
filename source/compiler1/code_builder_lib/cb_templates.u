@@ -824,9 +824,11 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		lock.deref().used= true;
 	}
 
-	auto template_key=
-		ust::to_string8( ust::ref_to_int( type_template_ptr.lock_imut().deref() ) ) +
-		mangler_.deref().MangleTemplateArgs( template_args_evaluation_result.signature_args );
+	var TemplateKey mut template_key
+	{
+		.template_= ust::shared_ptr_imut</TypeTemplate/>( type_template_ptr ),
+		.template_args= template_args_evaluation_result.signature_args,
+	};
 
 	var ust::string8 template_class_name= "_";
 
@@ -879,10 +881,10 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		auto mangled_llvm_type_name= mangler_.deref().MangleType( class_type.try_to_non_nullable() );
 		unsafe( U1_SetStructName( class_type.try_lock_imut().deref().llvm_type, mangled_llvm_type_name.front() ) );
 
-		AddNewTemplateThing( template_key, args_names_scope );
+		AddNewTemplateThing( move(template_key), args_names_scope );
 		return Type( class_type.try_to_non_nullable() );
 	}
-	if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
+	else if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
 	{
 		// Prepare type
 		var Type mut t;
@@ -897,14 +899,12 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			lock.deref().AddName( template_class_name, t );
 		}
 
-		AddNewTemplateThing( template_key, args_names_scope );
+		AddNewTemplateThing( move(template_key), args_names_scope );
 
 		return move(t);
 	}
-
-	halt; // Unhandled type template kind.
+	else { halt; } // Unhandled type template kind.
 }
-
 
 fn CodeBuilder::PrepareTemplateFunction(
 	mut this,
@@ -914,7 +914,8 @@ fn CodeBuilder::PrepareTemplateFunction(
 	bool first_arg_is_this,
 	SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>
 {
-	var FunctionTemplate& function_template= function_template_ptr.deref();
+	auto function_template_lock= function_template_ptr.lock_imut();
+	var FunctionTemplate& function_template= function_template_lock.deref();
 
 	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.deref();
 	var Synt::Function& function_syntax_element= template_syntax_element.function.deref();
@@ -1005,7 +1006,8 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 	ParametrizedFunctionTemplate& parametrized_function_template,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	auto& function_template= parametrized_function_template.base_template.deref();
+	auto function_template_lock= parametrized_function_template.base_template.lock_imut();
+	var FunctionTemplate& function_template= function_template_lock.deref();
 	auto& known_template_args= parametrized_function_template.known_args;
 
 	halt if( function_template.params.size() != known_template_args.size() );
@@ -1031,7 +1033,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	NamesScopePtr& instantiation_point_names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	var FunctionTemplate& function_template= function_template_ptr.deref();
+	auto function_template_lock= function_template_ptr.lock_imut();
+	var FunctionTemplate& function_template= function_template_lock.deref();
 	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.deref();
 	var Synt::Function& function_syntax_element= template_syntax_element.function.deref();
 
@@ -1061,10 +1064,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		}
 	}
 
-	// Use combination of template args (not signature params) and template pointer. This combination should be unique.
-	auto template_key=
-		ust::to_string8( ust::ref_to_int( function_template_ptr.deref() ) ) +
-		mangler_.deref().MangleTemplateArgs( result_template_args );
+	var TemplateKey mut template_key{ .template_= function_template_ptr, .template_args= result_template_args };
 
 	auto& function_name= function_syntax_element.name.back();
 	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
@@ -1082,7 +1082,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 		return ust::null_optional;
 	}
-	AddNewTemplateThing( template_key, result_names_scope );
+	AddNewTemplateThing( move(template_key), result_names_scope );
 
 	CreateTemplateErrorsContext(
 		function_template,
@@ -1154,7 +1154,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	var ust::string8 mut cache_key= "_parametrized_";
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
-		cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.deref() ) );
+		cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.lock_imut().deref() ) );
 		cache_key+= "_";
 	}
 	cache_key+= mangler_.deref().MangleTemplateArgs( template_args_finished );
@@ -1170,7 +1170,9 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	result_functions_set.class_= move(functions_set_class);
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
-		auto& function_template= function_template_ptr.deref();
+		auto function_template_lock= function_template_ptr.lock_imut();
+		var FunctionTemplate& function_template= function_template_lock.deref();
+
 		if( function_template.params.size() < template_args_finished.size() )
 		{
 			continue;
@@ -1721,9 +1723,9 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 	}
 }
 
-fn CodeBuilder::AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing )
+fn CodeBuilder::AddNewTemplateThing( mut this, TemplateKey mut key, NamesScopePtr mut thing )
 {
-	generated_template_things_.insert( key, thing );
+	generated_template_things_.insert( key, move(thing) );
 	generated_template_things_sequence_.push_back( move(key) );
 }
 
