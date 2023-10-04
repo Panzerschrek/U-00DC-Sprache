@@ -289,6 +289,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
 	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
+	FunctionType PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, ClassPtr class_= nullptr );
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
 
 	// Getting LLVM function type may require building complete types for arguments/return value.

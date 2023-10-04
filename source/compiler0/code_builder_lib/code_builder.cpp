@@ -993,12 +993,12 @@ size_t CodeBuilder::PrepareFunction(
 
 	func_variable.is_generator= func.kind == Synt::Function::Kind::Generator;
 
-	{ // Prepare function type
-		FunctionType function_type;
+	{ // Prepare and process function type.
 
-		if( func.type.return_type == nullptr )
-			function_type.return_type= void_type_;
-		else
+		if( !func.type.params.empty() && func.type.params.front().name == Keywords::this_ )
+			func_variable.is_this_call= true;
+
+		if( func.type.return_type != nullptr )
 		{
 			if( const auto name_lookup = std::get_if<Synt::NameLookup>( func.type.return_type.get() ) )
 			{
@@ -1009,69 +1009,14 @@ size_t CodeBuilder::PrepareFunction(
 						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc, func_name );
 					if( func.block == nullptr )
 						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
-
-					function_type.return_type= void_type_;
 				}
-			}
-
-			if( !func_variable.return_type_is_auto )
-			{
-				function_type.return_type= PrepareType( *func.type.return_type, names_scope, *global_function_context_ );
-				if( function_type.return_type == invalid_type_ )
-					return ~0u;
 			}
 		}
 
-		if( func.type.return_value_reference_modifier == ReferenceModifier::None )
-			function_type.return_value_type= ValueType::Value;
-		else
-			function_type.return_value_type= func.type.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc );
-
-		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type, function_type );
-
-		// Params.
-		function_type.params.reserve( func.type.params.size() );
-
-		for( const Synt::FunctionParam& in_param : func.type.params )
-		{
-			const bool is_this=
-				&in_param == &func.type.params.front() &&
-				in_param.name == Keywords::this_ &&
-				std::get_if<Synt::EmptyVariant>(&in_param.type) != nullptr;
-
-			if( !is_this && IsKeyword( in_param.name ) )
-				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc );
-
-			function_type.params.emplace_back();
-			FunctionType::Param& out_param= function_type.params.back();
-
-			if( is_this )
-			{
-				func_variable.is_this_call= true;
-				if( base_class == nullptr )
-				{
-					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc, func_name );
-					return ~0u;
-				}
-				out_param.type= base_class;
-			}
-			else
-				out_param.type= PrepareType( in_param.type, names_scope, *global_function_context_ );
-
-			if( is_this )
-				out_param.value_type= ( is_special_method || in_param.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-			else if( in_param.reference_modifier == ReferenceModifier::Reference )
-				out_param.value_type= in_param.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-			else
-				out_param.value_type= ValueType::Value;
-
-			ProcessFunctionParamReferencesTags( func.type, function_type, in_param, out_param, function_type.params.size() - 1u );
-		} // for arguments
-
-		function_type.unsafe= func.type.unsafe;
 
 		if (function_type.unsafe && base_class != nullptr )
 		{
@@ -1087,23 +1032,11 @@ size_t CodeBuilder::PrepareFunction(
 			}
 		}
 
-		function_type.calling_convention= GetLLVMCallingConvention( func.type.calling_convention, func.type.src_loc, names_scope.GetErrors() );
 		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
 		// But it's fine to use custom calling convention for static methods.
 		if( function_type.calling_convention != llvm::CallingConv::C &&
 			( func_variable.is_this_call || func.overloaded_operator != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc );
-
-		if( func_variable.return_type_is_auto && func_variable.is_generator )
-		{
-			REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type.src_loc );
-			func_variable.is_generator= false;
-		}
-		if( is_special_method && func_variable.is_generator )
-		{
-			REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type.src_loc );
-			func_variable.is_generator= false;
-		}
 
 		if( func_variable.is_generator )
 		{
@@ -1119,6 +1052,20 @@ size_t CodeBuilder::PrepareFunction(
 
 			// Generate for now own return references mapping.
 			generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
+
+			// Disable auto-generators.
+			if( func_variable.return_type_is_auto )
+			{
+				REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type.src_loc );
+				func_variable.is_generator= false;
+			}
+
+			// Disable generator special methods.
+			if( is_special_method )
+			{
+				REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type.src_loc );
+				func_variable.is_generator= false;
+			}
 
 			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
 			if( !func.type.return_value_reference_tag.empty() || !func.type.return_value_inner_reference_tag.empty() )
@@ -1139,12 +1086,11 @@ size_t CodeBuilder::PrepareFunction(
 			function_type= std::move(generator_function_type);
 		}
 
-		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type, function_type );
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator, names_scope.GetErrors(), func.src_loc );
 
 		func_variable.type= std::move(function_type);
-	} // end prepare function type
+	} // end prepare function type.
 
 	// Set constexpr.
 	if( func.constexpr_ )

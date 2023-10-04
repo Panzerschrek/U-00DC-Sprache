@@ -132,45 +132,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name )
 {
-	FunctionType function_type;
-
-	if( function_type_name.return_type == nullptr )
-		function_type.return_type= void_type_;
-	else
-		function_type.return_type= PrepareType( *function_type_name.return_type, names_scope, function_context );
-
-	if( function_type_name.return_value_reference_modifier == ReferenceModifier::None )
-		function_type.return_value_type= ValueType::Value;
-	else
-		function_type.return_value_type= function_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-
-	for( const Synt::FunctionParam& in_param : function_type_name.params )
-	{
-		if( IsKeyword( in_param.name ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc );
-
-		function_type.params.emplace_back();
-		FunctionType::Param& out_param= function_type.params.back();
-		out_param.type= PrepareType( in_param.type, names_scope, function_context );
-
-		if( in_param.reference_modifier == Synt::ReferenceModifier::None )
-			out_param.value_type= ValueType::Value;
-		else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
-			out_param.value_type= ValueType::ReferenceMut;
-		else
-			out_param.value_type= ValueType::ReferenceImut;
-
-		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() - 1u );
-	}
-
-	function_type.unsafe= function_type_name.unsafe;
-
-	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
-	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
-
-	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
-
-	return FunctionTypeToPointer( std::move(function_type) );
+	return FunctionTypeToPointer( PrepareFunctionType( names_scope, function_context, function_type_name ) );
 }
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
@@ -256,6 +218,81 @@ Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, cons
 		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, value.GetKindName() );
 
 	return invalid_type_;
+}
+
+FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, const ClassPtr class_ )
+{
+	FunctionType function_type;
+
+	if( function_type_name.return_type == nullptr )
+		function_type.return_type= void_type_;
+	else
+	{
+		bool is_auto_return= false;
+		if( const auto name_lookup = std::get_if<Synt::NameLookup>( function_type_name.return_type.get() ) )
+			if( name_lookup->name == Keywords::auto_ )
+				is_auto_return= true;
+
+		if( is_auto_return )
+			function_type.return_type= void_type_;
+		else
+			function_type.return_type= PrepareType( *function_type_name.return_type, names_scope, function_context );
+	}
+
+	if( function_type_name.return_value_reference_modifier == ReferenceModifier::None )
+		function_type.return_value_type= ValueType::Value;
+	else
+		function_type.return_value_type= function_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+
+	function_type.params.reserve( function_type_name.params.size() );
+	for( const Synt::FunctionParam& in_param : function_type_name.params )
+	{
+		FunctionType::Param out_param;
+
+		const bool is_this=
+			&in_param == &function_type_name.params.front() &&
+			in_param.name == Keywords::this_ &&
+			std::get_if<Synt::EmptyVariant>(&in_param.type) != nullptr;
+		if( is_this )
+		{
+			if( class_ == nullptr )
+			{
+				REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc, "TODO - func name" );
+				out_param.type= invalid_type_;
+			}
+			else
+				out_param.type= class_;
+
+			out_param.value_type= in_param.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		}
+		else
+		{
+			if( IsKeyword( in_param.name ) )
+				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc );
+
+			out_param.type= PrepareType( in_param.type, names_scope, function_context );
+
+			if( in_param.reference_modifier == Synt::ReferenceModifier::None )
+				out_param.value_type= ValueType::Value;
+			else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
+				out_param.value_type= ValueType::ReferenceMut;
+			else
+				out_param.value_type= ValueType::ReferenceImut;
+		}
+
+		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() );
+
+		function_type.params.push_back( std::move(out_param) );
+	}
+
+	function_type.unsafe= function_type_name.unsafe;
+	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
+
+	ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), function_type_name, function_type );
+	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
+	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
+
+	return function_type;
 }
 
 FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_type )

@@ -3339,13 +3339,16 @@ Function SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 			}
 
-			FunctionParam this_argument( src_loc );
-			this_argument.name= Keyword( Keywords::this_ );
-			this_argument.mutability_modifier= mutability_modifier;
-			this_argument.reference_modifier= ReferenceModifier::Reference;
-			this_argument.reference_tag= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
-			this_argument.inner_arg_reference_tag= std::move(inner_reference_tag);
-			params.push_back( std::move( this_argument ) );
+			if( result.name.back().name == Keywords::constructor_ || result.name.back().name == Keywords::destructor_ )
+				mutability_modifier= MutabilityModifier::Mutable;
+
+			FunctionParam this_param( src_loc );
+			this_param.name= Keyword( Keywords::this_ );
+			this_param.mutability_modifier= mutability_modifier;
+			this_param.reference_modifier= ReferenceModifier::Reference;
+			this_param.reference_tag= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
+			this_param.inner_arg_reference_tag= std::move(inner_reference_tag);
+			params.push_back( std::move( this_param ) );
 		}
 	}
 
