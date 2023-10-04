@@ -1239,7 +1239,7 @@ op TemplateKey::==( TemplateKey& l, TemplateKey& r ) : bool
 
 fn TemplateKeyHasher::hash( TemplateKey& k ) : size_type
 {
-	return TypeHasher::hash_combine( ust::ref_to_int( k.template_.lock_imut().deref() ), HashTemplateArgs( k.template_args ) );
+	return TypeHasher::hash_combine( ust::default_hasher::hash( k.template_ ), HashTemplateArgs( k.template_args ) );
 }
 
 op ParametrizedFunctionTemplateKey::==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool
@@ -1249,7 +1249,7 @@ op ParametrizedFunctionTemplateKey::==( ParametrizedFunctionTemplateKey& l, Para
 
 fn ParametrizedFunctionTemplateKeyHasher::hash( ParametrizedFunctionTemplateKey& k ) : size_type
 {
-	return TypeHasher::hash_combine( ust::ref_to_int( k.functions_set.lock_imut().deref() ), HashTemplateArgs( k.template_args ) );
+	return TypeHasher::hash_combine( ust::default_hasher::hash( k.functions_set ), HashTemplateArgs( k.template_args ) );
 }
 
 fn TemplateArgsEquals( TemplateArgsFinished& l, TemplateArgsFinished& r ) : bool
