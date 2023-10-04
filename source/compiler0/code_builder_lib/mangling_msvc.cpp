@@ -361,7 +361,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
-		TemplateArgs template_args;
+		llvm::SmallVector<TemplateArg, 8> template_args;
 		template_args.reserve( tuple_type->element_types.size() );
 		for( const Type& element : tuple_type->element_types )
 			template_args.push_back( element );
