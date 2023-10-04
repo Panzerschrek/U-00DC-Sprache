@@ -1143,12 +1143,12 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	FunctionsSet& functions_set,
 	ust::shared_ptr_nullable_mut</ClassType/> mut functions_set_class,
 	Synt::TemplateArgs& template_args,
-	SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>
+	SrcLoc& src_loc ) : ust::shared_ptr_nullable_mut</FunctionsSet/>
 {
 	var TemplateArgsFinished template_args_finished= EvaluateTemplateArgs( args_names_scope, function_context, template_args, src_loc );
 	if( template_args_finished.size() != template_args.size() )
 	{
-		return ust::null_optional;
+		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
 	var ust::string8 mut cache_key= "_parametrized_";
@@ -1161,10 +1161,9 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 
 	var ust::string8 names_scope_value_key= "_";
 
-	if_var( &prev_namespace_ptr : generated_template_things_.find( cache_key ) )
+	if_var( &prev_value : parametrized_template_functions_cache_.find( cache_key ) )
 	{
-		auto lock= prev_namespace_ptr.lock_imut();
-		return lock.deref().GetThisScopeValue( names_scope_value_key ).try_deref();
+		return prev_value;
 	}
 
 	var FunctionsSet mut result_functions_set;
@@ -1222,20 +1221,12 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	if( result_functions_set.parametrized_function_templates.empty() )
 	{
 		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, ust::string8("TODO - name") )
-		return ust::null_optional;
+		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
-	var NamesScopeValue mut names_scope_value( move(result_functions_set) );
-
-	// Cache result.
-	var NamesScopeMutPtr result_names_scope( NamesScope( "", functions_set.function_templates.front().deref().parent_names_scope.lock() ) );
-	with( mut lock : result_names_scope.lock_mut() )
-	{
-		lock.deref().AddName( names_scope_value_key, names_scope_value );
-	}
-	AddNewTemplateThing( move(cache_key), result_names_scope );
-
-	return move(names_scope_value);
+	var ust::shared_ptr_mut</FunctionsSet/> mut result( move(result_functions_set) );
+	parametrized_template_functions_cache_.insert( move(cache_key), result );
+	return move(result);
 }
 
 fn CodeBuilder::MatchTemplateArgument(

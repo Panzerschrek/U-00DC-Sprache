@@ -444,7 +444,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			return ust::null_optional;
 		}
 
-		auto mut parametrization_result=
+		auto parametrization_result=
 			ParametrizeTemplateFunctions(
 				names_scope,
 				function_context,
@@ -457,7 +457,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 		{
 			return ust::null_optional;
 		}
-		return parametrization_result.try_take();
+		return NamesScopeValue( parametrization_result.try_to_non_nullable() );
 	}
 
 	REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parametrization.src_loc )
