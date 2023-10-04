@@ -150,8 +150,8 @@ void FindImpl( const Synt::BinaryOperator& binary_operator )
 void FindImpl( const Synt::TernaryOperator& ternary_operator )
 {
 	FindImpl( ternary_operator.condition );
-	FindImpl( ternary_operator.false_branch );
-	FindImpl( ternary_operator.true_branch );
+	FindImpl( ternary_operator.branches[0] );
+	FindImpl( ternary_operator.branches[1] );
 }
 
 void FindImpl( const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator )

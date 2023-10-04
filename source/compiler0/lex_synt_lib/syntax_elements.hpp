@@ -701,8 +701,7 @@ struct TernaryOperator
 
 	SrcLoc src_loc;
 	Expression condition;
-	Expression true_branch;
-	Expression false_branch;
+	Expression branches[2];
 };
 
 struct ReferenceToRawPointerOperator

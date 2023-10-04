@@ -1088,9 +1088,9 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			ExpectLexem( Lexem::Type::BracketLeft );
 			ternary_operator->condition= ParseExpression();
 			ExpectLexem( Lexem::Type::Question );
-			ternary_operator->true_branch= ParseExpression();
+			ternary_operator->branches[0]= ParseExpression();
 			ExpectLexem( Lexem::Type::Colon );
-			ternary_operator->false_branch= ParseExpression();
+			ternary_operator->branches[1]= ParseExpression();
 			ExpectLexem( Lexem::Type::BracketRight );
 
 			return std::move(ternary_operator);

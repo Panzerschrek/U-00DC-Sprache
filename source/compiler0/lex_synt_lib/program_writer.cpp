@@ -273,9 +273,9 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << Keyword( Keywords::select_ ) << "( ";
 			ElementWrite( ternary_operator->condition, stream );
 			stream << " ? ";
-			ElementWrite( ternary_operator->true_branch, stream );
+			ElementWrite( ternary_operator->branches[0], stream );
 			stream << " : ";
-			ElementWrite( ternary_operator->false_branch, stream );
+			ElementWrite( ternary_operator->branches[1], stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const ReferenceToRawPointerOperator>& reference_to_raw_pointer_operator ) const

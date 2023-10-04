@@ -716,7 +716,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
-				const VariablePtr var= BuildExpressionCodeEnsureVariable( i == 0u ? ternary_operator.true_branch : ternary_operator.false_branch, names, function_context );
+				const VariablePtr var= BuildExpressionCodeEnsureVariable( ternary_operator.branches[i], names, function_context );
 				branches_types[i]= var->type;
 				branches_value_types[i]= var->value_type;
 				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), ternary_operator.src_loc );
@@ -791,9 +791,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
 			}
 
-			const Synt::Expression& branch_expr= i == 0u ? ternary_operator.true_branch : ternary_operator.false_branch;
-
-			const VariablePtr branch_result= BuildExpressionCodeEnsureVariable( branch_expr, names, function_context );
+			const VariablePtr branch_result= BuildExpressionCodeEnsureVariable( ternary_operator.branches[i], names, function_context );
 
 			branches_constexpr_values[i]= branch_result->constexpr_value;
 			if( result->value_type == ValueType::Value )
@@ -843,7 +841,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context.variables_state.TryAddLink( branch_result, result, names.GetErrors(), ternary_operator.src_loc );
 			}
 
-			CallDestructors( branch_temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch_expr ) );
+			CallDestructors( branch_temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( ternary_operator.branches[i] ) );
 
 			if( !function_context.is_functionless_context )
 				function_context.llvm_ir_builder.CreateBr( result_block );
