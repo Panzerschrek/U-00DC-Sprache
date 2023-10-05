@@ -572,22 +572,20 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			var Type ret_type= function_context.function_type.return_type;
 			var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
-			if( expr_initial_type != ret_type )
+			if( expr_initial_type.ReferenceIsConvertibleTo( ret_type ) )
+			{}
+			else if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, ret_type, expr_initial_type, return_operator.src_loc ) )
 			{
-				if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, ret_type, expr_initial_type, return_operator.src_loc ) )
-				{
-					expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, ret_type, conversion_constructor_, return_operator.src_loc );
-				}
+				expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, ret_type, conversion_constructor_, return_operator.src_loc );
 			}
-
-			var VariableLite expr= expr_ptr.lock_imut().deref();
-
-			if( expr.t != ret_type )
+			else
 			{
-				REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, expr.t )
+				REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, expr_initial_type )
 				function_context.references_graph.RemoveNode( return_node );
 				return block_element_build_info;
 			}
+
+			var VariableLite expr= expr_ptr.lock_imut().deref();
 
 			if( ret_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
@@ -610,7 +608,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_type.GetLLVMType() );
 
-				if( expr.value_type == ValueType::Value )
+				if( expr.value_type == ValueType::Value && expr.t == ret_type )
 				{
 					// Move
 					function_context.references_graph.MoveNode( expr_ptr );
@@ -629,6 +627,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				else
 				{
 					// Copy
+					var LLVMValueRef expr_reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, ret_type, function_context );
 					if( !ret_type.IsCopyConstructible() )
 					{
 						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, return_operator.src_loc, ret_type )
@@ -640,7 +639,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					else if( single_scalar_type == LLVMTypeRef::Null )
 					{
 						// Copy into "s_ret".
-						BuildCopyConstructorPart( names_scope, function_context, function_context.s_ret, expr.llvm_value, ret_type, return_operator.src_loc );
+						BuildCopyConstructorPart( names_scope, function_context, function_context.s_ret, expr_reference_converted, ret_type, return_operator.src_loc );
 					}
 					else
 					{
@@ -648,7 +647,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						var LLVMValueRef temp= unsafe( LLVMBuildAlloca( function_context.llvm_ir_builder, ret_type.GetLLVMType(), g_null_string ) );
 						CreateLifetimeStart( function_context, temp );
 
-						BuildCopyConstructorPart( names_scope, function_context, temp, expr.llvm_value, ret_type, return_operator.src_loc );
+						BuildCopyConstructorPart( names_scope, function_context, temp, expr_reference_converted, ret_type, return_operator.src_loc );
 
 						ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, temp, g_null_string ) );
 						CreateLifetimeEnd( function_context, temp );
