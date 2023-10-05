@@ -337,15 +337,14 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 		if( coroutine_type_description->return_value_type == ValueType::Value )
 		{
-			if( expression_result->type != yield_type )
+			if( expression_result->type.ReferenceIsConvertibleTo( yield_type ) )
+			{}
+			else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names.GetErrors(), src_loc ) )
+				expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names, function_context, src_loc );
+			else
 			{
-				if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names.GetErrors(), src_loc ) )
-					expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names, function_context, src_loc );
-				else
-				{
-					REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, expression_result->type );
-					return;
-				}
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, expression_result->type );
+				return;
 			}
 
 			// Check correctness of returning references.
@@ -369,7 +368,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				if( expression_result->type != void_type_ )
 					CreateTypedStore( function_context, yield_type, CreateMoveToLLVMRegisterInstruction( *expression_result, function_context ), promise );
 			}
-			else if( expression_result->value_type == ValueType::Value ) // Move composite value.
+			else if( expression_result->value_type == ValueType::Value && expression_result->type == yield_type ) // Move composite value.
 			{
 				CopyBytes( promise, expression_result->llvm_value, yield_type, function_context );
 
