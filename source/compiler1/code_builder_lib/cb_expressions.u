@@ -637,20 +637,33 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
-	auto name_lookup_result= LookupName( names_scope, function_context, move_operator.variable_name, move_operator.src_loc );
-	if( name_lookup_result.empty() )
+	var ust::shared_ptr_nullable_mut</Variable/> mut variable_opt;
+	if( move_operator.variable_name == KeywordToString( Keyword::this_ ) )
 	{
-		return ErrorValue();
+		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
+		{
+			REPORT_ERROR( ThisUnavailable, names_scope, move_operator.src_loc )
+			return ErrorValue();
+		}
+		variable_opt= function_context.this_;
+	}
+	else
+	{
+		auto name_lookup_result= LookupName( names_scope, function_context, move_operator.variable_name, move_operator.src_loc );
+		if( name_lookup_result.empty() )
+		{
+			return ErrorValue();
+		}
+		variable_opt= name_lookup_result.try_deref()[1].Get</Variable/>();
 	}
 
-	auto variable_ptr = name_lookup_result.try_deref()[1].Get</Variable/>();
-	if( variable_ptr.empty() )
+	if( variable_opt.empty() )
 	{
 		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "non-variable" )
 		return ErrorValue();
 	}
 
-	var VariablePtr variable_reference_ptr= variable_ptr.try_to_non_nullable();
+	var VariablePtr variable_reference_ptr= variable_opt.try_to_non_nullable();
 
 	with( mut lock : variable_reference_ptr.lock_mut() )
 	{

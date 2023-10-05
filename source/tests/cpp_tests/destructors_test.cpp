@@ -3603,7 +3603,7 @@ U_TEST( ByValThisDestruction_Test2 )
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
