@@ -361,20 +361,19 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 		if( return_value_type == ValueType::Value )
 		{
 			var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
-			if( expr_initial_type != yield_type )
+			if( expr_initial_type.ReferenceIsConvertibleTo( yield_type ) )
+			{}
+			else if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, yield_type, expr_initial_type, src_loc ) )
 			{
-				if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, yield_type, expr_initial_type, src_loc ) )
-				{
-					expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, yield_type, conversion_constructor_, src_loc );
-				}
+				expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, yield_type, conversion_constructor_, src_loc );
+			}
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr_initial_type )
+				return;
 			}
 
 			var VariableLite expr= expr_ptr.lock_imut().deref();
-			if( expr.t != yield_type )
-			{
-				REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr.t )
-				return;
-			}
 
 			// Check correctness of returning references.
 			if( yield_type.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -394,7 +393,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
 			{
 				// Process composite value.
-				if( expr.value_type == ValueType::Value )
+				if( expr.value_type == ValueType::Value && expr.t == yield_type )
 				{
 					// Move.
 					function_context.references_graph.MoveNode( expr_ptr );
@@ -415,7 +414,8 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 					}
 					else
 					{
-						BuildCopyConstructorPart( names_scope, function_context, promise, expr.llvm_value, yield_type, src_loc );
+						var LLVMValueRef expr_reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
+						BuildCopyConstructorPart( names_scope, function_context, promise, expr_reference_converted, yield_type, src_loc );
 					}
 				}
 			}

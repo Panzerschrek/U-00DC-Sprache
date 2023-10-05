@@ -588,16 +588,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::Value* ret= nullptr;
 	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
-		if( expression_result->type != function_context.return_type )
+		if( expression_result->type.ReferenceIsConvertibleTo( *function_context.return_type ) )
+		{}
+		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc ) )
+			expression_result= ConvertVariable( expression_result, *function_context.return_type, *conversion_contructor, names, function_context, return_operator.src_loc );
+		else
 		{
-			if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc ) )
-				expression_result= ConvertVariable( expression_result, *function_context.return_type, *conversion_contructor, names, function_context, return_operator.src_loc );
-			else
-			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type, expression_result->type );
-				function_context.variables_state.RemoveNode( return_value_node );
-				return block_info;
-			}
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type, expression_result->type );
+			function_context.variables_state.RemoveNode( return_value_node );
+			return block_info;
 		}
 
 		// Check correctness of returning references.
@@ -624,7 +623,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( expression_result->type != void_type_ )
 				ret= CreateMoveToLLVMRegisterInstruction( *expression_result, function_context );
 		}
-		else if( expression_result->value_type == ValueType::Value ) // Move composite value.
+		else if( expression_result->value_type == ValueType::Value && expression_result->type == function_context.return_type ) // Move composite value.
 		{
 			function_context.variables_state.MoveNode( expression_result );
 
@@ -644,24 +643,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else // Copy composite value.
 		{
-			if( !expression_result->type.IsCopyConstructible() )
+			if( !function_context.return_type->IsCopyConstructible() )
 			{
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), return_operator.src_loc, expression_result->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), return_operator.src_loc, *function_context.return_type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
-			if( expression_result->type.IsAbstract() )
+			if( function_context.return_type->IsAbstract() )
 			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), return_operator.src_loc, expression_result->type );
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), return_operator.src_loc, *function_context.return_type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
 
-			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
+			if( const auto single_scalar_type= GetSingleScalarType( function_context.return_type->GetLLVMType() ) )
 			{
 				U_ASSERT( function_context.s_ret == nullptr );
 				// Call copy constructor on temp address, load then value from it.
-				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( expression_result->type.GetLLVMType() );
+				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( function_context.return_type->GetLLVMType() );
 				CreateLifetimeStart( function_context, temp );
 
 				BuildCopyConstructorPart(
