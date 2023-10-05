@@ -1584,7 +1584,6 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
-			U_ASSERT( param.value_type != ValueType::Value );
 			// Save "this" in function context for accessing inside class methods.
 			function_context.this_= variable_reference;
 		}
