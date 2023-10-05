@@ -1538,6 +1538,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		{
 			.name= KeywordToString( Keyword::this_ ),
 			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
+			.reference_modifier= ReferenceModifier::Reference,
 		};
 
 		if( IsKeyword( it_.front(), Keyword::mut_ ) )
@@ -1587,6 +1588,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			.src_loc= it_.front().src_loc,
 			.name= KeywordToString( Keyword::this_ ),
 			.mutability_modifier= MutabilityModifier::Mutable,
+			.reference_modifier= ReferenceModifier::Reference,
 		};
 		res.function_type.params.push_back( move(this_param) );
 	}

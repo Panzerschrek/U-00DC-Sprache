@@ -262,8 +262,6 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 			}
 			else
 				out_param.type= class_;
-
-			out_param.value_type= in_param.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		}
 		else
 		{
@@ -271,14 +269,14 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc );
 
 			out_param.type= PrepareType( in_param.type, names_scope, function_context );
-
-			if( in_param.reference_modifier == Synt::ReferenceModifier::None )
-				out_param.value_type= ValueType::Value;
-			else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
-				out_param.value_type= ValueType::ReferenceMut;
-			else
-				out_param.value_type= ValueType::ReferenceImut;
 		}
+
+		if( in_param.reference_modifier == Synt::ReferenceModifier::None )
+			out_param.value_type= ValueType::Value;
+		else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
+			out_param.value_type= ValueType::ReferenceMut;
+		else
+			out_param.value_type= ValueType::ReferenceImut;
 
 		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() );
 
