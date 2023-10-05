@@ -3376,6 +3376,94 @@ U_TEST( DerivedToBaseConversion_Destructors_Test3 )
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { -33, -66,  -99,  66, 33,  33 } ) );
 }
 
+U_TEST( DerivedToBaseConversion_Destructors_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class Base polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {  DestructorCalled( -x ); }
+			fn constructor( mut this, Base& other ) ( x= other.x ) { DestructorCalled( -x * 3 ); }
+			fn destructor() { DestructorCalled(x); }
+		}
+		class Derived : Base
+		{
+			fn constructor( i32 in_x ) ( base( in_x ) ) { DestructorCalled( -x * 2 ); }
+			fn constructor( mut this, Derived& other ) ( base( cast_ref</Base/>(other) ) ) { DestructorCalled( -x * 6 ); }
+			fn destructor()
+			{
+				DestructorCalled( x * 2 );
+			}
+		}
+		fn Bar() : Derived
+		{
+			// Construct derived (and base inside).
+			return Derived( 33 );
+		}
+		fn Foo()
+		{
+			var Base b= Bar(); // Call copy constructor for base, destroy derived result.
+			// Destroy base bariable.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { -33, -66,  -99,  66, 33,  33 } ) );
+}
+
+U_TEST( DerivedToBaseConversion_Destructors_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class Base polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {  DestructorCalled( -x ); }
+			fn constructor( mut this, Base& other ) ( x= other.x ) { DestructorCalled( -x * 3 ); }
+			fn destructor() { DestructorCalled(x); }
+		}
+		class Derived : Base
+		{
+			fn constructor( i32 in_x ) ( base( in_x ) ) { DestructorCalled( -x * 2 ); }
+			fn constructor( mut this, Derived& other ) ( base( cast_ref</Base/>(other) ) ) { DestructorCalled( -x * 6 ); }
+			fn destructor()
+			{
+				DestructorCalled( x * 2 );
+			}
+		}
+		fn Bar() : Derived
+		{
+			// Construct derived (and base inside).
+			return Derived( 33 );
+		}
+		fn Foo()
+		{
+			var Base b( Bar() ); // Call copy constructor for base, destroy derived result.
+			// Destroy base bariable.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { -33, -66,  -99,  66, 33,  33 } ) );
+}
+
 } // namespace
 
 } // namespace U
