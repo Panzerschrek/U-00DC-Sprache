@@ -1157,21 +1157,37 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name, move_operator.src_loc ).value;
-	if( resolved_value_ptr == nullptr )
-		return ErrorValue();
+	VariablePtr resolved_variable;
+	std::string_view kind_name;
+	if( move_operator.var_name == Keywords::this_ )
+	{
+		if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
+		{
+			REPORT_ERROR( ThisUnavailable, names.GetErrors(), move_operator.src_loc );
+			return ErrorValue();
+		}
+		resolved_variable= function_context.this_;
+		kind_name= Keyword( Keywords::this_ );
+	}
+	else
+	{
+		NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name, move_operator.src_loc ).value;
+		if( resolved_value_ptr == nullptr )
+			return ErrorValue();
 
-	resolved_value_ptr->referenced= true;
-	CollectDefinition( *resolved_value_ptr, move_operator.src_loc );
+		resolved_value_ptr->referenced= true;
+		CollectDefinition( *resolved_value_ptr, move_operator.src_loc );
 
-	const Value& resolved_value= resolved_value_ptr->value;
-	const VariablePtr resolved_variable= resolved_value.GetVariable();
+		const Value& resolved_value= resolved_value_ptr->value;
+		resolved_variable= resolved_value.GetVariable();
+		kind_name= resolved_value.GetKindName();
+	}
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.
 
 	if( resolved_variable == nullptr || IsGlobalVariable( resolved_variable ) )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, kind_name );
 		return ErrorValue();
 	}
 	if( resolved_variable->value_type != ValueType::ReferenceMut )
@@ -1195,7 +1211,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const auto input_nodes= function_context.variables_state.GetNodeInputLinks( resolved_variable );
 	if( input_nodes.size() != 1u )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, kind_name );
 		return ErrorValue();
 	}
 
@@ -1203,7 +1219,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( variable_for_move->value_type != ValueType::Value )
 	{
 		// This is not a variable, but some reference.
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, kind_name );
 		return ErrorValue();
 	}
 
@@ -1220,7 +1236,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	end_variable_search:
 	if( !found_in_variables )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, kind_name );
 		return ErrorValue();
 	}
 

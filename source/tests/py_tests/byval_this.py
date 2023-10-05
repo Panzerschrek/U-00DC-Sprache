@@ -87,7 +87,7 @@ def ByValThis_Test2():
 	assert( call_result == 88776655 )
 
 
-def ByValThis_Test2():
+def ByValThis_Test3():
 	c_program_text= """
 		struct S
 		{
@@ -105,3 +105,26 @@ def ByValThis_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 12 ) )
+
+
+def ByValThis_Test4():
+	c_program_text= """
+		struct Vec
+		{
+			f32 x; f32 y;
+			fn constructor( f32 in_x, f32 in_y ) ( x(in_x), y(in_y) ) {}
+			fn constructor( mut this, Vec& other )= delete;
+			fn scale( byval mut this, f32 s ) : Vec { x *= s; y *= s; return move(this); }
+			fn reverse( byval mut this ) : Vec{ x= -x; y= -y; return move(this); }
+		}
+		static_assert( !typeinfo</Vec/>.is_copy_constructible );
+		fn Foo()
+		{
+			// Use chain of byval thiscall methods, starting with temp variable construction.
+			auto v= Vec( 3.0f, 5.0f ).scale( 2.0f ).reverse();
+			halt if( v.x !=  -6.0f );
+			halt if( v.y != -10.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
