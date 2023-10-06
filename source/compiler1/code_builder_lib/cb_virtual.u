@@ -659,13 +659,13 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	FunctionContext &mut function_context,
 	SrcLoc& src_loc ) : tup[ VariablePtr, LLVMValueRef ]
 {
-	if( function_context.is_functionless_context )
-	{
-		return ust::make_tuple( this_ptr, LLVMValueRef::Null );
-	}
 	if( function.virtual_table_index == ~0u )
 	{
 		return ust::make_tuple( this_ptr, EnsureLLVMFunctionCreated( function ) ); // No need to perform virtual call.
+	}
+	if( function_context.is_functionless_context )
+	{
+		return ust::make_tuple( this_ptr, LLVMValueRef::Null );
 	}
 
 	auto constexpr c_offset_field_number= 0u;

@@ -304,6 +304,19 @@ def ByValThis_Test12():
 	assert( call_result == 77 )
 
 
+def ByValThis_Test13():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constexpr Foo( byval this ) : i32 { return x * 7; }
+		}
+		var S constexpr s{ .x= 15 };
+		static_assert( s.Foo() == 15 * 7 ); // "byval" "this" method may be constexpr.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ByValThisErrors_Test0():
 	c_program_text= """
 		struct S
