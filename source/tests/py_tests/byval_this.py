@@ -317,6 +317,25 @@ def ByValThis_Test13():
 	tests_lib.build_program( c_program_text )
 
 
+def ByValThis_Test14():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn Foo( byval this ) : i32 { return x * 5; }
+		}
+		fn Foo() : i32
+		{
+			var (fn( S s ) : i32 ) ptr= S::Foo; // Assign "byval" "this" method to pointer.
+			var S s{ .x= 9 };
+			return ptr(s); // Call method via pointer.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 45 )
+
+
 def ByValThisErrors_Test0():
 	c_program_text= """
 		struct S

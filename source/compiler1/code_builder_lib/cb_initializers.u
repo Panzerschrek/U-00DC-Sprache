@@ -1079,33 +1079,11 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 	if( !functions_set_opt.empty() )
 	{
-		auto lock= functions_set_opt.try_lock_imut();
-		var FunctionsSet& functions_set= lock.deref();
-
 		var ust::vector</ FunctionVariable /> mut exact_type_functions;
 		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
-		foreach( &function_variable : functions_set.functions )
+		with( &functions_set : functions_set_opt.try_lock_imut().deref() )
 		{
-			if( function_variable.t == function_type )
-			{
-				exact_type_functions.push_back( function_variable );
-			}
-			else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
-			{
-				functions_with_conversion.push_back( function_variable );
-			}
-		}
-
-		foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
-		{
-			auto function_template_lock= parametrized_function_template.base_template.lock_imut();
-			var FunctionTemplate& function_template= function_template_lock.deref();
-			if( parametrized_function_template.known_args.size() != function_template.params.size() )
-			{
-				continue;
-			}
-
-			if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_src_loc ) )
+			foreach( &function_variable : functions_set.functions )
 			{
 				if( function_variable.t == function_type )
 				{
@@ -1116,29 +1094,51 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 					functions_with_conversion.push_back( function_variable );
 				}
 			}
-		}
 
-		foreach( &function_template : functions_set.function_templates )
-		{
-			if( !function_template.lock_imut().deref().params.empty() )
+			foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
 			{
-				continue;
+				auto function_template_lock= parametrized_function_template.base_template.lock_imut();
+				var FunctionTemplate& function_template= function_template_lock.deref();
+				if( parametrized_function_template.known_args.size() != function_template.params.size() )
+				{
+					continue;
+				}
+
+				if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_src_loc ) )
+				{
+					if( function_variable.t == function_type )
+					{
+						exact_type_functions.push_back( function_variable );
+					}
+					else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+					{
+						functions_with_conversion.push_back( function_variable );
+					}
+				}
 			}
 
-			var ParametrizedFunctionTemplate parametrized_function_template
+			foreach( &function_template : functions_set.function_templates )
 			{
-				.base_template= function_template,
-				.instantiation_point_names_scope= names_scope,
-			};
-			if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_src_loc ) )
-			{
-				if( function_variable.t == function_type )
+				if( !function_template.lock_imut().deref().params.empty() )
 				{
-					exact_type_functions.push_back( function_variable );
+					continue;
 				}
-				else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+
+				var ParametrizedFunctionTemplate parametrized_function_template
 				{
-					functions_with_conversion.push_back( function_variable );
+					.base_template= function_template,
+					.instantiation_point_names_scope= names_scope,
+				};
+				if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_src_loc ) )
+				{
+					if( function_variable.t == function_type )
+					{
+						exact_type_functions.push_back( function_variable );
+					}
+					else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+					{
+						functions_with_conversion.push_back( function_variable );
+					}
 				}
 			}
 		}
