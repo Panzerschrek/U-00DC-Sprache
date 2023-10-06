@@ -391,3 +391,39 @@ def ByValThisErrors_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ThisInNonclassFunction", 2 ) )
+
+
+def ByvalThisForConstructorOrDestructor_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( byval this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
+
+
+def ByvalThisForConstructorOrDestructor_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( byval mut this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
+
+
+def ByvalThisForConstructorOrDestructor_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn destructor( byval this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )

@@ -545,11 +545,19 @@ fn CodeBuilder::PrepareFunction(
 
 	function_variable.is_constructor= is_constructor;
 	{
-		auto& function_type= function_variable.t;
+		var FunctionType &mut function_type= function_variable.t;
 		if( ( is_constructor || is_destructor ) &&
 			!(function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.src_loc )
+			function_type.return_type= void_type_;
+			function_type.return_value_type= ValueType::Value;
+		}
+		if( ( is_constructor || is_destructor ) &&
+			!function_type.params.empty() && function_type.params.front().value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ByvalThisForConstructorOrDestructor, names_scope_ptr, function_declaration.src_loc )
+			function_type.params.front().value_type= ValueType::ReferenceMut;
 		}
 		if( is_destructor && function_type.params.size() > 1s )
 		{
@@ -584,6 +592,7 @@ fn CodeBuilder::PrepareFunction(
 			( function_declaration.operator == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_variable, class_type_non_null ) ) )
 		{
 			REPORT_ERROR( ThisMethodCanNotBeUnsafe, names_scope_ptr, function_declaration.src_loc )
+			function_variable.t.is_unsafe= false;
 		}
 	}
 

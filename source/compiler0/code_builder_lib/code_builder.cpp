@@ -963,7 +963,7 @@ size_t CodeBuilder::PrepareFunction(
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
 
-	if( is_destructor || is_constructor )
+	if( is_special_method )
 		U_ASSERT( func.type.params.size() >= 1u && func.type.params.front().name == Keywords::this_ );
 
 	if( !is_special_method && IsKeyword( func_name ) )
@@ -1016,7 +1016,17 @@ size_t CodeBuilder::PrepareFunction(
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
+		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc );
+			function_type.return_type= void_type_;
+			function_type.return_value_type= ValueType::Value;
+		}
+
+		if( is_special_method && !function_type.params.empty() && function_type.params.front().value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ByvalThisForConstructorOrDestructor, names_scope.GetErrors(), func.src_loc );
+			function_type.params.front().value_type= ValueType::ReferenceMut;
+		}
 
 		if (function_type.unsafe && base_class != nullptr )
 		{

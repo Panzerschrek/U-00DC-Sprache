@@ -96,6 +96,7 @@ PROCESS_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, "
 // Constructors errors
 PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor outside class." )
 PROCESS_ERROR( ConstructorAndDestructorMustReturnVoid, "Constructors and destructors must return void." )
+PROCESS_ERROR( ByvalThisForConstructorOrDestructor, "\"byval\" \"this\" for constructor or destructor. Mutable reference should be used for \"this\" instead." )
 PROCESS_ERROR( ConversionConstructorMustHaveOneArgument, "Conversion constructor must have exactly 1 argument (except \"this\" )." )
 PROCESS_ERROR( InitializationListInNonConstructor, "Initialization list for non-constructor function ." )
 PROCESS_ERROR( ClassHaveNoConstructors, "Class have no constructors." )
