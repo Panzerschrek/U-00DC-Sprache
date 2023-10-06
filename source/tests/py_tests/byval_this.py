@@ -220,6 +220,71 @@ def ByValThis_Test8():
 	tests_lib.build_program( c_program_text )
 
 
+def ByValThis_Test9():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) {}
+			op+( byval this, S other ) : S // byval this overloaded binary operator.
+			{
+				return S( x + other.x );
+			}
+		}
+		fn Foo() : i32
+		{
+			return ( S( 17 ) + S( 55 ) ).x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 17 + 55 )
+
+
+def ByValThis_Test10():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) {}
+			op()( byval this ) : i32 // byval this overloaded call operator.
+			{
+				return x * 5;
+			}
+		}
+		fn Foo() : i32
+		{
+			return S( 6 )();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 30 )
+
+
+def ByValThis_Test11():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) {}
+			// Overloading with byval this.
+			fn Foo( mut this ) : i32 { return x * 5; }
+			fn Foo( byval this ) : i32 { return x * 3; }
+		}
+		fn Foo()
+		{
+			var S mut s_mut( 10 ), imut s_imut( 20 );
+			halt if( s_mut.Foo() != 50 );
+			halt if( s_imut.Foo() != 60 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ByValThisErrors_Test0():
 	c_program_text= """
 		struct S
@@ -230,7 +295,6 @@ def ByValThisErrors_Test0():
 				x= 42; // error - 'this' is not mutable.
 			}
 		}
-
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -304,3 +368,26 @@ def ByValThisErrors_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+
+
+def ByValThisErrors_Test5():
+	c_program_text= """
+		struct S
+		{
+			// For now type completeness required for all value args of generators.
+			// Because of that byval this generator methods are not possible.
+			fn generator Gen( byval this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def ByValThisErrors_Test6():
+	c_program_text= """
+		fn Foo( byval this ); // byval this outside class.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisInNonclassFunction", 2 ) )
