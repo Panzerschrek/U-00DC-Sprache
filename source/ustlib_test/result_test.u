@@ -197,7 +197,7 @@ fn nomangle main() : i32
 		var IntRes mut res( 9998 );
 		halt if( !res.is_ok() );
 		halt if( res.is_error() );
-		auto res_extracted= ust::result_try_take( move(res) );
+		auto res_extracted= move(res).try_take();
 		halt if( res_extracted != 9998 );
 	}
 	{ // Take result - check destruction.
@@ -205,7 +205,7 @@ fn nomangle main() : i32
 		halt if( !res.is_ok() );
 		halt if( res.is_error() );
 		halt if( res.try_deref().ptr.lock_imut().deref() != 6655 );
-		auto res_extracted= ust::result_try_take( move(res) );
+		auto res_extracted= move(res).try_take();
 		halt if( res_extracted.ptr.lock_imut().deref() != 6655 );
 	}
 	{ // Take error.
@@ -213,7 +213,7 @@ fn nomangle main() : i32
 		halt if( res.is_ok() );
 		halt if( !res.is_error() );
 		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
-		auto err_extracted= ust::result_try_take_error( move(res) );
+		auto err_extracted= move(res).try_take_error();
 		halt if( err_extracted != SomeErrorEnum::CompleteDisaster );
 	}
 	{ // Take error - check destruction.
@@ -221,7 +221,7 @@ fn nomangle main() : i32
 		halt if( res.is_ok() );
 		halt if( !res.is_error() );
 		halt if( res.try_deref_error().ptr.lock_imut().deref() != 9852 );
-		auto err_extracted= ust::result_try_take_error( move(res) );
+		auto err_extracted= move(res).try_take_error();
 		halt if( err_extracted.ptr.lock_imut().deref() != 9852 );
 	}
 	{ // Result == Result.
