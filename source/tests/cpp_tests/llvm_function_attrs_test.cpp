@@ -879,6 +879,85 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 	}
 }
 
+U_TEST( LLVMFunctionAttrs_ForByValThis_Test0 )
+{
+	// Structs passed via "byval this" are passed via hidden pointer, if they contain more than single scalar inside.
+	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
+	// "readonly" should not be set since it's possible to mutate this arg in its destructor.
+	// "dereferenceable" should be equal to type size.
+	// "nocapture" should be used since there is no legal way to capture address of passed variable (because of some kind of "ReferenceProtectionError").
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+
+			fn Foo( byval imut this ){}
+			fn Bar( byval mut this ){}
+		}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_ZN1S3FooES_" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes(0) == 8 );
+
+	const llvm::Function* bar= module->getFunction( "_ZN1S3BarES_" );
+	U_TEST_ASSERT( bar != nullptr );
+
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes(0) == 8 );
+}
+
+U_TEST( LLVMFunctionAttrs_ForByValThis_Test1 )
+{
+	// Structs with single scalar inside are passed by value into "byval this" methods.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			u64 x;
+
+			fn Foo( byval imut this ){}
+			fn Bar( byval mut this ){}
+		}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_ZN1S3FooES_" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by value.
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* bar= module->getFunction( "_ZN1S3BarES_" );
+	U_TEST_ASSERT( bar != nullptr );
+
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by value.
+}
+
 } // namespace
 
 } // namespace U
