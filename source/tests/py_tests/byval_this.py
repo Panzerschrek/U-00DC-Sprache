@@ -412,6 +412,20 @@ def ByValThisErrors_Test6():
 	assert( HaveError( errors_list, "ThisInNonclassFunction", 2 ) )
 
 
+def ByValThisErrors_Test7():
+	c_program_text= """
+		struct S
+		{
+			// Can't overload function, since mutability modifier of value parametr doesn't affect function type.
+			fn Foo( byval mut this );
+			fn Foo( byval imut this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "FunctionPrototypeDuplication", 5 ) or HaveError( errors_list, "FunctionPrototypeDuplication", 6 ) )
+
+
 def ByvalThisForConstructorOrDestructor_Test0():
 	c_program_text= """
 		struct S
