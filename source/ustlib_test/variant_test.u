@@ -251,12 +251,12 @@ fn nomangle main() : i32
 		halt if( ust::string8() == v5 );
 		halt if( 33 == v11 );
 	}
-	{ // variant_try_move helper
+	{ // try_move
 
 		var ust::variant</ tup[ ust::box</i32/>, f32 ] /> mut v( 0.25f );
 		halt if( v.get</f32/>().empty() );
 
-		var f32 x= ust::variant_try_move</f32/>( move(v) );
+		var f32 x= move(v).try_move</f32/>();
 		halt if( x != 0.25f );
 
 	}

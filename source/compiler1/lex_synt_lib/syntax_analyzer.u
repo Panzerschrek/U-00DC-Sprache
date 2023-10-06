@@ -2133,15 +2133,15 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 				}
 				if( !block_element.get</IfOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( ust::variant_try_move</IfOperator/>( move(block_element) ) );
+					return IfAlternativeNullablePtr( move(block_element).try_move</IfOperator/>() );
 				}
 				if( !block_element.get</StaticIfOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( ust::variant_try_move</StaticIfOperator/>( move(block_element) ) );
+					return IfAlternativeNullablePtr( move(block_element).try_move</StaticIfOperator/>() );
 				}
 				if( !block_element.get</IfCoroAdvanceOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( ust::variant_try_move</IfCoroAdvanceOperator/>( move(block_element) ) );
+					return IfAlternativeNullablePtr( move(block_element).try_move</IfCoroAdvanceOperator/>() );
 				}
 
 				var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." );
