@@ -148,6 +148,20 @@ public:
 		}
 	}
 
+	// Checked conversion to non-nullable box from nullable box.
+	fn try_to_non_nullable( byval mut this ) : box</T/>
+	{
+		halt if( empty() );
+		unsafe
+		{
+			static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
+			var box</T/> mut result= uninitialized;
+			memory_copy_aligned( typeinfo</ box</T/> />.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( this ), typeinfo</ box</T/> />.size_of );
+			move_into_nowhere( move(this) );
+			return move(result);
+		}
+	}
+
 private:
 	$(T) ptr_= zero_init;
 }
@@ -162,20 +176,6 @@ struct box_nullable_hasher
 			return default_hasher::hash(value);
 		}
 		return 0s;
-	}
-}
-
-template</ type T />
-fn to_non_nullable( box_nullable</T/> mut val ) : box</T/>
-{
-	halt if( val.empty() );
-	unsafe
-	{
-		static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
-		var box</T/> mut result= uninitialized;
-		memory_copy_aligned( typeinfo</ box</T/> />.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( val ), typeinfo</ box</T/> />.size_of );
-		move_into_nowhere( move(val) );
-		return move(result);
 	}
 }
 

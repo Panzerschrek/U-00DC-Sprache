@@ -40,6 +40,10 @@ fn nomangle main() : i32
 		var ust::box</ C /> mut box_c( C() );
 		var ust::box_nullable</ D /> box_d( move(box_c) );  //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{ // try_to_non_nullable call requires moved class instance.
+		var ust::box_nullable</ i32 /> mut b(0);
+		b.try_to_non_nullable(); //##expect_error CopyConstructValueOfNoncopyableType
+	}
 
 	return 0;
 }
