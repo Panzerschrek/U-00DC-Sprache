@@ -3480,7 +3480,9 @@ Value CodeBuilder::DoCallFunction(
 				result->llvm_value= result->constexpr_value= evaluation_result.result_constant;
 		}
 	}
-	else if( !function_context.is_functionless_context && std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
+	else if( function_context.is_functionless_context )
+	{}
+	else if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
 		llvm::FunctionType* llvm_function_type= nullptr;
 		if( const auto really_function= llvm::dyn_cast<llvm::Function>(function) )
@@ -3500,6 +3502,16 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 			result->llvm_value= call_instruction;
+	}
+	else
+	{
+		// Fill dummy for error cases.
+		if( return_value_is_sret )
+		{}
+		else if( function_type.return_value_type == ValueType::Value )
+			result->llvm_value= llvm::UndefValue::get( function_type.return_type.GetLLVMType() );
+		else
+			result->llvm_value= llvm::UndefValue::get( function_type.return_type.GetLLVMType()->getPointerTo() );
 	}
 
 	// Clear inner references locks. Do this BEFORE result references management.
