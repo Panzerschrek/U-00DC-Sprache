@@ -161,10 +161,10 @@ def ByValThis_Test6():
 			i32 x;
 			fn Foo( byval mut this ) : i32
 			{
-				Reserve(); // Call mutable reference-thiscall method using value this.
+				Reverse(); // Call mutable reference-thiscall method using value this.
 				return x;
 			}
-			fn Reserve( mut this ) { x= -x; }
+			fn Reverse( mut this ) { x= -x; }
 		}
 		fn Foo() : i32
 		{
@@ -426,6 +426,67 @@ def ByValThisErrors_Test7():
 	assert( HaveError( errors_list, "FunctionPrototypeDuplication", 5 ) or HaveError( errors_list, "FunctionPrototypeDuplication", 6 ) )
 
 
+def ByValThisErrors_Test8():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( byval mut this )
+			{
+				auto& this_ref= this;
+				move(this);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+
+
+def ByValThisErrors_Test9():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( byval mut this, bool cond )
+			{
+				if( cond ) { move(this); }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 6 ) )
+
+
+def ByValThisErrors_Test10():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( mut this )
+			{
+				move(this); // Try to move mutable reference "this".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 6 ) )
+
+
+def ByValThisErrors_Test11():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( imut this )
+			{
+				move(this); // Try to move immutable reference "this".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 6 ) )
+
+
 def ByvalThisForConstructorOrDestructor_Test0():
 	c_program_text= """
 		struct S
@@ -532,3 +593,118 @@ def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
+
+
+def AccessingMovedByvalThis_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( byval mut this )
+			{
+				move(this);
+				move(this); // Accessing moved "this" in move operator.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 7 ) )
+
+
+def AccessingMovedByvalThis_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( byval mut this )
+			{
+				move(this);
+				auto& this_ref= this; // Accessing moved "this" directly by name.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 7 ) )
+
+
+def AccessingMovedByvalThis_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn Foo( byval mut this )
+			{
+				move(this);
+				auto x_copy= x; // Access field of moved "this".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+
+
+def AccessingMovedByvalThis_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( byval mut this )
+			{
+				move(this);
+				Bar(); // Can't call thiscall method, since "this" is already move.
+			}
+			fn Bar(this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def AccessingMovedByvalThis_Test4():
+	c_program_text= """
+		class C polymorph
+		{
+			fn Foo( byval mut this )
+			{
+				move(this);
+				Bar(); // Can't call thiscall virtual method, since "this" is already move.
+			}
+			fn virtual Bar(this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def AccessingMovedByvalThis_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( byval mut this )
+			{
+				move(this);
+				Bar(); // Ok - call static method, when "this" is alredy moved.
+			}
+			fn Bar();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingMovedByvalThis_Test6():
+	c_program_text= """
+		class Base polymorph {}
+		class Derived : Base
+		{
+			fn Foo( byval mut this )
+			{
+				move(this);
+				auto& b= base; // Access base pointer for moved "this".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )

@@ -364,7 +364,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( ThisUnavailable, names_scope, src_loc )
 			return ErrorValue();
 		}
-		return function_context.this_.try_to_non_nullable();
+
+		auto mut this_non_null= function_context.this_.try_to_non_nullable();
+		if( function_context.references_graph.NodeIsMoved( this_non_null ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, KeywordToString( Keyword::this_ ) )
+			return ErrorValue();
+		}
+		return move(this_non_null);
 	}
 	if( name == KeywordToString( Keyword::base_ ) )
 	{
@@ -375,6 +382,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 
 		var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+		if( function_context.references_graph.NodeIsMoved( this_ptr ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, KeywordToString( Keyword::base_ ) )
+			return ErrorValue();
+		}
+
 		auto this_lock= this_ptr.lock_imut();
 		var Variable& this_= this_lock.deref();
 
