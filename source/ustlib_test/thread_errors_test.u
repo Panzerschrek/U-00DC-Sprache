@@ -15,6 +15,12 @@ struct CallableObjectShared
 	{}
 }
 
+struct CallableObjectRegular
+{
+	op()( this )
+	{}
+}
+
 fn nomangle main() : i32
 {
 	{ // Create thread with "non_sync"-marked function-object.
@@ -22,6 +28,11 @@ fn nomangle main() : i32
 	}
 	{ // Create thread with function-object, containing non-thread-safe shared_ptr class inside.
 		auto thread= ust::make_thread_void( CallableObjectShared() ); //##expect_error TemplateContext
+	}
+	{
+		// thred should be moved in "join" call.
+		auto mut thread= ust::make_thread_void( CallableObjectRegular() );
+		thread.join(); //##expect_error CopyConstructValueOfNoncopyableType
 	}
 
 	return 0;

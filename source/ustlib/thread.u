@@ -36,12 +36,12 @@ public:
 	fn constructor( mut this, this_type &imut other )= delete;
 	op=( mut this, this_type &imut other )= delete;
 
-	// Implement "join" as non-this-call method to enforce user to move thread to join it and avoid calling "join" again.
-	fn join( this_type mut this_ ) : ResultType
+	// Implement "join" as byval this-call method to enforce user to move thread to join it and avoid calling "join" again.
+	fn join( byval mut this ) : ResultType
 	{
-		this_.join_impl();
-		auto mut res= this_.impl_.try_deref().result.try_take();
-		this_.impl_.reset();
+		join_impl();
+		auto mut res= impl_.try_deref().result.try_take();
+		impl_.reset();
 		return move(res);
 	}
 
