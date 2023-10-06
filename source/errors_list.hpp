@@ -154,6 +154,7 @@ PROCESS_ERROR( OperatorDeclarationOutsideClass, "Operator declaration outside cl
 PROCESS_ERROR( OperatorDoesNotHaveParentClassArguments, "Operator does not have parent class arguments. At least one argument of operator must have parent class type." )
 PROCESS_ERROR( InvalidArgumentCountForOperator, "Invalid argument count for operator." )
 PROCESS_ERROR( InvalidReturnTypeForOperator, "Invalid return type for operator, expected \"{0}\" ." )
+PROCESS_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, "Invalid value type for first parameter of operator. Expected mutable reference." )
 
 // Enums
 PROCESS_ERROR( UnderlayingTypeForEnumIsTooSmall, "Underlaying type for enum is too small - enum max value is {0}, but type max value is {1}." )

@@ -463,3 +463,39 @@ def VirtualForByvalThisFunction_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )
+
+
+def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test0():
+	c_program_text= """
+		struct S
+		{
+			op=( byval mut this, S& other );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
+
+
+def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test1():
+	c_program_text= """
+		struct S
+		{
+			op*=( byval imut this, S& other );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
+
+
+def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test2():
+	c_program_text= """
+		struct S
+		{
+			op>>=( byval this, i32 shift );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )

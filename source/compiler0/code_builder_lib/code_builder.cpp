@@ -1325,6 +1325,7 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
+	case OverloadedOperator::Assign:
 	case OverloadedOperator::AssignAdd:
 	case OverloadedOperator::AssignSub:
 	case OverloadedOperator::AssignMul:
@@ -1339,19 +1340,14 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
+		if( !func_type.params.empty() && func_type.params.front().value_type != ValueType::ReferenceMut )
+			REPORT_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, errors_container, src_loc );
 		break;
 
 	case OverloadedOperator::LogicalNot:
 	case OverloadedOperator::BitwiseNot:
 		if( func_type.params.size() != 1u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
-		break;
-
-	case OverloadedOperator::Assign:
-		if( func_type.params.size() != 2u )
-			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
-		if( !ret_is_void )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
 		break;
 
 	case OverloadedOperator::Increment:

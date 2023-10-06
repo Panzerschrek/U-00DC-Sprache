@@ -916,6 +916,10 @@ fn CodeBuilder::CheckOverloadedOperator(
 		{
 			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
 		}
+		if( !func_type.params.empty() && func_type.params.front().value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, names_scope, src_loc )
+		}
 	}
 	else if( operator == OverloadedOperator::CompareEqual )
 	{
