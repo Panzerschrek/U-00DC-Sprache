@@ -1126,6 +1126,8 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.src_loc, func_name );
 		if( is_out_of_line_function )
 			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.src_loc, func_name );
+		if( func_variable.is_this_call && !func_variable.type.params.empty() && func_variable.type.params.front().value_type == ValueType::Value )
+			REPORT_ERROR( VirtualForByvalThisFunction, names_scope.GetErrors(), func.src_loc, func_name );
 
 		func_variable.virtual_function_kind= func.virtual_function_kind;
 	}

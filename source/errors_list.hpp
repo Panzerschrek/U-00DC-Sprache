@@ -177,6 +177,7 @@ PROCESS_ERROR( AutoFunctionInsideClassesNotAllowed, "\"auto\" for member functio
 // Virtual functions errors
 PROCESS_ERROR( VirtualForNonclassFunction, "Virtual for non-class function \"{0}\"." )
 PROCESS_ERROR( VirtualForNonThisCallFunction, "Virtual for non-thiscall function \"{0}\"." )
+PROCESS_ERROR( VirtualForByvalThisFunction, "Virtual for \"byval\" \"this\" function \"{0}\"." )
 PROCESS_ERROR( VirtualForNonpolymorphClass, "Function \"{0}\" can not be virtual, because its class is not polymorph." )
 PROCESS_ERROR( FunctionCanNotBeVirtual, "Function \"{0}\" can not be virtual." )
 PROCESS_ERROR( VirtualRequired, "\"virtual\" required for function \"{0}\"." )

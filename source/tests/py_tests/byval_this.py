@@ -427,3 +427,39 @@ def ByvalThisForConstructorOrDestructor_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
+
+
+def VirtualForByvalThisFunction_Test0():
+	c_program_text= """
+		class C polymorph
+		{
+			fn virtual Foo( byval imut this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )
+
+
+def VirtualForByvalThisFunction_Test1():
+	c_program_text= """
+		class C interface
+		{
+			fn virtual pure Foo( byval mut this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )
+
+
+def VirtualForByvalThisFunction_Test2():
+	c_program_text= """
+		class C abstract
+		{
+			fn virtual pure Foo( byval this, i32 y );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )

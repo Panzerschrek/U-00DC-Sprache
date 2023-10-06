@@ -694,6 +694,10 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( VirtualForFunctionImplementation, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
+		if( function_variable.is_this_call && ! function_variable.t.params.empty() && function_variable.t.params.front().value_type == ValueType::Value )
+		{
+			REPORT_ERROR( VirtualForByvalThisFunction, names_scope_ptr, function_declaration.src_loc, func_name )
+		}
 	}
 
 	// Check "=default" / "=delete".
