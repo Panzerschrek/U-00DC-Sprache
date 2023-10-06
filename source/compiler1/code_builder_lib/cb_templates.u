@@ -934,10 +934,9 @@ fn CodeBuilder::PrepareTemplateFunction(
 		var Synt::FunctionType::Param& function_param= function_syntax_element.function_type.params[i];
 		var VariableTypeExtended& arg= args[i];
 
-		auto is_this= function_param.name == KeywordToString( Keyword::this_ );
 		auto param_is_mutable_reference=
-			function_param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
-			( function_param.reference_modifier == Synt::ReferenceModifier::Reference || is_this );
+			function_param.reference_modifier == Synt::ReferenceModifier::Reference &&
+			function_param.mutability_modifier == Synt::MutabilityModifier::Mutable;
 		if( param_is_mutable_reference && arg.value_type != ValueType::ReferenceMut )
 		{
 			return ust::null_optional;

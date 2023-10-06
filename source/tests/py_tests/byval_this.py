@@ -285,6 +285,25 @@ def ByValThis_Test11():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ByValThis_Test12():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) {}
+			template</ type T /> fn CastScale( this, T scale ) : T { return T(x) * scale; }
+		}
+		fn Foo() : u32
+		{
+			var S s(7);
+			return s.CastScale( 11u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 77 )
+
+
 def ByValThisErrors_Test0():
 	c_program_text= """
 		struct S
