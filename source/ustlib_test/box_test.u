@@ -75,7 +75,7 @@ fn nomangle main() : i32
 	}
 	{ // take
 		auto mut box= ust::make_box( 897 );
-		auto val= ust::box_take( move(box) );
+		auto val= move(box).take_value();
 		halt if( val != 897 );
 	}
 	// make_box

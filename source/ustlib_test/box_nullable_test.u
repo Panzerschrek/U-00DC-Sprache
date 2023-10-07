@@ -121,7 +121,7 @@ fn nomangle main() : i32
 	}
 	{ // take
 		var ust::box_nullable</i32/> mut box= ust::make_box( 897 );
-		auto val= ust::box_try_take( box );
+		auto val= box.try_take_value();
 		halt if( !box.empty() );
 		halt if( val != 897 );
 	}
