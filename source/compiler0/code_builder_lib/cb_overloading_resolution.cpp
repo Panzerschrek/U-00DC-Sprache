@@ -388,7 +388,7 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 		const Synt::FunctionParam& param= params[ param_index ];
 
 		FunctionType::Param result;
-		if( param.reference_modifier == ReferenceModifier::Reference || param.name == Keyword( Keywords::this_ ) )
+		if( param.reference_modifier == ReferenceModifier::Reference )
 			result.value_type= param.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		else
 			result.value_type= ValueType::Value;
