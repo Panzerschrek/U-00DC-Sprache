@@ -96,6 +96,7 @@ PROCESS_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, "
 // Constructors errors
 PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor outside class." )
 PROCESS_ERROR( ConstructorAndDestructorMustReturnVoid, "Constructors and destructors must return void." )
+PROCESS_ERROR( ByvalThisForConstructorOrDestructor, "\"byval\" \"this\" for constructor or destructor. Mutable reference should be used for \"this\" instead." )
 PROCESS_ERROR( ConversionConstructorMustHaveOneArgument, "Conversion constructor must have exactly 1 argument (except \"this\" )." )
 PROCESS_ERROR( InitializationListInNonConstructor, "Initialization list for non-constructor function ." )
 PROCESS_ERROR( ClassHaveNoConstructors, "Class have no constructors." )
@@ -153,6 +154,7 @@ PROCESS_ERROR( OperatorDeclarationOutsideClass, "Operator declaration outside cl
 PROCESS_ERROR( OperatorDoesNotHaveParentClassArguments, "Operator does not have parent class arguments. At least one argument of operator must have parent class type." )
 PROCESS_ERROR( InvalidArgumentCountForOperator, "Invalid argument count for operator." )
 PROCESS_ERROR( InvalidReturnTypeForOperator, "Invalid return type for operator, expected \"{0}\" ." )
+PROCESS_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, "Invalid value type for first parameter of operator. Expected mutable reference." )
 
 // Enums
 PROCESS_ERROR( UnderlayingTypeForEnumIsTooSmall, "Underlaying type for enum is too small - enum max value is {0}, but type max value is {1}." )
@@ -176,6 +178,7 @@ PROCESS_ERROR( AutoFunctionInsideClassesNotAllowed, "\"auto\" for member functio
 // Virtual functions errors
 PROCESS_ERROR( VirtualForNonclassFunction, "Virtual for non-class function \"{0}\"." )
 PROCESS_ERROR( VirtualForNonThisCallFunction, "Virtual for non-thiscall function \"{0}\"." )
+PROCESS_ERROR( VirtualForByvalThisFunction, "Virtual for \"byval\" \"this\" function \"{0}\"." )
 PROCESS_ERROR( VirtualForNonpolymorphClass, "Function \"{0}\" can not be virtual, because its class is not polymorph." )
 PROCESS_ERROR( FunctionCanNotBeVirtual, "Function \"{0}\" can not be virtual." )
 PROCESS_ERROR( VirtualRequired, "\"virtual\" required for function \"{0}\"." )

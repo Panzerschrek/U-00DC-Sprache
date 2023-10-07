@@ -40,6 +40,7 @@ class SpracheLexer(RegexLexer):
 			(r'else(?![a-zA-Z_0-9])', token.Keyword),
 			(r'move(?![a-zA-Z_0-9])', token.Keyword),
 			(r'take(?![a-zA-Z_0-9])', token.Keyword),
+			(r'byval(?![a-zA-Z_0-9])', token.Keyword),
 			(r'select(?![a-zA-Z_0-9])', token.Keyword),
 			(r'tup(?![a-zA-Z_0-9])', token.Keyword),
 			(r'struct(?![a-zA-Z_0-9])', token.Keyword),

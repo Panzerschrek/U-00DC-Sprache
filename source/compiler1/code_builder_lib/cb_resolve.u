@@ -25,20 +25,23 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				if( !function_context.this_.empty() && !function_context.whole_this_is_unavailable )
 				{
 					auto this_non_null= function_context.this_.try_to_non_nullable();
-					with( &this_ : this_non_null.lock_imut().deref() )
+					if( ! function_context.references_graph.NodeIsMoved( this_non_null ) )
 					{
-						if_var( &this_class_type : this_.t.GetClassType() )
+						with( &this_ : this_non_null.lock_imut().deref() )
 						{
-							auto functions_set_class_non_null= functions_set.class_.try_to_non_nullable();
-							if( functions_set_class_non_null == this_class_type ||
-								this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
+							if_var( &this_class_type : this_.t.GetClassType() )
 							{
-								var ThisMethodsSet mut this_methods_set
+								auto functions_set_class_non_null= functions_set.class_.try_to_non_nullable();
+								if( functions_set_class_non_null == this_class_type ||
+									this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
 								{
-									.this_= this_non_null,
-									.functions_set= f_ptr_non_null,
-								};
-								return move(this_methods_set);
+									var ThisMethodsSet mut this_methods_set
+									{
+										.this_= this_non_null,
+										.functions_set= f_ptr_non_null,
+									};
+									return move(this_methods_set);
+								}
 							}
 						}
 					}
@@ -86,7 +89,14 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope, src_loc, field_name )
 			return ErrorValue();
 		}
+
 		var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+
+		if( function_context.references_graph.NodeIsMoved( this_ptr ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, KeywordToString( Keyword::this_ ) )
+			return ErrorValue();
+		}
 
 		if( function_context.whole_this_is_unavailable )
 		{

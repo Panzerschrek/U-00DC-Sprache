@@ -963,7 +963,7 @@ size_t CodeBuilder::PrepareFunction(
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
 
-	if( is_destructor || is_constructor )
+	if( is_special_method )
 		U_ASSERT( func.type.params.size() >= 1u && func.type.params.front().name == Keywords::this_ );
 
 	if( !is_special_method && IsKeyword( func_name ) )
@@ -1016,7 +1016,17 @@ size_t CodeBuilder::PrepareFunction(
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
+		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc );
+			function_type.return_type= void_type_;
+			function_type.return_value_type= ValueType::Value;
+		}
+
+		if( is_special_method && !function_type.params.empty() && function_type.params.front().value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ByvalThisForConstructorOrDestructor, names_scope.GetErrors(), func.src_loc );
+			function_type.params.front().value_type= ValueType::ReferenceMut;
+		}
 
 		if (function_type.unsafe && base_class != nullptr )
 		{
@@ -1116,6 +1126,8 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.src_loc, func_name );
 		if( is_out_of_line_function )
 			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.src_loc, func_name );
+		if( func_variable.is_this_call && !func_variable.type.params.empty() && func_variable.type.params.front().value_type == ValueType::Value )
+			REPORT_ERROR( VirtualForByvalThisFunction, names_scope.GetErrors(), func.src_loc, func_name );
 
 		func_variable.virtual_function_kind= func.virtual_function_kind;
 	}
@@ -1313,6 +1325,7 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
+	case OverloadedOperator::Assign:
 	case OverloadedOperator::AssignAdd:
 	case OverloadedOperator::AssignSub:
 	case OverloadedOperator::AssignMul:
@@ -1327,19 +1340,14 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
+		if( !func_type.params.empty() && func_type.params.front().value_type != ValueType::ReferenceMut )
+			REPORT_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, errors_container, src_loc );
 		break;
 
 	case OverloadedOperator::LogicalNot:
 	case OverloadedOperator::BitwiseNot:
 		if( func_type.params.size() != 1u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
-		break;
-
-	case OverloadedOperator::Assign:
-		if( func_type.params.size() != 2u )
-			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
-		if( !ret_is_void )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
 		break;
 
 	case OverloadedOperator::Increment:
@@ -1584,7 +1592,6 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
-			U_ASSERT( param.value_type != ValueType::Value );
 			// Save "this" in function context for accessing inside class methods.
 			function_context.this_= variable_reference;
 		}

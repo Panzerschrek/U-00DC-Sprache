@@ -14,9 +14,9 @@ import "optional_ref.u"
 	if( ??res.is_error() )
 	{
 		// This works for functions returning result::ErrorT, functionis returning "result" with ErrorT and any other OkT, optionals and generally any types, constructible from result::ErrorT.
-		return ust::result_try_take_error( move( ??res ) );
+		return move( ??res ).try_take_error();
 	}
-	auto ?m<? mut ?> ?var_name = ust::result_try_take( move( ??res ) );
+	auto ?m<? mut ?> ?var_name = move( ??res ).try_take();
 ?>
 
 // Use this macro to process result or error.
@@ -34,12 +34,12 @@ import "optional_ref.u"
 	{
 		if( ??res.is_ok() )
 		{
-			auto ?ok_mut<? mut ?> ?ok_variable = ust::result_try_take( move( ??res ) );
+			auto ?ok_mut<? mut ?> ?ok_variable = move( ??res ).try_take();
 			?b_ok
 		}
 		else
 		{
-			auto ?err_mut<? mut ?> ?err_variable = ust::result_try_take_error( move( ??res ) );
+			auto ?err_mut<? mut ?> ?err_variable = move( ??res ).try_take_error();
 			?b_err
 		}
 	}
@@ -207,6 +207,36 @@ public:
 		}
 	}
 
+	// Extract and return ok value.
+	fn try_take( byval mut this'a' ) : OkT'a'
+	{
+		unsafe
+		{
+			var OkT mut t= uninitialized;
+			{
+				auto& ref= try_deref(); // try_deref will halt if result contains error.
+				memory_copy_aligned( typeinfo</OkT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</OkT/>.size_of ); // Copy contents into the result.
+			}
+			move_into_nowhere( move(this) ); // Forget about the result container.
+			return move(t);
+		}
+	}
+
+	// Extract and return error value.
+	fn try_take_error( byval mut this'a' ) : ErrorT'a'
+	{
+		unsafe
+		{
+			var ErrorT mut t= uninitialized;
+			{
+				auto& ref= try_deref_error(); // try_deref will halt if result contains no error.
+				memory_copy_aligned( typeinfo</ErrorT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</ErrorT/>.size_of ); // Copy contents into the result.
+			}
+			move_into_nowhere( move(this) ); // Forget about the result container.
+			return move(t);
+		}
+	}
+
 	// ==
 
 	op enable_if( c_is_equality_comparable )
@@ -291,38 +321,6 @@ private:
 	ContainerTag</ tup[ OkT, ErrorT ] /> container_tag_;
 	aligned_storage</ c_storage_size, c_storage_align /> storage_;
 	bool is_ok_;
-}
-
-// Extract and return ok value.
-template</type OkT, type ErrorT/>
-fn result_try_take( result</OkT, ErrorT/> mut r'a' ) : OkT'a'
-{
-	unsafe
-	{
-		var OkT mut t= uninitialized;
-		{
-			auto& ref= r.try_deref(); // try_deref will halt if result contains error.
-			memory_copy_aligned( typeinfo</OkT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</OkT/>.size_of ); // Copy contents into the result.
-		}
-		move_into_nowhere( move(r) ); // Forget about the result container.
-		return move(t);
-	}
-}
-
-// Extract and return error value.
-template</type OkT, type ErrorT/>
-fn result_try_take_error( result</OkT, ErrorT/> mut r'a' ) : ErrorT'a'
-{
-	unsafe
-	{
-		var ErrorT mut t= uninitialized;
-		{
-			auto& ref= r.try_deref_error(); // try_deref will halt if result contains no error.
-			memory_copy_aligned( typeinfo</ErrorT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</ErrorT/>.size_of ); // Copy contents into the result.
-		}
-		move_into_nowhere( move(r) ); // Forget about the result container.
-		return move(t);
-	}
 }
 
 } // namespace ust

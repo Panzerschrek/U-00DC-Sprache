@@ -1532,7 +1532,10 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	auto is_constructor_or_destructor=
 		res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ );
 
-	if( IsKeyword( it_.front(), Keyword::this_ ) || IsKeyword( it_.front(), Keyword::mut_ ) || IsKeyword( it_.front(), Keyword::imut_ ) )
+	if( IsKeyword( it_.front(), Keyword::byval_ ) ||
+		IsKeyword( it_.front(), Keyword::this_ ) ||
+		IsKeyword( it_.front(), Keyword::mut_ ) ||
+		IsKeyword( it_.front(), Keyword::imut_ ) )
 	{
 		var FunctionType::Param mut this_param
 		{
@@ -1540,6 +1543,12 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 			.reference_modifier= ReferenceModifier::Reference,
 		};
+
+		if( IsKeyword( it_.front(), Keyword::byval_ ) )
+		{
+			this_param.reference_modifier= ReferenceModifier::None;
+			NextLexem();
+		}
 
 		if( IsKeyword( it_.front(), Keyword::mut_ ) )
 		{
@@ -2124,15 +2133,15 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 				}
 				if( !block_element.get</IfOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( ust::variant_try_move</IfOperator/>( move(block_element) ) );
+					return IfAlternativeNullablePtr( move(block_element).try_move</IfOperator/>() );
 				}
 				if( !block_element.get</StaticIfOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( ust::variant_try_move</StaticIfOperator/>( move(block_element) ) );
+					return IfAlternativeNullablePtr( move(block_element).try_move</StaticIfOperator/>() );
 				}
 				if( !block_element.get</IfCoroAdvanceOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( ust::variant_try_move</IfCoroAdvanceOperator/>( move(block_element) ) );
+					return IfAlternativeNullablePtr( move(block_element).try_move</IfCoroAdvanceOperator/>() );
 				}
 
 				var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." );

@@ -487,11 +487,11 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	if( function_context.is_functionless_context )
-		return std::make_pair( this_, nullptr );
-
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) ); // No need to perform virtual call.
+
+	if( function_context.is_functionless_context )
+		return std::make_pair( this_, nullptr );
 
 	const Type& function_this_type= function.type.params.front().type;
 

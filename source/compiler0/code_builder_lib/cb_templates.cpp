@@ -920,8 +920,8 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		const Synt::FunctionParam& function_param= function_declaration.type.params[i];
 
 		const bool expected_arg_is_mutalbe_reference=
-			function_param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
-			( function_param.reference_modifier == Synt::ReferenceModifier::Reference || function_param.name == Keywords::this_ );
+			function_param.reference_modifier == Synt::ReferenceModifier::Reference &&
+			function_param.mutability_modifier == Synt::MutabilityModifier::Mutable;
 
 		// Functin arg declared as "mut&", but given something immutable.
 		if( expected_arg_is_mutalbe_reference && given_args[i].value_type != ValueType::ReferenceMut )

@@ -28,6 +28,7 @@ def main():
 		"auto_for_return_type_errors_test",
 		"break_from_block_test",
 		"byte_types_test",
+		"byval_this",
 		"c_style_for_operator_test",
 		"char_literals_test",
 		"char_test",

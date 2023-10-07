@@ -16,6 +16,7 @@ if_coro_advance
 else
 move
 take
+byval
 select
 tup
 struct

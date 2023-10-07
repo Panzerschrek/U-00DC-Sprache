@@ -148,6 +148,37 @@ public:
 		}
 	}
 
+	// Checked conversion to non-nullable box from nullable box.
+	fn try_to_non_nullable( byval mut this ) : box</T/>
+	{
+		halt if( empty() );
+		unsafe
+		{
+			static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
+			var box</T/> mut result= uninitialized;
+			memory_copy_aligned( typeinfo</ box</T/> />.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( this ), typeinfo</ box</T/> />.size_of );
+			move_into_nowhere( move(this) );
+			return move(result);
+		}
+	}
+
+	// Take value, leave box empty.
+	// This is a zero-params template function, because "is_abstract" check requires T completeness, which may create globals loop.
+	template<//>
+	fn enable_if( !is_abstract</T/>() ) try_take_value( mut this ) : T
+	{
+		halt if(empty());
+		unsafe
+		{
+			auto ptr= get_ptr();
+			var T mut t= uninitialized;
+			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>($>(ptr)), typeinfo</T/>.size_of ); // Copy contents into the result.
+			memory_free( polymorph_restore_original_ref( $>(ptr) ) ); // Free memory block, that was used for box.
+			ptr_= nullptr</T/>(); // Reset box storage pointer. Now it is empty.
+			return move(t);
+		}
+	}
+
 private:
 	$(T) ptr_= zero_init;
 }
@@ -162,37 +193,6 @@ struct box_nullable_hasher
 			return default_hasher::hash(value);
 		}
 		return 0s;
-	}
-}
-
-template</ type T />
-fn to_non_nullable( box_nullable</T/> mut val ) : box</T/>
-{
-	halt if( val.empty() );
-	unsafe
-	{
-		static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
-		var box</T/> mut result= uninitialized;
-		memory_copy_aligned( typeinfo</ box</T/> />.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( val ), typeinfo</ box</T/> />.size_of );
-		move_into_nowhere( move(val) );
-		return move(result);
-	}
-}
-
-// Take value, leave box empty.
-// This is a free function, because "is_abstract" check requires T completeness, which may create globals loop.
-template</type T/>
-fn enable_if( !is_abstract</T/>() ) box_try_take( box_nullable</T/> &mut b ) : T
-{
-	halt if(b.empty());
-	unsafe
-	{
-		auto ptr= b.get_ptr();
-		var T mut t= uninitialized;
-		memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>($>(ptr)), typeinfo</T/>.size_of ); // Copy contents into the result.
-		memory_free( polymorph_restore_original_ref( $>(ptr) ) ); // Free memory block, that was used for box.
-		move_into_uninitialized( b, box_nullable</T/>() ); // Replace box contents with empty instance.
-		return move(t);
 	}
 }
 

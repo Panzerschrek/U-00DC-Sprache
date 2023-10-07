@@ -113,20 +113,33 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 5u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 9u ) );
+}
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 4u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 5u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[2].src_loc.GetLine() == 6u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[3].src_loc.GetLine() == 7u );
-	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[4].src_loc.GetLine() == 8u );
-	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[5].src_loc.GetLine() == 9u );
+U_TEST( InvalidFirstParamValueTypeForAssignmentLikeOperator_Test )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			op=( S &imut dst, S &imut src );
+			op+=( S dst, i32 x );
+			op<<=( i32 x, S& s );
+			op/=( f32 &imut x, S s );
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 5u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 7u ) );
 }
 
 U_TEST( InvalidReturnTypeForOperator_Test )

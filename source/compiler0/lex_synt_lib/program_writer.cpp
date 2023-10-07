@@ -206,6 +206,8 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 {
 	if( param.name == Keywords::this_ )
 	{
+		if( param.reference_modifier == ReferenceModifier::None )
+			stream << Keyword( Keywords::byval_ ) << " ";
 		if( param.mutability_modifier != MutabilityModifier::None )
 		{
 			ElementWrite( param.mutability_modifier, stream );

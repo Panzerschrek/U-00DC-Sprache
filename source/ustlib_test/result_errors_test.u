@@ -38,14 +38,14 @@ fn nomangle main() : i32
 		var IntRes res_copy= res; //##expect_error CopyConstructValueOfNoncopyableType
 	}
 	{
-		// result_try_take accepts value, but immutable reference is given. And value can't be copied from this reference.
+		// try_take accepts value, but immutable reference is given. And value can't be copied from this reference.
 		var IntRes res( 6666666 );
-		ust::result_try_take( res ); //##expect_error CopyConstructValueOfNoncopyableType
+		res.try_take(); //##expect_error CopyConstructValueOfNoncopyableType
 	}
 	{
-		// result_try_take_error accepts value, but immutable reference is given. And value can't be copied from this reference.
-		var IntRes res( SomeErrorEnum::NotOk );
-		ust::result_try_take_error( res ); //##expect_error CopyConstructValueOfNoncopyableType
+		// try_take_error accepts value, but mutable reference is given. And value can't be copied from this reference.
+		var IntRes mut res( SomeErrorEnum::NotOk );
+		res.try_take_error(); //##expect_error CopyConstructValueOfNoncopyableType
 	}
 	{
 		// Trying to modify result contents, using immutable class instance.

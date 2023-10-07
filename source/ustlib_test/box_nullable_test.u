@@ -105,7 +105,7 @@ fn nomangle main() : i32
 	{ // box_nullable can be converted to box.
 		var ust::box_nullable</ i32 /> mut box0( 46 );
 		auto addr0= ust::ref_to_int( box0.try_deref() );
-		var ust::box</ i32 /> box1= ust::to_non_nullable( move(box0) );
+		var ust::box</ i32 /> box1=  move(box0).try_to_non_nullable();
 		auto addr1= ust::ref_to_int( box1.deref() );
 
 		halt if( addr0 != addr1 );
@@ -121,7 +121,7 @@ fn nomangle main() : i32
 	}
 	{ // take
 		var ust::box_nullable</i32/> mut box= ust::make_box( 897 );
-		auto val= ust::box_try_take( box );
+		auto val= box.try_take_value();
 		halt if( !box.empty() );
 		halt if( val != 897 );
 	}

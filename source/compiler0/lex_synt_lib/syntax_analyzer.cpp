@@ -3287,69 +3287,57 @@ Function SyntaxAnalyzer::ParseFunction()
 	std::vector<FunctionParam>& params= result.type.params;
 
 	// Try parse "this"
-	if( it_->type == Lexem::Type::Identifier )
+	if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::byval_ || it_->text == Keywords::mut_ ||  it_->text == Keywords::imut_ || it_->text == Keywords::this_ ) )
 	{
-		bool is_this= false;
+		ReferenceModifier reference_modifier= ReferenceModifier::Reference; // By default "this" is passed by reference.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-		if( it_->text == Keywords::mut_ )
+
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::byval_ )
 		{
 			NextLexem();
-			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
-			{
-				PushErrorMessage();
-				return result;
-			}
-			NextLexem();
+			reference_modifier= ReferenceModifier::None;
+		}
 
-			is_this= true;
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+		{
+			NextLexem();
 			mutability_modifier= MutabilityModifier::Mutable;
 		}
-		else if( it_->text == Keywords::imut_ )
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
 		{
 			NextLexem();
-			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
-			{
-				PushErrorMessage();
-				return result;
-			}
-			NextLexem();
-
-			is_this= true;
 			mutability_modifier= MutabilityModifier::Immutable;
 		}
-		else if( it_->text == Keywords::this_ )
-		{
-			is_this= true;
+
+		if( it_->type == Lexem::Type::Identifier &&it_->text == Keywords::this_ )
 			NextLexem();
-		}
+		else
+			PushErrorMessage();
 
-		if( is_this )
+		const SrcLoc& src_loc= it_->src_loc;
+
+		std::string inner_reference_tag;
+		if( it_->type == Lexem::Type::Apostrophe )
+			inner_reference_tag= ParseInnerReferenceTag();
+
+		if( it_->type == Lexem::Type::Comma )
 		{
-			const SrcLoc& src_loc= it_->src_loc;
-
-			std::string inner_reference_tag;
-			if( it_->type == Lexem::Type::Apostrophe )
-				inner_reference_tag= ParseInnerReferenceTag();
-
-			if( it_->type == Lexem::Type::Comma )
-			{
-				NextLexem();
-				// Disallov constructions, like "fn f( mut this, ){}"
-				if( it_->type == Lexem::Type::BracketRight )
-					PushErrorMessage();
-			}
-
-			if( result.name.back().name == Keywords::constructor_ || result.name.back().name == Keywords::destructor_ )
-				mutability_modifier= MutabilityModifier::Mutable;
-
-			FunctionParam this_param( src_loc );
-			this_param.name= Keyword( Keywords::this_ );
-			this_param.mutability_modifier= mutability_modifier;
-			this_param.reference_modifier= ReferenceModifier::Reference;
-			this_param.reference_tag= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
-			this_param.inner_arg_reference_tag= std::move(inner_reference_tag);
-			params.push_back( std::move( this_param ) );
+			NextLexem();
+			// Disallov constructions, like "fn f( mut this, ){}"
+			if( it_->type == Lexem::Type::BracketRight )
+				PushErrorMessage();
 		}
+
+		if( result.name.back().name == Keywords::constructor_ || result.name.back().name == Keywords::destructor_ )
+			mutability_modifier= MutabilityModifier::Mutable;
+
+		FunctionParam this_param( src_loc );
+		this_param.name= Keyword( Keywords::this_ );
+		this_param.reference_modifier= reference_modifier;
+		this_param.mutability_modifier= mutability_modifier;
+		this_param.reference_tag= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
+		this_param.inner_arg_reference_tag= std::move(inner_reference_tag);
+		params.push_back( std::move( this_param ) );
 	}
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )

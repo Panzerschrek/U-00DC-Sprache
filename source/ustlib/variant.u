@@ -173,6 +173,36 @@ public:
 		return res;
 	}
 
+	// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.
+	// It is recommended to move variant value while calling this function.
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_move( byval mut this ) : T
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					unsafe
+					{
+						var T mut result= uninitialized;
+						memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( storage_ ), typeinfo</T/>.size_of );
+						unsafe( move_into_nowhere( move(this) ) );
+						return move(result);
+					}
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt; // Variant contains other type.
+	}
+
 	// "==" operators
 	// Use aslo "==" for value to variant comparison to avoid constly conversions to variant.
 
@@ -222,37 +252,6 @@ public:
 		return false;
 	}
 
-public: // Methods for internal usage.
-
-	// After this call destructor should not be called.
-	// Halts, if variant doesn't contain value of specified type.
-	template</ type T />
-	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
-	try_move_impl( mut this ) unsafe : T
-	{
-		auto mut cur_index= 0s;
-		for( & element : typeinfo</Y/>.elements_list )
-		{
-			static_if( same_type</ typeof(element.type)::src_type, T /> )
-			{
-				if( cur_index == size_type(index_) )
-				{
-					unsafe
-					{
-						var T mut result= uninitialized;
-						memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( storage_ ), typeinfo</T/>.size_of );
-						return move(result);
-					}
-				}
-			}
-			else
-			{
-				++cur_index;
-			}
-		}
-		halt; // Variant contains other type.
-	}
-
 private:
 	var variant_impl::TupleTypeProperties tuple_type_properties_= variant_impl::get_tuple_type_properties</Y/>();
 
@@ -264,18 +263,6 @@ private:
 		tuple_type_properties_.max_element_alignment
 		/> storage_;
 	u8 index_;
-}
-
-// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.
-// This is free function, because variant value needs to be destroyed after this call.
-// It is recommended to move variant value while valling this function.
-template</ type T, type Y />
-fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
-variant_try_move( variant</Y/> mut v ) : T
-{
-	var T mut res= unsafe( v.try_move_impl</T/>() );
-	unsafe( move_into_nowhere( move(v) ) );
-	return move(res);
 }
 
 namespace variant_impl

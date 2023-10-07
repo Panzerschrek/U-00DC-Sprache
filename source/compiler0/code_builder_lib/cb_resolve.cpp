@@ -58,6 +58,11 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 			REPORT_ERROR( ThisUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
 			return ErrorValue();
 		}
+		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), name_lookup.src_loc, Keyword( Keywords::this_ ) );
+			return ErrorValue();
+		}
 		return function_context.this_;
 	}
 	else if( name_lookup.name == Keywords::base_ )
@@ -65,6 +70,11 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		if( function_context.this_ == nullptr )
 		{
 			REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
+			return ErrorValue();
+		}
+		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), name_lookup.src_loc, Keyword( Keywords::base_ ) );
 			return ErrorValue();
 		}
 		const Class& class_= *function_context.this_->type.GetClassType();
@@ -298,12 +308,14 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 				}
 			}
 		}
+		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
+			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, Keyword( Keywords::this_ ) );
 
 		return AccessClassField( names, function_context, function_context.this_, *field, "TODO - field name", src_loc );
 	}
 	else if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= value.GetFunctionsSet() )
 	{
-		if( function_context.this_ != nullptr )
+		if( function_context.this_ != nullptr && !function_context.variables_state.NodeMoved( function_context.this_ ) )
 		{
 			// Trying add "this" to functions set, but only if whole "this" is available.
 			if( ( function_context.this_->type.GetClassType() == overloaded_functions_set->base_class ||
