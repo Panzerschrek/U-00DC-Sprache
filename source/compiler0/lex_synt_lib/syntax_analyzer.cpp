@@ -3306,14 +3306,11 @@ Function SyntaxAnalyzer::ParseFunction()
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
 		{
 			NextLexem();
-
 			mutability_modifier= MutabilityModifier::Immutable;
 		}
 
 		if( it_->type == Lexem::Type::Identifier &&it_->text == Keywords::this_ )
-		{
 			NextLexem();
-		}
 		else
 			PushErrorMessage();
 

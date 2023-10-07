@@ -1108,7 +1108,12 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 				for( const FunctionType::Param& param : function.type.params )
 				{
 					if( function.is_this_call && &param == &function.type.params.front() )
-						ss << Keyword( param.value_type == ValueType::ReferenceMut ? Keywords::mut_ : Keywords::imut_ ) << " " << Keyword( Keywords::this_ );
+					{
+						if( param.value_type == ValueType::Value )
+							ss << Keyword( Keywords::byval_ ) << " " << Keyword( Keywords::this_ );
+						else
+							ss << Keyword( param.value_type == ValueType::ReferenceMut ? Keywords::mut_ : Keywords::imut_ ) << " " << Keyword( Keywords::this_ );
+					}
 					else
 					{
 						ss << param.type.ToString() << " ";
