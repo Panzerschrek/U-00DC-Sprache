@@ -297,7 +297,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function )
 {
-	NamesScope* actual_nams_scope= nullptr;
+	NamesScope* actual_names_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
 	const auto& name= function.name;
@@ -343,31 +343,34 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			if( value == nullptr )
 				return;
 
-			actual_nams_scope= nullptr;
+			actual_names_scope= nullptr;
 			if( const auto namespace_= value->value.GetNamespace() )
-				actual_nams_scope= namespace_.get();
+				actual_names_scope= namespace_.get();
 			else if( const auto type= value->value.GetTypeName() )
 			{
 				if( const auto class_= type->GetClassType() )
 				{
-					actual_nams_scope= class_->members.get();
+					actual_names_scope= class_->members.get();
 
 					if( i + 2 == name.size() )
 						base_class= class_;
 				}
 			}
 
-			if( actual_nams_scope == nullptr )
+			if( actual_names_scope == nullptr )
 				return;
 
 			if( name[i + 1].completion_requested )
 			{
-				NamesScopeFetchComleteForNamesScope( *actual_nams_scope, name[i + 1].name );
+				NamesScopeFetchComleteForNamesScope( *actual_names_scope, name[i + 1].name );
 				return;
 			}
 
-			value= actual_nams_scope->GetThisScopeValue( name[i + 1].name );
+			value= actual_names_scope->GetThisScopeValue( name[i + 1].name );
 		}
+
+		if( actual_names_scope == nullptr )
+			return;
 	}
 	else
 	{
@@ -378,7 +381,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		}
 
 		// Declaration/definition in current scope.
-		actual_nams_scope= &names_scope;
+		actual_names_scope= &names_scope;
 
 		base_class= names_scope.GetClass();
 	}
@@ -390,7 +393,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	const bool out_of_line_flag= false;
 
 	// Prepare function - complete names in types of params and return value.
-	const size_t function_index= PrepareFunction( *actual_nams_scope, base_class, functions_set, function, out_of_line_flag );
+	const size_t function_index= PrepareFunction( *actual_names_scope, base_class, functions_set, function, out_of_line_flag );
 
 	if( function_index >= functions_set.functions.size() )
 	{
@@ -407,7 +410,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	BuildFuncCode(
 		function_variable,
 		base_class,
-		*actual_nams_scope,
+		*actual_names_scope,
 		name.back().name,
 		function.type.params,
 		*function.block,

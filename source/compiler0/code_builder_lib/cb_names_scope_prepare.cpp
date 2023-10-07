@@ -376,7 +376,10 @@ void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const
 		}
 
 		if( value == nullptr )
+		{
 			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function.src_loc, function.name[i].name );
+			return;
+		}
 		if( i + 1 < function.name.size() )
 			CollectDefinition( *value, function.name[i].src_loc );
 	}
