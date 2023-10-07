@@ -30,3 +30,9 @@ V annotaçii sväzyvanija ssylok vozmožno toljko sväzyyvanije spiska i odnogo 
 
 Takže dlä nekotorogo koda vozmožno ponadobitjsä nekij avtovyvod tegov dlä vozvrata i sväzyvanija.
 Vozmožno etot funkçional možno objedinitj s postrojenijem funkçij s "auto" vozvrascajemym znacenijem.
+
+Možno voobsce, suscestvenno peresmotretj sposob zadanija ssylocnoj notaçii funkçij.
+Naprimer, možno zadavatj vozvrascajemyje ssylki i sväzyvanije kak "constexpr" vyraženija, sostojascije iz massivov/kortežej.
+Eti vyraženija možno zadavatj prämo v kode (ukazyvatj konstanty), ili vyzyvatj vycislenije "constexpr" funkçij dlä nih, jesli nužno cto-to složnoje.
+Pri etom možno ispoljzovatj çifrovyje i bukvennyje oboznacenija dlä nomerov parametrov i nomerov ih tegov.
+Eti že "constexpr" vyraženija (s nekoj normalizaçijej) možno zapisyvatj v "typeinfo" dlä tipov funkçij.
