@@ -3,7 +3,6 @@ compiler. Features are grouped and sorted by priority inside each group.
 Delete the features from the list as soon as they are implemented.
 
 General:
-*) by value this parameter
 *) build-in "for" for array types.
 *) Disassembly operator - declare variables with initializer as members of value of composite type.
 *) Function to function pointer assignment
@@ -18,6 +17,8 @@ General:
 *) More advanced macros - more context, elements, string manipulations
 *) switch-style operator for expression context
 *) thread-local variables
+*) A way to construct temporary variable with sequence initializer, struct named initializer,
+	etc. (in expression context)
 *) "nodiscard" for types (and/or) functions
 
 References:
@@ -87,6 +88,7 @@ Language server
 *) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
 *) Go to definition for non-value names - loop labels, reference tags, etc.
 *) Go to definition for macros
+*) Complete file names in "import"
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
 *) Sort completed items using some kind of prioroty
