@@ -535,7 +535,7 @@ def StructFieldChildNodes_Test28():
 			i32 x; f32 y;
 			fn Foo( mut this )
 			{
-				var f32 &mut y_ref= y;
+				var f32 &imut y_ref= y;
 				Bar(); // Error - creating mutable reference to "this" in call to thiscall method "Bar", when reference to one of "this" fields exists.
 			}
 			fn Bar( mut this ) {}
@@ -554,7 +554,7 @@ def StructFieldChildNodes_Test29():
 			fn Foo( mut this )
 			{
 				var f32 &mut y_ref= y;
-				Bar(); // Error - creating reference to "this" in call to thiscall method "Bar", when reference to one of "this" fields exists.
+				Bar(); // Error - creating reference to "this" in call to thiscall method "Bar", when mutable reference to one of "this" fields exists.
 			}
 			fn Bar( this ) {}
 		}
