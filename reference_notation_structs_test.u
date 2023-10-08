@@ -1,0 +1,48 @@
+// First char - param number from '0' up to '9'
+// Second char - '_' for arg reference itself, letters starting from 'a' for inner tags.
+type ReferenceNode= [ char8, 2 ];
+
+template</size_type S/>
+type ReferenceNodeList= [ ReferenceNode, S ];
+
+// Dst, src.
+type ReferencePollution= [ ReferenceNode, 2 ];
+
+// List of references pollution.
+// Basically it is just a list of pairs of reference nodes.
+template</ size_type S />
+type ReferencePollutionList= [ ReferencePollution, S ];
+
+// Simple return references.
+var tup[
+	ReferenceNodeList</2s/>,
+	tup[ ReferenceNodeList</1s/>, ReferenceNodeList</3s/> ] ]
+	c_some_function_return
+	[
+		[ "0a", "2b" ], // References of return reference.
+		[ [ "1_" ], [ "1b", "3b", "4_" ] ] // References of return inner tag.
+	];
+
+// Simple reference pollution:
+var ReferencePollutionList</3s/> c_some_function_pollution[ [ "0a", "0b" ], [ "2b", "3_" ], [ "3a", "5d" ] ];
+
+/*
+
+// Current function syntax:
+fn some_function( i32 x, f32 &mut y ) ' a <- b ' unsafe call_colv( "C" ) : SomeStruct &mut;
+
+// Suggested function sytnax:
+fn some_function( i32 x, f32 &mut y ) unsafe call_colv( "C" ) : SomeStruct &mut return_references( c_some_function_return ) reference_pollution( c_some_function_pollution );
+
+*/
+
+// It seems to be a good idea to remove old reference notation (with named tags) completely.
+// But auto-creation of return reference notation for simple cases still seems to be a good idea.
+
+// It's unclear which exact syntax to use for reference notation.
+// It seems to be resonable to use some keyword and expression in ().
+// Exact keyword names is not known yet.
+
+// It's also unclear how to specify return references - separare for reference and inner tags or with same structure.
+// It real application in may be rare to specify both return reference sets.
+// So it may be a good idea to use separate notation.
