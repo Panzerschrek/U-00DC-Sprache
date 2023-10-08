@@ -3844,6 +3844,7 @@ fn CodeBuilder::DoCallFunction(
 						lock.deref().push_back( move(out_error) );
 					}
 				}
+				return ErrorValue();
 			},
 		}
 	}

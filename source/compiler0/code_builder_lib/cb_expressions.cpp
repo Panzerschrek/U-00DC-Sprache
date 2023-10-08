@@ -3495,6 +3495,8 @@ Value CodeBuilder::DoCallFunction(
 			else
 				result->llvm_value= result->constexpr_value= evaluation_result.result_constant;
 		}
+		else
+			return ErrorValue(); // Should copy evaluation error later.
 	}
 	else if( function_context.is_functionless_context )
 	{}
