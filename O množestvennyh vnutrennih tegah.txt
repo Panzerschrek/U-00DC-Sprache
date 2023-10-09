@@ -36,3 +36,11 @@ Naprimer, možno zadavatj vozvrascajemyje ssylki i sväzyvanije kak "constexpr" 
 Eti vyraženija možno zadavatj prämo v kode (ukazyvatj konstanty), ili vyzyvatj vycislenije "constexpr" funkçij dlä nih, jesli nužno cto-to složnoje.
 Pri etom možno ispoljzovatj çifrovyje i bukvennyje oboznacenija dlä nomerov parametrov i nomerov ih tegov.
 Eti že "constexpr" vyraženija (s nekoj normalizaçijej) možno zapisyvatj v "typeinfo" dlä tipov funkçij.
+
+
+Sopostavlenije ssylocnyh polej i polej s tipami, soderžascimi ssylki vnutri, s ssylocnymi tegami tipa možno realizovatj sledujuscim obrazom:
+Dlä polej-ssylok ukazyvajutsä "constexpr" vyraženija tipa "char8", gde znacenije ot 'a' do 'z' oznacajet opredelönnyj nomer ssylocnogo tega.
+Dlä polej tipov, soderžascih vnutri ssylki, ukazyvajetsä drugoje vyraženije s massivom "char8".
+Kompilätor dolžen najti maksimaljnyj po porädku teg i otsleditj, ctoby ne bylo propuscennyh tegov.
+Takže kompilätor proverit, cto netu smešivanija "mut" i "imut" tegov.
+Podhod s "constexpr" pozvolit ukazyvatj tegi dlä šablonnyh kontejnerov lüboj složnosti.
