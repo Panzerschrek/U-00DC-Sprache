@@ -161,10 +161,7 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 
 	node_state.moved= true;
 	if( node_state.inner_reference != nullptr )
-	{
-		RemoveNode( node_state.inner_reference );
-		node_state.inner_reference= nullptr;
-	}
+		RemoveNodeLinks( node_state.inner_reference );
 
 	// Move child nodes first in order to replace links from children with links from parent.
 	for( const VariablePtr& child : node->children )
