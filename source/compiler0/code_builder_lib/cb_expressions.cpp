@@ -3705,6 +3705,11 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 		CreateLifetimeStart( function_context, variable->llvm_value );
 	}
 
+	if( type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.CreateNodeInnerReference(
+			variable,
+			type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+
 	{
 		const VariablePtr variable_for_initialization=
 			std::make_shared<Variable>(
@@ -3749,6 +3754,11 @@ VariablePtr CodeBuilder::ConvertVariable(
 			"temp " + dst_type.ToString() );
 
 	function_context.variables_state.AddNode( result );
+
+	if( dst_type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.CreateNodeInnerReference(
+			result,
+			dst_type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 	if( !function_context.is_functionless_context )
 	{

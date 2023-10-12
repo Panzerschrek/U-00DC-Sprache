@@ -228,6 +228,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Do not forget to remove node in case of error-return!!!
 			function_context.variables_state.AddNode( variable );
 
+			if( type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.CreateNodeInnerReference(
+					variable,
+					type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+
 			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, variable_declaration.name );
 
 			CreateLifetimeStart( function_context, variable->llvm_value );
@@ -430,6 +435,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				initializer_experrsion->constexpr_value /* constexpr preserved for move/copy. */ );
 
 		function_context.variables_state.AddNode( variable );
+
+		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.CreateNodeInnerReference(
+				variable,
+				initializer_experrsion->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 		if( initializer_experrsion->value_type == ValueType::Value &&
 			initializer_experrsion->location == Variable::Location::Pointer &&
@@ -828,6 +838,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						nullptr,
 						nullptr );
 				function_context.variables_state.AddNode( variable );
+
+				if( element_type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.CreateNodeInnerReference(
+						variable,
+						element_type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 				if( !EnsureTypeComplete( element_type ) )
 				{
@@ -1320,6 +1335,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				nullptr,
 				expr->constexpr_value /* constexpr preserved for move/copy. */ );
 		function_context.variables_state.AddNode( variable );
+
+		if( expr->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.CreateNodeInnerReference(
+				variable,
+				expr->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 		if( !variable->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
