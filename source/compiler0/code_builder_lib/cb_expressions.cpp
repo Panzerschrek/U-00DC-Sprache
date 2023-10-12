@@ -3557,7 +3557,7 @@ Value CodeBuilder::DoCallFunction(
 				function_context.variables_state.TryAddLink( args_nodes[arg_reference.first], result, names.GetErrors(), call_src_loc );
 			else
 				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
-					function_context.variables_state.TryAddLink( accesible_node, result,  names.GetErrors(), call_src_loc );
+					function_context.variables_state.TryAddLink( accesible_node, result, names.GetErrors(), call_src_loc );
 		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
@@ -3578,6 +3578,8 @@ Value CodeBuilder::DoCallFunction(
 	// Setup references after call.
 	for( const FunctionType::ReferencePollution& referene_pollution : function_type.references_pollution )
 	{
+		// Does it have sence, write references to value argument?
+
 		const size_t dst_arg= referene_pollution.dst.first;
 		U_ASSERT( dst_arg < function_type.params.size() );
 
@@ -3585,16 +3587,13 @@ Value CodeBuilder::DoCallFunction(
 		if( function_type.params[ dst_arg ].type.ReferencesTagsCount() == 0 )
 			continue;
 
-		bool src_variables_is_mut= false;
-		ReferencesGraph::NodesSet src_nodes;
 		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.params[ referene_pollution.src.first ].value_type != ValueType::Value );
-			src_nodes.emplace( args_nodes[ referene_pollution.src.first ] );
 
-			if( function_type.params[ referene_pollution.src.first ].value_type == ValueType::ReferenceMut )
-				src_variables_is_mut= true;
+			for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ dst_arg ] ) )
+				function_context.variables_state.TryAddLink( args_nodes[ referene_pollution.src.first ], inner_reference_node, names.GetErrors(), call_src_loc );
 		}
 		else
 		{
@@ -3604,33 +3603,11 @@ Value CodeBuilder::DoCallFunction(
 			if( function_type.params[ referene_pollution.src.first ].type.ReferencesTagsCount() == 0 )
 				continue;
 
-			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ referene_pollution.src.first ] ) )
-			{
-				src_nodes.insert( inner_reference );
-				if( inner_reference->value_type != ValueType::ReferenceImut )
-					src_variables_is_mut= true;
-			}
-		}
-
-		if( function_type.params[ dst_arg ].value_type != ValueType::Value && !src_nodes.empty() )
-		{
-			const bool dst_inner_reference_is_mut= function_type.params[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
-			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
-			const bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
-
-			for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ dst_arg ] ) )
-			{
-				if( ( inner_reference_node->value_type == ValueType::ReferenceMut  && !result_node_is_mut ) ||
-					( inner_reference_node->value_type == ValueType::ReferenceImut &&  result_node_is_mut ))
-					REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, inner_reference_node->name );
-
+			const auto src_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ referene_pollution.src.first ] );
+			const auto dst_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ dst_arg ] );
+			for( const VariablePtr& inner_reference_node : dst_nodes )
 				for( const VariablePtr& src_node : src_nodes )
 					function_context.variables_state.TryAddLink( src_node, inner_reference_node, names.GetErrors(), call_src_loc );
-			}
-		}
-		else
-		{
-			// Does it have sence, write references to value argument?
 		}
 	}
 
