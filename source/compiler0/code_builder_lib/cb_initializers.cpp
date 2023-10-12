@@ -1225,18 +1225,15 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Link references.
-	for( const VariablePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( variable ) )
+	for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
 	{
-		if( dst_variable_node->inner_reference_node != nullptr )
+		if( ( inner_reference_node->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
+			( inner_reference_node->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
 		{
-			if( ( dst_variable_node->inner_reference_node->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
-				( dst_variable_node->inner_reference_node->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
-			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, dst_variable_node->inner_reference_node->name );
-				return nullptr;
-			}
-			function_context.variables_state.TryAddLink( initializer_variable, dst_variable_node->inner_reference_node, block_names.GetErrors(), initializer_src_loc );
+			REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference_node->name );
+			return nullptr;
 		}
+		function_context.variables_state.TryAddLink( initializer_variable, inner_reference_node, block_names.GetErrors(), initializer_src_loc );
 	}
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );

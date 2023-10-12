@@ -3655,17 +3655,14 @@ Value CodeBuilder::DoCallFunction(
 			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 			const bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
 
-			for( const VariablePtr& dst_node : function_context.variables_state.GetAllAccessibleVariableNodes( args_nodes[ dst_arg ] ) )
+			for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ dst_arg ] ) )
 			{
-				if( dst_node->inner_reference_node != nullptr )
-				{
-					if( ( dst_node->inner_reference_node->value_type == ValueType::ReferenceMut  && !result_node_is_mut ) ||
-						( dst_node->inner_reference_node->value_type == ValueType::ReferenceImut &&  result_node_is_mut ))
-						REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, dst_node->inner_reference_node->name );
+				if( ( inner_reference_node->value_type == ValueType::ReferenceMut  && !result_node_is_mut ) ||
+					( inner_reference_node->value_type == ValueType::ReferenceImut &&  result_node_is_mut ))
+					REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, inner_reference_node->name );
 
-					for( const VariablePtr& src_node : src_nodes )
-						function_context.variables_state.TryAddLink( src_node, dst_node->inner_reference_node, names.GetErrors(), call_src_loc );
-				}
+				for( const VariablePtr& src_node : src_nodes )
+					function_context.variables_state.TryAddLink( src_node, inner_reference_node, names.GetErrors(), call_src_loc );
 			}
 		}
 		else
