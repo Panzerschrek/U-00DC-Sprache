@@ -1694,19 +1694,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( result_type.ReferencesTagsCount() > 0 )
 			{
-				const auto accessible_innder_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr_lock );
-				if( !accessible_innder_nodes.empty() )
-				{
-					bool inner_reference_is_mutable= false;
-					for( const VariablePtr& accessible_inner_node : accessible_innder_nodes )
-						inner_reference_is_mutable|= accessible_inner_node->value_type == ValueType::ReferenceMut;
+				const VariablePtr inner_node=
+					function_context.variables_state.CreateNodeInnerReference(
+						variable,
+						result_type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
-					const VariablePtr inner_node=
-						function_context.variables_state.CreateNodeInnerReference( variable, inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-
-					for( const VariablePtr& accessible_inner_node : accessible_innder_nodes )
-						function_context.variables_state.TryAddLink( accessible_inner_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );
-				}
+				for( const VariablePtr& accessible_inner_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr_lock ) )
+					function_context.variables_state.TryAddLink( accessible_inner_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );
 			}
 
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
