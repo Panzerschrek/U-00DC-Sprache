@@ -86,16 +86,16 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 	AddLink( from, to );
 }
 
-VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariableMutPtr& node, const ValueType value_type )
+VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariableMutPtr& node )
 {
-	U_ASSERT( value_type != ValueType::Value );
 	U_ASSERT( nodes_.find( node ) != nodes_.end() );
 	U_ASSERT( node->inner_reference_node == nullptr );
 
 	node->inner_reference_node=
 		std::make_shared<Variable>(
 			FundamentalType( U_FundamentalType::InvalidType ),
-			value_type,
+			// Mutability of inner reference node is determined only by type properties itself.
+			node->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
 			node->name + " inner reference" );
 

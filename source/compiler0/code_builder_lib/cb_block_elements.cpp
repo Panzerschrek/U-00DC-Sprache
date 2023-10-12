@@ -229,9 +229,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.variables_state.AddNode( variable );
 
 			if( type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.CreateNodeInnerReference(
-					variable,
-					type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+				function_context.variables_state.CreateNodeInnerReference( variable );
 
 			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, variable_declaration.name );
 
@@ -437,9 +435,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state.AddNode( variable );
 
 		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.CreateNodeInnerReference(
-				variable,
-				initializer_experrsion->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			function_context.variables_state.CreateNodeInnerReference( variable );
 
 		if( initializer_experrsion->value_type == ValueType::Value &&
 			initializer_experrsion->location == Variable::Location::Pointer &&
@@ -611,9 +607,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( expression_result->type.ReferencesTagsCount() > 0u )
 		{
-			function_context.variables_state.CreateNodeInnerReference(
-				return_value_node,
-				return_value_node->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			function_context.variables_state.CreateNodeInnerReference( return_value_node );
 
 			// Check correctness of returning references.
 			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
@@ -844,9 +838,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.AddNode( variable );
 
 				if( element_type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.CreateNodeInnerReference(
-						variable,
-						element_type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+					function_context.variables_state.CreateNodeInnerReference( variable );
 
 				if( !EnsureTypeComplete( element_type ) )
 				{
@@ -1340,10 +1332,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				expr->constexpr_value /* constexpr preserved for move/copy. */ );
 		function_context.variables_state.AddNode( variable );
 
-		if( expr->type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.CreateNodeInnerReference(
-				variable,
-				expr->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		if( variable->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.CreateNodeInnerReference( variable );
 
 		if( !variable->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -1694,10 +1684,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( result_type.ReferencesTagsCount() > 0 )
 			{
-				const VariablePtr inner_node=
-					function_context.variables_state.CreateNodeInnerReference(
-						variable,
-						result_type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+				const VariablePtr inner_node= function_context.variables_state.CreateNodeInnerReference( variable );
 
 				for( const VariablePtr& accessible_inner_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr_lock ) )
 					function_context.variables_state.TryAddLink( accessible_inner_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );

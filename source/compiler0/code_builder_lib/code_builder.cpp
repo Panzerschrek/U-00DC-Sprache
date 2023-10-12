@@ -1569,10 +1569,7 @@ Type CodeBuilder::BuildFuncCode(
 					arg_name + " referenced variable" );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference=
-				function_context.variables_state.CreateNodeInnerReference(
-					variable,
-					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference( variable );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;

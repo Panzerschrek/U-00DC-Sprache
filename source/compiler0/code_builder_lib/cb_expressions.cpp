@@ -762,9 +762,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	if( result->value_type == ValueType::Value && result->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference(
-			result,
-			result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		function_context.variables_state.CreateNodeInnerReference( result );
 
 	llvm::BasicBlock* result_block= nullptr;
 	llvm::BasicBlock* branches_basic_blocks[2]{nullptr, nullptr};
@@ -1259,9 +1257,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( result->type.ReferencesTagsCount() > 0 )
 	{
-		const auto inner_node= function_context.variables_state.CreateNodeInnerReference(
-			result,
-			result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result );
 
 		// We must save inner references of moved variable.
 		if( variable_for_move->inner_reference_node != nullptr )
@@ -1333,9 +1329,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	if( expression_result->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference(
-			result,
-			expression_result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		function_context.variables_state.CreateNodeInnerReference( result );
 
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc );
 
@@ -1569,9 +1563,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				if( variable_ptr->type.ReferencesTagsCount() > 0 )
 				{
-					const auto inner_node= function_context.variables_state.CreateNodeInnerReference(
-						variable_copy,
-						variable_copy->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+					const auto inner_node= function_context.variables_state.CreateNodeInnerReference( variable_copy );
 
 					if( variable_ptr->inner_reference_node != nullptr )
 						function_context.variables_state.AddLink( variable_ptr->inner_reference_node, inner_node );
@@ -3338,9 +3330,7 @@ Value CodeBuilder::DoCallFunction(
 				if( param.type.ReferencesTagsCount() > 0u )
 				{
 					const auto value_arg_inner_node=
-						function_context.variables_state.CreateNodeInnerReference(
-							arg_node,
-							param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+						function_context.variables_state.CreateNodeInnerReference( arg_node );
 
 					for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr ) )
 						function_context.variables_state.TryAddLink( inner_reference, value_arg_inner_node, names.GetErrors(), src_loc );
@@ -3572,35 +3562,8 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
 	{
-		bool inner_reference_is_mutable= false;
-
-		// First, know, what kind of reference we needs - mutable or immutable.
-		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
-		{
-			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
-			{
-				const auto node_kind= args_nodes[arg_reference.first]->value_type;
-
-				if( node_kind == ValueType::Value || node_kind == ValueType::ReferenceMut )
-					inner_reference_is_mutable= true;
-				else if( node_kind == ValueType::ReferenceImut ) {}
-				else U_ASSERT( false ); // Unexpected node kind.
-			}
-			else
-			{
-				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
-				{
-					if( accesible_node->value_type == ValueType::Value || accesible_node->value_type == ValueType::ReferenceMut )
-						inner_reference_is_mutable= true;
-					else if( accesible_node->value_type == ValueType::ReferenceImut ) {}
-					else U_ASSERT( false ); // Unexpected node kind.
-				}
-			}
-		}
-
-		// Then, create inner node and link input nodes with it.
-		const auto inner_reference_node=
-			function_context.variables_state.CreateNodeInnerReference( result, inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		// Create inner node and link input nodes with it.
+		const auto inner_reference_node= function_context.variables_state.CreateNodeInnerReference( result );
 
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
@@ -3711,9 +3674,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	}
 
 	if( type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference(
-			variable,
-			type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		function_context.variables_state.CreateNodeInnerReference( variable );
 
 	{
 		const VariablePtr variable_for_initialization=
@@ -3761,9 +3722,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 	function_context.variables_state.AddNode( result );
 
 	if( dst_type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference(
-			result,
-			dst_type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		function_context.variables_state.CreateNodeInnerReference( result );
 
 	if( !function_context.is_functionless_context )
 	{
