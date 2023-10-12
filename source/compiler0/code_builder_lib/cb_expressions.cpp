@@ -1247,7 +1247,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
 
-	const VariablePtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			variable_for_move->type,
 			ValueType::Value,
@@ -1554,7 +1554,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( variable_ptr->constexpr_value != nullptr )
 		{
-			const VariablePtr variable_copy=
+			const VariableMutPtr variable_copy=
 				std::make_shared<Variable>(
 				variable_ptr->type,
 				variable_ptr->value_type,
@@ -1570,8 +1570,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( variable_ptr->type.ReferencesTagsCount() > 0 )
 				{
 					const auto inner_node= function_context.variables_state.CreateNodeInnerReference(
-						variable_ptr,
-						variable_ptr->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+						variable_copy,
+						variable_copy->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 					if( const auto variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_ptr ) )
 						function_context.variables_state.AddLink( variable_inner_node, inner_node );
@@ -3291,14 +3291,15 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			args_nodes[arg_number]=
+			VariableMutPtr arg_node=
 				std::make_shared<Variable>(
 					param.type,
 					ValueType::Value,
 					Variable::Location::Pointer, // TODO - is this correct?
 					"value_arg_" + std::to_string(i) );
+			args_nodes[arg_number]= arg_node;
 
-			function_context.variables_state.AddNode( args_nodes[arg_number] );
+			function_context.variables_state.AddNode( arg_node );
 
 			if( !ReferenceIsConvertible( expr->type, param.type, names.GetErrors(), call_src_loc ) &&
 				!HasConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) )
@@ -3338,7 +3339,7 @@ Value CodeBuilder::DoCallFunction(
 				{
 					const auto value_arg_inner_node=
 						function_context.variables_state.CreateNodeInnerReference(
-							args_nodes[arg_number],
+							arg_node,
 							param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 					for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr ) )

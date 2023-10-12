@@ -587,7 +587,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	const VariablePtr return_value_node=
+	const VariableMutPtr return_value_node=
 		std::make_shared<Variable>(
 			*function_context.return_type,
 			function_context.function_type.return_value_type,

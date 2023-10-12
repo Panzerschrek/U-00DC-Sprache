@@ -25,7 +25,7 @@ public:
 	void TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	VariablePtr GetNodeInnerReference( const VariablePtr& node ) const;
-	VariablePtr CreateNodeInnerReference( const VariablePtr& node, ValueType kind );
+	VariablePtr CreateNodeInnerReference( const VariableMutPtr& node, ValueType kind );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
@@ -49,7 +49,6 @@ private:
 	struct NodeState
 	{
 		bool moved= false;
-		VariablePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 	};
 
 	struct Link

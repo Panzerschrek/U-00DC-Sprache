@@ -129,6 +129,9 @@ public:
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	mutable std::vector<VariablePtr> children;
 
+	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
+	VariablePtr inner_reference_node;
+
 public:
 	Variable()= default;
 	Variable(const Variable&)= delete;

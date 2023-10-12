@@ -37,8 +37,8 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 	if( nodes_.count(node) == 0 )
 		return;
 
-	if( const auto inner_reference= GetNodeInnerReference( node ) )
-		RemoveNode( inner_reference );
+	if( node->inner_reference_node != nullptr )
+		RemoveNode( node->inner_reference_node );
 
 	for( const VariablePtr& child : node->children )
 		if( child != nullptr )
@@ -88,30 +88,26 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 
 VariablePtr ReferencesGraph::GetNodeInnerReference( const VariablePtr& node ) const
 {
-	const auto it= nodes_.find( node );
-	U_ASSERT( it != nodes_.end() );
-	return it->second.inner_reference;
+	U_ASSERT( nodes_.find( node ) != nodes_.end() );
+	return node->inner_reference_node;
 }
 
-VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariablePtr& node, const ValueType value_type )
+VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariableMutPtr& node, const ValueType value_type )
 {
 	U_ASSERT( value_type != ValueType::Value );
+	U_ASSERT( nodes_.find( node ) != nodes_.end() );
+	U_ASSERT( node->inner_reference_node == nullptr );
 
-	const auto inner_node=
+	node->inner_reference_node=
 		std::make_shared<Variable>(
 			FundamentalType( U_FundamentalType::InvalidType ),
 			value_type,
 			Variable::Location::Pointer,
 			node->name + " inner reference" );
 
-	AddNode( inner_node );
+	AddNode( node->inner_reference_node );
 
-	const auto it= nodes_.find( node );
-	U_ASSERT( it != nodes_.end() );
-	U_ASSERT( it->second.inner_reference == nullptr );
-	it->second.inner_reference= inner_node;
-
-	return inner_node;
+	return node->inner_reference_node;
 }
 
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
@@ -157,11 +153,12 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 	U_ASSERT( nodes_.count(node) != 0 );
 
 	NodeState& node_state= nodes_[node];
-	U_ASSERT( !node_state.moved );
 
+	U_ASSERT( !node_state.moved );
 	node_state.moved= true;
-	if( node_state.inner_reference != nullptr )
-		RemoveNodeLinks( node_state.inner_reference );
+
+	if( node->inner_reference_node != nullptr )
+		RemoveNodeLinks( node->inner_reference_node );
 
 	// Move child nodes first in order to replace links from children with links from parent.
 	for( const VariablePtr& child : node->children )
@@ -246,8 +243,8 @@ void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
 
 	if( node->value_type == ValueType::Value )
 	{
-		if( auto inner_node= GetNodeInnerReference( node ) )
-			result_set.emplace( inner_node );
+		if( node->inner_reference_node != nullptr )
+			result_set.emplace( node->inner_reference_node );
 		return;
 	}
 
@@ -278,8 +275,6 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 
 			if( result_state.moved != src_state.moved )
 				REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
-
-			U_ASSERT( result_state.inner_reference == src_state.inner_reference ); // Should have same inner node or nullptr.
 		}
 
 		for( const auto& src_link : branch_state.links_ )
@@ -305,25 +300,22 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 
 	for( const auto& var_before : state_before.nodes_ )
 	{
-		U_ASSERT( state_after.nodes_.find( var_before.first ) != state_after.nodes_.end() );
-		const auto& var_after= *state_after.nodes_.find( var_before.first );
+		const VariablePtr& node=  var_before.first;
+		U_ASSERT( state_after.nodes_.find( node) != state_after.nodes_.end() );
+		const auto& var_after= *state_after.nodes_.find( node );
 
 		if( !var_before.second.moved && var_after.second.moved )
 			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
 
-		if( var_before.second.inner_reference != var_after.second.inner_reference )
+		if( node->inner_reference_node != nullptr )
 		{
-			U_ASSERT( false ); // Should have same inner node or nullptr.
-		}
-		else if( var_before.second.inner_reference != nullptr )
-		{
-			const NodesSet nodes_before= state_before.GetAllAccessibleVariableNodes( var_before.second.inner_reference );
-			NodesSet nodes_after= state_after.GetAllAccessibleVariableNodes( var_after.second.inner_reference );
+			const NodesSet nodes_before= state_before.GetAllAccessibleVariableNodes( node->inner_reference_node );
+			NodesSet nodes_after= state_after.GetAllAccessibleVariableNodes( node->inner_reference_node );
 			for( const auto& node : nodes_before )
 				nodes_after.erase(node);
 
 			for( const auto& node : nodes_after )
-				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, var_before.first->name, node->name );
+				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, node->name, node->name );
 		}
 	}
 	return errors;
