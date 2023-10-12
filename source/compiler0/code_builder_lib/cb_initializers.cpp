@@ -1227,15 +1227,15 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	// Link references.
 	for( const VariablePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( variable ) )
 	{
-		if( const VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node ) )
+		if( dst_variable_node->inner_reference_node != nullptr )
 		{
-			if( ( inner_reference->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
-				( inner_reference->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
+			if( ( dst_variable_node->inner_reference_node->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
+				( dst_variable_node->inner_reference_node->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
 			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
+				REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, dst_variable_node->inner_reference_node->name );
 				return nullptr;
 			}
-			function_context.variables_state.TryAddLink( initializer_variable, inner_reference, block_names.GetErrors(), initializer_src_loc );
+			function_context.variables_state.TryAddLink( initializer_variable, dst_variable_node->inner_reference_node, block_names.GetErrors(), initializer_src_loc );
 		}
 	}
 

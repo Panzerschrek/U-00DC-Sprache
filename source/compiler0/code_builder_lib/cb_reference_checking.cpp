@@ -222,14 +222,14 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 
 	for( const VariablePtr& dst_variable_node : dst_variable_nodes )
 	{
-		if( const VariablePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node ) )
+		if( dst_variable_node->inner_reference_node != nullptr )
 		{
-			if( ( dst_node_inner_reference->value_type == ValueType::ReferenceMut  && !node_is_mutable ) ||
-				( dst_node_inner_reference->value_type == ValueType::ReferenceImut &&  node_is_mutable ) )
-				REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
+			if( ( dst_variable_node->inner_reference_node->value_type == ValueType::ReferenceMut  && !node_is_mutable ) ||
+				( dst_variable_node->inner_reference_node->value_type == ValueType::ReferenceImut &&  node_is_mutable ) )
+				REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_variable_node->inner_reference_node->name );
 
 			for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-				function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference, errors_container, src_loc );
+				function_context.variables_state.TryAddLink( src_node_inner_reference, dst_variable_node->inner_reference_node, errors_container, src_loc );
 		}
 	}
 }
@@ -309,7 +309,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		const VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
+		const VariablePtr inner_reference= node_pair.first->inner_reference_node;
 		if( inner_reference == nullptr )
 			continue;
 

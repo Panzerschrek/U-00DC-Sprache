@@ -24,7 +24,6 @@ public:
 	// May emit ReferenceProtectionError.
 	void TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	VariablePtr GetNodeInnerReference( const VariablePtr& node ) const;
 	VariablePtr CreateNodeInnerReference( const VariableMutPtr& node, ValueType kind );
 
 	// Each access to variable must produce temporary reference to it.

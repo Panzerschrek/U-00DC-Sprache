@@ -1264,8 +1264,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 		// We must save inner references of moved variable.
-		if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move ) )
-			function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
+		if( variable_for_move->inner_reference_node != nullptr )
+			function_context.variables_state.AddLink( variable_for_move->inner_reference_node, inner_node );
 	}
 
 	// Move both reference node and variable node.
@@ -1573,8 +1573,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						variable_copy,
 						variable_copy->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
-					if( const auto variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_ptr ) )
-						function_context.variables_state.AddLink( variable_inner_node, inner_node );
+					if( variable_ptr->inner_reference_node != nullptr )
+						function_context.variables_state.AddLink( variable_ptr->inner_reference_node, inner_node );
 				}
 			}
 			else
@@ -3657,14 +3657,14 @@ Value CodeBuilder::DoCallFunction(
 
 			for( const VariablePtr& dst_node : function_context.variables_state.GetAllAccessibleVariableNodes( args_nodes[ dst_arg ] ) )
 			{
-				if( const VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node ) )
+				if( dst_node->inner_reference_node != nullptr )
 				{
-					if( ( inner_reference->value_type == ValueType::ReferenceMut  && !result_node_is_mut ) ||
-						( inner_reference->value_type == ValueType::ReferenceImut &&  result_node_is_mut ))
-						REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, inner_reference->name );
+					if( ( dst_node->inner_reference_node->value_type == ValueType::ReferenceMut  && !result_node_is_mut ) ||
+						( dst_node->inner_reference_node->value_type == ValueType::ReferenceImut &&  result_node_is_mut ))
+						REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, dst_node->inner_reference_node->name );
 
 					for( const VariablePtr& src_node : src_nodes )
-						function_context.variables_state.TryAddLink( src_node, inner_reference, names.GetErrors(), call_src_loc );
+						function_context.variables_state.TryAddLink( src_node, dst_node->inner_reference_node, names.GetErrors(), call_src_loc );
 				}
 			}
 		}

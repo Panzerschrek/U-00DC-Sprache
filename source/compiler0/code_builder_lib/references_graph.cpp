@@ -86,12 +86,6 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 	AddLink( from, to );
 }
 
-VariablePtr ReferencesGraph::GetNodeInnerReference( const VariablePtr& node ) const
-{
-	U_ASSERT( nodes_.find( node ) != nodes_.end() );
-	return node->inner_reference_node;
-}
-
 VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariableMutPtr& node, const ValueType value_type )
 {
 	U_ASSERT( value_type != ValueType::Value );
