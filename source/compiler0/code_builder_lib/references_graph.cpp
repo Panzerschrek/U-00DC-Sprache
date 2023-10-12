@@ -264,7 +264,8 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	ReferencesGraph result;
 	std::vector<CodeBuilderError> errors;
 
-	llvm::SmallVector< std::pair<VariablePtr, VariablePtr>, 16 > replaced_nodes; // First node replaced with second node.
+	// Number of nodes in different branches may be different - child nodes and global variable nodes may be added.
+
 	for( const ReferencesGraph& branch_state : branches_variables_state )
 	{
 		for( const auto& node_pair : branch_state.nodes_ )
@@ -273,29 +274,12 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 				result.nodes_[ node_pair.first ]= node_pair.second;
 
 			const NodeState& src_state= node_pair.second;
-			NodeState& result_state= result.nodes_[ node_pair.first ];
+			const NodeState& result_state= result.nodes_[ node_pair.first ];
 
 			if( result_state.moved != src_state.moved )
 				REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
 
-				 if( result_state.inner_reference == nullptr && src_state.inner_reference == nullptr ) {}
-			else if( result_state.inner_reference == nullptr && src_state.inner_reference != nullptr )
-			{
-				result.nodes_[ result_state.inner_reference ]= NodeState();
-				result_state.inner_reference= src_state.inner_reference;
-			}
-			else if( result_state.inner_reference != nullptr && src_state.inner_reference == nullptr ) {}
-			else if( result_state.inner_reference != src_state.inner_reference ) // both nonnull and different
-			{
-				// Variable inner reference created in multiple braches.
-
-				// If linked as mutable and as immutable in different branches - result is mutable.
-				if( ( result_state.inner_reference->value_type != ValueType::ReferenceMut && src_state.inner_reference->value_type == ValueType::ReferenceMut ) )
-					replaced_nodes.emplace_back( result_state.inner_reference, src_state.inner_reference );
-				// else - remove duplicated nodes with same kind.
-				else if( result_state.inner_reference != src_state.inner_reference )
-					replaced_nodes.emplace_back( src_state.inner_reference, result_state.inner_reference );
-			}
+			U_ASSERT( result_state.inner_reference == src_state.inner_reference ); // Should have same inner node or nullptr.
 		}
 
 		for( const auto& src_link : branch_state.links_ )
@@ -304,27 +288,6 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 				result.links_.insert( src_link );
 		}
 	}
-
-	if( !replaced_nodes.empty() )
-	{
-		LinksSet links_corrected;
-		for( auto link : result.links_ )
-		{
-			for( const auto& replaced_node : replaced_nodes )
-			{
-				if( link.src == replaced_node.first )
-					link.src = replaced_node.second;
-				if( link.dst == replaced_node.first )
-					link.dst= replaced_node.second;
-			}
-			if( link.src != link.dst )
-				links_corrected.insert(link);
-		}
-		result.links_= std::move(links_corrected);
-	}
-
-	for( const auto& replaced_node_pair : replaced_nodes )
-		result.nodes_.erase( replaced_node_pair.first );
 
 	// Technically it's possible to create mutliple mutable references to same node or mutable reference + immutable reference.
 	// But this is not an error, actually, because only one reference is created in runtime (depending on executed branch).
@@ -338,7 +301,7 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 {
 	std::vector<CodeBuilderError> errors;
 
-	U_ASSERT( state_before.nodes_.size() <= state_after.nodes_.size() ); // Pollution can add nodes.
+	U_ASSERT( state_before.nodes_.size() <= state_after.nodes_.size() ); // Child nodes and global variable nodes may be added.
 
 	for( const auto& var_before : state_before.nodes_ )
 	{
@@ -348,18 +311,18 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 		if( !var_before.second.moved && var_after.second.moved )
 			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
 
-		if( var_before.second.inner_reference != var_after.second.inner_reference || // Reference pollution added first time
-			// Or accessible variables changed.
-			( var_before.second.inner_reference != nullptr &&
-			  state_before.GetAllAccessibleVariableNodes( var_before.second.inner_reference ) != state_after.GetAllAccessibleVariableNodes( var_after.second.inner_reference ) ) )
+		if( var_before.second.inner_reference != var_after.second.inner_reference )
 		{
-			NodesSet added_nodes= state_after.GetAllAccessibleVariableNodes( var_after.second.inner_reference );
-			if( var_before.second.inner_reference != nullptr )
-			{
-				for( const auto& node : state_before.GetAllAccessibleVariableNodes( var_before.second.inner_reference ) )
-					added_nodes.erase(node);
-			}
-			for( const auto& node : added_nodes )
+			U_ASSERT( false ); // Should have same inner node or nullptr.
+		}
+		else if( var_before.second.inner_reference != nullptr )
+		{
+			const NodesSet nodes_before= state_before.GetAllAccessibleVariableNodes( var_before.second.inner_reference );
+			NodesSet nodes_after= state_after.GetAllAccessibleVariableNodes( var_after.second.inner_reference );
+			for( const auto& node : nodes_before )
+				nodes_after.erase(node);
+
+			for( const auto& node : nodes_after )
 				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, var_before.first->name, node->name );
 		}
 	}
