@@ -222,19 +222,15 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 
 	for( const VariablePtr& dst_variable_node : dst_variable_nodes )
 	{
-		VariablePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
-		if( dst_node_inner_reference == nullptr )
+		if( const VariablePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node ) )
 		{
-			dst_node_inner_reference=
-				function_context.variables_state.CreateNodeInnerReference( dst_variable_node, node_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			if( ( dst_node_inner_reference->value_type == ValueType::ReferenceMut  && !node_is_mutable ) ||
+				( dst_node_inner_reference->value_type == ValueType::ReferenceImut &&  node_is_mutable ) )
+				REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
+
+			for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
+				function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference, errors_container, src_loc );
 		}
-
-		if( ( dst_node_inner_reference->value_type == ValueType::ReferenceMut  && !node_is_mutable ) ||
-			( dst_node_inner_reference->value_type == ValueType::ReferenceImut &&  node_is_mutable ) )
-			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
-
-		for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-			function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference, errors_container, src_loc );
 	}
 }
 

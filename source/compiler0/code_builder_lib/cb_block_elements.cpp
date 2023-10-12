@@ -609,9 +609,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		// Check correctness of returning references.
 		if( expression_result->type.ReferencesTagsCount() > 0u )
 		{
+			function_context.variables_state.CreateNodeInnerReference(
+				return_value_node,
+				return_value_node->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+
+			// Check correctness of returning references.
 			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
 			{
 				for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
