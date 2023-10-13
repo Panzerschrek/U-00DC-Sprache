@@ -208,6 +208,11 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 	return result;
 }
 
+void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, to, errors_container, src_loc );
+}
+
 void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	const VariablePtr& node,
 	NodesSet& visited_nodes_set,
@@ -254,6 +259,18 @@ void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
 
 	if( const VariablePtr parent= node->parent.lock() )
 		GetAccessibleVariableNodesInnerReferences_r( parent, visited_nodes_set, result_set );
+}
+
+void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	if( to->is_variable_inner_reference_node )
+		TryAddLink( from, to, errors_container, src_loc );
+	else
+	{
+		for( const Link& link : links_ )
+			if( link.dst == to )
+				TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, link.src, errors_container, src_loc );
+	}
 }
 
 ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc )

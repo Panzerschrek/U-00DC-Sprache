@@ -40,6 +40,10 @@ public:
 	NodesSet GetAccessibleVariableNodesInnerReferences( const VariablePtr& node ) const;
 	NodesSet GetNodeInputLinks( const VariablePtr& node ) const;
 
+	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
+	// Than create ling between "from" and this node.
+	void TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc );
 	static std::vector<CodeBuilderError> CheckWhileBlockVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
@@ -75,6 +79,8 @@ private:
 	void RemoveNodeLinks( const VariablePtr& node );
 	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAccessibleVariableNodesInnerReferences_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+
+	void TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 private:
 	std::unordered_map<VariablePtr, NodeState> nodes_;

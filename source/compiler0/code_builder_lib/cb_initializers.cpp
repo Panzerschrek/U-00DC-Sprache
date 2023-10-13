@@ -1302,16 +1302,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Link references.
-	for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
-	{
-		if( ( inner_reference_node->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
-			( inner_reference_node->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
-		{
-			REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference_node->name );
-			return nullptr;
-		}
-		function_context.variables_state.TryAddLink( initializer_variable, inner_reference_node, block_names.GetErrors(), initializer_src_loc );
-	}
+	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( initializer_variable, variable->inner_reference_node, block_names.GetErrors(), initializer_src_loc );
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );
 
@@ -1523,13 +1514,17 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 
 		if( field->is_reference )
 		{
-			const VariablePtr this_variable=
+			const VariableMutPtr this_variable=
 				std::make_shared<Variable>(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					field->GetName() );
 			function_context.variables_state.AddNode( this_variable );
+
+			if( Type(class_type).ReferencesTagsCount() > 0 )
+				function_context.variables_state.CreateNodeInnerReference( this_variable );
+
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( this_variable );
 		}

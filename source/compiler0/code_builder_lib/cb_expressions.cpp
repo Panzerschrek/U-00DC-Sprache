@@ -3627,8 +3627,9 @@ Value CodeBuilder::DoCallFunction(
 			continue;
 
 		const auto& src_node= referene_pollution.src.second == FunctionType::c_arg_reference_tag_number ? args_nodes[ referene_pollution.src.first ] : args_nodes[ referene_pollution.src.first ]->inner_reference_node;
-		for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ dst_arg ] ) )
-			function_context.variables_state.TryAddLink( src_node, inner_reference_node, names.GetErrors(), call_src_loc );
+		const auto& dst_inner_reference_node= args_nodes[ dst_arg ]->inner_reference_node;
+		if( src_node != nullptr && dst_inner_reference_node != nullptr )
+			function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_node, dst_inner_reference_node, names.GetErrors(), call_src_loc );
 	}
 
 	for( const VariablePtr& node : args_nodes )

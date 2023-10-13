@@ -1724,8 +1724,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				const VariablePtr inner_node= function_context.variables_state.CreateNodeInnerReference( variable );
 
-				for( const VariablePtr& accessible_inner_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr_lock ) )
-					function_context.variables_state.TryAddLink( accessible_inner_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );
+				if( coro_expr->inner_reference_node != nullptr )
+					function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );
 			}
 
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
@@ -1780,8 +1780,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable_reference->llvm_value= coroutine_reference_result;
 
-				for( const VariablePtr& internal_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr ) )
-					function_context.variables_state.TryAddLink( internal_reference_node, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				if( coro_expr->inner_reference_node != nullptr )
+					function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
 			}
 		}
 

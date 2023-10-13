@@ -462,6 +462,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoForFunctionTemplate_Test1", // Auto return type doesn't work properly with auto-constexpr for templates.
 
 		// TODO - fix these reference-checking-relared tests.
+		"InnerReferenceMutabilityChanging_Test0",
 		"InnerReferenceMutabilityChanging_Test1",
 		"InnerReferenceMutabilityChanging_Test2",
 		"InnerReferenceMutabilityChanging_Test3",

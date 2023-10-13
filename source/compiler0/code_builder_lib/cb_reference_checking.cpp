@@ -210,8 +210,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	if( dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
-	for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( dst_variable ) )
-		function_context.variables_state.TryAddLink( src_variable->inner_reference_node, inner_reference_node, errors_container, src_loc );
+	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_variable->inner_reference_node, dst_variable->inner_reference_node, errors_container, src_loc );
 }
 
 void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )

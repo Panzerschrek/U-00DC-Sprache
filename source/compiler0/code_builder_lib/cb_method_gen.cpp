@@ -150,7 +150,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		{
 			U_ASSERT( field->syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
 
-			const VariablePtr this_variable=
+			const VariableMutPtr this_variable=
 				std::make_shared<Variable>(
 					class_type,
 					ValueType::ReferenceMut,
@@ -158,6 +158,9 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 					field->GetName(),
 					this_llvm_value );
 			function_context.variables_state.AddNode( this_variable );
+
+			if( Type(class_type).ReferencesTagsCount() > 0 )
+				function_context.variables_state.CreateNodeInnerReference( this_variable );
 
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 
