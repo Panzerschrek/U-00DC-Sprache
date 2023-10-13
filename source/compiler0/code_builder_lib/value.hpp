@@ -132,6 +132,8 @@ public:
 	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
 	VariablePtr inner_reference_node;
 
+	bool is_variable_inner_reference_node= false;
+
 public:
 	Variable()= default;
 	Variable(const Variable&)= delete;
