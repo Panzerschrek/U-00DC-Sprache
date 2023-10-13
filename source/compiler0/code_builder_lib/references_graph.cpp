@@ -77,6 +77,8 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 
 void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
+	U_ASSERT( from != nullptr );
+	U_ASSERT( to != nullptr );
 	if( (to->value_type == ValueType::ReferenceMut && HaveOutgoingLinks( from ) ) ||
 		HaveOutgoingMutableNodes( from ) )
 	{

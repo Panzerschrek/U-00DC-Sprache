@@ -210,25 +210,8 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	if( dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
-	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( src_variable );
-	const ReferencesGraph::NodesSet dst_variable_nodes_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( dst_variable );
-
-	if( src_node_inner_references.empty() || dst_variable_nodes_inner_references.empty() )
-		return;
-
-	bool node_is_mutable= false;
-	for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-		node_is_mutable= node_is_mutable || src_node_inner_reference->value_type == ValueType::ReferenceMut;
-
-	for( const VariablePtr& inner_reference_node : dst_variable_nodes_inner_references )
-	{
-		if( ( inner_reference_node->value_type == ValueType::ReferenceMut  && !node_is_mutable ) ||
-			( inner_reference_node->value_type == ValueType::ReferenceImut &&  node_is_mutable ) )
-			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, inner_reference_node->name );
-
-		for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-			function_context.variables_state.TryAddLink( src_node_inner_reference, inner_reference_node, errors_container, src_loc );
-	}
+	for( const VariablePtr& inner_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( dst_variable ) )
+		function_context.variables_state.TryAddLink( src_variable->inner_reference_node, inner_reference_node, errors_container, src_loc );
 }
 
 void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )

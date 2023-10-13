@@ -1575,7 +1575,7 @@ Type CodeBuilder::BuildFuncCode(
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
-		const VariablePtr variable_reference=
+		const VariableMutPtr variable_reference=
 			std::make_shared<Variable>(
 				param.type,
 				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -1586,6 +1586,11 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddNode( variable_reference );
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
+		if( param.type.ReferencesTagsCount() > 0u )
+			function_context.variables_state.AddLink(
+				variable->inner_reference_node,
+				function_context.variables_state.CreateNodeInnerReference( variable_reference ) );
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{

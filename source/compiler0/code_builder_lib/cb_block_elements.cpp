@@ -216,6 +216,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				variable_declaration.name );
 		function_context.variables_state.AddNode( variable_reference );
 
+		if( type.ReferencesTagsCount() > 0u )
+			function_context.variables_state.CreateNodeInnerReference( variable_reference );
+
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const VariableMutPtr variable=
@@ -247,6 +250,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
 
+				if( type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.AddLink( variable->inner_reference_node, function_context.variables_state.CreateNodeInnerReference( variable_for_initialization ) );
+
 				variable->constexpr_value=
 					variable_declaration.initializer == nullptr
 						? ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names, function_context )
@@ -260,6 +266,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			prev_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
+
+			if( type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.TryAddLink( variable->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), variable_declaration.src_loc );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -319,6 +328,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			function_context.variables_state.TryAddLink( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
+			if( type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.TryAddLink( expression_result->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), variables_declaration.src_loc );
 		}
 		else U_ASSERT(false);
 
@@ -397,6 +408,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			initializer_experrsion->constexpr_value );
 	function_context.variables_state.AddNode( variable_reference );
 
+	if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.CreateNodeInnerReference( variable_reference );
+
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
 		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
@@ -417,6 +431,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
 		function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
+		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddLink( initializer_experrsion->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), auto_variable_declaration.src_loc );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -490,6 +506,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		prev_variables_storage.RegisterVariable( variable );
 
 		function_context.variables_state.AddLink( variable, variable_reference );
+
+		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddLink( variable->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), auto_variable_declaration.src_loc );
 	}
 	else U_ASSERT(false);
 
@@ -591,6 +610,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			"return value lock" );
 	function_context.variables_state.AddNode( return_value_node );
 
+	if( function_context.return_type->ReferencesTagsCount() > 0 )
+		function_context.variables_state.CreateNodeInnerReference( return_value_node );
+
 	llvm::Value* ret= nullptr;
 	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
@@ -607,8 +629,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( expression_result->type.ReferencesTagsCount() > 0u )
 		{
-			function_context.variables_state.CreateNodeInnerReference( return_value_node );
-
 			// Check correctness of returning references.
 			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
 			{
@@ -769,7 +789,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence, names, function_context );
 
-	const VariablePtr sequence_lock=
+	const VariableMutPtr sequence_lock=
 		std::make_shared<Variable>(
 			sequence_expression->type,
 			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -778,6 +798,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	function_context.variables_state.AddNode( sequence_lock );
 	function_context.variables_state.TryAddLink( sequence_expression, sequence_lock,  names.GetErrors(), range_for_operator.src_loc );
+
+	if( sequence_expression->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.TryAddLink(
+			sequence_expression->inner_reference_node,
+			function_context.variables_state.CreateNodeInnerReference( sequence_lock ),
+			names.GetErrors(),
+			range_for_operator.src_loc );
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
@@ -810,6 +837,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Do not forget to remove node in case of error-return!!!
 			function_context.variables_state.AddNode( variable_reference );
 
+			if( element_type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.CreateNodeInnerReference( variable_reference );
+
 			if( range_for_operator.reference_modifier == ReferenceModifier::Reference )
 			{
 				if( range_for_operator.mutability_modifier == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
@@ -824,6 +854,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
+				if( sequence_expression->type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.TryAddLink( sequence_lock->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), range_for_operator.src_loc );
 			}
 			else
 			{
@@ -879,6 +911,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				function_context.variables_state.AddLink( variable, variable_reference );
+				if( sequence_expression->type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 			}
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
@@ -1283,6 +1317,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Do not forget to remove node in case of error-return!!!
 	function_context.variables_state.AddNode( variable_reference );
 
+	if( expr->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.CreateNodeInnerReference( variable_reference );
+
 	if( with_operator.reference_modifier != ReferenceModifier::Reference &&
 		!EnsureTypeComplete( variable_reference->type ) )
 	{
@@ -1319,6 +1356,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, with_operator.variable_name, with_operator.src_loc, function_context );
 
 		function_context.variables_state.TryAddLink( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
+		if( expr->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddLink( expr->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), with_operator.src_loc );
 	}
 	else if( with_operator.reference_modifier == ReferenceModifier::None )
 	{
@@ -1388,6 +1427,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variables_storage.RegisterVariable( variable );
 
 		function_context.variables_state.AddLink( variable, variable_reference );
+		if( expr->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 	}
 	else U_ASSERT(false);
 

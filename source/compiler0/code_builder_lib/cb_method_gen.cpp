@@ -165,7 +165,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		}
 		else
 		{
-			const VariablePtr field_variable=
+			const VariableMutPtr field_variable=
 				std::make_shared<Variable>(
 					field->type,
 					ValueType::ReferenceMut,
@@ -174,6 +174,9 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
+
+			if( field->type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.CreateNodeInnerReference( field_variable );
 
 			if( field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
