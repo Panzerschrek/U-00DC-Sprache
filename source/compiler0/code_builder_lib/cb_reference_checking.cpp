@@ -261,8 +261,18 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	return std::move(res.first);
 }
 
+void CodeBuilder::CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
+{
+	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )
+		if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+}
+
 bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node )
 {
+	U_ASSERT( variable_node != nullptr );
+	U_ASSERT( variable_node->value_type == ValueType::Value );
+
 	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_references )
 	{
 		const size_t arg_n= param_and_tag.first;

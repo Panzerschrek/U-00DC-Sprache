@@ -625,14 +625,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		if( expression_result->type.ReferencesTagsCount() > 0u )
-		{
-			// Check correctness of returning references.
-			for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result->inner_reference_node ) )
-			{
-				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc );
-			}
-		}
+			CheckReturnedReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
 
 		// Setup references in order to catch errors, when referene to local variable is returned inside struct.
 		SetupReferencesInCopyOrMove( function_context, return_value_node, expression_result, names.GetErrors(), return_operator.src_loc );
@@ -727,12 +720,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
 		}
 
-		// Check correctness of returning reference.
-		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
-		{
-			if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc );
-		}
+		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
 		function_context.variables_state.AddLink( expression_result, return_value_node );
