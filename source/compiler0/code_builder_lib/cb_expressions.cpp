@@ -1595,7 +1595,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						function_context.variables_state.CreateNodeInnerReference( variable_copy ),
 						names.GetErrors(),
 						unsafe_expression.src_loc );
-
 			}
 			else
 				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc );
@@ -3601,7 +3600,7 @@ Value CodeBuilder::DoCallFunction(
 				function_context.variables_state.TryAddLink( src_node, result, names.GetErrors(), call_src_loc );
 		}
 	}
-	else if( function_type.return_type.ReferencesTagsCount() > 0u )
+	if( function_type.return_type.ReferencesTagsCount() > 0u )
 	{
 		// Create inner node and link input nodes with it.
 		const auto inner_reference_node= function_context.variables_state.CreateNodeInnerReference( result );

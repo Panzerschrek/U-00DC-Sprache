@@ -40,7 +40,7 @@ public:
 	NodesSet GetNodeInputLinks( const VariablePtr& node ) const;
 
 	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
-	// Than create ling between "from" and this node.
+	// Than create link between "from" and this node.
 	void TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;

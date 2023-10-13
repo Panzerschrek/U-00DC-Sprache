@@ -132,6 +132,8 @@ public:
 	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
 	VariablePtr inner_reference_node;
 
+	// Mark inner reference nodes of variables using this flag.
+	// Do this in order to stop references graph search on these nodes while performing reference pollution.
 	bool is_variable_inner_reference_node= false;
 
 public:
