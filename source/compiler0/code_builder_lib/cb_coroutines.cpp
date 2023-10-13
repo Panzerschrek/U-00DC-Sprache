@@ -352,13 +352,10 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 			// Check correctness of returning references.
 			if( expression_result->type.ReferencesTagsCount() > 0u )
 			{
-				for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
+				for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result->inner_reference_node ) )
 				{
-					for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
-					{
-						if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-							REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
-					}
+					if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+						REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
 				}
 			}
 

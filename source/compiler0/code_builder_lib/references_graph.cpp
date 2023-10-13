@@ -184,13 +184,6 @@ ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleVariableNodes( const 
 	return result_set;
 }
 
-ReferencesGraph::NodesSet ReferencesGraph::GetAccessibleVariableNodesInnerReferences( const VariablePtr& node ) const
-{
-	NodesSet visited_nodes_set, result_set;
-	GetAccessibleVariableNodesInnerReferences_r( node, visited_nodes_set, result_set );
-	return result_set;
-}
-
 ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr& node ) const
 {
 	NodesSet result;
@@ -234,31 +227,6 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 		GetAllAccessibleVariableNodes_r( parent, visited_nodes_set, result_set );
 
 	// Children nodes can't have input links. So, ignore them.
-}
-
-void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
-	const VariablePtr& node,
-	NodesSet& visited_nodes_set,
-	NodesSet& result_set ) const
-{
-	U_ASSERT( nodes_.find(node) != nodes_.end() );
-
-	if( !visited_nodes_set.insert(node).second )
-		return; // Already visited
-
-	if( node->value_type == ValueType::Value )
-	{
-		if( node->inner_reference_node != nullptr && node->inner_reference_node->is_variable_inner_reference_node )
-			result_set.emplace( node->inner_reference_node );
-		return;
-	}
-
-	for( const auto& link : links_ )
-		if( link.dst == node )
-			GetAccessibleVariableNodesInnerReferences_r( link.src, visited_nodes_set, result_set );
-
-	if( const VariablePtr parent= node->parent.lock() )
-		GetAccessibleVariableNodesInnerReferences_r( parent, visited_nodes_set, result_set );
 }
 
 void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
