@@ -37,7 +37,7 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 	if( nodes_.count(node) == 0 )
 		return;
 
-	if( node->inner_reference_node != nullptr )
+	if( node->inner_reference_node != nullptr && node->parent.lock() == nullptr )
 		RemoveNode( node->inner_reference_node );
 
 	for( const VariablePtr& child : node->children )
