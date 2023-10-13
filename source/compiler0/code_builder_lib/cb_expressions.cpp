@@ -1409,6 +1409,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_mut.src_loc );
 
+	if( var->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.TryAddLink(
+			var->inner_reference_node,
+			function_context.variables_state.CreateNodeInnerReference( result ),
+			names.GetErrors(),
+			cast_mut.src_loc );
+
 	RegisterTemporaryVariable( function_context, result );
 	return result;
 }
@@ -1442,6 +1449,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_imut.src_loc );
+
+	if( var->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.TryAddLink(
+			var->inner_reference_node,
+			function_context.variables_state.CreateNodeInnerReference( result ),
+			names.GetErrors(),
+			cast_imut.src_loc );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
