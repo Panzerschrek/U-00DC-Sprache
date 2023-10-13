@@ -420,15 +420,13 @@ def PassMutableReferenceTwoTimes_Tes4():
 		{
 			var i32 mut x= 0;
 			var S s{ .x= x };
-			auto& s0= s;
-			auto& s1= s;
-			Bar( s0, s1 );
+			Bar( s, s );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def PassMutableReferenceTwoTimes_Tes5():
@@ -439,15 +437,13 @@ def PassMutableReferenceTwoTimes_Tes5():
 		{
 			var i32 mut x= 0;
 			var S s{ .x= x };
-			auto& s0= s;
-			auto& s1= s;
-			Bar( s0, s1 );
+			Bar( s, s );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def PassMutableReferenceTwoTimes_Tes6():
