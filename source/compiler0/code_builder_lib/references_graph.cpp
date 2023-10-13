@@ -285,22 +285,25 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 
 	for( const auto& var_before : state_before.nodes_ )
 	{
-		const VariablePtr& node=  var_before.first;
+		const VariablePtr& node= var_before.first;
 		U_ASSERT( state_after.nodes_.find( node) != state_after.nodes_.end() );
 		const auto& var_after= *state_after.nodes_.find( node );
 
 		if( !var_before.second.moved && var_after.second.moved )
 			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
 
-		if( node->inner_reference_node != nullptr )
+		if( node->inner_reference_node != nullptr && node->value_type == ValueType::Value )
 		{
-			const NodesSet nodes_before= state_before.GetAllAccessibleVariableNodes( node->inner_reference_node );
-			NodesSet nodes_after= state_after.GetAllAccessibleVariableNodes( node->inner_reference_node );
+			// If this is a variable node with inner reference check if no input links was added in loop body.
+			// Reference nodes also may have inner reference nodes, but adding of input links (pollution) for them is not possible, so, ignore them.
+
+			const NodesSet nodes_before= state_before.GetNodeInputLinks( node->inner_reference_node );
+			NodesSet nodes_after= state_after.GetNodeInputLinks( node->inner_reference_node );
 			for( const auto& node : nodes_before )
 				nodes_after.erase(node);
 
-			for( const auto& node : nodes_after )
-				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, node->name, node->name );
+			for( const auto& newly_linked_node : nodes_after )
+				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, node->name, newly_linked_node->name );
 		}
 	}
 	return errors;
