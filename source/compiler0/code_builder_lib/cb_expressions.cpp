@@ -350,6 +350,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			U_ASSERT( fetch_result->constexpr_value != nullptr );
 			function_context.variables_state.AddNodeIfNotExists( fetch_result );
+			if( fetch_result->inner_reference_node != nullptr )
+				function_context.variables_state.AddNodeIfNotExists( fetch_result->inner_reference_node  );
+
 			if( variable->constexpr_value != nullptr )
 				return fetch_result; // Pass constexpr fetch result for constexpr typeinfo variable.
 			else
@@ -374,6 +377,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				function_context.variables_state.AddNode( non_constexpr_ref );
 				function_context.variables_state.TryAddLink( fetch_result, non_constexpr_ref, names.GetErrors(), member_access_operator.src_loc );
+
+				if( fetch_result->inner_reference_node != nullptr )
+					function_context.variables_state.TryAddLink(
+						fetch_result->inner_reference_node,
+						function_context.variables_state.CreateNodeInnerReference( non_constexpr_ref ),
+						names.GetErrors(),
+						member_access_operator.src_loc );
+
 				RegisterTemporaryVariable( function_context, non_constexpr_ref );
 				return non_constexpr_ref;
 			}
@@ -956,13 +967,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Create mutable reference node without any links. TODO - check if this is correct.
-	const VariablePtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			raw_pointer_type->element_type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
 			"$>(" + v->name + ")",
 			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
+
+	if( result->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.CreateNodeInnerReference( result );
 
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
@@ -1274,13 +1288,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	if( result->type.ReferencesTagsCount() > 0 )
-	{
-		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result );
-
-		// We must save inner references of moved variable.
-		if( variable_for_move->inner_reference_node != nullptr )
-			function_context.variables_state.AddLink( variable_for_move->inner_reference_node, inner_node );
-	}
+		function_context.variables_state.AddLink( variable_for_move->inner_reference_node, function_context.variables_state.CreateNodeInnerReference( result ) );
 
 	// Move both reference node and variable node.
 	function_context.variables_state.MoveNode( resolved_variable );
@@ -1480,6 +1488,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	BuildFullTypeinfo( type, var_ptr, root_namespace );
 
 	function_context.variables_state.AddNodeIfNotExists( var_ptr );
+	if( var_ptr->inner_reference_node != nullptr )
+		function_context.variables_state.AddNodeIfNotExists( var_ptr->inner_reference_node );
 
 	return var_ptr;
 }
@@ -1580,12 +1590,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( variable_ptr->value_type == ValueType::Value )
 			{
 				if( variable_ptr->type.ReferencesTagsCount() > 0 )
-				{
-					const auto inner_node= function_context.variables_state.CreateNodeInnerReference( variable_copy );
+					function_context.variables_state.TryAddLink(
+						variable_ptr->inner_reference_node,
+						function_context.variables_state.CreateNodeInnerReference( variable_copy ),
+						names.GetErrors(),
+						unsafe_expression.src_loc );
 
-					if( variable_ptr->inner_reference_node != nullptr )
-						function_context.variables_state.AddLink( variable_ptr->inner_reference_node, inner_node );
-				}
 			}
 			else
 				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc );
@@ -1729,6 +1739,8 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 			std::string( Keyword( Keywords::base_ ) ),
 			ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, c_base_field_index ) );
 
+	base->inner_reference_node= variable->inner_reference_node;
+
 	variable->children[ c_base_field_index ]= base;
 	base->parent= variable;
 
@@ -1745,12 +1757,12 @@ Value CodeBuilder::AccessClassField(
 	const std::string& field_name,
 	const SrcLoc& src_loc )
 {
-	const Class* const variabe_type_class= variable->type.GetClassType();
-	U_ASSERT( variabe_type_class != nullptr );
+	const Class* const variable_type_class= variable->type.GetClassType();
+	U_ASSERT( variable_type_class != nullptr );
 
 	if( field.class_ != variable->type )
 	{
-		if( variabe_type_class->base_class != nullptr )
+		if( variable_type_class->base_class != nullptr )
 		{
 			// Recursive try to access field in parent class.
 			return
@@ -1836,12 +1848,18 @@ Value CodeBuilder::AccessClassField(
 		if( variable->inner_reference_node != nullptr )
 			function_context.variables_state.TryAddLink( variable->inner_reference_node, result, names.GetErrors(), src_loc );
 
+		if( field.type.ReferencesTagsCount() > 0 )
+		{
+			// Hack for typeinfo classes, that can contain references to other typeinfo classes (with references inside).
+			function_context.variables_state.CreateNodeInnerReference( result );
+		}
+
 		RegisterTemporaryVariable( function_context, result );
 		return result;
 	}
 	else
 	{
-		variable->children.resize( variabe_type_class->llvm_type->getNumElements(), nullptr );
+		variable->children.resize( variable_type_class->llvm_type->getNumElements(), nullptr );
 		if( const auto prev_node= variable->children[ field.index ] )
 		{
 			function_context.variables_state.AddNodeIfNotExists( prev_node );
@@ -1919,7 +1937,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
-		const VariablePtr r_var_lock=
+		const VariableMutPtr r_var_lock=
 			std::make_shared<Variable>(
 				r_var_real->type,
 				ValueType::ReferenceMut,
@@ -1928,6 +1946,13 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				r_var_real->llvm_value );
 		function_context.variables_state.AddNode( r_var_lock );
 		function_context.variables_state.TryAddLink( r_var_real, r_var_lock, names.GetErrors(), src_loc );
+
+		if( r_var_real->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddLink(
+				r_var_real->inner_reference_node,
+				function_context.variables_state.CreateNodeInnerReference( r_var_lock ),
+				names.GetErrors(),
+				src_loc );
 
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariable();
 
@@ -1996,7 +2021,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	{
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 
-		const VariablePtr r_var_lock=
+		const VariableMutPtr r_var_lock=
 			std::make_shared<Variable>(
 				r_var->type,
 				ValueType::ReferenceImut,
@@ -2005,6 +2030,13 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				r_var->llvm_value );
 		function_context.variables_state.AddNode( r_var_lock );
 		function_context.variables_state.TryAddLink( r_var, r_var_lock, names.GetErrors(), src_loc );
+
+		if( r_var->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddLink(
+				r_var->inner_reference_node,
+				function_context.variables_state.CreateNodeInnerReference( r_var_lock ),
+				names.GetErrors(),
+				src_loc );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
@@ -2945,7 +2977,21 @@ Value CodeBuilder::DoReferenceCast(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
+	// Complete types required for both safe and unsafe casting.
+	// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
+	if( !EnsureTypeComplete( type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, type );
+		return ErrorValue();
+	}
+
 	const VariablePtr var= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+
+	if( !EnsureTypeComplete( var->type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, var->type );
+		return ErrorValue();
+	}
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -2955,6 +3001,14 @@ Value CodeBuilder::DoReferenceCast(
 			"cast</" + type.ToString() + "/>(" + var->name + ")" );
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), src_loc );
+
+	if( type.ReferencesTagsCount() > 0 )
+	{
+		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result );
+		// Source type may not contain references inside.
+		if( var->inner_reference_node != nullptr )
+			function_context.variables_state.TryAddLink( var->inner_reference_node, inner_node, names.GetErrors(), src_loc );
+	}
 
 	llvm::Value* src_value= var->llvm_value;
 	if( var->location == Variable::Location::LLVMRegister )
@@ -2970,14 +3024,6 @@ Value CodeBuilder::DoReferenceCast(
 		result->llvm_value= src_value;
 	else
 	{
-		// Complete types required for both safe and unsafe casting.
-		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
-		if( !EnsureTypeComplete( type ) )
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, type );
-
-		if( !EnsureTypeComplete( var->type ) )
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, var->type );
-
 		if( ReferenceIsConvertible( var->type, type, names.GetErrors(), src_loc ) )
 		{
 			if( !function_context.is_functionless_context )
@@ -3551,7 +3597,8 @@ Value CodeBuilder::DoCallFunction(
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
-			function_context.variables_state.TryAddLink( src_node, result, names.GetErrors(), call_src_loc );
+			if( src_node != nullptr )
+				function_context.variables_state.TryAddLink( src_node, result, names.GetErrors(), call_src_loc );
 		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
@@ -3562,7 +3609,8 @@ Value CodeBuilder::DoCallFunction(
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
-			function_context.variables_state.TryAddLink( src_node, inner_reference_node, names.GetErrors(), call_src_loc );
+			if( src_node != nullptr )
+				function_context.variables_state.TryAddLink( src_node, inner_reference_node, names.GetErrors(), call_src_loc );
 		}
 	}
 

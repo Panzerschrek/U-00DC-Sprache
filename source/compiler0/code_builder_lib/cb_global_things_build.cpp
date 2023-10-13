@@ -1106,6 +1106,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				Variable::Location::Pointer,
 				variable_declaration.name );
 
+		function_context.variables_state.AddNode( variable_reference );
+		if( type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.CreateNodeInnerReference( variable_reference );
+
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, variable_declaration.name, type, !is_mutable );
@@ -1125,8 +1129,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			function_context.variables_state.AddNode( variable );
 
+			if( type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.CreateNodeInnerReference( variable );
+
 			{
-				const VariablePtr variable_for_initialization=
+				const VariableMutPtr variable_for_initialization=
 					std::make_shared<Variable>(
 						type,
 						ValueType::ReferenceMut,
@@ -1135,6 +1142,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
+
+				if( type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.AddLink(
+						variable->inner_reference_node,
+						function_context.variables_state.CreateNodeInnerReference( variable_for_initialization ) );
 
 				if( variable_declaration.initializer != nullptr )
 					variable->constexpr_value= ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_declaration.initializer );
@@ -1241,6 +1253,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				auto_variable_declaration->name,
 				nullptr,
 				initializer_experrsion->constexpr_value );
+
+		function_context.variables_state.AddNode( variable_reference );
+		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.CreateNodeInnerReference( variable_reference );
 
 		if( !EnsureTypeComplete( variable_reference->type ) ) // Type completeness required for variable or reference declaration.
 		{
