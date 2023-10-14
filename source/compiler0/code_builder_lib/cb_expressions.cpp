@@ -3607,14 +3607,24 @@ Value CodeBuilder::DoCallFunction(
 	// Prepare result references.
 	if( function_type.return_value_type != ValueType::Value )
 	{
+		VariablePtr inner_reference_node;
+		if( function_type.return_type.ReferencesTagsCount() > 0u )
+			inner_reference_node= function_context.variables_state.CreateNodeInnerReference( result );
+
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
 			if( src_node != nullptr )
+			{
 				function_context.variables_state.TryAddLink( src_node, result, names.GetErrors(), call_src_loc );
+
+				// For now just assume that inner reference node of reference result points to inner reference node associated with given tag.
+				if( inner_reference_node != nullptr && src_node->inner_reference_node != nullptr )
+					function_context.variables_state.TryAddLink( src_node->inner_reference_node, inner_reference_node, names.GetErrors(), call_src_loc );
+			}
 		}
 	}
-	if( function_type.return_type.ReferencesTagsCount() > 0u )
+	else if( function_type.return_type.ReferencesTagsCount() > 0u )
 	{
 		// Create inner node and link input nodes with it.
 		const auto inner_reference_node= function_context.variables_state.CreateNodeInnerReference( result );
