@@ -243,7 +243,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		if( variable_entry.initializer == nullptr )
 			continue;
 
-		const VariableMutPtr variable=
+		const VariablePtr variable=
 			Variable::Create(
 				type,
 				ValueType::Value,
@@ -252,7 +252,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 		function_context.variables_state.AddNode( variable );
 
-		const VariableMutPtr variable_for_initialization=
+		const VariablePtr variable_for_initialization=
 			Variable::Create(
 				type,
 				ValueType::ReferenceMut,

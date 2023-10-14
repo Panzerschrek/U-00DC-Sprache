@@ -71,7 +71,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( array_type->element_type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				variable->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( array_member ),
+				array_member->inner_reference_node,
 				names.GetErrors(),
 				initializer.src_loc );
 
@@ -115,7 +115,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
-			const VariableMutPtr tuple_element=
+			const VariablePtr tuple_element=
 				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
@@ -129,7 +129,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					variable->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( tuple_element ),
+					tuple_element->inner_reference_node,
 					names.GetErrors(),
 					initializer.src_loc );
 
@@ -229,7 +229,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				InitializeReferenceField( variable, *field, member_initializer.initializer, names, function_context );
 		else
 		{
-			const VariableMutPtr struct_member=
+			const VariablePtr struct_member=
 				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
@@ -243,7 +243,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field->type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					variable->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( struct_member ),
+					struct_member->inner_reference_node,
 					names.GetErrors(),
 					initializer.src_loc );
 
@@ -277,7 +277,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 		else
 		{
-			const VariableMutPtr struct_member=
+			const VariablePtr struct_member=
 				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
@@ -291,7 +291,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field->type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					variable->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( struct_member ),
+					struct_member->inner_reference_node,
 					names.GetErrors(),
 					initializer.src_loc );
 
@@ -499,7 +499,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( array_type->element_type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				variable->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( array_member ),
+				array_member->inner_reference_node,
 				names.GetErrors(),
 				initializer.src_loc );
 
@@ -524,7 +524,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
-			const VariableMutPtr tuple_element=
+			const VariablePtr tuple_element=
 				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
@@ -538,7 +538,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					variable->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( tuple_element ),
+					tuple_element->inner_reference_node,
 					names.GetErrors(),
 					initializer.src_loc );
 
@@ -572,7 +572,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				continue;
 			}
 
-			const VariableMutPtr struct_member=
+			const VariablePtr struct_member=
 				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
@@ -586,7 +586,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field->type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					variable->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( struct_member ),
+					struct_member->inner_reference_node,
 					names.GetErrors(),
 					initializer.src_loc );
 
@@ -656,7 +656,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		if( array_type->element_type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				variable->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( array_member ),
+				array_member->inner_reference_node,
 				block_names.GetErrors(),
 				src_loc );
 
@@ -688,7 +688,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
-			const VariableMutPtr tuple_element=
+			const VariablePtr tuple_element=
 				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
@@ -702,7 +702,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					variable->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( tuple_element ),
+					tuple_element->inner_reference_node,
 					block_names.GetErrors(),
 					src_loc );
 
@@ -1133,7 +1133,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
-			const VariableMutPtr field_variable=
+			const VariablePtr field_variable=
 				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
@@ -1147,7 +1147,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( field->type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					this_->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( field_variable ),
+					field_variable->inner_reference_node,
 					names_scope.GetErrors(),
 					constructor_initialization_list.src_loc );
 
@@ -1210,7 +1210,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
-			const VariableMutPtr field_variable=
+			const VariablePtr field_variable=
 				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
@@ -1224,7 +1224,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( field->type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					this_->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( field_variable ),
+					field_variable->inner_reference_node,
 					names_scope.GetErrors(),
 					constructor_initialization_list.src_loc );
 
@@ -1514,16 +1514,13 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 
 		if( field->is_reference )
 		{
-			const VariableMutPtr this_variable=
+			const VariablePtr this_variable=
 				Variable::Create(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					field->GetName() );
 			function_context.variables_state.AddNode( this_variable );
-
-			if( Type(class_type).ReferencesTagsCount() > 0 )
-				function_context.variables_state.CreateNodeInnerReference( this_variable );
 
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( this_variable );

@@ -159,6 +159,15 @@ public:
 		std::string name= "",
 		llvm::Value* llvm_value= nullptr,
 		llvm::Constant* constexpr_value= nullptr );
+
+	static VariableMutPtr CreateChildNode(
+		const VariablePtr& parent,
+		Type type,
+		ValueType value_type,
+		Location location,
+		std::string name= "",
+		llvm::Value* llvm_value= nullptr,
+		llvm::Constant* constexpr_value= nullptr );
 };
 
 // Used for displaying of template args.

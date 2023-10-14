@@ -213,9 +213,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				variable_declaration.name );
 		function_context.variables_state.AddNode( variable_reference );
 
-		if( type.ReferencesTagsCount() > 0u )
-			function_context.variables_state.CreateNodeInnerReference( variable_reference );
-
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const VariableMutPtr variable=
@@ -227,9 +224,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			// Do not forget to remove node in case of error-return!!!
 			function_context.variables_state.AddNode( variable );
-
-			if( type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.CreateNodeInnerReference( variable );
 
 			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, variable_declaration.name );
 
@@ -248,7 +242,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
 
 				if( type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.AddLink( variable->inner_reference_node, function_context.variables_state.CreateNodeInnerReference( variable_for_initialization ) );
+					function_context.variables_state.AddLink( variable->inner_reference_node, variable_for_initialization->inner_reference_node );
 
 				variable->constexpr_value=
 					variable_declaration.initializer == nullptr
@@ -405,9 +399,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			initializer_experrsion->constexpr_value );
 	function_context.variables_state.AddNode( variable_reference );
 
-	if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( variable_reference );
-
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
 		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
@@ -446,9 +437,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				initializer_experrsion->constexpr_value /* constexpr preserved for move/copy. */ );
 
 		function_context.variables_state.AddNode( variable );
-
-		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.CreateNodeInnerReference( variable );
 
 		if( initializer_experrsion->value_type == ValueType::Value &&
 			initializer_experrsion->location == Variable::Location::Pointer &&
@@ -606,9 +594,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			Variable::Location::Pointer,
 			"return value lock" );
 	function_context.variables_state.AddNode( return_value_node );
-
-	if( function_context.return_type->ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( return_value_node );
 
 	llvm::Value* ret= nullptr;
 	if( function_context.function_type.return_value_type == ValueType::Value )
@@ -784,7 +769,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( sequence_expression->type.ReferencesTagsCount() > 0 )
 		function_context.variables_state.TryAddLink(
 			sequence_expression->inner_reference_node,
-			function_context.variables_state.CreateNodeInnerReference( sequence_lock ),
+			sequence_lock->inner_reference_node,
 			names.GetErrors(),
 			range_for_operator.src_loc );
 
@@ -819,9 +804,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Do not forget to remove node in case of error-return!!!
 			function_context.variables_state.AddNode( variable_reference );
 
-			if( element_type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.CreateNodeInnerReference( variable_reference );
-
 			if( range_for_operator.reference_modifier == ReferenceModifier::Reference )
 			{
 				if( range_for_operator.mutability_modifier == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
@@ -850,9 +832,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						nullptr,
 						nullptr );
 				function_context.variables_state.AddNode( variable );
-
-				if( element_type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.CreateNodeInnerReference( variable );
 
 				if( !EnsureTypeComplete( element_type ) )
 				{
@@ -1299,9 +1278,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Do not forget to remove node in case of error-return!!!
 	function_context.variables_state.AddNode( variable_reference );
 
-	if( expr->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( variable_reference );
-
 	if( with_operator.reference_modifier != ReferenceModifier::Reference &&
 		!EnsureTypeComplete( variable_reference->type ) )
 	{
@@ -1352,9 +1328,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				nullptr,
 				expr->constexpr_value /* constexpr preserved for move/copy. */ );
 		function_context.variables_state.AddNode( variable );
-
-		if( variable->type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.CreateNodeInnerReference( variable );
 
 		if( !variable->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -1707,10 +1680,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( result_type.ReferencesTagsCount() > 0 )
 			{
-				const VariablePtr inner_node= function_context.variables_state.CreateNodeInnerReference( variable );
-
 				if( coro_expr->inner_reference_node != nullptr )
-					function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );
+					function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, variable->inner_reference_node, names.GetErrors(), if_coro_advance.src_loc );
 			}
 
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?

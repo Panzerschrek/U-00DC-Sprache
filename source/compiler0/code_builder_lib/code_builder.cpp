@@ -1569,13 +1569,12 @@ Type CodeBuilder::BuildFuncCode(
 					arg_name + " referenced variable" );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference( variable );
-			function_context.variables_state.AddLink( accesible_variable, inner_reference );
+			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_node );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
-		const VariableMutPtr variable_reference=
+		const VariablePtr variable_reference=
 			Variable::Create(
 				param.type,
 				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -1588,9 +1587,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
 		if( param.type.ReferencesTagsCount() > 0u )
-			function_context.variables_state.AddLink(
-				variable->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( variable_reference ) );
+			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{

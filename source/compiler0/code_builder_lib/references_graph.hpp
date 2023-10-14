@@ -24,8 +24,6 @@ public:
 	// May emit ReferenceProtectionError.
 	void TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	VariablePtr CreateNodeInnerReference( const VariableMutPtr& node );
-
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
 	bool HaveOutgoingLinks( const VariablePtr& from ) const;

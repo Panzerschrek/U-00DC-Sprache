@@ -131,7 +131,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		// Lock variable. We must prevent modification of this variable in index calcualtion.
 		// Do not forget to unregister it in case of error-return!
-		const VariableMutPtr variable_lock=
+		const VariablePtr variable_lock=
 			Variable::Create(
 				variable->type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -143,7 +143,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( variable_lock->type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				variable->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( variable_lock ),
+				variable_lock->inner_reference_node,
 				names.GetErrors(),
 				indexation_operator.src_loc );
 
@@ -226,7 +226,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( result->type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				variable_lock->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( result ),
+				result->inner_reference_node,
 				names.GetErrors(),
 				indexation_operator.src_loc );
 
@@ -296,20 +296,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// Create variable child node.
 
 		const VariableMutPtr result=
-			Variable::Create(
+			Variable::CreateChildNode(
+				variable,
 				tuple_type->element_types[size_t(index_value)],
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				variable->name + "[" + std::to_string(index_value) + "]",
 				ForceCreateConstantIndexGEP( function_context, tuple_type->llvm_type, variable->llvm_value, uint32_t(index_value) ) );
 
-		result->inner_reference_node= variable->inner_reference_node;
-
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( uint32_t(index_value) );
 
 		variable->children[ size_t(index_value) ]= result;
-		result->parent= variable;
 
 		function_context.variables_state.AddNode( result );
 
@@ -366,7 +364,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				// So, typeinfo list pseudo-field behaves like immutable field.
 				// Doing so we prevent possible modification of returned variable, since it is de-facto global constant and thus can't be modified.
 
-				const VariableMutPtr non_constexpr_ref=
+				const VariablePtr non_constexpr_ref=
 					Variable::Create(
 						fetch_result->type,
 						ValueType::ReferenceImut,
@@ -381,7 +379,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( fetch_result->inner_reference_node != nullptr )
 					function_context.variables_state.TryAddLink(
 						fetch_result->inner_reference_node,
-						function_context.variables_state.CreateNodeInnerReference( non_constexpr_ref ),
+						non_constexpr_ref->inner_reference_node,
 						names.GetErrors(),
 						member_access_operator.src_loc );
 
@@ -788,9 +786,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Do not forget to remove node in case of error-return!!!
 	function_context.variables_state.AddNode( result );
 
-	if( result->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( result );
-
 	llvm::BasicBlock* result_block= nullptr;
 	llvm::BasicBlock* branches_basic_blocks[2]{nullptr, nullptr};
 
@@ -967,7 +962,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Create mutable reference node without any links. TODO - check if this is correct.
-	const VariableMutPtr result=
+	const VariablePtr result=
 		Variable::Create(
 			raw_pointer_type->element_type,
 			ValueType::ReferenceMut,
@@ -976,9 +971,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
 
 	function_context.variables_state.AddNode( result );
-
-	if( result->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( result );
 
 	RegisterTemporaryVariable( function_context, result );
 
@@ -1278,7 +1270,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
 
-	const VariableMutPtr result=
+	const VariablePtr result=
 		Variable::Create(
 			variable_for_move->type,
 			ValueType::Value,
@@ -1289,7 +1281,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	if( result->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.AddLink( variable_for_move->inner_reference_node, function_context.variables_state.CreateNodeInnerReference( result ) );
+		function_context.variables_state.AddLink( variable_for_move->inner_reference_node, result->inner_reference_node );
 
 	// Move both reference node and variable node.
 	function_context.variables_state.MoveNode( resolved_variable );
@@ -1355,9 +1347,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Copy content to new variable.
 	function_context.variables_state.AddNode( result );
 
-	if( expression_result->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( result );
-
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc );
 
 	if( !function_context.is_functionless_context )
@@ -1413,7 +1402,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( var->type.ReferencesTagsCount() > 0 )
 		function_context.variables_state.TryAddLink(
 			var->inner_reference_node,
-			function_context.variables_state.CreateNodeInnerReference( result ),
+			result->inner_reference_node,
 			names.GetErrors(),
 			cast_mut.src_loc );
 
@@ -1454,7 +1443,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( var->type.ReferencesTagsCount() > 0 )
 		function_context.variables_state.TryAddLink(
 			var->inner_reference_node,
-			function_context.variables_state.CreateNodeInnerReference( result ),
+			result->inner_reference_node,
 			names.GetErrors(),
 			cast_imut.src_loc );
 
@@ -1520,7 +1509,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	llvm::Constant* const constant= llvm::ConstantInt::getBool( llvm_context_, same );
 
-	const VariableMutPtr result=
+	const VariablePtr result=
 		Variable::Create(
 			bool_type_,
 			ValueType::Value,
@@ -1591,7 +1580,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( variable_ptr->constexpr_value != nullptr )
 		{
-			const VariableMutPtr variable_copy=
+			const VariablePtr variable_copy=
 				Variable::Create(
 				variable_ptr->type,
 				variable_ptr->value_type,
@@ -1607,7 +1596,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( variable_ptr->type.ReferencesTagsCount() > 0 )
 					function_context.variables_state.TryAddLink(
 						variable_ptr->inner_reference_node,
-						function_context.variables_state.CreateNodeInnerReference( variable_copy ),
+						variable_copy->inner_reference_node,
 						names.GetErrors(),
 						unsafe_expression.src_loc );
 			}
@@ -1746,17 +1735,15 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 	}
 
 	const VariableMutPtr base=
-		Variable::Create(
+		Variable::CreateChildNode(
+			variable,
 			variabe_type_class->base_class,
 			variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
 			std::string( Keyword( Keywords::base_ ) ),
 			ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, c_base_field_index ) );
 
-	base->inner_reference_node= variable->inner_reference_node;
-
 	variable->children[ c_base_field_index ]= base;
-	base->parent= variable;
 
 	function_context.variables_state.AddNode( base );
 
@@ -1865,7 +1852,12 @@ Value CodeBuilder::AccessClassField(
 		if( field.type.ReferencesTagsCount() > 0 )
 		{
 			// Hack for typeinfo classes, that can contain references to other typeinfo classes (with references inside).
-			function_context.variables_state.CreateNodeInnerReference( result );
+			result->inner_reference_node=
+				std::make_shared<Variable>(
+					FundamentalType( U_FundamentalType::InvalidType ),
+					ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					result->name + " inner reference" );
 		}
 
 		RegisterTemporaryVariable( function_context, result );
@@ -1885,20 +1877,18 @@ Value CodeBuilder::AccessClassField(
 		// Create variable child node.
 
 		const VariableMutPtr result=
-			Variable::Create(
+			Variable::CreateChildNode(
+				variable,
 				field.type,
 				( variable->value_type == ValueType::ReferenceMut && field.is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				variable->name + "." + field_name,
 				ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, field.index ) );
 
-		result->inner_reference_node= variable->inner_reference_node;
-
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( field.index );
 
 		variable->children[ field.index ]= result;
-		result->parent= variable;
 
 		function_context.variables_state.AddNode( result );
 
@@ -1951,7 +1941,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
-		const VariableMutPtr r_var_lock=
+		const VariablePtr r_var_lock=
 			Variable::Create(
 				r_var_real->type,
 				ValueType::ReferenceMut,
@@ -1964,7 +1954,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( r_var_real->type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				r_var_real->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( r_var_lock ),
+				r_var_lock->inner_reference_node,
 				names.GetErrors(),
 				src_loc );
 
@@ -2035,7 +2025,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	{
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 
-		const VariableMutPtr r_var_lock=
+		const VariablePtr r_var_lock=
 			Variable::Create(
 				r_var->type,
 				ValueType::ReferenceImut,
@@ -2048,7 +2038,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( r_var->type.ReferencesTagsCount() > 0 )
 			function_context.variables_state.TryAddLink(
 				r_var->inner_reference_node,
-				function_context.variables_state.CreateNodeInnerReference( r_var_lock ),
+				r_var_lock->inner_reference_node,
 				names.GetErrors(),
 				src_loc );
 
@@ -3018,10 +3008,9 @@ Value CodeBuilder::DoReferenceCast(
 
 	if( type.ReferencesTagsCount() > 0 )
 	{
-		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result );
 		// Source type may not contain references inside.
 		if( var->inner_reference_node != nullptr )
-			function_context.variables_state.TryAddLink( var->inner_reference_node, inner_node, names.GetErrors(), src_loc );
+			function_context.variables_state.TryAddLink( var->inner_reference_node, result->inner_reference_node, names.GetErrors(), src_loc );
 	}
 
 	llvm::Value* src_value= var->llvm_value;
@@ -3343,13 +3332,13 @@ Value CodeBuilder::DoCallFunction(
 			if( param.type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink(
 					expr->inner_reference_node,
-					function_context.variables_state.CreateNodeInnerReference( arg_node ),
+					arg_node->inner_reference_node,
 					names.GetErrors(),
 					src_loc );
 		}
 		else
 		{
-			VariableMutPtr arg_node=
+			VariablePtr arg_node=
 				Variable::Create(
 					param.type,
 					ValueType::Value,
@@ -3396,7 +3385,7 @@ Value CodeBuilder::DoCallFunction(
 				if( param.type.ReferencesTagsCount() > 0u )
 					function_context.variables_state.TryAddLink(
 						expr->inner_reference_node,
-						function_context.variables_state.CreateNodeInnerReference( arg_node ),
+						arg_node->inner_reference_node,
 						names.GetErrors(),
 						src_loc );
 
@@ -3487,14 +3476,14 @@ Value CodeBuilder::DoCallFunction(
 	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
 	const bool return_value_is_sret= FunctionTypeIsSRet( function_type );
 
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->type= function_type.return_type;
-	result->value_type= function_type.return_value_type;
-	result->name= "fn_result " + result->type.ToString();
+	const VariableMutPtr result= Variable::Create(
+		function_type.return_type,
+		function_type.return_value_type,
+		Variable::Location::Pointer, // Set later
+		"fn_result " + function_type.return_type.ToString() );
+
 	if( function_type.return_value_type != ValueType::Value )
-	{
 		result->location= Variable::Location::Pointer;
-	}
 	else
 	{
 		if( !EnsureTypeComplete( function_type.return_type ) )
@@ -3608,10 +3597,6 @@ Value CodeBuilder::DoCallFunction(
 	// Prepare result references.
 	if( function_type.return_value_type != ValueType::Value )
 	{
-		VariablePtr inner_reference_node;
-		if( function_type.return_type.ReferencesTagsCount() > 0u )
-			inner_reference_node= function_context.variables_state.CreateNodeInnerReference( result );
-
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
@@ -3620,21 +3605,19 @@ Value CodeBuilder::DoCallFunction(
 				function_context.variables_state.TryAddLink( src_node, result, names.GetErrors(), call_src_loc );
 
 				// For now just assume that inner reference node of reference result points to inner reference node associated with given tag.
-				if( inner_reference_node != nullptr && src_node->inner_reference_node != nullptr )
-					function_context.variables_state.TryAddLink( src_node->inner_reference_node, inner_reference_node, names.GetErrors(), call_src_loc );
+				if( result->inner_reference_node != nullptr && src_node->inner_reference_node != nullptr )
+					function_context.variables_state.TryAddLink( src_node->inner_reference_node, result->inner_reference_node, names.GetErrors(), call_src_loc );
 			}
 		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
 	{
 		// Create inner node and link input nodes with it.
-		const auto inner_reference_node= function_context.variables_state.CreateNodeInnerReference( result );
-
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
 			if( src_node != nullptr )
-				function_context.variables_state.TryAddLink( src_node, inner_reference_node, names.GetErrors(), call_src_loc );
+				function_context.variables_state.TryAddLink( src_node, result->inner_reference_node, names.GetErrors(), call_src_loc );
 		}
 	}
 
@@ -3695,11 +3678,8 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 		CreateLifetimeStart( function_context, variable->llvm_value );
 	}
 
-	if( type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( variable );
-
 	{
-		const VariableMutPtr variable_for_initialization=
+		const VariablePtr variable_for_initialization=
 			Variable::Create(
 				type,
 				ValueType::ReferenceMut,
@@ -3710,7 +3690,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 		function_context.variables_state.AddLink( variable, variable_for_initialization );
 
 		if( type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.AddLink( variable->inner_reference_node, function_context.variables_state.CreateNodeInnerReference( variable_for_initialization ) );
+			function_context.variables_state.AddLink( variable->inner_reference_node, variable_for_initialization->inner_reference_node );
 
 		variable->constexpr_value= ApplyConstructorInitializer( variable_for_initialization, synt_args, src_loc, names, function_context );
 
@@ -3746,9 +3726,6 @@ VariablePtr CodeBuilder::ConvertVariable(
 
 	function_context.variables_state.AddNode( result );
 
-	if( dst_type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.CreateNodeInnerReference( result );
-
 	if( !function_context.is_functionless_context )
 	{
 		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
@@ -3759,7 +3736,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		// Create temp variables frame to prevent destruction of "src".
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const VariableMutPtr result_for_initialization=
+		const VariablePtr result_for_initialization=
 			Variable::Create(
 				dst_type,
 				ValueType::ReferenceMut,
@@ -3770,7 +3747,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		function_context.variables_state.AddLink( result, result_for_initialization );
 
 		if( dst_type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.AddLink( result->inner_reference_node, function_context.variables_state.CreateNodeInnerReference( result_for_initialization ) );
+			function_context.variables_state.AddLink( result->inner_reference_node, result_for_initialization->inner_reference_node );
 
 		DoCallFunction(
 			EnsureLLVMFunctionCreated( conversion_constructor ),

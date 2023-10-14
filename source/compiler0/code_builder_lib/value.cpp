@@ -52,15 +52,50 @@ Variable::Variable(
 }
 
 VariableMutPtr Variable::Create(
-	const Type type,
+	Type type,
 	const ValueType value_type,
 	const Location location,
-	const std::string name,
+	std::string name,
 	llvm::Value* const llvm_value,
 	llvm::Constant* const constexpr_value )
 {
-	// TODO - create inner reference node if it is necessary.
-	return std::make_shared<Variable>( type, value_type, location, std::move(name), llvm_value, constexpr_value );
+	auto result= std::make_shared<Variable>( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value );
+
+	if( result->type.ReferencesTagsCount() > 0 )
+	{
+		const auto inner_reference_node=
+			std::make_shared<Variable>(
+				FundamentalType( U_FundamentalType::InvalidType ),
+				// Mutability of inner reference node is determined only by type properties itself.
+				result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				result->name + " inner reference" );
+		inner_reference_node->is_variable_inner_reference_node= result->value_type == ValueType::Value;
+
+		result->inner_reference_node= inner_reference_node;
+	}
+
+	return result;
+}
+
+VariableMutPtr Variable::CreateChildNode(
+	const VariablePtr& parent,
+	Type type,
+	const ValueType value_type,
+	const Location location,
+	std::string name,
+	llvm::Value* const llvm_value,
+	llvm::Constant* const constexpr_value )
+{
+	U_ASSERT( parent != nullptr );
+	auto result= std::make_shared<Variable>( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value );
+	result->parent= parent;
+
+	// Child nodes reuse inner reference nodes of parents.
+	if( type.ReferencesTagsCount() > 0 )
+		result->inner_reference_node= parent->inner_reference_node;
+
+	return result;
 }
 
 std::string ConstantVariableToString( const TemplateVariableArg& variable )

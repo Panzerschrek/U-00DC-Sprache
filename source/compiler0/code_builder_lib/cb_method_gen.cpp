@@ -150,7 +150,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		{
 			U_ASSERT( field->syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
 
-			const VariableMutPtr this_variable=
+			const VariablePtr this_variable=
 				Variable::Create(
 					class_type,
 					ValueType::ReferenceMut,
@@ -159,16 +159,13 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 					this_llvm_value );
 			function_context.variables_state.AddNode( this_variable );
 
-			if( Type(class_type).ReferencesTagsCount() > 0 )
-				function_context.variables_state.CreateNodeInnerReference( this_variable );
-
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 
 			function_context.variables_state.RemoveNode( this_variable );
 		}
 		else
 		{
-			const VariableMutPtr field_variable=
+			const VariablePtr field_variable=
 				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
@@ -177,9 +174,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
-
-			if( field->type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.CreateNodeInnerReference( field_variable );
 
 			if( field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
