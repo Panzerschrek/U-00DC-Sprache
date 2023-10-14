@@ -975,10 +975,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			"$>(" + v->name + ")",
 			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
 
+	function_context.variables_state.AddNode( result );
+
 	if( result->type.ReferencesTagsCount() > 0 )
 		function_context.variables_state.CreateNodeInnerReference( result );
 
-	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
 	return result;
