@@ -830,3 +830,171 @@ def ReferenceFieldNode_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].src_loc.line == 10 )
+
+
+def ReferenceInnerReferenceNode_Test0():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref0= s; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			auto& s_ref1= s; // Create here inner reference node for "s_ref1". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test1():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref0= s; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			var S& s_ref1= s; // Create here inner reference node for "s_ref1". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test2():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_proxy_ref= s;
+			var S& s_ref0= s_proxy_ref; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			var S& s_ref1= s_proxy_ref; // Create here inner reference node for "s_ref1". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test3():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref0= s; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			cast_imut(s); // Create here inner reference node for result of "cast_imut". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test4():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( S& s0, S& s1 );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			Bar( s, s ); // Create here two inner reference nodes for two reference args, causing reference protection error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test5():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo( bool cond )
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			var i32 mut y= 0;
+			var S other_s{ .r= y };
+			auto& s_ref= s;
+			select( cond ? s : other_s ); // Create inner reference node for result of "select" and make to it link from "s". This is a second mutable link, which causes reference protection error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def ReferenceInnerReferenceNode_Test6():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( S& s );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref= s;
+			Bar( s ); // Create here inner reference node for arg node, causing creation of second mutable link to inner node of "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test7():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		struct T { S s; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var T t{ .s{ .r= x } };
+			auto& s_ref= t.s; // Create inner reference node, that is linked with "t" inner reference node.
+			auto& t_ref= t; // Create inner reference node, that is linked with "t" inner reference node (second mutable link).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test8():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		struct T { S s; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var T t{ .s{ .r= x } };
+			auto& t_ref= t; // Create inner reference node, that is linked with "t" inner reference node.
+			auto& s_ref= t.s; // Create inner reference node, that is linked with "t" inner reference node (second mutable link).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test9():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		struct T { S s; }
+		fn Bar( T& t, S& s );
+		fn Bar( S& s, T& t );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var T t{ .s{ .r= x } };
+			Bar( t, t.s ); // Create two inner nodes, linked with inner node of "t".
+			Bar( t.s, t ); // Create two inner nodes, linked with inner node of "t".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
