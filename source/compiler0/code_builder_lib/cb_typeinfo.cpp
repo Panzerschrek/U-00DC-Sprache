@@ -64,13 +64,6 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 			Variable::Location::Pointer,
 			"typeinfo</" + type.ToString() + "/>" );
 
-	result->inner_reference_node=
-		Variable::Create(
-			FundamentalType( U_FundamentalType::InvalidType ),
-			ValueType::ReferenceImut,
-			Variable::Location::Pointer,
-			result->name + " inner reference" );
-
 	result->constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
 	result->llvm_value= CreateGlobalConstantVariable( result->type, "", result->constexpr_value );
 
@@ -434,13 +427,6 @@ VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<Typei
 			result->type,
 			"", // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
 			initializer );
-
-	result->inner_reference_node=
-		Variable::Create(
-			FundamentalType( U_FundamentalType::InvalidType ),
-			ValueType::ReferenceImut,
-			Variable::Location::Pointer,
-			"typeinfo_list inner reference" );
 
 	return result;
 }

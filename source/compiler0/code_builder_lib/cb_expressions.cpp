@@ -1588,17 +1588,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			function_context.variables_state.AddNode( variable_copy );
 
-			if( variable_ptr->value_type == ValueType::Value )
-			{
-				if( variable_ptr->type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.TryAddLink(
-						variable_ptr->inner_reference_node,
-						variable_copy->inner_reference_node,
-						names.GetErrors(),
-						unsafe_expression.src_loc );
-			}
-			else
+			if( variable_ptr->value_type != ValueType::Value )
 				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc );
+			if( variable_ptr->type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.TryAddLink( variable_ptr->inner_reference_node, variable_copy->inner_reference_node, names.GetErrors(), unsafe_expression.src_loc );
 
 			function_context.variables_state.MoveNode( variable_ptr );
 
@@ -3301,7 +3294,7 @@ Value CodeBuilder::DoCallFunction(
 			}
 
 			// Lock references.
-			const auto arg_node=
+			const VariablePtr arg_node=
 				Variable::Create(
 				param.type,
 				param.value_type,
@@ -3320,7 +3313,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			VariablePtr arg_node=
+			const VariablePtr arg_node=
 				Variable::Create(
 					param.type,
 					ValueType::Value,
