@@ -348,8 +348,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			U_ASSERT( fetch_result->constexpr_value != nullptr );
 			function_context.variables_state.AddNodeIfNotExists( fetch_result );
-			if( fetch_result->inner_reference_node != nullptr )
-				function_context.variables_state.AddNodeIfNotExists( fetch_result->inner_reference_node  );
 
 			if( variable->constexpr_value != nullptr )
 				return fetch_result; // Pass constexpr fetch result for constexpr typeinfo variable.
@@ -757,10 +755,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->type= branches_types[0];
-	result->location= Variable::Location::Pointer;
-	result->name= Keyword( Keywords::select_ );
+	const VariableMutPtr result= Variable::Create(
+		branches_types[0],
+		ValueType::Value, // Set later
+		Variable::Location::Pointer,
+		std::string( Keyword( Keywords::select_ ) ) );
 	if( branches_value_types[0] == ValueType::Value || branches_value_types[1] == ValueType::Value )
 	{
 		result->value_type= ValueType::Value;
@@ -1492,8 +1491,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	BuildFullTypeinfo( type, var_ptr, root_namespace );
 
 	function_context.variables_state.AddNodeIfNotExists( var_ptr );
-	if( var_ptr->inner_reference_node != nullptr )
-		function_context.variables_state.AddNodeIfNotExists( var_ptr->inner_reference_node );
 
 	return var_ptr;
 }
@@ -1729,8 +1726,6 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 	if( const auto prev_node= variable->children[ c_base_field_index ] )
 	{
 		function_context.variables_state.AddNodeIfNotExists( prev_node );
-		if( prev_node->inner_reference_node != nullptr )
-			function_context.variables_state.AddNodeIfNotExists( prev_node->inner_reference_node );
 		return prev_node;
 	}
 
@@ -1849,17 +1844,6 @@ Value CodeBuilder::AccessClassField(
 		if( variable->inner_reference_node != nullptr )
 			function_context.variables_state.TryAddLink( variable->inner_reference_node, result, names.GetErrors(), src_loc );
 
-		if( field.type.ReferencesTagsCount() > 0 )
-		{
-			// Hack for typeinfo classes, that can contain references to other typeinfo classes (with references inside).
-			result->inner_reference_node=
-				std::make_shared<Variable>(
-					FundamentalType( U_FundamentalType::InvalidType ),
-					ValueType::ReferenceImut,
-					Variable::Location::Pointer,
-					result->name + " inner reference" );
-		}
-
 		RegisterTemporaryVariable( function_context, result );
 		return result;
 	}
@@ -1869,8 +1853,6 @@ Value CodeBuilder::AccessClassField(
 		if( const auto prev_node= variable->children[ field.index ] )
 		{
 			function_context.variables_state.AddNodeIfNotExists( prev_node );
-			if( prev_node->inner_reference_node != nullptr )
-				function_context.variables_state.AddNodeIfNotExists( prev_node->inner_reference_node );
 			return prev_node; // Child node already created.
 		}
 

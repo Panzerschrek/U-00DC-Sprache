@@ -346,8 +346,6 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		{
 			// Add global variable nodes lazily.
 			function_context.variables_state.AddNodeIfNotExists( variable );
-			if( variable->inner_reference_node != nullptr )
-				function_context.variables_state.AddNodeIfNotExists( variable->inner_reference_node );
 		}
 	}
 

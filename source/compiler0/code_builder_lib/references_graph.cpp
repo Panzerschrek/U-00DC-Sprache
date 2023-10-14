@@ -33,6 +33,9 @@ void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 {
 	if( nodes_.count( node ) == 0 )
 		nodes_.emplace( node, NodeState() );
+
+	if( node->inner_reference_node != nullptr )
+		AddNodeIfNotExists( node->inner_reference_node );
 }
 
 void ReferencesGraph::RemoveNode( const VariablePtr& node )
