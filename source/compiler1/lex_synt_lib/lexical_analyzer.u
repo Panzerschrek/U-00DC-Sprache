@@ -68,6 +68,8 @@ fn ParseIdentifier( Iterator &mut it ) : Lexem
 	var Lexem mut result;
 	result.lexem_type= Lexem::Type::Identifier;
 
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
+
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
@@ -92,6 +94,8 @@ fn ParseMacroUniqueIdentifier( Iterator &mut it ) : Lexem
 	it.drop_front(); // Skip '?'
 	it.drop_front(); // Skip '?'
 
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
+
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
@@ -114,6 +118,8 @@ fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 	result.lexem_type= Lexem::Type::MacroIdentifier;
 
 	it.drop_front(); // Skip '?'
+
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
 
 	while( !it.empty() )
 	{
@@ -532,6 +538,8 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 	var LexicalAnalysisResult mut result;
 
 	auto mut it= program_text;
+
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
 
 	if( !it.empty() && GetUTF8FirstChar(it) == char32(0xFEFF) )
 	{
