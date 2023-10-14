@@ -1498,7 +1498,7 @@ Type CodeBuilder::BuildFuncCode(
 		const std::string& arg_name= declaration_arg.name;
 
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				param.type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -1562,7 +1562,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			// Create inner node + root variable.
 			const VariablePtr accesible_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
@@ -1576,7 +1576,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				param.type,
 				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,

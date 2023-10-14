@@ -59,7 +59,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 
 		const VariableMutPtr array_member=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -116,7 +116,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
 			const VariableMutPtr tuple_element=
-				std::make_shared<Variable>(
+				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -230,7 +230,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 		{
 			const VariableMutPtr struct_member=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -278,7 +278,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 		{
 			const VariableMutPtr struct_member=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -487,7 +487,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	else if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
 		const VariableMutPtr array_member=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -525,7 +525,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			const VariableMutPtr tuple_element=
-				std::make_shared<Variable>(
+				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -573,7 +573,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 
 			const VariableMutPtr struct_member=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -644,7 +644,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	else if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
 		const VariableMutPtr array_member=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -689,7 +689,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			const VariableMutPtr tuple_element=
-				std::make_shared<Variable>(
+				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -1134,7 +1134,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
 			const VariableMutPtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -1211,7 +1211,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
 			const VariableMutPtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -1515,7 +1515,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 		if( field->is_reference )
 		{
 			const VariableMutPtr this_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -1531,7 +1531,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 		else
 		{
 			const VariablePtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,

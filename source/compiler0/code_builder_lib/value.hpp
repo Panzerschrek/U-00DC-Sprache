@@ -151,6 +151,14 @@ public:
 		std::string in_name= "",
 		llvm::Value* in_llvm_value= nullptr,
 		llvm::Constant* in_constexpr_value= nullptr );
+
+	static VariableMutPtr Create(
+		Type type,
+		ValueType value_type,
+		Location location,
+		std::string name= "",
+		llvm::Value* llvm_value= nullptr,
+		llvm::Constant* constexpr_value= nullptr );
 };
 
 // Used for displaying of template args.

@@ -549,7 +549,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			// Create global variable for given variable.
 			// We can't just use given variable itself, because its address may be local for instantiation point.
 			const VariablePtr variable_for_insertion=
-				std::make_shared<Variable>(
+				Variable::Create(
 					given_variable->type,
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
@@ -1249,7 +1249,7 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 			else if( const auto variable= std::get_if<TemplateVariableArg>( &known_template_arg ) )
 			{
 				const VariablePtr variable_for_insertion=
-					std::make_shared<Variable>(
+					Variable::Create(
 						variable->type,
 						ValueType::ReferenceImut,
 						Variable::Location::Pointer,

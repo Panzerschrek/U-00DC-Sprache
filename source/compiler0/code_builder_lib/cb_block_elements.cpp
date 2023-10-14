@@ -206,7 +206,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		const VariableMutPtr variable_reference =
-			std::make_shared<Variable>(
+			Variable::Create(
 				type,
 				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -219,7 +219,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const VariableMutPtr variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					type,
 					ValueType::Value,
 					Variable::Location::Pointer,
@@ -238,7 +238,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			{
 				const VariableMutPtr variable_for_initialization=
-					std::make_shared<Variable>(
+					Variable::Create(
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
@@ -396,7 +396,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	const VariableMutPtr variable_reference=
-		std::make_shared<Variable>(
+		Variable::Create(
 			initializer_experrsion->type,
 			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -437,7 +437,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				initializer_experrsion->type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -600,7 +600,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	const VariableMutPtr return_value_node=
-		std::make_shared<Variable>(
+		Variable::Create(
 			*function_context.return_type,
 			function_context.function_type.return_value_type,
 			Variable::Location::Pointer,
@@ -772,7 +772,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence, names, function_context );
 
 	const VariableMutPtr sequence_lock=
-		std::make_shared<Variable>(
+		Variable::Create(
 			sequence_expression->type,
 			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -806,7 +806,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
 			const VariableMutPtr variable_reference=
-				std::make_shared<Variable>(
+				Variable::Create(
 					element_type,
 					is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
@@ -842,7 +842,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				const VariableMutPtr variable=
-					std::make_shared<Variable>(
+					Variable::Create(
 						element_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
@@ -1289,7 +1289,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression, names, function_context );
 
 	const VariableMutPtr variable_reference=
-		std::make_shared<Variable>(
+		Variable::Create(
 			expr->type,
 			with_operator.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -1344,7 +1344,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else if( with_operator.reference_modifier == ReferenceModifier::None )
 	{
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				expr->type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -1587,7 +1587,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	 // TODO - maybe disallow this operator for temporary coroutines?
 	const VariableMutPtr coro_expr_lock=
-		std::make_shared<Variable>(
+		Variable::Create(
 			coro_expr->type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
@@ -1671,7 +1671,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const ValueType result_value_type= coroutine_type_description->return_value_type;
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				result_type,
 				if_coro_advance.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -1685,7 +1685,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Create variable for value result of coroutine.
 			is_variable= true;
 			const VariableMutPtr variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					result_type,
 					ValueType::Value,
 					Variable::Location::Pointer,
@@ -1727,7 +1727,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), if_coro_advance.src_loc, result_type );
 
 				const VariableMutPtr variable=
-					std::make_shared<Variable>(
+					Variable::Create(
 						result_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
@@ -2450,7 +2450,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			r_var=
-				std::make_shared<Variable>(
+				Variable::Create(
 					r_var->type,
 					ValueType::Value,
 					Variable::Location::LLVMRegister,

@@ -58,14 +58,14 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 {
 	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			typeinfo_class,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
 			"typeinfo</" + type.ToString() + "/>" );
 
 	result->inner_reference_node=
-		std::make_shared<Variable>(
+		Variable::Create(
 			FundamentalType( U_FundamentalType::InvalidType ),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -421,7 +421,7 @@ VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<Typei
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			std::move(list_type),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -436,7 +436,7 @@ VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<Typei
 			initializer );
 
 	result->inner_reference_node=
-		std::make_shared<Variable>(
+		Variable::Create(
 			FundamentalType( U_FundamentalType::InvalidType ),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,

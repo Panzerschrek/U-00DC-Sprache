@@ -31,7 +31,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 			REPORT_ERROR( ExpectedVariable, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), result.GetKindName() );
 
 		const VariablePtr dummy_result=
-			std::make_shared<Variable>(
+			Variable::Create(
 				invalid_type_,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -132,7 +132,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// Lock variable. We must prevent modification of this variable in index calcualtion.
 		// Do not forget to unregister it in case of error-return!
 		const VariableMutPtr variable_lock=
-			std::make_shared<Variable>(
+			Variable::Create(
 				variable->type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				variable->location,
@@ -181,7 +181,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc ); // Destroy temporaries of index expression.
 
 		const VariableMutPtr result=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -296,7 +296,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// Create variable child node.
 
 		const VariableMutPtr result=
-			std::make_shared<Variable>(
+			Variable::Create(
 				tuple_type->element_types[size_t(index_value)],
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -367,7 +367,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				// Doing so we prevent possible modification of returned variable, since it is de-facto global constant and thus can't be modified.
 
 				const VariableMutPtr non_constexpr_ref=
-					std::make_shared<Variable>(
+					Variable::Create(
 						fetch_result->type,
 						ValueType::ReferenceImut,
 						Variable::Location::Pointer,
@@ -482,7 +482,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// TODO - maybe not support unary minus for 8 and 16 bit integer types?
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			variable->type,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -529,7 +529,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			variable->type,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -570,7 +570,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			variable->type,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -623,7 +623,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( binary_operator.operator_type == BinaryOperatorType::NotEqual && call_variable->type == bool_type_ )
 			{
 				const VariableMutPtr variable=
-					std::make_shared<Variable>(
+					Variable::Create(
 						bool_type_,
 						ValueType::Value,
 						Variable::Location::LLVMRegister,
@@ -647,7 +647,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				IsSignedInteger( call_variable->type.GetFundamentalType()->fundamental_type ) )
 			{
 				const VariableMutPtr variable=
-					std::make_shared<Variable>(
+					Variable::Create(
 						bool_type_,
 						ValueType::Value,
 						Variable::Location::LLVMRegister,
@@ -691,7 +691,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		// Save l_var in register, because build-in binary operators require value-parameters.
 		l_var=
-			std::make_shared<Variable>(
+			Variable::Create(
 				l_var->type,
 				ValueType::Value,
 				Variable::Location::LLVMRegister,
@@ -936,7 +936,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	raw_pointer_type.llvm_type= llvm::PointerType::get( v->type.GetLLVMType(), 0u );
 
 	const VariablePtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			std::move(raw_pointer_type),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -968,7 +968,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Create mutable reference node without any links. TODO - check if this is correct.
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			raw_pointer_type->element_type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
@@ -1021,7 +1021,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -1052,7 +1052,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	U_UNUSED(names);
 	
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -1279,7 +1279,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			variable_for_move->type,
 			ValueType::Value,
 			variable_for_move->location,
@@ -1346,7 +1346,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Allocate variable for result.
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			expression_result->type,
 			ValueType::Value,
 			Variable::Location::Pointer,
@@ -1389,7 +1389,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const VariablePtr var= BuildExpressionCodeEnsureVariable( cast_mut.expression, names, function_context );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			var->type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
@@ -1429,7 +1429,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const VariablePtr var= BuildExpressionCodeEnsureVariable( cast_imut.expression, names, function_context );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			var->type,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -1521,7 +1521,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::Constant* const constant= llvm::ConstantInt::getBool( llvm_context_, same );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -1543,7 +1543,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -1592,7 +1592,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( variable_ptr->constexpr_value != nullptr )
 		{
 			const VariableMutPtr variable_copy=
-				std::make_shared<Variable>(
+				Variable::Create(
 				variable_ptr->type,
 				variable_ptr->value_type,
 				variable_ptr->location,
@@ -1746,7 +1746,7 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 	}
 
 	const VariableMutPtr base=
-		std::make_shared<Variable>(
+		Variable::Create(
 			variabe_type_class->base_class,
 			variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -1797,7 +1797,7 @@ Value CodeBuilder::AccessClassField(
 	if( field.is_reference )
 	{
 		const VariableMutPtr result=
-			std::make_shared<Variable>(
+			Variable::Create(
 				field.type,
 				field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				 Variable::Location::Pointer,
@@ -1885,7 +1885,7 @@ Value CodeBuilder::AccessClassField(
 		// Create variable child node.
 
 		const VariableMutPtr result=
-			std::make_shared<Variable>(
+			Variable::Create(
 				field.type,
 				( variable->value_type == ValueType::ReferenceMut && field.is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -1952,7 +1952,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
 		const VariableMutPtr r_var_lock=
-			std::make_shared<Variable>(
+			Variable::Create(
 				r_var_real->type,
 				ValueType::ReferenceMut,
 				r_var_real->location,
@@ -1986,7 +1986,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		}
 
 		const VariablePtr move_result=
-			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
+			Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 		return move_result;
 	}
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
@@ -2036,7 +2036,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 
 		const VariableMutPtr r_var_lock=
-			std::make_shared<Variable>(
+			Variable::Create(
 				r_var->type,
 				ValueType::ReferenceImut,
 				r_var->location,
@@ -2080,14 +2080,14 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.RemoveNode( r_var_lock );
 
 		const VariablePtr result=
-			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
+			Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 		return result;
 	}
 	else if( op == OverloadedOperator::CompareEqual )
 	{
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
 		const VariablePtr l_var_lock=
-			std::make_shared<Variable>(
+			Variable::Create(
 				l_var->type,
 				ValueType::ReferenceImut,
 				l_var->location,
@@ -2114,7 +2114,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		U_ASSERT( r_var->location == Variable::Location::Pointer );
 
 		const VariableMutPtr result=
-			std::make_shared<Variable>(
+			Variable::Create(
 				bool_type_,
 				ValueType::Value,
 				Variable::Location::LLVMRegister,
@@ -2940,7 +2940,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, names.GetErrors(), src_loc );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
@@ -3008,7 +3008,7 @@ Value CodeBuilder::DoReferenceCast(
 	}
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			type,
 			var->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut, // "ValueType" here converts into ConstReference
 			Variable::Location::Pointer,
@@ -3331,7 +3331,7 @@ Value CodeBuilder::DoCallFunction(
 
 			// Lock references.
 			const auto arg_node=
-				std::make_shared<Variable>(
+				Variable::Create(
 				param.type,
 				param.value_type,
 				Variable::Location::Pointer,
@@ -3350,7 +3350,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			VariableMutPtr arg_node=
-				std::make_shared<Variable>(
+				Variable::Create(
 					param.type,
 					ValueType::Value,
 					Variable::Location::Pointer, // TODO - is this correct?
@@ -3682,7 +3682,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, type );
 
 	const VariableMutPtr variable=
-		std::make_shared<Variable>(
+		Variable::Create(
 			type,
 			ValueType::Value,
 			Variable::Location::Pointer,
@@ -3700,7 +3700,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 
 	{
 		const VariableMutPtr variable_for_initialization=
-			std::make_shared<Variable>(
+			Variable::Create(
 				type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -3738,7 +3738,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 	conversion_constructor.referenced= true;
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			dst_type,
 			ValueType::Value,
 			Variable::Location::Pointer,
@@ -3760,7 +3760,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		const VariableMutPtr result_for_initialization=
-			std::make_shared<Variable>(
+			Variable::Create(
 				dst_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,

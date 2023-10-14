@@ -51,6 +51,18 @@ Variable::Variable(
 {
 }
 
+VariableMutPtr Variable::Create(
+	const Type type,
+	const ValueType value_type,
+	const Location location,
+	const std::string name,
+	llvm::Value* const llvm_value,
+	llvm::Constant* const constexpr_value )
+{
+	// TODO - create inner reference node if it is necessary.
+	return std::make_shared<Variable>( type, value_type, location, std::move(name), llvm_value, constexpr_value );
+}
+
 std::string ConstantVariableToString( const TemplateVariableArg& variable )
 {
 	if( variable.constexpr_value == nullptr )

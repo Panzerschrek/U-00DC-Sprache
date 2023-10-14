@@ -985,7 +985,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.src_loc );
 
 		const VariableMutPtr var=
-			std::make_shared<Variable>(
+			Variable::Create(
 				enum_,
 				ValueType::ReferenceImut,
 				Variable::Location::Pointer );
@@ -1100,7 +1100,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -1120,7 +1120,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 					: CreateGlobalConstantVariable( type, name_mangled );
 
 			const VariableMutPtr variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					type,
 					ValueType::Value,
 					Variable::Location::Pointer,
@@ -1134,7 +1134,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			{
 				const VariableMutPtr variable_for_initialization=
-					std::make_shared<Variable>(
+					Variable::Create(
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
@@ -1246,7 +1246,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				initializer_experrsion->type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,

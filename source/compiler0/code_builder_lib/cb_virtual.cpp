@@ -505,7 +505,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	// Cast "this" into type of class, where this virtual function is declared.
 	// This is needed to perform (possible) pointer correction later.
 	const VariableMutPtr this_casted=
-		std::make_shared<Variable>(
+		Variable::Create(
 			function_this_type,
 			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
