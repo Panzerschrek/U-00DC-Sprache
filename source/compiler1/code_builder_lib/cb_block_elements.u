@@ -591,13 +591,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				foreach( &inner_reference_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( expr_ptr ) )
 				{
-					foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
-					{
-						if( !IsReferenceAllowedForReturn( function_context, variable_node ) )
-						{
-							REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.src_loc )
-						}
-					}
+					CheckReturnedReferenceIsAllowed( names_scope, function_context, inner_reference_node, return_operator.src_loc );
 				}
 			}
 
@@ -682,13 +676,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				function_context.references_graph.RemoveNode( return_node );
 				return block_element_build_info;
 			}
-			foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( expr_ptr ) )
-			{
-				if( !IsReferenceAllowedForReturn( function_context, node ) )
-				{
-					REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.src_loc )
-				}
-			}
+
+			CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
 
 			// Link result with return node. This allow us to prevent returning of reference to local variable.
 			function_context.references_graph.AddLink( expr_ptr, return_node );
