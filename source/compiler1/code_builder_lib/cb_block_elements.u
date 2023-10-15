@@ -1146,13 +1146,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						inner_reference_is_mutable|= accessible_inner_node.lock_imut().deref().value_type == ValueType::ReferenceMut;
 					}
 
-					var VariablePtr inner_node=
-						function_context.references_graph.CreateNodeInnerReference( variable_ptr, select( inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-
-					foreach( &accessible_inner_node : accessible_innder_nodes )
-					{
-						function_context.references_graph.TryAddLink( accessible_inner_node, inner_node, names_scope, if_coro_advance_operator.src_loc );
-					}
+					// TODO - setup reference links here.
 				}
 			}
 		}

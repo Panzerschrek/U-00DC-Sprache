@@ -1254,32 +1254,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	auto address_of_reference= CreateClassFieldGEP( function_context, variable, field );
 	CreateTypedReferenceStore( function_context, field.t, reference_converted, address_of_reference );
 
-	{
-		var ReferencesGraph &mut references_graph= function_context.references_graph;
-
-		foreach( &dst_variable_node : references_graph.GetAllAccessibleVariableNodes( variable_ptr ) )
-		{
-			var VariableNullablePtr mut inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
-			if( inner_reference_node.empty() )
-			{
-				inner_reference_node= references_graph.CreateNodeInnerReference(
-					dst_variable_node,
-					select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-			}
-
-			var VariablePtr inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
-			auto inner_reference_value_type= inner_reference_node_non_null.lock_imut().deref().value_type;
-			if(
-				(  field.is_mutable && inner_reference_value_type != ValueType::ReferenceMut ) ||
-				( !field.is_mutable && inner_reference_value_type != ValueType::ReferenceImut ) )
-			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, initializer_src_loc, inner_reference_node_non_null.lock_imut().deref().name )
-			}
-
-			references_graph.TryAddLink( initializer_variable_ptr, inner_reference_node_non_null, names_scope, initializer_src_loc );
-
-		}
-	}
+	// TODO - setup references here.
 
 	// Destroy temporary variables after creating links to prevent destruction of variables, linked with initializer reference.
 	DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_expression_src_loc );

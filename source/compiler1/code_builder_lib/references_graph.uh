@@ -21,8 +21,6 @@ public:
 	// Produces error in case if this link violates reference protection rules.
 	fn TryAddLink( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
-	fn CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr;
-
 	fn MoveNode( mut this, VariablePtr& node );
 	fn NodeIsMoved( this, VariablePtr& node ) : bool;
 
@@ -31,8 +29,6 @@ public:
 
 	fn EnsureHaveNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 	fn EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
-
-	fn GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr;
 
 	type NodesSet= ust::unordered_set</VariablePtr/>;
 	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
@@ -57,7 +53,6 @@ private:
 private:
 	struct NodeState
 	{
-		VariableNullablePtr inner_reference_node; // May exists only in variable nodes.
 		bool moved;
 	}
 

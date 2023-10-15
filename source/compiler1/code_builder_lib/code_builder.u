@@ -1216,19 +1216,20 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 			if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
+				auto variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable();
+				function_context.references_graph.AddLink( variable_inner_reference_node, variable_reference_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+
 				var Variable mut accesible_variable
 				{
+					.t= type_param.t,
 					.value_type= ValueType::Value,
 					.location= Variable::Location::Pointer,
 					.name= in_param.name + " referenced variable"
 				};
-				var VariablePtr accesible_variable_ptr( move(accesible_variable) );
+				var VariablePtr accesible_variable_ptr= move(accesible_variable).CreatePtr();
 				function_context.references_graph.AddNode( accesible_variable_ptr );
 
-				var VariablePtr inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
-					variable_ptr,
-					select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-				function_context.references_graph.AddLink( accesible_variable_ptr, inner_reference_node );
+				function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
 
 				function_context.args_inner_variable_nodes[arg_n]= accesible_variable_ptr;
 			}
@@ -1811,7 +1812,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 		{
 			continue;
 		}
-		var VariableNullablePtr inner_reference_node= function_context.references_graph.GetNodeInnerReference( function_context.args_nodes[i].try_to_non_nullable() );
+		var VariableNullablePtr inner_reference_node= function_context.args_nodes[i].try_lock_imut().deref().inner_reference_node;
 		if( inner_reference_node.empty() )
 		{
 			continue;
@@ -1908,6 +1909,11 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 		return;
 	}
 
+	// TODO - fix this.
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( src_loc );
+
+	/*
 	var bool mut node_is_mutable= false;
 	foreach( &src_inner_reference_node : src_inner_reference_nodes )
 	{
@@ -1939,6 +1945,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 			references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node_non_null, names_scope, src_loc );
 		}
 	}
+	*/
 }
 
 fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool

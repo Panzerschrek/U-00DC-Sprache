@@ -375,7 +375,7 @@ struct Variable
 
 	fn CreatePtr( byval mut this ) : VariablePtr
 	{
-		auto inner_reference_kind= t.GetInnerReferenceKind();
+		auto inner_reference_kind= this.t.GetInnerReferenceKind();
 		if( inner_reference_kind != InnerReferenceKind::None )
 		{
 			// Create inner reference node.

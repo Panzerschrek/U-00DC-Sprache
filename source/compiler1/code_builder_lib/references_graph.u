@@ -17,6 +17,14 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 
 	var NodeState mut node_state{ .moved= false };
 	nodes_.insert( node, move(node_state) );
+
+	with( &node_val : node.lock_imut().deref() )
+	{
+		if( !node_val.inner_reference_node.empty() && node_val.parent.lock().empty() )
+		{
+			AddNode( node_val.inner_reference_node.try_to_non_nullable() );
+		}
+	}
 }
 
 fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
@@ -32,17 +40,19 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 		return;
 	}
 
-	var VariableNullablePtr inner_reference_node= nodes_[node].inner_reference_node;
-	if( !inner_reference_node.empty() )
+	with( &node_val : node.lock_imut().deref() )
 	{
-		RemoveNode( inner_reference_node.try_to_non_nullable() );
-	}
-
-	foreach( &child : node.lock_imut().deref().children )
-	{
-		if( !child.empty() )
+		if( !node_val.inner_reference_node.empty() && node_val.parent.lock().empty() )
 		{
-			RemoveNode( child.try_to_non_nullable() );
+			RemoveNode( node_val.inner_reference_node.try_to_non_nullable() );
+		}
+
+		foreach( &child : node_val.children )
+		{
+			if( !child.empty() )
+			{
+				RemoveNode( child.try_to_non_nullable() );
+			}
 		}
 	}
 
@@ -86,39 +96,22 @@ fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, Na
 	AddLink( from, to );
 }
 
-fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr
-{
-	debug_assert( value_type != ValueType::Value, "Creating inner reference node of value type!" );
-
-	var Variable mut node_src{ .value_type= value_type, .location= Variable::Location::Pointer, .name= node.lock_imut().deref().name + " inner reference" };
-	var VariablePtr inner_node( move(node_src) );
-
-	AddNode( inner_node );
-
-	var NodeState &mut dst_node= nodes_[node];
-	debug_assert( dst_node.inner_reference_node.empty(), "Inner reference node already exists!" );
-	dst_node.inner_reference_node= inner_node;
-
-	return inner_node;
-}
-
 fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
 	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 
-	var VariableNullablePtr mut inner_reference_node;
+	with( &mut node_state : nodes_[node] )
 	{
-		var NodeState &mut node= nodes_[node];
-		debug_assert( !node.moved, "Node is already moved!" );
-		node.moved= true;
-
-		inner_reference_node= node.inner_reference_node;
-		node.inner_reference_node.reset();
+		debug_assert( !node_state.moved, "Node is already moved!" );
+		node_state.moved= true;
 	}
 
-	if( !inner_reference_node.empty() )
+	with( &inner_reference_node : node.lock_imut().deref().inner_reference_node )
 	{
-		RemoveNode( inner_reference_node.try_to_non_nullable() );
+		if( !inner_reference_node.empty() )
+		{
+			RemoveNodeLinks( inner_reference_node.try_to_non_nullable() );
+		}
 	}
 
 	// Move child nodes first in order to replace links from children with links from parent.
@@ -212,12 +205,6 @@ fn ReferencesGraph::EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, N
 	}
 }
 
-fn ReferencesGraph::GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr
-{
-	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
-	return nodes_[node].inner_reference_node;
-}
-
 fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet
 {
 	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
@@ -268,7 +255,6 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 {
 	var ReferencesGraph mut result;
 
-	var ust::vector</NodeReplacement/> mut replaced_nodes;
 	foreach( &branch_state : branches )
 	{
 		foreach( &node_pair : branch_state.nodes_ )
@@ -281,35 +267,10 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 				result.nodes_.insert( node, src_node );
 			}
 
-			var NodeState &mut dst_node= result.nodes_[ node ];
+			var NodeState& dst_node= result.nodes_[ node ];
 			if( src_node.moved != dst_node.moved )
 			{
 				errors.push_back( ReportError( CodeBuilderErrorCode::ConditionalMove, src_loc, node.lock_imut().deref().name ) );
-			}
-
-			if( src_node.inner_reference_node == dst_node.inner_reference_node )
-			{} // ok - same nodes.
-			else if( dst_node.inner_reference_node.empty() )
-			{  // ok - dst have no node, take node from src.
-				dst_node.inner_reference_node= src_node.inner_reference_node;
-			}
-			else if( src_node.inner_reference_node.empty() )
-			{} // ok - src have no node.
-			else
-			{
-				// Node created in both branches.
-				// Take mutable node and replace it with immutable node.
-				if( src_node.inner_reference_node.try_lock_imut().deref().value_type == ValueType::ReferenceMut )
-				{
-					var NodeReplacement mut replacement{ .first= dst_node.inner_reference_node.try_to_non_nullable(), .second= src_node.inner_reference_node.try_to_non_nullable() };
-					dst_node.inner_reference_node= src_node.inner_reference_node;
-					replaced_nodes.push_back( move(replacement) );
-				}
-				else
-				{
-					var NodeReplacement mut replacement{ .first= src_node.inner_reference_node.try_to_non_nullable(), .second= dst_node.inner_reference_node.try_to_non_nullable() };
-					replaced_nodes.push_back( move(replacement) );
-				}
 			}
 		}
 
@@ -332,50 +293,6 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 		}
 	}
 
-	if( !replaced_nodes.empty() )
-	{
-		var ust::vector</Link/> mut links_corrected;
-		foreach( mut link : result.links_ )
-		{
-			foreach( &replacement : replaced_nodes )
-			{
-				if( link.src == replacement.first )
-				{
-					link.src = replacement.second;
-				}
-				if( link.dst == replacement.first )
-				{
-					link.dst= replacement.second;
-				}
-			}
-
-			var bool mut found= false;
-			foreach( &prev_link : links_corrected )
-			{
-				if( link == prev_link )
-				{
-					found= true;
-					break;
-				}
-			}
-
-			if( !found )
-			{
-				links_corrected.push_back( link );
-			}
-		}
-
-		result.links_= move(links_corrected);
-	}
-
-	foreach( &replacement : replaced_nodes )
-	{
-		if( !result.nodes_.find( replacement.first ).empty() )
-		{
-			result.nodes_.erase( replacement.first );
-		}
-	}
-
 	// See the comment in same code in Compiler0.
 
 	return move(result);
@@ -393,36 +310,7 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 			errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, src_loc, node_before_pair.key().lock_imut().deref().name ) );
 		}
 
-		if( node_before.inner_reference_node.empty() && node_after.inner_reference_node.empty() )
-		{
-			continue;
-		}
-
-		// TODO - what if inner variable node changed? What if links removed?
-		if( !node_after.inner_reference_node.empty() )
-		{
-			var NodesSet mut new_accessible_variables= state_after.GetAllAccessibleVariableNodes( node_after.inner_reference_node.try_to_non_nullable() );
-			if( !node_before.inner_reference_node.empty() )
-			{
-				foreach( &variable_node : state_before.GetAllAccessibleVariableNodes( node_before.inner_reference_node.try_to_non_nullable() ) )
-				{
-					if( new_accessible_variables.exists(variable_node) )
-					{
-						new_accessible_variables.drop( variable_node );
-					}
-				}
-			}
-
-			foreach( &added_node : new_accessible_variables )
-			{
-				errors.push_back(
-					ReportError(
-						CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable,
-						src_loc,
-						node_before_pair.key().lock_imut().deref().name,
-						added_node.lock_imut().deref().name ) );
-			}
-		}
+		// TODO - check for outer variables pollution.
 	}
 }
 
@@ -451,12 +339,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, No
 
 fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r( this, VariablePtr& node, NodesSet &mut out_nodes )
 {
-	var VariableNullablePtr inner_node= nodes_[node].inner_reference_node;
-	if( !inner_node.empty() )
-	{
-		out_nodes.insert( inner_node.try_to_non_nullable() );
-		return;
-	}
+	// TODO - remove this.
 
 	foreach( &link : links_ )
 	{

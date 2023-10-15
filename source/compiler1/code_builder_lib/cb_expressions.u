@@ -624,20 +624,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			};
 			var VariablePtr mut variable_copy_ptr= move(variable_copy).CreatePtr();
 			function_context.references_graph.AddNode( variable_copy_ptr );
-			if( variable.value_type == ValueType::Value )
-			{
-				var VariableNullablePtr inner_node= function_context.references_graph.GetNodeInnerReference( variable_ptr );
-				if( !inner_node.empty() )
-				{
-					var VariablePtr inner_node_non_null= inner_node.try_to_non_nullable();
-					var VariablePtr own_inner_node= function_context.references_graph.CreateNodeInnerReference( variable_copy_ptr, inner_node_non_null.lock_imut().deref().value_type );
-					function_context.references_graph.AddLink( inner_node_non_null, own_inner_node );
-				}
-			}
-			else
+
+			if( variable.value_type != ValueType::Value )
 			{
 				function_context.references_graph.TryAddLink( variable_ptr, variable_copy_ptr, names_scope, unsafe_expression.src_loc );
 			}
+
+			// TODO - setup references for inner nodes here.
+
 			function_context.references_graph.MoveNode( variable_ptr );
 
 			RegisterTemporaryVariable( function_context, variable_copy_ptr );
@@ -3589,21 +3583,7 @@ fn CodeBuilder::DoCallFunction(
 
 			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
-				var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_ptr );
-				var bool mut is_mutable= false;
-				foreach( &inner_reference : inner_references )
-				{
-					is_mutable |= inner_reference.lock_imut().deref().value_type == ValueType::ReferenceMut;
-				}
-
-				auto own_inner_reference= function_context.references_graph.CreateNodeInnerReference(
-					arg_node,
-					select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-
-				foreach( &inner_reference : inner_references )
-				{
-					function_context.references_graph.TryAddLink( inner_reference, own_inner_reference, names_scope, src_loc );
-				}
+				// TODO - setup references here.
 			}
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
@@ -3934,127 +3914,14 @@ fn CodeBuilder::DoCallFunction(
 	}
 	else if( function_type.return_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 	{
-		// First, know, what kind of reference we needs - mutable or immutable.
-		var bool mut inner_reference_is_mutable= false;
-		foreach( &param_reference : function_type.return_references )
-		{
-			var size_type i(param_reference.param_index);
-			auto& arg_node= args_nodes[i];
-			if( arg_node.empty() )
-			{
-				continue;
-			}
-			var VariablePtr arg_node_non_null= arg_node.try_to_non_nullable();
-
-			if( param_reference.reference_index == FunctionType::c_param_reference_number )
-			{
-				inner_reference_is_mutable |= arg_node_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut;
-			}
-			if( param_reference.reference_index == 0u8 )
-			{
-				foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_node_non_null ) )
-				{
-					inner_reference_is_mutable |= inner_node.lock_imut().deref().value_type == ValueType::ReferenceMut;
-				}
-			}
-		}
-
-		// Than, create inner node and link input nodes with it.
-		var VariablePtr inner_node=
-			function_context.references_graph.CreateNodeInnerReference(
-				result_ptr,
-				select( inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-
-		foreach( &param_reference : function_type.return_references )
-		{
-			var size_type i(param_reference.param_index);
-			auto& arg_node= args_nodes[i];
-			if( arg_node.empty() )
-			{
-				continue;
-			}
-			var VariablePtr arg_node_non_null= arg_node.try_to_non_nullable();
-
-			if( param_reference.reference_index == FunctionType::c_param_reference_number )
-			{
-				function_context.references_graph.TryAddLink( arg_node_non_null, inner_node, names_scope, src_loc );
-			}
-			if( param_reference.reference_index == 0u8 )
-			{
-				foreach( &dst_inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_node_non_null ) )
-				{
-					function_context.references_graph.TryAddLink( dst_inner_node_id, inner_node, names_scope, src_loc );
-				}
-			}
-		}
+		// TODO - setup references here.
 	}
 
 	// Setup references after call.
 	foreach( &reference_pollution : function_type.references_pollution )
 	{
-		var size_type dst_arg(reference_pollution.dst.param_index);
-		var size_type src_arg(reference_pollution.src.param_index);
-		if( function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::None ||
-			args_nodes[src_arg].empty() ||
-			args_nodes[dst_arg].empty() ||
-			function_type.params[ dst_arg ].value_type == ValueType::Value ) // Skip reference pollution for value params. TODO - is this correct?
-		{
-			continue;
-		}
-
-		var VariablePtr src_node= args_nodes[src_arg].try_to_non_nullable();
-		var VariablePtr dst_node= args_nodes[dst_arg].try_to_non_nullable();
-
-		var ReferencesGraph::NodesSet mut src_nodes;
-		var bool mut src_variables_is_mut= false;
-		if( reference_pollution.src.reference_index == FunctionType::c_param_reference_number )
-		{
-			// Reference-arg itself.
-			src_nodes.insert( src_node );
-			src_variables_is_mut= function_type.params[src_arg].value_type == ValueType::ReferenceMut;
-		}
-		else
-		{
-			// Variables, referenced by inner references_graph references.
-			src_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( src_node );
-
-			foreach( &node : src_nodes )
-			{
-				src_variables_is_mut|= node.lock_imut().deref().value_type == ValueType::ReferenceMut;
-			}
-		}
-
-		var bool dst_inner_reference_is_mut= function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::Mut;
-		// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
-		var bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
-
-		if( !src_nodes.empty() )
-		{
-			foreach( dst_node : function_context.references_graph.GetAllAccessibleVariableNodes( dst_node ) )
-			{
-				var VariableNullablePtr mut inner_reference_node= function_context.references_graph.GetNodeInnerReference( dst_node );
-				if( inner_reference_node.empty() )
-				{
-					inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
-						dst_node,
-						select( result_node_is_mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-				}
-
-				var VariablePtr inner_reference_node_no_null= inner_reference_node.try_to_non_nullable();
-				var ValueType inner_reference_node_value_type= inner_reference_node_no_null.lock_imut().deref().value_type;
-
-				if( (  result_node_is_mut && inner_reference_node_value_type == ValueType::ReferenceImut ) ||
-					( !result_node_is_mut && inner_reference_node_value_type == ValueType::ReferenceMut ) )
-				{
-					REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, inner_reference_node_no_null.lock_imut().deref().name )
-				}
-
-				foreach( & src_node : src_nodes )
-				{
-					function_context.references_graph.TryAddLink( src_node, inner_reference_node_no_null, names_scope, src_loc );
-				}
-			}
-		}
+		ust::ignore_unused(reference_pollution);
+		// TODO - setup references here.
 	}
 
 	// Remove temp nodes.
