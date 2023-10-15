@@ -358,6 +358,13 @@ struct Variable
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	ust::vector</VariableNullablePtr/> children;
 
+	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
+	VariableNullablePtr inner_reference_node;
+
+	// Mark inner reference nodes of variables using this flag.
+	// Do this in order to stop references graph search on these nodes while performing reference pollution.
+	bool is_variable_inner_reference_node= false;
+
 	bool referenced= false;
 
 	// This struct is non-copyable.
@@ -368,7 +375,27 @@ struct Variable
 
 	fn CreatePtr( byval mut this ) : VariablePtr
 	{
-		// TODO - create inner reference nodes here (if necessary).
+		auto inner_reference_kind= t.GetInnerReferenceKind();
+		if( inner_reference_kind != InnerReferenceKind::None )
+		{
+			// Create inner reference node.
+			var Variable mut node_src
+			{
+				.value_type= select( inner_reference_kind == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.location= Variable::Location::Pointer,
+				.name= this.name + " inner reference",
+				.is_variable_inner_reference_node= this.value_type == ValueType::Value,
+			};
+
+			this.inner_reference_node= VariablePtr( move(node_src) );
+		}
+
+		return VariablePtr( move(this) );
+	}
+
+	fn CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr
+	{
+		this.parent= parent;
 		return VariablePtr( move(this) );
 	}
 }

@@ -1452,14 +1452,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
 				.name= v.name + "[" + ust::to_string8(type_index) + "]",
-				.parent= variable_ptr
+				.inner_reference_node= v.inner_reference_node,
 			};
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
-			var VariablePtr mut result_ptr= move(result).CreatePtr();
+			var VariablePtr mut result_ptr= move(result).CreateChildPtr( variable_ptr );
 			function_context.references_graph.AddNode( result_ptr );
 			v.children[ type_index ]= result_ptr;
 			return move(result_ptr);
@@ -1966,9 +1966,9 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 		.location= Variable::Location::Pointer,
 		.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, u32(base_field_index) ),
 		.name= variable.name + ".base",
-		.parent= variable_ptr,
+		.inner_reference_node= variable.inner_reference_node,
 	};
-	var VariablePtr mut base_ptr= move(base_).CreatePtr();
+	var VariablePtr mut base_ptr= move(base_).CreateChildPtr( variable_ptr );
 
 	variable.children[ base_field_index ]= base_ptr;
 	function_context.references_graph.AddNode( base_ptr );
@@ -2120,14 +2120,14 @@ fn CodeBuilder::AccessDirectClassField(
 			.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
 			.name= v.name + "." + field_name,
-			.parent= variable_ptr,
+			.inner_reference_node= v.inner_reference_node,
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
 		{
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
 
-		var VariablePtr mut result_ptr= move(result).CreatePtr();
+		var VariablePtr mut result_ptr= move(result).CreateChildPtr( variable_ptr );
 		function_context.references_graph.AddNode( result_ptr );
 
 		v.children[ size_type(field.index) ]= result_ptr;
