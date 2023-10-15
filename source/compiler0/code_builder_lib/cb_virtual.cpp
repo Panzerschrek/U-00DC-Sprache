@@ -514,7 +514,8 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	function_context.variables_state.AddNode( this_casted );
 	function_context.variables_state.TryAddLink( this_, this_casted, errors_container, src_loc );
 
-	// TODO - perform linking with inner node here.
+	if( this_->inner_reference_node != nullptr && function_this_type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.TryAddLink( this_->inner_reference_node, this_casted->inner_reference_node, errors_container, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted );
 
