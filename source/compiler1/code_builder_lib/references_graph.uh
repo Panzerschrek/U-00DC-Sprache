@@ -35,6 +35,10 @@ public:
 	fn GetAccessibleVariableNodesInnerReferences( this, VariablePtr& node ) : NodesSet;
 	fn GetNodeInputLinks( this, VariablePtr& node ) : NodesSet;
 
+	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
+	// Than create link between "from" and this node.
+	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph;
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc );
 
@@ -47,6 +51,8 @@ private:
 
 	fn HaveDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
 	fn HaveOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
+
+	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	fn RemoveNodeLinks( mut this, VariablePtr& node );
 

@@ -645,6 +645,11 @@ fn Type::IsAbstract( this ) : bool
 	return false;
 }
 
+fn Type::ReferencesTagsCount( this ) : u32
+{
+	return select( GetInnerReferenceKind() == InnerReferenceKind::None ? 0u : 1u );
+}
+
 fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
 {
 	if_var( &array_type : GetArrayType() )

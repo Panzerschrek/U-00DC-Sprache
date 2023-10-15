@@ -284,6 +284,7 @@ public:
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
 
+	fn ReferencesTagsCount( this ) : u32;
 	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;

@@ -1254,7 +1254,11 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	auto address_of_reference= CreateClassFieldGEP( function_context, variable, field );
 	CreateTypedReferenceStore( function_context, field.t, reference_converted, address_of_reference );
 
-	// TODO - setup references here.
+	function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+		initializer_variable_ptr,
+		variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+		names_scope,
+		initializer_expression_src_loc );
 
 	// Destroy temporary variables after creating links to prevent destruction of variables, linked with initializer reference.
 	DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_expression_src_loc );

@@ -219,6 +219,7 @@ void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( c
 		TryAddLink( from, to, errors_container, src_loc );
 	else
 	{
+		// TODO - handle modification of links container during iteration.
 		for( const Link& link : links_ )
 			if( link.dst == to )
 				TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, link.src, errors_container, src_loc );

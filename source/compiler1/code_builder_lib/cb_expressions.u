@@ -3526,10 +3526,8 @@ fn CodeBuilder::DoCallFunction(
 		is_constexpr= false; // Can't call constexpr function, returning reference.
 	}
 
-	// TODO - use vector of pairs instead of pair of vectors.
-	var ust::vector</VariableNullablePtr/> mut args_nodes, mut reference_args_inner_nodes;
+	var ust::vector</VariableNullablePtr/> mut args_nodes;
 	args_nodes.resize( total_args );
-	reference_args_inner_nodes.resize( total_args );
 
 	var ust::vector</LLVMValueRef/> mut value_args_for_lifetime_end_call;
 
@@ -3573,6 +3571,7 @@ fn CodeBuilder::DoCallFunction(
 
 			var Variable mut arg_node_variable
 			{
+				.t= expected_arg_type,
 				.value_type= ValueType::Value,
 				.location= Variable::Location::Pointer,
 				.name= "value arg " + arg_number_str,
@@ -3581,9 +3580,17 @@ fn CodeBuilder::DoCallFunction(
 			args_nodes[arg_n]= arg_node;
 			function_context.references_graph.AddNode( arg_node );
 
-			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( expected_arg_type.ReferencesTagsCount() > 0u )
 			{
-				// TODO - setup references here.
+				auto arg_inner_reference_node= arg_ptr.lock_imut().deref().inner_reference_node;
+				if( !arg_inner_reference_node.empty() )
+				{
+					function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+						arg_inner_reference_node.try_to_non_nullable(),
+						arg_node.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						src_loc );
+				}
 			}
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
@@ -3710,6 +3717,7 @@ fn CodeBuilder::DoCallFunction(
 
 			var Variable mut arg_node_variable
 			{
+				.t= expected_arg_type,
 				.value_type= param.value_type,
 				.location= Variable::Location::Pointer,
 				.llvm_value= llvm_arg,
@@ -3720,28 +3728,16 @@ fn CodeBuilder::DoCallFunction(
 			function_context.references_graph.AddNode( arg_node );
 			function_context.references_graph.TryAddLink( arg_ptr, arg_node, names_scope, src_loc );
 
-			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( expected_arg_type.ReferencesTagsCount() > 0u )
 			{
-				var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_ptr );
-				var bool mut is_mutable= false;
-				foreach( &inner_reference : inner_references )
+				auto arg_inner_reference_node= arg_ptr.lock_imut().deref().inner_reference_node;
+				if( !arg_inner_reference_node.empty() )
 				{
-					is_mutable |= inner_reference.lock_imut().deref().value_type == ValueType::ReferenceMut;
-				}
-
-				var Variable mut own_reference_node_variable
-				{
-					.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-					.location= Variable::Location::Pointer,
-					.name= "inner reference lock " + arg_number_str,
-				};
-				var VariablePtr own_reference_node= move(own_reference_node_variable).CreatePtr();
-				reference_args_inner_nodes[arg_n]= own_reference_node;
-				function_context.references_graph.AddNode( own_reference_node );
-
-				foreach( &inner_reference : inner_references )
-				{
-					function_context.references_graph.TryAddLink( inner_reference, own_reference_node, names_scope, src_loc );
+					function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+						arg_inner_reference_node.try_to_non_nullable(),
+						arg_node.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						src_loc );
 				}
 			}
 		}
@@ -3874,15 +3870,6 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	// Remove temp inner nodes.
-	foreach( &node : reference_args_inner_nodes )
-	{
-		if( !node.empty() )
-		{
-			function_context.references_graph.RemoveNode( node.try_to_non_nullable() );
-		}
-	}
-
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
@@ -3903,25 +3890,62 @@ fn CodeBuilder::DoCallFunction(
 			{
 				function_context.references_graph.TryAddLink( arg_node_non_null, result_ptr, names_scope, src_loc );
 			}
-			if( param_reference.reference_index == 0u8 )
+			else
 			{
-				foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_node_non_null ) )
+				auto arg_inner_reference_node= arg_node_non_null.lock_imut().deref().inner_reference_node;
+				if( !arg_inner_reference_node.empty() )
 				{
-					function_context.references_graph.TryAddLink( inner_node, result_ptr, names_scope, src_loc );
+					function_context.references_graph.TryAddLink( arg_inner_reference_node.try_to_non_nullable(), result_ptr, names_scope, src_loc );
 				}
 			}
 		}
 	}
 	else if( function_type.return_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 	{
-		// TODO - setup references here.
+
 	}
 
 	// Setup references after call.
 	foreach( &reference_pollution : function_type.references_pollution )
 	{
-		ust::ignore_unused(reference_pollution);
-		// TODO - setup references here.
+		var size_type dst_arg(reference_pollution.dst.param_index);
+		var size_type src_arg(reference_pollution.src.param_index);
+		if( function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::None ||
+			args_nodes[src_arg].empty() ||
+			args_nodes[dst_arg].empty() ||
+			function_type.params[ dst_arg ].value_type == ValueType::Value ) // Skip reference pollution for value params. TODO - is this correct?
+		{
+			continue;
+		}
+
+		var VariablePtr src_node= args_nodes[src_arg].try_to_non_nullable();
+		var VariablePtr dst_node= args_nodes[dst_arg].try_to_non_nullable();
+
+		auto dst_inner_reference_node= dst_node.lock_imut().deref().inner_reference_node;
+		if( !dst_inner_reference_node.empty() )
+		{
+			var VariablePtr dst_inner_reference_node_non_null= dst_inner_reference_node.try_to_non_nullable();
+			if( reference_pollution.src.reference_index == FunctionType::c_param_reference_number )
+			{
+				function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+					src_node,
+					dst_inner_reference_node_non_null,
+					names_scope,
+					src_loc );
+			}
+			else
+			{
+				auto src_inner_reference_node= src_node.lock_imut().deref().inner_reference_node;
+				if( !src_inner_reference_node.empty() )
+				{
+					function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+						src_inner_reference_node.try_to_non_nullable(),
+						dst_inner_reference_node_non_null,
+						names_scope,
+						src_loc );
+				}
+			}
+		}
 	}
 
 	// Remove temp nodes.

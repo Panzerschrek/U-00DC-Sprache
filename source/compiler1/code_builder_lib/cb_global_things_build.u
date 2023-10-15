@@ -1217,7 +1217,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		.location= Variable::Location::Pointer,
 		.name= variable_declaration.name,
 	};
-	auto mut variable_ptr= VariablePtr( move(variable) );
+	auto mut variable_ptr= move(variable).CreatePtr();
 
 	auto mut constexpr_value= LLVMValueRef::Null;
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )

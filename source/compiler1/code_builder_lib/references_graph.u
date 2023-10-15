@@ -251,6 +251,11 @@ fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 	return result;
 }
 
+fn ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, to, names_scope, src_loc );
+}
+
 fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches,  ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph
 {
 	var ReferencesGraph mut result;
@@ -426,6 +431,25 @@ fn ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( this, Vari
 	}
 
 	return false;
+}
+
+fn ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( to.lock_imut().deref().is_variable_inner_reference_node )
+	{
+		TryAddLink( from, to, names_scope, src_loc );
+	}
+	else
+	{
+		for( auto mut i = 0s; i < links_.size(); ++i )
+		{
+			if( links_[i].dst == to )
+			{
+				auto src= links_[i].src;
+				TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src, names_scope, src_loc );
+			}
+		}
+	}
 }
 
 fn ReferencesGraph::RemoveNodeLinks( mut this, VariablePtr& node )
