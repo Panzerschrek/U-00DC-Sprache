@@ -319,7 +319,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			function_context.variables_state.TryAddLink( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
-			if( type.ReferencesTagsCount() > 0u )
+			if( type.ReferencesTagsCount() > 0u && expression_result->inner_reference_node != nullptr )
 				function_context.variables_state.TryAddLink( expression_result->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), variables_declaration.src_loc );
 		}
 		else U_ASSERT(false);

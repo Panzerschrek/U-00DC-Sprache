@@ -2981,11 +2981,10 @@ Value CodeBuilder::DoReferenceCast(
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), src_loc );
 
-	if( type.ReferencesTagsCount() > 0 )
+	if( type.ReferencesTagsCount() > 0 && var->inner_reference_node != nullptr )
 	{
 		// Source type may not contain references inside.
-		if( var->inner_reference_node != nullptr )
-			function_context.variables_state.TryAddLink( var->inner_reference_node, result->inner_reference_node, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddLink( var->inner_reference_node, result->inner_reference_node, names.GetErrors(), src_loc );
 	}
 
 	llvm::Value* src_value= var->llvm_value;
@@ -3304,7 +3303,7 @@ Value CodeBuilder::DoCallFunction(
 			function_context.variables_state.AddNode( arg_node );
 			function_context.variables_state.TryAddLink( expr, arg_node, names.GetErrors(), src_loc );
 
-			if( param.type.ReferencesTagsCount() > 0 )
+			if( param.type.ReferencesTagsCount() > 0 && expr->inner_reference_node != nullptr )
 				function_context.variables_state.TryAddLink(
 					expr->inner_reference_node,
 					arg_node->inner_reference_node,
@@ -3357,7 +3356,7 @@ Value CodeBuilder::DoCallFunction(
 				// Do it only if arg type can contain any reference inside.
 				// Do it before potential moving.
 				EnsureTypeComplete( param.type ); // arg type for value arg must be already complete.
-				if( param.type.ReferencesTagsCount() > 0u )
+				if( param.type.ReferencesTagsCount() > 0u && expr->inner_reference_node != nullptr )
 					function_context.variables_state.TryAddLink(
 						expr->inner_reference_node,
 						arg_node->inner_reference_node,
