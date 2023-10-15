@@ -3454,31 +3454,22 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	} // for args
 
+	if( !EnsureTypeComplete( function_type.return_type ) )
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
+
 	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
 	const bool return_value_is_sret= FunctionTypeIsSRet( function_type );
 
 	const VariableMutPtr result= Variable::Create(
 		function_type.return_type,
 		function_type.return_value_type,
-		Variable::Location::Pointer, // Set later
+		( function_type.return_value_type == ValueType::Value && !return_value_is_composite ) ? Variable::Location::LLVMRegister : Variable::Location::Pointer,
 		"fn_result " + function_type.return_type.ToString() );
 
-	if( function_type.return_value_type != ValueType::Value )
-		result->location= Variable::Location::Pointer;
-	else
-	{
-		if( !EnsureTypeComplete( function_type.return_type ) )
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
-
-		result->location= return_value_is_composite ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
-	}
 	function_context.variables_state.AddNode( result );
 
 	if( return_value_is_composite )
 	{
-		if( !EnsureTypeComplete( function_type.return_type ) )
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
-
 		if( !function_context.is_functionless_context )
 		{
 			result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
@@ -3580,7 +3571,8 @@ Value CodeBuilder::DoCallFunction(
 	{
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
-			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
+			const auto& arg_node= args_nodes[arg_reference.first];
+			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? arg_node : arg_node->inner_reference_node;
 			if( src_node != nullptr )
 			{
 				function_context.variables_state.TryAddLink( src_node, result, names.GetErrors(), call_src_loc );
@@ -3596,7 +3588,8 @@ Value CodeBuilder::DoCallFunction(
 		// Create inner node and link input nodes with it.
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
-			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? args_nodes[arg_reference.first] : args_nodes[arg_reference.first]->inner_reference_node;
+			const auto& arg_node= args_nodes[arg_reference.first];
+			const auto& src_node= arg_reference.second == FunctionType::c_arg_reference_tag_number ? arg_node : arg_node->inner_reference_node;
 			if( src_node != nullptr )
 				function_context.variables_state.TryAddLink( src_node, result->inner_reference_node, names.GetErrors(), call_src_loc );
 		}
@@ -3614,7 +3607,8 @@ Value CodeBuilder::DoCallFunction(
 		if( function_type.params[ dst_arg ].type.ReferencesTagsCount() == 0 )
 			continue;
 
-		const auto& src_node= referene_pollution.src.second == FunctionType::c_arg_reference_tag_number ? args_nodes[ referene_pollution.src.first ] : args_nodes[ referene_pollution.src.first ]->inner_reference_node;
+		const auto& arg_node= args_nodes[ referene_pollution.src.first ];
+		const auto& src_node= referene_pollution.src.second == FunctionType::c_arg_reference_tag_number ? arg_node : arg_node->inner_reference_node;
 		const auto& dst_inner_reference_node= args_nodes[ dst_arg ]->inner_reference_node;
 		if( src_node != nullptr && dst_inner_reference_node != nullptr )
 			function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_node, dst_inner_reference_node, names.GetErrors(), call_src_loc );

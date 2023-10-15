@@ -708,7 +708,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
-		function_context.variables_state.AddLink( expression_result, return_value_node );
+		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
+
+		if( function_context.return_type->ReferencesTagsCount() > 0 && expression_result->inner_reference_node != nullptr )
+			function_context.variables_state.TryAddLink( expression_result->inner_reference_node, return_value_node->inner_reference_node, names.GetErrors(), return_operator.src_loc );
 
 		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context );
 	}
@@ -818,7 +821,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
-				if( sequence_expression->type.ReferencesTagsCount() > 0 )
+				if( element_type.ReferencesTagsCount() > 0 )
 					function_context.variables_state.TryAddLink( sequence_lock->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), range_for_operator.src_loc );
 			}
 			else
@@ -872,7 +875,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				function_context.variables_state.AddLink( variable, variable_reference );
-				if( sequence_expression->type.ReferencesTagsCount() > 0 )
+				if( element_type.ReferencesTagsCount() > 0 )
 					function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 			}
 
@@ -1567,6 +1570,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			coro_expr->name + "lock" );
 	function_context.variables_state.AddNode( coro_expr_lock );
 	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
+
+	if( coro_expr->type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, coro_expr_lock->inner_reference_node, names.GetErrors(), if_coro_advance.src_loc );
+
 	variables_storage.RegisterVariable( coro_expr_lock );
 
 	ReferencesGraph variables_state_before_branching= function_context.variables_state;
@@ -1680,10 +1687,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( result_type.ReferencesTagsCount() > 0 )
 			{
-				if( coro_expr->inner_reference_node != nullptr )
-					function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, variable->inner_reference_node, names.GetErrors(), if_coro_advance.src_loc );
-			}
+				function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 
+				if( coro_expr_lock->inner_reference_node != nullptr )
+					function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_node, variable->inner_reference_node, names.GetErrors(), if_coro_advance.src_loc );
+			}
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
 		}
 		else
@@ -1724,6 +1732,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				coro_result_variables_storage.RegisterVariable( variable );
 				function_context.variables_state.AddLink( variable, variable_reference );
+
+				if( result_type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 
 				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
