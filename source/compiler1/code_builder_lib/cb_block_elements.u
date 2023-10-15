@@ -318,9 +318,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
 			if( t.ReferencesTagsCount() > 0u )
 			{
-				function_context.references_graph.AddLink(
+				function_context.references_graph.TryAddLink(
 					expression_result_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
-					variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+					variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					variable_declaration.src_loc );
 			}
 
 			with( mut lock : variable_reference.lock_mut() )
@@ -417,9 +419,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
 		if( expr.t.ReferencesTagsCount() > 0u )
 		{
-			function_context.references_graph.AddLink(
+			function_context.references_graph.TryAddLink(
 				expr_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
-				variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+				variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+				names_scope,
+				 auto_variable_declaration.src_loc );
 		}
 
 		with( mut lock : variable_reference.lock_mut() )

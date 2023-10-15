@@ -443,15 +443,14 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
 
-		// TODO - support references graph changes in Compiler1.
-		"ReferenceInnerReferenceNode_Test0",
-		"ReferenceInnerReferenceNode_Test1",
-		"ReferenceInnerReferenceNode_Test2",
-		"ReferenceInnerReferenceNode_Test3",
-		"ReferenceInnerReferenceNode_Test5",
-		"ReferenceInnerReferenceNode_Test6",
-		"ReferenceInnerReferenceNode_Test7",
-		"ReferenceInnerReferenceNode_Test8",
+		// TODO - fix these reference-checking-relared tests.
+		"InnerReferenceMutabilityChanging_Test0",
+		"InnerReferenceMutabilityChanging_Test1",
+		"InnerReferenceMutabilityChanging_Test2",
+		"InnerReferenceMutabilityChanging_Test3",
+		"InnerReferenceMutabilityChanging_Test4",
+		"InnerReferenceMutabilityChanging_Test5",
+		"InnerReferenceMutabilityChanging_Test6",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

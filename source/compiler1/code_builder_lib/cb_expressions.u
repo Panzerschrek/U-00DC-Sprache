@@ -877,7 +877,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-
 	var Type& t= branches_types_imut[0].t;
 	auto mut value_type= ValueType::Value;
 	auto mut llvm_value= LLVMValueRef::Null;
@@ -1001,6 +1000,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				branches_reference_values[i]= branch_result.llvm_value;
 				function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
+				if( t.ReferencesTagsCount() > 0u )
+				{
+					function_context.references_graph.TryAddLink(
+						branch_result_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						result_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						ternary_operator.src_loc );
+				}
 			}
 
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(branch_expr) );

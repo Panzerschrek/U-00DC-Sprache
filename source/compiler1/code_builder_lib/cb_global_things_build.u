@@ -1428,7 +1428,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	// Finally, set result variable.
 	auto mut lock= global_auto_variable_ptr.lock_mut();
-	lock.deref().variable.reset( move(variable) );
+	lock.deref().variable= move(variable).CreatePtr();
 }
 
 } // namespace U1
