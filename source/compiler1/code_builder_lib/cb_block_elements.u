@@ -1061,7 +1061,17 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	};
 	var VariablePtr coro_expr_lock= move(coro_expr_lock_variable).CreatePtr();
 	function_context.references_graph.AddNode( coro_expr_lock );
+
 	function_context.references_graph.TryAddLink( coro_expr_ptr, coro_expr_lock, names_scope, if_coro_advance_operator.src_loc );
+	if( coro_expr.t.ReferencesTagsCount() > 0u )
+	{
+		function_context.references_graph.TryAddLink(
+			coro_expr_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+			coro_expr_lock.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+			names_scope,
+			if_coro_advance_operator.src_loc );
+	}
+
 	RegisterTopFrameVariable( function_context, coro_expr_lock );
 
 	var ReferencesGraph mut references_graph_before_branching= function_context.references_graph;
@@ -1168,18 +1178,20 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				lock.deref().llvm_value= promise;
 			}
 
-			if( result_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( result_type.ReferencesTagsCount() > 0u )
 			{
-				auto accessible_innder_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( coro_expr_lock );
-				if( !accessible_innder_nodes.empty() )
-				{
-					var bool mut inner_reference_is_mutable= false;
-					foreach( &accessible_inner_node : accessible_innder_nodes )
-					{
-						inner_reference_is_mutable|= accessible_inner_node.lock_imut().deref().value_type == ValueType::ReferenceMut;
-					}
+				function_context.references_graph.AddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
 
-					// TODO - setup reference links here.
+				auto coro_inner_reference_node= coro_expr_lock.lock_imut().deref().inner_reference_node;
+				if( !coro_inner_reference_node.empty() )
+				{
+					function_context.references_graph.TryAddLink(
+						coro_inner_reference_node.try_to_non_nullable(),
+						variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						if_coro_advance_operator.src_loc );
 				}
 			}
 		}
@@ -1228,6 +1240,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					lock.deref().llvm_value= llvm_value;
 				}
 
+				if( result_type.ReferencesTagsCount() > 0u )
+				{
+					function_context.references_graph.AddLink(
+						coro_expr_lock.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+				}
 				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
 			else
@@ -1244,9 +1262,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					lock.deref().llvm_value= coroutine_reference_result;
 				}
 
-				foreach( & internal_reference_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( coro_expr_ptr ) )
+				auto coro_inner_reference_node= coro_expr_lock.lock_imut().deref().inner_reference_node;
+				if( !coro_inner_reference_node.empty() )
 				{
-					function_context.references_graph.TryAddLink( internal_reference_node, variable_reference, names_scope, if_coro_advance_operator.src_loc );
+					function_context.references_graph.AddLink(
+						coro_expr_lock.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						variable_reference.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
 				}
 			}
 		}

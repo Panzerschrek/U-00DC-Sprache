@@ -32,7 +32,6 @@ public:
 
 	type NodesSet= ust::unordered_set</VariablePtr/>;
 	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
-	fn GetAccessibleVariableNodesInnerReferences( this, VariablePtr& node ) : NodesSet;
 	fn GetNodeInputLinks( this, VariablePtr& node ) : NodesSet;
 
 	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
@@ -44,7 +43,6 @@ public:
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes );
-	fn GetAccessibleVariableNodesInnerReferences_r( this, VariablePtr& node, NodesSet &mut out_nodes );
 
 	fn HaveDirectOutgoingLinks( this, VariablePtr& from ) : bool;
 	fn HaveOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool;
