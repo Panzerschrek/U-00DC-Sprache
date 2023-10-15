@@ -817,7 +817,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		this_casted.llvm_value= unsafe( LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), g_null_string ) );
 	}
 
-	var VariablePtr mut this_casted_ptr( move(this_casted) );
+	var VariablePtr mut this_casted_ptr= move(this_casted).CreatePtr();
 	function_context.references_graph.AddNode( this_casted_ptr );
 	function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
 	RegisterTemporaryVariable( function_context, this_casted_ptr );

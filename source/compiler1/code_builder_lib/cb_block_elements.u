@@ -209,7 +209,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 			debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_declaration.name, variable_declaration.src_loc );
 
-			var VariablePtr variable_ptr( move(variable) );
+			var VariablePtr variable_ptr= move(variable).CreatePtr();
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_reference );
 			RegisterFrameVariable( function_context, variable_ptr, 1s );
@@ -224,7 +224,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 					.name= variable_declaration.name,
 				};
 
-				var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+				var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
 				function_context.references_graph.AddNode( variable_for_initialization_ptr );
 				function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
 
@@ -375,7 +375,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		.src_loc= auto_variable_declaration.src_loc,
 		.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
 	};
-	var VariablePtr mut variable_reference( move(variable_reference_variable) );
+	var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
 	// Do not forget to remove node in case of errror-return!!!
 	function_context.references_graph.AddNode( variable_reference );
 
@@ -447,7 +447,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, auto_variable_declaration.name, auto_variable_declaration.src_loc );
 
-		var VariablePtr variable_ptr( move(variable) );
+		var VariablePtr variable_ptr= move(variable).CreatePtr();
 		function_context.references_graph.AddNode( variable_ptr );
 		function_context.references_graph.AddLink( variable_ptr, variable_reference );
 		RegisterFrameVariable( function_context, variable_ptr, 1s );
@@ -564,7 +564,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			.location= Variable::Location::Pointer,
 			.name= "return value",
 		};
-		var VariablePtr return_node( move(return_node_variable) );
+		var VariablePtr return_node= move(return_node_variable).CreatePtr();
 		function_context.references_graph.AddNode( return_node );
 
 
@@ -1037,7 +1037,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.constexpr_value= coro_expr.constexpr_value,
 		.name= coro_expr_ptr.lock_imut().deref().name + " lock",
 	};
-	var VariablePtr coro_expr_lock( move(coro_expr_lock_variable) );
+	var VariablePtr coro_expr_lock= move(coro_expr_lock_variable).CreatePtr();
 	function_context.references_graph.AddNode( coro_expr_lock );
 	function_context.references_graph.TryAddLink( coro_expr_ptr, coro_expr_lock, names_scope, if_coro_advance_operator.src_loc );
 	RegisterTopFrameVariable( function_context, coro_expr_lock );
@@ -1118,7 +1118,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
 				VariableExistanceMayHaveSideEffects(result_type)
 		};
-		var VariablePtr mut variable_reference( move(variable_reference_variable) );
+		var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
 		function_context.references_graph.AddNode( variable_reference );
 
 		if( result_value_type == ValueType::Value )
@@ -1136,7 +1136,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, if_coro_advance_operator.variable_name, if_coro_advance_operator.src_loc );
 
-			var VariablePtr variable_ptr( move(variable) );
+			var VariablePtr variable_ptr= move(variable).CreatePtr();
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_reference );
 			RegisterTopFrameVariable( function_context, variable_ptr );
@@ -1193,7 +1193,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, if_coro_advance_operator.variable_name, if_coro_advance_operator.src_loc );
 
-				var VariablePtr variable_ptr( move(variable) );
+				var VariablePtr variable_ptr= move(variable).CreatePtr();
 				function_context.references_graph.AddNode( variable_ptr );
 				function_context.references_graph.AddLink( variable_ptr, variable_reference );
 				RegisterTopFrameVariable( function_context, variable_ptr );
@@ -2025,7 +2025,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.location= Variable::Location::Pointer,
 		.name= sequence_expression_ptr.lock_imut().deref().name + " sequence lock",
 	};
-	var VariablePtr sequence_lock_node( move(lock_variable) );
+	var VariablePtr sequence_lock_node= move(lock_variable).CreatePtr();
 	function_context.references_graph.AddNode( sequence_lock_node );
 	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 
@@ -2068,7 +2068,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				.src_loc= range_for_operator.src_loc,
 				.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
 			};
-			var VariablePtr mut variable_reference( move(variable_reference_variable) );
+			var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
 			// Do not forget to remove node in case of error-return!!!
 			function_context.references_graph.AddNode( variable_reference );
 
@@ -2130,7 +2130,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, src_element_llvm_value, variable.t, range_for_operator.src_loc );
 				}
 
-				var VariablePtr variable_ptr( move(variable) );
+				var VariablePtr variable_ptr= move(variable).CreatePtr();
 				function_context.references_graph.AddNode( variable_ptr );
 				function_context.references_graph.AddLink( variable_ptr, variable_reference );
 				RegisterTopFrameVariable( function_context, variable_ptr );
@@ -2441,7 +2441,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.src_loc= with_operator.src_loc,
 		.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
 	};
-	var VariablePtr mut variable_reference( move(variable_reference_variable) );
+	var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
 	// Do not forget to remove node in case of error-return!!!
 	function_context.references_graph.AddNode( variable_reference );
 
@@ -2524,7 +2524,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, with_operator.variable_name, with_operator.src_loc );
 
-		var VariablePtr variable_ptr( move(variable) );
+		var VariablePtr variable_ptr= move(variable).CreatePtr();
 		function_context.references_graph.AddNode( variable_ptr );
 		function_context.references_graph.AddLink( variable_ptr, variable_reference );
 		RegisterTopFrameVariable( function_context, variable_ptr );

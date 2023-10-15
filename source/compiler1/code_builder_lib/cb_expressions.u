@@ -26,7 +26,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 		.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) ),
 		.name= "error value"
 	};
-	var VariablePtr mut dummy_ptr( move(dummy) );
+	var VariablePtr mut dummy_ptr= move(dummy).CreatePtr();
 	function_context.references_graph.AddNode( dummy_ptr );
 	return move(dummy_ptr);
 }
@@ -125,7 +125,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -145,7 +145,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -283,7 +283,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.constexpr_value= constexpr_value,
 			.name= "string literal",
 		};
-		var VariablePtr mut result_ptr( move(result) );
+		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
 		return move(result_ptr);
@@ -339,7 +339,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.constexpr_value= constexpr_value,
 			.name= "char literal",
 		};
-		var VariablePtr mut result_ptr( move(result) );
+		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
 		return move(result_ptr);
@@ -420,7 +420,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.name= KeywordToString( Keyword::base_ ),
 		};
 
-		var VariablePtr mut base_ptr( move(base_) );
+		var VariablePtr mut base_ptr= move(base_).CreatePtr();
 		function_context.references_graph.AddNode( base_ptr );
 		function_context.references_graph.TryAddLink( this_ptr, base_ptr, names_scope, src_loc );
 
@@ -462,7 +462,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -484,7 +484,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -533,7 +533,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= v.llvm_value;
 	}
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_imut_.src_loc );
 
@@ -574,7 +574,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= v.llvm_value;
 	}
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_mut_.src_loc );
 
@@ -622,7 +622,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.constexpr_value= LLVMValueRef::Null,
 				.name= variable.name,
 			};
-			var VariablePtr mut variable_copy_ptr( move(variable_copy) );
+			var VariablePtr mut variable_copy_ptr= move(variable_copy).CreatePtr();
 			function_context.references_graph.AddNode( variable_copy_ptr );
 			if( variable.value_type == ValueType::Value )
 			{
@@ -749,7 +749,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.llvm_value= reference.llvm_value,
 		.name= "moved " + reference.name,
 	};
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
 
@@ -823,7 +823,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	move(variable_lock);
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
 	SetupReferencesInCopyOrMove( names_scope, function_context, result_ptr, variable_ptr, take_operator.src_loc );
@@ -919,7 +919,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.llvm_value= llvm_value,
 		.name= KeywordToString( Keyword::select_ ),
 	};
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 
 	// Do not forget to remove this node in case of error-return!!!
 	function_context.references_graph.AddNode( result_ptr );
@@ -1103,7 +1103,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	};
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1137,7 +1137,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	};
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1187,7 +1187,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					}
 				}
 
-				var VariablePtr mut result_ptr( move(result) );
+				var VariablePtr mut result_ptr= move(result).CreatePtr();
 				function_context.references_graph.AddNode( result_ptr );
 				RegisterTemporaryVariable( function_context, result_ptr );
 				return move(result_ptr);
@@ -1236,7 +1236,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					result.constexpr_value= result.llvm_value;
 				}
 
-				var VariablePtr mut result_ptr( move(result) );
+				var VariablePtr mut result_ptr= move(result).CreatePtr();
 				function_context.references_graph.AddNode( result_ptr );
 				RegisterTemporaryVariable( function_context, result_ptr );
 				return move(result_ptr);
@@ -1286,7 +1286,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.location= Variable::Location::Pointer,
 			.name= "lock []",
 		};
-		var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
+		var VariablePtr variable_lock_node= move(variable_lock_node_variable).CreatePtr();
 		function_context.references_graph.AddNode( variable_lock_node );
 		function_context.references_graph.TryAddLink( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
 
@@ -1371,7 +1371,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ) ) );
 			}
 
-			var VariablePtr mut result_ptr( move(result) );
+			var VariablePtr mut result_ptr= move(result).CreatePtr();
 			function_context.references_graph.AddNode( result_ptr );
 			function_context.references_graph.AddLink( variable_lock_node, result_ptr );
 			function_context.references_graph.RemoveNode( variable_lock_node );
@@ -1459,7 +1459,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
-			var VariablePtr mut result_ptr( move(result) );
+			var VariablePtr mut result_ptr= move(result).CreatePtr();
 			function_context.references_graph.AddNode( result_ptr );
 			v.children[ type_index ]= result_ptr;
 			return move(result_ptr);
@@ -1594,7 +1594,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					.name= fetch_result_data.name,
 				};
 
-				var VariablePtr mut result_ptr( move(result) );
+				var VariablePtr mut result_ptr= move(result).CreatePtr();
 				function_context.references_graph.AddNode( result_ptr );
 				function_context.references_graph.TryAddLink( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
 				RegisterTemporaryVariable( function_context, result_ptr );
@@ -1654,7 +1654,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.location= Variable::Location::Pointer,
 				.name= variable_ptr.lock_imut().deref().name + " lock",
 			};
-			var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
+			var VariablePtr variable_lock_node= move(variable_lock_node_variable).CreatePtr();
 			function_context.references_graph.AddNode( variable_lock_node );
 			function_context.references_graph.AddLink( variable_ptr, variable_lock_node );
 
@@ -1747,7 +1747,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1790,7 +1790,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1834,7 +1834,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1930,7 +1930,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		}
 	}
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, src_loc );
 
@@ -1968,7 +1968,7 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 		.name= variable.name + ".base",
 		.parent= variable_ptr,
 	};
-	var VariablePtr mut base_ptr( move(base_) );
+	var VariablePtr mut base_ptr= move(base_).CreatePtr();
 
 	variable.children[ base_field_index ]= base_ptr;
 	function_context.references_graph.AddNode( base_ptr );
@@ -2083,7 +2083,7 @@ fn CodeBuilder::AccessDirectClassField(
 			MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 		}
 
-		var VariablePtr mut result_ptr( move(result) );
+		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 
 		auto inner_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable_ptr );
@@ -2127,7 +2127,7 @@ fn CodeBuilder::AccessDirectClassField(
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
 
-		var VariablePtr mut result_ptr( move(result) );
+		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 
 		v.children[ size_type(field.index) ]= result_ptr;
@@ -2801,7 +2801,7 @@ fn CodeBuilder::BuildBinaryOperator(
 	}
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -2912,7 +2912,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	// Register variable for references checking.
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -2993,7 +2993,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			.location= Variable::Location::Pointer,
 			.name= r_var_ptr.lock_imut().deref().name + " lock",
 		};
-		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
+		var VariablePtr r_var_lock_node= move(r_var_lock_node_variable ).CreatePtr();
 		function_context.references_graph.AddNode( r_var_lock_node );
 		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 
@@ -3078,7 +3078,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			.location= Variable::Location::Pointer,
 			.name= r_var_ptr.lock_imut().deref().name + " lock",
 		};
-		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
+		var VariablePtr r_var_lock_node= move(r_var_lock_node_variable ).CreatePtr();
 		function_context.references_graph.AddNode( r_var_lock_node );
 		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 
@@ -3120,7 +3120,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			.location= Variable::Location::Pointer,
 			.name= l_var_ptr.lock_imut().deref().name + " lock",
 		};
-		var VariablePtr l_var_lock_node( move(l_var_lock_node_variable ) );
+		var VariablePtr l_var_lock_node= move(l_var_lock_node_variable ).CreatePtr();
 		function_context.references_graph.AddNode( l_var_lock_node );
 		function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
 
@@ -3208,7 +3208,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			}
 		}
 
-		var VariablePtr mut result_ptr( move(result) );
+		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
 		return move(result_ptr);
@@ -3583,7 +3583,7 @@ fn CodeBuilder::DoCallFunction(
 				.location= Variable::Location::Pointer,
 				.name= "value arg " + arg_number_str,
 			};
-			var VariablePtr arg_node( move(arg_node_variable) );
+			var VariablePtr arg_node= move(arg_node_variable).CreatePtr();
 			args_nodes[arg_n]= arg_node;
 			function_context.references_graph.AddNode( arg_node );
 
@@ -3735,7 +3735,7 @@ fn CodeBuilder::DoCallFunction(
 				.llvm_value= llvm_arg,
 				.name= "reference arg " + arg_number_str ,
 			};
-			var VariablePtr arg_node( move(arg_node_variable) );
+			var VariablePtr arg_node= move(arg_node_variable).CreatePtr();
 			args_nodes[arg_n]= arg_node;
 			function_context.references_graph.AddNode( arg_node );
 			function_context.references_graph.TryAddLink( arg_ptr, arg_node, names_scope, src_loc );
@@ -3755,7 +3755,7 @@ fn CodeBuilder::DoCallFunction(
 					.location= Variable::Location::Pointer,
 					.name= "inner reference lock " + arg_number_str,
 				};
-				var VariablePtr own_reference_node( move(own_reference_node_variable) );
+				var VariablePtr own_reference_node= move(own_reference_node_variable).CreatePtr();
 				reference_args_inner_nodes[arg_n]= own_reference_node;
 				function_context.references_graph.AddNode( own_reference_node );
 
@@ -3903,7 +3903,7 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
 	// Prepare result references.
@@ -4111,7 +4111,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	}
 	result.llvm_value= llvm_value;
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
 
@@ -4124,7 +4124,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 			.llvm_value= llvm_value,
 			.name= name,
 		};
-		var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+		var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
 		function_context.references_graph.AddNode( variable_for_initialization_ptr );
 		function_context.references_graph.AddLink( result_ptr, variable_for_initialization_ptr );
 
@@ -4167,7 +4167,7 @@ fn CodeBuilder::ConvertVariable(
 		.name= "converted " + dst_type.ToString(),
 	};
 
-	var VariablePtr mut result_ptr( move(result) );
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
 	{
@@ -4183,7 +4183,7 @@ fn CodeBuilder::ConvertVariable(
 			.llvm_value= llvm_value,
 			.name= "converted " + dst_type.ToString(),
 		};
-		var VariablePtr result_for_constructor_call_ptr( move(result_for_constructor_call) );
+		var VariablePtr result_for_constructor_call_ptr= move(result_for_constructor_call).CreatePtr();
 		function_context.references_graph.AddNode( result_for_constructor_call_ptr );
 		function_context.references_graph.AddLink( result_ptr, result_for_constructor_call_ptr );
 

@@ -208,7 +208,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		v.llvm_value= AddGlobalConstantVariable( "\0", llvm_type, v.constexpr_value );
 	}
 
-	var VariablePtr mut v_ptr( move(v) );
+	var VariablePtr mut v_ptr= move(v).CreatePtr();
 	var TypeinfoCacheElement mut cache_element{ .variable= v_ptr };
 	typeinfo_cache_.insert( t, move(cache_element) );
 

@@ -1205,8 +1205,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.referenced= type_param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(type_param.t)
 			};
 
-			var VariablePtr variable_ptr( move(variable) );
-			var VariablePtr mut variable_reference_ptr( move(variable_reference) );
+			var VariablePtr variable_ptr= move(variable).CreatePtr();
+			var VariablePtr mut variable_reference_ptr= move(variable_reference).CreatePtr();
 
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddNode( variable_reference_ptr );

@@ -363,6 +363,14 @@ struct Variable
 	// This struct is non-copyable.
 	fn constructor( mut this, Variable& other )= delete;
 	op=( mut this, Variable& other )= delete;
+
+	// Various methods.
+
+	fn CreatePtr( byval mut this ) : VariablePtr
+	{
+		// TODO - create inner reference nodes here (if necessary).
+		return VariablePtr( move(this) );
+	}
 }
 
 type VariablePtr= ust::shared_ptr_mut</Variable/>;
