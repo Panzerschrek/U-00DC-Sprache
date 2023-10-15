@@ -2080,11 +2080,7 @@ fn CodeBuilder::AccessDirectClassField(
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 
-		auto inner_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable_ptr );
-		foreach( &inner_node : inner_nodes )
-		{
-			function_context.references_graph.TryAddLink( inner_node, result_ptr, names_scope, src_loc );
-		}
+		function_context.references_graph.TryAddLink( variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(), result_ptr, names_scope, src_loc );
 
 		// Register variable for references checking.
 		RegisterTemporaryVariable( function_context, result_ptr );

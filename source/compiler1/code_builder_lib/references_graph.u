@@ -31,6 +31,14 @@ fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
 {
 	var NodeState mut node_state{ .moved= false };
 	nodes_.insert( node, move(node_state) );
+
+	with( &inner_reference_node : node.lock_imut().deref().inner_reference_node )
+	{
+		if( !inner_reference_node.empty() )
+		{
+			AddNodeIfNotExists( inner_reference_node.try_to_non_nullable() );
+		}
+	}
 }
 
 fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
