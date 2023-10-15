@@ -37,11 +37,11 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 
 Variable::Variable(
 	Type in_type,
-	ValueType in_value_type,
-	Location in_location,
+	const ValueType in_value_type,
+	const Location in_location,
 	std::string in_name,
-	llvm::Value* in_llvm_value,
-	llvm::Constant* in_constexpr_value )
+	llvm::Value* const in_llvm_value,
+	llvm::Constant* const in_constexpr_value )
 	: type(std::move(in_type))
 	, llvm_value(in_llvm_value)
 	, constexpr_value(in_constexpr_value)
@@ -59,17 +59,19 @@ VariableMutPtr Variable::Create(
 	llvm::Value* const llvm_value,
 	llvm::Constant* const constexpr_value )
 {
-	auto result= std::make_shared<Variable>( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value );
+	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 
 	if( result->type.ReferencesTagsCount() > 0 )
 	{
-		const auto inner_reference_node=
-			std::make_shared<Variable>(
+		const auto inner_reference_node= std::make_shared<Variable>(
+			Variable(
 				FundamentalType( U_FundamentalType::InvalidType ),
 				// Mutability of inner reference node is determined only by type properties itself.
 				result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				result->name + " inner reference" );
+				result->name + " inner reference",
+				nullptr,
+				nullptr ) );
 		inner_reference_node->is_variable_inner_reference_node= result->value_type == ValueType::Value;
 
 		result->inner_reference_node= inner_reference_node;
@@ -88,7 +90,7 @@ VariableMutPtr Variable::CreateChildNode(
 	llvm::Constant* const constexpr_value )
 {
 	U_ASSERT( parent != nullptr );
-	auto result= std::make_shared<Variable>( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value );
+	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 	result->parent= parent;
 
 	// Child nodes reuse inner reference nodes of parents.

@@ -136,21 +136,21 @@ public:
 	// Do this in order to stop references graph search on these nodes while performing reference pollution.
 	bool is_variable_inner_reference_node= false;
 
+private:
+	Variable(
+		Type in_type,
+		ValueType in_value_type,
+		Location in_location,
+		std::string in_name,
+		llvm::Value* in_llvm_value,
+		llvm::Constant* in_constexpr_value );
 public:
-	Variable()= default;
+	Variable()= delete;
 	Variable(const Variable&)= delete;
 	Variable(Variable&&)= default;
 
 	Variable& operator=(const Variable&)= delete;
 	Variable& operator=(Variable&&)= default;
-
-	Variable(
-		Type in_type,
-		ValueType in_value_type,
-		Location in_location,
-		std::string in_name= "",
-		llvm::Value* in_llvm_value= nullptr,
-		llvm::Constant* in_constexpr_value= nullptr );
 
 	static VariableMutPtr Create(
 		Type type,

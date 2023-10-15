@@ -1138,15 +1138,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( initializer == nullptr )
 		return ErrorValue();
 
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->constexpr_value= initializer;
+	VariableMutPtr result;
 	if( array_size == ~0u )
 	{
-		result->type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
-
-		result->value_type= ValueType::Value;
-		result->location= Variable::Location::LLVMRegister;
-		result->llvm_value= initializer;
+		result= Variable::Create(
+			FundamentalType( char_type, GetFundamentalLLVMType( char_type ) ),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			"",
+			initializer,
+			initializer );
 	}
 	else
 	{
@@ -1154,10 +1155,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		array_type.element_type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
 		array_type.element_count= array_size;
 		array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
-		result->type= std::move(array_type);
 
-		result->value_type= ValueType::ReferenceImut;
-		result->location= Variable::Location::Pointer;
+		result= Variable::Create(
+			std::move(array_type),
+			ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			"",
+			nullptr,
+			initializer );
 
 		// Use md5 for string literal names.
 		llvm::MD5 md5;
@@ -1168,9 +1173,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
 		llvm::MD5::MD5Result md5_result;
 		md5.final(md5_result);
-		const std::string literal_name= ( "_string_literal_" + md5_result.digest() ).str();
+		result->name= ( "_string_literal_" + md5_result.digest() ).str();
 
-		result->llvm_value= CreateGlobalConstantVariable( result->type, literal_name, result->constexpr_value );
+		result->llvm_value= CreateGlobalConstantVariable( result->type, result->name, result->constexpr_value );
 	}
 
 	function_context.variables_state.AddNode( result );
@@ -2257,10 +2262,11 @@ Value CodeBuilder::BuildBinaryOperator(
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
-	result->name= BinaryOperatorToString(binary_operator);
+	const VariableMutPtr result= Variable::Create(
+		invalid_type_, // Set later.
+		ValueType::Value,
+		Variable::Location::LLVMRegister,
+		std::string( BinaryOperatorToString(binary_operator) ) );
 
 	switch( binary_operator )
 	{
@@ -2688,10 +2694,11 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
-	result->name= BinaryOperatorToString(binary_operator);
+	const VariableMutPtr result= Variable::Create(
+		invalid_type_, // Set later.
+		ValueType::Value,
+		Variable::Location::LLVMRegister,
+		std::string( BinaryOperatorToString(binary_operator) ) );
 
 	if( binary_operator == BinaryOperatorType::Add )
 	{
