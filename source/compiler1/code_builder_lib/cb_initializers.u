@@ -183,6 +183,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
+			if( array_type.element_type.ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.TryAddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					element_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					sequence_initializer.src_loc );
+			}
+
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, element_initializer.deref() );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
@@ -237,6 +246,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+
+			if( tuple_type.element_types[i].ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.TryAddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					element_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					sequence_initializer.src_loc );
+			}
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i].deref() );
 
@@ -366,6 +384,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 
+			if( class_field.t.ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.TryAddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					member_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					member_initializer.src_loc );
+			}
+
 			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer.deref() );
 
 			function_context.references_graph.RemoveNode( member_variable_ptr );
@@ -410,6 +437,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+
+		if( field.t.ReferencesTagsCount() > 0u )
+		{
+			function_context.references_graph.TryAddLink(
+				variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+				member_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+				names_scope,
+				struct_named_initializer.src_loc );
+		}
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.deref().initializer;
@@ -495,6 +531,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				function_context.references_graph.AddNode( element_variable_ptr );
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
+				if( array_type.element_type.ReferencesTagsCount() > 0u )
+				{
+					function_context.references_graph.TryAddLink(
+						variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						element_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						zero_initializer.src_loc );
+				}
+
 				BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
 				function_context.references_graph.RemoveNode( element_variable_ptr );
@@ -522,6 +567,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+
+			if( tuple_type.element_types[i].ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.TryAddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					element_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					zero_initializer.src_loc );
+			}
 
 			BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
@@ -571,6 +625,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+
+			if( field.t.ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.TryAddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					member_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					zero_initializer.src_loc );
+			}
 
 			BuildInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
 
@@ -1413,6 +1476,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 
+				if( class_field.t.ReferencesTagsCount() > 0u )
+				{
+					function_context.references_graph.TryAddLink(
+						this_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						field_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						constructor_initialization_list.src_loc );
+				}
+
 				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 
 				function_context.references_graph.RemoveNode( field_variable_ptr );
@@ -1444,6 +1516,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+
+				if( class_field.t.ReferencesTagsCount() > 0u )
+				{
+					function_context.references_graph.TryAddLink(
+						this_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						field_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						names_scope,
+						constructor_initialization_list.src_loc );
+				}
 
 				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 
@@ -1495,6 +1576,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 			function_context.references_graph.AddNode( field_variable_ptr );
 			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+
+			if( class_field.t.ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.TryAddLink(
+					this_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					field_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					names_scope,
+					constructor_initialization_list.src_loc );
+			}
 
 			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
 
@@ -1560,7 +1650,16 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 			};
 			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 			function_context.references_graph.AddNode( field_variable_ptr );
+
+			if( class_field.t.ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.AddLink(
+					this_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					field_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+			}
+
 			BuildInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
+
 			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 	}

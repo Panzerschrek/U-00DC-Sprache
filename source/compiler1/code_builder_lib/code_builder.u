@@ -1899,53 +1899,11 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 		return;
 	}
 
-	var ReferencesGraph& mut references_graph= function_context.references_graph;
-
-	var ReferencesGraph::NodesSet dst_variable_nodes= references_graph.GetAllAccessibleVariableNodes( dst_node );
-	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAccessibleVariableNodesInnerReferences( src_node );
-
-	if( dst_variable_nodes.empty() || src_inner_reference_nodes.empty() )
-	{
-		return;
-	}
-
-	// TODO - fix this.
-	ust::ignore_unused( names_scope );
-	ust::ignore_unused( src_loc );
-
-	/*
-	var bool mut node_is_mutable= false;
-	foreach( &src_inner_reference_node : src_inner_reference_nodes )
-	{
-		node_is_mutable |= src_inner_reference_node.lock_imut().deref().value_type == ValueType::ReferenceMut;
-	}
-
-	node_is_mutable&= dst_type.GetInnerReferenceKind() == InnerReferenceKind::Mut;
-
-	foreach( &dst_variable_node : dst_variable_nodes )
-	{
-		var VariableNullablePtr mut dst_inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
-		if( dst_inner_reference_node.empty() )
-		{
-			dst_inner_reference_node= references_graph.CreateNodeInnerReference(
-				dst_variable_node,
-				select( node_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-		}
-		var VariablePtr dst_inner_reference_node_non_null= dst_inner_reference_node.try_to_non_nullable();
-		var ValueType inner_reference_value_type= dst_inner_reference_node_non_null.lock_imut().deref().value_type;
-
-		if( (  node_is_mutable && inner_reference_value_type == ValueType::ReferenceImut ) ||
-			( !node_is_mutable && inner_reference_value_type == ValueType::ReferenceMut ) )
-		{
-			REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, dst_inner_reference_node_non_null.lock_imut().deref().name )
-		}
-
-		foreach( &src_inner_reference_node : src_inner_reference_nodes )
-		{
-			references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node_non_null, names_scope, src_loc );
-		}
-	}
-	*/
+	function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+		src_node.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+		dst_node.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+		names_scope,
+		src_loc );
 }
 
 fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool

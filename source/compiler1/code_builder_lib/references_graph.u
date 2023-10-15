@@ -315,15 +315,38 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 {
 	foreach( &node_before_pair : state_before.nodes_ )
 	{
+		var VariablePtr& node_ptr= node_before_pair.key();
+
 		var NodeState& node_before= node_before_pair.value();
-		var NodeState& node_after= state_after.nodes_[node_before_pair.key()];
+		var NodeState& node_after= state_after.nodes_[node_ptr];
 
-		if( !node_before.moved && node_after.moved )
+		with( &node : node_ptr.lock_imut().deref() )
 		{
-			errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, src_loc, node_before_pair.key().lock_imut().deref().name ) );
-		}
+			if( !node_before.moved && node_after.moved )
+			{
+				errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, src_loc, node.name ) );
+			}
 
-		// TODO - check for outer variables pollution.
+			if( !node.inner_reference_node.empty() && node.value_type == ValueType::Value )
+			{
+				// If this is a variable node with inner reference check if no input links was added in loop body.
+				// Reference nodes also may have inner reference nodes, but adding of input links (pollution) for them is not possible, so, ignore them.
+
+				var VariablePtr inner_reference_node_non_null= node.inner_reference_node.try_to_non_nullable();
+
+				var NodesSet nodes_before= state_before.GetNodeInputLinks( inner_reference_node_non_null);
+				var NodesSet mut nodes_after= state_after.GetNodeInputLinks( inner_reference_node_non_null  );
+				foreach( & prev_link_node : nodes_before )
+				{
+					nodes_after.drop(prev_link_node);
+				}
+
+				foreach( & newly_linked_node : nodes_after )
+				{
+					errors.push_back( ReportError( CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, src_loc, node.name, newly_linked_node.lock_imut().deref().name ) );
+				}
+			}
+		}
 	}
 }
 
