@@ -438,6 +438,8 @@ fn ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut
 	}
 	else
 	{
+		// Use index-based for since "links_" container may be modified in recursive call.
+		// It is fine to use index-based for since new links may be only added, but not removed.
 		for( auto mut i = 0s; i < links_.size(); ++i )
 		{
 			if( links_[i].dst == to )

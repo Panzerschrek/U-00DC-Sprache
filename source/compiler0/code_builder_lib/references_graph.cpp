@@ -219,10 +219,15 @@ void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( c
 		TryAddLink( from, to, errors_container, src_loc );
 	else
 	{
-		// TODO - handle modification of links container during iteration.
+		// Fill container with reachable nodes and only that perform recursive calls.
+		// Do this in order to avoid iteration over container of links, which may be modified in recursive call.
+		llvm::SmallVector< VariablePtr, 12 > src_nodes;
 		for( const Link& link : links_ )
 			if( link.dst == to )
-				TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, link.src, errors_container, src_loc );
+				src_nodes.push_back( link.src );
+
+		for( const VariablePtr& src_node : src_nodes )
+			TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src_node, errors_container, src_loc );
 	}
 }
 
@@ -271,7 +276,7 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 	for( const auto& var_before : state_before.nodes_ )
 	{
 		const VariablePtr& node= var_before.first;
-		U_ASSERT( state_after.nodes_.find( node) != state_after.nodes_.end() );
+		U_ASSERT( state_after.nodes_.find(node) != state_after.nodes_.end() );
 		const auto& var_after= *state_after.nodes_.find( node );
 
 		if( !var_before.second.moved && var_after.second.moved )
