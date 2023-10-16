@@ -1598,7 +1598,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( variable_ptr->type.ReferencesTagsCount() > 0 )
 				function_context.variables_state.TryAddLink( variable_ptr->inner_reference_node, variable_copy->inner_reference_node, names.GetErrors(), unsafe_expression.src_loc );
 
-			function_context.variables_state.MoveNode( variable_ptr );
+			if( variable_ptr->value_type == ValueType::Value )
+				function_context.variables_state.MoveNode( variable_ptr );
 
 			RegisterTemporaryVariable( function_context, variable_copy );
 

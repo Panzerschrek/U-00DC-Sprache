@@ -1244,7 +1244,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				auto_variable_declaration->name,
 				nullptr,
 				initializer_experrsion->constexpr_value );
-		function_context.variables_state.AddNode( variable_reference );
 
 		if( !EnsureTypeComplete( variable_reference->type ) ) // Type completeness required for variable or reference declaration.
 		{

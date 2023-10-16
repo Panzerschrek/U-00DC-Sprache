@@ -589,7 +589,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	const VariableMutPtr return_value_node=
+	const VariablePtr return_value_node=
 		Variable::Create(
 			*function_context.return_type,
 			function_context.function_type.return_value_type,
@@ -615,7 +615,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			CheckReturnedReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
 
-			function_context.variables_state.TryAddLink( expression_result->inner_reference_node, return_value_node->inner_reference_node, names.GetErrors(), return_operator.src_loc );
+			if( expression_result->inner_reference_node != nullptr )
+				function_context.variables_state.TryAddLink( expression_result->inner_reference_node, return_value_node->inner_reference_node, names.GetErrors(), return_operator.src_loc );
 		}
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
@@ -762,7 +763,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence, names, function_context );
 
-	const VariableMutPtr sequence_lock=
+	const VariablePtr sequence_lock=
 		Variable::Create(
 			sequence_expression->type,
 			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -868,7 +869,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( element_type.ReferencesTagsCount() > 0 )
 				{
 					function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
-					function_context.variables_state.TryAddLink( sequence_expression->inner_reference_node, variable->inner_reference_node, names.GetErrors(), range_for_operator.src_loc );
+					function_context.variables_state.TryAddLink( sequence_lock->inner_reference_node, variable->inner_reference_node, names.GetErrors(), range_for_operator.src_loc );
 				}
 
 				BuildCopyConstructorPart(
@@ -882,7 +883,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				function_context.variables_state.AddLink( variable, variable_reference );
-
 			}
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );

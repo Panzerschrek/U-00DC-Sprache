@@ -657,7 +657,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					unsafe_expression.src_loc );
 			}
 
-			function_context.references_graph.MoveNode( variable_ptr );
+			if( variable.value_type == ValueType::Value )
+			{
+				function_context.references_graph.MoveNode( variable_ptr );
+			}
 
 			RegisterTemporaryVariable( function_context, variable_copy_ptr );
 			return move(variable_copy_ptr);
@@ -1942,6 +1945,18 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 	var VariableLite v= v_ptr.lock_imut().deref();
 
+	// We needs complete types to check reference conversion possibility.
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
+		return ErrorValue();
+	}
+	if( !EnsureTypeComplete( v.t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, v.t )
+		return ErrorValue();
+	}
+
 	var Variable mut result
 	{
 		.t= t,
@@ -1964,18 +1979,6 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	}
 	else
 	{
-		// We needs complete types to check reference conversion possibility.
-		if( !EnsureTypeComplete( t ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
-			return ErrorValue();
-		}
-		if( !EnsureTypeComplete( v.t ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, v.t )
-			return ErrorValue();
-		}
-
 		if( v.t.ReferenceIsConvertibleTo( t ) )
 		{
 			result.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
