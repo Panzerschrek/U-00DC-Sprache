@@ -818,6 +818,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const VariablePtr branch_result= BuildExpressionCodeEnsureVariable( ternary_operator.branches[i], names, function_context );
 
 			branches_constexpr_values[i]= branch_result->constexpr_value;
+
+			if( result->type.ReferencesTagsCount() > 0 )
+				function_context.variables_state.TryAddLink( branch_result->inner_reference_node, result->inner_reference_node, names.GetErrors(), ternary_operator.src_loc );
+
 			if( result->value_type == ValueType::Value )
 			{
 				// Move or create copy.
@@ -832,8 +836,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					result->type.GetTupleType() != nullptr ||
 					result->type.GetArrayType() != nullptr )
 				{
-					SetupReferencesInCopyOrMove( function_context, result, branch_result, names.GetErrors(), ternary_operator.src_loc );
-
 					if( branch_result->value_type == ValueType::Value )
 					{
 						// Move.
@@ -861,10 +863,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			else
 			{
 				branches_reference_values[i]= branch_result->llvm_value;
-
 				function_context.variables_state.TryAddLink( branch_result, result, names.GetErrors(), ternary_operator.src_loc );
-				if( result->type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.TryAddLink( branch_result->inner_reference_node, result->inner_reference_node, names.GetErrors(), ternary_operator.src_loc );
 			}
 
 			CallDestructors( branch_temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( ternary_operator.branches[i] ) );
@@ -1351,7 +1350,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Copy content to new variable.
 	function_context.variables_state.AddNode( result );
 
-	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc );
+	if( expression_result->type.ReferencesTagsCount() > 0u )
+		function_context.variables_state.TryAddLink( expression_result->inner_reference_node, result->inner_reference_node, names.GetErrors(), take_operator.src_loc );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -2065,6 +2065,13 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				l_var->llvm_value );
 		function_context.variables_state.AddNode( l_var_lock );
 		function_context.variables_state.TryAddLink( l_var, l_var_lock, names.GetErrors(), src_loc );
+
+		if( l_var->type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddLink(
+				l_var->inner_reference_node,
+				l_var_lock->inner_reference_node,
+				names.GetErrors(),
+				src_loc );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )

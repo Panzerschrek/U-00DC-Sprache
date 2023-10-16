@@ -264,7 +264,7 @@ def TernaryOperator_SavesInnerReferences_Test0():
 			var i32 mut x= 0, mut y= 0;
 			auto res= select( b ? GetS(x) : GetS(y) );
 			++x; // Error, "x" have reference inside "res"
-			++y; // Error, "x" have reference inside "res"
+			++y; // Error, "y" have reference inside "res"
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

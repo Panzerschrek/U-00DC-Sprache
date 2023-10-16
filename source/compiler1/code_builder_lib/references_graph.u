@@ -5,12 +5,6 @@ import "references_graph.uh"
 namespace U1
 {
 
-struct NodeReplacement
-{
-	VariablePtr first;
-	VariablePtr second;
-}
-
 fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
 	debug_assert( nodes_.find( node ).empty(), "Node is already registered!" );

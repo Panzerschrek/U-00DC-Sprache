@@ -695,7 +695,14 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 				};
 				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 				function_context.references_graph.AddNode( element_variable_ptr );
+
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+				if( array_type.element_type.ReferencesTagsCount() > 0u )
+				{
+					function_context.references_graph.AddLink(
+						variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+						element_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+				}
 
 				constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
@@ -725,7 +732,14 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			};
 			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
+
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			if( tuple_type.element_types[i].ReferencesTagsCount() > 0u )
+			{
+				function_context.references_graph.AddLink(
+					variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
+					element_variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+			}
 
 			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
