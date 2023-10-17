@@ -1301,6 +1301,9 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 
 		result.return_type= std::make_unique<TypeName>( ParseTypeName() );
 
+		if( it_->type == Lexem::Type::Apostrophe )
+			result.return_value_inner_reference_tag= ParseInnerReferenceTag();
+
 		if( it_->type == Lexem::Type::And )
 		{
 			result.return_value_reference_modifier= ReferenceModifier::Reference;
@@ -1334,8 +1337,6 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 				NextLexem();
 			}
 		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-			result.return_value_inner_reference_tag= ParseInnerReferenceTag();
 	}
 }
 
