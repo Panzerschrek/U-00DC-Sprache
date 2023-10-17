@@ -265,6 +265,74 @@ U_TEST( ReturnReferenceFromArg_Test6 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
+U_TEST( ReturnReferenceFromArg_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		// Ok - return reference to one of args (with specifying reference tags).
+		fn Foo( bool cond, S &'x a'x_inner', S &'x b'x_inner' ) : S'x_inner' &'x
+		{
+			if( cond ) { return a; }
+			else { return b; }
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReturnReferenceFromArg_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
+		// This is not a big problem, since there is not possible to write correct implementation of this function without unsafe hacks.
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' &'x;
+		fn Bar()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S s{ .x= c };
+			{
+				var S mut s_a{ .x= a };
+				var S mut s_b{ .x= b };
+				var S &impossible_ref= Foo( s_a, s_b );
+				auto& b_ref= s_b.x; // Creating here reference to "s_b.x", which is wrongly linked with inner reference node of "impossible_ref".
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+}
+
+U_TEST( ReturnReferenceFromArg_Test9 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'x_inner' &'x;
+		fn Bar()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S s{ .x= c };
+			{
+				var S mut s_a{ .x= a };
+				var S mut s_b{ .x= b };
+				var S &s_a_ref= Foo( s_a, s_b );
+				auto& b_ref= s_b.x; // Ok, "s_b_ref" points to both node itself and node inner reference of "s_a", but not "s_b".
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( ReturnReferenceToLocalVariableInsideStruct )
 {
 	static const char c_program_text[]=
