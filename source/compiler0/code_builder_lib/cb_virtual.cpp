@@ -44,6 +44,10 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 		if( return_reference == this_inner_reference )
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
 
+	for( const FunctionType::ParamReference& return_reference : src_function_type.return_inner_references )
+		if( return_reference == this_inner_reference )
+			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
+
 	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
 	for( const FunctionType::ReferencePollution& reference_pollution : src_function_type.references_pollution )
 		if( reference_pollution.src == this_inner_reference || reference_pollution.dst == this_inner_reference )

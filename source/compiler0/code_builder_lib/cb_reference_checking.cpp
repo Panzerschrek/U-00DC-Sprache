@@ -13,7 +13,6 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	const FunctionType::Param& out_param,
 	const size_t arg_number )
 {
-
 	if(!func.return_value_reference_tag.empty() )
 	{
 		// Arg reference to return reference
