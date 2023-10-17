@@ -19,6 +19,7 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	U_ASSERT( src_function_type.params.front().type.GetClassType() != nullptr );
 	U_ASSERT( new_function_type.params.front().type.GetClassType() != nullptr );
 	U_ASSERT( src_function_type.return_references == new_function_type.return_references );
+	U_ASSERT( src_function_type.return_inner_references == new_function_type.return_inner_references );
 	U_ASSERT( src_function_type.references_pollution == new_function_type.references_pollution );
 
 	const auto src_class_inner_reference_kind= src_function_type.params.front().type.GetClassType()->inner_reference_type;
