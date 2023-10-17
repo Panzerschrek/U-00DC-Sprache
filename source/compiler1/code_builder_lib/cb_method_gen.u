@@ -147,7 +147,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
 			.name= KeywordToString( Keyword::base_ ),
 		};
-		var VariablePtr base_variable_ptr( move(base_variable) );
+		var VariablePtr base_variable_ptr= move(base_variable).CreatePtr();
 		function_context.references_graph.AddNode( base_variable_ptr );
 
 		BuildEmptyInitializer( class_members_ptr, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), src_loc );
@@ -173,7 +173,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field ),
 			.name= field_pair[0],
 		};
-		var VariablePtr field_variable_ptr( move(field_variable) );
+		var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 		function_context.references_graph.AddNode( field_variable_ptr );
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
@@ -193,7 +193,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 					.location= Variable::Location::Pointer,
 					.name= KeywordToString( Keyword::this_ ),
 				};
-				var VariablePtr this_variable_ptr( move(this_variable) );
+				var VariablePtr this_variable_ptr= move(this_variable).CreatePtr();
 				function_context.references_graph.AddNode( this_variable_ptr );
 				InitializeReferenceField( class_members_initial, function_context, this_variable_ptr, class_field, initializer );
 				function_context.references_graph.RemoveNode( this_variable_ptr );

@@ -54,10 +54,12 @@ std::set<FunctionType::ParamReference> CodeBuilder::GetGeneratorFunctionReturnRe
 		const size_t i= size_t(&param - generator_function_type.params.data());
 		if( param.value_type == ValueType::Value )
 		{
-			// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
-			// TODO - maybe check real inner reference kind here?
-			FunctionType::ParamReference param_reference{ uint8_t(i), uint8_t(0) };
-			result.insert( param_reference );
+			EnsureTypeComplete( param.type );
+			if( param.type.ReferencesTagsCount() > 0 )
+			{
+				FunctionType::ParamReference param_reference{ uint8_t(i), uint8_t(0) };
+				result.insert( param_reference );
+			}
 		}
 		else
 		{
@@ -347,18 +349,8 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				return;
 			}
 
-			// Check correctness of returning references.
 			if( expression_result->type.ReferencesTagsCount() > 0u )
-			{
-				for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
-				{
-					for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
-					{
-						if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-							REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
-					}
-				}
-			}
+				CheckReturnedReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -411,10 +403,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 			}
 
-			// Check correctness of returning reference.
-			for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
-				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+			CheckReturnedReferenceIsAllowed( names, function_context, expression_result, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 

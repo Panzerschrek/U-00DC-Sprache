@@ -1498,7 +1498,7 @@ Type CodeBuilder::BuildFuncCode(
 		const std::string& arg_name= declaration_arg.name;
 
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				param.type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -1562,24 +1562,20 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			// Create inner node + root variable.
 			const VariablePtr accesible_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
 					arg_name + " referenced variable" );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference=
-				function_context.variables_state.CreateNodeInnerReference(
-					variable,
-					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-			function_context.variables_state.AddLink( accesible_variable, inner_reference );
+			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_node );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
 		const VariablePtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				param.type,
 				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -1589,6 +1585,9 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddNode( variable_reference );
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
+		if( param.type.ReferencesTagsCount() > 0u )
+			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{

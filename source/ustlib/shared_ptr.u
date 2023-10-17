@@ -192,12 +192,12 @@ public:
 
 	fn enable_if(is_mutable) lock_mut_unchecked( this ) unsafe : lock_mut_t 'this'
 	{
-		return unsafe( lock_mut_t ( $>(value_), counter_ ) );
+		return unsafe( lock_mut_t ( value_, counter_ ) );
 	}
 
 	fn lock_imut_unchecked( this ) unsafe : lock_imut_t'this'
 	{
-		return unsafe( lock_imut_t( $>(value_), counter_ ) );
+		return unsafe( lock_imut_t( value_, counter_ ) );
 	}
 
 	// Compare.
@@ -437,8 +437,8 @@ template</ type T />
 class lock_mut
 {
 public:
-	fn constructor( mut this'a', T &'b  mut value, $(counter) counter ) ' a <- b ' unsafe
-		( value_(value), counter_(counter) )
+	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
+		( value_(v), counter_(c) )
 	{
 		unsafe
 		{
@@ -455,20 +455,24 @@ public:
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( mut this ) : T &'this  mut
 	{
-		return unsafe( $>( $<(value_) ) );
+		return unsafe( $>( value_ ) );
 	}
 
 private:
-	T & mut value_;
-	$(counter) counter_= zero_init;
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - "counter".
+	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+
+	$(T) value_;
+	$(counter) counter_;
 }
 
 template</ type T />
 class lock_imut
 {
 public:
-	fn constructor( mut this'a', T &'b imut value, $(counter) counter ) ' a <- b ' unsafe
-		( value_(value), counter_(counter) )
+	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
+		( value_(v), counter_(c) )
 	{
 		unsafe
 		{
@@ -486,12 +490,16 @@ public:
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( this ) : T &'this imut
 	{
-		return unsafe( $>($<(cast_mut(value_))) );
+		return unsafe( $>( value_ ) );
 	}
 
 private:
-	T &imut value_;
-	$(counter) counter_= zero_init;
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - "counter".
+	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+
+	$(T) value_;
+	$(counter) counter_;
 }
 
 } // namespace shared_ptr_impl

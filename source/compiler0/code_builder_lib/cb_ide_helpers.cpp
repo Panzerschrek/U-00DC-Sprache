@@ -243,8 +243,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		if( variable_entry.initializer == nullptr )
 			continue;
 
-		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+		const VariablePtr variable=
+			Variable::Create(
 				type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -252,8 +252,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 		function_context.variables_state.AddNode( variable );
 
-		const VariableMutPtr variable_for_initialization=
-			std::make_shared<Variable>(
+		const VariablePtr variable_for_initialization=
+			Variable::Create(
 				type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -735,7 +735,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 				arg.constexpr_value= llvm::Constant::getNullValue( arg.type.GetLLVMType() );
 
 				const VariablePtr variable_for_insertion=
-					std::make_shared<Variable>(
+					Variable::Create(
 						arg.type,
 						ValueType::ReferenceImut,
 						Variable::Location::Pointer,
@@ -782,7 +782,7 @@ Type CodeBuilder::GetStubTemplateArgType()
 	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlaying_type.llvm_type );
 
 	const VariablePtr member_variable=
-		std::make_shared<Variable>(
+		Variable::Create(
 			enum_type,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,

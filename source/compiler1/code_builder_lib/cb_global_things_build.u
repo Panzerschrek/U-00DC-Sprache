@@ -1217,7 +1217,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		.location= Variable::Location::Pointer,
 		.name= variable_declaration.name,
 	};
-	auto mut variable_ptr= VariablePtr( move(variable) );
+	auto mut variable_ptr= move(variable).CreatePtr();
 
 	auto mut constexpr_value= LLVMValueRef::Null;
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
@@ -1243,7 +1243,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 				.llvm_value= llvm_value,
 			};
 
-			var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+			var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
 			function_context.references_graph.AddNode( variable_for_initialization_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
 
@@ -1428,7 +1428,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	// Finally, set result variable.
 	auto mut lock= global_auto_variable_ptr.lock_mut();
-	lock.deref().variable.reset( move(variable) );
+	lock.deref().variable= move(variable).CreatePtr();
 }
 
 } // namespace U1

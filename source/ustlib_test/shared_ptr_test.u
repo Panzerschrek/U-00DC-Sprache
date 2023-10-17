@@ -447,6 +447,11 @@ fn nomangle main() : i32
 		halt if( ptr2.try_lock_imut().deref() != 85 );
 		halt if( ptr3.try_lock_imut().deref() != 58 );
 	}
+	{ // Lock classes contain only two pointers.
+		var IntPtrMut ptr= ust::make_shared_ptr( 66 );
+		static_assert( typeinfo</ typeof( ptr.lock_imut() ) />.size_of == typeinfo</size_type/>.size_of * 2s );
+		static_assert( typeinfo</ typeof( ptr.lock_mut () ) />.size_of == typeinfo</size_type/>.size_of * 2s );
+	}
 
 	return 0;
 }

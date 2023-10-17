@@ -284,6 +284,7 @@ public:
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
 
+	fn ReferencesTagsCount( this ) : u32;
 	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
@@ -358,11 +359,23 @@ struct Variable
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	ust::vector</VariableNullablePtr/> children;
 
+	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
+	VariableNullablePtr inner_reference_node;
+
+	// Mark inner reference nodes of variables using this flag.
+	// Do this in order to stop references graph search on these nodes while performing reference pollution.
+	bool is_variable_inner_reference_node= false;
+
 	bool referenced= false;
 
 	// This struct is non-copyable.
 	fn constructor( mut this, Variable& other )= delete;
 	op=( mut this, Variable& other )= delete;
+
+	// Various methods.
+
+	fn CreatePtr( byval mut this ) : VariablePtr;
+	fn CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr;
 }
 
 type VariablePtr= ust::shared_ptr_mut</Variable/>;

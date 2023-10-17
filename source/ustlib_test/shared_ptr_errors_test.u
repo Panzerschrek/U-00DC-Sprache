@@ -56,6 +56,26 @@ fn nomangle main() : i32
 		var IntPtrImut ptr_imut(0);
 		auto &imut ref= ptr_imut.lock_imut().deref(); //##expect_error DestroyedVariableStillHaveReferences
 	}
+	{ // Can't modify source ptr when lock exists.
+		var IntPtrImut mut ptr(0);
+		auto l= ptr.lock_imut();
+		move(ptr); //##expect_error MovedVariableHaveReferences
+	}
+	{ // Can't modify source ptr when lock exists.
+		var IntPtrMut mut ptr(0);
+		auto l= ptr.lock_mut();
+		move(ptr); //##expect_error MovedVariableHaveReferences
+	}
+	{ // Can't modify source ptr when lock exists.
+		var IntPtrNullableImut mut ptr(0);
+		auto l= ptr.try_lock_imut();
+		ptr.reset(); //##expect_error ReferenceProtectionError
+	}
+	{ // Can't modify source ptr when lock exists.
+		var IntPtrNullableMut mut ptr(0);
+		auto l= ptr.try_lock_mut();
+		ptr.reset(); //##expect_error ReferenceProtectionError
+	}
 	{ // Weak pointers have no lock_mut/lock_imut methods.
 		var IntPtrWeakMut  weak_ptr_mut ;
 		var IntPtrWeakImut weak_ptr_imut;

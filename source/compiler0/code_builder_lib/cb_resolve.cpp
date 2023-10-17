@@ -94,7 +94,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		// So, create regular node pointing to "this".
 		// TODO - maybe access "base" child node in constructor initializer list since it is not possible to call real virtual method of "this"?
 		const VariablePtr base=
-			std::make_shared<Variable>(
+			Variable::Create(
 				class_.base_class,
 				function_context.this_->value_type,
 				Variable::Location::Pointer,

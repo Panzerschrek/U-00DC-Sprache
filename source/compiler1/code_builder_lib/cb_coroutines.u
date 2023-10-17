@@ -378,16 +378,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			// Check correctness of returning references.
 			if( yield_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
-				foreach( &inner_reference_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( expr_ptr ) )
-				{
-					foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
-					{
-						if( !IsReferenceAllowedForReturn( function_context, variable_node ) )
-						{
-							REPORT_ERROR( ReturningUnallowedReference, names_scope, src_loc )
-						}
-					}
-				}
+				CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(), src_loc );
 			}
 
 			if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
@@ -444,14 +435,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
 			}
 
-			// Check correctness of returning reference.
-			foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( expr_ptr ) )
-			{
-				if( !IsReferenceAllowedForReturn( function_context, node ) )
-				{
-					REPORT_ERROR( ReturningUnallowedReference, names_scope, src_loc )
-				}
-			}
+			CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 

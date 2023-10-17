@@ -505,7 +505,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	// Cast "this" into type of class, where this virtual function is declared.
 	// This is needed to perform (possible) pointer correction later.
 	const VariableMutPtr this_casted=
-		std::make_shared<Variable>(
+		Variable::Create(
 			function_this_type,
 			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -513,6 +513,9 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			CreateReferenceCast( this_->llvm_value, this_->type, function_this_type, function_context ) );
 	function_context.variables_state.AddNode( this_casted );
 	function_context.variables_state.TryAddLink( this_, this_casted, errors_container, src_loc );
+
+	if( this_->inner_reference_node != nullptr && function_this_type.ReferencesTagsCount() > 0 )
+		function_context.variables_state.TryAddLink( this_->inner_reference_node, this_casted->inner_reference_node, errors_container, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted );
 

@@ -645,6 +645,11 @@ fn Type::IsAbstract( this ) : bool
 	return false;
 }
 
+fn Type::ReferencesTagsCount( this ) : u32
+{
+	return select( GetInnerReferenceKind() == InnerReferenceKind::None ? 0u : 1u );
+}
+
 fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
 {
 	if_var( &array_type : GetArrayType() )
@@ -912,6 +917,32 @@ fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
 //
 // Value
 //
+
+fn Variable::CreatePtr( byval mut this ) : VariablePtr
+{
+	auto inner_reference_kind= this.t.GetInnerReferenceKind();
+	if( inner_reference_kind != InnerReferenceKind::None )
+	{
+		// Create inner reference node.
+		var Variable mut node_src
+		{
+			.value_type= select( inner_reference_kind == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= this.name + " inner reference",
+			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
+		};
+
+		this.inner_reference_node= VariablePtr( move(node_src) );
+	}
+
+	return VariablePtr( move(this) );
+}
+
+fn Variable::CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr
+{
+	this.parent= parent;
+	return VariablePtr( move(this) );
+}
 
 fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8
 {

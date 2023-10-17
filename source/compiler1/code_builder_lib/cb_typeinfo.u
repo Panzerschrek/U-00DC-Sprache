@@ -208,7 +208,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		v.llvm_value= AddGlobalConstantVariable( "\0", llvm_type, v.constexpr_value );
 	}
 
-	var VariablePtr mut v_ptr( move(v) );
+	var VariablePtr mut v_ptr= move(v).CreatePtr();
 	var TypeinfoCacheElement mut cache_element{ .variable= v_ptr };
 	typeinfo_cache_.insert( t, move(cache_element) );
 
@@ -419,6 +419,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 		.members_initial= class_members,
 		.generated_class_data( move(typeinfo_class_description) ),
 		.can_be_constexpr= true,
+		.inner_reference_kind= InnerReferenceKind::Imut,
 	};
 
 	var ClassTypePtr mut class_type_ptr( move(class_type) );
@@ -960,7 +961,7 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 	auto name_nt= "\0"; // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
 	v.llvm_value= unsafe( AddGlobalConstantVariable( name_nt, v.t.GetLLVMType(), v.constexpr_value ) );
 
-	return VariablePtr( move(v) );
+	return move(v).CreatePtr();
 }
 
 } // namespace U1

@@ -985,7 +985,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.src_loc );
 
 		const VariableMutPtr var=
-			std::make_shared<Variable>(
+			Variable::Create(
 				enum_,
 				ValueType::ReferenceImut,
 				Variable::Location::Pointer );
@@ -1100,11 +1100,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				variable_declaration.name );
+		function_context.variables_state.AddNode( variable_reference );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -1116,18 +1117,17 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 					: CreateGlobalConstantVariable( type, name_mangled );
 
 			const VariableMutPtr variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					type,
 					ValueType::Value,
 					Variable::Location::Pointer,
 					variable_declaration.name,
 					global_variable );
-
 			function_context.variables_state.AddNode( variable );
 
 			{
 				const VariablePtr variable_for_initialization=
-					std::make_shared<Variable>(
+					Variable::Create(
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
@@ -1135,6 +1135,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
+
+				if( type.ReferencesTagsCount() > 0 )
+					function_context.variables_state.AddLink( variable->inner_reference_node, variable_for_initialization->inner_reference_node );
 
 				if( variable_declaration.initializer != nullptr )
 					variable->constexpr_value= ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_declaration.initializer );
@@ -1234,7 +1237,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				initializer_experrsion->type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,

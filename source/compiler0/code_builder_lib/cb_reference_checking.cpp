@@ -210,32 +210,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	if( dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
-	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( src_variable );
-	const ReferencesGraph::NodesSet dst_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( dst_variable );
-
-	if( src_node_inner_references.empty() || dst_variable_nodes.empty() )
-		return;
-
-	bool node_is_mutable= false;
-	for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-		node_is_mutable= node_is_mutable || src_node_inner_reference->value_type == ValueType::ReferenceMut;
-
-	for( const VariablePtr& dst_variable_node : dst_variable_nodes )
-	{
-		VariablePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
-		if( dst_node_inner_reference == nullptr )
-		{
-			dst_node_inner_reference=
-				function_context.variables_state.CreateNodeInnerReference( dst_variable_node, node_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-		}
-
-		if( ( dst_node_inner_reference->value_type == ValueType::ReferenceMut  && !node_is_mutable ) ||
-			( dst_node_inner_reference->value_type == ValueType::ReferenceImut &&  node_is_mutable ) )
-			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
-
-		for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-			function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference, errors_container, src_loc );
-	}
+	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_variable->inner_reference_node, dst_variable->inner_reference_node, errors_container, src_loc );
 }
 
 void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )
@@ -286,8 +261,18 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	return std::move(res.first);
 }
 
+void CodeBuilder::CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
+{
+	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )
+		if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+}
+
 bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node )
 {
+	U_ASSERT( variable_node != nullptr );
+	U_ASSERT( variable_node->value_type == ValueType::Value );
+
 	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_references )
 	{
 		const size_t arg_n= param_and_tag.first;
@@ -313,7 +298,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		const VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
+		const VariablePtr inner_reference= node_pair.first->inner_reference_node;
 		if( inner_reference == nullptr )
 			continue;
 

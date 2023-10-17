@@ -1206,6 +1206,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	void CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
 	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node );
 
 	void CheckReferencesPollutionBeforeReturn(
