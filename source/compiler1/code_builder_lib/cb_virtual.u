@@ -48,14 +48,14 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	// Disable inner reference kind change if function returns "this" inner reference.
 	foreach( &return_reference : src_function.t.return_references )
 	{
-		if( return_reference == this_inner_reference)
+		if( return_reference == this_inner_reference )
 		{
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
 		}
 	}
 	foreach( &return_reference : src_function.t.return_inner_references )
 	{
-		if( return_reference == this_inner_reference)
+		if( return_reference == this_inner_reference )
 		{
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
 		}

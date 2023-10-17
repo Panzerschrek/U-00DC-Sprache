@@ -287,7 +287,7 @@ U_TEST( ReturnReferenceFromArg_Test8 )
 	R"(
 		struct S { i32 &mut x; }
 		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
-		// This is not a big problem, since there is not possible to write correct implementation of this function without unsafe hacks.
+		// This is not a big problem, since it is not possible to write correct implementation of this function without unsafe hacks.
 		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' &'x;
 		fn Bar()
 		{

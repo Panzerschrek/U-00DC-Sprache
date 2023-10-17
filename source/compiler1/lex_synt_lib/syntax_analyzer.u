@@ -1307,7 +1307,7 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 
 	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
 	{
-		function_type.inner_reference_tag= ParseInnerReferenceTag();
+		function_type.return_value_inner_reference_tag= ParseInnerReferenceTag();
 	}
 
 	if( it_.front().lexem_type == Lexem::Type::And )
