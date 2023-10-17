@@ -244,6 +244,27 @@ U_TEST( ReturnReferenceFromArg_Test5 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
+U_TEST( ReturnReferenceFromArg_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' &'x
+		{
+			return a;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
+}
+
 U_TEST( ReturnReferenceToLocalVariableInsideStruct )
 {
 	static const char c_program_text[]=
