@@ -4016,10 +4016,10 @@ fn CodeBuilder::DoCallFunction(
 			}
 		}
 	}
-	else if( function_type.return_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+	if( function_type.return_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 	{
 		var VariablePtr result_inner_reference_node_non_null= result_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable();
-		foreach( &param_reference : function_type.return_references )
+		foreach( &param_reference : function_type.return_inner_references )
 		{
 			var size_type i(param_reference.param_index);
 			auto& arg_node= args_nodes[i];

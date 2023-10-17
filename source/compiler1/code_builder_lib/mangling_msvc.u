@@ -375,6 +375,34 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerState &mut mangler_state, Funct
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
+		if( !function_type.return_inner_references.empty() )
+		{
+			// Encode return references, like template class with special name and numeric args.
+			params_empty= false;
+
+			mangler_state.PushElement( g_class_type_prefix );
+
+			// Use separate backreferences table.
+			{
+				var ManglerState mut template_mangler_state;
+
+				template_mangler_state.PushElement( g_template_prefix );
+				template_mangler_state.EncodeName( "_RRI" );
+				foreach( &arg_and_tag : function_type.return_inner_references )
+				{
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, u64(arg_and_tag.param_index)  );
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, u64(arg_and_tag.reference_index) );
+				}
+				// Finish list of template args.
+				template_mangler_state.PushElement( g_terminator );
+
+				mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+			}
+			// Finish class name.
+			mangler_state.PushElement( g_terminator );
+		}
 		if( !function_type.references_pollution.empty() )
 		{
 			// Encode references pollution like template class with special name and numeric args.

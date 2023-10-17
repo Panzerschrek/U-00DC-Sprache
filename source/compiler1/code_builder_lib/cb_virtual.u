@@ -53,6 +53,13 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
 		}
 	}
+	foreach( &return_reference : src_function.t.return_inner_references )
+	{
+		if( return_reference == this_inner_reference)
+		{
+			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+		}
+	}
 
 	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
 	foreach( &reference_pollution : src_function.t.references_pollution )

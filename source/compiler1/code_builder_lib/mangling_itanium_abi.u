@@ -698,6 +698,28 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 				}
 			}
 		}
+		if( !function_type.return_inner_references.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				mangler_state.Push( "_RRI" );
+
+				debug_assert( function_type.return_inner_references.size() < 36s );
+				mangler_state.Push( Base36Digit( u32( function_type.return_inner_references.size()) ) );
+
+				foreach( &param_reference : function_type.return_inner_references )
+				{
+					halt if( param_reference.param_index >= 36u8 );
+					halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
+
+					mangler_state.Push( Base36Digit( u32(param_reference.param_index) ) );
+					mangler_state.Push( select(
+						param_reference.reference_index == FunctionType::c_param_reference_number
+						? "_"c8
+						: Base36Digit( u32(param_reference.reference_index) ) ) );
+				}
+			}
+		}
 		if( !function_type.references_pollution.empty() )
 		{
 			ADD_NODE( mangler_state )

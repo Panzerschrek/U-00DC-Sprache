@@ -1305,6 +1305,11 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 
 	function_type.return_type= ParseTypeName();
 
+	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	{
+		function_type.inner_reference_tag= ParseInnerReferenceTag();
+	}
+
 	if( it_.front().lexem_type == Lexem::Type::And )
 	{
 		NextLexem();
@@ -1332,10 +1337,6 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 			function_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
 			NextLexem();
 		}
-	}
-	else if( it_.front().lexem_type == Lexem::Type::Apostrophe )
-	{
-		function_type.return_value_reference_tag= ParseInnerReferenceTag();
 	}
 }
 

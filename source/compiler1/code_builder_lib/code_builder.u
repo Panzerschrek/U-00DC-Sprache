@@ -465,7 +465,7 @@ fn CodeBuilder::PrepareFunction(
 		auto mut return_references= GetGeneratorFunctionReturnReferences( function_type );
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
 		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
-		function_type.return_references= move(return_references);
+		select( function_type.return_value_type == ValueType::Value ? function_type.return_inner_references : function_type.return_references )= move(return_references);
 		function_type.return_type= move(generator_return_type);
 		function_type.return_value_type= ValueType::Value;
 
@@ -491,7 +491,7 @@ fn CodeBuilder::PrepareFunction(
 			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
 		}
 		// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-		if( !function_declaration.function_type.return_value_reference_tag.empty() )
+		if( !function_declaration.function_type.return_value_reference_tag.empty() || !function_declaration.function_type.inner_reference_tag.empty() )
 		{
 			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "Explicit return tags for generators." )
 		}
@@ -1785,6 +1785,37 @@ fn CodeBuilder::CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, Fun
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool
 {
 	foreach( &return_reference : function_context.function_type.return_references )
+	{
+		auto i= size_type(return_reference.param_index);
+		if( return_reference.reference_index == FunctionType::c_param_reference_number &&
+			variable_node == function_context.args_nodes[i] )
+		{
+			return true;
+		}
+		if( return_reference.reference_index == 0u8 &&
+			variable_node == function_context.args_inner_variable_nodes[i] )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc )
+{
+	foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( return_reference_node ) )
+	{
+		if( !IsReferenceAllowedForInnerReturn( function_context, node ) )
+		{
+			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+		}
+	}
+}
+
+fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool
+{
+	foreach( &return_reference : function_context.function_type.return_inner_references )
 	{
 		auto i= size_type(return_reference.param_index);
 		if( return_reference.reference_index == FunctionType::c_param_reference_number &&

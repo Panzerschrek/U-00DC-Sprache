@@ -96,9 +96,8 @@ struct FunctionType
 	LLVMCallConvID calling_convention = LLVMCallConv::C;
 	bool is_unsafe= false;
 
-	// for functions, returning references this is references of reference itslef.
-	// For function, returning values, this is inner references.
 	ust::vector</ParamReference/> return_references; // Sorted by param index.
+	ust::vector</ParamReference/> return_inner_references; // Sorted by param index.
 
 	// Sorted.
 	ust::vector</ReferencePollution/> references_pollution;
