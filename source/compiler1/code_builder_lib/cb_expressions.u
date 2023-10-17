@@ -1509,14 +1509,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
+			var Type& element_type= tuple_type.element_types[type_index];
 			var Variable mut result
 			{
-				.t= tuple_type.element_types[type_index],
+				.t= element_type,
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
 				.name= v.name + "[" + ust::to_string8(type_index) + "]",
-				.inner_reference_node= v.inner_reference_node,
+				.inner_reference_node= select( element_type.ReferencesTagsCount() > 0u ? v.inner_reference_node : VariableNullablePtr() ),
 			};
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
@@ -2046,14 +2047,16 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 		}
 	}
 
+	var Type base_type= class_type.lock_imut().deref().base_class.try_to_non_nullable();
+
 	var Variable mut base_
 	{
-		.t= class_type.lock_imut().deref().base_class.try_to_non_nullable(),
+		.t= base_type,
 		.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
 		.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, u32(base_field_index) ),
 		.name= variable.name + ".base",
-		.inner_reference_node= variable.inner_reference_node,
+		.inner_reference_node= select( base_type.ReferencesTagsCount() > 0u ? variable.inner_reference_node : VariableNullablePtr() ),
 	};
 	var VariablePtr mut base_ptr= move(base_).CreateChildPtr( variable_ptr );
 
@@ -2203,7 +2206,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
 			.name= v.name + "." + field_name,
-			.inner_reference_node= v.inner_reference_node,
+			.inner_reference_node= select( field.t.ReferencesTagsCount() > 0u ? v.inner_reference_node : VariableNullablePtr() ),
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
 		{
