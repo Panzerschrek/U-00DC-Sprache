@@ -1135,9 +1135,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
-
-				if( type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.AddLink( variable->inner_reference_node, variable_for_initialization->inner_reference_node );
+				LinkInnerReferences( variable, variable_for_initialization, function_context, names_scope.GetErrors(), variables_declaration->src_loc );
 
 				if( variable_declaration.initializer != nullptr )
 					variable->constexpr_value= ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_declaration.initializer );

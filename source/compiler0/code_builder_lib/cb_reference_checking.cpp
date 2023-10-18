@@ -209,7 +209,20 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	if( dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
-	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_variable->inner_reference_node, dst_variable->inner_reference_node, errors_container, src_loc );
+	const size_t reference_tag_count= dst_variable->type.ReferencesTagsCount();
+	U_ASSERT( src_variable->inner_reference_nodes.size() >= reference_tag_count );
+	U_ASSERT( dst_variable->inner_reference_nodes.size() >= reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
+		function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_variable->inner_reference_nodes[i], dst_variable->inner_reference_nodes[i], errors_container, src_loc );
+}
+
+void CodeBuilder::LinkInnerReferences( const VariablePtr& from, const VariablePtr& to, FunctionContext& function_context, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+{
+	const size_t reference_tag_count= to->type.ReferencesTagsCount();
+	U_ASSERT( from->inner_reference_nodes.size() >= reference_tag_count );
+	U_ASSERT( to->inner_reference_nodes.size() >= reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
+		function_context.variables_state.TryAddLink( from, to, errors, src_loc );
 }
 
 void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )
@@ -322,9 +335,9 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		const VariablePtr inner_reference= node_pair.first->inner_reference_node;
-		if( inner_reference == nullptr )
+		if( node_pair.first->inner_reference_nodes.empty() )
 			continue;
+		const VariablePtr inner_reference= node_pair.first->inner_reference_nodes[0];
 
 		for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 		{

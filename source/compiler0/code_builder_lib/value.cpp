@@ -62,7 +62,7 @@ VariableMutPtr Variable::Create(
 {
 	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 
-	const auto reference_tag_count= result->type.ReferencesTagsCount();
+	const size_t reference_tag_count= result->type.ReferencesTagsCount();
 	result->inner_reference_nodes.resize( reference_tag_count );
 	for( size_t i= 0; i < reference_tag_count; ++i )
 	{
@@ -96,8 +96,14 @@ VariableMutPtr Variable::CreateChildNode(
 	result->parent= parent;
 
 	// Child nodes reuse inner reference nodes of parents.
-	if( type.ReferencesTagsCount() > 0 )
-		result->inner_reference_node= parent->inner_reference_node;
+	// TODO - perorm proper reference mapping.
+	const size_t reference_tag_count= result->type.ReferencesTagsCount();
+	result->inner_reference_nodes.resize( reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
+	{
+		U_ASSERT( i < parent->inner_reference_nodes.size() );
+		result->inner_reference_nodes[i]= parent->inner_reference_nodes[i];
+	}
 
 	return result;
 }

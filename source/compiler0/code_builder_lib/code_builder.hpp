@@ -1198,6 +1198,9 @@ private:
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	// Destination should contain no more inner references than source.
+	void LinkInnerReferences( const VariablePtr& from, const VariablePtr& to, FunctionContext& function_context, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
+
 	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 

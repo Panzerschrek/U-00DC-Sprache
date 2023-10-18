@@ -349,8 +349,9 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				return;
 			}
 
-			if( expression_result->type.ReferencesTagsCount() > 0u )
-				CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, src_loc );
+			// TODO - fix this.
+			// if( expression_result->type.ReferencesTagsCount() > 0u )
+			//	CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
