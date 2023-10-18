@@ -1562,7 +1562,8 @@ Type CodeBuilder::BuildFuncCode(
 
 		function_context.args_nodes[ arg_number ].first= variable;
 
-		if (param.type.ReferencesTagsCount() > 0u )
+		const auto reference_tag_count= param.type.ReferencesTagsCount();
+		for( size_t i= 0; i < reference_tag_count; ++i )
 		{
 			// Create inner node + root variable.
 			const VariablePtr accesible_variable=
@@ -1570,10 +1571,10 @@ Type CodeBuilder::BuildFuncCode(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					arg_name + " referenced variable" );
+					arg_name + " referenced variable " + std::to_string(i) );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_node );
+			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
@@ -1590,8 +1591,8 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-		if( param.type.ReferencesTagsCount() > 0u )
-			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
+		for( size_t i= 0; i < reference_tag_count; ++i )
+			function_context.variables_state.AddLink( variable->inner_reference_nodes[i], variable_reference->inner_reference_nodes[i] );
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{

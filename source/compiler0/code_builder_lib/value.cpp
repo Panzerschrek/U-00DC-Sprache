@@ -62,7 +62,9 @@ VariableMutPtr Variable::Create(
 {
 	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 
-	if( result->type.ReferencesTagsCount() > 0 )
+	const auto reference_tag_count= result->type.ReferencesTagsCount();
+	result->inner_reference_nodes.resize( reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
 	{
 		const auto inner_reference_node= std::make_shared<Variable>(
 			Variable(
@@ -75,9 +77,8 @@ VariableMutPtr Variable::Create(
 				nullptr ) );
 		inner_reference_node->is_variable_inner_reference_node= result->value_type == ValueType::Value;
 
-		result->inner_reference_node= inner_reference_node;
+		result->inner_reference_nodes[i]= inner_reference_node;
 	}
-
 	return result;
 }
 

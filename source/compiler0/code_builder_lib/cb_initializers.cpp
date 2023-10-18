@@ -47,7 +47,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 {
 	if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		if(  initializer.initializers.size() != array_type->element_count )
+		if( initializer.initializers.size() != array_type->element_count )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names.GetErrors(),

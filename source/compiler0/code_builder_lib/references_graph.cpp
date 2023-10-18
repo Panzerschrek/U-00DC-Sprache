@@ -25,8 +25,9 @@ void ReferencesGraph::AddNode( const VariablePtr& node )
 	U_ASSERT( nodes_.count(node) == 0 );
 	nodes_.emplace( node, NodeState() );
 
-	if( node->inner_reference_node != nullptr && node->parent.lock() == nullptr )
-		AddNode( node->inner_reference_node );
+	if( node->parent.lock() == nullptr )
+		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
+			AddNode( inner_reference_node );
 }
 
 void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
@@ -34,8 +35,8 @@ void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 	if( nodes_.count( node ) == 0 )
 		nodes_.emplace( node, NodeState() );
 
-	if( node->inner_reference_node != nullptr )
-		AddNodeIfNotExists( node->inner_reference_node );
+	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
+		AddNodeIfNotExists( inner_reference_node );
 }
 
 void ReferencesGraph::RemoveNode( const VariablePtr& node )
@@ -43,8 +44,9 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 	if( nodes_.count(node) == 0 )
 		return;
 
-	if( node->inner_reference_node != nullptr && node->parent.lock() == nullptr )
-		RemoveNode( node->inner_reference_node );
+	if( node->parent.lock() == nullptr )
+		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
+			RemoveNode( inner_reference_node );
 
 	for( const VariablePtr& child : node->children )
 		if( child != nullptr )
@@ -141,8 +143,8 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 	U_ASSERT( !node_state.moved );
 	node_state.moved= true;
 
-	if( node->inner_reference_node != nullptr )
-		RemoveNodeLinks( node->inner_reference_node );
+	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
+		RemoveNodeLinks( inner_reference_node );
 
 	// Move child nodes first in order to replace links from children with links from parent.
 	for( const VariablePtr& child : node->children )
@@ -282,18 +284,20 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 		if( !var_before.second.moved && var_after.second.moved )
 			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
 
-		if( node->inner_reference_node != nullptr && node->value_type == ValueType::Value )
+		if( node->value_type == ValueType::Value )
 		{
-			// If this is a variable node with inner reference check if no input links was added in loop body.
+			// If this is a variable node with inner references check if no input links was added in loop body.
 			// Reference nodes also may have inner reference nodes, but adding of input links (pollution) for them is not possible, so, ignore them.
+			for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
+			{
+				const NodesSet nodes_before= state_before.GetNodeInputLinks( inner_reference_node );
+				NodesSet nodes_after= state_after.GetNodeInputLinks( inner_reference_node );
+				for( const auto& node : nodes_before )
+					nodes_after.erase(node);
 
-			const NodesSet nodes_before= state_before.GetNodeInputLinks( node->inner_reference_node );
-			NodesSet nodes_after= state_after.GetNodeInputLinks( node->inner_reference_node );
-			for( const auto& node : nodes_before )
-				nodes_after.erase(node);
-
-			for( const auto& newly_linked_node : nodes_after )
-				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, node->name, newly_linked_node->name );
+				for( const auto& newly_linked_node : nodes_after )
+					REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, node->name, newly_linked_node->name );
+			}
 		}
 	}
 	return errors;
