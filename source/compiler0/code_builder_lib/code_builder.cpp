@@ -1563,9 +1563,10 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.args_nodes[ arg_number ].first= variable;
 
 		const auto reference_tag_count= param.type.ReferencesTagsCount();
+		function_context.args_nodes[ arg_number ].second.resize( reference_tag_count );
 		for( size_t i= 0; i < reference_tag_count; ++i )
 		{
-			// Create inner node + root variable.
+			// Create root variable.
 			const VariablePtr accesible_variable=
 				Variable::Create(
 					invalid_type_,
@@ -1576,7 +1577,7 @@ Type CodeBuilder::BuildFuncCode(
 
 			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 
-			function_context.args_nodes[ arg_number ].second= accesible_variable;
+			function_context.args_nodes[ arg_number ].second[i]= accesible_variable;
 		}
 
 		const VariablePtr variable_reference=

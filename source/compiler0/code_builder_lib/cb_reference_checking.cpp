@@ -295,7 +295,7 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
 		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
-		if( param_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+		else if( param_and_tag.second < function_context.args_nodes[arg_n].second.size() && variable_node == function_context.args_nodes[arg_n].second[ param_and_tag.second ] )
 			return true;
 	}
 
@@ -320,7 +320,7 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
 		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
-		if( param_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+		if( param_and_tag.second < function_context.args_nodes[arg_n].second.size() && variable_node == function_context.args_nodes[arg_n].second[param_and_tag.second] )
 			return true;
 	}
 
@@ -339,34 +339,43 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		if( node_pair.first->inner_reference_nodes.empty() )
-			continue;
-		const VariablePtr inner_reference= node_pair.first->inner_reference_nodes[0];
-
-		for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+		for( const VariablePtr& inner_reference : node_pair.first->inner_reference_nodes )
 		{
-			if( accesible_variable == node_pair.second )
-				continue;
-
-			std::optional<FunctionType::ParamReference> reference;
-			for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
+			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 			{
-				if( accesible_variable == function_context.args_nodes[j].first )
-					reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_arg_reference_tag_number );
-				if( accesible_variable == function_context.args_nodes[j].second )
-					reference= FunctionType::ParamReference( uint8_t(j), 0u );
-			}
+				bool own_variable= false;
+				for( const VariablePtr& own_accessible_variable : node_pair.second )
+					if( accesible_variable == own_accessible_variable )
+					{
+						own_variable= true;
+						break;
+					}
 
-			if( reference != std::nullopt )
-			{
-				FunctionType::ReferencePollution pollution;
-				pollution.src= *reference;
-				pollution.dst.first= uint8_t(i);
-				pollution.dst.second= 0u;
-				if( function_context.function_type.references_pollution.count( pollution ) != 0u )
+				if( own_variable )
 					continue;
+
+				std::optional<FunctionType::ParamReference> reference;
+				for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
+				{
+					if( accesible_variable == function_context.args_nodes[j].first )
+						reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_arg_reference_tag_number );
+
+					for( size_t k= 0; k < function_context.args_nodes[j].second.size(); ++k )
+					if( accesible_variable == function_context.args_nodes[j].second[k] )
+						reference= FunctionType::ParamReference( uint8_t(j), uint8_t(k) );
+				}
+
+				if( reference != std::nullopt )
+				{
+					FunctionType::ReferencePollution pollution;
+					pollution.src= *reference;
+					pollution.dst.first= uint8_t(i);
+					pollution.dst.second= 0u;
+					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
+						continue;
+				}
+				REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
 			}
-			REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
 		}
 	}
 }
