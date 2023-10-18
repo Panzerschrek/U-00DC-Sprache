@@ -105,7 +105,7 @@ public:
 	bool IsAbstract() const;
 
 	size_t ReferencesTagsCount() const;
-	InnerReferenceType GetInnerReferenceType() const;
+	InnerReferenceType GetInnerReferenceType(size_t index) const;
 
 	llvm::Type* GetLLVMType() const;
 

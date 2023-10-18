@@ -531,7 +531,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			{
 				if( !EnsureTypeComplete( field->type ) )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->src_loc, field->type );
-				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
+				for( size_t i= 0, reference_tag_count= field->type.ReferencesTagsCount(); i < reference_tag_count; ++i )
+					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType(i) );
 			}
 
 		});

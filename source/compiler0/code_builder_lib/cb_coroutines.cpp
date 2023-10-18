@@ -24,7 +24,10 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 			// Require type completeness for value params in order to know inner reference kind.
 			if( EnsureTypeComplete( param.type ) )
 			{
-				const InnerReferenceType param_type_inner_reference_type= param.type.GetInnerReferenceType();
+				InnerReferenceType param_type_inner_reference_type= InnerReferenceType::None;
+				for( size_t i= 0, reference_tag_count= param.type.ReferencesTagsCount(); i < reference_tag_count; ++i )
+					param_type_inner_reference_type= std::max( param_type_inner_reference_type, param.type.GetInnerReferenceType(i) );
+
 				if( param_type_inner_reference_type == InnerReferenceType::Mut )
 					coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
 				else if( param_type_inner_reference_type == InnerReferenceType::Imut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )

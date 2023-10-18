@@ -369,20 +369,36 @@ bool Type::IsAbstract() const
 
 size_t Type::ReferencesTagsCount() const
 {
-	return GetInnerReferenceType() == InnerReferenceType::None ? 0 : 1;
+	if( const auto class_type= GetClassType() )
+		return class_type->inner_reference_type == InnerReferenceType::None ? 0 : 1;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->element_type.ReferencesTagsCount();
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		// TODO - calculate sum, not max.
+		size_t result= 0;
+		for( const Type& element : tuple_type->element_types )
+			result= std::max( result, element.ReferencesTagsCount() );
+		return result;
+	}
+
+	return 0;
 }
 
-InnerReferenceType Type::GetInnerReferenceType() const
+InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 {
+	U_ASSERT( index < ReferencesTagsCount() );
+
 	if( const auto class_type= GetClassType() )
 		return class_type->inner_reference_type;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->element_type.GetInnerReferenceType();
+		return array_type->element_type.GetInnerReferenceType(index);
 	else if( const auto tuple_type= GetTupleType() )
 	{
+		// TODO - perform proper mapping.
 		InnerReferenceType result= InnerReferenceType::None;
 		for( const Type& element : tuple_type->element_types )
-			result= std::max( result, element.GetInnerReferenceType() );
+			result= std::max( result, element.GetInnerReferenceType(index) );
 		return result;
 	}
 
