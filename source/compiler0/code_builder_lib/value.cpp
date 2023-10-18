@@ -23,6 +23,7 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		l_type.return_type == r_type.return_type &&
 		l_type.return_value_type == r_type.return_value_type &&
 		l_type.return_references == r_type.return_references &&
+		l_type.return_inner_references == r_type.return_inner_references &&
 		l_type.references_pollution == r_type.references_pollution &&
 		l_type.unsafe == r_type.unsafe &&
 		l_type.calling_convention == r_type.calling_convention &&

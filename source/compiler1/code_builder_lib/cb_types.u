@@ -313,6 +313,28 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 	}
 
+	if( ! function_type.return_value_inner_reference_tag.empty() )
+	{
+		for( auto mut i= 0s; i < res.params.size(); ++i )
+		{
+			if( function_type.return_value_inner_reference_tag == function_type.params[i].reference_tag )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
+				res.return_inner_references.push_back( move(param_reference) );
+			}
+			if( function_type.return_value_inner_reference_tag == function_type.params[i].inner_reference_tag )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= 0u8 };
+				res.return_inner_references.push_back( move(param_reference) );
+			}
+		}
+
+		if( res.return_inner_references.empty() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, function_type.return_value_inner_reference_tag )
+		}
+	}
+
 	// Prepare reference pollution.
 	foreach( &in_pollution : function_type.references_pollution )
 	{

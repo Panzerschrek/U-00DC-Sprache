@@ -553,6 +553,24 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 				: Base36Digit(arg_and_tag.second) );
 		}
 	}
+	if( !function_type.return_inner_references.empty() )
+	{
+		const ManglerState::NodeHolder rr_node( mangler_state );
+		mangler_state.Push( "_RRI" );
+		mangler_state.Push( Base36Digit(function_type.return_inner_references.size()) );
+
+		for( const FunctionType::ParamReference& arg_and_tag : function_type.return_inner_references )
+		{
+			U_ASSERT( arg_and_tag.first  < 36u );
+			U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );
+
+			mangler_state.Push( Base36Digit(arg_and_tag.first) );
+			mangler_state.Push(
+				arg_and_tag.second == FunctionType::c_arg_reference_tag_number
+				? '_'
+				: Base36Digit(arg_and_tag.second) );
+		}
+	}
 	if( !function_type.references_pollution.empty() )
 	{
 		const ManglerState::NodeHolder rp_node( mangler_state );

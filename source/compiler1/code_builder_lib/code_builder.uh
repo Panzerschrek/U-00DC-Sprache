@@ -956,6 +956,10 @@ private:
 
 	fn CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;
+
+	fn CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
+	fn IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;
+
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename

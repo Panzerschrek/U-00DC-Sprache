@@ -613,7 +613,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( expression_result->type.ReferencesTagsCount() > 0u )
 		{
-			CheckReturnedReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
 
 			if( expression_result->inner_reference_node != nullptr )
 				function_context.variables_state.TryAddLink( expression_result->inner_reference_node, return_value_node->inner_reference_node, names.GetErrors(), return_operator.src_loc );
@@ -710,6 +710,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		if( function_context.return_type->ReferencesTagsCount() > 0u && expression_result->inner_reference_node != nullptr )
+			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
 		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );

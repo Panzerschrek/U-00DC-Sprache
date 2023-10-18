@@ -19,6 +19,7 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	U_ASSERT( src_function_type.params.front().type.GetClassType() != nullptr );
 	U_ASSERT( new_function_type.params.front().type.GetClassType() != nullptr );
 	U_ASSERT( src_function_type.return_references == new_function_type.return_references );
+	U_ASSERT( src_function_type.return_inner_references == new_function_type.return_inner_references );
 	U_ASSERT( src_function_type.references_pollution == new_function_type.references_pollution );
 
 	const auto src_class_inner_reference_kind= src_function_type.params.front().type.GetClassType()->inner_reference_type;
@@ -40,6 +41,10 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 
 	// Disable inner reference kind change if function returns "this" inner reference.
 	for( const FunctionType::ParamReference& return_reference : src_function_type.return_references )
+		if( return_reference == this_inner_reference )
+			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
+
+	for( const FunctionType::ParamReference& return_reference : src_function_type.return_inner_references )
 		if( return_reference == this_inner_reference )
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
 
