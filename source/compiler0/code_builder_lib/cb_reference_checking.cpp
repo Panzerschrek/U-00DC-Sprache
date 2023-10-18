@@ -360,8 +360,9 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		for( const VariablePtr& inner_reference : node_pair.first->inner_reference_nodes )
+		for( size_t j= 0; j < node_pair.first->inner_reference_nodes.size(); ++j )
 		{
+			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[j];
 			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 			{
 				bool own_variable= false;
@@ -391,7 +392,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 					FunctionType::ReferencePollution pollution;
 					pollution.src= *reference;
 					pollution.dst.first= uint8_t(i);
-					pollution.dst.second= 0u;
+					pollution.dst.second= uint8_t(j);
 					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 						continue;
 				}

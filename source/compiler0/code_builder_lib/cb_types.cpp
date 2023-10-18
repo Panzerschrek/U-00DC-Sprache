@@ -203,6 +203,15 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		if( !found )
 			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, generator_type_name.return_value_reference_tag );
 	}
+	for( const std::string& tag : generator_type_name.return_value_inner_reference_tags )
+	{
+		bool found= false;
+		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == tag )
+			found= true;
+
+		if( !found )
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, tag );
+	}
 
 	// For now there is no reason to process reference tag.
 	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
