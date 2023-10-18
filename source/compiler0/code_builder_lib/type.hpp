@@ -192,8 +192,12 @@ public:
 
 	// Use "std::set" for references description, because we needs stable order for function type mangling.
 
-	std::set<ParamReference> return_references; // Tags of returned reference.
-	std::set<ParamReference> return_inner_references; // Tags of inner reference node of returned value/reference.
+	// Tags of returned reference.
+	std::set<ParamReference> return_references;
+
+	// Tags for each inner reference node for returned value/reference.
+	std::vector<std::set<ParamReference>> return_inner_references;
+
 	std::set<ReferencePollution> references_pollution;
 
 	// Do not store llvm type here, because calculating exact llvm type requires complete types of arguments and return value.

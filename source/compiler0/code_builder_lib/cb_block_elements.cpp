@@ -604,13 +604,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		if( expression_result->type.ReferencesTagsCount() > 0u )
-		{
-			// TODO - fix this.
-			// CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
-
-			LinkInnerReferences( expression_result, return_value_node, function_context, names.GetErrors(), return_operator.src_loc );
-		}
+		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		LinkInnerReferences( expression_result, return_value_node, function_context, names.GetErrors(), return_operator.src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
 			expression_result->type.GetEnumType() != nullptr ||

@@ -1063,7 +1063,7 @@ size_t CodeBuilder::PrepareFunction(
 			// Generate for now own return references mapping.
 			// TODO - fix this. Allow specifying reference mapping for generators, as soon, as multiple inner reference tags will be introduced.
 			if( function_type.return_value_type == ValueType::Value )
-				generator_function_type.return_inner_references= GetGeneratorFunctionReturnReferences( function_type );
+				generator_function_type.return_inner_references.push_back( GetGeneratorFunctionReturnReferences( function_type ) );
 			else
 				generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
 

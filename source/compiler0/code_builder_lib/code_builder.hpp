@@ -1213,7 +1213,7 @@ private:
 	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node );
 
 	void CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
-	bool IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node );
+	bool IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, size_t index );
 
 	void CheckReferencesPollutionBeforeReturn(
 		FunctionContext& function_context,

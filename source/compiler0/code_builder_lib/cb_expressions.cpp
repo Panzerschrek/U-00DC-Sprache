@@ -3523,22 +3523,18 @@ Value CodeBuilder::DoCallFunction(
 				function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], result, names.GetErrors(), call_src_loc );
 		}
 	}
-	if( function_type.return_type.ReferencesTagsCount() > 0u )
+	// Create inner node and link input nodes with it.
+	for( size_t tag_n= 0; tag_n < std::min( result->inner_reference_nodes.size(), function_type.return_inner_references.size() ); ++tag_n )
 	{
-		// Create inner node and link input nodes with it.
-		for( const FunctionType::ParamReference& arg_reference : function_type.return_inner_references )
+		auto& dst_node= result->inner_reference_nodes[tag_n];
+		for( const FunctionType::ParamReference& arg_reference : function_type.return_inner_references[tag_n] )
 		{
 			const auto& arg_node= args_nodes[arg_reference.first];
 
-			// TODO - perform proper reference mapping.
-			if( !result->inner_reference_nodes.empty() )
-			{
-				auto& dst_node= result->inner_reference_nodes[0];
-				if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
-					function_context.variables_state.TryAddLink( arg_node, dst_node, names.GetErrors(), call_src_loc );
-				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
-					function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], dst_node, names.GetErrors(), call_src_loc );
-			}
+			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
+				function_context.variables_state.TryAddLink( arg_node, dst_node, names.GetErrors(), call_src_loc );
+			else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
+				function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], dst_node, names.GetErrors(), call_src_loc );
 		}
 	}
 

@@ -553,13 +553,13 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 				: Base36Digit(arg_and_tag.second) );
 		}
 	}
-	if( !function_type.return_inner_references.empty() )
+	for( size_t i= 0; i < function_type.return_inner_references.size(); ++i )
 	{
 		const ManglerState::NodeHolder rr_node( mangler_state );
-		mangler_state.Push( "_RRI" );
+		mangler_state.Push( "_RRI" + std::to_string(i) );
 		mangler_state.Push( Base36Digit(function_type.return_inner_references.size()) );
 
-		for( const FunctionType::ParamReference& arg_and_tag : function_type.return_inner_references )
+		for( const FunctionType::ParamReference& arg_and_tag : function_type.return_inner_references[i] )
 		{
 			U_ASSERT( arg_and_tag.first  < 36u );
 			U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );

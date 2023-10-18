@@ -500,7 +500,7 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
-		if( !function_type.return_inner_references.empty() )
+		for( size_t i = 0; i < function_type.return_inner_references.size(); ++i )
 		{
 			// Encode return inner references, like template class with special name and numeric args.
 			params_empty= false;
@@ -513,8 +513,8 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 				ManglerState template_mangler_state( template_name );
 
 				template_mangler_state.PushElement( g_template_prefix );
-				template_mangler_state.EncodeName( "_RRI" );
-				for( const FunctionType::ParamReference& arg_and_tag : function_type.return_inner_references )
+				template_mangler_state.EncodeName( "_RRI" + std::to_string(i) );
+				for( const FunctionType::ParamReference& arg_and_tag : function_type.return_inner_references[i] )
 				{
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
 					EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.first ), false );

@@ -25,16 +25,17 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 				function_type.return_references.emplace( uint8_t(arg_number), uint8_t(i) );
 	}
 
+	function_type.return_inner_references.resize( func.return_value_inner_reference_tags.size() );
 	for( size_t j= 0; j < func.return_value_inner_reference_tags.size(); ++j )
 	{
 		// In arg reference to return value references
 		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_inner_reference_tags[j] )
-			function_type.return_inner_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
+			function_type.return_inner_references[j].emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
 		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
 			if( in_param.inner_arg_reference_tags[i] == func.return_value_inner_reference_tags[j] )
-				function_type.return_inner_references.emplace( uint8_t(arg_number), 0u );
+				function_type.return_inner_references[j].emplace( uint8_t(arg_number), 0u );
 	}
 }
 
@@ -320,17 +321,21 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 
 void CodeBuilder::CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
 {
-	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )
-		if( !IsReferenceAllowedForInnerReturn( function_context, var_node ) )
-			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+	for( size_t i= 0; i < return_reference_node->inner_reference_nodes.size(); ++i )
+		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node->inner_reference_nodes[i] ) )
+			if( !IsReferenceAllowedForInnerReturn( function_context, var_node, i ) )
+				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
 }
 
-bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node )
+bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, const size_t index )
 {
 	U_ASSERT( variable_node != nullptr );
 	U_ASSERT( variable_node->value_type == ValueType::Value );
 
-	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_inner_references )
+	if( index >= function_context.function_type.return_inner_references.size() )
+		return false;
+
+	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_inner_references[index] )
 	{
 		const size_t arg_n= param_and_tag.first;
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
