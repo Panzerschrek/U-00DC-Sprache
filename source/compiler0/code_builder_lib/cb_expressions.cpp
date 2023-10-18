@@ -1264,7 +1264,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			variable_for_move->constexpr_value );
 	function_context.variables_state.AddNode( result );
 
-	LinkInnerReferences( variable_for_move, result, function_context, names.GetErrors(), move_operator.src_loc );
+	LinkInnerReferences( resolved_variable, result, function_context, names.GetErrors(), move_operator.src_loc );
 
 	// Move both reference node and variable node.
 	function_context.variables_state.MoveNode( resolved_variable );
@@ -2936,6 +2936,8 @@ Value CodeBuilder::DoReferenceCast(
 		return ErrorValue();
 	}
 
+	const bool types_are_compatible= ReferenceIsConvertible( var->type, type, names.GetErrors(), src_loc );
+
 	const VariableMutPtr result=
 		Variable::Create(
 			type,
@@ -2944,7 +2946,9 @@ Value CodeBuilder::DoReferenceCast(
 			"cast</" + type.ToString() + "/>(" + var->name + ")" );
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), src_loc );
-	LinkInnerReferences( var, result, function_context, names.GetErrors(), src_loc );
+
+	if( types_are_compatible )
+		LinkInnerReferences( var, result, function_context, names.GetErrors(), src_loc );
 
 	llvm::Value* src_value= var->llvm_value;
 	if( var->location == Variable::Location::LLVMRegister )
@@ -2960,7 +2964,7 @@ Value CodeBuilder::DoReferenceCast(
 		result->llvm_value= src_value;
 	else
 	{
-		if( ReferenceIsConvertible( var->type, type, names.GetErrors(), src_loc ) )
+		if( types_are_compatible )
 		{
 			if( !function_context.is_functionless_context )
 				result->llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
