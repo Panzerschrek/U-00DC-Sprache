@@ -162,6 +162,7 @@ public:
 		llvm::Value* llvm_value= nullptr,
 		llvm::Constant* constexpr_value= nullptr );
 
+	// Create child node but do not fill inner nodes (only resize it to proper size).
 	static VariableMutPtr CreateChildNode(
 		const VariablePtr& parent,
 		Type type,

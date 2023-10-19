@@ -375,10 +375,10 @@ size_t Type::ReferencesTagsCount() const
 		return array_type->element_type.ReferencesTagsCount();
 	else if( const auto tuple_type= GetTupleType() )
 	{
-		// TODO - calculate sum, not max.
+		// Combine all tags of tuple elements.
 		size_t result= 0;
 		for( const Type& element : tuple_type->element_types )
-			result= std::max( result, element.ReferencesTagsCount() );
+			result+= element.ReferencesTagsCount();
 		return result;
 	}
 
@@ -395,11 +395,16 @@ InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 		return array_type->element_type.GetInnerReferenceType(index);
 	else if( const auto tuple_type= GetTupleType() )
 	{
-		// TODO - perform proper mapping.
-		InnerReferenceType result= InnerReferenceType::None;
+		size_t offset= 0;
 		for( const Type& element : tuple_type->element_types )
-			result= std::max( result, element.GetInnerReferenceType(index) );
-		return result;
+		{
+			const size_t count= element.ReferencesTagsCount();
+			if( index >= offset && index < offset + count )
+				return element.GetInnerReferenceType( index - offset );
+			offset+= count;
+		}
+		U_ASSERT(false); // Unreachable.
+		return InnerReferenceType::None;
 	}
 
 	return InnerReferenceType::None;

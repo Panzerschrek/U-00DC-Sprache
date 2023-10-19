@@ -105,6 +105,27 @@ void ReferencesGraph::TryAddInnerLinks( const VariablePtr& from, const VariableP
 		TryAddLink( from->inner_reference_nodes[i], to->inner_reference_nodes[i], errors_container, src_loc );
 }
 
+void ReferencesGraph::TryAddInnerLinksForTupleElement( const VariablePtr& from, const VariablePtr& to, const size_t element_index, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	const TupleType* const tuple_type= from->type.GetTupleType();
+	U_ASSERT( tuple_type != nullptr );
+	U_ASSERT( element_index < tuple_type->element_types.size() );
+	U_ASSERT( tuple_type->element_types[element_index] == to->type );
+	const size_t element_type_reference_tag_count= to->type.ReferencesTagsCount();
+	if( element_type_reference_tag_count == 0 )
+		return;
+
+	size_t offset= 0;
+	for( size_t i= 0; i < element_index; ++i )
+		offset+= tuple_type->element_types[i].ReferencesTagsCount();
+
+	U_ASSERT( offset <= from->inner_reference_nodes.size() );
+	U_ASSERT( offset + element_type_reference_tag_count <= from->inner_reference_nodes.size() );
+	U_ASSERT( to->inner_reference_nodes.size() == element_type_reference_tag_count );
+	for( size_t i= 0; i < element_type_reference_tag_count; ++i )
+		TryAddLink( from->inner_reference_nodes[i + offset], to->inner_reference_nodes[i], errors_container, src_loc );
+}
+
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 {
 	// Check if any parent have links and any child (including children of children) have links.

@@ -119,10 +119,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( tuple_element );
 			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc );
-
-			// TODO - perform proper references mapping for tuple element.
-			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( variable, tuple_element, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, tuple_element, i, names.GetErrors(), initializer.src_loc );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -513,10 +510,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( tuple_element );
 			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc );
-
-			// TODO - perform proper reference mapping.
-			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( variable, tuple_element, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, tuple_element, i, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( tuple_element, names, function_context, initializer );
 
@@ -665,10 +659,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 			function_context.variables_state.AddNode( tuple_element );
 			function_context.variables_state.TryAddLink( variable, tuple_element, block_names.GetErrors(), src_loc );
-
-			// TODO - perform proper reference mapping.
-			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( variable, tuple_element, block_names.GetErrors(), src_loc );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, tuple_element, i, block_names.GetErrors(), src_loc );
 
 			llvm::Constant* const constant_initializer=
 				ApplyEmptyInitializer( variable_name, src_loc, tuple_element, block_names, function_context );

@@ -292,6 +292,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->name + "[" + std::to_string(index_value) + "]",
 				ForceCreateConstantIndexGEP( function_context, tuple_type->llvm_type, variable->llvm_value, uint32_t(index_value) ) );
 
+		if( const size_t element_type_reference_tag_count= result->type.ReferencesTagsCount(); element_type_reference_tag_count != 0 )
+		{
+			size_t offset= 0;
+			for( size_t i= 0; i < size_t(index_value); ++i )
+				offset+= tuple_type->element_types[i].ReferencesTagsCount();
+
+			U_ASSERT( offset <= variable->inner_reference_nodes.size() );
+			U_ASSERT( offset + element_type_reference_tag_count <= variable->inner_reference_nodes.size() );
+			U_ASSERT( result->inner_reference_nodes.size() == element_type_reference_tag_count );
+			for( size_t i= 0; i < element_type_reference_tag_count; ++i )
+				result->inner_reference_nodes[i]= variable->inner_reference_nodes[i + offset];
+		}
+
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( uint32_t(index_value) );
 
@@ -1703,6 +1716,13 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 			std::string( Keyword( Keywords::base_ ) ),
 			ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, c_base_field_index ) );
 
+	// TODO - perform proper reference mapping.
+	for( VariablePtr& inner_reference_node : base->inner_reference_nodes )
+	{
+		U_ASSERT( !variable->inner_reference_nodes.empty() );
+		inner_reference_node= variable->inner_reference_nodes.front();
+	}
+
 	variable->children[ c_base_field_index ]= base;
 
 	function_context.variables_state.AddNode( base );
@@ -1823,7 +1843,6 @@ Value CodeBuilder::AccessClassField(
 		}
 
 		// Create variable child node.
-
 		const VariableMutPtr result=
 			Variable::CreateChildNode(
 				variable,
@@ -1832,6 +1851,13 @@ Value CodeBuilder::AccessClassField(
 				Variable::Location::Pointer,
 				variable->name + "." + field_name,
 				ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, field.index ) );
+
+		// TODO - perform proper reference mapping.
+		for( VariablePtr& inner_reference_node : result->inner_reference_nodes )
+		{
+			U_ASSERT( !variable->inner_reference_nodes.empty() );
+			inner_reference_node= variable->inner_reference_nodes.front();
+		}
 
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( field.index );

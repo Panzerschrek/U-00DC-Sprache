@@ -803,9 +803,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
-				// TODO - perform proper reference mapping.
-				if( element_type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.TryAddInnerLinks( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable_reference, element_index, names.GetErrors(), range_for_operator.src_loc );
 			}
 			else
 			{
@@ -846,9 +844,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateVariableInfo( *variable, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), range_for_operator.src_loc );
-				// TODO - perform proper reference mapping.
-				if( element_type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.TryAddInnerLinks( sequence_lock, variable, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable, element_index, names.GetErrors(), range_for_operator.src_loc );
 
 				BuildCopyConstructorPart(
 					variable->llvm_value,
