@@ -132,7 +132,7 @@ public:
 	// For variables of types with references inside.
 	// Size is equal to number of reference tags of the variable type.
 	// Null values are not possible.
-	std::vector<VariablePtr> inner_reference_nodes;
+	llvm::SmallVector<VariablePtr, 1> inner_reference_nodes;
 
 	// Mark inner reference nodes of variables using this flag.
 	// Do this in order to stop references graph search on these nodes while performing reference pollution.
