@@ -237,15 +237,6 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 			src_loc );
 }
 
-void CodeBuilder::LinkInnerReferences( const VariablePtr& from, const VariablePtr& to, FunctionContext& function_context, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
-{
-	const size_t reference_tag_count= to->type.ReferencesTagsCount();
-	U_ASSERT( from->inner_reference_nodes.size() >= reference_tag_count );
-	U_ASSERT( to->inner_reference_nodes.size() >= reference_tag_count );
-	for( size_t i= 0; i < reference_tag_count; ++i )
-		function_context.variables_state.TryAddLink( from->inner_reference_nodes[i], to->inner_reference_nodes[i], errors, src_loc );
-}
-
 void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )
 {
 	function_context.stack_variables_stack.back()->RegisterVariable( std::move(variable) );

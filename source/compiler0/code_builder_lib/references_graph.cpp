@@ -96,6 +96,15 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 	AddLink( from, to );
 }
 
+void ReferencesGraph::TryAddInnerLinks( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	const size_t reference_tag_count= to->type.ReferencesTagsCount();
+	U_ASSERT( from->inner_reference_nodes.size() >= reference_tag_count );
+	U_ASSERT( to->inner_reference_nodes.size() >= reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
+		TryAddLink( from->inner_reference_nodes[i], to->inner_reference_nodes[i], errors_container, src_loc );
+}
+
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 {
 	// Check if any parent have links and any child (including children of children) have links.

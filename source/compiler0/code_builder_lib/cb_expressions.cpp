@@ -139,7 +139,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->name + " lock" );
 		function_context.variables_state.AddNode( variable_lock );
 		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
-		LinkInnerReferences( variable, variable_lock, function_context, names.GetErrors(), indexation_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 
 		const VariablePtr index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names, function_context );
 
@@ -216,7 +216,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		function_context.variables_state.AddNode( result );
 		function_context.variables_state.TryAddLink( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
-		LinkInnerReferences( variable_lock, result, function_context, names.GetErrors(), indexation_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
 
 		function_context.variables_state.RemoveNode( variable_lock );
 
@@ -361,7 +361,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				function_context.variables_state.AddNode( non_constexpr_ref );
 				function_context.variables_state.TryAddLink( fetch_result, non_constexpr_ref, names.GetErrors(), member_access_operator.src_loc );
-				LinkInnerReferences( fetch_result, non_constexpr_ref, function_context, names.GetErrors(), member_access_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinks( fetch_result, non_constexpr_ref, names.GetErrors(), member_access_operator.src_loc );
 
 				RegisterTemporaryVariable( function_context, non_constexpr_ref );
 				return non_constexpr_ref;
@@ -801,7 +801,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			branches_constexpr_values[i]= branch_result->constexpr_value;
 
-			LinkInnerReferences( branch_result, result, function_context, names.GetErrors(), ternary_operator.src_loc );
+			function_context.variables_state.TryAddInnerLinks( branch_result, result, names.GetErrors(), ternary_operator.src_loc );
 
 			if( result->value_type == ValueType::Value )
 			{
@@ -1264,7 +1264,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			variable_for_move->constexpr_value );
 	function_context.variables_state.AddNode( result );
 
-	LinkInnerReferences( resolved_variable, result, function_context, names.GetErrors(), move_operator.src_loc );
+	function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names.GetErrors(), move_operator.src_loc );
 
 	// Move both reference node and variable node.
 	function_context.variables_state.MoveNode( resolved_variable );
@@ -1330,7 +1330,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Copy content to new variable.
 	function_context.variables_state.AddNode( result );
 
-	LinkInnerReferences( expression_result, result, function_context, names.GetErrors(), take_operator.src_loc );
+	function_context.variables_state.TryAddInnerLinks( expression_result, result, names.GetErrors(), take_operator.src_loc );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -1381,7 +1381,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// TODO - check if it is correct to create mutable links to possible immutable links.
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_mut.src_loc );
-	LinkInnerReferences( var, result, function_context, names.GetErrors(), cast_mut.src_loc );
+	function_context.variables_state.TryAddInnerLinks( var, result, names.GetErrors(), cast_mut.src_loc );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
@@ -1416,7 +1416,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_imut.src_loc );
-	LinkInnerReferences( var, result, function_context, names.GetErrors(), cast_imut.src_loc );
+	function_context.variables_state.TryAddInnerLinks( var, result, names.GetErrors(), cast_imut.src_loc );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
@@ -1562,7 +1562,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			if( variable_ptr->value_type != ValueType::Value )
 				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc );
-			LinkInnerReferences( variable_ptr, variable_copy, function_context, names.GetErrors(), unsafe_expression.src_loc );
+			function_context.variables_state.TryAddInnerLinks( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc );
 
 			if( variable_ptr->value_type == ValueType::Value )
 				function_context.variables_state.MoveNode( variable_ptr );
@@ -1898,7 +1898,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				r_var_real->llvm_value );
 		function_context.variables_state.AddNode( r_var_lock );
 		function_context.variables_state.TryAddLink( r_var_real, r_var_lock, names.GetErrors(), src_loc );
-		LinkInnerReferences( r_var_real, r_var_lock, function_context, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( r_var_real, r_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariable();
 
@@ -1976,7 +1976,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				r_var->llvm_value );
 		function_context.variables_state.AddNode( r_var_lock );
 		function_context.variables_state.TryAddLink( r_var, r_var_lock, names.GetErrors(), src_loc );
-		LinkInnerReferences( r_var, r_var_lock, function_context, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
@@ -2021,7 +2021,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				l_var->llvm_value );
 		function_context.variables_state.AddNode( l_var_lock );
 		function_context.variables_state.TryAddLink( l_var, l_var_lock, names.GetErrors(), src_loc );
-		LinkInnerReferences( l_var, l_var_lock, function_context, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )
@@ -2948,7 +2948,7 @@ Value CodeBuilder::DoReferenceCast(
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), src_loc );
 
 	if( types_are_compatible )
-		LinkInnerReferences( var, result, function_context, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( var, result, names.GetErrors(), src_loc );
 
 	llvm::Value* src_value= var->llvm_value;
 	if( var->location == Variable::Location::LLVMRegister )
@@ -3265,7 +3265,7 @@ Value CodeBuilder::DoCallFunction(
 			args_nodes[arg_number]= arg_node;
 			function_context.variables_state.AddNode( arg_node );
 			function_context.variables_state.TryAddLink( expr, arg_node, names.GetErrors(), src_loc );
-			LinkInnerReferences( expr, arg_node, function_context, names.GetErrors(), src_loc );
+			function_context.variables_state.TryAddInnerLinks( expr, arg_node, names.GetErrors(), src_loc );
 		}
 		else
 		{
@@ -3313,7 +3313,7 @@ Value CodeBuilder::DoCallFunction(
 				// Do it only if arg type can contain any reference inside.
 				// Do it before potential moving.
 				EnsureTypeComplete( param.type ); // arg type for value arg must be already complete.
-				LinkInnerReferences( expr, arg_node, function_context, names.GetErrors(), src_loc );
+				function_context.variables_state.TryAddInnerLinks( expr, arg_node, names.GetErrors(), src_loc );
 
 				llvm::Type* const single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() );
 
@@ -3618,7 +3618,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 				variable->llvm_value );
 		function_context.variables_state.AddNode( variable_for_initialization );
 		function_context.variables_state.AddLink( variable, variable_for_initialization );
-		LinkInnerReferences( variable, variable_for_initialization, function_context, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names.GetErrors(), src_loc );
 
 		variable->constexpr_value= ApplyConstructorInitializer( variable_for_initialization, synt_args, src_loc, names, function_context );
 
@@ -3673,7 +3673,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 				result->llvm_value );
 		function_context.variables_state.AddNode( result_for_initialization );
 		function_context.variables_state.AddLink( result, result_for_initialization );
-		LinkInnerReferences( result, result_for_initialization, function_context, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( result, result_for_initialization, names.GetErrors(), src_loc );
 
 		DoCallFunction(
 			EnsureLLVMFunctionCreated( conversion_constructor ),

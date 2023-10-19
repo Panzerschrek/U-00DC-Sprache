@@ -67,7 +67,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		function_context.variables_state.AddNode( array_member );
 		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc );
-		LinkInnerReferences( variable, array_member, function_context, names.GetErrors(), initializer.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, array_member, names.GetErrors(), initializer.src_loc );
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		llvm::SmallVector<llvm::Constant*, 16> members_constants;
@@ -122,7 +122,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			// TODO - perform proper references mapping for tuple element.
 			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
-				LinkInnerReferences( variable, tuple_element, function_context, names.GetErrors(), initializer.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, tuple_element, names.GetErrors(), initializer.src_loc );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -233,7 +233,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			// TODO - perform proper reference tag mapping for struct members.
 			if( field->type.ReferencesTagsCount() > 0 )
-				LinkInnerReferences( variable, struct_member, function_context, names.GetErrors(), initializer.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, struct_member, names.GetErrors(), initializer.src_loc );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -278,7 +278,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			// TODO - perform proper reference tag mapping for struct members.
 			if( field->type.ReferencesTagsCount() > 0 )
-				LinkInnerReferences( variable, struct_member, function_context, names.GetErrors(), initializer.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, struct_member, names.GetErrors(), initializer.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -480,7 +480,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		function_context.variables_state.AddNode( array_member );
 		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc );
-		LinkInnerReferences( variable, array_member, function_context, names.GetErrors(), initializer.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, array_member, names.GetErrors(), initializer.src_loc );
 
 		GenerateLoop(
 			array_type->element_count,
@@ -516,7 +516,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			// TODO - perform proper reference mapping.
 			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
-				LinkInnerReferences( variable, tuple_element, function_context, names.GetErrors(), initializer.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, tuple_element, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( tuple_element, names, function_context, initializer );
 
@@ -561,7 +561,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			// TODO - perform proper reference mapping.
 			if( field->type.ReferencesTagsCount() > 0 )
-				LinkInnerReferences( variable, struct_member, function_context, names.GetErrors(), initializer.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, struct_member, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 
@@ -625,7 +625,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 		function_context.variables_state.AddNode( array_member );
 		function_context.variables_state.TryAddLink( variable, array_member, block_names.GetErrors(), src_loc );
-		LinkInnerReferences( variable, array_member, function_context, block_names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, array_member, block_names.GetErrors(), src_loc );
 
 		llvm::Constant* constant_initializer= nullptr;
 
@@ -668,7 +668,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 			// TODO - perform proper reference mapping.
 			if( tuple_type->element_types[i].ReferencesTagsCount() > 0 )
-				LinkInnerReferences( variable, tuple_element, function_context, block_names.GetErrors(), src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, tuple_element, block_names.GetErrors(), src_loc );
 
 			llvm::Constant* const constant_initializer=
 				ApplyEmptyInitializer( variable_name, src_loc, tuple_element, block_names, function_context );
@@ -1110,7 +1110,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			// TODO - perform proper reference mapping.
 			if( field->type.ReferencesTagsCount() > 0 )
-				LinkInnerReferences( this_, field_variable, function_context, names_scope.GetErrors(), constructor_initialization_list.src_loc );
+				function_context.variables_state.TryAddInnerLinks( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
@@ -1184,7 +1184,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			// TODO - perform proper reference mapping.
 			if( field->type.ReferencesTagsCount() > 0 )
-				LinkInnerReferences( this_, field_variable, function_context, names_scope.GetErrors(), constructor_initialization_list.src_loc );
+				function_context.variables_state.TryAddInnerLinks( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 
