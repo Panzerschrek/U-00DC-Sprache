@@ -139,6 +139,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 	add_size_field( "references_tags_count", type.ReferencesTagsCount() );
 
+	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
 	{
 		bool contains_mutable_references= false;
 		for( size_t i= 0, reference_tag_count= type.ReferencesTagsCount(); i < reference_tag_count; ++i )

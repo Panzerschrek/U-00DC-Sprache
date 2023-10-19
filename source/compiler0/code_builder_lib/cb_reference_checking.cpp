@@ -35,7 +35,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 		// Inner arg references to return value references
 		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
 			if( in_param.inner_arg_reference_tags[i] == func.return_value_inner_reference_tags[j] )
-				function_type.return_inner_references[j].emplace( uint8_t(arg_number), 0u );
+				function_type.return_inner_references[j].emplace( uint8_t(arg_number), i );
 	}
 }
 
@@ -118,6 +118,8 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	FunctionType& function_type,
 	const ClassPtr base_class )
 {
+	// TODO - fix this.
+	// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
 	const std::string& func_name= func.name.back().name;
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
