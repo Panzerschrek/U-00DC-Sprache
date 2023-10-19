@@ -56,6 +56,7 @@ def main():
 		"macro_errors_test",
 		"macro_test",
 		"methods_generation_test",
+		"multiple_inner_reference_tags_test",
 		"names_in_error_messages_test",
 		"nomangle_test",
 		"non_sync_tag_errors_test",
