@@ -21,6 +21,13 @@ public:
 	// Produces error in case if this link violates reference protection rules.
 	fn TryAddLink( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
+	// Destination should contain no more inner references than source.
+	fn TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	// Create inner links between tuple node and tuple element node.
+	// "from" shold be tuple.
+	fn TryAddInnerLinksForTupleElement( mut this, VariablePtr& from, VariablePtr& to, size_type element_index, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
 	fn MoveNode( mut this, VariablePtr& node );
 	fn NodeIsMoved( this, VariablePtr& node ) : bool;
 

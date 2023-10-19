@@ -941,19 +941,19 @@ fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
 
 fn Variable::CreatePtr( byval mut this ) : VariablePtr
 {
-	auto inner_reference_kind= this.t.GetInnerReferenceKind();
-	if( inner_reference_kind != InnerReferenceKind::None )
+	auto reference_tag_count= this.t.ReferencesTagsCount();
+	for( auto mut i= 0u; i < reference_tag_count; ++i )
 	{
 		// Create inner reference node.
 		var Variable mut node_src
 		{
-			.value_type= select( inner_reference_kind == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.value_type= select( this.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= this.name + " inner reference",
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
 		};
 
-		this.inner_reference_node= VariablePtr( move(node_src) );
+		this.inner_reference_nodes.push_back( VariablePtr( move(node_src) ) );
 	}
 
 	return VariablePtr( move(this) );

@@ -378,7 +378,8 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			// Check correctness of returning references.
 			if( yield_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
-				CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(), src_loc );
+				// TODO
+				// CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(), src_loc );
 			}
 
 			if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
