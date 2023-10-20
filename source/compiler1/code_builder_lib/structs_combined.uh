@@ -286,7 +286,7 @@ public:
 	fn IsAbstract( this ) : bool;
 
 	fn ReferencesTagsCount( this ) : u32;
-	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
+	fn GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 

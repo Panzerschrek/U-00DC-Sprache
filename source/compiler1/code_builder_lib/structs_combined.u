@@ -653,21 +653,39 @@ fn Type::IsAbstract( this ) : bool
 
 fn Type::ReferencesTagsCount( this ) : u32
 {
-	return select( GetInnerReferenceKind() == InnerReferenceKind::None ? 0u : 1u );
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.ReferencesTagsCount();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		auto mut result= 0u;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			result= ust::max( result, element_type.ReferencesTagsCount() );
+		}
+		return result;
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return select( class_type.lock_imut().deref().inner_reference_kind == InnerReferenceKind::None ? 0u : 1u );
+	}
+
+	return 0u;
 }
 
-fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
+fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 {
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_type.GetInnerReferenceKind();
+		return array_type.element_type.GetInnerReferenceKind(index);
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
 		var InnerReferenceKind mut inner_reference_type= InnerReferenceKind::None;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			var InnerReferenceKind element_inner_reference_type= element_type.GetInnerReferenceKind();
+			var InnerReferenceKind element_inner_reference_type= element_type.GetInnerReferenceKind(index);
 			if( u32(element_inner_reference_type) > u32(inner_reference_type) )
 			{
 				inner_reference_type= element_inner_reference_type;
@@ -940,7 +958,7 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 		// Create inner reference node.
 		var Variable mut node_src
 		{
-			.value_type= select( this.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.value_type= select( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= this.name + " inner reference",
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,

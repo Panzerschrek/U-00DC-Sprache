@@ -24,14 +24,11 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 			// Require type completeness for value params in order to know inner reference kind.
 			if( EnsureTypeComplete( param.t ) )
 			{
-				var InnerReferenceKind param_type_inner_reference_kind= param.t.GetInnerReferenceKind();
-				if( param_type_inner_reference_kind == InnerReferenceKind::Mut )
+				auto reference_tags_count= param.t.ReferencesTagsCount();
+				coroutine_type_description.inner_reference_kind= InnerReferenceKind::None;
+				for( auto mut i= 0u; i < reference_tags_count; ++i )
 				{
-					coroutine_type_description.inner_reference_kind= InnerReferenceKind::Mut;
-				}
-				else if( param_type_inner_reference_kind == InnerReferenceKind::Imut && coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
-				{
-					coroutine_type_description.inner_reference_kind= InnerReferenceKind::Imut;
+					coroutine_type_description.inner_reference_kind= ust::max( coroutine_type_description.inner_reference_kind, param.t.GetInnerReferenceKind( size_type(i) ) );
 				}
 			}
 		}
