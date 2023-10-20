@@ -148,6 +148,9 @@ PROCESS_ERROR( ExplicitReferencePollutionForCopyConstructor, "Explicit reference
 PROCESS_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, "Explicit reference pollution for equality compare operator. Reference pollution for such operators is not allowed." )
 PROCESS_ERROR( ReferenceFieldOfTypeWithReferencesInside, "Reference field \"{0}\" have type, with other references inside." )
+PROCESS_ERROR( ExpectedReferenceNotation, "Expected reference notation for field \"{0}\"." )
+PROCESS_ERROR( InnerReferenceTagCountMismatch, "Mismatch in count of inner reference tags. Expected {0}, got {1}. " )
+PROCESS_ERROR( InvalidInnerReferenceTagName, "Invalid inner reference tag name \"{0}\". Expected letters in range a-z." )
 
 // Operators overloading
 PROCESS_ERROR( OperatorDeclarationOutsideClass, "Operator declaration outside class. Operators can be declared only inside classes." )

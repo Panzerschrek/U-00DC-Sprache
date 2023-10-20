@@ -588,9 +588,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				if( !std::holds_alternative< Synt::EmptyVariant >( reference_field->syntax_element->reference_tag_expression ) )
 					reference_tag= EvaluateReferenceFieldTag( *the_class.members, reference_field->syntax_element->reference_tag_expression );
 				else
-				{
-					// TODO - generate error here.
-				}
+					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), reference_field->syntax_element->src_loc, reference_field->syntax_element->name );
 
 				if( reference_tag != std::nullopt )
 				{
@@ -615,9 +613,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
 					reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression );
 				else
-				{
-					// TODO - generate error here.
-				}
+					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
 
 				const auto reference_tag_count= field->type.ReferencesTagsCount();
 
@@ -625,7 +621,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				{
 					if( reference_tags->size() != reference_tag_count )
 					{
-						// TODO - generate error here.
+						REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, reference_tag_count, reference_tags->size() );
 						reference_tags->resize(reference_tag_count);
 					}
 					field->inner_reference_tags= std::move(*reference_tags);

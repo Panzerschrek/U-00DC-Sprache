@@ -33,8 +33,7 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 		return uint8_t( value - 'a' );
 	else
 	{
-		// TODO - use separate error code.
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), src_loc, "out of range reference tags" );
+		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, value );
 		return std::nullopt;
 	}
 }
@@ -75,8 +74,7 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 			result.push_back( uint8_t(value - 'a') );
 		else
 		{
-			// TODO - use separate error code.
-			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), src_loc, "out of range reference tags" );
+			REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, value );
 			return std::nullopt;
 		}
 	}
