@@ -280,17 +280,21 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	// Setup return references mapping.
 	if( !function_type.return_value_reference_tag.empty() )
 	{
-		for( auto mut i= 0s; i < res.params.size(); ++i )
+		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
 		{
-			if( function_type.return_value_reference_tag == function_type.params[i].reference_tag )
+			auto& param= function_type.params[param_n];
+			if( function_type.return_value_reference_tag == param.reference_tag )
 			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
 				res.return_references.push_back( move(param_reference) );
 			}
-			if( function_type.return_value_reference_tag == function_type.params[i].inner_reference_tag )
+			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
 			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= 0u8 };
-				res.return_references.push_back( move(param_reference) );
+				if( function_type.return_value_reference_tag == param.inner_reference_tags[tag_n] )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
+					res.return_references.push_back( move(param_reference) );
+				}
 			}
 		}
 
@@ -313,25 +317,30 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 	}
 
-	if( ! function_type.return_value_inner_reference_tag.empty() )
+	for( auto mut return_inner_tag_n= 0s; return_inner_tag_n < function_type.return_value_inner_reference_tags.size(); ++return_inner_tag_n )
 	{
-		for( auto mut i= 0s; i < res.params.size(); ++i )
+		var ust::string8& return_inner_tag= function_type.return_value_inner_reference_tags[return_inner_tag_n];
+		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
 		{
-			if( function_type.return_value_inner_reference_tag == function_type.params[i].reference_tag )
+			auto& param= function_type.params[param_n];
+			if( return_inner_tag == param.reference_tag )
 			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
 				res.return_inner_references.push_back( move(param_reference) );
 			}
-			if( function_type.return_value_inner_reference_tag == function_type.params[i].inner_reference_tag )
+			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
 			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= 0u8 };
-				res.return_inner_references.push_back( move(param_reference) );
+				if( return_inner_tag == param.inner_reference_tags[tag_n] )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
+					res.return_inner_references.push_back( move(param_reference) );
+				}
 			}
 		}
 
 		if( res.return_inner_references.empty() )
 		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, function_type.return_value_inner_reference_tag )
+			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, return_inner_tag )
 		}
 	}
 
@@ -346,29 +355,32 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 		var ust::vector</FunctionType::ParamReference/> mut pollutions_dst, mut pollutions_src;
 
-		for( auto mut i= 0s; i < res.params.size(); ++i )
+		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
 		{
-			if( in_pollution.dst == function_type.params[i].inner_reference_tag )
-			{
-				var FunctionType::ParamReference mut dst{ .param_index= u8(i), .reference_index= 0u8 };
-				pollutions_dst.push_back( move(dst) );
-			}
-			else if( in_pollution.dst == function_type.params[i].reference_tag )
+			auto& param= function_type.params[param_n];
+
+			if( in_pollution.dst == function_type.params[param_n].reference_tag )
 			{
 				REPORT_ERROR( ArgReferencePollution, names_scope, function_type.src_loc )
 			}
-		}
-		for( auto mut i= 0s; i < res.params.size(); ++i )
-		{
-			if( in_pollution.src == function_type.params[i].inner_reference_tag )
+			if( in_pollution.src == param.reference_tag )
 			{
-				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= 0u8 };
+				var FunctionType::ParamReference mut src{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
 				pollutions_src.push_back( move(src) );
 			}
-			if( in_pollution.src == function_type.params[i].reference_tag )
+
+			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
 			{
-				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number};
-				pollutions_src.push_back( move(src) );
+				if( in_pollution.dst == param.inner_reference_tags[tag_n] )
+				{
+					var FunctionType::ParamReference mut dst{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
+					pollutions_dst.push_back( move(dst) );
+				}
+				if( in_pollution.src == param.inner_reference_tags[tag_n] )
+				{
+					var FunctionType::ParamReference mut src{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
+					pollutions_src.push_back( move(src) );
+				}
 			}
 		}
 
