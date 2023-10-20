@@ -1822,36 +1822,41 @@ fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_con
 
 fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc )
 {
-	foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( return_reference_node ) )
+	with( &inner_reference_nodes : return_reference_node.lock_imut().deref().inner_reference_nodes )
 	{
-		if( !IsReferenceAllowedForInnerReturn( function_context, node ) )
+		for( auto mut i= 0s; i < inner_reference_nodes.size(); ++i )
 		{
-			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+			foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
+			{
+				if( !IsReferenceAllowedForInnerReturn( function_context, node, i ) )
+				{
+					REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+				}
+			}
 		}
 	}
 }
 
-fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool
+fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool
 {
-	// TODO
-	ust::ignore_unused( function_context );
-	ust::ignore_unused( variable_node );
-	/*
-	foreach( &return_reference : function_context.function_type.return_inner_references )
+	if( index >= function_context.function_type.return_inner_references.size() )
 	{
-		auto i= size_type(return_reference.param_index);
+		return false;
+	}
+	foreach( &return_reference : function_context.function_type.return_inner_references[index] )
+	{
+		auto param_n= size_type(return_reference.param_index);
 		if( return_reference.reference_index == FunctionType::c_param_reference_number &&
-			variable_node == function_context.args_nodes[i] )
+			variable_node == function_context.args_nodes[param_n] )
 		{
 			return true;
 		}
-		if( return_reference.reference_index == 0u8 &&
-			variable_node == function_context.args_inner_variable_nodes[i] )
+		if( size_type(return_reference.reference_index) < function_context.args_inner_variable_nodes[param_n].size() &&
+			variable_node == function_context.args_inner_variable_nodes[param_n][ size_type(return_reference.reference_index) ] )
 		{
 			return true;
 		}
 	}
-	*/
 	return false;
 }
 

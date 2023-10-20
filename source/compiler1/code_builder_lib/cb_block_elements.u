@@ -592,8 +592,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			var VariableLite expr= expr_ptr.lock_imut().deref();
 
-			// TODO
-			// CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(), return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
 
 			function_context.references_graph.TryAddInnerLinks( expr_ptr, return_node, names_scope, return_operator.src_loc );
 
@@ -677,15 +676,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 
 			CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
-			if( function_context.function_type.return_type.ReferencesTagsCount() > 0u )
-			{
-				// TODO
-				// auto inner_reference_node= expr_ptr.lock_imut().deref().inner_reference_node;
-				// if( !inner_reference_node.empty() )
-				// {
-				//	CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, inner_reference_node.try_to_non_nullable(), return_operator.src_loc );
-				// }
-			}
+			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
 
 			// Link result with return node. This allow us to prevent returning of reference to local variable.
 			function_context.references_graph.TryAddLink( expr_ptr, return_node, names_scope, return_operator.src_loc );
