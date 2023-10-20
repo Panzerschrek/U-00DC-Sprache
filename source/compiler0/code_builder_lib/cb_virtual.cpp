@@ -44,9 +44,10 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 		if( return_reference == this_inner_reference )
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
 
-	for( const FunctionType::ParamReference& return_reference : src_function_type.return_inner_references )
-		if( return_reference == this_inner_reference )
-			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
+	for( const auto& inner_referencs_set : src_function_type.return_inner_references )
+		for( const FunctionType::ParamReference& return_reference : inner_referencs_set )
+			if( return_reference == this_inner_reference )
+				REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
 
 	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
 	for( const FunctionType::ReferencePollution& reference_pollution : src_function_type.references_pollution )
@@ -518,9 +519,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			CreateReferenceCast( this_->llvm_value, this_->type, function_this_type, function_context ) );
 	function_context.variables_state.AddNode( this_casted );
 	function_context.variables_state.TryAddLink( this_, this_casted, errors_container, src_loc );
-
-	if( this_->inner_reference_node != nullptr && function_this_type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.TryAddLink( this_->inner_reference_node, this_casted->inner_reference_node, errors_container, src_loc );
+	function_context.variables_state.TryAddInnerLinks( this_, this_casted, errors_container, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted );
 

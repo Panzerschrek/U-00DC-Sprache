@@ -81,6 +81,8 @@ struct FunctionType
 	}
 	var u8 c_param_reference_number= ~0u8;
 
+	type ParamReferences= ust::vector</ParamReference/>; // Sorted by param index.
+
 	struct ReferencePollution
 	{
 		ParamReference dst;
@@ -96,8 +98,8 @@ struct FunctionType
 	LLVMCallConvID calling_convention = LLVMCallConv::C;
 	bool is_unsafe= false;
 
-	ust::vector</ParamReference/> return_references; // Sorted by param index.
-	ust::vector</ParamReference/> return_inner_references; // Sorted by param index.
+	ParamReferences return_references;
+	ust::vector</ ParamReferences /> return_inner_references; // References for inner reference tags.
 
 	// Sorted.
 	ust::vector</ReferencePollution/> references_pollution;
@@ -284,7 +286,7 @@ public:
 	fn IsAbstract( this ) : bool;
 
 	fn ReferencesTagsCount( this ) : u32;
-	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
+	fn GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 
@@ -358,8 +360,9 @@ struct Variable
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	ust::vector</VariableNullablePtr/> children;
 
-	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
-	VariableNullablePtr inner_reference_node;
+	/// For variables of types with references inside.
+	// Size is equal to number of reference tags of the variable type.
+	ust::vector</VariablePtr/> inner_reference_nodes;
 
 	// Mark inner reference nodes of variables using this flag.
 	// Do this in order to stop references graph search on these nodes while performing reference pollution.

@@ -1118,7 +1118,7 @@ U_TEST( DocumentSignatureHelp_Test6 )
 	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
 
 	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
-	const SignatureHelpResultNormalized expected_result{ "foo( imut this'x' ) : bool" };
+	const SignatureHelpResultNormalized expected_result{ "foo( imut this' x ' ) : bool" };
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 

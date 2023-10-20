@@ -255,8 +255,18 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_SIZE_FIELD( "align_of", LLVMABIAlignmentOfType( data_layout_, llvm_type ) )
 	}
 
-	ADD_SIZE_FIELD( "references_tags_count", select( t.GetInnerReferenceKind() == InnerReferenceKind::None ? 0s : 1s ) )
-	ADD_BOOL_FIELD( "contains_mutable_references", t.GetInnerReferenceKind() == InnerReferenceKind::Mut )
+	ADD_SIZE_FIELD( "references_tags_count", t.ReferencesTagsCount() )
+
+	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
+	{
+		var bool mut contains_mutable_references= false;
+		auto reference_tags_count= t.ReferencesTagsCount();
+		for( auto mut i= 0u; i < reference_tags_count; ++i )
+		{
+			contains_mutable_references|= t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut;
+		}
+		ADD_BOOL_FIELD( "contains_mutable_references", contains_mutable_references )
+	}
 
 	ADD_BOOL_FIELD( "is_fundamental"     , !t.GetFundamentalType    ().empty() )
 	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )

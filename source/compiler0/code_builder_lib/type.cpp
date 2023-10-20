@@ -369,21 +369,42 @@ bool Type::IsAbstract() const
 
 size_t Type::ReferencesTagsCount() const
 {
-	return GetInnerReferenceType() == InnerReferenceType::None ? 0 : 1;
+	if( const auto class_type= GetClassType() )
+		return class_type->inner_reference_type == InnerReferenceType::None ? 0 : 1;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->element_type.ReferencesTagsCount();
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		// Combine all tags of tuple elements.
+		size_t result= 0;
+		for( const Type& element : tuple_type->element_types )
+			result+= element.ReferencesTagsCount();
+		return result;
+	}
+
+	return 0;
 }
 
-InnerReferenceType Type::GetInnerReferenceType() const
+InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 {
+	U_ASSERT( index < ReferencesTagsCount() );
+
 	if( const auto class_type= GetClassType() )
 		return class_type->inner_reference_type;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->element_type.GetInnerReferenceType();
+		return array_type->element_type.GetInnerReferenceType(index);
 	else if( const auto tuple_type= GetTupleType() )
 	{
-		InnerReferenceType result= InnerReferenceType::None;
+		size_t offset= 0;
 		for( const Type& element : tuple_type->element_types )
-			result= std::max( result, element.GetInnerReferenceType() );
-		return result;
+		{
+			const size_t count= element.ReferencesTagsCount();
+			if( index >= offset && index < offset + count )
+				return element.GetInnerReferenceType( index - offset );
+			offset+= count;
+		}
+		U_ASSERT(false); // Unreachable.
+		return InnerReferenceType::None;
 	}
 
 	return InnerReferenceType::None;
@@ -626,8 +647,10 @@ size_t Type::Hash() const
 
 			for( const FunctionType::ParamReference& param_reference : function.return_references )
 				hash= llvm::hash_combine( hash, param_reference );
-			for( const FunctionType::ParamReference& param_reference : function.return_inner_references )
-				hash= llvm::hash_combine( hash, param_reference );
+
+			for( const auto& tags_set : function.return_inner_references )
+				for( const FunctionType::ParamReference& param_reference : tags_set )
+					hash= llvm::hash_combine( hash, param_reference );
 
 			for( const FunctionType::ReferencePollution& reference_pollution : function.references_pollution )
 				hash= llvm::hash_combine( hash, reference_pollution.dst, reference_pollution.src );
@@ -756,20 +779,10 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 		if( !found )
 			return false;
 	}
-	for( const ParamReference& src_inner_arg_reference : src_function_type.return_inner_references )
-	{
-		bool found= false;
-		for( const ParamReference& dst_inner_arg_reference : dst_function_type.return_inner_references )
-		{
-			if( dst_inner_arg_reference == src_inner_arg_reference )
-			{
-				found= true;
-				break;
-			}
-		}
-		if( !found )
-			return false;
-	}
+
+	// TODO - perform checks for inner tags.
+	if( src_function_type.return_inner_references != dst_function_type.return_inner_references )
+		return false;
 
 	// We can convert function, linkink less references to function, linking more references
 	for( const ReferencePollution& src_pollution : src_function_type.references_pollution )

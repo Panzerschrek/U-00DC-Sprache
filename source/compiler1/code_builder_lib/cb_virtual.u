@@ -53,11 +53,14 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
 		}
 	}
-	foreach( &return_reference : src_function.t.return_inner_references )
+	foreach( &tag_inner_references : src_function.t.return_inner_references )
 	{
-		if( return_reference == this_inner_reference )
+		foreach( &return_reference : tag_inner_references )
 		{
-			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+			if( return_reference == this_inner_reference )
+			{
+				REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+			}
 		}
 	}
 
@@ -828,18 +831,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	function_context.references_graph.AddNode( this_casted_ptr );
 
 	function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
-	if( function_this_type.ReferencesTagsCount() > 0u )
-	{
-		auto inner_reference_node= this_ptr.lock_imut().deref().inner_reference_node;
-		if( !inner_reference_node.empty() )
-		{
-			function_context.references_graph.TryAddLink(
-				inner_reference_node.try_to_non_nullable(),
-				this_casted_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
-				names_scope,
-				src_loc );
-		}
-	}
+	function_context.references_graph.TryAddInnerLinks( this_ptr, this_casted_ptr, names_scope, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted_ptr );
 	return ust::make_tuple( move(this_casted_ptr), function_ptr );

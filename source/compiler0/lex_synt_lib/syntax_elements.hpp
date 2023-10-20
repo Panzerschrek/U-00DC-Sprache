@@ -492,7 +492,7 @@ struct FunctionParam
 	std::string name;
 	TypeName type;
 	std::string reference_tag;
-	std::string inner_arg_reference_tag;
+	std::vector<std::string> inner_arg_reference_tags;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
@@ -508,7 +508,7 @@ struct FunctionType
 	std::string return_value_reference_tag;
 	FunctionReferencesPollutionList references_pollution_list;
 	std::vector<FunctionParam> params;
-	std::string return_value_inner_reference_tag;
+	std::vector<std::string> return_value_inner_reference_tags;
 
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
@@ -534,6 +534,7 @@ public:
 	TypeName return_type;
 	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
 	std::string return_value_reference_tag;
+	std::vector<std::string> return_value_inner_reference_tags;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };

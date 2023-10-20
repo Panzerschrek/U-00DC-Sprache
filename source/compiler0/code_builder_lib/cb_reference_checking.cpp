@@ -20,19 +20,22 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 			function_type.return_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
-		if( in_param.inner_arg_reference_tag == func.return_value_reference_tag )
-			function_type.return_references.emplace( uint8_t(arg_number), 0u );
+		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
+			if( in_param.inner_arg_reference_tags[i] == func.return_value_reference_tag )
+				function_type.return_references.emplace( uint8_t(arg_number), uint8_t(i) );
 	}
 
-	if( !func.return_value_inner_reference_tag.empty() )
+	function_type.return_inner_references.resize( func.return_value_inner_reference_tags.size() );
+	for( size_t j= 0; j < func.return_value_inner_reference_tags.size(); ++j )
 	{
 		// In arg reference to return value references
-		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_inner_reference_tag )
-			function_type.return_inner_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
+		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_inner_reference_tags[j] )
+			function_type.return_inner_references[j].emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
-		if( in_param.inner_arg_reference_tag == func.return_value_inner_reference_tag )
-			function_type.return_inner_references.emplace( uint8_t(arg_number), 0u );
+		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
+			if( in_param.inner_arg_reference_tags[i] == func.return_value_inner_reference_tags[j] )
+				function_type.return_inner_references[j].emplace( uint8_t(arg_number), uint8_t(i) );
 	}
 }
 
@@ -44,20 +47,26 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 	if( function_type.return_value_type == ValueType::Value )
 	{
 		// Check names of tags, report about unknown tag names.
-		if( !func.return_value_inner_reference_tag.empty() )
+		for( const std::string& inner_return_tag : func.return_value_inner_reference_tags )
 		{
 			bool found= false;
-			for( const Synt::FunctionParam& arg : func.params )
+			for( const Synt::FunctionParam& param : func.params )
 			{
-				if( func.return_value_inner_reference_tag == arg.reference_tag ||
-					func.return_value_inner_reference_tag == arg.inner_arg_reference_tag )
+				if( inner_return_tag == param.reference_tag )
 				{
 					found= true;
 					break;
 				}
+
+				for( const std::string& param_inner_tag : param.inner_arg_reference_tags )
+					if( param_inner_tag == inner_return_tag )
+					{
+						found= true;
+						break;
+					}
 			}
 			if( !found )
-				REPORT_ERROR( NameNotFound, errors_container, func.src_loc, func.return_value_inner_reference_tag );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc, inner_return_tag );
 		}
 	}
 }
@@ -74,14 +83,20 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		if( !func.return_value_reference_tag.empty() )
 		{
 			bool tag_found= false;
-			for( const Synt::FunctionParam& arg : func.params )
+			for( const Synt::FunctionParam& param : func.params )
 			{
-				if( func.return_value_reference_tag == arg.inner_arg_reference_tag ||
-					func.return_value_reference_tag == arg.reference_tag)
+				if( func.return_value_reference_tag == param.reference_tag )
 				{
 					tag_found= true;
 					break;
 				}
+
+				for( const std::string& param_inner_tag : param.inner_arg_reference_tags )
+					if( func.return_value_reference_tag == param_inner_tag )
+					{
+						tag_found= true;
+						break;
+					}
 			}
 
 			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
@@ -103,6 +118,8 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	FunctionType& function_type,
 	const ClassPtr base_class )
 {
+	// TODO - fix this.
+	// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
 	const std::string& func_name= func.name.back().name;
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
@@ -158,14 +175,16 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	{
 		ArgsVector<FunctionType::ParamReference> result;
 
-		for( size_t arg_n= 0u; arg_n < function_type.params.size(); ++arg_n )
+		for( size_t param_n= 0u; param_n < function_type.params.size(); ++param_n )
 		{
-			const Synt::FunctionParam& in_arg= func.params[ arg_n ];
+			const Synt::FunctionParam& in_param= func.params[ param_n ];
 
-			if( name == in_arg.reference_tag )
-				result.emplace_back( arg_n, FunctionType::c_arg_reference_tag_number );
-			if( name == in_arg.inner_arg_reference_tag )
-				result.emplace_back( arg_n, 0u );
+			if( name == in_param.reference_tag )
+				result.emplace_back( param_n, FunctionType::c_arg_reference_tag_number );
+
+			for( size_t tag_n= 0; tag_n < in_param.inner_arg_reference_tags.size(); ++tag_n )
+				if( name == in_param.inner_arg_reference_tags[tag_n] )
+					result.emplace_back( param_n, uint8_t(tag_n) );
 		}
 
 		if( result.empty() )
@@ -209,7 +228,15 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	if( dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
-	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_variable->inner_reference_node, dst_variable->inner_reference_node, errors_container, src_loc );
+	const size_t reference_tag_count= dst_variable->type.ReferencesTagsCount();
+	U_ASSERT( src_variable->inner_reference_nodes.size() >= reference_tag_count );
+	U_ASSERT( dst_variable->inner_reference_nodes.size() >= reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
+		function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+			src_variable->inner_reference_nodes[i],
+			dst_variable->inner_reference_nodes[i],
+			errors_container,
+			src_loc );
 }
 
 void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )
@@ -278,7 +305,7 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
 		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
-		if( param_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+		else if( param_and_tag.second < function_context.args_nodes[arg_n].second.size() && variable_node == function_context.args_nodes[arg_n].second[ param_and_tag.second ] )
 			return true;
 	}
 
@@ -287,23 +314,27 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 
 void CodeBuilder::CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
 {
-	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )
-		if( !IsReferenceAllowedForInnerReturn( function_context, var_node ) )
-			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+	for( size_t i= 0; i < return_reference_node->inner_reference_nodes.size(); ++i )
+		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node->inner_reference_nodes[i] ) )
+			if( !IsReferenceAllowedForInnerReturn( function_context, var_node, i ) )
+				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
 }
 
-bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node )
+bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, const size_t index )
 {
 	U_ASSERT( variable_node != nullptr );
 	U_ASSERT( variable_node->value_type == ValueType::Value );
 
-	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_inner_references )
+	if( index >= function_context.function_type.return_inner_references.size() )
+		return false;
+
+	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_inner_references[index] )
 	{
 		const size_t arg_n= param_and_tag.first;
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
 		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
-		if( param_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+		if( param_and_tag.second < function_context.args_nodes[arg_n].second.size() && variable_node == function_context.args_nodes[arg_n].second[param_and_tag.second] )
 			return true;
 	}
 
@@ -322,34 +353,36 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		const VariablePtr inner_reference= node_pair.first->inner_reference_node;
-		if( inner_reference == nullptr )
-			continue;
-
-		for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+		for( size_t j= 0; j < node_pair.first->inner_reference_nodes.size(); ++j )
 		{
-			if( accesible_variable == node_pair.second )
-				continue;
-
-			std::optional<FunctionType::ParamReference> reference;
-			for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
+			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[j];
+			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 			{
-				if( accesible_variable == function_context.args_nodes[j].first )
-					reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_arg_reference_tag_number );
-				if( accesible_variable == function_context.args_nodes[j].second )
-					reference= FunctionType::ParamReference( uint8_t(j), 0u );
-			}
-
-			if( reference != std::nullopt )
-			{
-				FunctionType::ReferencePollution pollution;
-				pollution.src= *reference;
-				pollution.dst.first= uint8_t(i);
-				pollution.dst.second= 0u;
-				if( function_context.function_type.references_pollution.count( pollution ) != 0u )
+				if( j < node_pair.second.size() && accesible_variable == node_pair.second[j] )
 					continue;
+
+				std::optional<FunctionType::ParamReference> reference;
+				for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
+				{
+					if( accesible_variable == function_context.args_nodes[j].first )
+						reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_arg_reference_tag_number );
+
+					for( size_t k= 0; k < function_context.args_nodes[j].second.size(); ++k )
+					if( accesible_variable == function_context.args_nodes[j].second[k] )
+						reference= FunctionType::ParamReference( uint8_t(j), uint8_t(k) );
+				}
+
+				if( reference != std::nullopt )
+				{
+					FunctionType::ReferencePollution pollution;
+					pollution.src= *reference;
+					pollution.dst.first= uint8_t(i);
+					pollution.dst.second= uint8_t(j);
+					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
+						continue;
+				}
+				REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
 			}
-			REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
 		}
 	}
 }

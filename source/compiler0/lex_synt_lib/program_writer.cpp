@@ -127,6 +127,22 @@ void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 	return std::visit( UniversalVisitor(stream), complex_name );
 }
 
+void WriteInnerReferenceTags( const std::vector<std::string>& tags, std::ostream& stream )
+{
+	if( tags.empty() )
+		return;
+
+	stream << "' ";
+	for( const std::string& tag : tags )
+	{
+		stream << tag;
+		if( &tag == &tags.back() )
+			stream << " '";
+		else
+			stream << ", ";
+	}
+}
+
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
 {
 	stream << "[ ";
@@ -236,12 +252,7 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 		stream << param.name;
 	}
 
-	if( !param.inner_arg_reference_tag.empty() )
-	{
-		stream << "'";
-		stream << param.inner_arg_reference_tag;
-		stream << "'";
-	}
+	WriteInnerReferenceTags( param.inner_arg_reference_tags, stream );
 }
 
 void ElementWrite( const TypeName& type_name, std::ostream& stream )
@@ -959,12 +970,7 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	else
 		stream << Keyword( Keywords::void_ );
 
-	if( !function_type.return_value_inner_reference_tag.empty() )
-	{
-		stream << "'";
-		stream << function_type.return_value_inner_reference_tag;
-		stream << "'";
-	}
+	WriteInnerReferenceTags( function_type.return_value_inner_reference_tags, stream );
 
 	if( function_type.return_value_reference_modifier != ReferenceModifier::None )
 	{

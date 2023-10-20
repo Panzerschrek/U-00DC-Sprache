@@ -240,9 +240,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
-
-				if( type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.AddLink( variable->inner_reference_node, variable_for_initialization->inner_reference_node );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names.GetErrors(), variable_declaration.src_loc );
 
 				variable->constexpr_value=
 					variable_declaration.initializer == nullptr
@@ -257,9 +255,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			prev_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
-
-			if( type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
+			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), variable_declaration.src_loc );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -319,8 +315,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			function_context.variables_state.TryAddLink( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
-			if( type.ReferencesTagsCount() > 0u && expression_result->inner_reference_node != nullptr )
-				function_context.variables_state.TryAddLink( expression_result->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), variables_declaration.src_loc );
+			function_context.variables_state.TryAddInnerLinks( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
 		}
 		else U_ASSERT(false);
 
@@ -419,8 +414,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
 		function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
-		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.TryAddLink( initializer_experrsion->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -455,12 +449,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateVariableInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
-		if( initializer_experrsion->type.ReferencesTagsCount() > 0 )
-		{
-			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
-
-			function_context.variables_state.TryAddLink( initializer_experrsion->inner_reference_node, variable->inner_reference_node, names.GetErrors(), auto_variable_declaration.src_loc );
-		}
+		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable, names.GetErrors(), auto_variable_declaration.src_loc );
 
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
@@ -611,13 +601,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		if( expression_result->type.ReferencesTagsCount() > 0u )
-		{
-			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
-
-			if( expression_result->inner_reference_node != nullptr )
-				function_context.variables_state.TryAddLink( expression_result->inner_reference_node, return_value_node->inner_reference_node, names.GetErrors(), return_operator.src_loc );
-		}
+		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
 			expression_result->type.GetEnumType() != nullptr ||
@@ -710,14 +695,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
-		if( function_context.return_type->ReferencesTagsCount() > 0u && expression_result->inner_reference_node != nullptr )
-			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result->inner_reference_node, return_operator.src_loc );
+		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
 		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
-
-		if( function_context.return_type->ReferencesTagsCount() > 0 && expression_result->inner_reference_node != nullptr )
-			function_context.variables_state.TryAddLink( expression_result->inner_reference_node, return_value_node->inner_reference_node, names.GetErrors(), return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context );
 	}
@@ -774,13 +756,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	function_context.variables_state.AddNode( sequence_lock );
 	function_context.variables_state.TryAddLink( sequence_expression, sequence_lock,  names.GetErrors(), range_for_operator.src_loc );
-
-	if( sequence_expression->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.TryAddLink(
-			sequence_expression->inner_reference_node,
-			sequence_lock->inner_reference_node,
-			names.GetErrors(),
-			range_for_operator.src_loc );
+	function_context.variables_state.TryAddInnerLinks( sequence_expression, sequence_lock, names.GetErrors(), range_for_operator.src_loc );
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
@@ -827,8 +803,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
-				if( element_type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.TryAddLink( sequence_lock->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable_reference, element_index, names.GetErrors(), range_for_operator.src_loc );
 			}
 			else
 			{
@@ -868,11 +843,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				CreateLifetimeStart( function_context, variable->llvm_value );
 				debug_info_builder_->CreateVariableInfo( *variable, variable_name, range_for_operator.src_loc, function_context );
 
-				if( element_type.ReferencesTagsCount() > 0 )
-				{
-					function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
-					function_context.variables_state.TryAddLink( sequence_lock->inner_reference_node, variable->inner_reference_node, names.GetErrors(), range_for_operator.src_loc );
-				}
+				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable, element_index, names.GetErrors(), range_for_operator.src_loc );
 
 				BuildCopyConstructorPart(
 					variable->llvm_value,
@@ -1325,8 +1297,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, with_operator.variable_name, with_operator.src_loc, function_context );
 
 		function_context.variables_state.TryAddLink( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
-		if( expr->type.ReferencesTagsCount() > 0 )
-			function_context.variables_state.TryAddLink( expr->inner_reference_node, variable_reference->inner_reference_node, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
 	}
 	else if( with_operator.reference_modifier == ReferenceModifier::None )
 	{
@@ -1360,11 +1331,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateVariableInfo( *variable, with_operator.variable_name, with_operator.src_loc, function_context );
 
-		if( expr->type.ReferencesTagsCount() > 0 )
-		{
-			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
-			function_context.variables_state.TryAddLink( expr->inner_reference_node, variable->inner_reference_node, names.GetErrors(), with_operator.src_loc );
-		}
+		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expr, variable, names.GetErrors(), with_operator.src_loc );
 
 		if( expr->value_type == ValueType::Value )
 		{
@@ -1580,9 +1548,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			coro_expr->name + "lock" );
 	function_context.variables_state.AddNode( coro_expr_lock );
 	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
-
-	if( coro_expr->type.ReferencesTagsCount() > 0 )
-		function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, coro_expr_lock->inner_reference_node, names.GetErrors(), if_coro_advance.src_loc );
+	function_context.variables_state.TryAddInnerLinks( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
 
 	variables_storage.RegisterVariable( coro_expr_lock );
 
@@ -1695,13 +1661,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			coro_result_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
 
+			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+			// TODO - perform proper refence mapping.
 			if( result_type.ReferencesTagsCount() > 0 )
-			{
-				function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
+				function_context.variables_state.TryAddInnerLinks( coro_expr_lock, variable, names.GetErrors(), if_coro_advance.src_loc );
 
-				if( coro_expr_lock->inner_reference_node != nullptr )
-					function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_node, variable->inner_reference_node, names.GetErrors(), if_coro_advance.src_loc );
-			}
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
 		}
 		else
@@ -1743,13 +1707,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				coro_result_variables_storage.RegisterVariable( variable );
 				function_context.variables_state.AddLink( variable, variable_reference );
 
+				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				// TODO - perform proper refence mapping.
 				if( result_type.ReferencesTagsCount() > 0 )
-				{
-					function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
-
-					if( coro_expr_lock->inner_reference_node != nullptr )
-						function_context.variables_state.AddLink( coro_expr_lock->inner_reference_node, variable->inner_reference_node );
-				}
+					function_context.variables_state.TryAddInnerLinks( coro_expr_lock, variable, names.GetErrors(), if_coro_advance.src_loc );
 
 				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
@@ -1762,8 +1723,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable_reference->llvm_value= coroutine_reference_result;
 
-				if( coro_expr->inner_reference_node != nullptr )
-					function_context.variables_state.TryAddLink( coro_expr->inner_reference_node, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				// TODO - perform proper reference mapping.
+				if( !coro_expr->inner_reference_nodes.empty() )
+					function_context.variables_state.TryAddLink( coro_expr->inner_reference_nodes[0], variable_reference, names.GetErrors(), if_coro_advance.src_loc );
 			}
 		}
 

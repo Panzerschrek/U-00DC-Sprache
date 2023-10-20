@@ -417,7 +417,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.deref().src_loc, field.t )
 				continue;
 			}
-			if( field.is_reference && field.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( field.is_reference && field.t.ReferencesTagsCount() > 0u )
 			{
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
 				field.t= invalid_type_;
@@ -637,14 +637,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto field_lock= field_pair[1].lock_imut();
 			var ClassField& field= field_lock.deref();
 
-			auto field_inner_reference_kind=
-				select( field.is_reference
-					? select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut )
-					: field.t.GetInnerReferenceKind() );
-
-			if( u32(field_inner_reference_kind) > u32(class_inner_reference_kind) )
+			if( field.is_reference )
 			{
-				class_inner_reference_kind= field_inner_reference_kind;
+				class_inner_reference_kind= ust::max( class_inner_reference_kind, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+			}
+			else
+			{
+				auto reference_tags_count= field.t.ReferencesTagsCount();
+				for( auto mut i= 0u; i < reference_tags_count; ++i )
+				{
+					class_inner_reference_kind= ust::max( class_inner_reference_kind, field.t.GetInnerReferenceKind( size_type(i) ) );
+				}
 			}
 		}
 

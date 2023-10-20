@@ -129,8 +129,10 @@ public:
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	mutable std::vector<VariablePtr> children;
 
-	// For variables of types with references inside. Make vector, when multiple inner reference tags will be supported.
-	VariablePtr inner_reference_node;
+	// For variables of types with references inside.
+	// Size is equal to number of reference tags of the variable type.
+	// Null values are not possible.
+	llvm::SmallVector<VariablePtr, 1> inner_reference_nodes;
 
 	// Mark inner reference nodes of variables using this flag.
 	// Do this in order to stop references graph search on these nodes while performing reference pollution.
@@ -160,6 +162,7 @@ public:
 		llvm::Value* llvm_value= nullptr,
 		llvm::Constant* constexpr_value= nullptr );
 
+	// Create child node but do not fill inner nodes (only resize it to proper size).
 	static VariableMutPtr CreateChildNode(
 		const VariablePtr& parent,
 		Type type,

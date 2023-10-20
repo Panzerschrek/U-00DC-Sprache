@@ -1063,7 +1063,12 @@ size_t CodeBuilder::PrepareFunction(
 			// Generate for now own return references mapping.
 			// TODO - fix this. Allow specifying reference mapping for generators, as soon, as multiple inner reference tags will be introduced.
 			if( function_type.return_value_type == ValueType::Value )
-				generator_function_type.return_inner_references= GetGeneratorFunctionReturnReferences( function_type );
+			{
+				generator_function_type.return_inner_references.clear();
+				auto return_references= GetGeneratorFunctionReturnReferences( function_type );
+				if( !return_references.empty() )
+					generator_function_type.return_inner_references.push_back( std::move(return_references) );
+			}
 			else
 				generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
 
@@ -1082,7 +1087,7 @@ size_t CodeBuilder::PrepareFunction(
 			}
 
 			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-			if( !func.type.return_value_reference_tag.empty() || !func.type.return_value_inner_reference_tag.empty() )
+			if( !func.type.return_value_reference_tag.empty() || !func.type.return_value_inner_reference_tags.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
 
 			// Disable references pollution for generator. It is too complicated for now.
@@ -1456,7 +1461,7 @@ Type CodeBuilder::BuildFuncCode(
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for generators.
 			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
-			if( arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
+			if( arg.value_type != ValueType::Value && arg.type.ReferencesTagsCount() > 0u )
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
 
 			// Generator is not declared as non-sync, but param is non-sync. This is an error.
@@ -1562,20 +1567,22 @@ Type CodeBuilder::BuildFuncCode(
 
 		function_context.args_nodes[ arg_number ].first= variable;
 
-		if (param.type.ReferencesTagsCount() > 0u )
+		const auto reference_tag_count= param.type.ReferencesTagsCount();
+		function_context.args_nodes[ arg_number ].second.resize( reference_tag_count );
+		for( size_t i= 0; i < reference_tag_count; ++i )
 		{
-			// Create inner node + root variable.
+			// Create root variable.
 			const VariablePtr accesible_variable=
 				Variable::Create(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					arg_name + " referenced variable" );
+					arg_name + " referenced variable " + std::to_string(i) );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_node );
+			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 
-			function_context.args_nodes[ arg_number ].second= accesible_variable;
+			function_context.args_nodes[ arg_number ].second[i]= accesible_variable;
 		}
 
 		const VariablePtr variable_reference=
@@ -1590,8 +1597,8 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-		if( param.type.ReferencesTagsCount() > 0u )
-			function_context.variables_state.AddLink( variable->inner_reference_node, variable_reference->inner_reference_node );
+		for( size_t i= 0; i < reference_tag_count; ++i )
+			function_context.variables_state.AddLink( variable->inner_reference_nodes[i], variable_reference->inner_reference_nodes[i] );
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{

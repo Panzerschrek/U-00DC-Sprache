@@ -14,9 +14,12 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 
 	with( &node_val : node.lock_imut().deref() )
 	{
-		if( !node_val.inner_reference_node.empty() && node_val.parent.lock().empty() )
+		if( node_val.parent.lock().empty() )
 		{
-			AddNode( node_val.inner_reference_node.try_to_non_nullable() );
+			foreach( &inner_reference_node : node_val.inner_reference_nodes )
+			{
+				AddNode( inner_reference_node );
+			}
 		}
 	}
 }
@@ -26,12 +29,9 @@ fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
 	var NodeState mut node_state{ .moved= false };
 	nodes_.insert( node, move(node_state) );
 
-	with( &inner_reference_node : node.lock_imut().deref().inner_reference_node )
+	foreach( &inner_reference_node : node.lock_imut().deref().inner_reference_nodes )
 	{
-		if( !inner_reference_node.empty() )
-		{
-			AddNodeIfNotExists( inner_reference_node.try_to_non_nullable() );
-		}
+		AddNodeIfNotExists( inner_reference_node );
 	}
 }
 
@@ -44,9 +44,12 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 
 	with( &node_val : node.lock_imut().deref() )
 	{
-		if( !node_val.inner_reference_node.empty() && node_val.parent.lock().empty() )
+		if( node_val.parent.lock().empty() )
 		{
-			RemoveNode( node_val.inner_reference_node.try_to_non_nullable() );
+			foreach( &inner_reference_node : node_val.inner_reference_nodes )
+			{
+				RemoveNode( inner_reference_node );
+			}
 		}
 
 		foreach( &child : node_val.children )
@@ -98,6 +101,54 @@ fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, Na
 	AddLink( from, to );
 }
 
+fn ReferencesGraph::TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	with( &to_val : to.lock_imut().deref() )
+	{
+		auto reference_tag_count= to_val.t.ReferencesTagsCount();
+		if( reference_tag_count == 0u )
+		{
+			return;
+		}
+
+		with( &from_val : from.lock_imut().deref() )
+		{
+			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			{
+				TryAddLink( from_val.inner_reference_nodes[i], to_val.inner_reference_nodes[i], names_scope, src_loc );
+			}
+		}
+	}
+}
+
+fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from, VariablePtr& to, size_type element_index, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	with( &to_val : to.lock_imut().deref() )
+	{
+		auto element_type_reference_tag_count= to_val.t.ReferencesTagsCount();
+		if( element_type_reference_tag_count == 0u )
+		{
+			return;
+		}
+
+		with( &from_val : from.lock_imut().deref() )
+		{
+			auto& tuple_type= from_val.t.GetTupleType().try_deref();
+
+			var size_type mut offset= 0s;
+			for( auto mut i= 0s; i < element_index; ++i )
+			{
+				offset+= size_type( tuple_type.element_types[i].ReferencesTagsCount() );
+			}
+
+			for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
+			{
+				TryAddLink( from_val.inner_reference_nodes[i + offset], to_val.inner_reference_nodes[i], names_scope, src_loc );
+			}
+		}
+	}
+}
+
 fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
 	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
@@ -110,9 +161,9 @@ fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 
 	with( &node_val : node.lock_imut().deref() )
 	{
-		if( !node_val.inner_reference_node.empty() )
+		foreach( &inner_reference_node : node_val.inner_reference_nodes )
 		{
-			RemoveNodeLinks( node_val.inner_reference_node.try_to_non_nullable() );
+			RemoveNodeLinks( inner_reference_node );
 		}
 
 		// Move child nodes first in order to replace links from children with links from parent.
@@ -312,23 +363,23 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 				errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, src_loc, node.name ) );
 			}
 
-			if( !node.inner_reference_node.empty() && node.value_type == ValueType::Value )
+			if( node.value_type == ValueType::Value )
 			{
 				// If this is a variable node with inner reference check if no input links was added in loop body.
 				// Reference nodes also may have inner reference nodes, but adding of input links (pollution) for them is not possible, so, ignore them.
-
-				var VariablePtr inner_reference_node_non_null= node.inner_reference_node.try_to_non_nullable();
-
-				var NodesSet nodes_before= state_before.GetNodeInputLinks( inner_reference_node_non_null);
-				var NodesSet mut nodes_after= state_after.GetNodeInputLinks( inner_reference_node_non_null  );
-				foreach( & prev_link_node : nodes_before )
+				foreach( &inner_reference_node : node.inner_reference_nodes )
 				{
-					nodes_after.drop(prev_link_node);
-				}
+					var NodesSet nodes_before= state_before.GetNodeInputLinks( inner_reference_node);
+					var NodesSet mut nodes_after= state_after.GetNodeInputLinks( inner_reference_node  );
+					foreach( & prev_link_node : nodes_before )
+					{
+						nodes_after.drop(prev_link_node);
+					}
 
-				foreach( & newly_linked_node : nodes_after )
-				{
-					errors.push_back( ReportError( CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, src_loc, node.name, newly_linked_node.lock_imut().deref().name ) );
+					foreach( & newly_linked_node : nodes_after )
+					{
+						errors.push_back( ReportError( CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, src_loc, node.name, newly_linked_node.lock_imut().deref().name ) );
+					}
 				}
 			}
 		}

@@ -62,22 +62,23 @@ VariableMutPtr Variable::Create(
 {
 	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 
-	if( result->type.ReferencesTagsCount() > 0 )
+	const size_t reference_tag_count= result->type.ReferencesTagsCount();
+	result->inner_reference_nodes.resize( reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
 	{
 		const auto inner_reference_node= std::make_shared<Variable>(
 			Variable(
 				FundamentalType( U_FundamentalType::InvalidType ),
 				// Mutability of inner reference node is determined only by type properties itself.
-				result->type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				result->type.GetInnerReferenceType(i) == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				result->name + " inner reference",
+				result->name + " inner reference " + std::to_string(i),
 				nullptr,
 				nullptr ) );
 		inner_reference_node->is_variable_inner_reference_node= result->value_type == ValueType::Value;
 
-		result->inner_reference_node= inner_reference_node;
+		result->inner_reference_nodes[i]= inner_reference_node;
 	}
-
 	return result;
 }
 
@@ -94,9 +95,7 @@ VariableMutPtr Variable::CreateChildNode(
 	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 	result->parent= parent;
 
-	// Child nodes reuse inner reference nodes of parents.
-	if( type.ReferencesTagsCount() > 0 )
-		result->inner_reference_node= parent->inner_reference_node;
+	result->inner_reference_nodes.resize( result->type.ReferencesTagsCount() );
 
 	return result;
 }
