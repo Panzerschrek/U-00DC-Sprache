@@ -3982,7 +3982,6 @@ fn CodeBuilder::DoCallFunction(
 			{
 				continue;
 			}
-
 			var VariablePtr& dst_inner_reference_node= dst_inner_reference_nodes[ size_type( reference_pollution.dst.reference_index ) ];
 
 			if( reference_pollution.src.reference_index == FunctionType::c_param_reference_number )
@@ -4007,7 +4006,6 @@ fn CodeBuilder::DoCallFunction(
 						dst_inner_reference_node,
 						names_scope,
 						src_loc );
-
 				}
 			}
 		}

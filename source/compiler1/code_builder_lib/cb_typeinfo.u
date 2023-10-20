@@ -257,6 +257,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 
 	ADD_SIZE_FIELD( "references_tags_count", t.ReferencesTagsCount() )
 
+	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
 	{
 		var bool mut contains_mutable_references= false;
 		auto reference_tags_count= t.ReferencesTagsCount();

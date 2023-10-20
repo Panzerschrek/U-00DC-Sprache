@@ -659,6 +659,7 @@ fn Type::ReferencesTagsCount( this ) : u32
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
+		// Combine all tags of tuple elements.
 		auto mut result= 0u;
 		foreach( &element_type : tuple_type.element_types )
 		{
@@ -957,11 +958,16 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 	for( auto mut i= 0u; i < reference_tag_count; ++i )
 	{
 		// Create inner reference node.
+
+		auto mut name= this.name;
+		name+= " inner reference ";
+		name+= ust::to_string8(i);
+
 		var Variable mut node_src
 		{
 			.value_type= select( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
-			.name= this.name + " inner reference",
+			.name= move(name),
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
 		};
 
