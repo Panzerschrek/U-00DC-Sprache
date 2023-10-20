@@ -214,3 +214,58 @@ def TupleMultipleInnerReferenceTags_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 16 ) )
+
+
+def TupleMultipleInnerReferenceTags_Test10():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag'
+		{
+			var tup[ S, T ] t[ { .x= x }, { .y= y } ];
+			return t; // Return result inner references in specified in signature order.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleMultipleInnerReferenceTags_Test11():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag'
+		{
+			var tup[ S, T ] t[ { .x= y }, { .y= x } ];
+			return t; // Result inner references are in wrong order relative to specified tags in function signature.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+
+
+def TupleMultipleInnerReferenceTags_Test12():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ i32 & y; }
+		fn Pollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		fn Foo( tup[ S, T ] &mut t )
+		{
+			Pollution( t[0], t[1].y ); // Perform pollution of one inner tag by another. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def TupleMultipleInnerReferenceTags_Test13():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ i32 & y; }
+		fn Pollution( T &mut t'a', i32 &'b y ) ' a <- b ';
+		fn Foo( tup[ S, T ] &mut t )
+		{
+			Pollution( t[1], t[0].x ); // Perform pollution of one inner tag by another. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 8 ) )

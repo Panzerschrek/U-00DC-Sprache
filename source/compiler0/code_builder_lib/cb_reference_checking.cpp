@@ -358,15 +358,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[j];
 			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 			{
-				bool own_variable= false;
-				for( const VariablePtr& own_accessible_variable : node_pair.second )
-					if( accesible_variable == own_accessible_variable )
-					{
-						own_variable= true;
-						break;
-					}
-
-				if( own_variable )
+				if( j < node_pair.second.size() && accesible_variable == node_pair.second[j] )
 					continue;
 
 				std::optional<FunctionType::ParamReference> reference;
