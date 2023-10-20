@@ -544,8 +544,20 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				if( field->is_reference )
 					reference_fields.push_back(field);
+
 				if( field->type.ReferencesTagsCount() > 0 )
 					fields_with_references_inside.push_back(field);
+				else
+				{
+					if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
+					{
+						if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+						{
+							if( reference_tags->size() != 0 )
+								REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
+						}
+					}
+				}
 
 				has_fields_with_reference_notation |=
 					!std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->reference_tag_expression ) ||
