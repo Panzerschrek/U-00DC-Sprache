@@ -35,7 +35,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 		// Inner arg references to return value references
 		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
 			if( in_param.inner_arg_reference_tags[i] == func.return_value_inner_reference_tags[j] )
-				function_type.return_inner_references[j].emplace( uint8_t(arg_number), i );
+				function_type.return_inner_references[j].emplace( uint8_t(arg_number), uint8_t(i) );
 	}
 }
 
@@ -184,7 +184,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 			for( size_t tag_n= 0; tag_n < in_param.inner_arg_reference_tags.size(); ++tag_n )
 				if( name == in_param.inner_arg_reference_tags[tag_n] )
-					result.emplace_back( param_n, tag_n );
+					result.emplace_back( param_n, uint8_t(tag_n) );
 		}
 
 		if( result.empty() )
