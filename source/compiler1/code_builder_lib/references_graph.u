@@ -123,11 +123,29 @@ fn ReferencesGraph::TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& 
 
 fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from, VariablePtr& to, size_type element_index, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	if( to.lock_imut().deref().t.ReferencesTagsCount() > 0u )
+	with( &to_val : to.lock_imut().deref() )
 	{
-		// TODO - perform proper reference mapping.
-		ust::ignore_unused(element_index);
-		TryAddInnerLinks( from, to, names_scope, src_loc );
+		auto element_type_reference_tag_count= to_val.t.ReferencesTagsCount();
+		if( element_type_reference_tag_count == 0u )
+		{
+			return;
+		}
+
+		with( &from_val : from.lock_imut().deref() )
+		{
+			auto& tuple_type= from_val.t.GetTupleType().try_deref();
+
+			var size_type mut offset= 0s;
+			for( auto mut i= 0s; i < element_index; ++i )
+			{
+				offset+= size_type( tuple_type.element_types[i].ReferencesTagsCount() );
+			}
+
+			for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
+			{
+				TryAddLink( from_val.inner_reference_nodes[i + offset], to_val.inner_reference_nodes[i], names_scope, src_loc );
+			}
+		}
 	}
 }
 

@@ -662,7 +662,7 @@ fn Type::ReferencesTagsCount( this ) : u32
 		auto mut result= 0u;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			result= ust::max( result, element_type.ReferencesTagsCount() );
+			result+= element_type.ReferencesTagsCount();
 		}
 		return result;
 	}
@@ -682,16 +682,17 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		var InnerReferenceKind mut inner_reference_type= InnerReferenceKind::None;
+		var size_type mut offset= 0s;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			var InnerReferenceKind element_inner_reference_type= element_type.GetInnerReferenceKind(index);
-			if( u32(element_inner_reference_type) > u32(inner_reference_type) )
+			var size_type count( element_type.ReferencesTagsCount() );
+			if( index >= offset && index < offset + count )
 			{
-				inner_reference_type= element_inner_reference_type;
+				return element_type.GetInnerReferenceKind( index - offset );
 			}
+			offset+= count;
 		}
-		return inner_reference_type;
+		halt; // Unreachable.
 	}
 	if_var( &class_type : GetClassType() )
 	{

@@ -1463,10 +1463,19 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
-			if( element_type.ReferencesTagsCount() > 0u )
+			auto element_type_reference_tag_count= element_type.ReferencesTagsCount();
+			if( element_type_reference_tag_count > 0u )
 			{
-				// TODO - perform proper reference mapping.
-				result.inner_reference_nodes.push_back( v.inner_reference_nodes.front() );
+				var size_type mut offset= 0s;
+				for( auto mut i= 0s; i < type_index; ++i )
+				{
+					offset+= size_type( tuple_type.element_types[i].ReferencesTagsCount() );
+				}
+
+				for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
+				{
+					result.inner_reference_nodes.push_back( v.inner_reference_nodes[ i + offset ] );
+				}
 			}
 
 			var VariablePtr mut result_ptr= move(result).CreateChildPtr( variable_ptr );
