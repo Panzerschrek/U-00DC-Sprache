@@ -463,9 +463,24 @@ fn CodeBuilder::PrepareFunction(
 	{
 		// Generate for now own return references mapping.
 		auto mut return_references= GetGeneratorFunctionReturnReferences( function_type );
+		if( function_type.return_value_type == ValueType::Value )
+		{
+			if( !return_references.empty() )
+			{
+				function_type.return_inner_references.push_back( move(return_references) );
+			}
+			else
+			{
+				move(return_references);
+			}
+		}
+		else
+		{
+			function_type.return_references= move(return_references);
+		}
+
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
 		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
-		select( function_type.return_value_type == ValueType::Value ? function_type.return_inner_references : function_type.return_references )= move(return_references);
 		function_type.return_type= move(generator_return_type);
 		function_type.return_value_type= ValueType::Value;
 
@@ -1818,6 +1833,10 @@ fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names
 
 fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool
 {
+	// TODO
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( variable_node );
+	/*
 	foreach( &return_reference : function_context.function_type.return_inner_references )
 	{
 		auto i= size_type(return_reference.param_index);
@@ -1832,7 +1851,7 @@ fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& functio
 			return true;
 		}
 	}
-
+	*/
 	return false;
 }
 

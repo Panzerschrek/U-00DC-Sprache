@@ -248,21 +248,11 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 			return false;
 		}
 	}
-	foreach( &src_param_reference : this.return_inner_references )
+
+	// TODO - perform checks for inner tags.
+	if( this.return_inner_references != dst.return_inner_references )
 	{
-		var bool mut found= false;
-		foreach( &dst_param_reference : dst.return_inner_references )
-		{
-			if( src_param_reference == dst_param_reference )
-			{
-				found= true;
-				break;
-			}
-		}
-		if( !found )
-		{
-			return false;
-		}
+		return false;
 	}
 
 	// Can convert function, linkink less references to function, linking more references.
@@ -837,10 +827,13 @@ fn TypeHasher::hash( FunctionType& t ) : size_type
 		res= hash_combine( res, size_type(return_reference.param_index) );
 		res= hash_combine( res, size_type(return_reference.reference_index) );
 	}
-	foreach( &return_reference : t.return_inner_references )
+	foreach( &tag_references : t.return_inner_references )
 	{
-		res= hash_combine( res, size_type(return_reference.param_index) );
-		res= hash_combine( res, size_type(return_reference.reference_index) );
+		foreach( &return_reference : tag_references )
+		{
+			res= hash_combine( res, size_type(return_reference.param_index) );
+			res= hash_combine( res, size_type(return_reference.reference_index) );
+		}
 	}
 	foreach( &reference_pollution : t.references_pollution )
 	{

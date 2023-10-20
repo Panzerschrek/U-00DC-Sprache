@@ -3922,28 +3922,34 @@ fn CodeBuilder::DoCallFunction(
 	}
 	if( function_type.return_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 	{
-		var VariablePtr result_inner_reference_node= result_ptr.lock_imut().deref().inner_reference_nodes.front();
-		foreach( &param_reference : function_type.return_inner_references )
+		with( &result_inner_reference_nodes : result_ptr.lock_imut().deref().inner_reference_nodes )
 		{
-			var size_type i(param_reference.param_index);
-			auto& arg_node= args_nodes[i];
-			if( arg_node.empty() )
+			for( auto mut inner_tag_n= 0s; inner_tag_n < ust::min( function_type.return_inner_references.size(), result_inner_reference_nodes.size() ); ++inner_tag_n )
 			{
-				continue;
-			}
-			var VariablePtr arg_node_non_null= arg_node.try_to_non_nullable();
-
-			if( param_reference.reference_index == FunctionType::c_param_reference_number )
-			{
-				function_context.references_graph.TryAddLink( arg_node_non_null, result_inner_reference_node, names_scope, src_loc );
-			}
-			else
-			{
-				with( &inner_reference_nodes : arg_node_non_null.lock_imut().deref().inner_reference_nodes )
+				var VariablePtr& result_inner_reference_node= result_inner_reference_nodes[inner_tag_n];
+				foreach( &param_reference : function_type.return_inner_references[inner_tag_n] )
 				{
-					if( size_type(param_reference.reference_index) < inner_reference_nodes.size() )
+					var size_type i(param_reference.param_index);
+					auto& arg_node= args_nodes[i];
+					if( arg_node.empty() )
 					{
-						function_context.references_graph.TryAddLink( inner_reference_nodes[ size_type(param_reference.reference_index) ], result_inner_reference_node, names_scope, src_loc );
+						continue;
+					}
+					var VariablePtr arg_node_non_null= arg_node.try_to_non_nullable();
+
+					if( param_reference.reference_index == FunctionType::c_param_reference_number )
+					{
+						function_context.references_graph.TryAddLink( arg_node_non_null, result_inner_reference_node, names_scope, src_loc );
+					}
+					else
+					{
+						with( &inner_reference_nodes : arg_node_non_null.lock_imut().deref().inner_reference_nodes )
+						{
+							if( size_type(param_reference.reference_index) < inner_reference_nodes.size() )
+							{
+								function_context.references_graph.TryAddLink( inner_reference_nodes[ size_type(param_reference.reference_index) ], result_inner_reference_node, names_scope, src_loc );
+							}
+						}
 					}
 				}
 			}

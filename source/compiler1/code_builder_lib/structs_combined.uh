@@ -81,6 +81,8 @@ struct FunctionType
 	}
 	var u8 c_param_reference_number= ~0u8;
 
+	type ParamReferences= ust::vector</ParamReference/>; // Sorted by param index.
+
 	struct ReferencePollution
 	{
 		ParamReference dst;
@@ -96,8 +98,8 @@ struct FunctionType
 	LLVMCallConvID calling_convention = LLVMCallConv::C;
 	bool is_unsafe= false;
 
-	ust::vector</ParamReference/> return_references; // Sorted by param index.
-	ust::vector</ParamReference/> return_inner_references; // Sorted by param index.
+	ParamReferences return_references;
+	ust::vector</ ParamReferences /> return_inner_references; // References for inner reference tags.
 
 	// Sorted.
 	ust::vector</ReferencePollution/> references_pollution;

@@ -317,28 +317,31 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 	}
 
+	res.return_inner_references.resize( function_type.return_value_inner_reference_tags.size() );
 	for( auto mut return_inner_tag_n= 0s; return_inner_tag_n < function_type.return_value_inner_reference_tags.size(); ++return_inner_tag_n )
 	{
 		var ust::string8& return_inner_tag= function_type.return_value_inner_reference_tags[return_inner_tag_n];
+		auto &mut out_return_references= res.return_inner_references[return_inner_tag_n];
+
 		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
 		{
 			auto& param= function_type.params[param_n];
 			if( return_inner_tag == param.reference_tag )
 			{
 				var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
-				res.return_inner_references.push_back( move(param_reference) );
+				out_return_references.push_back( move(param_reference) );
 			}
 			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
 			{
 				if( return_inner_tag == param.inner_reference_tags[tag_n] )
 				{
 					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
-					res.return_inner_references.push_back( move(param_reference) );
+					out_return_references.push_back( move(param_reference) );
 				}
 			}
 		}
 
-		if( res.return_inner_references.empty() )
+		if( out_return_references.empty() )
 		{
 			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, return_inner_tag )
 		}

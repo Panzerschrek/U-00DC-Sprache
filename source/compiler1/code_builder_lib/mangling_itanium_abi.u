@@ -698,16 +698,17 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 				}
 			}
 		}
-		if( !function_type.return_inner_references.empty() )
+		for( auto mut i= 0s; i < function_type.return_inner_references.size(); ++i )
 		{
+			auto& inner_references= function_type.return_inner_references[i];
 			ADD_NODE( mangler_state )
 			{
-				mangler_state.Push( "_RRI" );
+				mangler_state.Push( ("_RRI" + ust::to_string8(i)).range() );
 
-				debug_assert( function_type.return_inner_references.size() < 36s );
-				mangler_state.Push( Base36Digit( u32( function_type.return_inner_references.size()) ) );
+				debug_assert( inner_references.size() < 36s );
+				mangler_state.Push( Base36Digit( u32( inner_references.size()) ) );
 
-				foreach( &param_reference : function_type.return_inner_references )
+				foreach( &param_reference : inner_references )
 				{
 					halt if( param_reference.param_index >= 36u8 );
 					halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
