@@ -37,7 +37,7 @@ def ClassFieldReferenceNotation_Test3():
 		struct S{ i32& x; }
 		struct T
 		{
-			S @("a"c8) s;
+			S @("a") s;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -48,7 +48,7 @@ def ClassFieldReferenceNotation_Test4():
 		struct S{ i32& x; }
 		struct T
 		{
-			S @("a"c8) imut s;
+			S @("a") imut s;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
