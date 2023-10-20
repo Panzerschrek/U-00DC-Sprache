@@ -101,6 +101,36 @@ fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, Na
 	AddLink( from, to );
 }
 
+fn ReferencesGraph::TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	with( &to_val : to.lock_imut().deref() )
+	{
+		auto reference_tag_count= to_val.t.ReferencesTagsCount();
+		if( reference_tag_count == 0u )
+		{
+			return;
+		}
+
+		with( &from_val : from.lock_imut().deref() )
+		{
+			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			{
+				TryAddLink( from_val.inner_reference_nodes[i], to_val.inner_reference_nodes[i], names_scope, src_loc );
+			}
+		}
+	}
+}
+
+fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from, VariablePtr& to, size_type element_index, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( to.lock_imut().deref().t.ReferencesTagsCount() > 0u )
+	{
+		// TODO - perform proper reference mapping.
+		ust::ignore_unused(element_index);
+		TryAddInnerLinks( from, to, names_scope, src_loc );
+	}
+}
+
 fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
 	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );

@@ -2112,15 +2112,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_name, range_for_operator.src_loc );
 
 				function_context.references_graph.TryAddLink( sequence_lock_node, variable_reference, names_scope, range_for_operator.src_loc );
-				if( variable_type.ReferencesTagsCount() > 0u )
-				{
-					// TODO - perform proper reference mapping.
-					function_context.references_graph.TryAddInnerLinks(
-						sequence_lock_node,
-						variable_reference,
-						names_scope,
-						range_for_operator.src_loc );
-				}
+				function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_reference, i, names_scope, range_for_operator.src_loc );
 			}
 			else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
 			{
@@ -2160,15 +2152,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				RegisterTopFrameVariable( function_context, variable_ptr );
 
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, range_for_operator.src_loc );
-				if( variable_type.ReferencesTagsCount() > 0u )
-				{
-					// TODO - perform proper reference mapping.
-					function_context.references_graph.TryAddInnerLinks(
-						sequence_lock_node,
-						variable_ptr,
-						names_scope,
-						range_for_operator.src_loc );
-				}
+				function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_ptr, i, names_scope, range_for_operator.src_loc );
 			}
 			else{ halt; }
 

@@ -1214,10 +1214,13 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 			function_context.args_nodes[arg_n]= variable_ptr;
 
-			if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			auto references_tags_count= type_param.t.ReferencesTagsCount();
+			for( auto mut i= 0u; i < references_tags_count; ++i )
 			{
-				auto variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable();
-				function_context.references_graph.AddLink( variable_inner_reference_node, variable_reference_ptr.lock_imut().deref().inner_reference_node.try_to_non_nullable() );
+				var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
+				function_context.references_graph.AddLink(
+					variable_inner_reference_node,
+					variable_reference_ptr.lock_imut().deref().inner_reference_nodes[i] );
 
 				var Variable mut accesible_variable
 				{
@@ -1843,59 +1846,55 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 		{
 			continue;
 		}
-		var VariableNullablePtr inner_reference_node= function_context.args_nodes[i].try_lock_imut().deref().inner_reference_node;
-		if( inner_reference_node.empty() )
+		foreach( &inner_reference_node : function_context.args_nodes[i].try_lock_imut().deref().inner_reference_nodes )
 		{
-			continue;
-		}
-		var VariablePtr inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
-
-		foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_non_null ) )
-		{
-			if( accessible_variable_node == function_context.args_inner_variable_nodes[i] )
+			foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 			{
-				continue;
-			}
-
-			var ust::optional</FunctionType::ParamReference/> mut param_reference;
-			for( auto mut j= 0s; j < params.size(); ++j )
-			{
-				if( accessible_variable_node == function_context.args_nodes[j] )
+				if( accessible_variable_node == function_context.args_inner_variable_nodes[i] )
 				{
-					var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
-					param_reference= move(r);
+					continue;
 				}
-				if( accessible_variable_node == function_context.args_inner_variable_nodes[j] )
+
+				var ust::optional</FunctionType::ParamReference/> mut param_reference;
+				for( auto mut j= 0s; j < params.size(); ++j )
 				{
-					var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= 0u8 };
-					param_reference= move(r);
+					if( accessible_variable_node == function_context.args_nodes[j] )
+					{
+						var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
+						param_reference= move(r);
+					}
+					if( accessible_variable_node == function_context.args_inner_variable_nodes[j] )
+					{
+						var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= 0u8 };
+						param_reference= move(r);
+					}
 				}
-			}
 
-			if( param_reference.empty() )
-			{
-				continue;
-			}
-
-			var FunctionType::ReferencePollution actual_reference_pollution
-			{
-				.dst{ .param_index= u8(i), .reference_index= 0u8 },
-				.src= param_reference.try_deref(),
-			};
-
-			var bool mut found= false;
-			foreach( &reference_pollution : function_type.references_pollution )
-			{
-				if( actual_reference_pollution == reference_pollution )
+				if( param_reference.empty() )
 				{
-					found= true;
-					break;
+					continue;
 				}
-			}
 
-			if( !found )
-			{
-				REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+				var FunctionType::ReferencePollution actual_reference_pollution
+				{
+					.dst{ .param_index= u8(i), .reference_index= 0u8 },
+					.src= param_reference.try_deref(),
+				};
+
+				var bool mut found= false;
+				foreach( &reference_pollution : function_type.references_pollution )
+				{
+					if( actual_reference_pollution == reference_pollution )
+					{
+						found= true;
+						break;
+					}
+				}
+
+				if( !found )
+				{
+					REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+				}
 			}
 		}
 	}
@@ -1924,17 +1923,22 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	VariablePtr& src_node,
 	SrcLoc& src_loc )
 {
-	var Type dst_type= dst_node.lock_imut().deref().t;
-	if( dst_type.GetInnerReferenceKind() == InnerReferenceKind::None )
+	auto reference_tag_count= dst_node.lock_imut().deref().t.ReferencesTagsCount();
+	if( reference_tag_count == 0u )
 	{
 		return;
 	}
 
-	function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
-		src_node.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
-		dst_node.lock_imut().deref().inner_reference_node.try_to_non_nullable(),
-		names_scope,
-		src_loc );
+	auto src_lock= src_node.lock_imut();
+	auto dst_lock= dst_node.lock_imut();
+	for( auto mut i= 0u; i < reference_tag_count; ++i )
+	{
+		function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+			src_lock.deref().inner_reference_nodes[i],
+			dst_lock.deref().inner_reference_nodes[i],
+			names_scope,
+			src_loc );
+	}
 }
 
 fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
