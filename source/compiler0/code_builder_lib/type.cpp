@@ -370,7 +370,7 @@ bool Type::IsAbstract() const
 size_t Type::ReferencesTagsCount() const
 {
 	if( const auto class_type= GetClassType() )
-		return class_type->inner_reference_type == InnerReferenceType::None ? 0 : 1;
+		return class_type->inner_references.size();
 	else if( const auto array_type= GetArrayType() )
 		return array_type->element_type.ReferencesTagsCount();
 	else if( const auto tuple_type= GetTupleType() )
@@ -390,7 +390,10 @@ InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 	U_ASSERT( index < ReferencesTagsCount() );
 
 	if( const auto class_type= GetClassType() )
-		return class_type->inner_reference_type;
+	{
+		U_ASSERT( index < class_type->inner_references.size() );
+		return class_type->inner_references[index];
+	}
 	else if( const auto array_type= GetArrayType() )
 		return array_type->element_type.GetInnerReferenceType(index);
 	else if( const auto tuple_type= GetTupleType() )

@@ -84,7 +84,10 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->generated_class_data= coroutine_type_description;
-	coroutine_class->inner_reference_type= coroutine_type_description.inner_reference_type;
+
+	if( coroutine_type_description.inner_reference_type != InnerReferenceType::None )
+		coroutine_class->inner_references.push_back( coroutine_type_description.inner_reference_type );
+
 	coroutine_class->members->SetClass( coroutine_class.get() );
 	coroutine_class->parents_list_prepared= true;
 	coroutine_class->is_default_constructible= false;

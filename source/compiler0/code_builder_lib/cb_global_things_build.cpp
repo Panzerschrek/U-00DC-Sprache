@@ -517,8 +517,20 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			++the_class.field_count;
 		} );
 
-	// Determine inner reference type.
+	// Determine inner references.
 	{
+		// Inherit inner references of parents.
+		// Normally any reference may be inhhereted only  from base, but not interfaces.
+		the_class.inner_references.clear();
+		for( const Class::Parent& parent : the_class.parents )
+		{
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), parent.class_->inner_references.size() ) );
+			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
+				the_class.inner_references[i]= std::max( the_class.inner_references[i], parent.class_->inner_references[i] );
+		}
+
+		// Collect fields for which reference notation is required.
+
 		ClassFieldsVector<ClassFieldPtr> reference_fields;
 		ClassFieldsVector<ClassFieldPtr> fields_with_references_inside;
 
@@ -533,32 +545,33 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					reference_fields.push_back(field);
 				if( field->type.ReferencesTagsCount() > 0 )
 					fields_with_references_inside.push_back(field);
-
-				if( field->is_reference )
-					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
-				else
-				{
-					if( !EnsureTypeComplete( field->type ) )
-						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->src_loc, field->type );
-					for( size_t i= 0, reference_tag_count= field->type.ReferencesTagsCount(); i < reference_tag_count; ++i )
-						the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType(i) );
-				}
-
 			});
 
-		for( const Class::Parent& parent : the_class.parents )
-			the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->inner_reference_type );
+		// Determine reference mapping where it is needed.
 
 		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 )
 		{
 			// Special case - class contains single reference field.
-			reference_fields.front()->reference_tag= uint8_t(0u);
+			ClassField& field= *reference_fields.front();
+			field.reference_tag= uint8_t(0u);
+
+			if( the_class.inner_references.empty() )
+				the_class.inner_references.push_back( InnerReferenceType::None );
+			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 		}
 		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 )
 		{
-			// Special case - class contains single field with references inside.
-			fields_with_references_inside.front()->inner_reference_tags.resize(0);
-			fields_with_references_inside.front()->inner_reference_tags.push_back(uint8_t(0));
+			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.l
+			ClassField& field= *fields_with_references_inside.front();
+			const auto reference_tag_count= field.type.ReferencesTagsCount();
+
+			field.inner_reference_tags.resize( reference_tag_count );
+			for( size_t i= 0; i < reference_tag_count; ++i )
+				field.inner_reference_tags[i]= uint8_t(i);
+
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReferenceType::None );
+			for( size_t i= 0; i < reference_tag_count; ++i )
+				the_class.inner_references[i]= std::max( the_class.inner_references[i], field.type.GetInnerReferenceType(i) );
 		}
 		else
 		{
@@ -566,13 +579,26 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			for( const ClassFieldPtr& reference_field : reference_fields )
 			{
+				// Fallback for cases with no notation - link reference field with tag 0.
 				reference_field->reference_tag= uint8_t(0u);
+
+				if( the_class.inner_references.empty() )
+					the_class.inner_references.push_back( InnerReferenceType::None );
+				the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 			}
 
 			for( const ClassFieldPtr& field : fields_with_references_inside )
 			{
-				field->inner_reference_tags.resize(0);
-				field->inner_reference_tags.push_back(uint8_t(0));
+				// Fallback for cases with no notation - link all field tags with tag 0.
+
+				const auto reference_tag_count= field->type.ReferencesTagsCount();
+
+				field->inner_reference_tags.resize( reference_tag_count, uint8_t(0) );
+
+				if( the_class.inner_references.empty() )
+					the_class.inner_references.push_back( InnerReferenceType::None );
+				for( size_t i= 0; i < reference_tag_count; ++i )
+					the_class.inner_references.front()= std::max( the_class.inner_references.front(), field->type.GetInnerReferenceType(i) );
 			}
 		}
 	}
