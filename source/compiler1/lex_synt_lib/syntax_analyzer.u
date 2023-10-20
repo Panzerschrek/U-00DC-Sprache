@@ -312,9 +312,9 @@ private:
 	fn PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text );
 
 private:
-	ust::array_view_imut</Lexem/> imut it_initial_;
-	ust::array_view_imut</Lexem/> it_;
-	ust::array_view_imut</Lexem/> last_error_it_;
+	ust::array_view_imut</Lexem/> @("a") imut it_initial_;
+	ust::array_view_imut</Lexem/> @("a") it_;
+	ust::array_view_imut</Lexem/> @("a") last_error_it_;
 	size_type last_error_repeats_= 0s;
 	LexSyntErrors errors_;
 
