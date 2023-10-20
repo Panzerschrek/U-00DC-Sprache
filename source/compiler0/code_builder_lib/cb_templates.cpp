@@ -362,7 +362,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		coroutine_param.return_value_type= ValueType::Value;
 
 	if( generator_type_name.inner_reference_tag == nullptr )
-		coroutine_param.inner_reference_type= InnerReferenceType::None;
+		coroutine_param.inner_reference_type= std::nullopt;
 	else
 		coroutine_param.inner_reference_type=
 			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable

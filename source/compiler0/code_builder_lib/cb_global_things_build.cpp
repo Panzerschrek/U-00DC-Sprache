@@ -556,7 +556,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			field.reference_tag= uint8_t(0u);
 
 			if( the_class.inner_references.empty() )
-				the_class.inner_references.push_back( InnerReferenceType::None );
+				the_class.inner_references.push_back( InnerReferenceType::Imut );
 			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 		}
 		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 )
@@ -569,7 +569,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( size_t i= 0; i < reference_tag_count; ++i )
 				field.inner_reference_tags[i]= uint8_t(i);
 
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReferenceType::None );
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReferenceType::Imut );
 			for( size_t i= 0; i < reference_tag_count; ++i )
 				the_class.inner_references[i]= std::max( the_class.inner_references[i], field.type.GetInnerReferenceType(i) );
 		}
@@ -583,7 +583,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				reference_field->reference_tag= uint8_t(0u);
 
 				if( the_class.inner_references.empty() )
-					the_class.inner_references.push_back( InnerReferenceType::None );
+					the_class.inner_references.push_back( InnerReferenceType::Imut );
 				the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 			}
 
@@ -596,7 +596,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				field->inner_reference_tags.resize( reference_tag_count, uint8_t(0) );
 
 				if( the_class.inner_references.empty() )
-					the_class.inner_references.push_back( InnerReferenceType::None );
+					the_class.inner_references.push_back( InnerReferenceType::Imut );
 				for( size_t i= 0; i < reference_tag_count; ++i )
 					the_class.inner_references.front()= std::max( the_class.inner_references.front(), field->type.GetInnerReferenceType(i) );
 			}

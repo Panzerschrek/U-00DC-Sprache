@@ -5,13 +5,17 @@ namespace U
 
 size_t CoroutineTypeDescription::Hash() const
 {
-	return
+	auto result=
 		llvm::hash_combine(
 			kind,
 			return_type.Hash(),
 			return_value_type,
-			inner_reference_type,
 			non_sync );
+
+	if( inner_reference_type != std::nullopt )
+		result= llvm::hash_combine( result, *inner_reference_type );
+
+	return result;
 }
 
 bool operator==( const CoroutineTypeDescription& l, const CoroutineTypeDescription& r )

@@ -407,10 +407,11 @@ InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 			offset+= count;
 		}
 		U_ASSERT(false); // Unreachable.
-		return InnerReferenceType::None;
+		return InnerReferenceType::Imut;
 	}
 
-	return InnerReferenceType::None;
+	U_ASSERT(false); // Unreachable - other types have 0 reference tags.
+	return InnerReferenceType::Imut;
 }
 
 llvm::Type* Type::GetLLVMType() const
@@ -506,7 +507,7 @@ std::string Type::ToString() const
 					result+= Keyword( Keywords::generator_ );
 				else U_ASSERT(false);
 
-				if( coroutine_type_description->inner_reference_type == InnerReferenceType::None )
+				if( coroutine_type_description->inner_reference_type == std::nullopt )
 				{}
 				else if( coroutine_type_description->inner_reference_type == InnerReferenceType::Imut )
 				{

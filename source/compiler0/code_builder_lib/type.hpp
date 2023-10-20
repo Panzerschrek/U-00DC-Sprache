@@ -32,8 +32,7 @@ class Type;
 
 enum class InnerReferenceType : uint8_t
 {
-	None, // Type have no innere references
-	Imut, // Type have immutable inner ereference
+	Imut, // Type have immutable inner reference
 	Mut, // Type have mutable inner reference
 };
 

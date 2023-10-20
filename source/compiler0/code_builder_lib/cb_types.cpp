@@ -182,7 +182,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		coroutine_type_description.return_value_type= ValueType::Value;
 
 	if( generator_type_name.inner_reference_tag == nullptr )
-		coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+		coroutine_type_description.inner_reference_type= std::nullopt;
 	else
 		coroutine_type_description.inner_reference_type=
 			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
