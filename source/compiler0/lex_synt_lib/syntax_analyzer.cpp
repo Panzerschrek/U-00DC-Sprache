@@ -3582,7 +3582,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 			if( it_->type == Lexem::Type::At )
 			{
 				NextLexem();
-				field.reference_tag_expression= ParseExpressionInBrackets();
+				field.inner_reference_tags_expression= ParseExpressionInBrackets();
 			}
 
 			bool is_reference= false;
@@ -3614,7 +3614,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 				if( it_->type == Lexem::Type::At )
 				{
 					NextLexem();
-					field.inner_reference_tags_expression= ParseExpressionInBrackets();
+					field.reference_tag_expression= ParseExpressionInBrackets();
 				}
 			}
 			else

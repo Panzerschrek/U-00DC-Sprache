@@ -533,6 +533,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 		ClassFieldsVector<ClassFieldPtr> reference_fields;
 		ClassFieldsVector<ClassFieldPtr> fields_with_references_inside;
+		bool has_fields_with_reference_notation= false;
 
 		the_class.members->ForEachValueInThisScope(
 			[&]( const Value& value )
@@ -545,11 +546,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					reference_fields.push_back(field);
 				if( field->type.ReferencesTagsCount() > 0 )
 					fields_with_references_inside.push_back(field);
+
+				has_fields_with_reference_notation |=
+					!std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->reference_tag_expression ) ||
+					!std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression );
 			});
 
 		// Determine reference mapping where it is needed.
 
-		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 )
+		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 && !has_fields_with_reference_notation )
 		{
 			// Special case - class contains single reference field.
 			ClassField& field= *reference_fields.front();
@@ -559,7 +564,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.inner_references.push_back( InnerReferenceType::Imut );
 			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 		}
-		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 )
+		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation )
 		{
 			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.l
 			ClassField& field= *fields_with_references_inside.front();
@@ -579,12 +584,29 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			for( const ClassFieldPtr& reference_field : reference_fields )
 			{
-				// Fallback for cases with no notation - link reference field with tag 0.
-				reference_field->reference_tag= uint8_t(0u);
+				std::optional<uint8_t> reference_tag;
+				if( !std::holds_alternative< Synt::EmptyVariant >( reference_field->syntax_element->reference_tag_expression ) )
+					reference_tag= EvaluateReferenceFieldTag( *the_class.members, reference_field->syntax_element->reference_tag_expression );
+				else
+				{
+					// TODO - generate error here.
+				}
 
-				if( the_class.inner_references.empty() )
-					the_class.inner_references.push_back( InnerReferenceType::Imut );
-				the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				if( reference_tag != std::nullopt )
+				{
+					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReferenceType::Imut );
+					InnerReferenceType& t= the_class.inner_references[ size_t(*reference_tag) ];
+					t= std::max( t, reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				}
+				else
+				{
+					// Fallback for cases with no notation - link reference field with tag 0.
+					reference_field->reference_tag= uint8_t(0u);
+
+					if( the_class.inner_references.empty() )
+						the_class.inner_references.push_back( InnerReferenceType::Imut );
+					the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				}
 			}
 
 			for( const ClassFieldPtr& field : fields_with_references_inside )
