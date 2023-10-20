@@ -251,3 +251,60 @@ def InnerReferenceTagCountMismatch_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
+
+
+def AutoReferenceNotationCalculation_Test0():
+	# Struct without references inside has zero reference tags.
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		static_assert( typeinfo</S/>.references_tags_count == 0s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoReferenceNotationCalculation_Test1():
+	# Struct with single immutable reference field - number of tags is 1.
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		static_assert( typeinfo</S/>.references_tags_count == 1s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoReferenceNotationCalculation_Test2():
+	# Struct with single mutable reference field - number of tags is 1.
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		static_assert( typeinfo</S/>.references_tags_count == 1s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoReferenceNotationCalculation_Test3():
+	# Struct with single field containg reference - number of tags is 1.
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		struct T{ i32 x; S s; f32 y; tup[ bool, char8 ] t; }
+		static_assert( typeinfo</T/>.references_tags_count == 1s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoReferenceNotationCalculation_Test4():
+	# Struct with single field containg references - number of tags is equal to number of references inside this field.
+	c_program_text= """
+		struct S{ i32 &imut @("a"c8) x; i32 &imut @("b"c8) y; i32 &imut @("c"c8) z; }
+		struct T{ i32 x; S s; f32 y; tup[ bool, char8 ] t; }
+		static_assert( typeinfo</T/>.references_tags_count == 3s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoReferenceNotationCalculation_Test5():
+	# Struct with single field containg references - number of tags is equal to number of references inside this field.
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ i32 x; f32 y; tup[ S, S, S, S ] t; }
+		static_assert( typeinfo</T/>.references_tags_count == 4s );
+	"""
+	tests_lib.build_program( c_program_text )
