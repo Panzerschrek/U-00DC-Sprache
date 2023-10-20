@@ -1241,6 +1241,8 @@ struct ClassField
 	TypeName type;
 	std::string name;
 	std::unique_ptr<const Initializer> initializer; // May be null.
+	Expression reference_tag_expression; // EmptyVariant if none.
+	Expression inner_reference_tags_expression; // EmptyVariant if none.
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
