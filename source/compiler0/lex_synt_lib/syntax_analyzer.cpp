@@ -3585,10 +3585,8 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 				field.inner_reference_tags_expression= ParseExpressionInBrackets();
 			}
 
-			bool is_reference= false;
 			if( it_->type == Lexem::Type::And )
 			{
-				is_reference= true;
 				NextLexem();
 				field.reference_modifier= ReferenceModifier::Reference;
 
