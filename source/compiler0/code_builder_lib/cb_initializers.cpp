@@ -227,10 +227,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
-
-			// TODO - perform proper reference tag mapping for struct members.
-			if( field->type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( variable, struct_member, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names.GetErrors(), initializer.src_loc );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -272,10 +269,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
-
-			// TODO - perform proper reference tag mapping for struct members.
-			if( field->type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( variable, struct_member, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names.GetErrors(), initializer.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -552,10 +546,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
-
-			// TODO - perform proper reference mapping.
-			if( field->type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( variable, struct_member, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 
@@ -1098,10 +1089,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			function_context.variables_state.AddNode( field_variable );
 			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
-
-			// TODO - perform proper reference mapping.
-			if( field->type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( this_, field_variable, *field, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
@@ -1172,10 +1160,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			function_context.variables_state.AddNode( field_variable );
 			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), Synt::GetInitializerSrcLoc(field_initializer.initializer) );
-
-			// TODO - perform proper reference mapping.
-			if( field->type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( this_, field_variable, *field, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 
@@ -1251,8 +1236,12 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Link references.
-	const size_t reference_index= 0; // TODO - perform proper reference mapping.
-	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( initializer_variable, variable->inner_reference_nodes[reference_index], block_names.GetErrors(), initializer_src_loc );
+	U_ASSERT( field.reference_tag < variable->inner_reference_nodes.size() );
+	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+		initializer_variable,
+		variable->inner_reference_nodes[field.reference_tag],
+		block_names.GetErrors(),
+		initializer_src_loc );
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );
 

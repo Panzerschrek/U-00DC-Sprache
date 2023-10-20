@@ -518,27 +518,64 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		} );
 
 	// Determine inner reference type.
-	the_class.members->ForEachValueInThisScope(
-		[&]( const Value& value )
-		{
-			const ClassFieldPtr field= value.GetClassField();
-			if( field == nullptr )
-				return;
+	{
+		ClassFieldsVector<ClassFieldPtr> reference_fields;
+		ClassFieldsVector<ClassFieldPtr> fields_with_references_inside;
 
-			if( field->is_reference )
-				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
-			else
+		the_class.members->ForEachValueInThisScope(
+			[&]( const Value& value )
 			{
-				if( !EnsureTypeComplete( field->type ) )
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->src_loc, field->type );
-				for( size_t i= 0, reference_tag_count= field->type.ReferencesTagsCount(); i < reference_tag_count; ++i )
-					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType(i) );
+				const ClassFieldPtr field= value.GetClassField();
+				if( field == nullptr )
+					return;
+
+				if( field->is_reference )
+					reference_fields.push_back(field);
+				if( field->type.ReferencesTagsCount() > 0 )
+					fields_with_references_inside.push_back(field);
+
+				if( field->is_reference )
+					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				else
+				{
+					if( !EnsureTypeComplete( field->type ) )
+						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->src_loc, field->type );
+					for( size_t i= 0, reference_tag_count= field->type.ReferencesTagsCount(); i < reference_tag_count; ++i )
+						the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType(i) );
+				}
+
+			});
+
+		for( const Class::Parent& parent : the_class.parents )
+			the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->inner_reference_type );
+
+		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 )
+		{
+			// Special case - class contains single reference field.
+			reference_fields.front()->reference_tag= uint8_t(0u);
+		}
+		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 )
+		{
+			// Special case - class contains single field with references inside.
+			fields_with_references_inside.front()->inner_reference_tags.resize(0);
+			fields_with_references_inside.front()->inner_reference_tags.push_back(uint8_t(0));
+		}
+		else
+		{
+			// General case - require reference notation.
+
+			for( const ClassFieldPtr& reference_field : reference_fields )
+			{
+				reference_field->reference_tag= uint8_t(0u);
 			}
 
-		});
-
-	for( const Class::Parent& parent : the_class.parents )
-		the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->inner_reference_type );
+			for( const ClassFieldPtr& field : fields_with_references_inside )
+			{
+				field->inner_reference_tags.resize(0);
+				field->inner_reference_tags.push_back(uint8_t(0));
+			}
+		}
+	}
 
 	// Fill llvm struct type fields
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;

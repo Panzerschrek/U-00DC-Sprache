@@ -126,6 +126,24 @@ void ReferencesGraph::TryAddInnerLinksForTupleElement( const VariablePtr& from, 
 		TryAddLink( from->inner_reference_nodes[i + offset], to->inner_reference_nodes[i], errors_container, src_loc );
 }
 
+void ReferencesGraph::TryAddInnerLinksForClassField( const VariablePtr& from, const VariablePtr& to, const ClassField& field, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	U_ASSERT( from->type.GetClassType() != nullptr );
+
+	const auto field_reference_tag_count= to->type.ReferencesTagsCount();
+	U_ASSERT( to->inner_reference_nodes.size() == to->type.ReferencesTagsCount() );
+	U_ASSERT( to->type == field.type );
+	U_ASSERT( !field.is_reference );
+	U_ASSERT( field.inner_reference_tags.size() == field_reference_tag_count );
+
+	for( size_t i= 0u; i < field_reference_tag_count; ++i )
+	{
+		const auto src_tag_number= field.inner_reference_tags[i];
+		U_ASSERT( src_tag_number < from->inner_reference_nodes.size() );
+		TryAddLink( from->inner_reference_nodes[src_tag_number], to->inner_reference_nodes[i], errors_container, src_loc );
+	}
+}
+
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 {
 	// Check if any parent have links and any child (including children of children) have links.

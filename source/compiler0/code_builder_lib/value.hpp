@@ -182,10 +182,12 @@ struct ClassField final
 	Type type;
 	ClassPtr class_= nullptr;
 	const Synt::ClassField* syntax_element= nullptr;
+	llvm::SmallVector<uint8_t, 4> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
 	uint32_t index= ~0u;
 	uint32_t original_index= ~0u;
 	bool is_mutable= true;
 	bool is_reference= false;
+	uint8_t reference_tag= 0u; // For reference fields - mapping of class inner reference tag to reference tag.
 
 	ClassField()= default;
 	ClassField( ClassPtr in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );

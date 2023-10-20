@@ -1716,12 +1716,10 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 			std::string( Keyword( Keywords::base_ ) ),
 			ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, c_base_field_index ) );
 
-	// TODO - perform proper reference mapping.
-	for( VariablePtr& inner_reference_node : base->inner_reference_nodes )
-	{
-		U_ASSERT( !variable->inner_reference_nodes.empty() );
-		inner_reference_node= variable->inner_reference_nodes.front();
-	}
+	// Reference nodes of child class are mapped 1 to 1 to nodes of parent class.
+	U_ASSERT( base->inner_reference_nodes.size() <= variable->inner_reference_nodes.size() );
+	for( size_t i= 0; i < base->inner_reference_nodes.size(); ++i )
+		base->inner_reference_nodes[i]= variable->inner_reference_nodes[i];
 
 	variable->children[ c_base_field_index ]= base;
 
@@ -1826,9 +1824,8 @@ Value CodeBuilder::AccessClassField(
 
 		function_context.variables_state.AddNode( result );
 
-		// TODO - perform proper reference mapping.
-		if( !variable->inner_reference_nodes.empty() )
-			function_context.variables_state.TryAddLink( variable->inner_reference_nodes[0], result, names.GetErrors(), src_loc );
+		U_ASSERT( field.reference_tag < variable->inner_reference_nodes.size() );
+		function_context.variables_state.TryAddLink( variable->inner_reference_nodes[ field.reference_tag ], result, names.GetErrors(), src_loc );
 
 		RegisterTemporaryVariable( function_context, result );
 		return result;
@@ -1852,11 +1849,12 @@ Value CodeBuilder::AccessClassField(
 				variable->name + "." + field_name,
 				ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, field.index ) );
 
-		// TODO - perform proper reference mapping.
-		for( VariablePtr& inner_reference_node : result->inner_reference_nodes )
+		U_ASSERT( result->inner_reference_nodes.size() == field.inner_reference_tags.size() );
+		for( size_t i= 0; i < result->inner_reference_nodes.size(); ++i )
 		{
-			U_ASSERT( !variable->inner_reference_nodes.empty() );
-			inner_reference_node= variable->inner_reference_nodes.front();
+			const auto src_tag_number= field.inner_reference_tags[i];
+			U_ASSERT( src_tag_number < variable->inner_reference_nodes.size() );
+			result->inner_reference_nodes[i]= variable->inner_reference_nodes[src_tag_number];
 		}
 
 		if( variable->constexpr_value != nullptr )
