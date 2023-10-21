@@ -461,3 +461,360 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
+
+
+def StructMultipleInnerReferenceTags_Test0():
+	c_program_text= """
+		struct S{}
+		static_assert( typeinfo</S/>.references_tags_count == 0s );
+
+		struct T{ S s; i32 x; f32 y; }
+		static_assert( typeinfo</T/>.references_tags_count == 0s );
+
+		struct R{ i32& r; }
+		static_assert( typeinfo</R/>.references_tags_count == 1s );
+
+		struct W{ i32 & @("a"c8) x; i32 & @("b"c8) y; } // Map two references to two tags.
+		static_assert( typeinfo</W/>.references_tags_count == 2s );
+
+		struct V{ i32 & @("a"c8) x; i32 & @("a"c8) y; } // Map two references to single tag.
+		static_assert( typeinfo</V/>.references_tags_count == 1s );
+
+		struct Q{ W @("ab") w; R @("c") r; }
+		static_assert( typeinfo</Q/>.references_tags_count == 3s );
+
+		struct H{ Q @("aaa") q; } // Map 3 references to single tag.
+		static_assert( typeinfo</H/>.references_tags_count == 1s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test1():
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		struct T{ f32 &mut  y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ f32 &imut f; }
+		fn DoPollution( R& mut r'x', f32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var f32 f= 0.0f;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .s{ .x= x }, .t{ .y= y } };
+				DoPollution( r, w.t.y ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			++x; // There are no links to "x" left, so, we can mutate it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test2():
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		struct T{ f32 &mut  y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ i32 &imut f; }
+		fn DoPollution( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var i32 f= 0;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .s{ .x= x }, .t{ .y= y } };
+				DoPollution( r, w.s.x ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			y *= 2.0f; // There are no links to "y" left, so, we can mutate it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test3():
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		struct T{ f32 &mut  y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ f32 &imut f; }
+		fn DoPollution( R& mut r'x', f32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var f32 f= 0.0f;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .s{ .x= x }, .t{ .y= y } };
+				DoPollution( r, w.t.y ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			y *= 2.0f; // Error, reference to "y" is saved inside "r".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+
+
+def StructMultipleInnerReferenceTags_Test4():
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		struct T{ f32 &mut  y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ i32 &imut f; }
+		fn DoPollution( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var i32 f= 0;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .s{ .x= x }, .t{ .y= y } };
+				DoPollution( r, w.s.x ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			--x; // Error, reference to "x" is saved inside "r".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+
+
+def StructMultipleInnerReferenceTags_Test5():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ i32 &imut f; }
+		fn DoPollutionW( W &mut w'x, y', i32 &'z mut i ) ' y <- z ';
+		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0;
+			var i32 f= 0;
+			var R mut r{ .f= f };
+			{
+				var i32 mut c= 0;
+				var W mut w{ .s{ .x= a }, .t{ .y= b } };
+				DoPollutionW( w, c ); // Save reference to "c" in inner reference tag #1 of "w".
+				DoPollutionR( r, w.t.y ); // Save reference to "c" inside "r".
+			} // Error, destroyed variable "c" still have references inside "r".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 18 ) )
+
+
+def StructMultipleInnerReferenceTags_Test6():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ i32 &imut f; }
+		fn DoPollutionW( W &mut t'x, y', i32 &'z mut i ) ' y <- z ';
+		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0;
+			var i32 f= 0;
+			var R mut r{ .f= f };
+			{
+				var i32 mut c= 0;
+				var W mut w{ .s{ .x= a }, .t{ .y= b } };
+				DoPollutionW( w, c ); // Save reference to "c" in inner reference tag #1 of "w".
+				DoPollutionR( r, w.s.x ); // Save reference to "a" inside "r".
+			} // Ok, there is no references to "c" inside "r".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test7():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		fn MakeW( i32 &'x_tag mut x, i32 &'y_tag mut y, i32 &'z_tag mut z ) : W'x_tag, y_tag';
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			auto W= MakeW( a, b, c );
+			++c; // Ok, W contains references to "a" and "b", but not to "c".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test8():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ i32 &imut f; }
+		fn MakeW( i32 &'x_tag mut x, i32 &'y_tag mut y ) : W'x_tag, y_tag';
+		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 f= 0;
+			var i32 mut a= 0;
+			var R mut r{ .f= f };
+			{
+				var i32 mut b= 0;
+				auto w= MakeW( a, b );
+				DoPollutionR( r, w.s.x ); // Create reference to "a" inside "r".
+			} // Ok, "r" has reference to "a", but not to destroyed "b".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test9():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		struct R{ i32 &imut f; }
+		fn MakeW( i32 &'x_tag mut x, i32 &'y_tag mut y ) : W'x_tag, y_tag';
+		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 f= 0;
+			var i32 mut a= 0;
+			var R mut r{ .f= f };
+			{
+				var i32 mut b= 0;
+				auto w= MakeW( a, b );
+				DoPollutionR( r, w.t.y ); // Create reference to "b" inside "r".
+			} // Error, "r" has reference to destroyed variable "b".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 17 ) )
+
+
+def StructMultipleInnerReferenceTags_Test10():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		fn MakeW( i32 &'x_tag mut x, i32 &'y_tag mut y ) : W'x_tag, y_tag'
+		{
+			var W w{ .s{ .x= x }, .t{ .y= y } };
+			return w; // Return result inner references in specified in signature order.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test11():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T{ i32 &mut y; }
+		struct W{ S @("a") s; T @("b") t; }
+		fn MakeW( i32 &'x_tag mut x, i32 &'y_tag mut y ) : W'x_tag, y_tag'
+		{
+			var W w{ .s{ .x= y }, .t{ .y= x } };
+			return w; // Result inner references are in wrong order relative to specified tags in function signature.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
+
+
+def StructMultipleInnerReferenceTags_Test12():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ i32 & y; }
+		struct W{ S @("a") s; T @("b") t; }
+		fn Pollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		fn Foo( W &mut w )
+		{
+			Pollution( w.s, w.t.y ); // Perform pollution of one inner tag by another. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def TupleMultipleInnerReferenceTags_Test13():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ i32 & y; }
+		struct W{ S @("a") s; T @("b") t; }
+		fn Pollution( T &mut t'a', i32 &'b y ) ' a <- b ';
+		fn Foo( W &mut w )
+		{
+			Pollution( w.t, w.s.x ); // Perform pollution of one inner tag by another. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def StructMultipleInnerReferenceTags_Test14():
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		struct T{ f32 &mut  y; }
+		struct V{ S @("a") s; T @("b") t; }
+		struct W{ V @("ba") v; } // Reverse order of reference tags.
+		struct R{ i32 &imut f; }
+		fn DoPollution( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var i32 f= 0;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .v{ .s{ .x= x }, .t{ .y= y } } };
+				DoPollution( r, w.v.s.x ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			y *= 2.0f; // There are no links to "y" left, so, we can mutate it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test15():
+	c_program_text= """
+		struct W{ i32 &imut @("a"c8) x; f32 &mut @("b"c8) y; }
+		struct R{ i32 &imut f; }
+		fn DoPollution( R& mut r'x', i32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var i32 f= 0;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .x= x, .y= y };
+				DoPollution( r, w.x ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			y *= 2.0f; // There are no links to "y" left, so, we can mutate it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructMultipleInnerReferenceTags_Test16():
+	c_program_text= """
+		struct W{ i32 &imut @("a"c8) x; f32 &mut @("b"c8) y; }
+		struct R{ f32 &imut f; }
+		fn DoPollution( R& mut r'x', f32 &'y f ) ' x <- y ';
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var f32 f= 0.0f;
+			var R mut r{ .f= f };
+			{
+				var W mut w{ .x= x, .y= y };
+				DoPollution( r, w.y ); // Save reference inside "r".
+			} // Destroy W struct, remove all inernal links.
+			++x; // There are no links to "x" left, so, we can mutate it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
