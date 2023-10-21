@@ -605,6 +605,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				if( reference_tag != std::nullopt )
 				{
+					reference_field->reference_tag= *reference_tag;
+
 					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReferenceType::Imut );
 					InnerReferenceType& t= the_class.inner_references[ size_t(*reference_tag) ];
 					t= std::max( t, reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
@@ -639,11 +641,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					}
 					field->inner_reference_tags= std::move(*reference_tags);
 
-					for( const size_t tag : field->inner_reference_tags )
+					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
+						const size_t tag= field->inner_reference_tags[i];
 						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReferenceType::Imut );
 						InnerReferenceType& t= the_class.inner_references[ tag ];
-						t= std::max( t, field->type.GetInnerReferenceType( tag ) );
+						t= std::max( t, field->type.GetInnerReferenceType( i ) );
 					}
 				}
 				else
@@ -658,6 +661,49 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					for( size_t i= 0; i < reference_tag_count; ++i )
 						t= std::max( t, field->type.GetInnerReferenceType(i) );
 				}
+			}
+		}
+
+		// Check for consistency of result tags.
+		llvm::SmallVector<bool, 32> reference_tags_usage_flags;
+		reference_tags_usage_flags.resize( the_class.inner_references.size(), false );
+
+		for( const Class::Parent& parent : the_class.parents )
+		{
+			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
+				reference_tags_usage_flags[i]= true;
+		}
+
+		the_class.members->ForEachValueInThisScope(
+			[&]( const Value& value )
+			{
+				const ClassFieldPtr field= value.GetClassField();
+				if( field == nullptr )
+					return;
+
+				if( field->is_reference )
+				{
+					U_ASSERT( field->reference_tag < the_class.inner_references.size() );
+					reference_tags_usage_flags[ field->reference_tag ]= true;
+				}
+				else
+				{
+					U_ASSERT( field->inner_reference_tags.size() == field->type.ReferencesTagsCount() );
+					for( const size_t tag : field->inner_reference_tags )
+					{
+						U_ASSERT( tag < the_class.inner_references.size() );
+						reference_tags_usage_flags[ tag ]= true;
+					}
+				}
+			} );
+
+		for( size_t i= 0; i < the_class.inner_references.size(); ++i )
+		{
+			if( !reference_tags_usage_flags[i] )
+			{
+				std::string s;
+				s.push_back( char( 'a' + i ) );
+				REPORT_ERROR( UnusedReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 			}
 		}
 	}

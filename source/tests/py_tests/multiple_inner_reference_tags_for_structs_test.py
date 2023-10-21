@@ -340,3 +340,55 @@ def AutoReferenceNotationCalculation_Test6():
 		static_assert( typeinfo</B/>.references_tags_count == 2s );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UnusedReferenceTag_Test0():
+	# "a" tag is not used.
+	c_program_text= """
+		struct S{ i32 & @("b"c8) x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) == 1 )
+	assert( errors_list[0].error_code == "UnusedReferenceTag" )
+	assert( errors_list[0].src_loc.line == 2 )
+
+
+def UnusedReferenceTag_Test1():
+	# "b" and "c" tags are not used.
+	c_program_text= """
+		struct S{ i32 & @("a"c8) x; i32 & @("d"c8) y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) == 2 )
+	assert( errors_list[0].error_code == "UnusedReferenceTag" )
+	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[1].error_code == "UnusedReferenceTag" )
+	assert( errors_list[1].src_loc.line == 2 )
+
+
+def UnusedReferenceTag_Test2():
+	# tags "a", "b", "c" are not used.
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ S @("d") s; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) == 3 )
+	assert( errors_list[0].error_code == "UnusedReferenceTag" )
+	assert( errors_list[0].src_loc.line == 3 )
+	assert( errors_list[1].error_code == "UnusedReferenceTag" )
+	assert( errors_list[1].src_loc.line == 3 )
+	assert( errors_list[2].error_code == "UnusedReferenceTag" )
+	assert( errors_list[2].src_loc.line == 3 )
+
+
+def UnusedReferenceTag_Test3():
+	# "b" tag is not used. "a" tag is inherited, "c" is specified.
+	c_program_text= """
+		class A polymorph { i32 &mut x; }
+		class B : A { f32 &imut @("c"c8) y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) == 1 )
+	assert( errors_list[0].error_code == "UnusedReferenceTag" )
+	assert( errors_list[0].src_loc.line == 3 )
