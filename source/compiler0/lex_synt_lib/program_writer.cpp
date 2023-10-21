@@ -818,11 +818,28 @@ void ElementWrite( const ClassField& class_field, std::ostream& stream )
 {
 	stream << "\t";
 	ElementWrite( class_field.type, stream );
+
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
+	{
+		stream << " @(";
+		ElementWrite( class_field.inner_reference_tags_expression, stream );
+		stream << ") ";
+	}
+
 	ElementWrite( class_field.reference_modifier, stream );
 	stream << " ";
+
 	ElementWrite( class_field.mutability_modifier, stream );
 	if( class_field.mutability_modifier != MutabilityModifier::None )
 		stream << " ";
+
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
+	{
+		stream << " @(";
+		ElementWrite( class_field.reference_tag_expression, stream );
+		stream << ") ";
+	}
+
 	stream << class_field.name << ";\n";
 }
 
