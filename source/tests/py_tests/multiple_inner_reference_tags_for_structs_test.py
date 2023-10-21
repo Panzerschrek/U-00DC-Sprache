@@ -167,6 +167,27 @@ def ExpectedReferenceNotation_Test7():
 	assert( HaveError( errors_list, "ExpectedReferenceNotation", 6 ) )
 
 
+def ExpectedReferenceNotation_Test8():
+	# Notation required for reference field since base class has references inside.
+	c_program_text= """
+		class A polymorph { i32 & x; }
+		class B : A { i32 & y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedReferenceNotation", 3 ) )
+
+
+def ExpectedReferenceNotation_Test9():
+	# Notation required for reference field since base class has field with references inside.
+	c_program_text= """
+		struct S{ i32& x; }
+		class A polymorph { i32 & x; }
+		class B : A { S s; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedReferenceNotation", 4 ) )
+
+
 def InvalidInnerReferenceTagName_Test0():
 	c_program_text= """
 		struct S
@@ -306,5 +327,16 @@ def AutoReferenceNotationCalculation_Test5():
 		struct S{ i32 & x; }
 		struct T{ i32 x; f32 y; tup[ S, S, S, S ] t; }
 		static_assert( typeinfo</T/>.references_tags_count == 4s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoReferenceNotationCalculation_Test6():
+	# Inherit tags.
+	c_program_text= """
+		class A polymorph { i32 & @("a"c8) x; i32 & @("b"c8) y; }
+		class B : A { f32 z; [ tup[ f32, bool ], 7 ] a; }
+		static_assert( typeinfo</A/>.references_tags_count == 2s );
+		static_assert( typeinfo</B/>.references_tags_count == 2s );
 	"""
 	tests_lib.build_program( c_program_text )

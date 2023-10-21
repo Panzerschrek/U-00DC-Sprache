@@ -528,6 +528,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
 				the_class.inner_references[i]= std::max( the_class.inner_references[i], parent.class_->inner_references[i] );
 		}
+		const bool has_parents_with_references_inside= !the_class.inner_references.empty();
 
 		// Collect fields for which reference notation is required.
 
@@ -566,7 +567,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 		// Determine reference mapping where it is needed.
 
-		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 && !has_fields_with_reference_notation )
+		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
 			// Special case - class contains single reference field.
 			ClassField& field= *reference_fields.front();
@@ -576,7 +577,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.inner_references.push_back( InnerReferenceType::Imut );
 			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 		}
-		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation )
+		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
 			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.l
 			ClassField& field= *fields_with_references_inside.front();
