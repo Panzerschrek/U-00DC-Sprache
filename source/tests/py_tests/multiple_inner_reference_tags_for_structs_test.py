@@ -392,3 +392,72 @@ def UnusedReferenceTag_Test3():
 	assert( len(errors_list) == 1 )
 	assert( errors_list[0].error_code == "UnusedReferenceTag" )
 	assert( errors_list[0].src_loc.line == 3 )
+
+
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test0():
+	# Use same tag for mutable and immutable reference fields.
+	c_program_text= """
+		struct S
+		{
+			i32 &imut @("a"c8) x;
+			i32 &mut  @("a"c8) y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 2 ) )
+
+
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test1():
+	# Use same tag for mutable field and struct with immutable reference inside.
+	c_program_text= """
+		struct T{ i32& x; }
+		struct S
+		{
+			T @("a") t;
+			i32 &mut @("a"c8) y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
+
+
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test2():
+	# Use same tag for tags of different structs with referene inside.
+	c_program_text= """
+		struct T{ i32& x; }
+		struct W{ f32 &mut x; }
+		struct S
+		{
+			T @("a") t;
+			W @("a") w;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
+
+
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test3():
+	# Use same tag for inner tags of struct, which are different.
+	c_program_text= """
+		struct S{ i32 &mut @("a"c8) x; i32 &imut @("b"c8) y; }
+		struct T
+		{
+			S @("aa") s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
+
+
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
+	# Use same tag for inner tags of tuple, which contains different tags.
+	c_program_text= """
+		struct T{ i32& x; }
+		struct W{ f32 &mut x; }
+		struct S
+		{
+			tup[ T, W ] @("aa") t;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )

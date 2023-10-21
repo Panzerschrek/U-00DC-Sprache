@@ -664,7 +664,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			}
 		}
 
-		// Check for consistency of result tags.
+		// Check consistency of result tags.
 		llvm::SmallVector<bool, 32> reference_tags_usage_flags;
 		reference_tags_usage_flags.resize( the_class.inner_references.size(), false );
 
@@ -685,14 +685,31 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				{
 					U_ASSERT( field->reference_tag < the_class.inner_references.size() );
 					reference_tags_usage_flags[ field->reference_tag ]= true;
+
+					if(
+						(  field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceType::Imut ) ||
+						( !field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceType:: Mut ) )
+					{
+						std::string s;
+						s.push_back( char( 'a' + field->reference_tag ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					}
 				}
 				else
 				{
 					U_ASSERT( field->inner_reference_tags.size() == field->type.ReferencesTagsCount() );
-					for( const size_t tag : field->inner_reference_tags )
+					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
+						const size_t tag= field->inner_reference_tags[i];
 						U_ASSERT( tag < the_class.inner_references.size() );
 						reference_tags_usage_flags[ tag ]= true;
+
+						if( field->type.GetInnerReferenceType(i) != the_class.inner_references[tag] )
+						{
+							std::string s;
+							s.push_back( char( 'a' + tag ) );
+							REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+						}
 					}
 				}
 			} );
