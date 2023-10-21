@@ -41,27 +41,6 @@ U_TEST( DestructionOfVariableWithReferenceDestroysReference )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( LockVariableMultipleTimesInSameStruct_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S
-		{
-			i32 &imut x;
-			i32 &mut  y;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var S mut s{ .x= x, .y= x };
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InnerReferenceMutabilityChanging, 11u ) );
-}
-
 U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 {
 	static const char c_program_text[]=
@@ -86,27 +65,6 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
-}
-
-U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S
-		{
-			i32 &mut  x;
-			i32 &imut y;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var S mut s{ .x= x, .y= x };
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InnerReferenceMutabilityChanging, 11u ) );
 }
 
 U_TEST( LockVariableMultipleTimesInSameStruct_Test3 )

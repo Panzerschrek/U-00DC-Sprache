@@ -460,15 +460,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	{
 		"TemplateParametersDeductionFailed_Test11",
 		"AutoForFunctionTemplate_Test1", // Auto return type doesn't work properly with auto-constexpr for templates.
-
-		// TODO - fix these reference-checking-relared tests.
-		"InnerReferenceMutabilityChanging_Test0",
-		"InnerReferenceMutabilityChanging_Test1",
-		"InnerReferenceMutabilityChanging_Test2",
-		"InnerReferenceMutabilityChanging_Test3",
-		"InnerReferenceMutabilityChanging_Test4",
-		"InnerReferenceMutabilityChanging_Test5",
-		"InnerReferenceMutabilityChanging_Test6",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )

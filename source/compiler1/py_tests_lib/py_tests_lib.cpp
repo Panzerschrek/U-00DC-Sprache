@@ -442,15 +442,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
-
-		// TODO - fix these reference-checking-relared tests.
-		"InnerReferenceMutabilityChanging_Test0",
-		"InnerReferenceMutabilityChanging_Test1",
-		"InnerReferenceMutabilityChanging_Test2",
-		"InnerReferenceMutabilityChanging_Test3",
-		"InnerReferenceMutabilityChanging_Test4",
-		"InnerReferenceMutabilityChanging_Test5",
-		"InnerReferenceMutabilityChanging_Test6",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

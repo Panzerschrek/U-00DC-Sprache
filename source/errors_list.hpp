@@ -132,7 +132,6 @@ PROCESS_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, "Could not select more
 
 // Reference checking
 PROCESS_ERROR( ReferenceProtectionError, "Reference protection check for variable \"{0}\" failed." )
-PROCESS_ERROR( InnerReferenceMutabilityChanging, "Changing inner reference \"{0}\" mutability." )
 PROCESS_ERROR( DestroyedVariableStillHaveReferences, "Destroyed variable \"{0}\" still have reference(s)." )
 PROCESS_ERROR( AccessingMovedVariable, "Accessing moved variable \"{0}\"." )
 PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference." )
