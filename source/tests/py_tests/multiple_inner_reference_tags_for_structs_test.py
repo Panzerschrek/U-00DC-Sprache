@@ -818,3 +818,73 @@ def StructMultipleInnerReferenceTags_Test16():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypesMismatch_ForFieldReferenceNotation_Test0():
+	c_program_text= """
+		struct S{ i32 & @(42) x; } // Expected char8, given int.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+
+
+def TypesMismatch_ForFieldReferenceNotation_Test1():
+	c_program_text= """
+		struct S{ i32 & @("a") x; } // Expected char8, given array of char8.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+
+
+def TypesMismatch_ForFieldReferenceNotation_Test2():
+	c_program_text= """
+		struct S{ i32 & @("a"c16) x; } // Expected char8, given char16.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+
+
+def TypesMismatch_ForFieldReferenceNotation_Test3():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ S @(0.5f) s; } // Expected array of char8, given f32.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+
+
+def TypesMismatch_ForFieldReferenceNotation_Test4():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ S @("a"c8) s; }  // Expected array of char8, given char8.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+
+
+def TypesMismatch_ForFieldReferenceNotation_Test5():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ S @("a"u32) s; }  // Expected array of char8, given array of char32.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+
+
+def ExpectedConstantExpression_ForFieldReferenceNotation_Test0():
+	c_program_text= """
+		struct S{ i32 & @( Foo() ) x; } // Call to non-constexpr function.
+		fn Foo() : char8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 2 ) )
+
+
+def ExpectedConstantExpression_ForFieldReferenceNotation_Test1():
+	c_program_text= """
+		struct S{ i32 & x; }
+		struct T{ S @( Foo() ) s; } // Call to non-constexpr function.
+		fn Foo() : [ char8, 1 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
