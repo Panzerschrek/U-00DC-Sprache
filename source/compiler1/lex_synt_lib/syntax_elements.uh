@@ -739,6 +739,8 @@ struct ClassField
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	Initializer initializer;
+	Expression reference_tag_expression; // EmptyVariant if none.
+	Expression inner_reference_tags_expression; // EmptyVariant if none.
 }
 
 enum ClassVisibility
