@@ -504,6 +504,9 @@ struct ClassField
 	bool used= false;
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 
+	u8 reference_tag= 0u8; // For reference fields - mapping of class inner reference tag to reference tag.
+	ust::vector</ u8 /> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
+
 	// Class, where this field is defined. May be not same class in case of inheritance.
 	ClassTypePtr source_class;
 }

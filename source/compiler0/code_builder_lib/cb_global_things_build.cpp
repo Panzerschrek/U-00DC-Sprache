@@ -579,7 +579,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		}
 		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
-			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.l
+			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.
 			ClassField& field= *fields_with_references_inside.front();
 			const auto reference_tag_count= field.type.ReferencesTagsCount();
 

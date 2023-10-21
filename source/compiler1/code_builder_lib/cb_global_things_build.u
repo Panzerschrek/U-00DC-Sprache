@@ -632,10 +632,29 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
+		var ust::vector</ClassFieldPtr/> mut reference_fields;
+		var ust::vector</ClassFieldPtr/> mut fields_with_references_inside;
+		var bool mut has_fields_with_reference_notation= false;
+
 		foreach( &field_pair : class_.fields_order )
 		{
-			auto field_lock= field_pair[1].lock_imut();
+			auto& field_ptr= field_pair[1];
+			auto field_lock= field_ptr.lock_imut();
 			var ClassField& field= field_lock.deref();
+
+			if( field.is_reference )
+			{
+				reference_fields.push_back( field_ptr );
+			}
+
+			if( field.t.ReferencesTagsCount() > 0u )
+			{
+				fields_with_references_inside.push_back( field_ptr );
+			}
+
+			has_fields_with_reference_notation |=
+				field.syntax_element.deref().reference_tag_expression.get</Synt::EmptyVariant/>().empty() ||
+				field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty();
 
 			if( field.is_reference )
 			{
@@ -652,6 +671,48 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 
 		class_.inner_reference_kind= class_inner_reference_kind;
+
+		if( reference_fields.size() == 1s && fields_with_references_inside.size() == 0s && !has_fields_with_reference_notation )
+		{
+			// Special case - class contains single reference field.
+			auto mut field_lock= reference_fields.front().lock_mut();
+			var ClassField &mut field= field_lock.deref();
+
+			field.reference_tag= 0u8;
+		}
+		else if( reference_fields.size() == 0s && fields_with_references_inside.size() == 1s && !has_fields_with_reference_notation )
+		{
+			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.
+			auto mut field_lock= fields_with_references_inside.front().lock_mut();
+			var ClassField &mut field= field_lock.deref();
+
+			auto reference_tag_count= field.t.ReferencesTagsCount();
+			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
+		}
+		else
+		{
+			// General case - require reference notation.
+
+			foreach( &field_ptr : reference_fields )
+			{
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.deref();
+
+				// Fallback for cases with no notation - link reference field with tag 0.
+				field.reference_tag= 0u8;
+			}
+
+			foreach( &field_ptr : fields_with_references_inside )
+			{
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.deref();
+
+				auto reference_tag_count= field.t.ReferencesTagsCount();
+
+				// Fallback for cases with no notation - link all field tags with tag 0.
+				field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
+			}
+		}
 	}
 
 	// Prepare virtual table.

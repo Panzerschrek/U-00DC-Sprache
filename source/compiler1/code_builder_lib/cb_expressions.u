@@ -1999,10 +1999,10 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 		.name= variable.name + ".base",
 	};
 
-	if( base_type.ReferencesTagsCount() > 0u )
+	// Child class reference tags are mapped 1 to 1 to parent class tags.
+	for( var u32 mut i= 0u, reference_tag_count= base_type.ReferencesTagsCount(); i < reference_tag_count; ++i )
 	{
-		// TODO - perform proper reference mapping.
-		base_.inner_reference_nodes.push_back( variable.inner_reference_nodes.front() );
+		base_.inner_reference_nodes.push_back( variable.inner_reference_nodes[i] );
 	}
 
 	var VariablePtr mut base_ptr= move(base_).CreateChildPtr( variable_ptr );
@@ -2123,8 +2123,8 @@ fn CodeBuilder::AccessDirectClassField(
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 
-		// TODO - perform proper reference mapping.
-		function_context.references_graph.TryAddLink( variable_ptr.lock_imut().deref().inner_reference_nodes.front(), result_ptr, names_scope, src_loc );
+		auto node_index= size_type( field.reference_tag );
+		function_context.references_graph.TryAddLink( variable_ptr.lock_imut().deref().inner_reference_nodes[ node_index ], result_ptr, names_scope, src_loc );
 
 		// Register variable for references checking.
 		RegisterTemporaryVariable( function_context, result_ptr );
@@ -2159,10 +2159,10 @@ fn CodeBuilder::AccessDirectClassField(
 		{
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
-		if( field.t.ReferencesTagsCount() > 0u )
+
+		for( var u32 mut i= 0u, reference_tag_count= field.t.ReferencesTagsCount(); i < reference_tag_count; ++i )
 		{
-			// TODO - perform proper reference mapping.
-			result.inner_reference_nodes.push_back( v.inner_reference_nodes.front() );
+			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( field.inner_reference_tags[i] ) ] );
 		}
 
 		var VariablePtr mut result_ptr= move(result).CreateChildPtr( variable_ptr );

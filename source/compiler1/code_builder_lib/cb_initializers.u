@@ -367,16 +367,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
-
-			if( class_field.t.ReferencesTagsCount() > 0u )
-			{
-				// TODO - perform proper reference mapping.
-				function_context.references_graph.TryAddInnerLinks(
-					variable_ptr,
-					member_variable_ptr,
-					names_scope,
-					member_initializer.src_loc );
-			}
+			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, class_field, names_scope, member_initializer.src_loc );
 
 			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer.deref() );
 
@@ -420,18 +411,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			.name= variable_ptr.lock_imut().deref().name + "." + field_name,
 		};
 		var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
-			function_context.references_graph.AddNode( member_variable_ptr );
-			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
-
-		if( field.t.ReferencesTagsCount() > 0u )
-		{
-			// TODO - perform proper reference mapping.
-			function_context.references_graph.TryAddInnerLinks(
-				variable_ptr,
-				member_variable_ptr,
-				names_scope,
-				struct_named_initializer.src_loc );
-		}
+		function_context.references_graph.AddNode( member_variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+		function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, struct_named_initializer.src_loc );
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.deref().initializer;
@@ -595,16 +577,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
-
-			if( field.t.ReferencesTagsCount() > 0u )
-			{
-				// TODO - perform proper reference mapping.
-				function_context.references_graph.TryAddInnerLinks(
-					variable_ptr,
-					member_variable_ptr,
-					names_scope,
-					zero_initializer.src_loc );
-			}
+			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, zero_initializer.src_loc );
 
 			BuildInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
 
@@ -1451,16 +1424,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
-
-				if( class_field.t.ReferencesTagsCount() > 0u )
-				{
-					// TODO - perform proper reference mapping.
-					function_context.references_graph.TryAddInnerLinks(
-						this_ptr,
-						field_variable_ptr,
-						names_scope,
-						constructor_initialization_list.src_loc );
-				}
+				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
 				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 
@@ -1493,16 +1457,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
-
-				if( class_field.t.ReferencesTagsCount() > 0u )
-				{
-					// TODO - perform proper reference mapping.
-					function_context.references_graph.TryAddInnerLinks(
-						this_ptr,
-						field_variable_ptr,
-						names_scope,
-						constructor_initialization_list.src_loc );
-				}
+				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
 				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 
@@ -1554,16 +1509,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 			function_context.references_graph.AddNode( field_variable_ptr );
 			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
-
-			if( class_field.t.ReferencesTagsCount() > 0u )
-			{
-				// TODO - perform proper reference mapping.
-				function_context.references_graph.TryAddInnerLinks(
-					this_ptr,
-					field_variable_ptr,
-					names_scope,
-					constructor_initialization_list.src_loc );
-			}
+			function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
 			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
 
@@ -1630,23 +1576,13 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 			function_context.references_graph.AddNode( field_variable_ptr );
 
-			if( class_field.t.ReferencesTagsCount() > 0u )
-			{
-				// TODO - perform proper reference mapping.
-				function_context.references_graph.TryAddInnerLinks(
-					this_variable_ptr,
-					field_variable_ptr,
-					class_members_ptr,
-					class_field.syntax_element.deref().src_loc );
-			}
-
 			BuildInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
 
 			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 	}
 
-		function_context.references_graph.RemoveNode( this_variable_ptr );
+	function_context.references_graph.RemoveNode( this_variable_ptr );
 }
 
 } // namespace U1

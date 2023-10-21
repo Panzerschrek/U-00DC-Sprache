@@ -149,6 +149,28 @@ fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from
 	}
 }
 
+fn ReferencesGraph::TryAddInnerLinksForClassField( mut this, VariablePtr& from, VariablePtr& to, ClassField& field, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	with( &to_val : to.lock_imut().deref() )
+	{
+		debug_assert( to_val.t == field.t );
+		auto field_type_reference_tag_count= to_val.t.ReferencesTagsCount();
+		if( field_type_reference_tag_count == 0u )
+		{
+			return;
+		}
+
+		with( &from_val : from.lock_imut().deref() )
+		{
+			for( auto mut i= 0u; i < field_type_reference_tag_count; ++i )
+			{
+				auto src_tag_number= size_type( field.inner_reference_tags[i] );
+				TryAddLink( from_val.inner_reference_nodes[src_tag_number], to_val.inner_reference_nodes[i], names_scope, src_loc );
+			}
+		}
+	}
+}
+
 fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
 	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
