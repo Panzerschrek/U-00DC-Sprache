@@ -656,6 +656,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			{
 				fields_with_references_inside.push_back( field_ptr );
 			}
+			else
+			{
+				if( field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty() )
+				{
+					if_var( &reference_tags : EvaluateReferenceFieldInnerTags( class_.members, field.syntax_element.deref().inner_reference_tags_expression ) )
+					{
+						if( !reference_tags.empty() )
+						{
+							REPORT_ERROR( InnerReferenceTagCountMismatch,class_.members, field.syntax_element.deref().src_loc, 0, reference_tags.size() )
+						}
+					}
+				}
+			}
 
 			has_fields_with_reference_notation |=
 				field.syntax_element.deref().reference_tag_expression.get</Synt::EmptyVariant/>().empty() ||
@@ -778,6 +791,66 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						class_.inner_references.push_back( InnerReferenceKind::Imut );
 					}
 				}
+			}
+		}
+
+		// Perform additional checks.
+		var ust::vector</bool/> mut reference_tags_usage_flags;
+		reference_tags_usage_flags.resize( class_.inner_references.size(), false );
+
+		foreach( &parent : class_.parents )
+		{
+			with( &parent_class : parent.class_.lock_imut().deref() )
+			{
+				for( auto mut i= 0s; i < parent_class.inner_references.size(); ++i )
+				{
+					reference_tags_usage_flags[i] = true;
+				}
+			}
+		}
+
+		foreach( &field_pair : class_.fields_order )
+		{
+			auto& field_ptr= field_pair[1];
+			auto field_lock= field_ptr.lock_imut();
+			var ClassField& field= field_lock.deref();
+
+			if( field.is_reference )
+			{
+				reference_tags_usage_flags[ size_type(field.reference_tag) ]= true;
+				if(
+					(  field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Imut ) ||
+					( !field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Mut ) )
+				{
+					var ust::string8 mut s;
+					s.push_back( char8( size_type( "a"c8 ) + size_type(field.reference_tag) ) );
+					REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
+				}
+			}
+			else
+			{
+				for( auto mut i= 0s; i < field.inner_reference_tags.size(); ++i )
+				{
+					auto tag= field.inner_reference_tags[i];
+					reference_tags_usage_flags[ size_type(tag) ]= true;
+
+					if( class_.inner_references[ size_type(tag) ] != field.t.GetInnerReferenceKind(i) )
+					{
+						var ust::string8 mut s;
+						s.push_back( char8( size_type( "a"c8 ) + size_type(tag) ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
+					}
+				}
+			}
+		}
+
+		for( auto mut i= 0s; i < class_.inner_references.size(); ++i )
+		{
+			if( !reference_tags_usage_flags[i] )
+			{
+				var ust::string8 mut s;
+				s.push_back( char8( size_type( "a"c8 ) + i ) );
+				REPORT_ERROR( UnusedReferenceTag, class_.members, syntax_element.src_loc, s )
 			}
 		}
 	}
