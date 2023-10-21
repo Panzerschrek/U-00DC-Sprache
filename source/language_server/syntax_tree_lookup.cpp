@@ -508,6 +508,8 @@ void FindImpl( const Synt::Namespace& namespace_ )
 void FindImpl( const Synt::ClassField& class_field )
 {
 	FindImpl( class_field.type );
+	FindImpl( class_field.reference_tag_expression );
+	FindImpl( class_field.inner_reference_tags_expression );
 }
 
 void FindImpl( const Synt::ClassVisibilityLabel& visibiliy_label )
