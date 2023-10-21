@@ -669,7 +669,7 @@ fn Type::ReferencesTagsCount( this ) : u32
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return select( class_type.lock_imut().deref().inner_reference_kind == InnerReferenceKind::None ? 0u : 1u );
+		return u32( class_type.lock_imut().deref().inner_references.size() );
 	}
 
 	return 0u;
@@ -697,7 +697,7 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().deref().inner_reference_kind;
+		return class_type.lock_imut().deref().inner_references[index];
 	}
 
 	return InnerReferenceKind::None;

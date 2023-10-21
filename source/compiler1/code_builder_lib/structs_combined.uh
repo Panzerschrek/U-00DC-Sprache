@@ -229,7 +229,7 @@ struct ClassType
 	bool have_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
 
-	InnerReferenceKind inner_reference_kind= InnerReferenceKind::None;
+	ust::vector</InnerReferenceKind/> inner_references;
 	Kind kind= Kind::Struct;
 
 	ust::shared_ptr_nullable_mut</ClassType/> base_class;

@@ -621,16 +621,21 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		auto &mut class_= lock.deref();
 
-		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
-
+		class_.inner_references.clear();
 		foreach( &parent : class_.parents )
 		{
-			auto parent_inner_reference_kind= parent.class_.lock_imut().deref().inner_reference_kind;
-			if( u32(parent_inner_reference_kind) > u32(class_inner_reference_kind) )
+			with( &parent_class : parent.class_.lock_imut().deref() )
 			{
-				class_inner_reference_kind= parent_inner_reference_kind;
+				auto s= ust::max( class_.inner_references.size(), parent_class.inner_references.size() );
+				class_.inner_references.resize( s, InnerReferenceKind::Imut );
+				for( auto mut i= 0s; i < parent_class.inner_references.size(); ++i )
+				{
+					auto& mut t= class_.inner_references[i];
+					t= ust::max( t, parent_class.inner_references[i] );
+				}
 			}
 		}
+		var bool has_parents_with_references_inside= !class_.inner_references.empty();
 
 		var ust::vector</ClassFieldPtr/> mut reference_fields;
 		var ust::vector</ClassFieldPtr/> mut fields_with_references_inside;
@@ -655,32 +660,23 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			has_fields_with_reference_notation |=
 				field.syntax_element.deref().reference_tag_expression.get</Synt::EmptyVariant/>().empty() ||
 				field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty();
-
-			if( field.is_reference )
-			{
-				class_inner_reference_kind= ust::max( class_inner_reference_kind, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
-			}
-			else
-			{
-				auto reference_tags_count= field.t.ReferencesTagsCount();
-				for( auto mut i= 0u; i < reference_tags_count; ++i )
-				{
-					class_inner_reference_kind= ust::max( class_inner_reference_kind, field.t.GetInnerReferenceKind( size_type(i) ) );
-				}
-			}
 		}
 
-		class_.inner_reference_kind= class_inner_reference_kind;
-
-		if( reference_fields.size() == 1s && fields_with_references_inside.size() == 0s && !has_fields_with_reference_notation )
+		if( reference_fields.size() == 1s && fields_with_references_inside.size() == 0s && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
 			// Special case - class contains single reference field.
 			auto mut field_lock= reference_fields.front().lock_mut();
 			var ClassField &mut field= field_lock.deref();
 
 			field.reference_tag= 0u8;
+			if( class_.inner_references.empty() )
+			{
+				class_.inner_references.push_back( InnerReferenceKind::Imut );
+			}
+			auto &mut t= class_.inner_references[ size_type(field.reference_tag) ];
+			t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 		}
-		else if( reference_fields.size() == 0s && fields_with_references_inside.size() == 1s && !has_fields_with_reference_notation )
+		else if( reference_fields.size() == 0s && fields_with_references_inside.size() == 1s && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
 			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.
 			auto mut field_lock= fields_with_references_inside.front().lock_mut();
@@ -688,6 +684,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			auto reference_tag_count= field.t.ReferencesTagsCount();
 			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
+			class_.inner_references.resize( size_type(reference_tag_count), InnerReferenceKind::Imut );
+			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			{
+				field.inner_reference_tags[i]= u8(i);
+				class_.inner_references[i]= field.t.GetInnerReferenceKind( size_type(i) );
+			}
 		}
 		else
 		{
@@ -700,6 +702,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				// Fallback for cases with no notation - link reference field with tag 0.
 				field.reference_tag= 0u8;
+				if( class_.inner_references.empty() )
+				{
+					class_.inner_references.push_back( InnerReferenceKind::Imut );
+				}
+				auto &mut t= class_.inner_references[ size_type(field.reference_tag) ];
+				t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 			}
 
 			foreach( &field_ptr : fields_with_references_inside )
@@ -711,6 +719,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				// Fallback for cases with no notation - link all field tags with tag 0.
 				field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
+				if( class_.inner_references.empty() )
+				{
+					class_.inner_references.push_back( InnerReferenceKind::Imut );
+				}
 			}
 		}
 	}

@@ -96,10 +96,15 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		.have_explicit_noncopy_constructors= false,
 		// This class allocates heep memory and because of that can't be constexpr.
 		.can_be_constexpr= false,
-		.inner_reference_kind= coroutine_type_description.inner_reference_kind,
 		.parents_list_prepared= true,
 		.generated_class_data( coroutine_type_description ),
 	};
+
+	if( coroutine_type_description.inner_reference_kind != InnerReferenceKind::None )
+	{
+		class_type.inner_references.push_back( coroutine_type_description.inner_reference_kind );
+	}
+
 	var ClassTypePtr class_type_ptr( move(class_type) );
 
 	var ust::string8 class_name= mangler_.deref().MangleType( class_type_ptr );
