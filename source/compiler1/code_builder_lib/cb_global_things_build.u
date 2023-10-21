@@ -707,7 +707,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 				else
 				{
-					// TODO - error here
+					REPORT_ERROR( ExpectedReferenceNotation, class_.members, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
 				}
 
 				if_var( tag : reference_tag )
@@ -745,7 +745,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 				else
 				{
-					// TODO - error here
+					REPORT_ERROR( ExpectedReferenceNotation, class_.members, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
 				}
 
 				auto reference_tag_count= field.t.ReferencesTagsCount();
@@ -755,6 +755,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					field.inner_reference_tags= reference_tags.try_take();
 					if( field.inner_reference_tags.size() != size_type(reference_tag_count) )
 					{
+						REPORT_ERROR( InnerReferenceTagCountMismatch,class_.members, field.syntax_element.deref().src_loc, reference_tag_count, field.inner_reference_tags.size() )
 						field.inner_reference_tags.resize( size_type(reference_tag_count), 0u8 );
 					}
 
