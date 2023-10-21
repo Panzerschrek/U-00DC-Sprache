@@ -164,7 +164,6 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 						? ValueType::ReferenceMut
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
-		.inner_reference_kind= InnerReferenceKind::None, // Set later
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type.non_sync_tag ),
 	};
 
@@ -173,11 +172,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		REPORT_ERROR( GeneratorNonSyncRequired, names_scope, generator_type.src_loc )
 	}
 
-	if( generator_type.inner_reference_tag.empty() )
-	{
-		coroutine_type_description.inner_reference_kind= InnerReferenceKind::None;
-	}
-	else
+	if( !generator_type.inner_reference_tag.empty() )
 	{
 		coroutine_type_description.inner_reference_kind=
 			select( generator_type.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable

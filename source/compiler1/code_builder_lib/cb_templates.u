@@ -587,15 +587,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 						? ValueType::ReferenceMut
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
-		.inner_reference_kind= InnerReferenceKind::None, // Set later
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 	};
 
-	if( signature_param.inner_reference_tag.empty() )
-	{
-		coroutine_type_param.inner_reference_kind= InnerReferenceKind::None;
-	}
-	else
+	if( !signature_param.inner_reference_tag.empty() )
 	{
 		coroutine_type_param.inner_reference_kind=
 			select( signature_param.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable

@@ -25,8 +25,7 @@ namespace U1
 
 enum InnerReferenceKind
 {
-	None, // Type have no inner references
-	Imut, // Type have immutable inner ereference
+	Imut, // Type have immutable inner reference
 	Mut, // Type have mutable inner reference
 }
 
@@ -551,7 +550,7 @@ struct CoroutineTypeDescription
 	Type return_type;
 	ValueType return_value_type;
 
-	InnerReferenceKind inner_reference_kind;
+	ust::optional</InnerReferenceKind/> inner_reference_kind;
 	bool non_sync_;
 
 	type hasher= CoroutineTypeDescriptionHasher;
@@ -723,7 +722,7 @@ public:
 		TemplateSignatureParam return_type;
 		ValueType return_value_type;
 
-		InnerReferenceKind inner_reference_kind;
+		ust::optional</InnerReferenceKind/> inner_reference_kind;
 		bool non_sync_;
 	}
 
