@@ -629,6 +629,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			auto &mut class_= lock.deref();
 
+			// Inherit inner references of parents.
+			// Normally any reference may be inhhereted only from base, but not interfaces.
 			class_.inner_references.clear();
 			foreach( &parent : class_.parents )
 			{
@@ -645,6 +647,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 			has_parents_with_references_inside= !class_.inner_references.empty();
 
+			// Collect fields for which reference notation is required.
 			foreach( &field_pair : class_.fields_order )
 			{
 				auto& field_ptr= field_pair[1];
@@ -827,12 +830,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			foreach( &parent : class_.parents )
 			{
-				with( &parent_class : parent.class_.lock_imut().deref() )
+				for( var size_type mut i= 0s, s= parent.class_.lock_imut().deref().inner_references.size(); i < s; ++i )
 				{
-					for( auto mut i= 0s; i < parent_class.inner_references.size(); ++i )
-					{
-						reference_tags_usage_flags[i] = true;
-					}
+					reference_tags_usage_flags[i] = true;
 				}
 			}
 
@@ -854,19 +854,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 					}
 				}
-				else
-				{
-					for( auto mut i= 0s; i < field.inner_reference_tags.size(); ++i )
-					{
-						auto tag= field.inner_reference_tags[i];
-						reference_tags_usage_flags[ size_type(tag) ]= true;
 
-						if( class_.inner_references[ size_type(tag) ] != field.t.GetInnerReferenceKind(i) )
-						{
-							var ust::string8 mut s;
-							s.push_back( char8( size_type( "a"c8 ) + size_type(tag) ) );
-							REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
-						}
+				for( auto mut i= 0s; i < field.inner_reference_tags.size(); ++i )
+				{
+					auto tag= field.inner_reference_tags[i];
+					reference_tags_usage_flags[ size_type(tag) ]= true;
+
+					if( class_.inner_references[ size_type(tag) ] != field.t.GetInnerReferenceKind(i) )
+					{
+						var ust::string8 mut s;
+						s.push_back( char8( size_type( "a"c8 ) + size_type(tag) ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 					}
 				}
 			}

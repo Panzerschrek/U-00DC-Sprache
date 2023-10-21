@@ -520,7 +520,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Determine inner references.
 	{
 		// Inherit inner references of parents.
-		// Normally any reference may be inhhereted only  from base, but not interfaces.
+		// Normally any reference may be inhhereted only from base, but not interfaces.
 		the_class.inner_references.clear();
 		for( const Class::Parent& parent : the_class.parents )
 		{
@@ -646,7 +646,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						const size_t tag= field->inner_reference_tags[i];
 						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReferenceType::Imut );
 						InnerReferenceType& t= the_class.inner_references[ tag ];
-						t= std::max( t, field->type.GetInnerReferenceType( i ) );
+						t= std::max( t, field->type.GetInnerReferenceType(i) );
 					}
 				}
 				else
@@ -695,21 +695,19 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 					}
 				}
-				else
-				{
-					U_ASSERT( field->inner_reference_tags.size() == field->type.ReferencesTagsCount() );
-					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
-					{
-						const size_t tag= field->inner_reference_tags[i];
-						U_ASSERT( tag < the_class.inner_references.size() );
-						reference_tags_usage_flags[ tag ]= true;
 
-						if( field->type.GetInnerReferenceType(i) != the_class.inner_references[tag] )
-						{
-							std::string s;
-							s.push_back( char( 'a' + tag ) );
-							REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
-						}
+				U_ASSERT( field->inner_reference_tags.size() == field->type.ReferencesTagsCount() );
+				for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
+				{
+					const size_t tag= field->inner_reference_tags[i];
+					U_ASSERT( tag < the_class.inner_references.size() );
+					reference_tags_usage_flags[ tag ]= true;
+
+					if( field->type.GetInnerReferenceType(i) != the_class.inner_references[tag] )
+					{
+						std::string s;
+						s.push_back( char( 'a' + tag ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 					}
 				}
 			} );
