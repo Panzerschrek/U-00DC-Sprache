@@ -1467,7 +1467,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			if( element_type_reference_tag_count > 0u )
 			{
 				var size_type mut offset= 0s;
-				for( auto mut i= 0s; i < type_index; ++i )
+				for( auto mut i= 0s; i < size_type(type_index); ++i )
 				{
 					offset+= size_type( tuple_type.element_types[i].ReferencesTagsCount() );
 				}
