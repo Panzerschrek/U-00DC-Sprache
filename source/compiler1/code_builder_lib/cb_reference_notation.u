@@ -1,0 +1,92 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>
+{
+	auto mut function_context= CreateGlobalFunctionContext();
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		with( &variable : BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref() )
+		{
+			var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+			var FundamentalType expected_type( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+			if( variable.t != expected_type )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, Type(expected_type), variable.t )
+				return ust::null_optional;
+			}
+			if( variable.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+				return ust::null_optional;
+			}
+
+			var u64 value= unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) );
+			if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
+			{
+				return u8( value - u64( "a"c8 ) );
+			}
+			else
+			{
+				REPORT_ERROR( InvalidInnerReferenceTagName, names_scope, src_loc, value )
+				return ust::null_optional;
+			}
+		}
+	}
+}
+
+fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>
+{
+	auto mut function_context= CreateGlobalFunctionContext();
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		with( &variable : BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref() )
+		{
+			var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+			if_var( &array_type : variable.t.GetArrayType() )
+			{
+				var FundamentalType expected_type( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+				if( array_type.element_type != expected_type )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, Type(expected_type), variable.t )
+					return ust::null_optional;
+				}
+				if( variable.constexpr_value == LLVMValueRef::Null )
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+					return ust::null_optional;
+				}
+
+				var ust::vector</u8/> mut result;
+				result.resize( size_type(array_type.element_count), 0u8 );
+
+				for( auto mut i= 0u64; i < array_type.element_count; ++i )
+				{
+					var u64 value= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ) );
+					if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
+					{
+						result[i]= u8( value - u64( "a"c8 ) );
+					}
+					else
+					{
+						REPORT_ERROR( InvalidInnerReferenceTagName, names_scope, src_loc, value )
+						return ust::null_optional;
+					}
+				}
+				return move(result);
+			}
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of char8", variable.t )
+				return ust::null_optional;
+			}
+		}
+	}
+}
+
+} // namespace U1

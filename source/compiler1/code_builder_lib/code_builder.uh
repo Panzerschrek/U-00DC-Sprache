@@ -899,6 +899,11 @@ private:
 		ust::array_view_imut</TypeTemplatePtr/> type_templates,
 		size_type signature_args_to_check ) : size_type;
 
+	// Reference notation.
+
+	fn EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>;
+	fn EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>;
+
 	// Coroutines
 	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
 	fn GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>;
