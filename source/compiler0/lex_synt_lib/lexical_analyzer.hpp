@@ -100,7 +100,6 @@ struct Lexem
 		AssignShiftLeft , // <<=
 		AssignShiftRight, // >>=
 
-		LeftArrow,  // <-
 		RightArrow, // ->
 
 		PointerTypeMark, // $
