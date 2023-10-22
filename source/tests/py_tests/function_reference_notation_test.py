@@ -211,3 +211,96 @@ def InvalidParamNumber_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "InvalidParamNumber", 4 ) )
+
+
+def FunctionReferenceNotationIsNormalized_Test0():
+	c_program_text= """
+		// Order of pollution doesn't matter.
+		var [ [ [char8, 2], 2 ], 2 ] pollution_0[ [ "0a", "1_" ], [ "0a", "2_" ] ];
+		var [ [ [char8, 2], 2 ], 2 ] pollution_1[ [ "0a", "2_" ], [ "0a", "1_" ] ];
+		struct S{ i32& x; }
+		type fn_0= ( fn( S &mut s, i32& x ) @(pollution_0) );
+		type fn_1= ( fn( S &mut s, i32& x ) @(pollution_1) );
+		static_assert( same_type</ fn_0, fn_1 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionReferenceNotationIsNormalized_Test1():
+	c_program_text= """
+		// Order of returned references doesn't matter.
+		var [ [ char8, 2 ], 3 ] return_references_0[ "0_", "1a", "2b" ];
+		var [ [ char8, 2 ], 3 ] return_references_1[ "2b", "0_", "1a" ];
+		var [ [ char8, 2 ], 3 ] return_references_2[ "0_", "2b", "1a" ];
+		var [ [ char8, 2 ], 5 ] return_references_3[ "0_", "1a", "2b", "0_", "1a" ]; // Duplicated references should be normalized-out.
+		struct S{ i32& x; }
+		type fn_0= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_0) );
+		type fn_1= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_1) );
+		type fn_2= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_2) );
+		type fn_3= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_3) );
+		static_assert( same_type</ fn_0, fn_1 /> );
+		static_assert( same_type</ fn_0, fn_2 /> );
+		static_assert( same_type</ fn_0, fn_3 /> );
+		static_assert( same_type</ fn_1, fn_2 /> );
+		static_assert( same_type</ fn_1, fn_3 /> );
+		static_assert( same_type</ fn_2, fn_3 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionReferenceNotationIsNormalized_Test2():
+	c_program_text= """
+		// Order of returned inner references doesn't matter.
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references_0[ [ "0_", "1a", "2b" ] ];
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references_1[ [ "2b", "0_", "1a" ] ];
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references_2[ [ "0_", "2b", "1a" ] ];
+		var tup[ [ [ char8, 2 ], 5 ] ] return_inner_references_3[ [ "0_", "1a", "2b", "0_", "1a" ] ]; // Duplicated references should be normalized-out.
+		struct S{ i32& x; }
+		type fn_0= ( fn( S& a, S& b, S& c ) : S @(return_inner_references_0) );
+		type fn_1= ( fn( S& a, S& b, S& c ) : S @(return_inner_references_1) );
+		type fn_2= ( fn( S& a, S& b, S& c ) : S @(return_inner_references_2) );
+		type fn_3= ( fn( S& a, S& b, S& c ) : S @(return_inner_references_3) );
+		static_assert( same_type</ fn_0, fn_1 /> );
+		static_assert( same_type</ fn_0, fn_2 /> );
+		static_assert( same_type</ fn_0, fn_3 /> );
+		static_assert( same_type</ fn_1, fn_2 /> );
+		static_assert( same_type</ fn_1, fn_3 /> );
+		static_assert( same_type</ fn_2, fn_3 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DifferentReferenceNotationMeansDifferentFunctionType_Test0():
+	c_program_text= """
+		var [ [ [char8, 2], 2 ], 2 ] pollution_0[ [ "0a", "1_" ], [ "0a", "2_" ] ];
+		var [ [ [char8, 2], 2 ], 2 ] pollution_1[ [ "0b", "1_" ], [ "0a", "2_" ] ];
+		struct S{ i32& x; }
+		type fn_0= ( fn( S &mut s, i32& x ) @(pollution_0) );
+		type fn_1= ( fn( S &mut s, i32& x ) @(pollution_1) );
+		static_assert( ! same_type</ fn_0, fn_1 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DifferentReferenceNotationMeansDifferentFunctionType_Test1():
+	c_program_text= """
+		var [ [ char8, 2 ], 3 ] return_references_0[ "0_", "1a", "2b" ];
+		var [ [ char8, 2 ], 3 ] return_references_1[ "0_", "3a", "2b" ];
+		struct S{ i32& x; }
+		type fn_0= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_0) );
+		type fn_1= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_1) );
+		static_assert( !same_type</ fn_0, fn_1 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DifferentReferenceNotationMeansDifferentFunctionType_Test2():
+	c_program_text= """
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references_0[ [ "0_", "1a", "2b" ] ];
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references_1[ [ "0_", "1a", "2c" ] ];
+		struct S{ i32& x; }
+		type fn_0= ( fn( S& a, S& b, S& c ) : S @(return_inner_references_0) );
+		type fn_1= ( fn( S& a, S& b, S& c ) : S @(return_inner_references_1) );
+		static_assert( !same_type</ fn_0, fn_1 /> );
+	"""
+	tests_lib.build_program( c_program_text )
