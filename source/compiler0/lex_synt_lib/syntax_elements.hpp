@@ -506,7 +506,6 @@ struct FunctionType
 	std::optional<std::string> calling_convention;
 	std::unique_ptr<const TypeName> return_type;
 	std::string return_value_reference_tag;
-	FunctionReferencesPollutionList references_pollution_list;
 	std::unique_ptr<const Expression> references_pollution_expression; // May be nullptr.
 	std::vector<FunctionParam> params;
 	std::vector<std::string> return_value_inner_reference_tags;

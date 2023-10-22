@@ -195,7 +195,6 @@ private:
 	ComplexName ParseComplexNameTail( ComplexName base );
 	ComplexName TryParseComplexNameTailWithTemplateArgs( ComplexName base );
 	std::vector<std::string> ParseInnerReferenceTags();
-	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
 	struct SignatureHelpTag{};
 	std::variant<std::vector<Expression>, SignatureHelpTag> ParseCall();
@@ -1272,9 +1271,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 
 void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 {
-	if( it_->type == Lexem::Type::Apostrophe )
-		result.references_pollution_list= ParseFunctionReferencesPollutionList();
-	else if( it_->type == Lexem::Type::At )
+	if( it_->type == Lexem::Type::At )
 	{
 		NextLexem();
 		result.references_pollution_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
@@ -1735,66 +1732,6 @@ std::vector<std::string> SyntaxAnalyzer::ParseInnerReferenceTags()
 		NextLexem();
 	else
 		PushErrorMessage();
-
-	return result;
-}
-
-FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollutionList()
-{
-	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
-	NextLexem();
-
-	FunctionReferencesPollutionList result;
-
-	if( it_->type == Lexem::Type::Apostrophe )
-	{
-		// Empty list
-		NextLexem();
-		return result;
-	}
-
-	while( NotEndOfFile() )
-	{
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.emplace_back();
-			result.back().first = it_->text;
-			NextLexem();
-		}
-		else
-		{
-			PushErrorMessage();
-			return result;
-		}
-
-		ExpectLexem( Lexem::Type::LeftArrow );
-
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.back().second= it_->text;
-			NextLexem();
-		}
-		else
-		{
-			PushErrorMessage();
-			return result;
-		}
-
-		if( it_->type == Lexem::Type::Comma )
-		{
-			NextLexem();
-			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
-			{
-				PushErrorMessage();
-				return result;
-			}
-		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-		{
-			NextLexem();
-			break;
-		}
-	}
 
 	return result;
 }

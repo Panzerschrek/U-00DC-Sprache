@@ -1191,11 +1191,6 @@ private:
 		FunctionType& function_type,
 		ClassPtr base_class );
 
-	void ProcessFunctionTypeReferencesPollution(
-		CodeBuilderErrorsContainer& errors_container,
-		const Synt::FunctionType& func,
-		FunctionType& function_type );
-
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );

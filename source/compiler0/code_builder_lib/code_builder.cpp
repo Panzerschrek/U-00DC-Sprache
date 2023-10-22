@@ -1091,7 +1091,7 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
 
 			// Disable references pollution for generator. It is too complicated for now.
-			if( !func.type.references_pollution_list.empty() )
+			if( func.type.references_pollution_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for generators." );
 
 			if( function_type.calling_convention != llvm::CallingConv::C )

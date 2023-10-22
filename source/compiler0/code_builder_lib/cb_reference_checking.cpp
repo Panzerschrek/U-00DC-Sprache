@@ -123,7 +123,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	const std::string& func_name= func.name.back().name;
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
-		if( !func.type.references_pollution_list.empty() )
+		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
@@ -136,7 +136,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
-		if( !func.type.references_pollution_list.empty() )
+		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
@@ -149,78 +149,10 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
 	{
-		if( !func.type.references_pollution_list.empty() )
+		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc );
 	}
-	else
-	{
-		if( func_name == Keywords::constructor_ )
-		{
-			for( const Synt::FunctionReferencesPollution& pollution : func.type.references_pollution_list )
-				if( pollution.second == Keywords::this_ )
-					REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc );
-		}
 
-		ProcessFunctionTypeReferencesPollution( errors_container, func.type, function_type );
-	}
-}
-
-void CodeBuilder::ProcessFunctionTypeReferencesPollution(
-	CodeBuilderErrorsContainer& errors_container,
-	const Synt::FunctionType& func,
-	FunctionType& function_type )
-{
-	const auto get_references=
-	[&]( const std::string_view name ) -> ArgsVector<FunctionType::ParamReference>
-	{
-		ArgsVector<FunctionType::ParamReference> result;
-
-		for( size_t param_n= 0u; param_n < function_type.params.size(); ++param_n )
-		{
-			const Synt::FunctionParam& in_param= func.params[ param_n ];
-
-			if( name == in_param.reference_tag )
-				result.emplace_back( param_n, FunctionType::c_arg_reference_tag_number );
-
-			for( size_t tag_n= 0; tag_n < in_param.inner_arg_reference_tags.size(); ++tag_n )
-				if( name == in_param.inner_arg_reference_tags[tag_n] )
-					result.emplace_back( param_n, uint8_t(tag_n) );
-		}
-
-		if( result.empty() )
-			REPORT_ERROR( NameNotFound, errors_container, func.src_loc, name );
-
-		return result;
-	};
-
-	for( const Synt::FunctionReferencesPollution& pollution : func.references_pollution_list )
-	{
-		if( pollution.first == pollution.second )
-		{
-			REPORT_ERROR( SelfReferencePollution, errors_container, func.src_loc );
-			continue;
-		}
-
-		const ArgsVector<FunctionType::ParamReference> dst_references= get_references( pollution.first );
-		const ArgsVector<FunctionType::ParamReference> src_references= get_references( pollution.second );
-
-		for( const FunctionType::ParamReference& dst_ref : dst_references )
-		{
-			if( dst_ref.second == FunctionType::c_arg_reference_tag_number )
-			{
-				REPORT_ERROR( ArgReferencePollution, errors_container, func.src_loc );
-				continue;
-			}
-
-			for( const FunctionType::ParamReference& src_ref : src_references )
-			{
-				FunctionType::ReferencePollution ref_pollution;
-				ref_pollution.dst= dst_ref;
-				ref_pollution.src= src_ref;
-				function_type.references_pollution.emplace(ref_pollution);
-			}
-		}
-	} // for pollution
 }
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
