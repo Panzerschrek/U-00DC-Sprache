@@ -13,18 +13,6 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	const FunctionType::Param& out_param,
 	const size_t arg_number )
 {
-	if(!func.return_value_reference_tag.empty() )
-	{
-		// Arg reference to return reference
-		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_reference_tag )
-			function_type.return_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
-
-		// Inner arg references to return reference
-		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
-			if( in_param.inner_arg_reference_tags[i] == func.return_value_reference_tag )
-				function_type.return_references.emplace( uint8_t(arg_number), uint8_t(i) );
-	}
-
 	function_type.return_inner_references.resize( func.return_value_inner_reference_tags.size() );
 	for( size_t j= 0; j < func.return_value_inner_reference_tags.size(); ++j )
 	{
@@ -72,37 +60,16 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 }
 
 void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
-	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	FunctionType& function_type )
 {
+	if( func.return_value_reference_expression != nullptr )
+		return;
+
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
 
 	if( function_type.return_value_type != ValueType::Value && function_type.return_references.empty() )
 	{
-		if( !func.return_value_reference_tag.empty() )
-		{
-			bool tag_found= false;
-			for( const Synt::FunctionParam& param : func.params )
-			{
-				if( func.return_value_reference_tag == param.reference_tag )
-				{
-					tag_found= true;
-					break;
-				}
-
-				for( const std::string& param_inner_tag : param.inner_arg_reference_tags )
-					if( func.return_value_reference_tag == param_inner_tag )
-					{
-						tag_found= true;
-						break;
-					}
-			}
-
-			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-				REPORT_ERROR( NameNotFound, errors_container, func.src_loc, func.return_value_reference_tag );
-		}
-
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
 		for( size_t i= 0u; i < function_type.params.size(); ++i )
 		{

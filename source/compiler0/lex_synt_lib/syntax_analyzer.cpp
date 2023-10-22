@@ -1311,23 +1311,6 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 			result.return_value_reference_modifier= ReferenceModifier::Reference;
 			NextLexem();
 
-			if( it_->type == Lexem::Type::Apostrophe )
-			{
-				NextLexem();
-
-				if( it_->type == Lexem::Type::Identifier )
-				{
-					result.return_value_reference_tag = it_->text;
-					NextLexem();
-				}
-				else
-				{
-					PushErrorMessage();
-					TryRecoverAfterError( { ExpectedLexem(Lexem::Type::BraceLeft), ExpectedLexem(Lexem::Type::BraceLeft), ExpectedLexem(Lexem::Type::Semicolon) } );
-					return;
-				}
-			}
-
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				if( it_->text == Keywords::mut_ )
@@ -1337,6 +1320,12 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 				else
 					PushErrorMessage();
 				NextLexem();
+			}
+
+			if( it_->type == Lexem::Type::At )
+			{
+				NextLexem();
+				result.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 			}
 		}
 	}

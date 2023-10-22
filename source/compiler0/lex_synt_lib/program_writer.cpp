@@ -994,9 +994,6 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 		stream << " ";
 
 		ElementWrite( function_type.return_value_reference_modifier, stream );
-		if( !function_type.return_value_reference_tag.empty() )
-			stream << "'" << function_type.return_value_reference_tag;
-
 		ElementWrite( function_type.return_value_mutability_modifier, stream );
 	}
 	else if( function_type.return_value_mutability_modifier != MutabilityModifier::None )

@@ -92,7 +92,8 @@ U_TEST( ReturnReferenceFromArg_Test0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S s't' ) : i32 &'t
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Foo( S s't' ) : i32 & @(return_references)
 		{
 			return s.x; // Ok, allowed
 		}
