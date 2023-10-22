@@ -31,6 +31,10 @@ public:
 	// "from" shold be tuple.
 	void TryAddInnerLinksForTupleElement( const VariablePtr& from, const VariablePtr& to, size_t element_index, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	// Create inner links between class node and class field node.
+	// "from" shold be class.
+	void TryAddInnerLinksForClassField( const VariablePtr& from, const VariablePtr& to, const ClassField& field, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
 	bool HaveOutgoingLinks( const VariablePtr& from ) const;

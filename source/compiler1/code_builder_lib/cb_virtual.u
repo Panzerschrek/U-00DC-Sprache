@@ -30,10 +30,7 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	ust::ignore_unused( new_function ); // Leave it for simmetry reasons.
 	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
 
-	auto src_class_inner_reference_kind= src_function_this_type.lock_imut().deref().inner_reference_kind;
-	auto new_class_inner_reference_kind= new_class_type.inner_reference_kind;
-
-	if( src_class_inner_reference_kind == new_class_inner_reference_kind )
+	if( src_function_this_type.lock_imut().deref().inner_references == new_class_type.inner_references )
 	{
 		// Ok - nothing changed.
 		return;

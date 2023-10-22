@@ -479,6 +479,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 {
 	// Complete type name of class field.
 	PrepareType( class_field.type, names_scope, *global_function_context_ );
+
+	// Complete inside reference notation expressions.
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
+		BuildExpressionCode( class_field.reference_tag_expression, names_scope, *global_function_context_ );
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
+		BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, *global_function_context_ );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )

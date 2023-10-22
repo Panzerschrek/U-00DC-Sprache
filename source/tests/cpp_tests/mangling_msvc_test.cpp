@@ -930,17 +930,17 @@ U_TEST( GeneratorsMangling_Test0 )
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	// Functions with generator param.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$generator@HI$0A@@@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXMU?$generator@HI$0A@@@I@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXU?$generator@NI$00@@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEADI$01@@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Kek@@YAXU?$generator@G_N$00I$0A@@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$generator@H@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXMU?$generator@H@@I@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXU?$generator@NI$0A@@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEADI$00@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Kek@@YAXU?$generator@G_N$00@@@Z" ) != nullptr );
 
 	// Generated generator type destructors.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@HI$0A@@@YAXAEAU1@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@NI$00@@YAXAEAU1@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@AEADI$01@@YAXAEAU1@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@G_N$00I$0A@@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@H@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@NI$0A@@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@AEADI$00@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@G_N$00@@YAXAEAU1@@Z" ) != nullptr );
 }
 
 U_TEST( GeneratorsMangling_Test1 )
@@ -955,8 +955,8 @@ U_TEST( GeneratorsMangling_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YA?AU?$generator@HI$0A@@@XZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YA?AU?$generator@HI$0A@@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YA?AU?$generator@H@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YA?AU?$generator@H@@XZ" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "NoMangleGenerator" ) != nullptr );
 }
 

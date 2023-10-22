@@ -3579,30 +3579,56 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 
 			field.type= ParseTypeName();
 
-			bool is_reference= false;
-			if( it_->type == Lexem::Type::And )
+			if( it_->type == Lexem::Type::At )
 			{
-				is_reference= true;
 				NextLexem();
-				field.reference_modifier= ReferenceModifier::Reference;
+				field.inner_reference_tags_expression= ParseExpressionInBrackets();
 			}
 
-			if( it_->type == Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::And )
 			{
-				if( it_->text == Keywords::mut_ )
+				NextLexem();
+				field.reference_modifier= ReferenceModifier::Reference;
+
+				if( it_->type == Lexem::Type::Identifier )
 				{
-					NextLexem();
-					field.mutability_modifier= MutabilityModifier::Mutable;
+					if( it_->text == Keywords::mut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Mutable;
+					}
+					else if( it_->text == Keywords::imut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Immutable;
+					}
+					else if( it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Constexpr;
+					}
 				}
-				if( it_->text == Keywords::imut_ )
+
+				if( it_->type == Lexem::Type::At )
 				{
 					NextLexem();
-					field.mutability_modifier= MutabilityModifier::Immutable;
+					field.reference_tag_expression= ParseExpressionInBrackets();
 				}
-				if( is_reference && it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
+			}
+			else
+			{
+				if( it_->type == Lexem::Type::Identifier )
 				{
-					NextLexem();
-					field.mutability_modifier= MutabilityModifier::Constexpr;
+					if( it_->text == Keywords::mut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Mutable;
+					}
+					else if( it_->text == Keywords::imut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Immutable;
+					}
 				}
 			}
 

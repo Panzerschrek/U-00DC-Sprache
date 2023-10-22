@@ -84,7 +84,7 @@ public:
 		std::shared_ptr<const TemplateSignatureParam> return_type;
 		ValueType return_value_type= ValueType::Value;
 
-		InnerReferenceType inner_reference_type= InnerReferenceType::None;
+		std::optional<InnerReferenceType> inner_reference_type;
 		bool non_sync= false;
 
 		bool operator==( const CoroutineParam& other ) const;

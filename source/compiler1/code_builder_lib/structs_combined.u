@@ -669,7 +669,7 @@ fn Type::ReferencesTagsCount( this ) : u32
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return select( class_type.lock_imut().deref().inner_reference_kind == InnerReferenceKind::None ? 0u : 1u );
+		return u32( class_type.lock_imut().deref().inner_references.size() );
 	}
 
 	return 0u;
@@ -697,10 +697,10 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().deref().inner_reference_kind;
+		return class_type.lock_imut().deref().inner_references[index];
 	}
 
-	return InnerReferenceKind::None;
+	halt; // Unreachable.
 }
 
 fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
@@ -901,7 +901,10 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 	auto mut hash= size_type(d.kind);
 	hash= TypeHasher::hash_combine( hash, TypeHasher::hash(d.return_type) );
 	hash= TypeHasher::hash_combine( hash, size_type(d.return_value_type) );
-	hash= TypeHasher::hash_combine( hash, size_type(d.inner_reference_kind) );
+	if_var( inner_reference_kind : d.inner_reference_kind )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type(inner_reference_kind) );
+	}
 	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
 	return hash;
 }
@@ -1549,20 +1552,20 @@ fn NamesScope::ToString( this ) : ust::string8
 			}
 			else { halt; }
 
-			if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
-			{}
-			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Imut )
+			if_var( inner_reference_kind : coroutine_type_description.inner_reference_kind )
 			{
-				res+= "'";
-				res+= KeywordToString( Keyword::imut_ );
-				res+= "'";
+				if( inner_reference_kind == InnerReferenceKind::Imut )
+				{
+					res+= "'";
+					res+= KeywordToString( Keyword::imut_ );
+					res+= "'";
+				}
+				else if( inner_reference_kind == InnerReferenceKind::Mut )
+				{
+					res+= "'";
+					res+= KeywordToString( Keyword::mut_ );
+				}
 			}
-			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Mut )
-			{
-				res+= "'";
-				res+= KeywordToString( Keyword::mut_ );
-			}
-			else { halt; }
 
 			res+= " ";
 

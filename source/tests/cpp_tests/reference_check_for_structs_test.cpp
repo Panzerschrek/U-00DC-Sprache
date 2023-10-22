@@ -47,8 +47,8 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 	R"(
 		struct S
 		{
-			i32 &mut x;
-			i32 &mut y;
+			i32 &mut @("a"c8) x;
+			i32 &mut @("b"c8) y;
 		}
 
 		fn Foo()
@@ -73,8 +73,8 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test3 )
 	R"(
 		struct S
 		{
-			i32 &imut x;
-			i32 &imut y;
+			i32 &imut @("a"c8) x;
+			i32 &imut @("a"c8) y;
 		}
 
 		fn Foo()
@@ -462,10 +462,7 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
 }
 
 U_TEST( TwoLevelsOfIndirection_Test1 )
@@ -479,10 +476,7 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
 }
 
 U_TEST( ReferencePollutionTest0 )

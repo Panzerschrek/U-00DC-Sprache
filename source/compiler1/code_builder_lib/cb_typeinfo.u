@@ -429,8 +429,9 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 		.members_initial= class_members,
 		.generated_class_data( move(typeinfo_class_description) ),
 		.can_be_constexpr= true,
-		.inner_reference_kind= InnerReferenceKind::Imut,
 	};
+
+	class_type.inner_references.push_back( InnerReferenceKind::Imut );
 
 	var ClassTypePtr mut class_type_ptr( move(class_type) );
 

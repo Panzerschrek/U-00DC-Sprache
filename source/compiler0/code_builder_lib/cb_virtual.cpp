@@ -22,10 +22,10 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	U_ASSERT( src_function_type.return_inner_references == new_function_type.return_inner_references );
 	U_ASSERT( src_function_type.references_pollution == new_function_type.references_pollution );
 
-	const auto src_class_inner_reference_kind= src_function_type.params.front().type.GetClassType()->inner_reference_type;
-	const auto new_class_inner_reference_kind= new_function_type.params.front().type.GetClassType()->inner_reference_type;
+	const auto& src_class_inner_references= src_function_type.params.front().type.GetClassType()->inner_references;
+	const auto& new_class_inner_references= new_function_type.params.front().type.GetClassType()->inner_references;
 
-	if( src_class_inner_reference_kind == new_class_inner_reference_kind )
+	if( src_class_inner_references == new_class_inner_references )
 	{
 		// Ok - nothing changed.
 		return;

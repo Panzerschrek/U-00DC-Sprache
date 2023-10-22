@@ -69,6 +69,7 @@ struct Lexem
 		Not, // !
 
 		Apostrophe, // '
+		At, // @
 
 		Increment, // ++
 		Decrement, // --

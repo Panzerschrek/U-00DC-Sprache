@@ -15,7 +15,7 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 	coroutine_type_description.kind= CoroutineKind::Generator;
 	coroutine_type_description.return_type= generator_function_type.return_type;
 	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
-	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+	coroutine_type_description.inner_reference_type= std::nullopt;
 	coroutine_type_description.non_sync= non_sync;
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
@@ -24,14 +24,18 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 			// Require type completeness for value params in order to know inner reference kind.
 			if( EnsureTypeComplete( param.type ) )
 			{
-				InnerReferenceType param_type_inner_reference_type= InnerReferenceType::None;
-				for( size_t i= 0, reference_tag_count= param.type.ReferencesTagsCount(); i < reference_tag_count; ++i )
-					param_type_inner_reference_type= std::max( param_type_inner_reference_type, param.type.GetInnerReferenceType(i) );
+				const auto reference_tag_count= param.type.ReferencesTagsCount();
+				if( reference_tag_count > 0 )
+				{
+					InnerReferenceType param_type_inner_reference_type= InnerReferenceType::Imut;
+					for( size_t i= 0; i < reference_tag_count; ++i )
+						param_type_inner_reference_type= std::max( param_type_inner_reference_type, param.type.GetInnerReferenceType(i) );
 
-				if( param_type_inner_reference_type == InnerReferenceType::Mut )
-					coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
-				else if( param_type_inner_reference_type == InnerReferenceType::Imut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
-					coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
+					if( param_type_inner_reference_type == InnerReferenceType::Mut )
+						coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
+					else if( param_type_inner_reference_type == InnerReferenceType::Imut && coroutine_type_description.inner_reference_type == std::nullopt )
+						coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
+				}
 			}
 		}
 		else
@@ -41,7 +45,7 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 			// Do this later in order to avoid full type building for reference params.
 			if( param.value_type == ValueType::ReferenceMut )
 				coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
-			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
+			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == std::nullopt )
 				coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
 		}
 	}
@@ -84,7 +88,10 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->generated_class_data= coroutine_type_description;
-	coroutine_class->inner_reference_type= coroutine_type_description.inner_reference_type;
+
+	if( coroutine_type_description.inner_reference_type != std::nullopt )
+		coroutine_class->inner_references.push_back( *coroutine_type_description.inner_reference_type );
+
 	coroutine_class->members->SetClass( coroutine_class.get() );
 	coroutine_class->parents_list_prepared= true;
 	coroutine_class->is_default_constructible= false;

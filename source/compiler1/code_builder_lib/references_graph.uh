@@ -28,6 +28,10 @@ public:
 	// "from" shold be tuple.
 	fn TryAddInnerLinksForTupleElement( mut this, VariablePtr& from, VariablePtr& to, size_type element_index, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
+	// Create inner links between class node and class field node.
+	// "from" shold be class.
+	fn TryAddInnerLinksForClassField( mut this, VariablePtr& from, VariablePtr& to, ClassField& field, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
 	fn MoveNode( mut this, VariablePtr& node );
 	fn NodeIsMoved( this, VariablePtr& node ) : bool;
 

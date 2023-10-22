@@ -689,7 +689,7 @@ def FunctionOverridingWithReferencesNotationChange_Test2():
 	{
 		// Ok, inner reference kind doesn't changed.
 		fn virtual override Foo(this'a') : i32 &'a;
-		i32& y;
+		i32& @("a"c8) y;
 	}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -829,7 +829,7 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test2(
 	{
 		// Ok, inner reference kind doesn't changed.
 		fn virtual override Foo( mut this'a', S& s'b' ) ' a <- b ';
-		i32& y;
+		i32& @("a"c8) y;
 	}
 	"""
 	tests_lib.build_program( c_program_text )

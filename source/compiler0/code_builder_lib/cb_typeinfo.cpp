@@ -49,7 +49,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
-	typeinfo_class->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
+	typeinfo_class->inner_references.push_back( InnerReferenceType::Imut ); // Almost all typeinfo have references to another typeinfo.
 
 	return typeinfo_class;
 }

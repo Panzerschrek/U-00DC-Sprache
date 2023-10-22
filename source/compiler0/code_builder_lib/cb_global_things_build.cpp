@@ -517,28 +517,211 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			++the_class.field_count;
 		} );
 
-	// Determine inner reference type.
-	the_class.members->ForEachValueInThisScope(
-		[&]( const Value& value )
+	// Determine inner references.
+	{
+		// Inherit inner references of parents.
+		// Normally any reference may be inhhereted only from base, but not interfaces.
+		the_class.inner_references.clear();
+		for( const Class::Parent& parent : the_class.parents )
 		{
-			const ClassFieldPtr field= value.GetClassField();
-			if( field == nullptr )
-				return;
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), parent.class_->inner_references.size() ) );
+			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
+				the_class.inner_references[i]= std::max( the_class.inner_references[i], parent.class_->inner_references[i] );
+		}
+		const bool has_parents_with_references_inside= !the_class.inner_references.empty();
 
-			if( field->is_reference )
-				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
-			else
+		// Collect fields for which reference notation is required.
+
+		ClassFieldsVector<ClassFieldPtr> reference_fields;
+		ClassFieldsVector<ClassFieldPtr> fields_with_references_inside;
+		bool has_fields_with_reference_notation= false;
+
+		the_class.members->ForEachValueInThisScope(
+			[&]( const Value& value )
 			{
-				if( !EnsureTypeComplete( field->type ) )
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->src_loc, field->type );
-				for( size_t i= 0, reference_tag_count= field->type.ReferencesTagsCount(); i < reference_tag_count; ++i )
-					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType(i) );
+				const ClassFieldPtr field= value.GetClassField();
+				if( field == nullptr )
+					return;
+
+				if( field->is_reference )
+					reference_fields.push_back(field);
+
+				if( field->type.ReferencesTagsCount() > 0 )
+					fields_with_references_inside.push_back(field);
+				else
+				{
+					if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
+					{
+						if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+						{
+							if( reference_tags->size() != 0 )
+								REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
+						}
+					}
+				}
+
+				has_fields_with_reference_notation |=
+					!std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->reference_tag_expression ) ||
+					!std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression );
+			});
+
+		// Determine reference mapping where it is needed.
+
+		if( reference_fields.size() == 1 && fields_with_references_inside.size() == 0 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
+		{
+			// Special case - class contains single reference field.
+			ClassField& field= *reference_fields.front();
+			field.reference_tag= uint8_t(0u);
+
+			if( the_class.inner_references.empty() )
+				the_class.inner_references.push_back( InnerReferenceType::Imut );
+			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+		}
+		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
+		{
+			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.
+			ClassField& field= *fields_with_references_inside.front();
+			const auto reference_tag_count= field.type.ReferencesTagsCount();
+
+			field.inner_reference_tags.resize( reference_tag_count );
+			for( size_t i= 0; i < reference_tag_count; ++i )
+				field.inner_reference_tags[i]= uint8_t(i);
+
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReferenceType::Imut );
+			for( size_t i= 0; i < reference_tag_count; ++i )
+				the_class.inner_references[i]= std::max( the_class.inner_references[i], field.type.GetInnerReferenceType(i) );
+		}
+		else
+		{
+			// General case - require reference notation.
+
+			for( const ClassFieldPtr& reference_field : reference_fields )
+			{
+				std::optional<uint8_t> reference_tag;
+				if( !std::holds_alternative< Synt::EmptyVariant >( reference_field->syntax_element->reference_tag_expression ) )
+					reference_tag= EvaluateReferenceFieldTag( *the_class.members, reference_field->syntax_element->reference_tag_expression );
+				else
+					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), reference_field->syntax_element->src_loc, reference_field->syntax_element->name );
+
+				if( reference_tag != std::nullopt )
+				{
+					reference_field->reference_tag= *reference_tag;
+
+					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReferenceType::Imut );
+					InnerReferenceType& t= the_class.inner_references[ size_t(*reference_tag) ];
+					t= std::max( t, reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				}
+				else
+				{
+					// Fallback for cases with no notation - link reference field with tag 0.
+					reference_field->reference_tag= uint8_t(0u);
+
+					if( the_class.inner_references.empty() )
+						the_class.inner_references.push_back( InnerReferenceType::Imut );
+					the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				}
 			}
 
-		});
+			for( const ClassFieldPtr& field : fields_with_references_inside )
+			{
+				std::optional< llvm::SmallVector<uint8_t, 4> > reference_tags;
+				if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
+					reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression );
+				else
+					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
 
-	for( const Class::Parent& parent : the_class.parents )
-		the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->inner_reference_type );
+				const auto reference_tag_count= field->type.ReferencesTagsCount();
+
+				if( reference_tags != std::nullopt )
+				{
+					if( reference_tags->size() != reference_tag_count )
+					{
+						REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, reference_tag_count, reference_tags->size() );
+						reference_tags->resize(reference_tag_count);
+					}
+					field->inner_reference_tags= std::move(*reference_tags);
+
+					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
+					{
+						const size_t tag= field->inner_reference_tags[i];
+						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReferenceType::Imut );
+						InnerReferenceType& t= the_class.inner_references[ tag ];
+						t= std::max( t, field->type.GetInnerReferenceType(i) );
+					}
+				}
+				else
+				{
+					// Fallback for cases with no notation - link all field tags with tag 0.
+
+					field->inner_reference_tags.resize( reference_tag_count, uint8_t(0) );
+
+					if( the_class.inner_references.empty() )
+						the_class.inner_references.push_back( InnerReferenceType::Imut );
+					InnerReferenceType& t= the_class.inner_references.front();
+					for( size_t i= 0; i < reference_tag_count; ++i )
+						t= std::max( t, field->type.GetInnerReferenceType(i) );
+				}
+			}
+		}
+
+		// Check consistency of result tags.
+		llvm::SmallVector<bool, 32> reference_tags_usage_flags;
+		reference_tags_usage_flags.resize( the_class.inner_references.size(), false );
+
+		for( const Class::Parent& parent : the_class.parents )
+		{
+			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
+				reference_tags_usage_flags[i]= true;
+		}
+
+		the_class.members->ForEachValueInThisScope(
+			[&]( const Value& value )
+			{
+				const ClassFieldPtr field= value.GetClassField();
+				if( field == nullptr )
+					return;
+
+				if( field->is_reference )
+				{
+					U_ASSERT( field->reference_tag < the_class.inner_references.size() );
+					reference_tags_usage_flags[ field->reference_tag ]= true;
+
+					if(
+						(  field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceType::Imut ) ||
+						( !field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceType:: Mut ) )
+					{
+						std::string s;
+						s.push_back( char( 'a' + field->reference_tag ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					}
+				}
+
+				U_ASSERT( field->inner_reference_tags.size() == field->type.ReferencesTagsCount() );
+				for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
+				{
+					const size_t tag= field->inner_reference_tags[i];
+					U_ASSERT( tag < the_class.inner_references.size() );
+					reference_tags_usage_flags[ tag ]= true;
+
+					if( field->type.GetInnerReferenceType(i) != the_class.inner_references[tag] )
+					{
+						std::string s;
+						s.push_back( char( 'a' + tag ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					}
+				}
+			} );
+
+		for( size_t i= 0; i < the_class.inner_references.size(); ++i )
+		{
+			if( !reference_tags_usage_flags[i] )
+			{
+				std::string s;
+				s.push_back( char( 'a' + i ) );
+				REPORT_ERROR( UnusedReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+			}
+		}
+	}
 
 	// Fill llvm struct type fields
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;

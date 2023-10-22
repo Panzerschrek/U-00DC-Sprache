@@ -14,7 +14,6 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 		.return_type= generator_function_type.return_type,
 		.return_value_type= generator_function_type.return_value_type,
 		.non_sync_= non_sync_,
-		.inner_reference_kind= InnerReferenceKind::None,
 	};
 
 	foreach( &param : generator_function_type.params )
@@ -27,7 +26,14 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 				auto reference_tags_count= param.t.ReferencesTagsCount();
 				for( auto mut i= 0u; i < reference_tags_count; ++i )
 				{
-					coroutine_type_description.inner_reference_kind= ust::max( coroutine_type_description.inner_reference_kind, param.t.GetInnerReferenceKind( size_type(i) ) );
+					auto inner_kind= param.t.GetInnerReferenceKind( size_type(i) );
+					if_var( &mut k : coroutine_type_description.inner_reference_kind )
+					{
+						k= ust::max( k, inner_kind );
+						continue;
+					}
+
+					coroutine_type_description.inner_reference_kind= inner_kind;
 				}
 			}
 		}
@@ -40,7 +46,7 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 			{
 				coroutine_type_description.inner_reference_kind= InnerReferenceKind::Mut;
 			}
-			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
+			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_kind.empty() )
 			{
 				coroutine_type_description.inner_reference_kind= InnerReferenceKind::Imut;
 			}
@@ -96,10 +102,15 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		.have_explicit_noncopy_constructors= false,
 		// This class allocates heep memory and because of that can't be constexpr.
 		.can_be_constexpr= false,
-		.inner_reference_kind= coroutine_type_description.inner_reference_kind,
 		.parents_list_prepared= true,
 		.generated_class_data( coroutine_type_description ),
 	};
+
+	if_var( inner_reference_kind : coroutine_type_description.inner_reference_kind )
+	{
+		class_type.inner_references.push_back( inner_reference_kind );
+	}
+
 	var ClassTypePtr class_type_ptr( move(class_type) );
 
 	var ust::string8 class_name= mangler_.deref().MangleType( class_type_ptr );

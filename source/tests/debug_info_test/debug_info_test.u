@@ -120,9 +120,9 @@ fn ParametersTest()
 
 struct StructWithRef
 {
-	void& v;
+	void& @("a"c8) v;
 	i32 x= 0;
-	S0& s0;
+	S0& @("a"c8) s0;
 }
 
 fn StructsWithReferencesTest()

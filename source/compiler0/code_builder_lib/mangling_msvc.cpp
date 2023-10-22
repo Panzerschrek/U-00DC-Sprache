@@ -740,10 +740,13 @@ void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const C
 			EncodeNumber( template_mangler_state, llvm::APInt( 1u, uint64_t(1) ), false );
 		}
 
-		// Inner reference kind.
-		template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::u32_ ) );
-		template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-		EncodeNumber( template_mangler_state, llvm::APInt( 64u, uint64_t(coroutine_type_description->inner_reference_type) ), false );
+		if( coroutine_type_description->inner_reference_type != std::nullopt )
+		{
+			// Inner reference kind.
+			template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::u32_ ) );
+			template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+			EncodeNumber( template_mangler_state, llvm::APInt( 64u, uint64_t(*coroutine_type_description->inner_reference_type) ), false );
+		}
 
 		// Finish list of template arguments.
 		template_mangler_state.PushElement( g_terminator );
