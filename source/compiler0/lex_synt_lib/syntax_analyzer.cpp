@@ -194,7 +194,6 @@ private:
 	ComplexName ParseComplexName();
 	ComplexName ParseComplexNameTail( ComplexName base );
 	ComplexName TryParseComplexNameTailWithTemplateArgs( ComplexName base );
-	std::vector<std::string> ParseInnerReferenceTags();
 
 	struct SignatureHelpTag{};
 	std::variant<std::vector<Expression>, SignatureHelpTag> ParseCall();
@@ -1246,9 +1245,6 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	result.src_loc= it_->src_loc;
 	NextLexem();
 
-	if( it_->type == Lexem::Type::Apostrophe )
-		result.inner_arg_reference_tags= ParseInnerReferenceTags();
-
 	return result;
 }
 
@@ -1476,19 +1472,6 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			NextLexem();
 			generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
 
-			if( it_->type == Lexem::Type::Apostrophe )
-			{
-				NextLexem();
-
-				if( it_->type == Lexem::Type::Identifier )
-				{
-					generator_type.return_value_reference_tag= it_->text;
-					NextLexem();
-				}
-				else
-					PushErrorMessage();
-			}
-
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				if( it_->text == Keywords::mut_ )
@@ -1503,8 +1486,6 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 				}
 			}
 		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-			generator_type.return_value_inner_reference_tags= ParseInnerReferenceTags();
 
 		return std::make_unique<GeneratorType>(std::move(generator_type));
 	}
@@ -1671,44 +1652,6 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 	}
 	else
 		return ParseComplexNameTail( std::move(base) );
-}
-
-std::vector<std::string> SyntaxAnalyzer::ParseInnerReferenceTags()
-{
-	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
-	NextLexem();
-
-	std::vector<std::string> result;
-
-	if( it_->type == Lexem::Type::Apostrophe )
-	{
-		// Empty list
-		NextLexem();
-		return result;
-	}
-
-	while( NotEndOfFile() )
-	{
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.push_back( it_->text );
-			NextLexem();
-		}
-		else
-			break;
-
-		if( it_->type == Lexem::Type::Comma )
-			NextLexem();
-		else
-			break;
-	}
-
-	if( it_->type == Lexem::Type::Apostrophe )
-		NextLexem();
-	else
-		PushErrorMessage();
-
-	return result;
 }
 
 std::variant<std::vector<Expression>, SyntaxAnalyzer::SignatureHelpTag> SyntaxAnalyzer::ParseCall()
@@ -3233,10 +3176,6 @@ Function SyntaxAnalyzer::ParseFunction()
 
 		const SrcLoc& src_loc= it_->src_loc;
 
-		std::vector<std::string> inner_reference_tags;
-		if( it_->type == Lexem::Type::Apostrophe )
-			inner_reference_tags= ParseInnerReferenceTags();
-
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
@@ -3252,7 +3191,6 @@ Function SyntaxAnalyzer::ParseFunction()
 		this_param.name= Keyword( Keywords::this_ );
 		this_param.reference_modifier= reference_modifier;
 		this_param.mutability_modifier= mutability_modifier;
-		this_param.inner_arg_reference_tags= std::move(inner_reference_tags);
 		params.push_back( std::move( this_param ) );
 	}
 

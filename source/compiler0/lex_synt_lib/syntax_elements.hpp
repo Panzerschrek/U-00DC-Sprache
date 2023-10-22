@@ -491,7 +491,6 @@ struct FunctionParam
 	SrcLoc src_loc;
 	std::string name;
 	TypeName type;
-	std::vector<std::string> inner_arg_reference_tags;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
@@ -532,8 +531,6 @@ public:
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
 	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
-	std::string return_value_reference_tag;
-	std::vector<std::string> return_value_inner_reference_tags;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };

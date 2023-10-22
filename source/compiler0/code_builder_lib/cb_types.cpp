@@ -194,26 +194,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc ) )
 		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc );
 
-	if( !generator_type_name.return_value_reference_tag.empty() )
-	{
-		bool found= false;
-		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == generator_type_name.return_value_reference_tag )
-			found= true;
-
-		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, generator_type_name.return_value_reference_tag );
-	}
-	for( const std::string& tag : generator_type_name.return_value_inner_reference_tags )
-	{
-		bool found= false;
-		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == tag )
-			found= true;
-
-		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, tag );
-	}
-
-	// For now there is no reason to process reference tag.
+	// For now there is no reason to process reference tags.
 	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
 
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );

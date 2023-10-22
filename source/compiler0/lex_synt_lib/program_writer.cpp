@@ -127,22 +127,6 @@ void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 	return std::visit( UniversalVisitor(stream), complex_name );
 }
 
-void WriteInnerReferenceTags( const std::vector<std::string>& tags, std::ostream& stream )
-{
-	if( tags.empty() )
-		return;
-
-	stream << "' ";
-	for( const std::string& tag : tags )
-	{
-		stream << tag;
-		if( &tag == &tags.back() )
-			stream << " '";
-		else
-			stream << ", ";
-	}
-}
-
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
 {
 	stream << "[ ";
@@ -195,12 +179,7 @@ void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 	ElementWrite( generator_name.return_type, stream );
 
 	ElementWrite( generator_name.return_value_reference_modifier, stream );
-	if( generator_name.return_value_reference_modifier == ReferenceModifier::Reference && !generator_name.return_value_reference_tag.empty() )
-		stream << "'" << generator_name.return_value_reference_tag;
-
 	ElementWrite( generator_name.return_value_mutability_modifier, stream );
-	if( generator_name.return_value_reference_modifier != ReferenceModifier::Reference && !generator_name.return_value_reference_tag.empty() )
-		stream << "'" << generator_name.return_value_reference_tag << "'";
 }
 
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
@@ -245,8 +224,6 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 			stream << " ";
 		stream << param.name;
 	}
-
-	WriteInnerReferenceTags( param.inner_arg_reference_tags, stream );
 }
 
 void ElementWrite( const TypeName& type_name, std::ostream& stream )
