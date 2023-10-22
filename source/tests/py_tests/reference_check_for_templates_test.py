@@ -47,7 +47,8 @@ def ReferenceTagForTypeWithoutReferencesInside_ForThis_Test1():
 		struct S
 		{
 			i32 x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- b ' // Pollution does not works here, because 'a' expands to zero reference tags.
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this'a', i32&'b in_x ) @(pollution) // Pollution does not works here, because 'a' expands to zero reference tags.
 			( x(in_x) ) {}
 		}
 
@@ -64,7 +65,8 @@ def ReferenceTagForTypeWithoutReferencesInside_ForThis_Test1():
 def ReferenceTagForTypeWithoutReferencesInside_InPollution_Test1():
 	c_program_text= """
 		struct S{}
-		fn Bar( S &mut s'a', i32&'b x ) ' a <- b' {}   // Actual pollution not happens, because "S" have no references inside.
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Bar( S &mut s'a', i32&'b x ) @(pollution) {}   // Actual pollution not happens, because "S" have no references inside.
 
 		fn Foo()
 		{
@@ -82,7 +84,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test0():
 		template</ type T />
 		class Vec
 		{
-			fn push_back( mut this'x', T el'y' ) ' x <- y ' {}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn push_back( mut this'x', T el'y' ) @(pollution) {}
 			[ T, 0u ] container_marker;
 		}
 
@@ -107,7 +110,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test1():
 		template</ type T />
 		class Vec
 		{
-			fn push_back( mut this'x', T el'y' ) ' x <- y '{}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn push_back( mut this'x', T el'y' ) @(pollution) {}
 			fn get_val( this'x' ) : T'x' { return T(0); }
 			[ T, 0u ] container_marker;
 		}
@@ -131,7 +135,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test2():
 		template</ type T />
 		class Vec
 		{
-			fn push_back( mut this'x', T el'y' ) ' x <- y ' {}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn push_back( mut this'x', T el'y' ) @(pollution) {}
 			[ T, 0u ] container_marker;
 		}
 
@@ -151,7 +156,7 @@ def VariativeReferenceTagsCount_InTemplateClass_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 19 )
+	assert( errors_list[0].src_loc.line == 20 )
 
 
 def VariativeReferenceTagsCount_InTemplateClass_Test3():

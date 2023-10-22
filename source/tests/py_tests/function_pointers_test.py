@@ -57,7 +57,8 @@ def FunctionTypeDeclaration_Test5():
 		struct F{ i32& r; }
 		struct S
 		{
-			( fn( F& mut f'a', i32&'b x ) ' a <- b ' ) some_function;
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			( fn( F& mut f'a', i32&'b x ) @(pollution) ) some_function;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -362,7 +363,8 @@ def FunctionPointersConversions_Test3():
 
 		fn DoNotPollution( S &mut s, i32& a ) {}
 
-		type DoPollution= fn( S &mut s'x', i32&'y a ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		type DoPollution= fn( S &mut s'x', i32&'y a ) @(pollution);
 
 		fn Foo()
 		{
@@ -534,7 +536,8 @@ def ReferencePollution_ForFunctionPointer_Test0():
 	c_program_text= """
 		struct S{ i32& r; }
 
-		type DoPollutionType= fn( S& mut s'a', i32&'b x ) ' a <- b';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		type DoPollutionType= fn( S& mut s'a', i32&'b x ) @(pollution);
 
 		fn DoNotPollution( S&mut s, i32& x ){}
 
@@ -551,7 +554,7 @@ def ReferencePollution_ForFunctionPointer_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 15 )
+	assert( errors_list[0].src_loc.line == 16 )
 
 
 def ReturnReferenceTags_ForFunctionPointers_Test0():

@@ -765,7 +765,8 @@ def FunctionDoesNotOverride_Test4():
 		class A polymorph
 		{
 			i32& x;
-			fn virtual Foo(mut this'a', i32 &'b x) ' a <- b ';
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn virtual Foo(mut this'a', i32 &'b x) @(pollution);
 		}
 		class B : A
 		{
@@ -775,7 +776,7 @@ def FunctionDoesNotOverride_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def OverrideFinalFunction_Test0():

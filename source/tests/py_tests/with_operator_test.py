@@ -500,7 +500,8 @@ def TemporariesSaved_In_WithOperator_Test1():
 		struct R
 		{
 			S& s;
-			fn constructor( this'x', S &'y in_s ) ' x <- y ' ( s= in_s ) {}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this'x', S &'y in_s ) @(pollution) ( s= in_s ) {}
 		}
 		fn Foo() : i32
 		{

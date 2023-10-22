@@ -605,11 +605,12 @@ def IfCoroAdvance_UseAbstractType_Test1():
 def ReferencesPollution_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn generator Foo( S &mut s'a', i32 &'b x ) ' a <- b ' : i32;
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn generator Foo( S &mut s'a', i32 &'b x ) @(pollution) : i32;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 3 ) )
+	assert( HaveError( errors_list, "NotImplemented", 4 ) )
 
 
 def ExplicitReturReferenceTags_ForGenerators_Test0():
@@ -956,7 +957,8 @@ def UnallowedReferencePollution_ForGenerator_Test0():
 		{
 			DoPollution( s, x );
 		}
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -971,7 +973,8 @@ def UnallowedReferencePollution_ForGenerator_Test1():
 			DoPollution( s, x );
 			return;
 		}
-		fn DoPollution( S &mut s'a', i32 &'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s'a', i32 &'b mut x ) @(pollution);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1272,7 +1275,8 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 	c_program_text= """
 		fn generator SomeGen() : i32;
 		struct S{ i32& x; }
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
 		fn Foo()
 		{
 			var i32 x= 0, mut y= 0;
@@ -1287,7 +1291,7 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 14 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test2():

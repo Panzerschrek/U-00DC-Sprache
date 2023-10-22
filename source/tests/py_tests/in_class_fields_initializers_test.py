@@ -302,7 +302,8 @@ def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test3():
 		struct S
 		{
 			i32& x= global_zero;
-			fn constructor( this'a', i32&'b in_x ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this'a', i32&'b in_x ) @(pollution)
 			( x(in_x) )
 			{}
 		}

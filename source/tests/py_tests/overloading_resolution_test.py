@@ -57,12 +57,13 @@ def CouldNotOverloadFunction_Test4():
 			i32 & r;
 		}
 		fn Bar( S &mut s'y', i32&'x a );
-		fn Bar( S &mut s'y', i32&'x a ) ' y <- x';   // Error, differs only reference pollution.
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Bar( S &mut s'y', i32&'x a ) @(pollution);   // Error, differs only reference pollution.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].src_loc.line == 6 or errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].src_loc.line == 6 or errors_list[0].src_loc.line == 8 )
 
 
 def OverloadingResolutionTest_OnlyMutabilityCheck_Test0():

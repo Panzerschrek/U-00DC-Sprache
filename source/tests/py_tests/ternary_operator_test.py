@@ -168,7 +168,8 @@ def DestructorsCall_ForTernaryOperatorBranches_Test0():
 		{
 			i32 x;
 			i32 &mut r;
-			fn constructor( this'f', i32 in_x, i32 &'g mut in_r ) ' f <- g '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "2_" ] ];
+			fn constructor( this'f', i32 in_x, i32 &'g mut in_r ) @(pollution)
 			( x(in_x), r(in_r) )
 			{ ++r; }
 

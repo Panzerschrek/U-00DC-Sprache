@@ -369,7 +369,8 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test0():
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test1():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -392,15 +393,16 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 20 ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 18 ) )
-	assert( not HaveError( errors_list, "ReferencePollutionOfOuterLoopVariable", 19 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 21 ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( not HaveError( errors_list, "ReferencePollutionOfOuterLoopVariable", 20 ) )
 
 
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -421,13 +423,14 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferencePollutionOfOuterLoopVariable", 18 ) )
+	assert( HaveError( errors_list, "ReferencePollutionOfOuterLoopVariable", 19 ) )
 
 
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
 		fn Foo()
 		{
 			for( auto mut i= 0; i < 10; ++i ) label outer

@@ -143,13 +143,14 @@ def CouldNotConvertFunctionPointer_Test11():
 def CouldNotConvertFunctionPointer_Test12():
 	c_program_text= """
 		struct S{ i32& r; }
-		fn DoPolltion( S &mut s'a', i32&'b r ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPolltion( S &mut s'a', i32&'b r ) @(pollution) {}
 		fn Foo(){  var ( fn( S &mut s, i32& r ) ) ptr= DoPolltion;  }   // Destination have less references pollution, than source function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].src_loc.line == 4 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CouldNotSelectFunctionForPointer_Test0():
