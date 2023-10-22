@@ -297,7 +297,11 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 
 	ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), function_type_name, function_type );
 	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
-	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
+
+	if( function_type_name.references_pollution_expression != nullptr )
+		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression );
+	else
+		ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
 
 	return function_type;
 }

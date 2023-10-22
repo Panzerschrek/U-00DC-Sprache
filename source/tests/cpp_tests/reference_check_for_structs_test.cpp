@@ -485,7 +485,8 @@ U_TEST( ReferencePollutionTest0 )
 	R"(
 		struct S{ i32 &mut x; }
 
-		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- y '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s'x', i32 &'y mut i ) @(pollution)
 		{}
 	)";
 
