@@ -303,7 +303,7 @@ def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test3():
 		{
 			i32& x= global_zero;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b in_x ) @(pollution)
+			fn constructor( this, i32& in_x ) @(pollution)
 			( x(in_x) )
 			{}
 		}

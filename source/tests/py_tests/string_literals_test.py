@@ -182,7 +182,7 @@ def StringLiteralIsReferenceToGlobalVariable_Test7():
 	c_program_text= """
 		struct CharRef{ char8& c; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn LinkReferences( CharRef &mut cr'a', [ char8, 4 ] &'b s ) @(pollution);
+		fn LinkReferences( CharRef &mut cr, [ char8, 4 ] & s ) @(pollution);
 		fn Foo() : CharRef
 		{
 			var CharRef mut char_ref{ .c= "Lol"[1] };
@@ -197,7 +197,7 @@ def StringLiteralIsReferenceToGlobalVariable_Test8():
 	c_program_text= """
 		struct CharRef{ char8& c; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn LinkReferences( CharRef &mut cr'a', [ char8, 3 ] &'b s ) @(pollution);
+		fn LinkReferences( CharRef &mut cr, [ char8, 3 ] & s ) @(pollution);
 		fn Foo( CharRef &mut cr )
 		{
 			LinkReferences( cr, "WTF" ); // Add a reference to string literal into function argument inner reference.

@@ -502,7 +502,7 @@ def ArgumenstEvaluationOrder_Test2():
 def ArgumenstEvaluationOrder_Test3():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "2_" ];
-		fn AddMul10Pass( i32 &mut x, i32 y, i32 &'r mut z ) : i32 &mut @(return_references)
+		fn AddMul10Pass( i32 &mut x, i32 y, i32 & mut z ) : i32 &mut @(return_references)
 		{
 			x= x * 10 + y;
 			return z;
@@ -525,7 +525,7 @@ def ArgumenstEvaluationOrder_Test3():
 def ArgumenstEvaluationOrder_Test4():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "2_" ];
-		fn AddMul10Pass( i32 &mut x, i32 y, S &'r mut z ) : S &mut @(return_references)
+		fn AddMul10Pass( i32 &mut x, i32 y, S & mut z ) : S &mut @(return_references)
 		{
 			x= x * 10 + y;
 			return z;

@@ -202,7 +202,7 @@ def VariablesStateMerge_ForTernaryOperator_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn FakePollution( S &mut s'a', i32&'b i ) @(pollution) : i32 { return i; }
+		fn FakePollution( S &mut s, i32& i ) @(pollution) : i32 { return i; }
 		fn Foo( bool b )
 		{
 			var i32 mut x= 7, mut y= 5, t= 0;
@@ -221,7 +221,7 @@ def VariablesStateMerge_ForTernaryOperator_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn FakePollution( S &mut s'a', i32&'b i ) @(pollution) : i32 { return i; }
+		fn FakePollution( S &mut s, i32& i ) @(pollution) : i32 { return i; }
 		fn Foo( bool b )
 		{
 			var i32 mut x= 7, mut y= 5, t= 0;
@@ -240,7 +240,7 @@ def VariablesStateMerge_ForTernaryOperator_Test4():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn FakePollution( S &mut s'a', i32&'b mut i ) @(pollution) : i32 { return 0; }
+		fn FakePollution( S &mut s, i32& mut i ) @(pollution) : i32 { return 0; }
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0, mut t= 0, mut u= 0;
@@ -258,7 +258,7 @@ def TernaryOperator_SavesInnerReferences_Test0():
 			i32 &mut x;
 		}
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn GetS( i32 &'a mut x ) : S @(return_inner_references)
+		fn GetS( i32 & mut x ) : S @(return_inner_references)
 		{
 			var S mut s{ .x= x };
 			return move(s);

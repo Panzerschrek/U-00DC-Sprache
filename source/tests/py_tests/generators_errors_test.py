@@ -544,25 +544,6 @@ def IfCoroAdvance_ForNonCopyableValue_Test0():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
 
 
-def NameNotFound_ForGeneratorTypeTag_Test0():
-	c_program_text= """
-		struct S{ i32 &imut x; }
-		type Gen= generator : S'unknown_tag';
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 3 ) )
-
-
-def NameNotFound_ForGeneratorTypeTag_Test1():
-	c_program_text= """
-		type Gen= generator'imut known_tag' : i32 &'unknow_tag;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 2 ) )
-
-
 def IfCoroAdvance_UseAbstractType_Test0():
 	c_program_text= """
 		class A abstract
@@ -608,7 +589,7 @@ def ReferencesPollution_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn generator Foo( S &mut s'a', i32 &'b x ) @(pollution) : i32;
+		fn generator Foo( S &mut s, i32 & x ) @(pollution) : i32;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -618,7 +599,7 @@ def ReferencesPollution_ForGenerator_Test0():
 def ExplicitReturnReferenceTags_ForGenerators_Test0():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn generator Foo( i32 &'a x ) : i32 & @(return_references);
+		fn generator Foo( i32 & x ) : i32 & @(return_references);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -629,7 +610,7 @@ def ExplicitReturnReferenceTags_ForGenerators_Test1():
 	c_program_text= """
 		struct S{ i32 & x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn generator Foo( i32 &'a x ) : S @(return_inner_references);
+		fn generator Foo( i32 & x ) : S @(return_inner_references);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -962,7 +943,7 @@ def UnallowedReferencePollution_ForGenerator_Test0():
 			DoPollution( s, x );
 		}
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -978,7 +959,7 @@ def UnallowedReferencePollution_ForGenerator_Test1():
 			return;
 		}
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b mut x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & mut x ) @(pollution);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1280,7 +1261,7 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 		fn generator SomeGen() : i32;
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 x= 0, mut y= 0;

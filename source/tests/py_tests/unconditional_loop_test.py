@@ -303,7 +303,7 @@ def VariablesStateMerge_ForUnconditionalLoop_Test4():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn MakePollution( S& mut s'a', i32 &'b x ) @(pollution);
+		fn MakePollution( S& mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;

@@ -748,7 +748,7 @@ def FunctionDoesNotOverride_Test3():
 		class A polymorph
 		{
 			var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
-			fn virtual Foo(this, i32 &'r x) : i32 & @(return_references);
+			fn virtual Foo(this, i32 & x) : i32 & @(return_references);
 		}
 		class B : A
 		{
@@ -767,7 +767,7 @@ def FunctionDoesNotOverride_Test4():
 		{
 			i32& x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn virtual Foo(mut this'a', i32 &'b x) @(pollution);
+			fn virtual Foo(mut this, i32 & x) @(pollution);
 		}
 		class B : A
 		{

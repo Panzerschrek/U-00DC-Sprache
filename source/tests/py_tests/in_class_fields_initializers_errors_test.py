@@ -34,7 +34,7 @@ def InClassFieldInitializerCheck_Test2():
 		{
 			i32& x= 42;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b in_x ) @(pollution)
+			fn constructor( this, i32& in_x ) @(pollution)
 			( x= in_x )
 			{}  // Prevent calling of initializer in default constructor generation.
 		}

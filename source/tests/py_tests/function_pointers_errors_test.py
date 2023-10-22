@@ -125,7 +125,7 @@ def CouldNotConvertFunctionPointer_Test10():
 def CouldNotConvertFunctionPointer_Test11():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		type RetOnyFirstType= fn( i32&'x a, i32&'y b ) : i32& @(return_references);
+		type RetOnyFirstType= fn( i32& a, i32& b ) : i32& @(return_references);
 
 		fn RetBoth( i32& a, i32& b ) : i32&
 		{
@@ -145,7 +145,7 @@ def CouldNotConvertFunctionPointer_Test12():
 	c_program_text= """
 		struct S{ i32& r; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPolltion( S &mut s'a', i32&'b r ) @(pollution) {}
+		fn DoPolltion( S &mut s, i32& r ) @(pollution) {}
 		fn Foo(){  var ( fn( S &mut s, i32& r ) ) ptr= DoPolltion;  }   // Destination have less references pollution, than source function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

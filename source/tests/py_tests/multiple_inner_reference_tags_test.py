@@ -25,7 +25,7 @@ def TupleMultipleInnerReferenceTags_Test1():
 		struct T{ f32 &mut  y; }
 		struct R{ f32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( R& mut r'x', f32 &'y f ) @(pollution);
+		fn DoPollution( R& mut r, f32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -48,7 +48,7 @@ def TupleMultipleInnerReferenceTags_Test2():
 		struct T{ f32 &mut  y; }
 		struct R{ i32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( R& mut r'x', i32 &'y f ) @(pollution);
+		fn DoPollution( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -71,7 +71,7 @@ def TupleMultipleInnerReferenceTags_Test3():
 		struct T{ f32 &mut  y; }
 		struct R{ f32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( R& mut r'x', f32 &'y f ) @(pollution);
+		fn DoPollution( R& mut r, f32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -95,7 +95,7 @@ def TupleMultipleInnerReferenceTags_Test4():
 		struct T{ f32 &mut  y; }
 		struct R{ i32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( R& mut r'x', i32 &'y f ) @(pollution);
+		fn DoPollution( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -119,9 +119,9 @@ def TupleMultipleInnerReferenceTags_Test5():
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution_t[ [ "0b", "1_" ] ];
-		fn DoPollutionT( tup[ S, T ] &mut t'x, y', i32 &'z mut i ) @(pollution_t);
+		fn DoPollutionT( tup[ S, T ] &mut t, i32 & mut i ) @(pollution_t);
 		var [ [ [char8, 2], 2 ], 1 ] pollution_r[ [ "0a", "1_" ] ];
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) @(pollution_r);
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution_r);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0;
@@ -145,9 +145,9 @@ def TupleMultipleInnerReferenceTags_Test6():
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution_t[ [ "0b", "1_" ] ];
-		fn DoPollutionT( tup[ S, T ] &mut t'x, y', i32 &'z mut i ) @(pollution_t);
+		fn DoPollutionT( tup[ S, T ] &mut t, i32 & mut i ) @(pollution_t);
 		var [ [ [char8, 2], 2 ], 1 ] pollution_r[ [ "0a", "1_" ] ];
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) @(pollution_r);
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution_r);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0;
@@ -169,7 +169,7 @@ def TupleMultipleInnerReferenceTags_Test7():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y, i32 &'z_tag mut z ) : tup[ S, T ] @(return_inner_references);
+		fn MakeTup( i32 & mut x, i32 & mut y, i32 & mut z ) : tup[ S, T ] @(return_inner_references);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -186,9 +186,9 @@ def TupleMultipleInnerReferenceTags_Test8():
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
 		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references);
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references);
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) @(pollution);
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 f= 0;
@@ -210,9 +210,9 @@ def TupleMultipleInnerReferenceTags_Test9():
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
 		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references);
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references);
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) @(pollution);
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 f= 0;
@@ -234,7 +234,7 @@ def TupleMultipleInnerReferenceTags_Test10():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references)
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references)
 		{
 			var tup[ S, T ] t[ { .x= x }, { .y= y } ];
 			return t; // Return result inner references in specified in signature order.
@@ -248,7 +248,7 @@ def TupleMultipleInnerReferenceTags_Test11():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references)
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references)
 		{
 			var tup[ S, T ] t[ { .x= y }, { .y= x } ];
 			return t; // Result inner references are in wrong order relative to specified tags in function signature.
@@ -263,7 +263,7 @@ def TupleMultipleInnerReferenceTags_Test12():
 		struct S{ i32 & x; }
 		struct T{ i32 & y; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Pollution( S &mut s'a', i32 &'b x ) @(pollution);
+		fn Pollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo( tup[ S, T ] &mut t )
 		{
 			Pollution( t[0], t[1].y ); // Perform pollution of one inner tag by another. This is not allowed.
@@ -278,7 +278,7 @@ def TupleMultipleInnerReferenceTags_Test13():
 		struct S{ i32 & x; }
 		struct T{ i32 & y; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Pollution( T &mut t'a', i32 &'b y ) @(pollution);
+		fn Pollution( T &mut t, i32 & y ) @(pollution);
 		fn Foo( tup[ S, T ] &mut t )
 		{
 			Pollution( t[1], t[0].x ); // Perform pollution of one inner tag by another. This is not allowed.

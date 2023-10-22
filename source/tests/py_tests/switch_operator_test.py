@@ -547,7 +547,7 @@ def VariablesStateMerge_ForSwitchOperator_Test5():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b mut x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & mut x ) @(pollution);
 		fn Foo( i32 a )
 		{
 			var i32 mut x= 0, mut y= 0;

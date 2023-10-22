@@ -460,7 +460,7 @@ def MovedVariableHaveReferences_Test3():
 		{
 			i32& r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b x ) @(pollution)
+			fn constructor( this, i32& x ) @(pollution)
 			( r= x ) {}
 		}
 		fn Bar( S s, i32 x ){}

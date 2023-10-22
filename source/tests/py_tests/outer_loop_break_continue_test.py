@@ -370,7 +370,7 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test1():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -402,7 +402,7 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -430,7 +430,7 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', i32 &'b x ) @(pollution);
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			for( auto mut i= 0; i < 10; ++i ) label outer

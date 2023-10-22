@@ -468,7 +468,7 @@ def GeneratorTypeName_Test5():
 
 def GeneratorTypeName_Test6():
 	c_program_text= """
-		type MutGen= generator'mut some_tag' : i32 &'some_tag;
+		type MutGen= generator'mut some_tag' : i32 &;
 		static_assert( typeinfo</MutGen/>.references_tags_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -477,7 +477,7 @@ def GeneratorTypeName_Test6():
 def GeneratorTypeName_Test7():
 	c_program_text= """
 		struct S{ i32 &imut x; }
-		type ImutGen= generator'mut some_tag' : S'some_tag';
+		type ImutGen= generator'mut some_tag' : S;
 		static_assert( typeinfo</ImutGen/>.references_tags_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )

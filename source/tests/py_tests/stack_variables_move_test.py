@@ -39,7 +39,7 @@ def MoveOperatorTest0():
 		{
 			i32 &mut r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32 &'b mut in_r ) @(pollution)
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 			fn destructor()
 			{
@@ -67,7 +67,7 @@ def MoveOperatorTest1():
 		{
 			i32 &mut r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32 &'b mut in_r ) @(pollution)
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 		}
 
@@ -93,7 +93,7 @@ def MoveOperatorTest2():
 		{
 			i32 &mut r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32 &'b mut in_r ) @(pollution)
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 		}
 
@@ -114,7 +114,7 @@ def MoveOperatorTest3():
 		{
 			i32 &mut r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32 &'b mut in_r ) @(pollution)
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 		}
 

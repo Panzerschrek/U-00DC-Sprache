@@ -58,7 +58,7 @@ def FunctionTypeDeclaration_Test5():
 		struct S
 		{
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			( fn( F& mut f'a', i32&'b x ) @(pollution) ) some_function;
+			( fn( F& mut f, i32& x ) @(pollution) ) some_function;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -337,13 +337,13 @@ def FunctionPointersConversions_Test1():
 def FunctionPointersConversions_Test2():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn RetFirst( i32&'x a, i32&'y b ) : i32& @(return_references)
+		fn RetFirst( i32& a, i32& b ) : i32& @(return_references)
 		{
 			return a;
 		}
 
 		var [ [ char8, 2 ], 2 ] return_references_both[ "0_", "1_" ];
-		type RetBothType= fn( i32&'x a, i32&'x b ) : i32& @(return_references_both);
+		type RetBothType= fn( i32& a, i32& b ) : i32& @(return_references_both);
 
 		fn Foo() : i32
 		{
@@ -366,7 +366,7 @@ def FunctionPointersConversions_Test3():
 		fn DoNotPollution( S &mut s, i32& a ) {}
 
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		type DoPollution= fn( S &mut s'x', i32&'y a ) @(pollution);
+		type DoPollution= fn( S &mut s, i32& a ) @(pollution);
 
 		fn Foo()
 		{
@@ -539,7 +539,7 @@ def ReferencePollution_ForFunctionPointer_Test0():
 		struct S{ i32& r; }
 
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		type DoPollutionType= fn( S& mut s'a', i32&'b x ) @(pollution);
+		type DoPollutionType= fn( S& mut s, i32& x ) @(pollution);
 
 		fn DoNotPollution( S&mut s, i32& x ){}
 
@@ -564,7 +564,7 @@ def ReturnReferenceTags_ForFunctionPointers_Test0():
 		type RetBothType= fn( i32& a, i32& b ) : i32&;
 
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn RetFirst( i32&'x a, i32& b ) : i32& @(return_references)
+		fn RetFirst( i32& a, i32& b ) : i32& @(return_references)
 		{
 			return a;
 		}

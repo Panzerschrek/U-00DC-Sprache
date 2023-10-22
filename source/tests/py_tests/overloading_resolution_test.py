@@ -42,9 +42,9 @@ def CouldNotOverloadFunction_Test3():
 			i32 & r;
 		}
 		var [ [ char8, 2 ], 1 ] return_references_0[ "0_" ];
-		fn Bar( S &'x s'y' ) : i32 & @(return_references_0);
+		fn Bar( S & s ) : i32 & @(return_references_0);
 		var [ [ char8, 2 ], 1 ] return_references_1[ "1_" ];
-		fn Bar( S &'x s'y' ) : i32 & @(return_references_1);   // Error, differs only reference tag for return value.
+		fn Bar( S & s ) : i32 & @(return_references_1);   // Error, differs only reference tag for return value.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -58,9 +58,9 @@ def CouldNotOverloadFunction_Test4():
 		{
 			i32 & r;
 		}
-		fn Bar( S &mut s'y', i32&'x a );
+		fn Bar( S &mut s, i32& a );
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Bar( S &mut s'y', i32&'x a ) @(pollution);   // Error, differs only reference pollution.
+		fn Bar( S &mut s, i32& a ) @(pollution);   // Error, differs only reference pollution.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

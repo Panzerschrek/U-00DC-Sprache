@@ -268,7 +268,7 @@ def InnereReferenceTransferedInTakeOperator_Test0():
 			auto constexpr default_value= 0;
 			fn constructor()( r= default_value ) {}
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'tag0', i32 &'tag1 in_r ) @(pollution) ( r= in_r ) {}
+			fn constructor( this, i32 & in_r ) @(pollution) ( r= in_r ) {}
 		}
 		fn Foo()
 		{

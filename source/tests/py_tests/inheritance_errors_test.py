@@ -638,12 +638,12 @@ def FunctionOverridingWithReferencesNotationChange_Test0():
 	class A interface
 	{
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual pure Foo(this'a') : i32 & @(return_references);
+		fn virtual pure Foo(this) : i32 & @(return_references);
 	}
 	class B : A
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : i32 & @(return_references);
+		fn virtual override Foo(this) : i32 & @(return_references);
 		i32& x;
 	}
 	"""
@@ -658,7 +658,7 @@ def FunctionOverridingWithReferencesNotationChange_Test1():
 	class A polymorph
 	{
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual Foo(this'a') : i32 & @(return_references)
+		fn virtual Foo(this) : i32 & @(return_references)
 		{
 			return g_zero;
 		}
@@ -667,7 +667,7 @@ def FunctionOverridingWithReferencesNotationChange_Test1():
 	class B : A
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : i32 & @(return_references);
+		fn virtual override Foo(this) : i32 & @(return_references);
 		i32& x;
 	}
 	"""
@@ -682,7 +682,7 @@ def FunctionOverridingWithReferencesNotationChange_Test2():
 	class A polymorph
 	{
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual Foo(this'a') : i32 & @(return_references)
+		fn virtual Foo(this) : i32 & @(return_references)
 		{
 			return x;
 		}
@@ -691,7 +691,7 @@ def FunctionOverridingWithReferencesNotationChange_Test2():
 	class B : A
 	{
 		// Ok, inner reference kind doesn't changed.
-		fn virtual override Foo(this'a') : i32 & @(return_references);
+		fn virtual override Foo(this) : i32 & @(return_references);
 		i32& @("a"c8) y;
 	}
 	"""
@@ -703,13 +703,13 @@ def FunctionOverridingWithReferencesNotationChange_Test3():
 	class A interface
 	{
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual pure Foo(this'a') : i32 & @(return_references);
+		fn virtual pure Foo(this) : i32 & @(return_references);
 	}
 	class B abstract : A {}
 	class C : B
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : i32 & @(return_references);
+		fn virtual override Foo(this) : i32 & @(return_references);
 		i32& x;
 	}
 	"""
@@ -724,7 +724,7 @@ def FunctionOverridingWithReferencesNotationChange_Test4():
 	class A polymorph
 	{
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual Foo(this'a') : i32 & @(return_references)
+		fn virtual Foo(this) : i32 & @(return_references)
 		{
 			return g_zero;
 		}
@@ -734,7 +734,7 @@ def FunctionOverridingWithReferencesNotationChange_Test4():
 	class C : B
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added in intermediate class.
-		fn virtual override Foo(this'a') : i32 & @(return_references);
+		fn virtual override Foo(this) : i32 & @(return_references);
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -748,12 +748,12 @@ def FunctionOverridingWithReferencesNotationChange_Test5():
 	class A interface
 	{
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual pure Foo(this'a') : i32 & @(return_references);
+		fn virtual pure Foo(this) : i32 & @(return_references);
 	}
 	class B : A
 	{
 		// Error, returned reference changed from empty list to mutable internal reference of "this", because mutable reference field was added.
-		fn virtual override Foo(this'a') : i32 & @(return_references);
+		fn virtual override Foo(this) : i32 & @(return_references);
 		i32 &mut x;
 	}
 	"""
@@ -769,12 +769,12 @@ def FunctionOverridingWithReferencesNotationChange_Test6():
 	class A interface
 	{
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
-		fn virtual pure Foo(this'a') : S @(return_inner_references);
+		fn virtual pure Foo(this) : S @(return_inner_references);
 	}
 	class B : A
 	{
 		// Error, returned struct inner reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : S @(return_inner_references);
+		fn virtual override Foo(this) : S @(return_inner_references);
 		i32& x;
 	}
 	"""
@@ -790,12 +790,12 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test0(
 	class A interface
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn virtual pure Foo( mut this'a', S& s'b' ) @(pollution);
+		fn virtual pure Foo( mut this, S& s ) @(pollution);
 	}
 	class B : A
 	{
 		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because reference filed was added.
-		fn virtual override Foo( mut this'a', S& s'b' ) @(pollution);
+		fn virtual override Foo( mut this, S& s ) @(pollution);
 		i32& x;
 	}
 	"""
@@ -811,12 +811,12 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test1(
 	class A interface
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn virtual pure Foo( this'a', S &mut s'b' ) @(pollution);
+		fn virtual pure Foo( this, S &mut s ) @(pollution);
 	}
 	class B : A
 	{
 		// Error, reference pollution changed because pollutuon source ("this" inner reference) was changed because reference filed was added.
-		fn virtual override Foo( this'a', S &mut s'b' ) @(pollution);
+		fn virtual override Foo( this, S &mut s ) @(pollution);
 		i32& x;
 	}
 	"""
@@ -832,13 +832,13 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test2(
 	class A abstract
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn virtual pure Foo( mut this'a', S& s'b' ) @(pollution);
+		fn virtual pure Foo( mut this, S& s ) @(pollution);
 		i32& x;
 	}
 	class B : A
 	{
 		// Ok, inner reference kind doesn't changed.
-		fn virtual override Foo( mut this'a', S& s'b' ) @(pollution);
+		fn virtual override Foo( mut this, S& s ) @(pollution);
 		i32& @("a"c8) y;
 	}
 	"""
@@ -851,13 +851,13 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test3(
 	class A interface
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn virtual pure Foo( mut this'a', S& s'b' ) @(pollution);
+		fn virtual pure Foo( mut this, S& s ) @(pollution);
 	}
 	class B abstract : A {}
 	class C : B
 	{
 		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because reference filed was added.
-		fn virtual override Foo( mut this'a', S& s'b' ) @(pollution);
+		fn virtual override Foo( mut this, S& s ) @(pollution);
 		i32& x;
 	}
 	"""
@@ -873,13 +873,13 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test4(
 	class A interface
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn virtual pure Foo( this'a', S &mut s'b' ) @(pollution);
+		fn virtual pure Foo( this, S &mut s ) @(pollution);
 	}
 	class B abstract : A { i32& x; }
 	class C : B
 	{
 		// Error, reference pollution changed because pollutuon source ("this" inner reference) was changed because reference filed was added in intermediate class.
-		fn virtual override Foo( this'a', S &mut s'b' ) @(pollution);
+		fn virtual override Foo( this, S &mut s ) @(pollution);
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -893,12 +893,12 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test5(
 	class A interface
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn virtual pure Foo( mut this'a', i32&'b x ) @(pollution);
+		fn virtual pure Foo( mut this, i32& x ) @(pollution);
 	}
 	class B : A
 	{
 		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because reference filed was added.
-		fn virtual override Foo( mut this'a', i32&'b x ) @(pollution);
+		fn virtual override Foo( mut this, i32& x ) @(pollution);
 		i32& x;
 	}
 	"""
@@ -913,13 +913,13 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test6(
 	class A polymorph
 	{
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn virtual Foo( mut this'a', i32&'b x ) @(pollution);
+		fn virtual Foo( mut this, i32& x ) @(pollution);
 		i32& x;
 	}
 	class B : A
 	{
 		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because inner reference kind was changed ("imut" to "mut").
-		fn virtual override Foo( mut this'a', i32&'b x ) @(pollution);
+		fn virtual override Foo( mut this, i32& x ) @(pollution);
 		i32 &mut x;
 	}
 	"""
