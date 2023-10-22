@@ -1274,6 +1274,11 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 {
 	if( it_->type == Lexem::Type::Apostrophe )
 		result.references_pollution_list= ParseFunctionReferencesPollutionList();
+	else if( it_->type == Lexem::Type::At )
+	{
+		NextLexem();
+		result.references_pollution_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+	}
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
 	{
