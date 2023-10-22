@@ -11,7 +11,8 @@ U_TEST( IfMergeTest0_PollutionAllowedInAllBranches )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -37,7 +38,8 @@ U_TEST( IfMergeTest1_PollutionInOneBranchDoesNotAffectOtherBranch )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -63,8 +65,9 @@ U_TEST( IfMergeTest2_MutablePollutionSelectedAsResult )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <- b ' {}
-		fn LinkImut( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn LinkMut ( S &mut s'a', i32&'b  mut x ) @(pollution) {}
+		fn LinkImut( S &mut s'a', i32&'b imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -79,7 +82,7 @@ U_TEST( IfMergeTest2_MutablePollutionSelectedAsResult )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 14u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
 }
 
 U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
@@ -87,7 +90,8 @@ U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -110,7 +114,7 @@ U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 16u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
 U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
@@ -118,7 +122,8 @@ U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -145,8 +150,9 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 	R"(
 		struct S { i32 & mut x; }
 		struct T { i32 &imut x; }
-		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <- b ' {}
-		fn LinkImut( T &mut t'a', i32&'b imut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn LinkMut ( S &mut s'a', i32&'b  mut x ) @(pollution) {}
+		fn LinkImut( T &mut t'a', i32&'b imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, imut y= 0, mut z= 0;
@@ -172,7 +178,8 @@ U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -191,7 +198,7 @@ U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
 U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
@@ -199,7 +206,8 @@ U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -219,7 +227,7 @@ U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 13u );
 }
 
 U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
@@ -227,7 +235,8 @@ U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -244,7 +253,7 @@ U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
@@ -252,7 +261,8 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -264,7 +274,7 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
 }
 
 U_TEST( IfMergeTest10_TerminalBranchesAreIgnored0 )
@@ -273,7 +283,8 @@ U_TEST( IfMergeTest10_TerminalBranchesAreIgnored0 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -298,7 +309,8 @@ U_TEST( IfMergeTest11_TerminalBranchesAreIgnored1 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -326,7 +338,8 @@ U_TEST( IfMergeTest12_TerminalBranchesAreIgnored2 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -353,7 +366,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -367,7 +381,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop1 )
@@ -375,7 +389,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -389,7 +404,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop2 )
@@ -416,7 +431,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop3 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -428,7 +444,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 11u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop4 )
@@ -436,7 +452,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop4 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -448,7 +465,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop4 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 11u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop5 )
@@ -457,7 +474,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop5 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -488,7 +506,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop6 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -519,7 +538,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop7 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -537,7 +557,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop7 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 17u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop8 )
@@ -546,7 +566,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop8 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -564,7 +585,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop8 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 17u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop9 )
@@ -573,7 +594,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop9 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -592,7 +614,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop9 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 18u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop10 )
@@ -601,7 +623,8 @@ U_TEST( WhileMergeTest_PollutionInsideLoop10 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -628,7 +651,8 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution);
 
 		fn Foo( i32&'aa a, i32&'bb b ) : i32&'aa
 		{
@@ -647,8 +671,8 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 12u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 15u ) );
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 13u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 16u ) );
 }
 
 U_TEST( WhileMergeTest_TryMutateVariable )
@@ -657,7 +681,8 @@ U_TEST( WhileMergeTest_TryMutateVariable )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution);
 
 		fn Foo()
 		{
@@ -675,8 +700,8 @@ U_TEST( WhileMergeTest_TryMutateVariable )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 15u ));
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 13u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 16u ));
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
@@ -684,7 +709,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -698,7 +724,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop1 )
@@ -706,7 +732,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -720,7 +747,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop2 )
@@ -747,7 +774,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop3 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -761,7 +789,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
@@ -769,7 +797,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -783,7 +812,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
@@ -791,7 +820,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -805,7 +835,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
@@ -813,7 +843,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -827,7 +858,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop7 )
@@ -836,7 +867,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop7 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -867,7 +899,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop8 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -898,7 +931,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop9 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -917,7 +951,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop9 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 18u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop10 )
@@ -926,7 +960,8 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop10 )
 	R"(
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -952,7 +987,8 @@ U_TEST( TupleForMegeTest0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -967,7 +1003,7 @@ U_TEST( TupleForMegeTest0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
 }
 
 U_TEST( TupleForMegeTest1 )
@@ -975,7 +1011,8 @@ U_TEST( TupleForMegeTest1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -997,7 +1034,8 @@ U_TEST( TupleForMegeTest2 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1023,7 +1061,8 @@ U_TEST( TupleForMegeTest3 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1037,7 +1076,7 @@ U_TEST( TupleForMegeTest3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
 }
 
 U_TEST( TupleForMegeTest4 )
@@ -1045,7 +1084,8 @@ U_TEST( TupleForMegeTest4 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1066,7 +1106,8 @@ U_TEST( TupleForMegeTest5 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;

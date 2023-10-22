@@ -449,7 +449,8 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 		struct Box
 		{
 			i32 &mut r;
-			fn constructor( this'x', i32 &'y mut in_r ) ' x <- y '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this'x', i32 &'y mut in_r ) @(pollution)
 			( r= in_r )
 			{}
 		}
