@@ -1215,23 +1215,6 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
-
-		if( it_->type == Lexem::Type::Apostrophe )
-		{
-			NextLexem();
-
-			if( it_->type == Lexem::Type::Identifier )
-			{
-				result.reference_tag = it_->text;
-				NextLexem();
-			}
-			else
-			{
-				PushErrorMessage();
-				TryRecoverAfterError( g_function_arguments_list_control_lexems );
-				return result;
-			}
-		}
 	}
 
 	if( it_->type != Lexem::Type::Identifier )
@@ -3269,7 +3252,6 @@ Function SyntaxAnalyzer::ParseFunction()
 		this_param.name= Keyword( Keywords::this_ );
 		this_param.reference_modifier= reference_modifier;
 		this_param.mutability_modifier= mutability_modifier;
-		this_param.reference_tag= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
 		this_param.inner_arg_reference_tags= std::move(inner_reference_tags);
 		params.push_back( std::move( this_param ) );
 	}
@@ -3305,12 +3287,11 @@ Function SyntaxAnalyzer::ParseFunction()
 	if( ( result.name.back().name == Keywords::constructor_ || result.name.back().name == Keywords::destructor_ ) &&
 		( params.empty() || params.front().name != Keywords::this_ ) )
 	{
-		FunctionParam this_argument( result.src_loc );
-		this_argument.name= Keyword( Keywords::this_ );
-		this_argument.mutability_modifier= MutabilityModifier::Mutable;
-		this_argument.reference_modifier= ReferenceModifier::Reference;
-		this_argument.reference_tag= Keyword( Keywords::this_ );
-		params.insert( params.begin(), std::move( this_argument ) );
+		FunctionParam this_param( result.src_loc );
+		this_param.name= Keyword( Keywords::this_ );
+		this_param.mutability_modifier= MutabilityModifier::Mutable;
+		this_param.reference_modifier= ReferenceModifier::Reference;
+		params.insert( params.begin(), std::move( this_param ) );
 	}
 
 	ParseFunctionTypeEnding( result.type );

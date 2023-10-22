@@ -239,12 +239,6 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 
 		ElementWrite( param.reference_modifier, stream );
 
-		if( !param.reference_tag.empty() )
-		{
-			stream << "'";
-			stream << param.reference_tag;
-		}
-
 		ElementWrite( param.mutability_modifier, stream );
 
 		if( param.mutability_modifier != MutabilityModifier::None )

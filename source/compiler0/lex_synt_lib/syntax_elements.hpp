@@ -491,7 +491,6 @@ struct FunctionParam
 	SrcLoc src_loc;
 	std::string name;
 	TypeName type;
-	std::string reference_tag;
 	std::vector<std::string> inner_arg_reference_tags;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
