@@ -1217,6 +1217,8 @@ private:
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
 	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression );
 	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression );
+	std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference( const llvm::Constant* constant, NamesScope& names_scope, const SrcLoc& src_loc );
+	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
 	// Coroutines
 
@@ -1384,6 +1386,8 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	Type reference_notation_param_reference_description_type_;
+	Type reference_notation_pollution_element_type_;
 	llvm::PointerType* virtual_function_pointer_type_= nullptr; // Use common type for all function pointers in virtual table - for simplicity.
 	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 

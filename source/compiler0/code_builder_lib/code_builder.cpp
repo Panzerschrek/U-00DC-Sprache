@@ -145,6 +145,23 @@ CodeBuilder::CodeBuilder(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
 
+	{
+		// A piar of chars.
+		// First - number of param from '0' up to '9'.
+		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+		ArrayType a;
+		a.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+		a.element_count= 2;
+		reference_notation_param_reference_description_type_= std::move(a);
+	}
+	{
+		// A pair of reference param descriptions. First - destination, second - source.
+		ArrayType a;
+		a.element_type= reference_notation_param_reference_description_type_;
+		a.element_count= 2;
+		reference_notation_pollution_element_type_= std::move(a);
+	}
+
 	virtual_function_pointer_type_= llvm::PointerType::get( llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, true ), 0u );
 
 	// Use named struct for polymorph type id table element, because this is recursive struct.

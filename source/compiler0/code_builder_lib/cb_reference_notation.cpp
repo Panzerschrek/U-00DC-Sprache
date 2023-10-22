@@ -8,12 +8,7 @@ namespace U
 
 std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
 {
-	VariablePtr variable;
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-		variable= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-	}
-
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const Type expected_type= FundamentalType( U_FundamentalType::char8_ );
@@ -40,12 +35,7 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 
 std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression )
 {
-	VariablePtr variable;
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-		variable= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-	}
-
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
@@ -86,36 +76,18 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 {
 	std::set<FunctionType::ReferencePollution> result;
 
-	VariablePtr variable;
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-		variable= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-	}
-
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
-
-	Type expected_element_type;
-	{
-		ArrayType reference_name;
-		reference_name.element_type= FundamentalType( U_FundamentalType::char8_ );
-		reference_name.element_count= 2;
-
-		ArrayType reference_pair;
-		reference_pair.element_type= std::move(reference_name);
-		reference_pair.element_count= 2;
-
-		expected_element_type= std::move(reference_pair);
-	}
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + expected_element_type.ToString(), variable->type );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + reference_notation_pollution_element_type_.ToString(), variable->type );
 		return result;
 	}
-	if( array_type->element_type != expected_element_type )
+	if( array_type->element_type != reference_notation_pollution_element_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, expected_element_type, array_type->element_type );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, reference_notation_pollution_element_type_, array_type->element_type );
 		return result;
 	}
 	if( variable->constexpr_value == nullptr )
@@ -127,41 +99,15 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
 		const llvm::Constant* pollution_constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
-		const llvm::Constant* const dst= pollution_constant->getAggregateElement( uint32_t(0) );
-		const llvm::Constant* const src= pollution_constant->getAggregateElement( uint32_t(1) );
 
-		const uint64_t dst_param= dst->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
-		const uint64_t dst_ref= dst->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
-		const uint64_t src_param= src->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
-		const uint64_t src_ref= src->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
-
-		if( !( dst_param >= '0' && dst_param <= '9' ) )
-		{
-			REPORT_ERROR( InvalidParamNumber, names_scope.GetErrors(), src_loc, dst_param );
+		const auto dst_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(0) ), names_scope, src_loc );
+		const auto src_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(1) ), names_scope, src_loc );
+		if( dst_reference == std::nullopt || src_reference == std::nullopt )
 			continue;
-		}
-		if( !( src_param >= '0' && src_param <= '9' ) )
-		{
-			REPORT_ERROR( InvalidParamNumber, names_scope.GetErrors(), src_loc, src_param );
-			continue;
-		}
-
-		if( !( ( dst_ref >= 'a' && dst_ref <= 'z' ) || dst_ref == '_' ) )
-		{
-			REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, dst_param );
-			continue;
-		}
-		if( !( ( src_ref >= 'a' && src_ref <= 'z' ) || src_ref == '_' ) )
-		{
-			REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, src_param );
-			continue;
-		}
 
 		FunctionType::ReferencePollution pollution;
-		pollution.dst.first= uint8_t(dst_param - '0');
-		pollution.dst.second= dst_ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( dst_ref - 'a' );
-		pollution.src.first= uint8_t(src_param - '0');
-		pollution.src.second= src_ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( src_ref - 'a' );
+		pollution.dst= *dst_reference;
+		pollution.src= *src_reference;
 
 		if( pollution.dst.second == FunctionType::c_arg_reference_tag_number )
 		{
@@ -184,32 +130,18 @@ std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnRefere
 {
 	std::set<FunctionType::ParamReference> result;
 
-	VariablePtr variable;
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-		variable= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-	}
-
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
-
-	Type expected_element_type;
-	{
-		ArrayType reference_name;
-		reference_name.element_type= FundamentalType( U_FundamentalType::char8_ );
-		reference_name.element_count= 2;
-
-		expected_element_type= std::move(reference_name);
-	}
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + expected_element_type.ToString(), variable->type );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), variable->type );
 		return result;
 	}
-	if( array_type->element_type != expected_element_type )
+	if( array_type->element_type != reference_notation_param_reference_description_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, expected_element_type, array_type->element_type );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, reference_notation_param_reference_description_type_, array_type->element_type );
 		return result;
 	}
 	if( variable->constexpr_value == nullptr )
@@ -220,30 +152,39 @@ std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnRefere
 
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
-		const llvm::Constant* constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
-
-		const uint64_t param= constant->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
-		const uint64_t ref= constant->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
-
-		if( !( param >= '0' && param <= '9' ) )
-		{
-			REPORT_ERROR( InvalidParamNumber, names_scope.GetErrors(), src_loc, param );
-			continue;
-		}
-		if( !( ( ref >= 'a' && ref <= 'z' ) || ref == '_' ) )
-		{
-			REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, param );
-			continue;
-		}
-
-		FunctionType::ParamReference param_reference;
-		param_reference.first= uint8_t(param - '0');
-		param_reference.second= ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( ref - 'a' );
-
-		result.insert( param_reference );
+		if( const auto param_reference= ParseEvaluatedParamReference( variable->constexpr_value->getAggregateElement( uint32_t(i) ), names_scope, src_loc ) )
+			result.insert( *param_reference );
 	}
 
 	return result;
+}
+
+VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression )
+{
+	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
+	return BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
+}
+
+std::optional<FunctionType::ParamReference> CodeBuilder::ParseEvaluatedParamReference( const llvm::Constant* const constant, NamesScope& names_scope, const SrcLoc& src_loc )
+{
+	const uint64_t param= constant->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
+	const uint64_t ref= constant->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
+
+	if( !( param >= '0' && param <= '9' ) )
+	{
+		REPORT_ERROR( InvalidParamNumber, names_scope.GetErrors(), src_loc, param );
+		return std::nullopt;
+	}
+	if( !( ( ref >= 'a' && ref <= 'z' ) || ref == '_' ) )
+	{
+		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, param );
+		return std::nullopt;
+	}
+
+	FunctionType::ParamReference param_reference;
+	param_reference.first= uint8_t(param - '0');
+	param_reference.second= ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( ref - 'a' );
+	return param_reference;
 }
 
 } // namespace U
