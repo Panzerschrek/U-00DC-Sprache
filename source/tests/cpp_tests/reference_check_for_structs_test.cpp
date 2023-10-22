@@ -107,7 +107,8 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S s't', i32 &'p i ) : i32 &'p
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn Foo( S s't', i32 &'p i ) : i32 & @(return_references)
 		{
 			return s.x; // Error, does not allowed
 		}
@@ -119,7 +120,7 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test2 )
@@ -129,7 +130,8 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 		struct S
 		{
 			i32 &mut x;
-			fn Foo( this, i32 &'p i ) : i32 &'p
+			var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+			fn Foo( this, i32 &'p i ) : i32 & @(return_references)
 			{
 				return this.x; // Error, does not allowed
 			}
@@ -142,7 +144,7 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test3 )
@@ -152,7 +154,8 @@ U_TEST( ReturnReferenceFromArg_Test3 )
 		struct S
 		{
 			i32 x;
-			fn Foo( this, i32 &'p i ) : i32 &'this
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn Foo( this, i32 &'p i ) : i32 & @(return_references)
 			{
 				return this.x; // Ok, return this
 			}
@@ -169,9 +172,10 @@ U_TEST( ReturnReferenceFromArg_Test4 )
 		struct S
 		{
 			i32 &imut x;
-			fn Foo( this'inner_this_shit', i32 &'p i ) : i32 &'inner_this_shit
+			var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+			fn Foo( this'inner_this_shit', i32 &'p i ) : i32 & @(return_references)
 			{
-				return this.x; // Ok, return inner_this_shit
+				return this.x; // Ok, return inner reference of "this"
 			}
 		}
 	)";
@@ -209,7 +213,8 @@ U_TEST( ReturnReferenceFromArg_Test6 )
 	R"(
 		struct S { i32 &mut x; }
 		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' &'x
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' & @(return_references)
 		{
 			return a;
 		}
@@ -221,7 +226,7 @@ U_TEST( ReturnReferenceFromArg_Test6 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test7 )
@@ -230,7 +235,8 @@ U_TEST( ReturnReferenceFromArg_Test7 )
 	R"(
 		struct S { i32 &mut x; }
 		// Ok - return reference to one of args (with specifying reference tags).
-		fn Foo( bool cond, S &'x a'x_inner', S &'x b'x_inner' ) : S'x_inner' &'x
+		var [ [ char8, 2 ], 2 ] return_references[ "1_", "2_" ];
+		fn Foo( bool cond, S &'x a'x_inner', S &'x b'x_inner' ) : S'x_inner' & @(return_references)
 		{
 			if( cond ) { return a; }
 			else { return b; }
@@ -247,7 +253,8 @@ U_TEST( ReturnReferenceFromArg_Test8 )
 		struct S { i32 &mut x; }
 		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
 		// This is not a big problem, since it is not possible to write correct implementation of this function without unsafe hacks.
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' &'x;
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' & @(return_references);
 		fn Bar()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -267,7 +274,7 @@ U_TEST( ReturnReferenceFromArg_Test8 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test9 )
@@ -275,7 +282,8 @@ U_TEST( ReturnReferenceFromArg_Test9 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'x_inner' &'x;
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'x_inner' & @(return_references);
 		fn Bar()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -318,7 +326,8 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S s't' ) : i32 &'t mut
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Foo( S s't' ) : i32 &mut @(return_references)
 		{
 			return s.x;
 		}
@@ -338,7 +347,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 13u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
@@ -346,7 +355,8 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Baz( i32 &'r mut i, S s't' ) : i32 &'r mut
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Baz( i32 &'r mut i, S s't' ) : i32 & mut @(return_references)
 		{
 			return i;
 		}
@@ -1176,22 +1186,6 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
-}
-
-U_TEST( NameNotFound_ForReferenceTags_Test0 )
-{
-	// Unknown tag for return reference.
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32& x ) : i32&'a;  // Error, tag 'a' not found
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForReferenceTags_Test1 )

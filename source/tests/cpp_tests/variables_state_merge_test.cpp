@@ -654,7 +654,8 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 		fn Link( S &mut s'a', i32&'b imut x ) @(pollution);
 
-		fn Foo( i32&'aa a, i32&'bb b ) : i32&'aa
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( i32&'aa a, i32&'bb b ) : i32& @(return_references)
 		{
 			var S mut s{ .x=a };
 
@@ -671,8 +672,8 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 13u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 16u ) );
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 14u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 17u ) );
 }
 
 U_TEST( WhileMergeTest_TryMutateVariable )
