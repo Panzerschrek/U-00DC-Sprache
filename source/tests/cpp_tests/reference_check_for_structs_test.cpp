@@ -237,7 +237,8 @@ U_TEST( ReturnReferenceFromArg_Test7 )
 		struct S { i32 &mut x; }
 		// Ok - return reference to one of args (with specifying reference tags).
 		var [ [ char8, 2 ], 2 ] return_references[ "1_", "2_" ];
-		fn Foo( bool cond, S &'x a'x_inner', S &'x b'x_inner' ) : S'x_inner' & @(return_references)
+		var tup[ [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "1a", "2a" ] ];
+		fn Foo( bool cond, S &'x a'x_inner', S &'x b'x_inner' ) : S @(return_inner_references) & @(return_references)
 		{
 			if( cond ) { return a; }
 			else { return b; }
@@ -255,7 +256,8 @@ U_TEST( ReturnReferenceFromArg_Test8 )
 		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
 		// This is not a big problem, since it is not possible to write correct implementation of this function without unsafe hacks.
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' & @(return_references);
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1a" ] ];
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S @(return_inner_references) & @(return_references);
 		fn Bar()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -275,7 +277,7 @@ U_TEST( ReturnReferenceFromArg_Test8 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 16u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test9 )
@@ -284,7 +286,8 @@ U_TEST( ReturnReferenceFromArg_Test9 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'x_inner' & @(return_references);
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S @(return_inner_references) & @(return_references);
 		fn Bar()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -390,7 +393,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	R"(
 		template</ type T /> struct MutRef{ T &mut r; }
 
-		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn ToRef( i32 &'r mut x ) : MutRef</ i32 /> @(return_inner_references)
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -407,7 +411,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 16u ) );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
@@ -416,7 +420,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 	R"(
 		template</ type T /> struct MutRef{ T &mut r; }
 
-		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r' // References now implicitly tagged
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn ToRef( i32 &'r mut x ) : MutRef</ i32 /> @(return_inner_references)
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -436,7 +441,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
@@ -445,7 +450,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
 	R"(
 		template</ type T /> struct ImutRef{ T &imut r; }
 
-		fn ToRef( i32 &'r mut x, i32 &'f imut y ) : ImutRef</ i32 />'f' // References now implicitly tagged. Returning only one reference.
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1_" ] ];
+		fn ToRef( i32 &'r mut x, i32 &'f imut y ) : ImutRef</ i32 /> @(return_inner_references) // References now implicitly tagged. Returning only one reference.
 		{
 			x= y;
 			var ImutRef</ i32 /> r{ .r= y };
@@ -1189,22 +1195,6 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
-U_TEST( NameNotFound_ForReferenceTags_Test1 )
-{
-	// Unknown tag for return value inner reference.
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32& r; }
-		fn Foo( i32& x ) : S'a';  // Error, tag 'a' not found
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
-}
 
 } // namespace
 

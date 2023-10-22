@@ -455,7 +455,8 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 			{}
 		}
 
-		fn BoxIt( i32 &'a mut x ) : Box'a'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn BoxIt( i32 &'a mut x ) : Box @(return_inner_references)
 		{
 			return Box(x);
 		}
