@@ -97,13 +97,14 @@ fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 
 class SyntaxAnalyzer
 {
+	var ust::reference_notation::reference_pollution</3s/> constructor_pollution[ [ "0a", "1_" ], [ "0b", "1_" ], [ "0c", "1_" ] ];
 public:
 	fn constructor(
-		this'a',
-		Lexems&'b lexems,
+		this,
+		Lexems& lexems,
 		MacrosPtr mut macros,
 		MacroExpansionContextsPtr mut macro_expansion_contexts,
-		ust::string8 macro_unique_identifiers_base_name ) ' a <- b ';
+		ust::string8 macro_unique_identifiers_base_name ) @(constructor_pollution);
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 	fn ParseImports( mut this ) : ImportsList;
@@ -324,11 +325,11 @@ private:
 }
 
 fn SyntaxAnalyzer::constructor(
-	this'a',
-	Lexems&'b lexems,
+	this,
+	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut macro_unique_identifiers_base_name ) ' a <- b '
+	ust::string8 mut macro_unique_identifiers_base_name ) @(constructor_pollution)
 	(
 		it_initial_= lexems.range(),
 		it_= lexems.range(),

@@ -75,7 +75,7 @@ public:
 class VariablesFrameHolder
 {
 public:
-	fn constructor( mut this'x', FunctionContext &'y mut function_context ) ' x <- y '
+	fn constructor( mut this, FunctionContext & mut function_context ) @( ust::reference_notation::pollution::this_param_1_reference )
 	( function_context_= function_context )
 	{
 		function_context_.variables_frames.push_back( FunctionContext::VariablesFrame() );
@@ -93,7 +93,7 @@ public:
 		function_context_.variables_frames.drop_back();
 	}
 
-	fn GetFunctionContext( this'x' ) : FunctionContext &'x mut
+	fn GetFunctionContext( this ) : FunctionContext &mut @( ust::reference_notation::return_references::this_param_inner_reference )
 	{
 		return function_context_;
 	}

@@ -266,13 +266,13 @@ public:
 	fn conversion_constructor( ClassTypePtr mut class_type );
 	fn conversion_constructor( EnumTypePtr mut enum_type );
 
-	fn GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType />'this';
-	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this';
-	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this';
-	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this';
-	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this';
-	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this';
-	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this';
+	fn GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType /> @( ret_tags );
+	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType /> @( ret_tags );
+	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType /> @( ret_tags );
+	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType /> @( ret_tags );
+	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType /> @( ret_tags );
+	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr /> @( ret_tags );
+	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr /> @( ret_tags );
 
 	fn GetLLVMType( this ) : LLVMTypeRef;
 
@@ -293,6 +293,9 @@ public:
 	fn ToString( this ) : ust::string8;
 
 	op==( Type& l, Type& r ) : bool;
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
 private:
 	ust::variant</ tup[
@@ -745,17 +748,20 @@ public:
 	fn conversion_constructor( CoroutineTypeParam mut generator_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
-	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this';
-	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam />'this';
-	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam />'this';
-	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this';
-	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this';
-	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this';
-	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this';
-	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this';
-	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this';
+	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);
+	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags);
+	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags);
+	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags);
+	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags);
+	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags);
+	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam /> @(ret_tags);
+	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam /> @(ret_tags);
+	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam /> @(ret_tags);
 
 	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
 private:
 	type Container= ust::variant</ tup[
@@ -895,9 +901,9 @@ class NamesScope
 public:
 	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
 
-	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue />'this';
+	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags);
 
-	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue />'this';
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags);
 
 	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
 
@@ -905,7 +911,7 @@ public:
 	fn GetErrors( this ) : ErrorsContainerPtr;
 
 	// For iteration over NamesScope values
-	fn range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/>'this';
+	fn range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/> @(ret_tags);
 
 	fn GetThisNamespaceName( this ) : ust::string8&;
 
@@ -922,6 +928,9 @@ public:
 	fn AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility );
 	fn GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility;
 	fn CopyAccessRightsFrom( mut this, NamesScope& src );
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
 private:
 	ust::string8 name_;
