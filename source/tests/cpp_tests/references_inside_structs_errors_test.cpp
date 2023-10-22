@@ -190,11 +190,11 @@ U_TEST( CaputuringThisReferenceInConstructor_Test0 )
 	R"(
 		struct S { T& t; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', T &'b t ) @(pollution);
+		fn DoPollution( S &mut s, T & t ) @(pollution);
 		struct T
 		{
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0_" ] ];
-			fn constructor( this, S &mut s'a' ) @(pollution)
+			fn constructor( this, S &mut s ) @(pollution)
 			{
 				DoPollution( s, this ); // Capture immutable "this" reference inside constructor argument.
 			}
@@ -212,11 +212,11 @@ U_TEST( CaputuringThisReferenceInConstructor_Test1 )
 	R"(
 		struct S { T &mut t; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', T &'b mut t ) @(pollution);
+		fn DoPollution( S &mut s, T & mut t ) @(pollution);
 		struct T
 		{
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0_" ] ];
-			fn constructor( this, S &mut s'a' ) @(pollution)
+			fn constructor( this, S &mut s ) @(pollution)
 			{
 				DoPollution( s, this ); // Capture mutable "this" reference inside constructor argument.
 			}
@@ -234,11 +234,11 @@ U_TEST( CaputuringThisReferenceInConstructor_Test2 )
 	R"(
 		struct S { T& t; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', T &'b t ) @(pollution);
+		fn DoPollution( S &mut s, T & t ) @(pollution);
 		struct T
 		{
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0_" ] ];
-			fn constructor( this, S &mut s'a' ) @(pollution); // Capture immutable "this" reference inside constructor argument.
+			fn constructor( this, S &mut s ) @(pollution); // Capture immutable "this" reference inside constructor argument.
 		}
 	)";
 
@@ -253,11 +253,11 @@ U_TEST( CaputuringThisReferenceInConstructor_Test3 )
 	R"(
 		struct S { T &mut t; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', T &'b mut t ) @(pollution);
+		fn DoPollution( S &mut s, T & mut t ) @(pollution);
 		struct T
 		{
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0_" ] ];
-			fn constructor( this, S &mut s'a' ) @(pollution); // Capture mutable "this" reference inside constructor argument.
+			fn constructor( this, S &mut s ) @(pollution); // Capture mutable "this" reference inside constructor argument.
 		}
 	)";
 
@@ -272,10 +272,10 @@ U_TEST( CaputuringThisReferenceInConstructor_Test4 )
 	R"(
 		struct S { T& t; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', T &'b t ) @(pollution);
+		fn DoPollution( S &mut s, T & t ) @(pollution);
 		struct T
 		{
-			fn constructor( this, S &mut s'a' ) // Reference pollution is not specified.
+			fn constructor( this, S &mut s ) // Reference pollution is not specified.
 			{
 				DoPollution( s, this ); // Capture immutable "this" reference inside constructor argument.
 			}
@@ -293,10 +293,10 @@ U_TEST( CaputuringThisReferenceInConstructor_Test5 )
 	R"(
 		struct S { T &mut t; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut s'a', T &'b mut t ) @(pollution);
+		fn DoPollution( S &mut s, T & mut t ) @(pollution);
 		struct T
 		{
-			fn constructor( this, S &mut s'a' ) // Reference pollution is not specified.
+			fn constructor( this, S &mut s ) // Reference pollution is not specified.
 			{
 				DoPollution( s, this ); // Capture mutable "this" reference inside constructor argument.
 			}

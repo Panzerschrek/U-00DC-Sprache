@@ -145,7 +145,7 @@ U_TEST( InitializingReferencesInsideStructsInConstructorInitializerList )
 			f32 dummy;
 			i32 &mut r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor ( this'x', i32 &'y mut in_r ) @(pollution)
+			fn constructor ( this, i32 & mut in_r ) @(pollution)
 			( r= in_r, dummy(0.0f) )
 			{}
 		}

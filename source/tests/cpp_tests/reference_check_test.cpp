@@ -465,7 +465,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_4 )
 		struct S{ i32& x; }
 		fn GetS() : S;
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S &mut x'a', i32 &'b y ) @(pollution);
+		fn DoPollution( S &mut x, i32 & y ) @(pollution);
 		fn Foo() : S
 		{
 			var S mut s= GetS();

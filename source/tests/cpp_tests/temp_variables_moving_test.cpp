@@ -450,13 +450,13 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 		{
 			i32 &mut r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'x', i32 &'y mut in_r ) @(pollution)
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r )
 			{}
 		}
 
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn BoxIt( i32 &'a mut x ) : Box @(return_inner_references)
+		fn BoxIt( i32 & mut x ) : Box @(return_inner_references)
 		{
 			return Box(x);
 		}

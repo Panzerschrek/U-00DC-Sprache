@@ -93,7 +93,7 @@ U_TEST( ReturnReferenceFromArg_Test0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn Foo( S s't' ) : i32 & @(return_references)
+		fn Foo( S s ) : i32 & @(return_references)
 		{
 			return s.x; // Ok, allowed
 		}
@@ -108,7 +108,7 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
-		fn Foo( S s't', i32 &'p i ) : i32 & @(return_references)
+		fn Foo( S s, i32 & i ) : i32 & @(return_references)
 		{
 			return s.x; // Error, does not allowed
 		}
@@ -131,7 +131,7 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 		{
 			i32 &mut x;
 			var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
-			fn Foo( this, i32 &'p i ) : i32 & @(return_references)
+			fn Foo( this, i32 & i ) : i32 & @(return_references)
 			{
 				return this.x; // Error, does not allowed
 			}
@@ -155,7 +155,7 @@ U_TEST( ReturnReferenceFromArg_Test3 )
 		{
 			i32 x;
 			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-			fn Foo( this, i32 &'p i ) : i32 & @(return_references)
+			fn Foo( this, i32 & i ) : i32 & @(return_references)
 			{
 				return this.x; // Ok, return this
 			}
@@ -173,7 +173,7 @@ U_TEST( ReturnReferenceFromArg_Test4 )
 		{
 			i32 &imut x;
 			var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-			fn Foo( this'inner_this_shit', i32 &'p i ) : i32 & @(return_references)
+			fn Foo( this, i32 & i ) : i32 & @(return_references)
 			{
 				return this.x; // Ok, return inner reference of "this"
 			}
@@ -215,7 +215,7 @@ U_TEST( ReturnReferenceFromArg_Test6 )
 		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1a" ] ];
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S @(return_inner_references) & @(return_references)
+		fn Foo( S & a, S & b ) : S @(return_inner_references) & @(return_references)
 		{
 			return a;
 		}
@@ -238,7 +238,7 @@ U_TEST( ReturnReferenceFromArg_Test7 )
 		// Ok - return reference to one of args (with specifying reference tags).
 		var [ [ char8, 2 ], 2 ] return_references[ "1_", "2_" ];
 		var tup[ [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "1a", "2a" ] ];
-		fn Foo( bool cond, S &'x a'x_inner', S &'x b'x_inner' ) : S @(return_inner_references) & @(return_references)
+		fn Foo( bool cond, S & a, S & b ) : S @(return_inner_references) & @(return_references)
 		{
 			if( cond ) { return a; }
 			else { return b; }
@@ -257,7 +257,7 @@ U_TEST( ReturnReferenceFromArg_Test8 )
 		// This is not a big problem, since it is not possible to write correct implementation of this function without unsafe hacks.
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1a" ] ];
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S @(return_inner_references) & @(return_references);
+		fn Foo( S & a, S & b ) : S @(return_inner_references) & @(return_references);
 		fn Bar()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -287,7 +287,7 @@ U_TEST( ReturnReferenceFromArg_Test9 )
 		struct S { i32 &mut x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S @(return_inner_references) & @(return_references);
+		fn Foo( S & a, S & b ) : S @(return_inner_references) & @(return_references);
 		fn Bar()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -331,7 +331,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn Foo( S s't' ) : i32 &mut @(return_references)
+		fn Foo( S s ) : i32 &mut @(return_references)
 		{
 			return s.x;
 		}
@@ -360,7 +360,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Baz( i32 &'r mut i, S s't' ) : i32 & mut @(return_references)
+		fn Baz( i32 & mut i, S s ) : i32 & mut @(return_references)
 		{
 			return i;
 		}
@@ -394,7 +394,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 		template</ type T /> struct MutRef{ T &mut r; }
 
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn ToRef( i32 &'r mut x ) : MutRef</ i32 /> @(return_inner_references)
+		fn ToRef( i32 & mut x ) : MutRef</ i32 /> @(return_inner_references)
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -421,7 +421,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 		template</ type T /> struct MutRef{ T &mut r; }
 
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn ToRef( i32 &'r mut x ) : MutRef</ i32 /> @(return_inner_references)
+		fn ToRef( i32 & mut x ) : MutRef</ i32 /> @(return_inner_references)
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -451,7 +451,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
 		template</ type T /> struct ImutRef{ T &imut r; }
 
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1_" ] ];
-		fn ToRef( i32 &'r mut x, i32 &'f imut y ) : ImutRef</ i32 /> @(return_inner_references) // References now implicitly tagged. Returning only one reference.
+		fn ToRef( i32 & mut x, i32 & imut y ) : ImutRef</ i32 /> @(return_inner_references) // References now implicitly tagged. Returning only one reference.
 		{
 			x= y;
 			var ImutRef</ i32 /> r{ .r= y };
@@ -504,7 +504,7 @@ U_TEST( ReferencePollutionTest0 )
 		struct S{ i32 &mut x; }
 
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Foo( S &mut s'x', i32 &'y mut i ) @(pollution)
+		fn Foo( S &mut s, i32 & mut i ) @(pollution)
 		{}
 	)";
 
@@ -519,7 +519,7 @@ U_TEST( ReferencePollutionTest1 )
 
 		// Function takes mutable argumebnt, but links it with other argument as immutable.
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Foo( S &mut s'x', i32 &'y mut i ) @(pollution)
+		fn Foo( S &mut s, i32 & mut i ) @(pollution)
 		{}
 
 		fn Foo()
@@ -540,7 +540,7 @@ U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	R"(
 		struct S{ i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn Baz( S &mut s_dst'x', S &imut s_src'y' ) @(pollution)
+		fn Baz( S &mut s_dst, S &imut s_src ) @(pollution)
 		{}
 
 		fn Foo()
@@ -570,7 +570,7 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	R"(
 		struct S{ i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Baz( S &mut s_dst'x', i32 &'y imut i ) @(pollution)
+		fn Baz( S &mut s_dst, i32 & imut i ) @(pollution)
 		{}
 
 		fn Foo()
@@ -598,7 +598,7 @@ U_TEST( ReferencePollutionTest4_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 		struct MutRefTag{ i32& mut x; }
 		struct S{ [ MutRefTag, 0 ] ref_tag; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Baz( S &mut s_dst'x', i32 &'y imut i ) @(pollution)
+		fn Baz( S &mut s_dst, i32 & imut i ) @(pollution)
 		{}
 
 		fn Foo()
@@ -621,7 +621,7 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 		{
 			i32 &imut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this't', i32 &'p mut in_x ) @(pollution)
+			fn constructor( this, i32 & mut in_x ) @(pollution)
 			( x(in_x) )
 			{}
 		}
@@ -651,7 +651,7 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 		{
 			i32 &imut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this't', i32 &'p in_x ) @(pollution)
+			fn constructor( this, i32 & in_x ) @(pollution)
 			( x(in_x) )
 			{}
 		}
@@ -685,7 +685,7 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
 		{
 			i32 &mut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this't', i32 &'p mut in_x ) @(pollution)
+			fn constructor( this, i32 & mut in_x ) @(pollution)
 			( x(in_x) )
 			{}
 			fn constructor( B &imut other )= default;
@@ -715,7 +715,7 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
 		{
 			i32 &mut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this't', i32 &'p mut in_x ) @(pollution)
+			fn constructor( this, i32 & mut in_x ) @(pollution)
 			( x(in_x) )
 			{}
 			fn constructor( B &imut other )= default;
@@ -744,7 +744,7 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 		{
 			i32 &imut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'st', i32 &'r in_x ) @(pollution)
+			fn constructor( this, i32 & in_x ) @(pollution)
 			( x= in_x )
 			{}
 		}
@@ -774,7 +774,7 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 		{
 			i32 &imut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'st', i32 &'r in_x ) @(pollution)
+			fn constructor( this, i32 & in_x ) @(pollution)
 			( x= in_x )
 			{}
 		}
@@ -834,7 +834,7 @@ U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 	R"(
 		struct S{ i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "0a" ] ];
-		fn Foo( S &mut s'x' ) @(pollution)
+		fn Foo( S &mut s ) @(pollution)
 		{}
 	)";
 
@@ -853,7 +853,7 @@ U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
 	R"(
 		struct S{ i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1_", "0a" ] ];
-		fn Foo( S &mut s'x', i32 &'y mut r ) @(pollution)
+		fn Foo( S &mut s, i32 & mut r ) @(pollution)
 		{}
 	)";
 
@@ -867,7 +867,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
 	R"(
 		struct S{ i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn FakePollution( S &mut s'x', i32 &'y i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
+		fn FakePollution( S &mut s, i32 & i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
 		{}
 
 		fn Foo( S &mut s, i32 & r )
@@ -891,7 +891,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 	R"(
 		struct S{ i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn FakePollution( S &mut s'x', i32 &'y i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
+		fn FakePollution( S &mut s, i32 & i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
 		{}
 
 		fn Foo( S &mut s, i32 & r )
@@ -919,7 +919,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 		{
 			i32 &imut x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn FakePollution( mut this'x', i32 &'y i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
+			fn FakePollution( mut this, i32 & i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
 			{}
 		}
 
@@ -967,7 +967,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructo
 		{
 			i32& x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-			fn constructor( mut this'x', S & other'y' ) @(pollution)
+			fn constructor( mut this, S & other ) @(pollution)
 			( x(other.x) )
 			{}
 		}
@@ -991,7 +991,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 		{
 			i32& x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-			op=( mut this'x', S & other'y' ) @(pollution)
+			op=( mut this, S & other ) @(pollution)
 			{}
 		}
 	)";
@@ -1013,7 +1013,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForEqualityCompar
 		{
 			i32& x;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-			op==( S& a'x', S& b'y') @(pollution) : bool;
+			op==( S& a, S& b ) @(pollution) : bool;
 		}
 	)";
 
@@ -1098,7 +1098,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 		{
 			i32& r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b in_r ) @(pollution)
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1124,7 +1124,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 		{
 			i32& r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b in_r ) @(pollution)
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1150,7 +1150,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 		{
 			i32& r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b in_r ) @(pollution)
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		struct T{ R r; }
@@ -1177,7 +1177,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 		{
 			i32& r;
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this'a', i32&'b in_r ) @(pollution)
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		fn Foo()

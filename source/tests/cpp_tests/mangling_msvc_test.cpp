@@ -993,7 +993,7 @@ U_TEST( SpecialFunctionTypeDataManglingTest )
 
 		struct S{ i32& x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0_" ] ];
-		fn RefPollutionFunction( ( fn( i32 &'a x, S &mut s'b' ) @(pollution) ) f ) {}
+		fn RefPollutionFunction( ( fn( i32 & x, S &mut s ) @(pollution) ) f ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );

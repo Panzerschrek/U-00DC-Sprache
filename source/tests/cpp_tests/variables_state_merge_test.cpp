@@ -12,7 +12,7 @@ U_TEST( IfMergeTest0_PollutionAllowedInAllBranches )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -39,7 +39,7 @@ U_TEST( IfMergeTest1_PollutionInOneBranchDoesNotAffectOtherBranch )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -66,8 +66,8 @@ U_TEST( IfMergeTest2_MutablePollutionSelectedAsResult )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn LinkMut ( S &mut s'a', i32&'b  mut x ) @(pollution) {}
-		fn LinkImut( S &mut s'a', i32&'b imut x ) @(pollution) {}
+		fn LinkMut ( S &mut s, i32&  mut x ) @(pollution) {}
+		fn LinkImut( S &mut s, i32& imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -91,7 +91,7 @@ U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -123,7 +123,7 @@ U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -151,8 +151,8 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 		struct S { i32 & mut x; }
 		struct T { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn LinkMut ( S &mut s'a', i32&'b  mut x ) @(pollution) {}
-		fn LinkImut( T &mut t'a', i32&'b imut x ) @(pollution) {}
+		fn LinkMut ( S &mut s, i32&  mut x ) @(pollution) {}
+		fn LinkImut( T &mut t, i32& imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, imut y= 0, mut z= 0;
@@ -179,7 +179,7 @@ U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -207,7 +207,7 @@ U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -236,7 +236,7 @@ U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -262,7 +262,7 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -284,7 +284,7 @@ U_TEST( IfMergeTest10_TerminalBranchesAreIgnored0 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -310,7 +310,7 @@ U_TEST( IfMergeTest11_TerminalBranchesAreIgnored1 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -339,7 +339,7 @@ U_TEST( IfMergeTest12_TerminalBranchesAreIgnored2 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution)
+		fn Link( S &mut s, i32& mut x ) @(pollution)
 		{}
 		fn Foo()
 		{
@@ -367,7 +367,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
+		fn Link( S &mut s, i32& mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -390,7 +390,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop1 )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
+		fn Link( S &mut s, i32& imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -432,7 +432,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop3 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -453,7 +453,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop4 )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -475,7 +475,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop5 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -507,7 +507,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop6 )
 		fn Cond() : bool;
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -539,7 +539,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop7 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -567,7 +567,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop8 )
 		fn Cond() : bool;
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -595,7 +595,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop9 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -624,7 +624,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop10 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -652,10 +652,10 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution);
+		fn Link( S &mut s, i32& imut x ) @(pollution);
 
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( i32&'aa a, i32&'bb b ) : i32& @(return_references)
+		fn Foo( i32& a, i32& b ) : i32& @(return_references)
 		{
 			var S mut s{ .x=a };
 
@@ -683,7 +683,7 @@ U_TEST( WhileMergeTest_TryMutateVariable )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution);
+		fn Link( S &mut s, i32& imut x ) @(pollution);
 
 		fn Foo()
 		{
@@ -711,7 +711,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
+		fn Link( S &mut s, i32& mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -734,7 +734,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop1 )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
+		fn Link( S &mut s, i32& imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -776,7 +776,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop3 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
+		fn Link( S &mut s, i32& mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -799,7 +799,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
+		fn Link( S &mut s, i32& imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -822,7 +822,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -845,7 +845,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
 	R"(
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& imut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -869,7 +869,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop7 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) {}
+		fn Link( S &mut s, i32& mut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -901,7 +901,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop8 )
 		fn Cond() : bool;
 		struct S { i32 &imut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b imut x ) @(pollution) {}
+		fn Link( S &mut s, i32& imut x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;
@@ -933,7 +933,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop9 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -962,7 +962,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop10 )
 		fn Cond() : bool;
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution) : bool { return false; }
+		fn Link( S &mut s, i32& mut x ) @(pollution) : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -989,7 +989,7 @@ U_TEST( TupleForMegeTest0 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
+		fn Link( S &mut s, i32& mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1013,7 +1013,7 @@ U_TEST( TupleForMegeTest1 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
+		fn Link( S &mut s, i32& mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1036,7 +1036,7 @@ U_TEST( TupleForMegeTest2 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
+		fn Link( S &mut s, i32& mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1063,7 +1063,7 @@ U_TEST( TupleForMegeTest3 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
+		fn Link( S &mut s, i32& mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1086,7 +1086,7 @@ U_TEST( TupleForMegeTest4 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
+		fn Link( S &mut s, i32& mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -1108,7 +1108,7 @@ U_TEST( TupleForMegeTest5 )
 	R"(
 		struct S { i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Link( S &mut s'a', i32&'b mut x ) @(pollution);
+		fn Link( S &mut s, i32& mut x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;

@@ -11,7 +11,7 @@ U_TEST( ReferncesTagsTest_BaseReferencesDefinition0 )
 	static const char c_program_text[]=
 	R"(
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( i32 &'a x, i32 &'b y ) : i32 & imut @(return_references)
+		fn Foo( i32 & x, i32 & y ) : i32 & imut @(return_references)
 		{
 			return x;
 		}
@@ -32,7 +32,7 @@ U_TEST( ReferncesTagsTest_BaseReferencesDefinition1 )
 	static const char c_program_text[]=
 	R"(
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( i32 &'a x, i32 &'b y ) : i32 & imut @(return_references)
+		fn Foo( i32 & x, i32 & y ) : i32 & imut @(return_references)
 		{
 			return x;
 		}
@@ -59,7 +59,7 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference0 )
 	static const char c_program_text[]=
 	R"(
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( i32 &'a x, i32 &'b y ) : i32 &imut @(return_references)
+		fn Foo( i32 & x, i32 & y ) : i32 &imut @(return_references)
 		{
 			return y; // returning of "y" does not allowed.
 		}
@@ -79,7 +79,7 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference1 )
 	static const char c_program_text[]=
 	R"(
 		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
-		fn Foo( i32 & x, i32 &'b y ) : i32 &imut @(return_references)
+		fn Foo( i32 & x, i32 & y ) : i32 &imut @(return_references)
 		{
 			return x;
 		}
@@ -114,7 +114,7 @@ U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant1 )
 	R"(
 		auto constexpr ccc= 5654;
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn PositiveVarOrZero( i32 &'a imut x ) : i32 &imut @(return_references)
+		fn PositiveVarOrZero( i32 & imut x ) : i32 &imut @(return_references)
 		{
 			if( x > 0 ) { return x; } // Ok, return global constant
 			return ccc; // Ok, return allowed reference.
@@ -129,7 +129,7 @@ U_TEST( ReferncesTagsTest_UntaggedReturValueMustBeOk )
 	static const char c_program_text[]=
 	R"(
 		auto constexpr ccc= 5654;
-		fn Foo( i32 &'a x, i32 &'b y, i32 & z ) : i32 & // Return value is untagged => can return reference to any argument
+		fn Foo( i32 & x, i32 & y, i32 & z ) : i32 & // Return value is untagged => can return reference to any argument
 		{
 			if( x >= y && x >= z ) { return x; }
 			if( y >= x && y >= z ) { return y; }
