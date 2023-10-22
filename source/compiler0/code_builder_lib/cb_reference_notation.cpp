@@ -159,6 +159,51 @@ std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnRefere
 	return result;
 }
 
+std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression )
+{
+	std::vector<std::set<FunctionType::ParamReference>> result;
+
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
+
+	const auto tuple_type= variable->type.GetTupleType();
+	if( tuple_type == nullptr )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "tuple of " + reference_notation_param_reference_description_type_.ToString() + " arrays", variable->type );
+		return result;
+	}
+	if( variable->constexpr_value == nullptr )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), src_loc );
+		return result;
+	}
+
+	result.resize( tuple_type->element_types.size() );
+	for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+	{
+		const auto array_type= tuple_type->element_types[i].GetArrayType();
+		if( array_type == nullptr )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), variable->type );
+			continue;
+		}
+		if( array_type->element_type != reference_notation_param_reference_description_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, reference_notation_param_reference_description_type_, array_type->element_type );
+			continue;
+		}
+
+		const auto tag_constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
+		for( uint64_t j= 0; j < array_type->element_count; ++j )
+		{
+			if( const auto param_reference= ParseEvaluatedParamReference( tag_constant->getAggregateElement( uint32_t(j) ), names_scope, src_loc ) )
+				result[i].insert( *param_reference );
+		}
+	}
+
+	return result;
+}
+
 VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression )
 {
 	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );

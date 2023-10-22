@@ -214,7 +214,8 @@ U_TEST( ReturnReferenceFromArg_Test6 )
 		struct S { i32 &mut x; }
 		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S'y_inner' & @(return_references)
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1a" ] ];
+		fn Foo( S &'x a'x_inner', S &'y b'y_inner' ) : S @(return_inner_references) & @(return_references)
 		{
 			return a;
 		}
@@ -226,7 +227,7 @@ U_TEST( ReturnReferenceFromArg_Test6 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test7 )

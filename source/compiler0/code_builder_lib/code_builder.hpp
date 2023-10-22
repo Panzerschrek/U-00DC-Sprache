@@ -1168,17 +1168,6 @@ private:
 	void CheckClassFieldsInitializers( ClassPtr class_type );
 
 	// Reference-checking.
-	void ProcessFunctionParamReferencesTags(
-		const Synt::FunctionType& func,
-		FunctionType& function_type,
-		const Synt::FunctionParam& in_arg,
-		const FunctionType::Param& out_arg,
-		size_t arg_number );
-
-	void ProcessFunctionReturnValueReferenceTags(
-		CodeBuilderErrorsContainer& errors_container,
-		const Synt::FunctionType& func,
-		const FunctionType& function_type );
 
 	void TryGenerateFunctionReturnReferencesMapping(
 		const Synt::FunctionType& func,
@@ -1217,6 +1206,7 @@ private:
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
 	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression );
 	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression );
+	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression );
 	std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference( const llvm::Constant* constant, NamesScope& names_scope, const SrcLoc& src_loc );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 

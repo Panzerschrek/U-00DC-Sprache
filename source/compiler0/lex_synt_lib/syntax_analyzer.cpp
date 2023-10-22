@@ -1303,8 +1303,11 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 
 		result.return_type= std::make_unique<TypeName>( ParseTypeName() );
 
-		if( it_->type == Lexem::Type::Apostrophe )
-			result.return_value_inner_reference_tags= ParseInnerReferenceTags();
+		if( it_->type == Lexem::Type::At )
+		{
+			NextLexem();
+			result.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+		}
 
 		if( it_->type == Lexem::Type::And )
 		{

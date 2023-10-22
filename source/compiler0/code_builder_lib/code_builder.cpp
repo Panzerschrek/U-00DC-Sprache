@@ -1104,7 +1104,7 @@ size_t CodeBuilder::PrepareFunction(
 			}
 
 			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-			if( func.type.return_value_reference_expression != nullptr || !func.type.return_value_inner_reference_tags.empty() )
+			if( func.type.return_value_reference_expression != nullptr || func.type.return_value_inner_references_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
 
 			// Disable references pollution for generator. It is too complicated for now.

@@ -987,8 +987,6 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	else
 		stream << Keyword( Keywords::void_ );
 
-	WriteInnerReferenceTags( function_type.return_value_inner_reference_tags, stream );
-
 	if( function_type.return_value_reference_modifier != ReferenceModifier::None )
 	{
 		stream << " ";

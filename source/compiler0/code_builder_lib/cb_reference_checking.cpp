@@ -6,64 +6,11 @@
 namespace U
 {
 
-void CodeBuilder::ProcessFunctionParamReferencesTags(
-	const Synt::FunctionType& func,
-	FunctionType& function_type,
-	const Synt::FunctionParam& in_param,
-	const FunctionType::Param& out_param,
-	const size_t arg_number )
-{
-	function_type.return_inner_references.resize( func.return_value_inner_reference_tags.size() );
-	for( size_t j= 0; j < func.return_value_inner_reference_tags.size(); ++j )
-	{
-		// In arg reference to return value references
-		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_inner_reference_tags[j] )
-			function_type.return_inner_references[j].emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
-
-		// Inner arg references to return value references
-		for( size_t i= 0; i < in_param.inner_arg_reference_tags.size(); ++i )
-			if( in_param.inner_arg_reference_tags[i] == func.return_value_inner_reference_tags[j] )
-				function_type.return_inner_references[j].emplace( uint8_t(arg_number), uint8_t(i) );
-	}
-}
-
-void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
-	CodeBuilderErrorsContainer& errors_container,
-	const Synt::FunctionType& func,
-	const FunctionType& function_type )
-{
-	if( function_type.return_value_type == ValueType::Value )
-	{
-		// Check names of tags, report about unknown tag names.
-		for( const std::string& inner_return_tag : func.return_value_inner_reference_tags )
-		{
-			bool found= false;
-			for( const Synt::FunctionParam& param : func.params )
-			{
-				if( inner_return_tag == param.reference_tag )
-				{
-					found= true;
-					break;
-				}
-
-				for( const std::string& param_inner_tag : param.inner_arg_reference_tags )
-					if( param_inner_tag == inner_return_tag )
-					{
-						found= true;
-						break;
-					}
-			}
-			if( !found )
-				REPORT_ERROR( NameNotFound, errors_container, func.src_loc, inner_return_tag );
-		}
-	}
-}
-
 void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 	const Synt::FunctionType& func,
 	FunctionType& function_type )
 {
-	if( func.return_value_reference_expression != nullptr )
+	if( func.return_value_reference_expression != nullptr || func.return_value_inner_references_expression != nullptr )
 		return;
 
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
