@@ -637,26 +637,28 @@ def FunctionOverridingWithReferencesNotationChange_Test0():
 	c_program_text= """
 	class A interface
 	{
-		fn virtual pure Foo(this'a') : i32 &'a ;
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn virtual pure Foo(this'a') : i32 & @(return_references);
 	}
 	class B : A
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : i32 &'a;
+		fn virtual override Foo(this'a') : i32 & @(return_references);
 		i32& x;
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def FunctionOverridingWithReferencesNotationChange_Test1():
 	c_program_text= """
 	class A polymorph
 	{
-		fn virtual Foo(this'a') : i32 &'a
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn virtual Foo(this'a') : i32 & @(return_references)
 		{
 			return g_zero;
 		}
@@ -665,21 +667,22 @@ def FunctionOverridingWithReferencesNotationChange_Test1():
 	class B : A
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : i32 &'a;
+		fn virtual override Foo(this'a') : i32 & @(return_references);
 		i32& x;
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 13 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def FunctionOverridingWithReferencesNotationChange_Test2():
 	c_program_text= """
 	class A polymorph
 	{
-		fn virtual Foo(this'a') : i32 &'a
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn virtual Foo(this'a') : i32 & @(return_references)
 		{
 			return x;
 		}
@@ -688,7 +691,7 @@ def FunctionOverridingWithReferencesNotationChange_Test2():
 	class B : A
 	{
 		// Ok, inner reference kind doesn't changed.
-		fn virtual override Foo(this'a') : i32 &'a;
+		fn virtual override Foo(this'a') : i32 & @(return_references);
 		i32& @("a"c8) y;
 	}
 	"""
@@ -699,27 +702,29 @@ def FunctionOverridingWithReferencesNotationChange_Test3():
 	c_program_text= """
 	class A interface
 	{
-		fn virtual pure Foo(this'a') : i32 &'a;
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn virtual pure Foo(this'a') : i32 & @(return_references);
 	}
 	class B abstract : A {}
 	class C : B
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : i32 &'a;
+		fn virtual override Foo(this'a') : i32 & @(return_references);
 		i32& x;
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def FunctionOverridingWithReferencesNotationChange_Test4():
 	c_program_text= """
 	class A polymorph
 	{
-		fn virtual Foo(this'a') : i32 &'a
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn virtual Foo(this'a') : i32 & @(return_references)
 		{
 			return g_zero;
 		}
@@ -729,32 +734,33 @@ def FunctionOverridingWithReferencesNotationChange_Test4():
 	class C : B
 	{
 		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added in intermediate class.
-		fn virtual override Foo(this'a') : i32 &'a;
+		fn virtual override Foo(this'a') : i32 & @(return_references);
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 14 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def FunctionOverridingWithReferencesNotationChange_Test5():
 	c_program_text= """
 	class A interface
 	{
-		fn virtual pure Foo(this'a') : i32 &'a ;
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn virtual pure Foo(this'a') : i32 & @(return_references);
 	}
 	class B : A
 	{
 		// Error, returned reference changed from empty list to mutable internal reference of "this", because mutable reference field was added.
-		fn virtual override Foo(this'a') : i32 &'a;
+		fn virtual override Foo(this'a') : i32 & @(return_references);
 		i32 &mut x;
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def FunctionOverridingWithReferencesNotationChange_Test6():

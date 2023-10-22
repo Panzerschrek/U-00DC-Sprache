@@ -336,12 +336,14 @@ def FunctionPointersConversions_Test1():
 
 def FunctionPointersConversions_Test2():
 	c_program_text= """
-		fn RetFirst( i32&'x a, i32&'y b ) : i32&'x
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn RetFirst( i32&'x a, i32&'y b ) : i32& @(return_references)
 		{
 			return a;
 		}
 
-		type RetBothType= fn( i32&'x a, i32&'x b ) : i32&'x;
+		var [ [ char8, 2 ], 2 ] return_references_both[ "0_", "1_" ];
+		type RetBothType= fn( i32&'x a, i32&'x b ) : i32& @(return_references_both);
 
 		fn Foo() : i32
 		{
@@ -561,7 +563,8 @@ def ReturnReferenceTags_ForFunctionPointers_Test0():
 	c_program_text= """
 		type RetBothType= fn( i32& a, i32& b ) : i32&;
 
-		fn RetFirst( i32&'x a, i32& b ) : i32&'x
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn RetFirst( i32&'x a, i32& b ) : i32& @(return_references)
 		{
 			return a;
 		}
@@ -578,7 +581,7 @@ def ReturnReferenceTags_ForFunctionPointers_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 15 )
+	assert( errors_list[0].src_loc.line == 16 )
 
 
 def FunctionPointerAsSpecializedTemplateParameter_Test0():

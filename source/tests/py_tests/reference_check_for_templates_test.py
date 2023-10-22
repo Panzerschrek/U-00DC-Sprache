@@ -13,7 +13,8 @@ def ReferenceTagForTypeWithoutReferencesInside_UsedAsReturnReferenceTag_Test1():
 	c_program_text= """
 		struct S{}
 		auto constexpr global_constant= 42;
-		fn Extract( S& s'a' ) : i32 &'a // tag for struct with zero inner tags
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Extract( S& s'a' ) : i32 & @(return_references) // tag for struct with zero inner tags
 		{
 			return global_constant;
 		}

@@ -146,7 +146,8 @@ def FunctionReferencePass_Test0():
 
 def FunctionReferencePass_Test1():
 	c_program_text= """
-		fn PassFirst( i32&'f x, i32&'s y ) : i32&'f { return x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn PassFirst( i32&'f x, i32&'s y ) : i32& @(return_references) { return x; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -229,7 +230,8 @@ def ReturnReferenceInsideStruct_Test0():
 def ReturnReferenceFromStruct_Test0():
 	c_program_text= """
 		struct S{ i32 &mut r; }
-		fn GetR( S& s'x' ) : i32 &'x mut
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn GetR( S& s'x' ) : i32 &mut @(return_references)
 		{
 			return s.r;
 		}
@@ -244,7 +246,7 @@ def ReturnReferenceFromStruct_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 12 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def ReturnReferenceInsideStruct_Test0():
@@ -533,7 +535,8 @@ def InnerReferencesChain_Test0():
 			i32 &mut x;
 			i32 y;
 			fn Bar(this) : bool;
-			fn GetY(mut this) : i32  &'this mut;
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn GetY(mut this) : i32  &mut @(return_references);
 		}
 		fn MakeS( i32 &'f mut x ) : S'f';
 		fn Foo( S &mut s )
@@ -553,7 +556,8 @@ def InnerReferencesChain_Test1():
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 			fn constructor( this'b', i32 &'f mut x ) @(pollution);
 			fn Bar(this) : bool;
-			fn GetY(mut this) : i32  &'this mut;
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn GetY(mut this) : i32  & mut @(return_references);
 		}
 		fn Foo( S &mut s )
 		{
@@ -567,7 +571,8 @@ def PollutionAndReturn_Test0():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn DoPollution( S& mut s'a', i32 &'b mut x ) @(pollution) : i32 &'b mut;
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn DoPollution( S& mut s'a', i32 &'b mut x ) @(pollution) : i32 &mut @(return_references);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -578,14 +583,15 @@ def PollutionAndReturn_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def PollutionAndReturn_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn DoPollution( S& mut s0'a', S& mut s1'b' ) @(pollution) : i32 &'b mut;
+		var [ [ char8, 2 ], 1 ] return_references[ "1a" ];
+		fn DoPollution( S& mut s0'a', S& mut s1'b' ) @(pollution) : i32 &mut @(return_references);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -596,7 +602,7 @@ def PollutionAndReturn_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def DoublePollution_Test0():

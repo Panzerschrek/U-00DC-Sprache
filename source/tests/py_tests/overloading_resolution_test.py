@@ -41,13 +41,15 @@ def CouldNotOverloadFunction_Test3():
 			i32 x;
 			i32 & r;
 		}
-		fn Bar( S &'x s'y' ) : i32 &'x;
-		fn Bar( S &'x s'y' ) : i32 &'y;   // Error, differs only reference tag for return value.
+		var [ [ char8, 2 ], 1 ] return_references_0[ "0_" ];
+		fn Bar( S &'x s'y' ) : i32 & @(return_references_0);
+		var [ [ char8, 2 ], 1 ] return_references_1[ "1_" ];
+		fn Bar( S &'x s'y' ) : i32 & @(return_references_1);   // Error, differs only reference tag for return value.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].src_loc.line == 7 or errors_list[0].src_loc.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 or errors_list[0].src_loc.line == 10 )
 
 
 def CouldNotOverloadFunction_Test4():

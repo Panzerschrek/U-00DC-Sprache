@@ -124,7 +124,8 @@ def CouldNotConvertFunctionPointer_Test10():
 
 def CouldNotConvertFunctionPointer_Test11():
 	c_program_text= """
-		type RetOnyFirstType= fn( i32&'x a, i32&'y b ) : i32&'x;
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		type RetOnyFirstType= fn( i32&'x a, i32&'y b ) : i32& @(return_references);
 
 		fn RetBoth( i32& a, i32& b ) : i32&
 		{
@@ -137,7 +138,7 @@ def CouldNotConvertFunctionPointer_Test11():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def CouldNotConvertFunctionPointer_Test12():
