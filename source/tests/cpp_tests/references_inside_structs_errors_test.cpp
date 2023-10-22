@@ -203,7 +203,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
 }
 
 U_TEST( CaputuringThisReferenceInConstructor_Test1 )

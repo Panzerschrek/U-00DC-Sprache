@@ -118,9 +118,19 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	FunctionType& function_type,
 	const ClassPtr base_class )
 {
+	const std::string& func_name= func.name.back().name;
+
+	if( func_name == Keywords::constructor_ )
+	{
+		for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
+		{
+			if( pollution.src.first == 0 && pollution.src.second == FunctionType::c_arg_reference_tag_number )
+				REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc );
+		}
+	}
+
 	// TODO - fix this.
 	// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
-	const std::string& func_name= func.name.back().name;
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( func.type.references_pollution_expression != nullptr )
@@ -152,7 +162,6 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc );
 	}
-
 }
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )

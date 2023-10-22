@@ -163,6 +163,18 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 		pollution.src.first= uint8_t(src_param - '0');
 		pollution.src.second= src_ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( src_ref - 'a' );
 
+		if( pollution.dst.second == FunctionType::c_arg_reference_tag_number )
+		{
+			REPORT_ERROR( ArgReferencePollution, names_scope.GetErrors(), src_loc );
+			continue;
+		}
+
+		if( pollution.dst == pollution.src )
+		{
+			REPORT_ERROR( SelfReferencePollution, names_scope.GetErrors(), src_loc );
+			continue;
+		}
+
 		result.insert( pollution );
 	}
 	return result;
