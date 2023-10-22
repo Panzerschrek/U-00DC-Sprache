@@ -257,7 +257,8 @@ def TernaryOperator_SavesInnerReferences_Test0():
 		{
 			i32 &mut x;
 		}
-		fn GetS( i32 &'a mut x ) : S'a'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32 &'a mut x ) : S @(return_inner_references)
 		{
 			var S mut s{ .x= x };
 			return move(s);
@@ -273,6 +274,6 @@ def TernaryOperator_SavesInnerReferences_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 15 )
+	assert( errors_list[0].src_loc.line == 16 )
 	assert( errors_list[1].error_code == "ReferenceProtectionError" )
-	assert( errors_list[1].src_loc.line == 16 )
+	assert( errors_list[1].src_loc.line == 17 )

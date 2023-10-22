@@ -27,24 +27,26 @@ def GeneratorMismatch_Test2():
 		{
 			fn generator Foo(this) : i32;
 		}
-		fn S::Foo(this) : ( generator'imut this_tag' : i32 )'this' { }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn S::Foo(this) : ( generator'imut this_tag' : i32 ) @(return_inner_references) { }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 6 ) )
+	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 7 ) )
 
 
 def GeneratorMismatch_Test3():
 	c_program_text= """
 		struct S
 		{
-			fn Foo(this) : ( generator'imut this_tag' : i32 )'this';
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+			fn Foo(this) : ( generator'imut this_tag' : i32 ) @(return_inner_references);
 		}
 		fn generator S::Foo(this) : i32 { }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 6 ) )
+	assert( HaveError( errors_list, "GeneratorMismatch", 5 ) or HaveError( errors_list, "GeneratorMismatch", 7 ) )
 
 
 def NonDefaultCallingConventionForGenerator_Test0():
@@ -626,11 +628,12 @@ def ExplicitReturnReferenceTags_ForGenerators_Test0():
 def ExplicitReturnReferenceTags_ForGenerators_Test1():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn generator Foo( i32 &'a x ) : S'a';
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator Foo( i32 &'a x ) : S @(return_inner_references);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 3 ) )
+	assert( HaveError( errors_list, "NotImplemented", 4 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():

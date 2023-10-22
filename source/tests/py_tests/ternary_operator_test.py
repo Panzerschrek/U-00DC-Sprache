@@ -196,7 +196,8 @@ def DestructorsCall_ForTernaryOperatorResult_Test0():
 			i32 &mut x;
 			fn destructor() { ++x; }
 		}
-		fn GetS( i32 &'a mut x ) : S'a'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32 &'a mut x ) : S @(return_inner_references)
 		{
 			var S mut s{ .x= x };
 			return move(s);

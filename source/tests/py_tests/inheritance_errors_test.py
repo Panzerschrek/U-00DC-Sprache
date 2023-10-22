@@ -768,19 +768,20 @@ def FunctionOverridingWithReferencesNotationChange_Test6():
 	struct S{ i32& x; }
 	class A interface
 	{
-		fn virtual pure Foo(this'a') : S'a';
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn virtual pure Foo(this'a') : S @(return_inner_references);
 	}
 	class B : A
 	{
 		// Error, returned struct inner reference changed from empty list to internal reference of "this", because reference field was added.
-		fn virtual override Foo(this'a') : S'a';
+		fn virtual override Foo(this'a') : S @(return_inner_references);
 		i32& x;
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test0():

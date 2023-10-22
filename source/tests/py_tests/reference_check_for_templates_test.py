@@ -30,7 +30,8 @@ def ReferenceTagForTypeWithoutReferencesInside_UsedAsReturnReferenceTag_Test1():
 def ReferenceTagForTypeWithoutReferencesInside_ForReturnValue_Test1():
 	c_program_text= """
 		struct S {}
-		fn Bar( i32&'a x ) : S'a' //  tag for struct with zero inner tags
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn Bar( i32&'a x ) : S @(return_inner_references) //  tag for struct with zero inner tags
 		{
 			return S();
 		}
@@ -113,7 +114,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test1():
 		{
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
 			fn push_back( mut this'x', T el'y' ) @(pollution) {}
-			fn get_val( this'x' ) : T'x' { return T(0); }
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+			fn get_val( this'x' ) : T @(return_inner_references) { return T(0); }
 			[ T, 0u ] container_marker;
 		}
 
@@ -166,7 +168,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test3():
 		struct Box
 		{
 			T boxed;
-			fn Get( this'x' ) : T'x' { return boxed; }
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+			fn Get( this'x' ) : T @(return_inner_references) { return boxed; }
 		}
 
 		struct S{ i32& r; }
@@ -189,7 +192,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test4():
 		struct Box
 		{
 			T boxed;
-			fn Get( this'x' ) : T'x' { return boxed; }
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+			fn Get( this'x' ) : T @(return_inner_references) { return boxed; }
 		}
 
 		struct S{ i32& r; }
@@ -210,7 +214,7 @@ def VariativeReferenceTagsCount_InTemplateClass_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 21 )
+	assert( errors_list[0].src_loc.line == 22 )
 
 
 def ReferenceTagsForTemplateDependentType_Test0():
@@ -224,7 +228,8 @@ def ReferenceTagsForTemplateDependentType_Test0():
 def ReferenceTagsForTemplateDependentType_Test1():
 	c_program_text= """
 		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
 		template</ type T />
-		fn Foo( S s'a' ) : T'a' { return T(); }  // Inner references tag for template-dependent return type.
+		fn Foo( S s'a' ) : T @(return_inner_references) { return T(); }  // Inner references tag for template-dependent return type.
 	"""
 	tests_lib.build_program( c_program_text )

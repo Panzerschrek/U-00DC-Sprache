@@ -252,7 +252,8 @@ def ReturnReferenceFromStruct_Test0():
 def ReturnReferenceInsideStruct_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn GetS( i32&'r x ) : S'r'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32&'r x ) : S @(return_inner_references)
 		{
 			var S s{ .x= x };
 			return s;
@@ -267,7 +268,7 @@ def ReturnReferenceInsideStruct_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 12 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def PollutionTest0():
@@ -536,9 +537,10 @@ def InnerReferencesChain_Test0():
 			i32 y;
 			fn Bar(this) : bool;
 			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-			fn GetY(mut this) : i32  &mut @(return_references);
+			fn GetY(mut this) : i32 &mut @(return_references);
 		}
-		fn MakeS( i32 &'f mut x ) : S'f';
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn MakeS( i32 &'f mut x ) : S @(return_inner_references);
 		fn Foo( S &mut s )
 		{
 			for( auto mut ss= MakeS( s.GetY() ); ss.Bar(); ){}

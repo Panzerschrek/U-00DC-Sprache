@@ -168,7 +168,8 @@ def TupleMultipleInnerReferenceTags_Test7():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y, i32 &'z_tag mut z ) : tup[ S, T ]'x_tag, y_tag';
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y, i32 &'z_tag mut z ) : tup[ S, T ] @(return_inner_references);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -184,7 +185,8 @@ def TupleMultipleInnerReferenceTags_Test8():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag';
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references);
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 		fn DoPollutionR( R& mut r'x', i32 &'y f ) @(pollution);
 		fn Foo()
@@ -207,7 +209,8 @@ def TupleMultipleInnerReferenceTags_Test9():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag';
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references);
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 		fn DoPollutionR( R& mut r'x', i32 &'y f ) @(pollution);
 		fn Foo()
@@ -223,14 +226,15 @@ def TupleMultipleInnerReferenceTags_Test9():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 17 ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 18 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test10():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag'
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references)
 		{
 			var tup[ S, T ] t[ { .x= x }, { .y= y } ];
 			return t; // Return result inner references in specified in signature order.
@@ -243,14 +247,15 @@ def TupleMultipleInnerReferenceTags_Test11():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag'
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ] @(return_inner_references)
 		{
 			var tup[ S, T ] t[ { .x= y }, { .y= x } ];
 			return t; // Result inner references are in wrong order relative to specified tags in function signature.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test12():
