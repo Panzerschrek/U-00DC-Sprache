@@ -1,5 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
+import "function_reference_notation.u"
 import "helpers.u"
 import "memory.u"
 
@@ -27,7 +28,7 @@ public:
 
 	template</ size_type size />
 	fn enable_if( is_mutable )
-	conversion_constructor( mut this'a', [ T, size ] &'b  mut arr ) ' a <-  b '
+	conversion_constructor( mut this, [ T, size ] & mut arr ) @( reference_notation::pollution::this_param_1_reference )
 		( size_(size) )
 	{
 		unsafe{  begin_= $<( cast_ref_unsafe</T/>(arr) );  }
@@ -35,14 +36,14 @@ public:
 
 	template</ size_type size />
 	fn enable_if( !is_mutable )
-	conversion_constructor( mut this'a', [ T, size ] &'b imut arr ) ' a <- b '
+	conversion_constructor( mut this, [ T, size ] &imut arr ) @( reference_notation::pollution::this_param_1_reference )
 		( size_(size) )
 	{
 		unsafe{  begin_= $<( cast_mut( cast_ref_unsafe</T/>(arr) ) );  }
 	}
 
 	fn enable_if( !is_mutable )
-	conversion_constructor( mut this'a', random_access_range</ T, true />& src_range'b' ) ' a <- b '
+	conversion_constructor( mut this, random_access_range</ T, true />& src_range ) @( reference_notation::pollution::this_param_1_inner_reference )
 	{
 		unsafe
 		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.
@@ -57,7 +58,7 @@ public:
 	{}
 
 	op enable_if( is_mutable )
-	[]( this'x', size_type index ) : T &'x  mut
+	[]( this, size_type index ) : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if( empty() );
 		return unsafe( index_unchecked(index) );
@@ -65,67 +66,67 @@ public:
 
 	op
 	enable_if( !is_mutable )
-	[]( this'x', size_type index ) : T &'x imut
+	[]( this, size_type index ) : T & imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if( empty() );
 		return unsafe( index_unchecked(index) );
 	}
 
-	fn enable_if(  is_mutable ) index_unchecked( this'x', size_type index ) unsafe : T &'x  mut
+	fn enable_if(  is_mutable ) index_unchecked( this, size_type index ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(begin_ + index) );
 	}
 
-	fn enable_if( !is_mutable ) index_unchecked( this'x', size_type index ) unsafe : T &'x imut
+	fn enable_if( !is_mutable ) index_unchecked( this, size_type index ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(begin_ + index) );
 	}
 
-	fn enable_if(  is_mutable ) front( this'x' ) : T &'x  mut
+	fn enable_if(  is_mutable ) front( this ) : T &  mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn enable_if( !is_mutable ) front( this'x' ) : T &'x imut
+	fn enable_if( !is_mutable ) front( this ) : T & imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn enable_if(  is_mutable ) back ( this'x' ) : T &'x  mut
+	fn enable_if(  is_mutable ) back ( this ) : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked () );
 	}
 
-	fn enable_if( !is_mutable ) back ( this'x' ) : T &'x imut
+	fn enable_if( !is_mutable ) back ( this ) : T &imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked () );
 	}
 
-	fn enable_if(  is_mutable ) front_unchecked( this'x' ) unsafe : T &'x  mut
+	fn enable_if(  is_mutable ) front_unchecked( this ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(begin_) );
 	}
 
-	fn enable_if( !is_mutable ) front_unchecked( this'x' ) unsafe : T &'x imut
+	fn enable_if( !is_mutable ) front_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(begin_) );
 	}
 
-	fn enable_if(  is_mutable ) back_unchecked ( this'x' ) unsafe : T &'x  mut
+	fn enable_if(  is_mutable ) back_unchecked ( this ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(begin_ + size_ - 1s) );
 	}
 
-	fn enable_if( !is_mutable ) back_unchecked ( this'x' ) unsafe : T &'x imut
+	fn enable_if( !is_mutable ) back_unchecked ( this ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(begin_ + size_ - 1s) );
 	}
 
-	fn subrange( this'x', size_type start_index, size_type end_index ) : this_type'x'
+	fn subrange( this, size_type start_index, size_type end_index ) : this_type @( reference_notation::return_inner_references::this_param_inner_reference )
 	{
 		halt if( start_index > end_index );
 		halt if( end_index > size_ );
@@ -188,7 +189,7 @@ public:
 		--size_;
 	}
 
-	fn range( this'x' ) : this_type'x'
+	fn range( this ) : this_type @( reference_notation::return_inner_references::this_param_inner_reference )
 	{
 		return this;
 	}
@@ -236,13 +237,13 @@ type array_view_imut= random_access_range</ T, false />;
 // Doing such we can avoid common mistakes.
 
 template</type T/>
-fn single_element_array_view( T &'a mut el ) : array_view_mut</T/>'a'
+fn single_element_array_view( T & mut el ) : array_view_mut</T/> @( reference_notation::return_inner_references::param0 )
 {
 	return unsafe( array_view_mut</T/>( $<(el), 1s ) );
 }
 
 template</type T/>
-fn single_element_array_view( T &'a imut el ) : array_view_imut</T/>'a'
+fn single_element_array_view( T &imut el ) : array_view_imut</T/> @( reference_notation::return_inner_references::param0 )
 {
 	return unsafe( array_view_imut</T/>( $<(cast_mut(el)), 1s ) );
 }

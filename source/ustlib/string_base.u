@@ -228,12 +228,12 @@ public:
 
 	// ranges
 
-	fn range(  mut this ) : range_mut'this'
+	fn range(  mut this ) : range_mut  @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( range_mut ( ptr_, size_ ) );
 	}
 
-	fn range( imut this ) : range_imut'this'
+	fn range( imut this ) : range_imut @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( range_imut( ptr_, size_ ) );
 	}

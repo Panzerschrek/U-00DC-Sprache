@@ -54,16 +54,19 @@ class result
 public:
 	static_assert( !same_type</OkT, ErrorT/>, "Result and error types must be distinct!" );
 
+	static_assert( typeinfo</OkT/>.references_tags_count == 0s, "TODO - support references inside result." );
+	static_assert( typeinfo</ErrorT/>.references_tags_count == 0s, "TODO - support references inside result." );
+
 public:
 	// Construt from ok value.
-	fn conversion_constructor( mut this'a', OkT mut res'b' ) ' a <- b '
+	fn conversion_constructor( mut this, OkT mut res )
 		( is_ok_= true, storage_= zero_init ) // TODO - use uninitialized initializer for storage
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(res) ) );
 	}
 
 	// Construct from error value.
-	fn conversion_constructor( mut this'a', ErrorT mut err'b' ) ' a <- b '
+	fn conversion_constructor( mut this, ErrorT mut err )
 		( is_ok_= false, storage_= zero_init ) // TODO - use uninitialized initializer for storage
 	{
 		unsafe( move_into_uninitialized( deref_error_unchecked(), move(err) ) );
@@ -153,7 +156,7 @@ public:
 
 	fn
 	enable_if( typeinfo</OkT/>.references_tags_count == 0s )
-	as_ref(  mut this ) : optional_ref_mut </OkT/>'this'
+	as_ref(  mut this ) : optional_ref_mut </OkT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( is_ok_ )
 		{
@@ -167,7 +170,7 @@ public:
 
 	fn
 	enable_if( typeinfo</OkT/>.references_tags_count == 0s )
-	as_ref( imut this ) : optional_ref_imut</OkT/>'this'
+	as_ref( imut this ) : optional_ref_imut</OkT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( is_ok_ )
 		{
@@ -181,7 +184,7 @@ public:
 
 	fn
 	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
-	as_error_ref(  mut this ) : optional_ref_mut </ErrorT/>'this'
+	as_error_ref(  mut this ) : optional_ref_mut </ErrorT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( !is_ok_ )
 		{
@@ -195,7 +198,7 @@ public:
 
 	fn
 	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
-	as_error_ref( imut this ) : optional_ref_imut</ErrorT/>'this'
+	as_error_ref( imut this ) : optional_ref_imut</ErrorT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( !is_ok_ )
 		{
@@ -208,7 +211,7 @@ public:
 	}
 
 	// Extract and return ok value.
-	fn try_take( byval mut this'a' ) : OkT'a'
+	fn try_take( byval mut this ) : OkT
 	{
 		unsafe
 		{
@@ -223,7 +226,7 @@ public:
 	}
 
 	// Extract and return error value.
-	fn try_take_error( byval mut this'a' ) : ErrorT'a'
+	fn try_take_error( byval mut this ) : ErrorT
 	{
 		unsafe
 		{

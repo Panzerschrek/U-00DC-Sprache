@@ -129,7 +129,7 @@ public:
 
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
-	get( this ) : optional_ref</ T, false />'this'
+	get( this ) : optional_ref</ T, false />  @( reference_notation::return_inner_references::param0 )
 	{
 		var optional_ref</ T, false /> mut res;
 		auto mut cur_index= 0s;
@@ -152,7 +152,7 @@ public:
 
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
-	get(mut this) : optional_ref</ T, true />'this'
+	get(mut this) : optional_ref</ T, true />  @( reference_notation::return_inner_references::param0 )
 	{
 		var optional_ref</ T, true /> mut res;
 		auto mut cur_index= 0s;

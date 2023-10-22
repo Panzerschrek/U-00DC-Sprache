@@ -16,6 +16,8 @@ public:
 	type this_type= vector</T/>;
 	type hasher= range_hasher;
 
+	static_assert( typeinfo</T/>.references_tags_count == 0s, "Currently vector doesn't support types with references inside." );
+
 public:
 	// Default constructor.
 	fn constructor()= default;
@@ -297,7 +299,7 @@ public:
 		swap( size_type(i0), size_type(i1) );
 	}
 
-	fn push_back( mut this'a', T mut val'b' ) ' a <- b '
+	fn push_back( mut this, T mut val )
 	{
 		unsafe
 		{
@@ -310,7 +312,7 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this'a', size_type count, T& val'b' ) ' a <- b '
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this, size_type count, T& val )
 	{
 		unsafe
 		{
@@ -344,7 +346,7 @@ public:
 		}
 	}
 
-	fn pop_back( mut this'a' ) : T'a'
+	fn pop_back( mut this ) : T
 	{
 		halt if(empty());
 		unsafe
@@ -356,7 +358,7 @@ public:
 		}
 	}
 
-	fn pop_back_unchecked( mut this'a' ) unsafe : T'a'
+	fn pop_back_unchecked( mut this ) unsafe : T
 	{
 		unsafe
 		{
@@ -367,7 +369,7 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this'a', size_type new_size, T& val'b' ) ' a <- b '
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this, size_type new_size, T& val )
 	{
 		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )
@@ -403,13 +405,13 @@ public:
 	}
 
 	fn enable_if( typeinfo</ T />.references_tags_count == 0s )
-	range(  mut this ) : random_access_range_mut </T/>'this'
+	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
 	fn enable_if( typeinfo</ T />.references_tags_count == 0s )
-	range( imut this ) : random_access_range_imut</T/>'this'
+	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
 	}

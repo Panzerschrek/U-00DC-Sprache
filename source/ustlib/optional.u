@@ -12,7 +12,8 @@ var null_optional_type constexpr null_optional{};
 template</ type T />
 class optional
 {
-	// TODO - disable optional for types with references inside?
+	static_assert( typeinfo</T/>.references_tags_count == 0s, "Currently optional doesn't support types with references inside." );
+
 public:
 	type hasher= optional_hasher;
 
@@ -29,7 +30,7 @@ public:
 	}
 	
 	// Construct with value.
-	fn conversion_constructor( mut this'a', T mut val'b' ) ' a <- b '
+	fn conversion_constructor( mut this, T mut val )
 	( storage_= zero_init, has_value_= true  ) // TODO - initialize with unsafe 
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(val) ) );
@@ -95,7 +96,7 @@ public:
 	}
 
 	// Assign value
-	op=( mut this'a', T mut val'b' ) ' a <- b '
+	op=( mut this, T mut val )
 	{
 		unsafe
 		{
@@ -164,7 +165,7 @@ public:
 		} 
 	}
 
-	fn reset( mut this'a', T mut val'b' ) ' a <- b '
+	fn reset( mut this, T mut val )
 	{
 		unsafe
 		{
@@ -179,7 +180,7 @@ public:
 
 	fn
 	enable_if( typeinfo</T/>.references_tags_count == 0s )
-	as_ref( mut this ) : optional_ref_mut</T/>'this'
+	as_ref( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( has_value_ )
 		{
@@ -193,7 +194,7 @@ public:
 
 	fn
 	enable_if( typeinfo</T/>.references_tags_count == 0s )
-	as_ref( imut this ) : optional_ref_imut</T/>'this'
+	as_ref( imut this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( has_value_ )
 		{
@@ -206,7 +207,7 @@ public:
 	}
 
 	// Take value, leave optional empty.
-	fn try_take( mut this'a' ) : T'a'
+	fn try_take( mut this ) : T
 	{
 		halt if(empty());
 		has_value_ = false;

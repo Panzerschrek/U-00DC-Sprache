@@ -1,5 +1,6 @@
 import "helpers.u"
 import "container_utils.u"
+import "function_reference_notation.u"
 
 namespace ust
 {
@@ -31,14 +32,14 @@ public:
 
 	// Construct from reference
 	fn enable_if( is_mutable )
-	constructor( mut this'x', T &'y  mut ref ) ' x <- y '
+	constructor( mut this, T &  mut ref ) @( reference_notation::pollution::this_param_1_reference )
 		( ptr_= $<(ref) )
 	{
 	}
 
 	// Construct 'imut' reference from 'mut' reference.
 	fn enable_if( !is_mutable )
-	constructor( mut this'x', T &'y imut ref ) ' x <- y '
+	constructor( mut this, T &imut ref ) @( reference_notation::pollution::this_param_1_reference )
 		( ptr_= $<( unsafe( cast_mut(ref) ) ) )
 	{
 	}
@@ -50,7 +51,7 @@ public:
 
 	// Assign 'mut' reference to 'imut' reference.
 	op enable_if( !is_mutable )
-	=( mut this'x', optional_ref</ T, true />& other'y' ) ' x <- y'
+	=( mut this, optional_ref</ T, true />& other ) @( reference_notation::pollution::this_param_1_inner_reference )
 	{
 		this.ptr_= unsafe( other.get_ptr() );
 	}
@@ -67,27 +68,27 @@ public:
 	}
 
 	fn enable_if( is_mutable )
-	try_deref( this'x' ) : T &'x mut
+	try_deref( this ) : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if(empty());
 		return unsafe( deref_unchecked() );
 	}
 
 	fn enable_if( !is_mutable )
-	try_deref( this'x' ) : T &'x imut
+	try_deref( this ) : T &imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		halt if(empty());
 		return unsafe( deref_unchecked() );
 	}
 
 	fn enable_if( is_mutable )
-	deref_unchecked( this'x' ) unsafe : T &'x mut
+	deref_unchecked( this ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(ptr_) );
 	}
 
 	fn enable_if( !is_mutable )
-	deref_unchecked( this'x' ) unsafe : T &'x imut
+	deref_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
 	{
 		return unsafe( $>(ptr_) );
 	}
@@ -104,13 +105,13 @@ public:
 	}
 
 	fn enable_if( is_mutable )
-	reset( mut this'x', T &'y  mut ref ) ' x <-  y '
+	reset( mut this, T & mut ref ) @( reference_notation::pollution::this_param_1_reference )
 	{
 		ptr_= $<(ref);
 	}
 
 	fn enable_if( !is_mutable )
-	reset( mut this'x', T &'y imut ref ) ' x <- y '
+	reset( mut this, T &imut ref ) @( reference_notation::pollution::this_param_1_reference )
 	{
 		ptr_= $<( unsafe( cast_mut(ref) ) );
 	}

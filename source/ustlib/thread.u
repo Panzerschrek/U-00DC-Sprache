@@ -14,7 +14,7 @@ class thread
 	static_assert( !non_sync</Func/>, "passing non_sync functor into another thread" );
 
 public:
-	fn constructor( mut this'a', Func mut func'b' ) ' a <- b '
+	fn constructor( mut this, Func mut func )
 	( impl_( Impl(move(func)) ) )
 	{
 		unsafe
@@ -91,13 +91,13 @@ template</ type Func />
 type thread_void= thread</ Func, void />;
 
 template</ type Func />
-fn make_thread_void( Func mut func'a' ) : thread_void</Func/>'a'
+fn make_thread_void( Func mut func ) : thread_void</Func/>
 {
 	return thread_void</Func/>( move(func) );
 }
 
 template</ type ReturnType, type Func />
-fn make_thread( Func mut func'a' ) : thread</ Func, ReturnType />'a'
+fn make_thread( Func mut func ) : thread</ Func, ReturnType />
 {
 	return thread</ Func, ReturnType />( move(func) );
 }

@@ -62,13 +62,13 @@ fn polymorph_is_instance_of( B& b ) : bool
 }
 
 template</ type To, type From />
-fn polymorph_cast( From &'x mut from ) : optional_ref</ To, true  />'x'
+fn polymorph_cast( From & mut from ) : optional_ref</ To, true  /> @( reference_notation::return_inner_references::param0 )
 {
 	polymorph_impl::polymorph_cast_impl</To/>(from);
 }
 
 template</ type To, type From />
-fn polymorph_cast( From &'x imut from ) : optional_ref</ To, false />'x'
+fn polymorph_cast( From &imut from ) : optional_ref</ To, false /> @( reference_notation::return_inner_references::param0 )
 {
 	unsafe
 	{
@@ -120,7 +120,7 @@ fn constexpr is_polymorph() : bool
 
 // TODO - fix this. Now "polymorph_cast" for types with references inside is completely broken because of "optional_ref".
 template</ type To, type From />
-fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
+fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( reference_notation::return_inner_references::param0 )
 {
 	// Disable cast where it can produce internal reference out of nowhere.
 	static_assert( typeinfo</To/>.references_tags_count <= typeinfo</From/>.references_tags_count );

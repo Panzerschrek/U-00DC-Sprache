@@ -176,34 +176,34 @@ public:
 
 	// Lock operations.
 
-	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t 'this'
+	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t  @( reference_notation::return_inner_references::param0 )
 	{
 		halt if( empty() );
 		return unsafe( lock_mut_unchecked() );
 	}
 
-	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t'this'
+	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
 		halt if( empty() );
 		return unsafe( lock_imut_unchecked() );
 	}
 
-	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t 'this'
+	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_mut_unchecked() );
 	}
 
-	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t'this'
+	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_imut_unchecked() );
 	}
 
-	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t 'this'
+	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_mut_t ( value_, counter_ ) );
 	}
 
-	fn lock_imut_unchecked( this ) unsafe : lock_imut_t'this'
+	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_imut_t( value_, counter_ ) );
 	}
@@ -460,7 +460,7 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn deref( mut this ) : T &'this  mut
+	fn deref( mut this ) : T & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>( value_ ) );
 	}
@@ -490,7 +490,7 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn deref( this ) : T &'this imut
+	fn deref( this ) : T & imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(value_) );
 	}

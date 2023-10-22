@@ -67,7 +67,7 @@ public:
 		return size_ == 0s;
 	}
 
-	fn insert( mut this, key_type& key, value_type mut value ) : value_type &'this mut
+	fn insert( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
 		unsafe
@@ -141,7 +141,7 @@ public:
 		erase(key);
 	}
 
-	fn find( imut this, key_type& key ) : optional_ref</ value_type, false />'this'
+	fn find( imut this, key_type& key ) : optional_ref</ value_type, false /> @( reference_notation::return_inner_references::param0 )
 	{
 		unsafe
 		{
@@ -151,7 +151,7 @@ public:
 		}
 	}
 
-	fn find(  mut this, key_type& key ) : optional_ref</ value_type, true  />'this'
+	fn find(  mut this, key_type& key ) : optional_ref</ value_type, true  /> @( reference_notation::return_inner_references::param0 )
 	{
 		unsafe
 		{
@@ -165,12 +165,12 @@ public:
 		return null_optional_ref;
 	}
 
-	op[](  mut this, key_type& key ) : value_type &'this  mut
+	op[](  mut this, key_type& key ) : value_type & mut @( reference_notation::return_references::param0 )
 	{
 		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
-	op[]( imut this, key_type& key ) : value_type &'this imut
+	op[]( imut this, key_type& key ) : value_type &imut @( reference_notation::return_references::param0 )
 	{
 		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
@@ -194,12 +194,12 @@ public:
 		size_= 0s;
 	}
 
-	fn range( imut this ) : unordered_map_range</false/>'this'
+	fn range( imut this ) : unordered_map_range</false/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( unordered_map_range</false/>( table_, size_, capacity_ ) );
 	}
 
-	fn range(  mut this ) : unordered_map_range</true />'this'
+	fn range(  mut this ) : unordered_map_range</true /> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( unordered_map_range</true />( table_, size_, capacity_ ) );
 	}
@@ -308,15 +308,15 @@ public:
 	{
 		class element_imut
 		{
-			fn constructor( mut this'x', TableValue &'y imut table_value ) ' x <- y ' unsafe
+			fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::this_param_1_reference ) unsafe
 			( table_value_(table_value) ) {}
 
-			fn key( this'x' ) : key_type &'x
+			fn key( this ) : key_type & @( reference_notation::return_references::this_param_inner_reference )
 			{
 				return table_value_.key_storage;
 			}
 
-			fn value( this'x' ) : value_type &'x imut
+			fn value( this ) : value_type &imut @( reference_notation::return_references::this_param_inner_reference )
 			{
 				return table_value_.value_storage;
 			}
@@ -327,15 +327,15 @@ public:
 
 		class element_mut
 		{
-			fn constructor( mut this'x', TableValue &'y  mut table_value ) ' x <- y ' unsafe
+			fn constructor( mut this, TableValue & mut table_value ) @( reference_notation::pollution::this_param_1_reference ) unsafe
 			( table_value_(table_value) ) {}
 
-			fn key( this'x' ) : key_type &'x
+			fn key( this ) : key_type & @( reference_notation::return_references::this_param_inner_reference )
 			{
 				return table_value_.key_storage;
 			}
 
-			fn value( this'x' ) : value_type &'x  mut
+			fn value( this ) : value_type & mut @( reference_notation::return_references::this_param_inner_reference )
 			{
 				return table_value_.value_storage;
 			}
@@ -378,27 +378,27 @@ public:
 		}
 
 		fn enable_if( is_mutable )
-		front( this'x' ) : element_mut'x'
+		front( this ) : element_mut @( reference_notation::return_inner_references::this_param_inner_reference )
 		{
 			halt if(empty());
 			return unsafe( front_unchecked() );
 		}
 
 		fn enable_if( !is_mutable )
-		front( this'x' ) : element_imut'x'
+		front( this ) : element_imut @( reference_notation::return_inner_references::this_param_inner_reference )
 		{
 			halt if(empty());
 			return unsafe( front_unchecked() );
 		}
 
 		fn enable_if( is_mutable )
-		front_unchecked( this'x' ) unsafe : element_mut'x'
+		front_unchecked( this ) unsafe : element_mut @( reference_notation::return_inner_references::this_param_inner_reference )
 		{
 			return unsafe( element_mut( $>(table_) ) );
 		}
 
 		fn enable_if( !is_mutable )
-		front_unchecked( this'x' ) unsafe : element_imut'x'
+		front_unchecked( this ) unsafe : element_imut @( reference_notation::return_inner_references::this_param_inner_reference )
 		{
 			return unsafe( element_imut( $>(table_) ) );
 		}
