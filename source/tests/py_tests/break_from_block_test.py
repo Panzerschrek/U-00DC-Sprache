@@ -431,7 +431,8 @@ def BreakFromBlock_VariablesStateMerge_Test4():
 def BreakFromBlock_VariablesStateMerge_Test5():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -452,5 +453,5 @@ def BreakFromBlock_VariablesStateMerge_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 16 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 19 ) )

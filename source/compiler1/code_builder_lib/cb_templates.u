@@ -598,20 +598,6 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				: InnerReferenceKind::Imut );
 	}
 
-	if( !signature_param.return_value_reference_tag.empty() )
-	{
-		var bool mut found= false;
-		if( !signature_param.inner_reference_tag.empty() && signature_param.inner_reference_tag.try_deref().name == signature_param.return_value_reference_tag )
-		{
-			found= true;
-		}
-
-		if( !found )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, signature_param.src_loc, signature_param.return_value_reference_tag )
-		}
-	}
-
 	return move(coroutine_type_param);
 }
 

@@ -357,12 +357,12 @@ fn Type::conversion_constructor( EnumTypePtr mut enum_type )
 	( something_( move(enum_type) ) )
 {}
 
-fn Type::GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType />'this'
+fn Type::GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType /> @( ret_tags )
 {
 	return something_.get</FundamentalType/>();
 }
 
-fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
+fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</ArrayType/>/>() )
 	{
@@ -372,7 +372,7 @@ fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
 	return ust::null_optional_ref;
 }
 
-fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
+fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</TupleType/>/>() )
 	{
@@ -382,7 +382,7 @@ fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
 	return ust::null_optional_ref;
 }
 
-fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this'
+fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</RawPointerType/>/>() )
 	{
@@ -392,7 +392,7 @@ fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType
 	return ust::null_optional_ref;
 }
 
-fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this'
+fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</FunctionPointerType/>/>() )
 	{
@@ -402,12 +402,12 @@ fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionP
 	return ust::null_optional_ref;
 }
 
-fn Type::GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this'
+fn Type::GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr /> @( ret_tags )
 {
 	return something_.get</ClassTypePtr/>();
 }
 
-fn Type::GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this'
+fn Type::GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr /> @( ret_tags )
 {
 	return something_.get</EnumTypePtr/>();
 }
@@ -1197,22 +1197,22 @@ fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut 
 	( something_( ust::make_shared_ptr_final( move(specialized_template_param) ) ) )
 {}
 
-fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this'
+fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags)
 {
 	return something_.get</TemplateParam/>();
 }
 
-fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypeParam />'this'
+fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags)
 {
 	return something_.get</TypeParam/>();
 }
 
-fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam />'this'
+fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags)
 {
 	return something_.get</VariableParam/>();
 }
 
-fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this'
+fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags)
 {
 	if_var( &array_type_param : something_.get</ ust::shared_ptr_final</ArrayTypeParam/> />() )
 	{
@@ -1222,7 +1222,7 @@ fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ Ar
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this'
+fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags)
 {
 	if_var( &tuple_type_param : something_.get</ ust::shared_ptr_final</TupleTypeParam/> />() )
 	{
@@ -1232,7 +1232,7 @@ fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ Tu
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this'
+fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags)
 {
 	if_var( &raw_pointer_type_param : something_.get</ ust::shared_ptr_final</RawPointerTypeParam/> />() )
 	{
@@ -1242,7 +1242,7 @@ fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this'
+fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam /> @(ret_tags)
 {
 	if_var( &function_type_param : something_.get</ ust::shared_ptr_final</FunctionTypeParam/> />() )
 	{
@@ -1252,7 +1252,7 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this'
+fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam /> @(ret_tags)
 {
 	if_var( &coroutine_type_param : something_.get</ ust::shared_ptr_final</CoroutineTypeParam/> />() )
 	{
@@ -1262,7 +1262,7 @@ fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut<
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
+fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam /> @(ret_tags)
 {
 	if_var( &specialized_template_param : something_.get</ ust::shared_ptr_final</SpecializedTemplateParam/> />() )
 	{
@@ -1422,7 +1422,7 @@ fn NamesScope::constructor(
 {
 }
 
-fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue />'this'
+fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags)
 {
 	return names_map_.find( name );
 }
@@ -1442,7 +1442,7 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 	return false;
 }
 
-fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue />'this'
+fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags)
 {
 	if( !names_map_.find(name).empty() )
 	{
@@ -1472,7 +1472,7 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 	return errors_container_;
 }
 
-fn NamesScope::range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/>'this'
+fn NamesScope::range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/> @(ret_tags)
 {
 	return names_map_.range();
 }

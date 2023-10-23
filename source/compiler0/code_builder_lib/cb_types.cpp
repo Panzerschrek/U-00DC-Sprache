@@ -194,26 +194,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc ) )
 		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc );
 
-	if( !generator_type_name.return_value_reference_tag.empty() )
-	{
-		bool found= false;
-		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == generator_type_name.return_value_reference_tag )
-			found= true;
-
-		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, generator_type_name.return_value_reference_tag );
-	}
-	for( const std::string& tag : generator_type_name.return_value_inner_reference_tags )
-	{
-		bool found= false;
-		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == tag )
-			found= true;
-
-		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, tag );
-	}
-
-	// For now there is no reason to process reference tag.
+	// For now there is no reason to process reference tags.
 	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
 
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
@@ -287,7 +268,6 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		else
 			out_param.value_type= ValueType::ReferenceImut;
 
-		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() );
 
 		function_type.params.push_back( std::move(out_param) );
 	}
@@ -295,9 +275,26 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	function_type.unsafe= function_type_name.unsafe;
 	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
 
-	ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), function_type_name, function_type );
-	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
-	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
+	if( function_type_name.references_pollution_expression != nullptr )
+		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression );
+	if( function_type_name.return_value_reference_expression != nullptr )
+		function_type.return_references= EvaluateFunctionReturnReferences( names_scope, *function_type_name.return_value_reference_expression );
+	if( function_type_name.return_value_inner_references_expression != nullptr )
+		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *function_type_name.return_value_inner_references_expression );
+
+	// Generate mapping of input references to output references if return reference notation is not specified.
+	// Assume that returned reference points to any reference param.
+	if( function_type.return_value_type != ValueType::Value &&
+		function_type_name.return_value_reference_expression == nullptr &&
+		function_type_name.return_value_inner_references_expression == nullptr  )
+	{
+		for( size_t i= 0u; i < function_type.params.size(); ++i )
+		{
+			// TODO - what if param is immutable reference and return reference is mutable?
+			if( function_type.params[i].value_type != ValueType::Value )
+				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
+		}
+	}
 
 	return function_type;
 }

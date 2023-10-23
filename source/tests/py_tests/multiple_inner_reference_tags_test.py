@@ -24,7 +24,8 @@ def TupleMultipleInnerReferenceTags_Test1():
 		struct S{ i32 &imut x; }
 		struct T{ f32 &mut  y; }
 		struct R{ f32 &imut f; }
-		fn DoPollution( R& mut r'x', f32 &'y f ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( R& mut r, f32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -46,7 +47,8 @@ def TupleMultipleInnerReferenceTags_Test2():
 		struct S{ i32 &imut x; }
 		struct T{ f32 &mut  y; }
 		struct R{ i32 &imut f; }
-		fn DoPollution( R& mut r'x', i32 &'y f ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -68,7 +70,8 @@ def TupleMultipleInnerReferenceTags_Test3():
 		struct S{ i32 &imut x; }
 		struct T{ f32 &mut  y; }
 		struct R{ f32 &imut f; }
-		fn DoPollution( R& mut r'x', f32 &'y f ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( R& mut r, f32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -83,7 +86,7 @@ def TupleMultipleInnerReferenceTags_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 16 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test4():
@@ -91,7 +94,8 @@ def TupleMultipleInnerReferenceTags_Test4():
 		struct S{ i32 &imut x; }
 		struct T{ f32 &mut  y; }
 		struct R{ i32 &imut f; }
-		fn DoPollution( R& mut r'x', i32 &'y f ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -106,7 +110,7 @@ def TupleMultipleInnerReferenceTags_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 16 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test5():
@@ -114,8 +118,10 @@ def TupleMultipleInnerReferenceTags_Test5():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
-		fn DoPollutionT( tup[ S, T ] &mut t'x, y', i32 &'z mut i ) ' y <- z ';
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution_t[ [ "0b", "1_" ] ];
+		fn DoPollutionT( tup[ S, T ] &mut t, i32 & mut i ) @(pollution_t);
+		var [ [ [char8, 2], 2 ], 1 ] pollution_r[ [ "0a", "1_" ] ];
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution_r);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0;
@@ -130,7 +136,7 @@ def TupleMultipleInnerReferenceTags_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 17 ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 19 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test6():
@@ -138,8 +144,10 @@ def TupleMultipleInnerReferenceTags_Test6():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
-		fn DoPollutionT( tup[ S, T ] &mut t'x, y', i32 &'z mut i ) ' y <- z ';
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution_t[ [ "0b", "1_" ] ];
+		fn DoPollutionT( tup[ S, T ] &mut t, i32 & mut i ) @(pollution_t);
+		var [ [ [char8, 2], 2 ], 1 ] pollution_r[ [ "0a", "1_" ] ];
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution_r);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0;
@@ -160,7 +168,8 @@ def TupleMultipleInnerReferenceTags_Test7():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y, i32 &'z_tag mut z ) : tup[ S, T ]'x_tag, y_tag';
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 & mut x, i32 & mut y, i32 & mut z ) : tup[ S, T ] @(return_inner_references);
 		fn Foo()
 		{
 			var i32 mut a= 0, mut b= 0, mut c= 0;
@@ -176,8 +185,10 @@ def TupleMultipleInnerReferenceTags_Test8():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag';
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references);
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 f= 0;
@@ -198,8 +209,10 @@ def TupleMultipleInnerReferenceTags_Test9():
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
 		struct R{ i32 &imut f; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag';
-		fn DoPollutionR( R& mut r'x', i32 &'y f ) ' x <- y ';
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references);
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollutionR( R& mut r, i32 & f ) @(pollution);
 		fn Foo()
 		{
 			var i32 f= 0;
@@ -213,14 +226,15 @@ def TupleMultipleInnerReferenceTags_Test9():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 16 ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 18 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test10():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag'
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references)
 		{
 			var tup[ S, T ] t[ { .x= x }, { .y= y } ];
 			return t; // Return result inner references in specified in signature order.
@@ -233,39 +247,42 @@ def TupleMultipleInnerReferenceTags_Test11():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		struct T{ i32 &mut y; }
-		fn MakeTup( i32 &'x_tag mut x, i32 &'y_tag mut y ) : tup[ S, T ]'x_tag, y_tag'
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
+		fn MakeTup( i32 & mut x, i32 & mut y ) : tup[ S, T ] @(return_inner_references)
 		{
 			var tup[ S, T ] t[ { .x= y }, { .y= x } ];
 			return t; // Result inner references are in wrong order relative to specified tags in function signature.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test12():
 	c_program_text= """
 		struct S{ i32 & x; }
 		struct T{ i32 & y; }
-		fn Pollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Pollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo( tup[ S, T ] &mut t )
 		{
 			Pollution( t[0], t[1].y ); // Perform pollution of one inner tag by another. This is not allowed.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 8 ) )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 9 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test13():
 	c_program_text= """
 		struct S{ i32 & x; }
 		struct T{ i32 & y; }
-		fn Pollution( T &mut t'a', i32 &'b y ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Pollution( T &mut t, i32 & y ) @(pollution);
 		fn Foo( tup[ S, T ] &mut t )
 		{
 			Pollution( t[1], t[0].x ); // Perform pollution of one inner tag by another. This is not allowed.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 8 ) )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 9 ) )

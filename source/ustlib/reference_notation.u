@@ -1,0 +1,95 @@
+// This file contains definitions of types, that are used for functions reference notation.
+// Also it contains constants and helper functions for common reference notation patterns.
+
+namespace ust
+{
+
+namespace reference_notation
+{
+
+// A pair of chars.
+// First - number of param from '0' up to '9'.
+// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+type param_reference_description= [ char8, 2 ];
+
+// A pair of reference param descriptions. First - destination, second - source.
+type pollution_element= [ param_reference_description, 2 ];
+
+// List of reference pollutions of a function.
+template</ size_type N />
+type pollution_list= [ pollution_element, N ];
+
+// List of returned references.
+template</ size_type N />
+type references_list= [ param_reference_description, N ];
+
+namespace pollution
+{
+
+// Save reference to param #1 into reference tag #0 of of param #0.
+var pollution_list</1s/> constexpr param0_param_1_reference[ [ "0a", "1_" ] ];
+
+// Save inner reference #0 of param #1 into reference tag #0 of param #0.
+var pollution_list</1s/> constexpr param0_param_1_inner_reference[ [ "0a", "1a" ] ];
+
+}
+
+namespace return_references
+{
+
+var references_list</1s/> constexpr param0[ "0_" ];
+var references_list</1s/> constexpr param1[ "1_" ];
+var references_list</1s/> constexpr param2[ "2_" ];
+var references_list</1s/> constexpr param3[ "3_" ];
+
+fn constexpr param_n( u8 n ) : references_list</1s/>
+{
+	var references_list</1s/> result[ [ char8( u32("0"c8) + u32(n) ), "_"c8 ] ];
+	return result;
+}
+
+var references_list</1s/> constexpr param0_inner_reference0[ "0a" ];
+var references_list</1s/> constexpr param1_inner_reference0[ "1a" ];
+var references_list</1s/> constexpr param2_inner_reference0[ "2a" ];
+var references_list</1s/> constexpr param3_inner_reference0[ "3a" ];
+
+fn constexpr param_n_inner_reference_m( u8 n, u8 m ) : references_list</1s/>
+{
+	var references_list</1s/> result[ [ char8( u32("0"c8) + u32(n) ), char8( u32("a"c8) + u32(m) ) ] ];
+	return result;
+}
+
+} // namespace return_reference
+
+namespace return_inner_references
+{
+
+// Inner reference of return value points to param reference #n.
+var tup[ references_list</1s/> ] constexpr param0[ [ "0_" ] ];
+var tup[ references_list</1s/> ] constexpr param1[ [ "1_" ] ];
+var tup[ references_list</1s/> ] constexpr param2[ [ "2_" ] ];
+var tup[ references_list</1s/> ] constexpr param3[ [ "3_" ] ];
+
+fn constexpr param_n( u8 n ) : tup[ references_list</1s/> ]
+{
+	var tup[ references_list</1s/> ] result[ [ [ char8( u32("0"c8) + u32(n) ), "_"c8 ] ] ];
+	return result;
+}
+
+// Inner reference of return value points to param inner reference tag #m of param #n.
+var tup[ references_list</1s/> ] constexpr param0_inner_reference0[ [ "0a" ] ];
+var tup[ references_list</1s/> ] constexpr param1_inner_reference0[ [ "1a" ] ];
+var tup[ references_list</1s/> ] constexpr param2_inner_reference0[ [ "2a" ] ];
+var tup[ references_list</1s/> ] constexpr param3_inner_reference0[ [ "3a" ] ];
+
+fn constexpr param_n_inner_reference_m( u8 n, u8 m ) : tup[ references_list</1s/> ]
+{
+	var tup[ references_list</1s/> ] result[ [ [ char8( u32("0"c8) + u32(n) ), char8( u32("a"c8) + u32(m) ) ] ] ];
+	return result;
+}
+
+} // return_inner_references
+
+} // namespace reference_notation
+
+} // namespace ust

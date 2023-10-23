@@ -145,6 +145,23 @@ CodeBuilder::CodeBuilder(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
 
+	{
+		// A pair of chars.
+		// First - number of param from '0' up to '9'.
+		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+		ArrayType a;
+		a.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+		a.element_count= 2;
+		reference_notation_param_reference_description_type_= std::move(a);
+	}
+	{
+		// A pair of reference param descriptions. First - destination, second - source.
+		ArrayType a;
+		a.element_type= reference_notation_param_reference_description_type_;
+		a.element_count= 2;
+		reference_notation_pollution_element_type_= std::move(a);
+	}
+
 	virtual_function_pointer_type_= llvm::PointerType::get( llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, true ), 0u );
 
 	// Use named struct for polymorph type id table element, because this is recursive struct.
@@ -1087,11 +1104,11 @@ size_t CodeBuilder::PrepareFunction(
 			}
 
 			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-			if( !func.type.return_value_reference_tag.empty() || !func.type.return_value_inner_reference_tags.empty() )
+			if( func.type.return_value_reference_expression != nullptr || func.type.return_value_inner_references_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
 
 			// Disable references pollution for generator. It is too complicated for now.
-			if( !func.type.references_pollution_list.empty() )
+			if( func.type.references_pollution_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for generators." );
 
 			if( function_type.calling_convention != llvm::CallingConv::C )

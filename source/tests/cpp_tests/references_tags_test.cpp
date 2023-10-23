@@ -10,7 +10,8 @@ U_TEST( ReferncesTagsTest_BaseReferencesDefinition0 )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 &'a x, i32 &'b y ) : i32 &'a imut
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( i32 & x, i32 & y ) : i32 & imut @(return_references)
 		{
 			return x;
 		}
@@ -30,7 +31,8 @@ U_TEST( ReferncesTagsTest_BaseReferencesDefinition1 )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 &'a x, i32 &'b y ) : i32 &'a imut
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( i32 & x, i32 & y ) : i32 & imut @(return_references)
 		{
 			return x;
 		}
@@ -49,14 +51,15 @@ U_TEST( ReferncesTagsTest_BaseReferencesDefinition1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
 U_TEST( ReferncesTagsTest_TryReturnUnallowedReference0 )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 &'a x, i32 &'b y ) : i32 &'a imut
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( i32 & x, i32 & y ) : i32 &imut @(return_references)
 		{
 			return y; // returning of "y" does not allowed.
 		}
@@ -68,14 +71,15 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( ReferncesTagsTest_TryReturnUnallowedReference1 )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 & x, i32 &'b y ) : i32 &'b imut    // "x" untagged and can not be returned, because return value tagged
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn Foo( i32 & x, i32 & y ) : i32 &imut @(return_references)
 		{
 			return x;
 		}
@@ -87,7 +91,7 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant0 )
@@ -109,7 +113,8 @@ U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant1 )
 	static const char c_program_text[]=
 	R"(
 		auto constexpr ccc= 5654;
-		fn PositiveVarOrZero( i32 &'a imut x ) : i32 &'a imut
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn PositiveVarOrZero( i32 & imut x ) : i32 &imut @(return_references)
 		{
 			if( x > 0 ) { return x; } // Ok, return global constant
 			return ccc; // Ok, return allowed reference.
@@ -124,7 +129,7 @@ U_TEST( ReferncesTagsTest_UntaggedReturValueMustBeOk )
 	static const char c_program_text[]=
 	R"(
 		auto constexpr ccc= 5654;
-		fn Foo( i32 &'a x, i32 &'b y, i32 & z ) : i32 & // Return value is untagged => can return reference to any argument
+		fn Foo( i32 & x, i32 & y, i32 & z ) : i32 & // Return value is untagged => can return reference to any argument
 		{
 			if( x >= y && x >= z ) { return x; }
 			if( y >= x && y >= z ) { return y; }
@@ -135,53 +140,15 @@ U_TEST( ReferncesTagsTest_UntaggedReturValueMustBeOk )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( NameNotFound_ForReturnReferenceTag_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32 &'F x ) : i32 &'unexistent_tag
-		{
-			return x;
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
-}
-
-U_TEST( NameNotFound_ForReturnReferenceTag_Test1 )
-{
-	static const char c_program_text[]=
-	R"(
-		auto constexpr XXX= 457;
-		fn Foo() : i32 &'unexistent_tag
-		{
-			return XXX;
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
-}
-
-U_TEST( ImplicitThisTag )
+U_TEST( ThisTag )
 {
 	static const char c_program_text[]=
 	R"(
 		struct S
 		{
 			i32 x;
-			fn GetXRef( mut this, i32 &mut other ) : i32 &'this mut // use implicitly defined for "this" argument "this" tag.
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn GetXRef( mut this, i32 &mut other ) : i32 &mut @(return_references)
 			{
 				x= other;
 				return x;

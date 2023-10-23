@@ -42,22 +42,22 @@ public:
 		}
 	}
 
-	fn deref( mut this ) : T &mut
+	fn deref(  mut this ) : T & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( deref_unchecked() );
 	}
 
-	fn deref( imut this ) : T &imut
+	fn deref( imut this ) : T &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( deref_unchecked() );
 	}
 
-	fn deref_unchecked( mut this ) unsafe : T &mut
+	fn deref_unchecked(  mut this ) unsafe : T & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_) );
 	}
 
-	fn deref_unchecked( imut this ) unsafe : T &imut
+	fn deref_unchecked( imut this ) unsafe : T &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_) );
 	}

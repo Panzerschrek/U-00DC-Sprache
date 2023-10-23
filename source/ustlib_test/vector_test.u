@@ -16,11 +16,11 @@ struct C // Default-constructible, non-empty
 
 struct R // Have destructor with side-effects.
 {
-	i32&mut r;
-	fn constructor( this'a', i32&'b mut in_r ) ' a <- b ' ( r= in_r ) {}
+	$(i32) r;
+	fn constructor( this, i32& mut in_r ) ( r= $<(in_r) ) {}
 	fn destructor()
 	{
-		++r;
+		unsafe{  ++ $>(r);  }
 	}
 }
 

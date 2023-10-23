@@ -168,7 +168,8 @@ def DestructorsCall_ForTernaryOperatorBranches_Test0():
 		{
 			i32 x;
 			i32 &mut r;
-			fn constructor( this'f', i32 in_x, i32 &'g mut in_r ) ' f <- g '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "2_" ] ];
+			fn constructor( this, i32 in_x, i32 & mut in_r ) @(pollution)
 			( x(in_x), r(in_r) )
 			{ ++r; }
 
@@ -195,7 +196,8 @@ def DestructorsCall_ForTernaryOperatorResult_Test0():
 			i32 &mut x;
 			fn destructor() { ++x; }
 		}
-		fn GetS( i32 &'a mut x ) : S'a'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32 & mut x ) : S @(return_inner_references)
 		{
 			var S mut s{ .x= x };
 			return move(s);

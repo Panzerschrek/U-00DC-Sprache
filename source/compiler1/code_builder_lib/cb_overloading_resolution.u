@@ -403,7 +403,7 @@ fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args 
 	return move(result);
 }
 
-fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x'
+fn CodeBuilder::GetFunctionWithSameType( FunctionsSet & mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable /> @(ust::reference_notation::return_inner_references::param0)
 {
 	foreach( &mut function : functions_set.functions )
 	{

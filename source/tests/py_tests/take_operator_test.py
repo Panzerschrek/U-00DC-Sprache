@@ -267,7 +267,8 @@ def InnereReferenceTransferedInTakeOperator_Test0():
 
 			auto constexpr default_value= 0;
 			fn constructor()( r= default_value ) {}
-			fn constructor( this'tag0', i32 &'tag1 in_r ) ' tag0 <- tag1 ' ( r= in_r ) {}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & in_r ) @(pollution) ( r= in_r ) {}
 		}
 		fn Foo()
 		{
@@ -283,4 +284,4 @@ def InnereReferenceTransferedInTakeOperator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 18 )
+	assert( errors_list[0].src_loc.line == 19 )

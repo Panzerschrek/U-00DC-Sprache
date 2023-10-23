@@ -1,19 +1,12 @@
 from py_tests_common import *
 
 
-def ReferenceTagForTypeWithoutReferencesInside_Test0():
-	c_program_text= """
-		struct S{}
-		fn Foo( S& s'x' ){}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def ReferenceTagForTypeWithoutReferencesInside_UsedAsReturnReferenceTag_Test1():
 	c_program_text= """
 		struct S{}
 		auto constexpr global_constant= 42;
-		fn Extract( S& s'a' ) : i32 &'a // tag for struct with zero inner tags
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Extract( S& s ) : i32 & @(return_references) // tag for struct with zero inner tags
 		{
 			return global_constant;
 		}
@@ -29,7 +22,8 @@ def ReferenceTagForTypeWithoutReferencesInside_UsedAsReturnReferenceTag_Test1():
 def ReferenceTagForTypeWithoutReferencesInside_ForReturnValue_Test1():
 	c_program_text= """
 		struct S {}
-		fn Bar( i32&'a x ) : S'a' //  tag for struct with zero inner tags
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn Bar( i32& x ) : S @(return_inner_references) //  tag for struct with zero inner tags
 		{
 			return S();
 		}
@@ -47,7 +41,8 @@ def ReferenceTagForTypeWithoutReferencesInside_ForThis_Test1():
 		struct S
 		{
 			i32 x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- b ' // Pollution does not works here, because 'a' expands to zero reference tags.
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& in_x ) @(pollution) // Pollution does not works here, because 'a' expands to zero reference tags.
 			( x(in_x) ) {}
 		}
 
@@ -64,7 +59,8 @@ def ReferenceTagForTypeWithoutReferencesInside_ForThis_Test1():
 def ReferenceTagForTypeWithoutReferencesInside_InPollution_Test1():
 	c_program_text= """
 		struct S{}
-		fn Bar( S &mut s'a', i32&'b x ) ' a <- b' {}   // Actual pollution not happens, because "S" have no references inside.
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Bar( S &mut s, i32& x ) @(pollution) {}   // Actual pollution not happens, because "S" have no references inside.
 
 		fn Foo()
 		{
@@ -82,7 +78,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test0():
 		template</ type T />
 		class Vec
 		{
-			fn push_back( mut this'x', T el'y' ) ' x <- y ' {}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn push_back( mut this, T el ) @(pollution) {}
 			[ T, 0u ] container_marker;
 		}
 
@@ -107,8 +104,10 @@ def VariativeReferenceTagsCount_InTemplateClass_Test1():
 		template</ type T />
 		class Vec
 		{
-			fn push_back( mut this'x', T el'y' ) ' x <- y '{}
-			fn get_val( this'x' ) : T'x' { return T(0); }
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn push_back( mut this, T el ) @(pollution) {}
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+			fn get_val( this ) : T @(return_inner_references) { return T(0); }
 			[ T, 0u ] container_marker;
 		}
 
@@ -131,7 +130,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test2():
 		template</ type T />
 		class Vec
 		{
-			fn push_back( mut this'x', T el'y' ) ' x <- y ' {}
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn push_back( mut this, T el ) @(pollution) {}
 			[ T, 0u ] container_marker;
 		}
 
@@ -151,7 +151,7 @@ def VariativeReferenceTagsCount_InTemplateClass_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 19 )
+	assert( errors_list[0].src_loc.line == 20 )
 
 
 def VariativeReferenceTagsCount_InTemplateClass_Test3():
@@ -160,7 +160,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test3():
 		struct Box
 		{
 			T boxed;
-			fn Get( this'x' ) : T'x' { return boxed; }
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+			fn Get( this ) : T @(return_inner_references) { return boxed; }
 		}
 
 		struct S{ i32& r; }
@@ -183,7 +184,8 @@ def VariativeReferenceTagsCount_InTemplateClass_Test4():
 		struct Box
 		{
 			T boxed;
-			fn Get( this'x' ) : T'x' { return boxed; }
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+			fn Get( this ) : T @(return_inner_references) { return boxed; }
 		}
 
 		struct S{ i32& r; }
@@ -204,13 +206,13 @@ def VariativeReferenceTagsCount_InTemplateClass_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 21 )
+	assert( errors_list[0].src_loc.line == 22 )
 
 
 def ReferenceTagsForTemplateDependentType_Test0():
 	c_program_text= """
 		template</ type T />
-		fn Foo( T t'a' ){} // Inner references tag for template-dependent arg type.
+		fn Foo( T t ){} // Inner references tag for template-dependent arg type.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -218,7 +220,8 @@ def ReferenceTagsForTemplateDependentType_Test0():
 def ReferenceTagsForTemplateDependentType_Test1():
 	c_program_text= """
 		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
 		template</ type T />
-		fn Foo( S s'a' ) : T'a' { return T(); }  // Inner references tag for template-dependent return type.
+		fn Foo( S s ) : T @(return_inner_references) { return T(); }  // Inner references tag for template-dependent return type.
 	"""
 	tests_lib.build_program( c_program_text )

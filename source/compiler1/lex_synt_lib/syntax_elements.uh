@@ -307,8 +307,6 @@ struct GeneratorType
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
 	ust::box_nullable</InnerReferenceTag/> inner_reference_tag;
-	ust::string8 return_value_reference_tag;
-	ust::vector</ust::string8/> return_value_inner_reference_tags;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 }
@@ -323,24 +321,16 @@ struct FunctionType
 		TypeName t;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-		ust::string8 reference_tag;
-		ust::vector</ust::string8/> inner_reference_tags;
 		ust::string8 name;
 	}
 	ust::vector</Param/> params;
 
-	struct ReferencePollution
-	{
-		ust::string8 dst;
-		ust::string8 src;
-	}
-	ust::vector</ReferencePollution/> references_pollution;
-
 	ust::optional</TypeName/> return_type; // Empty means "void"
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
-	ust::vector</ust::string8/> return_value_inner_reference_tags;
-	ust::string8 return_value_reference_tag; // Tag of returning reference or inner tag of returning value
+	ust::box_nullable</Expression/> references_pollution_expression;
+	ust::box_nullable</Expression/> return_value_reference_expression;
+	ust::box_nullable</Expression/> return_value_inner_references_expression;
 	ust::optional</ust::string8/> calling_convention;
 	bool is_unsafe= false;
 }

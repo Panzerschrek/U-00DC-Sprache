@@ -105,6 +105,27 @@ fn CodeBuilder::constructor(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
 
+	{
+		// A pair of chars.
+		// First - number of param from '0' up to '9'.
+		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+		var ArrayType mut a
+		{
+			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
+			.element_count(2),
+		};
+		reference_notation_param_reference_description_type_= move(a);
+	}
+	{
+		// A pair of reference param descriptions. First - destination, second - source.
+		var ArrayType mut a
+		{
+			.element_type= reference_notation_param_reference_description_type_,
+			.element_count(2),
+		};
+		reference_notation_pollution_element_type_= move(a);
+	}
+
 	virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u ));
 
 	unsafe
@@ -506,12 +527,12 @@ fn CodeBuilder::PrepareFunction(
 			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
 		}
 		// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-		if( !function_declaration.function_type.return_value_reference_tag.empty() || !function_declaration.function_type.return_value_inner_reference_tags.empty() )
+		if( !function_declaration.function_type.return_value_reference_expression.empty() || !function_declaration.function_type.return_value_inner_references_expression.empty() )
 		{
 			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "Explicit return tags for generators." )
 		}
 		// Disable references pollution for generator. It is too complicated for now.
-		if( !function_declaration.function_type.references_pollution.empty() )
+		if( !function_declaration.function_type.references_pollution_expression.empty() )
 		{
 			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "References pollution for generators." )
 		}
@@ -625,7 +646,7 @@ fn CodeBuilder::PrepareFunction(
 		if( ( is_constructor && IsCopyConstructor( function_variable, class_type_non_null ) ) ||
 			( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) ) )
 		{
-			if( !function_declaration.function_type.references_pollution.empty() )
+			if( !function_declaration.function_type.references_pollution_expression.empty() )
 			{
 				if( is_constructor )
 				{
@@ -638,6 +659,8 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.references_pollution.clear();
 			}
 
+			// TODO - fix this.
+			// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
 			var FunctionType::ReferencePollution mut pollution
 			{
 				.dst{ .param_index= 0u8, .reference_index= 0u8 },
@@ -648,7 +671,7 @@ fn CodeBuilder::PrepareFunction(
 
 		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
 			IsEqualityCompareOperator( function_variable, class_type_non_null ) &&
-			!function_declaration.function_type.references_pollution.empty() )
+			!function_declaration.function_type.references_pollution_expression.empty() )
 		{
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, names_scope_ptr, function_declaration.src_loc )
 			function_variable.t.references_pollution.clear();
@@ -656,9 +679,9 @@ fn CodeBuilder::PrepareFunction(
 
 		if( is_constructor )
 		{
-			foreach( &in_pollution : function_declaration.function_type.references_pollution )
+			foreach( &pollution : function_variable.t.references_pollution )
 			{
-				if( in_pollution.src == KeywordToString( Keyword::this_ ) )
+				if( pollution.src.param_index == 0u8 && pollution.src.reference_index == FunctionType::c_param_reference_number )
 				{
 					REPORT_ERROR( ConstructorThisReferencePollution, names_scope_ptr, function_declaration.src_loc )
 				}

@@ -38,7 +38,8 @@ def MoveOperatorTest0():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 			fn destructor()
 			{
@@ -65,7 +66,8 @@ def MoveOperatorTest1():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 		}
 
@@ -90,7 +92,8 @@ def MoveOperatorTest2():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 		}
 
@@ -110,7 +113,8 @@ def MoveOperatorTest3():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_r ) @(pollution)
 			( r= in_r ){}
 		}
 
@@ -125,7 +129,7 @@ def MoveOperatorTest3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 14 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def MoveInsideIf_Test0():

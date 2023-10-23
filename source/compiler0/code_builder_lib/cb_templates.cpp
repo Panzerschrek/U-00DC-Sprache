@@ -371,16 +371,6 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
-	if( !generator_type_name.return_value_reference_tag.empty() )
-	{
-		bool found= false;
-		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == generator_type_name.return_value_reference_tag )
-			found= true;
-
-		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, generator_type_name.return_value_reference_tag );
-	}
-
 	return coroutine_param;
 }
 

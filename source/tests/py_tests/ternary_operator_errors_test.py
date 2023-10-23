@@ -201,7 +201,8 @@ def VariablesStateMerge_ForTernaryOperator_Test1():
 def VariablesStateMerge_ForTernaryOperator_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn FakePollution( S &mut s'a', i32&'b i ) ' a <- b ' : i32 { return i; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn FakePollution( S &mut s, i32& i ) @(pollution) : i32 { return i; }
 		fn Foo( bool b )
 		{
 			var i32 mut x= 7, mut y= 5, t= 0;
@@ -213,13 +214,14 @@ def VariablesStateMerge_ForTernaryOperator_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn FakePollution( S &mut s'a', i32&'b i ) ' a <- b ' : i32 { return i; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn FakePollution( S &mut s, i32& i ) @(pollution) : i32 { return i; }
 		fn Foo( bool b )
 		{
 			var i32 mut x= 7, mut y= 5, t= 0;
@@ -231,13 +233,14 @@ def VariablesStateMerge_ForTernaryOperator_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test4():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn FakePollution( S &mut s'a', i32&'b mut i ) ' a <- b ' : i32 { return 0; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn FakePollution( S &mut s, i32& mut i ) @(pollution) : i32 { return 0; }
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0, mut t= 0, mut u= 0;
@@ -254,7 +257,8 @@ def TernaryOperator_SavesInnerReferences_Test0():
 		{
 			i32 &mut x;
 		}
-		fn GetS( i32 &'a mut x ) : S'a'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32 & mut x ) : S @(return_inner_references)
 		{
 			var S mut s{ .x= x };
 			return move(s);
@@ -270,6 +274,6 @@ def TernaryOperator_SavesInnerReferences_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 15 )
+	assert( errors_list[0].src_loc.line == 16 )
 	assert( errors_list[1].error_code == "ReferenceProtectionError" )
-	assert( errors_list[1].src_loc.line == 16 )
+	assert( errors_list[1].src_loc.line == 17 )

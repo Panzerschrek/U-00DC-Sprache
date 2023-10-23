@@ -1168,33 +1168,12 @@ private:
 	void CheckClassFieldsInitializers( ClassPtr class_type );
 
 	// Reference-checking.
-	void ProcessFunctionParamReferencesTags(
-		const Synt::FunctionType& func,
-		FunctionType& function_type,
-		const Synt::FunctionParam& in_arg,
-		const FunctionType::Param& out_arg,
-		size_t arg_number );
-
-	void ProcessFunctionReturnValueReferenceTags(
-		CodeBuilderErrorsContainer& errors_container,
-		const Synt::FunctionType& func,
-		const FunctionType& function_type );
-
-	void TryGenerateFunctionReturnReferencesMapping(
-		CodeBuilderErrorsContainer& errors_container,
-		const Synt::FunctionType& func,
-		FunctionType& function_type );
 
 	void ProcessFunctionReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::Function& func,
 		FunctionType& function_type,
 		ClassPtr base_class );
-
-	void ProcessFunctionTypeReferencesPollution(
-		CodeBuilderErrorsContainer& errors_container,
-		const Synt::FunctionType& func,
-		FunctionType& function_type );
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
@@ -1221,6 +1200,10 @@ private:
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
+	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression );
+	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression );
+	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression );
+	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
 	// Coroutines
 
@@ -1388,6 +1371,8 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	Type reference_notation_param_reference_description_type_;
+	Type reference_notation_pollution_element_type_;
 	llvm::PointerType* virtual_function_pointer_type_= nullptr; // Use common type for all function pointers in virtual table - for simplicity.
 	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 

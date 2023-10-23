@@ -124,7 +124,8 @@ def CouldNotConvertFunctionPointer_Test10():
 
 def CouldNotConvertFunctionPointer_Test11():
 	c_program_text= """
-		type RetOnyFirstType= fn( i32&'x a, i32&'y b ) : i32&'x;
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		type RetOnyFirstType= fn( i32& a, i32& b ) : i32& @(return_references);
 
 		fn RetBoth( i32& a, i32& b ) : i32&
 		{
@@ -137,19 +138,20 @@ def CouldNotConvertFunctionPointer_Test11():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def CouldNotConvertFunctionPointer_Test12():
 	c_program_text= """
 		struct S{ i32& r; }
-		fn DoPolltion( S &mut s'a', i32&'b r ) ' a <- b ' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPolltion( S &mut s, i32& r ) @(pollution) {}
 		fn Foo(){  var ( fn( S &mut s, i32& r ) ) ptr= DoPolltion;  }   // Destination have less references pollution, than source function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].src_loc.line == 4 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CouldNotSelectFunctionForPointer_Test0():

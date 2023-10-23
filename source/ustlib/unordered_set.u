@@ -56,7 +56,7 @@ public:
 		impl_.clear();
 	}
 
-	fn range( this ) : unordered_set_range'this'
+	fn range( this ) : unordered_set_range @( reference_notation::return_inner_references::param0 )
 	{
 		return unordered_set_range( impl_.range() );
 	}
@@ -65,7 +65,7 @@ public:
 	class unordered_set_range
 	{
 	public:
-		fn constructor( mut this'x', Impl::unordered_map_range</false/> mut impl'y' ) ' x <- y '
+		fn constructor( mut this, Impl::unordered_map_range</false/> mut impl ) @( reference_notation::pollution::param0_param_1_inner_reference )
 			( impl_( move(impl) ) )
 		{}
 
@@ -89,12 +89,12 @@ public:
 			unsafe{  return impl_.drop_front_unchecked();  }
 		}
 
-		fn front( this'x' ) : T &'x
+		fn front( this ) : T & @( reference_notation::return_references::param0_inner_reference0 )
 		{
 			return impl_.front().key();
 		}
 
-		fn front_unchecked( this'x' ) unsafe : T &'x
+		fn front_unchecked( this ) unsafe : T & @( reference_notation::return_references::param0_inner_reference0 )
 		{
 			unsafe{  return impl_.front_unchecked().key();  }
 		}

@@ -1,5 +1,6 @@
 import "alloc.u"
 import "container_utils.u"
+import "reference_notation.u"
 
 namespace ust
 {
@@ -108,18 +109,18 @@ public:
 
 	// Deref operations.
 
-	fn enable_if(is_nullable) try_deref( this ) : T &imut
+	fn enable_if(is_nullable) try_deref( this ) : T &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( deref_unchecked() );
 	}
 
-	fn enable_if(!is_nullable) deref( this ) : T &imut
+	fn enable_if(!is_nullable) deref( this ) : T &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( deref_unchecked() );
 	}
 
-	fn deref_unchecked( this ) unsafe : T &imut
+	fn deref_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_).value );
 	}
