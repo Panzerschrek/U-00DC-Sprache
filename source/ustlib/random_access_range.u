@@ -1,8 +1,8 @@
 import "aligned_storage.u"
 import "container_utils.u"
-import "function_reference_notation.u"
 import "helpers.u"
 import "memory.u"
+import "reference_notation.u"
 
 namespace ust
 {
@@ -28,7 +28,7 @@ public:
 
 	template</ size_type size />
 	fn enable_if( is_mutable )
-	conversion_constructor( mut this, [ T, size ] & mut arr ) @( reference_notation::pollution::this_param_1_reference )
+	conversion_constructor( mut this, [ T, size ] & mut arr ) @( reference_notation::pollution::param0_param_1_reference )
 		( size_(size) )
 	{
 		unsafe{  begin_= $<( cast_ref_unsafe</T/>(arr) );  }
@@ -36,14 +36,14 @@ public:
 
 	template</ size_type size />
 	fn enable_if( !is_mutable )
-	conversion_constructor( mut this, [ T, size ] &imut arr ) @( reference_notation::pollution::this_param_1_reference )
+	conversion_constructor( mut this, [ T, size ] &imut arr ) @( reference_notation::pollution::param0_param_1_reference )
 		( size_(size) )
 	{
 		unsafe{  begin_= $<( cast_mut( cast_ref_unsafe</T/>(arr) ) );  }
 	}
 
 	fn enable_if( !is_mutable )
-	conversion_constructor( mut this, random_access_range</ T, true />& src_range ) @( reference_notation::pollution::this_param_1_inner_reference )
+	conversion_constructor( mut this, random_access_range</ T, true />& src_range ) @( reference_notation::pollution::param0_param_1_inner_reference )
 	{
 		unsafe
 		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.
@@ -58,7 +58,7 @@ public:
 	{}
 
 	op enable_if( is_mutable )
-	[]( this, size_type index ) : T & mut @( reference_notation::return_references::this_param_inner_reference )
+	[]( this, size_type index ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if( empty() );
 		return unsafe( index_unchecked(index) );
@@ -66,67 +66,67 @@ public:
 
 	op
 	enable_if( !is_mutable )
-	[]( this, size_type index ) : T & imut @( reference_notation::return_references::this_param_inner_reference )
+	[]( this, size_type index ) : T & imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if( empty() );
 		return unsafe( index_unchecked(index) );
 	}
 
-	fn enable_if(  is_mutable ) index_unchecked( this, size_type index ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if(  is_mutable ) index_unchecked( this, size_type index ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		return unsafe( $>(begin_ + index) );
 	}
 
-	fn enable_if( !is_mutable ) index_unchecked( this, size_type index ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if( !is_mutable ) index_unchecked( this, size_type index ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		return unsafe( $>(begin_ + index) );
 	}
 
-	fn enable_if(  is_mutable ) front( this ) : T &  mut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if(  is_mutable ) front( this ) : T &  mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn enable_if( !is_mutable ) front( this ) : T & imut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if( !is_mutable ) front( this ) : T & imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn enable_if(  is_mutable ) back ( this ) : T & mut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if(  is_mutable ) back ( this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked () );
 	}
 
-	fn enable_if( !is_mutable ) back ( this ) : T &imut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if( !is_mutable ) back ( this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked () );
 	}
 
-	fn enable_if(  is_mutable ) front_unchecked( this ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if(  is_mutable ) front_unchecked( this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		return unsafe( $>(begin_) );
 	}
 
-	fn enable_if( !is_mutable ) front_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if( !is_mutable ) front_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		return unsafe( $>(begin_) );
 	}
 
-	fn enable_if(  is_mutable ) back_unchecked ( this ) unsafe : T & mut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if(  is_mutable ) back_unchecked ( this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		return unsafe( $>(begin_ + size_ - 1s) );
 	}
 
-	fn enable_if( !is_mutable ) back_unchecked ( this ) unsafe : T &imut @( reference_notation::return_references::this_param_inner_reference )
+	fn enable_if( !is_mutable ) back_unchecked ( this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		return unsafe( $>(begin_ + size_ - 1s) );
 	}
 
-	fn subrange( this, size_type start_index, size_type end_index ) : this_type @( reference_notation::return_inner_references::this_param_inner_reference )
+	fn subrange( this, size_type start_index, size_type end_index ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
 	{
 		halt if( start_index > end_index );
 		halt if( end_index > size_ );
@@ -189,7 +189,7 @@ public:
 		--size_;
 	}
 
-	fn range( this ) : this_type @( reference_notation::return_inner_references::this_param_inner_reference )
+	fn range( this ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
 	{
 		return this;
 	}

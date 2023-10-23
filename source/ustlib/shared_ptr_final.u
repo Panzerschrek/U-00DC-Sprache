@@ -1,6 +1,6 @@
 import "alloc.u"
 import "container_utils.u"
-import "function_reference_notation.u"
+import "reference_notation.u"
 
 namespace ust
 {

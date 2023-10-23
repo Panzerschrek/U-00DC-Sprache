@@ -308,15 +308,15 @@ public:
 	{
 		class element_imut
 		{
-			fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::this_param_1_reference ) unsafe
+			fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::param0_param_1_reference ) unsafe
 			( table_value_(table_value) ) {}
 
-			fn key( this ) : key_type & @( reference_notation::return_references::this_param_inner_reference )
+			fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
 			{
 				return table_value_.key_storage;
 			}
 
-			fn value( this ) : value_type &imut @( reference_notation::return_references::this_param_inner_reference )
+			fn value( this ) : value_type &imut @( reference_notation::return_references::param0_inner_reference0 )
 			{
 				return table_value_.value_storage;
 			}
@@ -327,15 +327,15 @@ public:
 
 		class element_mut
 		{
-			fn constructor( mut this, TableValue & mut table_value ) @( reference_notation::pollution::this_param_1_reference ) unsafe
+			fn constructor( mut this, TableValue & mut table_value ) @( reference_notation::pollution::param0_param_1_reference ) unsafe
 			( table_value_(table_value) ) {}
 
-			fn key( this ) : key_type & @( reference_notation::return_references::this_param_inner_reference )
+			fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
 			{
 				return table_value_.key_storage;
 			}
 
-			fn value( this ) : value_type & mut @( reference_notation::return_references::this_param_inner_reference )
+			fn value( this ) : value_type & mut @( reference_notation::return_references::param0_inner_reference0 )
 			{
 				return table_value_.value_storage;
 			}
@@ -378,27 +378,27 @@ public:
 		}
 
 		fn enable_if( is_mutable )
-		front( this ) : element_mut @( reference_notation::return_inner_references::this_param_inner_reference )
+		front( this ) : element_mut @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
 			halt if(empty());
 			return unsafe( front_unchecked() );
 		}
 
 		fn enable_if( !is_mutable )
-		front( this ) : element_imut @( reference_notation::return_inner_references::this_param_inner_reference )
+		front( this ) : element_imut @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
 			halt if(empty());
 			return unsafe( front_unchecked() );
 		}
 
 		fn enable_if( is_mutable )
-		front_unchecked( this ) unsafe : element_mut @( reference_notation::return_inner_references::this_param_inner_reference )
+		front_unchecked( this ) unsafe : element_mut @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
 			return unsafe( element_mut( $>(table_) ) );
 		}
 
 		fn enable_if( !is_mutable )
-		front_unchecked( this ) unsafe : element_imut @( reference_notation::return_inner_references::this_param_inner_reference )
+		front_unchecked( this ) unsafe : element_imut @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
 			return unsafe( element_imut( $>(table_) ) );
 		}

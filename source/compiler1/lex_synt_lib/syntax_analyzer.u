@@ -312,7 +312,7 @@ private:
 
 private:
 	auto inner_tags= "a";
-	var ust::reference_notation::reference_pollution</1s/> constructor_pollution[ [ "0a", "1_" ] ];
+	auto constructor_pollution= ust::reference_notation::pollution::param0_param_1_reference;
 
 	static_assert( typeinfo</ SyntaxAnalyzer />.references_tags_count == 1s );
 

@@ -1,7 +1,7 @@
 import "alloc.u"
 import "atomic.u"
-import "function_reference_notation.u"
 import "container_utils.u"
+import "reference_notation.u"
 
 namespace ust
 {
