@@ -527,7 +527,7 @@ fn CodeBuilder::PrepareFunction(
 			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
 		}
 		// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-		if( !function_declaration.function_type.return_value_reference_tag.empty() || !function_declaration.function_type.return_value_inner_reference_tags.empty() )
+		if( !function_declaration.function_type.return_value_reference_expression.empty() || !function_declaration.function_type.return_value_inner_references_expression.empty() )
 		{
 			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "Explicit return tags for generators." )
 		}

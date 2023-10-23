@@ -145,7 +145,35 @@ fn CodeBuilder::EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
-	return move(result);
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( array_type.element_type != reference_notation_param_reference_description_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_pollution_element_type_, variable.t )
+			return result;
+		}
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+			return result;
+		}
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ), names_scope, src_loc ) )
+			{
+				result.push_back( param_reference );
+			}
+		}
+
+		ust::sort( result.range() );
+		return result;
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_pollution_element_type_.ToString(), variable.t )
+		return result;
+	}
 }
 
 fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</ FunctionType::ParamReferences />
@@ -155,7 +183,44 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& 
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
-	return result;
+	if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		result.resize( tuple_type.element_types.size() );
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var Type& tuple_element_type= tuple_type.element_types[i];
+			if_var( &array_type : tuple_element_type.GetArrayType() )
+			{
+				if( array_type.element_type != reference_notation_param_reference_description_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_param_reference_description_type_, array_type.element_type )
+					continue;
+				}
+
+				auto tag_constant= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) );
+				for( auto mut j= 0u64; j < array_type.element_count; ++j )
+				{
+					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(i) ) ), names_scope, src_loc ) )
+					{
+						result[i].push_back( param_reference );
+					}
+				}
+				ust::sort( result[i].range() );
+			}
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), tuple_element_type )
+				continue;
+			}
+		}
+
+		return result;
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "tuple of " + reference_notation_pollution_element_type_.ToString() + " arrays", variable.t )
+		return result;
+	}
 }
 
 fn ParseEvaluatedParamReference( LLVMValueRef constant, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />

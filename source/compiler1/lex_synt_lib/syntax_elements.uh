@@ -332,11 +332,9 @@ struct FunctionType
 	ust::optional</TypeName/> return_type; // Empty means "void"
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
-	ust::vector</ust::string8/> return_value_inner_reference_tags;
-	ust::string8 return_value_reference_tag; // Tag of returning reference or inner tag of returning value
-	ust::box_nullable</Expression/> references_pollution_expression; // May be nullptr.
-	ust::box_nullable</Expression/> return_value_reference_expression; // May be nullptr.
-	ust::box_nullable</Expression/> return_value_inner_references_expression; // May be nullptr.
+	ust::box_nullable</Expression/> references_pollution_expression;
+	ust::box_nullable</Expression/> return_value_reference_expression;
+	ust::box_nullable</Expression/> return_value_inner_references_expression;
 	ust::optional</ust::string8/> calling_convention;
 	bool is_unsafe= false;
 }

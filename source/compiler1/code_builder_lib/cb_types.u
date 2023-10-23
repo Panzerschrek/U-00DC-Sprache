@@ -285,33 +285,21 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		res.params.push_back( move(out_param) );
 	}
 
-	// Setup return references mapping.
-	if( !function_type.return_value_reference_tag.empty() )
+	if_var( &references_pollution_expression : function_type.references_pollution_expression )
 	{
-		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
-		{
-			auto& param= function_type.params[param_n];
-			if( function_type.return_value_reference_tag == param.reference_tag )
-			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
-				res.return_references.push_back( move(param_reference) );
-			}
-			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
-			{
-				if( function_type.return_value_reference_tag == param.inner_reference_tags[tag_n] )
-				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
-					res.return_references.push_back( move(param_reference) );
-				}
-			}
-		}
-
-		if( res.return_references.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, function_type.return_value_reference_tag )
-		}
+		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, references_pollution_expression );
 	}
-	else if( res.return_value_type != ValueType::Value ) // Auto-generate return reference mapping if return tag is empty, but only for returning references and not for returning values.
+	if_var( &return_value_reference_expression : function_type.return_value_reference_expression )
+	{
+		res.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression );
+	}
+	if_var( &return_value_inner_references_expression : function_type.return_value_inner_references_expression )
+	{
+		res.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression );
+	}
+
+	// Auto-generate return reference mapping if return tag is empty, but only for returning references and not for returning values.
+	if( function_type.return_value_reference_expression.empty() && res.return_value_type != ValueType::Value )
 	{
 		// If there is no tag for return reference, assume, that it may refer to any reference param, but not inner reference of any param.
 		for( auto mut i= 0s; i < res.params.size(); ++i )
@@ -323,41 +311,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				res.return_references.push_back( move(param_reference) );
 			}
 		}
-	}
-
-	res.return_inner_references.resize( function_type.return_value_inner_reference_tags.size() );
-	for( auto mut return_inner_tag_n= 0s; return_inner_tag_n < function_type.return_value_inner_reference_tags.size(); ++return_inner_tag_n )
-	{
-		var ust::string8& return_inner_tag= function_type.return_value_inner_reference_tags[return_inner_tag_n];
-		auto &mut out_return_references= res.return_inner_references[return_inner_tag_n];
-
-		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
-		{
-			auto& param= function_type.params[param_n];
-			if( return_inner_tag == param.reference_tag )
-			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
-				out_return_references.push_back( move(param_reference) );
-			}
-			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
-			{
-				if( return_inner_tag == param.inner_reference_tags[tag_n] )
-				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
-					out_return_references.push_back( move(param_reference) );
-				}
-			}
-		}
-
-		if( out_return_references.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, return_inner_tag )
-		}
-	}
-
-	if_var( &references_pollution_expression : function_type.references_pollution_expression )
-	{
-		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, references_pollution_expression );
+		ust::sort( res.return_references.range() );
 	}
 
 	return move(res);
