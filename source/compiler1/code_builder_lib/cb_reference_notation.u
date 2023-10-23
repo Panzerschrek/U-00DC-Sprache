@@ -200,7 +200,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& 
 				auto tag_constant= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) );
 				for( auto mut j= 0u64; j < array_type.element_count; ++j )
 				{
-					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(i) ) ), names_scope, src_loc ) )
+					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(j) ) ), names_scope, src_loc ) )
 					{
 						result[i].push_back( param_reference );
 					}

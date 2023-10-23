@@ -184,7 +184,7 @@ std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctio
 		const auto array_type= tuple_type->element_types[i].GetArrayType();
 		if( array_type == nullptr )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), variable->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), tuple_type->element_types[i] );
 			continue;
 		}
 		if( array_type->element_type != reference_notation_param_reference_description_type_ )

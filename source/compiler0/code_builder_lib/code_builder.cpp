@@ -146,7 +146,7 @@ CodeBuilder::CodeBuilder(
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
 
 	{
-		// A piar of chars.
+		// A pair of chars.
 		// First - number of param from '0' up to '9'.
 		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
 		ArrayType a;
