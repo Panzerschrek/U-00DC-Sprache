@@ -106,48 +106,48 @@ public:
 
 	// Access ok value.
 
-	fn try_deref(  mut this ) : OkT & mut
+	fn try_deref(  mut this ) : OkT & mut @( reference_notation::return_references::param0 )
 	{
 		halt if(!is_ok());
 		return unsafe( deref_unchecked() );
 	}
 
-	fn try_deref( imut this ) : OkT &imut
+	fn try_deref( imut this ) : OkT &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(!is_ok());
 		return unsafe( deref_unchecked() );
 	}
 
-	fn deref_unchecked(  mut this ) unsafe : OkT & mut
+	fn deref_unchecked(  mut this ) unsafe : OkT & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( cast_ref_unsafe</OkT/>( storage_ ) );
 	}
 
-	fn deref_unchecked( imut this ) unsafe : OkT &imut
+	fn deref_unchecked( imut this ) unsafe : OkT &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( cast_ref_unsafe</OkT/>( storage_ ) );
 	}
 
 	// Access error value.
 
-	fn try_deref_error(  mut this ) : ErrorT & mut
+	fn try_deref_error(  mut this ) : ErrorT & mut @( reference_notation::return_references::param0 )
 	{
 		halt if(!is_error());
 		return unsafe( deref_error_unchecked() );
 	}
 
-	fn try_deref_error( imut this ) : ErrorT &imut
+	fn try_deref_error( imut this ) : ErrorT &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(!is_error());
 		return unsafe( deref_error_unchecked() );
 	}
 
-	fn deref_error_unchecked(  mut this ) unsafe : ErrorT & mut
+	fn deref_error_unchecked(  mut this ) unsafe : ErrorT & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( cast_ref_unsafe</ErrorT/>( storage_ ) );
 	}
 
-	fn deref_error_unchecked( imut this ) unsafe : ErrorT &imut
+	fn deref_error_unchecked( imut this ) unsafe : ErrorT &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( cast_ref_unsafe</ErrorT/>( storage_ ) );
 	}
