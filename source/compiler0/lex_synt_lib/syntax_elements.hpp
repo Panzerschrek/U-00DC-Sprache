@@ -504,8 +504,8 @@ struct FunctionType
 	std::vector<FunctionParam> params;
 	std::optional<std::string> calling_convention;
 	std::unique_ptr<const TypeName> return_type;
-	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
 	std::unique_ptr<const Expression> references_pollution_expression; // May be nullptr.
+	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
 	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
 
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
