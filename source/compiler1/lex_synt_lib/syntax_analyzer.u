@@ -97,7 +97,6 @@ fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 
 class SyntaxAnalyzer
 {
-	var ust::reference_notation::reference_pollution</3s/> constructor_pollution[ [ "0a", "1_" ], [ "0b", "1_" ], [ "0c", "1_" ] ];
 public:
 	fn constructor(
 		this,
@@ -312,9 +311,15 @@ private:
 	fn PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text );
 
 private:
-	ust::array_view_imut</Lexem/> @("a") imut it_initial_;
-	ust::array_view_imut</Lexem/> @("a") it_;
-	ust::array_view_imut</Lexem/> @("a") last_error_it_;
+	auto inner_tags= "a";
+	var ust::reference_notation::reference_pollution</1s/> constructor_pollution[ [ "0a", "1_" ] ];
+
+	static_assert( typeinfo</ SyntaxAnalyzer />.references_tags_count == 1s );
+
+private:
+	ust::array_view_imut</Lexem/> @(inner_tags) imut it_initial_;
+	ust::array_view_imut</Lexem/> @(inner_tags) it_;
+	ust::array_view_imut</Lexem/> @(inner_tags) last_error_it_;
 	size_type last_error_repeats_= 0s;
 	LexSyntErrors errors_;
 
