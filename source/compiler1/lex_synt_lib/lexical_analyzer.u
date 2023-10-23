@@ -464,7 +464,7 @@ fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 
 var tup[
 	[ tup[ [ char8, 3 ], Lexem::Type ],  4 ],
-	[ tup[ [ char8, 2 ], Lexem::Type ], 27 ],
+	[ tup[ [ char8, 2 ], Lexem::Type ], 26 ],
 	[ tup[ [ char8, 1 ], Lexem::Type ], 27 ] ]
 c_fixed_lexems_table
 [
@@ -498,7 +498,6 @@ c_fixed_lexems_table
 		[ "^=", Lexem::Type::AssignXor ],
 		[ "<<", Lexem::Type::ShiftLeft  ],
 		[ ">>", Lexem::Type::ShiftRight ],
-		[ "<-", Lexem::Type::LeftArrow  ],
 		[ "->", Lexem::Type::RightArrow ],
 		[ "$<", Lexem::Type::ReferenceToPointer ],
 		[ "$>", Lexem::Type::PointerToReference ],
