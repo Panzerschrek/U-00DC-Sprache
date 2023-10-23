@@ -949,6 +949,13 @@ void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostr
 
 void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
+	if( function_type.references_pollution_expression != nullptr )
+	{
+		stream << " @( ";
+		ElementWrite( *function_type.references_pollution_expression, stream );
+		stream << " )";
+	}
+
 	if( function_type.unsafe )
 		stream << Keyword( Keywords::unsafe_ ) << " ";
 
@@ -958,17 +965,26 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	else
 		stream << Keyword( Keywords::void_ );
 
+	if( function_type.return_value_inner_references_expression != nullptr )
+	{
+		stream << " @( ";
+		ElementWrite( *function_type.return_value_inner_references_expression, stream );
+		stream << " )";
+	}
+
 	if( function_type.return_value_reference_modifier != ReferenceModifier::None )
 	{
 		stream << " ";
 
 		ElementWrite( function_type.return_value_reference_modifier, stream );
 		ElementWrite( function_type.return_value_mutability_modifier, stream );
-	}
-	else if( function_type.return_value_mutability_modifier != MutabilityModifier::None )
-	{
-		stream << " ";
-		ElementWrite( function_type.return_value_mutability_modifier, stream );
+
+		if( function_type.return_value_reference_expression != nullptr )
+		{
+			stream << " @( ";
+			ElementWrite( *function_type.return_value_reference_expression, stream );
+			stream << " )";
+		}
 	}
 }
 
