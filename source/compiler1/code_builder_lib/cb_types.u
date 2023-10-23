@@ -180,33 +180,6 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 				: InnerReferenceKind::Imut );
 	}
 
-	if( !generator_type.return_value_reference_tag.empty() )
-	{
-		var bool mut found= false;
-		if( !generator_type.inner_reference_tag.empty() && generator_type.inner_reference_tag.try_deref().name == generator_type.return_value_reference_tag )
-		{
-			found= true;
-		}
-
-		if( !found )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, generator_type.src_loc, generator_type.return_value_reference_tag )
-		}
-	}
-	foreach( &inner_return_reference_tag : generator_type.return_value_inner_reference_tags )
-	{
-	var bool mut found= false;
-		if( !generator_type.inner_reference_tag.empty() && generator_type.inner_reference_tag.try_deref().name == inner_return_reference_tag )
-		{
-			found= true;
-		}
-
-		if( !found )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, generator_type.src_loc, inner_return_reference_tag )
-		}
-	}
-
 	// For now there is no reason to process reference tag.
 	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
 	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );

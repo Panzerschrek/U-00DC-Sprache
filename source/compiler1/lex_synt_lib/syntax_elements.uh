@@ -307,8 +307,6 @@ struct GeneratorType
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
 	ust::box_nullable</InnerReferenceTag/> inner_reference_tag;
-	ust::string8 return_value_reference_tag;
-	ust::vector</ust::string8/> return_value_inner_reference_tags;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 }
