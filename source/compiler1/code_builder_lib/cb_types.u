@@ -355,66 +355,10 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 	}
 
-	// Prepare reference pollution.
-	foreach( &in_pollution : function_type.references_pollution )
+	if_var( &references_pollution_expression : function_type.references_pollution_expression )
 	{
-		if( in_pollution.dst == in_pollution.src )
-		{
-			REPORT_ERROR( SelfReferencePollution, names_scope, function_type.src_loc )
-			continue;
-		}
-
-		var ust::vector</FunctionType::ParamReference/> mut pollutions_dst, mut pollutions_src;
-
-		for( auto mut param_n= 0s; param_n < res.params.size(); ++param_n )
-		{
-			auto& param= function_type.params[param_n];
-
-			if( in_pollution.dst == function_type.params[param_n].reference_tag )
-			{
-				REPORT_ERROR( ArgReferencePollution, names_scope, function_type.src_loc )
-			}
-			if( in_pollution.src == param.reference_tag )
-			{
-				var FunctionType::ParamReference mut src{ .param_index= u8(param_n), .reference_index= FunctionType::c_param_reference_number };
-				pollutions_src.push_back( move(src) );
-			}
-
-			for( auto mut tag_n= 0s; tag_n < param.inner_reference_tags.size(); ++tag_n )
-			{
-				if( in_pollution.dst == param.inner_reference_tags[tag_n] )
-				{
-					var FunctionType::ParamReference mut dst{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
-					pollutions_dst.push_back( move(dst) );
-				}
-				if( in_pollution.src == param.inner_reference_tags[tag_n] )
-				{
-					var FunctionType::ParamReference mut src{ .param_index= u8(param_n), .reference_index= u8(tag_n) };
-					pollutions_src.push_back( move(src) );
-				}
-			}
-		}
-
-		if( pollutions_dst.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.dst )
-		}
-		if( pollutions_src.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.src )
-		}
-
-		foreach( dst : pollutions_dst )
-		{
-			foreach( src : pollutions_src )
-			{
-				var FunctionType::ReferencePollution mut pollution{ .dst= dst, .src= src };
-				res.references_pollution.push_back( move(pollution) );
-			}
-		}
-
+		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, references_pollution_expression );
 	}
-	ust::sort( res.references_pollution.range() );
 
 	return move(res);
 }

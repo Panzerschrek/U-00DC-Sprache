@@ -329,13 +329,6 @@ struct FunctionType
 	}
 	ust::vector</Param/> params;
 
-	struct ReferencePollution
-	{
-		ust::string8 dst;
-		ust::string8 src;
-	}
-	ust::vector</ReferencePollution/> references_pollution;
-
 	ust::optional</TypeName/> return_type; // Empty means "void"
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
