@@ -128,7 +128,7 @@ fn CodeBuilder::EvaluateFunctionReferencePollution( mut this, NamesScopePtr& nam
 			result.push_back( pollution );
 		}
 
-		ust::sort( result.range() );
+		NormalizeList(result);
 		return result;
 	}
 	else
@@ -166,7 +166,7 @@ fn CodeBuilder::EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names
 			}
 		}
 
-		ust::sort( result.range() );
+		NormalizeList(result);
 		return result;
 	}
 	else
@@ -198,14 +198,15 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& 
 				}
 
 				auto tag_constant= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) );
+				auto& mut tag_list= result[i];
 				for( auto mut j= 0u64; j < array_type.element_count; ++j )
 				{
 					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(j) ) ), names_scope, src_loc ) )
 					{
-						result[i].push_back( param_reference );
+						tag_list.push_back( param_reference );
 					}
 				}
-				ust::sort( result[i].range() );
+				NormalizeList( tag_list );
 			}
 			else
 			{
@@ -220,6 +221,16 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& 
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "tuple of " + reference_notation_pollution_element_type_.ToString() + " arrays", variable.t )
 		return result;
+	}
+}
+
+fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite
+{
+	auto mut function_context= CreateGlobalFunctionContext();
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
 	}
 }
 
@@ -249,14 +260,29 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, NamesScopePtr& names_sco
 	return result;
 }
 
-fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite
+// TODO - create special method in standard library for doing this.
+template</type T/>
+fn NormalizeList( ust::vector</T/> &mut v )
 {
-	auto mut function_context= CreateGlobalFunctionContext();
+	if( v.size() <= 1s )
 	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-		return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+		return;
 	}
+	ust::sort( v.range() );
+
+	var size_type mut dst(1), mut src(1), end= v.size();
+	while( src < end )
+	{
+		if( cast_imut(v)[dst - 1s] != cast_imut(v)[src] )
+		{
+			v.swap( dst, src );
+			++dst;
+		}
+		++src;
+	}
+
+	auto dummy= v.front();
+	v.resize( dst, dummy );
 }
 
 } // namespace U1
