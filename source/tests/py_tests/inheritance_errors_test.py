@@ -810,7 +810,7 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test1(
 	struct S{ i32& x; }
 	class A interface
 	{
-		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0a" ] ];
 		fn virtual pure Foo( this, S &mut s ) @(pollution);
 	}
 	class B : A

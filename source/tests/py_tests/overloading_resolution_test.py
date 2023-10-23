@@ -43,7 +43,7 @@ def CouldNotOverloadFunction_Test3():
 		}
 		var [ [ char8, 2 ], 1 ] return_references_0[ "0_" ];
 		fn Bar( S & s ) : i32 & @(return_references_0);
-		var [ [ char8, 2 ], 1 ] return_references_1[ "1_" ];
+		var [ [ char8, 2 ], 1 ] return_references_1[ "0a" ];
 		fn Bar( S & s ) : i32 & @(return_references_1);   // Error, differs only reference tag for return value.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
