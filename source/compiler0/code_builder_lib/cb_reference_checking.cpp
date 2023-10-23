@@ -6,26 +6,6 @@
 namespace U
 {
 
-void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
-	const Synt::FunctionType& func,
-	FunctionType& function_type )
-{
-	if( func.return_value_reference_expression != nullptr || func.return_value_inner_references_expression != nullptr )
-		return;
-
-	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
-
-	if( function_type.return_value_type != ValueType::Value && function_type.return_references.empty() )
-	{
-		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
-		for( size_t i= 0u; i < function_type.params.size(); ++i )
-		{
-			if( function_type.params[i].value_type != ValueType::Value )
-				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
-		}
-	}
-}
-
 void CodeBuilder::ProcessFunctionReferencesPollution(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::Function& func,

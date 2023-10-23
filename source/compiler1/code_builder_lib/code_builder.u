@@ -659,6 +659,8 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.references_pollution.clear();
 			}
 
+			// TODO - fix this.
+			// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
 			var FunctionType::ReferencePollution mut pollution
 			{
 				.dst{ .param_index= 0u8, .reference_index= 0u8 },
@@ -679,7 +681,7 @@ fn CodeBuilder::PrepareFunction(
 		{
 			foreach( &pollution : function_variable.t.references_pollution )
 			{
-				if( pollution.src.param_index == 0u8 )
+				if( pollution.src.param_index == 0u8 && pollution.src.reference_index == FunctionType::c_param_reference_number )
 				{
 					REPORT_ERROR( ConstructorThisReferencePollution, names_scope_ptr, function_declaration.src_loc )
 				}

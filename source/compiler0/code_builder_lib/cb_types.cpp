@@ -275,14 +275,26 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	function_type.unsafe= function_type_name.unsafe;
 	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
 
-	TryGenerateFunctionReturnReferencesMapping( function_type_name, function_type );
-
+	if( function_type_name.references_pollution_expression != nullptr )
+		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression );
 	if( function_type_name.return_value_reference_expression != nullptr )
 		function_type.return_references= EvaluateFunctionReturnReferences( names_scope, *function_type_name.return_value_reference_expression );
 	if( function_type_name.return_value_inner_references_expression != nullptr )
 		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *function_type_name.return_value_inner_references_expression );
-	if( function_type_name.references_pollution_expression != nullptr )
-		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression );
+
+	// Generate mapping of input references to output references if return reference notation is not specified.
+	// Assume that returned reference points to any reference param.
+	if( function_type.return_value_type != ValueType::Value &&
+		function_type_name.return_value_reference_expression == nullptr &&
+		function_type_name.return_value_inner_references_expression == nullptr  )
+	{
+		for( size_t i= 0u; i < function_type.params.size(); ++i )
+		{
+			// TODO - what if param is immutable reference and return reference is mutable?
+			if( function_type.params[i].value_type != ValueType::Value )
+				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
+		}
+	}
 
 	return function_type;
 }

@@ -298,10 +298,12 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		res.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression );
 	}
 
-	// Auto-generate return reference mapping if return tag is empty, but only for returning references and not for returning values.
-	if( function_type.return_value_reference_expression.empty() && res.return_value_type != ValueType::Value )
+	// Generate mapping of input references to output references if return reference notation is not specified.
+	// Assume that returned reference points to any reference param.
+	if( res.return_value_type != ValueType::Value &&
+		function_type.return_value_reference_expression.empty() &&
+		function_type.return_value_inner_references_expression.empty() )
 	{
-		// If there is no tag for return reference, assume, that it may refer to any reference param, but not inner reference of any param.
 		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
 			if( res.params[i].value_type != ValueType::Value )

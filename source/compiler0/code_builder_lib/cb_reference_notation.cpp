@@ -6,6 +6,33 @@
 namespace U
 {
 
+namespace
+{
+
+std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference( const llvm::Constant* const constant, NamesScope& names_scope, const SrcLoc& src_loc )
+{
+	const uint64_t param= constant->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
+	const uint64_t ref= constant->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
+
+	if( !( param >= '0' && param <= '9' ) )
+	{
+		REPORT_ERROR( InvalidParamNumber, names_scope.GetErrors(), src_loc, param );
+		return std::nullopt;
+	}
+	if( !( ( ref >= 'a' && ref <= 'z' ) || ref == '_' ) )
+	{
+		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, param );
+		return std::nullopt;
+	}
+
+	FunctionType::ParamReference param_reference;
+	param_reference.first= uint8_t(param - '0');
+	param_reference.second= ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( ref - 'a' );
+	return param_reference;
+}
+
+} // namespace
+
 std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
@@ -98,8 +125,7 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
-		const llvm::Constant* pollution_constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
-
+		const llvm::Constant* const pollution_constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
 		const auto dst_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(0) ), names_scope, src_loc );
 		const auto src_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(1) ), names_scope, src_loc );
 		if( dst_reference == std::nullopt || src_reference == std::nullopt )
@@ -208,28 +234,6 @@ VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_
 {
 	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-}
-
-std::optional<FunctionType::ParamReference> CodeBuilder::ParseEvaluatedParamReference( const llvm::Constant* const constant, NamesScope& names_scope, const SrcLoc& src_loc )
-{
-	const uint64_t param= constant->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
-	const uint64_t ref= constant->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
-
-	if( !( param >= '0' && param <= '9' ) )
-	{
-		REPORT_ERROR( InvalidParamNumber, names_scope.GetErrors(), src_loc, param );
-		return std::nullopt;
-	}
-	if( !( ( ref >= 'a' && ref <= 'z' ) || ref == '_' ) )
-	{
-		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope.GetErrors(), src_loc, param );
-		return std::nullopt;
-	}
-
-	FunctionType::ParamReference param_reference;
-	param_reference.first= uint8_t(param - '0');
-	param_reference.second= ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( ref - 'a' );
-	return param_reference;
 }
 
 } // namespace U

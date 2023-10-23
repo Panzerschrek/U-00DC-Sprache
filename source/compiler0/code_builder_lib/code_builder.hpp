@@ -1169,10 +1169,6 @@ private:
 
 	// Reference-checking.
 
-	void TryGenerateFunctionReturnReferencesMapping(
-		const Synt::FunctionType& func,
-		FunctionType& function_type );
-
 	void ProcessFunctionReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::Function& func,
@@ -1207,7 +1203,6 @@ private:
 	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression );
 	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression );
 	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression );
-	std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference( const llvm::Constant* constant, NamesScope& names_scope, const SrcLoc& src_loc );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
 	// Coroutines
