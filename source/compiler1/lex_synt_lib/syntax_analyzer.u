@@ -1443,7 +1443,6 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		var FunctionType::Param mut this_param
 		{
 			.name= KeywordToString( Keyword::this_ ),
-			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 			.reference_modifier= ReferenceModifier::Reference,
 		};
 
