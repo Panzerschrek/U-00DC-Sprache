@@ -1662,9 +1662,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.variables_state.AddLink( variable, variable_reference );
 
 			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
-			// TODO - perform proper refence mapping.
-			if( result_type.ReferencesTagsCount() > 0 )
-				function_context.variables_state.TryAddInnerLinks( coro_expr_lock, variable, names.GetErrors(), if_coro_advance.src_loc );
+			for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
+			{
+				for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
+				{
+					U_ASSERT( param_reference.first == 0u );
+					U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+						function_context.variables_state.TryAddLink(
+							coro_expr_lock->inner_reference_nodes[param_reference.second],
+							variable->inner_reference_nodes[i],
+							names.GetErrors(),
+							if_coro_advance.src_loc );
+				}
+			}
 
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
 		}
@@ -1708,9 +1719,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.AddLink( variable, variable_reference );
 
 				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
-				// TODO - perform proper refence mapping.
-				if( result_type.ReferencesTagsCount() > 0 )
-					function_context.variables_state.TryAddInnerLinks( coro_expr_lock, variable, names.GetErrors(), if_coro_advance.src_loc );
+				for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
+				{
+					for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
+					{
+						U_ASSERT( param_reference.first == 0u );
+						U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+						if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+							function_context.variables_state.TryAddLink(
+								coro_expr_lock->inner_reference_nodes[param_reference.second],
+								variable->inner_reference_nodes[i],
+								names.GetErrors(),
+								if_coro_advance.src_loc );
+					}
+				}
 
 				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
@@ -1723,9 +1745,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable_reference->llvm_value= coroutine_reference_result;
 
-				// TODO - perform proper reference mapping.
-				if( !coro_expr->inner_reference_nodes.empty() )
-					function_context.variables_state.TryAddLink( coro_expr->inner_reference_nodes[0], variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_references )
+				{
+					U_ASSERT( param_reference.first == 0u );
+					U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+						function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_nodes[param_reference.second], variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				}
 			}
 		}
 
