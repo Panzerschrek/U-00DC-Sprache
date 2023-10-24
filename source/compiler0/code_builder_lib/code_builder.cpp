@@ -1077,18 +1077,10 @@ size_t CodeBuilder::PrepareFunction(
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
 			generator_function_type.return_value_type= ValueType::Value;
 
-			// Generate for now own return references mapping.
-			// TODO - fix this. Allow specifying reference mapping for generators, as soon, as multiple inner reference tags will be introduced.
-			if( function_type.return_value_type == ValueType::Value )
-			{
-				generator_function_type.return_inner_references= GetGeneratorFunctionReturnInnerReferences( function_type );;
-				generator_function_type.return_references.clear();
-			}
-			else
-			{
-				generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
-				generator_function_type.return_inner_references.clear();
-			}
+			// Generator function returns generator object by-value.
+			// Only inner references are required (to capturing reference args and args with references inside).
+			generator_function_type.return_inner_references= GetGeneratorFunctionReturnInnerReferences( function_type );
+			generator_function_type.return_references.clear();
 
 			// Disable auto-generators.
 			if( func_variable.return_type_is_auto )

@@ -40,78 +40,32 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 	return GetCoroutineType( root_namespace, coroutine_type_description );
 }
 
-std::set<FunctionType::ParamReference> CodeBuilder::GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type )
-{
-	// Transforming reference notation of function, to reference notation of generator.
-	// Params references are mapped to generator type inner references.
-
-	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
-	size_t tag_total= 0;
-	for( const FunctionType::Param& param : generator_function_type.params )
-	{
-		param_to_first_inner_reference_tag.push_back(tag_total);
-		if( param.value_type == ValueType::Value )
-			tag_total+= param.type.ReferencesTagsCount();
-		else
-			++tag_total;
-	}
-
-	std::set<FunctionType::ParamReference> result;
-
-	for( const FunctionType::ParamReference& param_reference : generator_function_type.return_references )
-	{
-		if( param_reference.first >= generator_function_type.params.size() )
-			continue;
-
-		FunctionType::ParamReference out_reference;
-		out_reference.first= 0; // Always use param0 - generator itself.
-
-		if( param_reference.second == FunctionType::c_arg_reference_tag_number )
-			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
-		else
-			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
-
-		result.insert( out_reference );
-	}
-
-	return result;
-}
-
 std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::GetGeneratorFunctionReturnInnerReferences( const FunctionType& generator_function_type )
 {
-	// Transforming reference notation of function, to reference notation of generator.
-	// Params references are mapped to generator type inner references.
-
-	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
-	size_t tag_total= 0;
-	for( const FunctionType::Param& param : generator_function_type.params )
-	{
-		param_to_first_inner_reference_tag.push_back(tag_total);
-		if( param.value_type == ValueType::Value )
-			tag_total+= param.type.ReferencesTagsCount();
-		else
-			++tag_total;
-	}
+	// Params references and references inside param types are mapped to generator type inner references.
 
 	std::vector<std::set<FunctionType::ParamReference>> result;
-	result.resize( generator_function_type.return_type.ReferencesTagsCount() );
-
-	for( size_t i= 0; i < std::min( result.size(), generator_function_type.return_inner_references.size() ); ++i )
+	for( const FunctionType::Param& param : generator_function_type.params )
 	{
-		for( const FunctionType::ParamReference& param_reference : generator_function_type.return_inner_references[i] )
+		const size_t i= size_t(&param - generator_function_type.params.data());
+		if( param.value_type == ValueType::Value )
 		{
-			if( param_reference.first >= generator_function_type.params.size() )
-				continue;
-
-			FunctionType::ParamReference out_reference;
-			out_reference.first= 0; // Always use param0 - generator itself.
-
-			if( param_reference.second == FunctionType::c_arg_reference_tag_number )
-				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
-			else
-				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
-
-			result[i].insert( out_reference );
+			if( EnsureTypeComplete( param.type ) )
+			{
+				const auto reference_tag_count= param.type.ReferencesTagsCount();
+				for( size_t j= 0; j < reference_tag_count; ++j )
+				{
+					FunctionType::ParamReference param_reference{ uint8_t(i), uint8_t(j) };
+					std::set<FunctionType::ParamReference> set{ param_reference };
+					result.push_back( std::move(set) );
+				}
+			}
+		}
+		else
+		{
+			FunctionType::ParamReference param_reference{ uint8_t(i), FunctionType::c_arg_reference_tag_number };
+			std::set<FunctionType::ParamReference> set{ param_reference };
+			result.push_back( std::move(set) );
 		}
 	}
 
