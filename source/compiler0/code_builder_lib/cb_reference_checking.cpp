@@ -23,20 +23,30 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		}
 	}
 
-	// TODO - fix this.
-	// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
+	const auto create_copy_pollution=
+	[&]
+	{
+		// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
+		// So, we can request it.
+		const size_t references_tags_count= base_class->inner_references.size();
+		for( size_t i= 0u; i < references_tags_count; ++i )
+		{
+			FunctionType::ReferencePollution ref_pollution;
+			ref_pollution.dst.first= 0u;
+			ref_pollution.dst.second= uint8_t(i);
+			ref_pollution.src.first= 1u;
+			ref_pollution.src.second= uint8_t(i);
+			function_type.references_pollution.insert(ref_pollution);
+		}
+	};
+
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
-		FunctionType::ReferencePollution ref_pollution;
-		ref_pollution.dst.first= 0u;
-		ref_pollution.dst.second= 0u;
-		ref_pollution.src.first= 1u;
-		ref_pollution.src.second= 0u;
-		function_type.references_pollution.insert(ref_pollution);
+		create_copy_pollution();
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
@@ -44,12 +54,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
-		FunctionType::ReferencePollution ref_pollution;
-		ref_pollution.dst.first= 0u;
-		ref_pollution.dst.second= 0u;
-		ref_pollution.src.first= 1u;
-		ref_pollution.src.second= 0u;
-		function_type.references_pollution.insert(ref_pollution);
+		create_copy_pollution();
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
 	{
@@ -74,13 +79,11 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferencs( const FunctionT
 		}
 	};
 
-	// TODO - fix this.
-	/*
 	for( const auto& pollution : function_type.references_pollution )
 	{
 		check_param_reference(pollution.dst);
 		check_param_reference(pollution.src);
-	}*/
+	}
 
 	for( const FunctionType::ParamReference& param_reference : function_type.return_references )
 		check_param_reference(param_reference);
