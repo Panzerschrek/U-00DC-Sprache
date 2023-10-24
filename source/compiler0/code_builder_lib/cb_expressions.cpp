@@ -3529,7 +3529,6 @@ Value CodeBuilder::DoCallFunction(
 			result->llvm_value= llvm::UndefValue::get( function_type.return_type.GetLLVMType()->getPointerTo() );
 	}
 
-
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
 	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
@@ -3540,42 +3539,46 @@ Value CodeBuilder::DoCallFunction(
 	{
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
-			const auto& arg_node= args_nodes[arg_reference.first];
-			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
-				function_context.variables_state.TryAddLink( arg_node, result, names.GetErrors(), call_src_loc );
-			else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
-				function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], result, names.GetErrors(), call_src_loc );
+			if( arg_reference.first < args_nodes.size() )
+			{
+				const auto& arg_node= args_nodes[arg_reference.first];
+				if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
+					function_context.variables_state.TryAddLink( arg_node, result, names.GetErrors(), call_src_loc );
+				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
+					function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], result, names.GetErrors(), call_src_loc );
+			}
 		}
 	}
-	// Create inner node and link input nodes with it.
+	// Create links for result inner references.
 	for( size_t tag_n= 0; tag_n < std::min( result->inner_reference_nodes.size(), function_type.return_inner_references.size() ); ++tag_n )
 	{
 		auto& dst_node= result->inner_reference_nodes[tag_n];
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_inner_references[tag_n] )
 		{
-			const auto& arg_node= args_nodes[arg_reference.first];
-
-			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
-				function_context.variables_state.TryAddLink( arg_node, dst_node, names.GetErrors(), call_src_loc );
-			else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
-				function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], dst_node, names.GetErrors(), call_src_loc );
+			if( arg_reference.first < args_nodes.size() )
+			{
+				const auto& arg_node= args_nodes[arg_reference.first];
+				if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
+					function_context.variables_state.TryAddLink( arg_node, dst_node, names.GetErrors(), call_src_loc );
+				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
+					function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], dst_node, names.GetErrors(), call_src_loc );
+			}
 		}
 	}
 
 	// Setup references after call.
 	for( const FunctionType::ReferencePollution& referene_pollution : function_type.references_pollution )
 	{
-		// Does it have sence, write references to value argument?
-
 		const size_t dst_arg= referene_pollution.dst.first;
-		U_ASSERT( dst_arg < function_type.params.size() );
+		const size_t src_arg= referene_pollution.src.first;
+		if( dst_arg >= function_type.params.size() || src_arg >= function_type.params.size() )
+			continue;
 
-		// It's possible that reference pollution is set for types without references inside.
 		if( function_type.params[ dst_arg ].type.ReferencesTagsCount() == 0 )
 			continue;
 
-		const auto& src_arg_node= args_nodes[ referene_pollution.src.first ];
-		const auto& dst_arg_node= args_nodes[ referene_pollution.dst.first ];
+		const VariablePtr& src_arg_node= args_nodes[ src_arg ];
+		const VariablePtr& dst_arg_node= args_nodes[ dst_arg ];
 
 		VariablePtr src_node;
 		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
