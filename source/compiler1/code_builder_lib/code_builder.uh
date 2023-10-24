@@ -903,9 +903,9 @@ private:
 
 	fn EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>;
 	fn EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>;
-	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</FunctionType::ReferencePollution/> ;
-	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : FunctionType::ParamReferences;
-	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</ FunctionType::ParamReferences />;
+	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</FunctionType::ReferencePollution/> ;
+	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
+	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</ FunctionType::ParamReferences />;
 	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
 
 	// Coroutines

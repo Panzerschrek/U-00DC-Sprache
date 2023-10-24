@@ -258,17 +258,18 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		res.params.push_back( move(out_param) );
 	}
 
+	auto num_params= res.params.size();
 	if_var( &references_pollution_expression : function_type.references_pollution_expression )
 	{
-		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, references_pollution_expression );
+		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, references_pollution_expression, num_params );
 	}
 	if_var( &return_value_reference_expression : function_type.return_value_reference_expression )
 	{
-		res.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression );
+		res.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression, num_params );
 	}
 	if_var( &return_value_inner_references_expression : function_type.return_value_inner_references_expression )
 	{
-		res.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression );
+		res.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression, num_params );
 	}
 
 	// Generate mapping of input references to output references if return reference notation is not specified.
