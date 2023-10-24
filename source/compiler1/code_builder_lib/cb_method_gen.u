@@ -317,12 +317,16 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			function_type.params.push_back( move(src_param) );
 		}
 		{
-			var FunctionType::ReferencePollution mut pollution
+			auto references_tags_count= class_type.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < references_tags_count; ++i )
 			{
-				.dst{ .param_index= 0u8, .reference_index= 0u8 },
-				.src{ .param_index= 1u8, .reference_index= 0u8 },
-			};
-			function_type.references_pollution.push_back( move(pollution) );
+				var FunctionType::ReferencePollution mut pollution
+				{
+					.dst{ .param_index= 0u8, .reference_index= u8(i) },
+					.src{ .param_index= 1u8, .reference_index= u8(i) },
+				};
+				function_type.references_pollution.push_back( move(pollution) );
+			}
 		}
 
 		// Prepare function variable.
@@ -497,12 +501,16 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			function_type.params.push_back( move(src_param) );
 		}
 		{
-			var FunctionType::ReferencePollution mut pollution
+			auto references_tags_count= class_type.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < references_tags_count; ++i )
 			{
-				.dst{ .param_index= 0u8, .reference_index= 0u8 },
-				.src{ .param_index= 1u8, .reference_index= 0u8 },
-			};
-			function_type.references_pollution.push_back( move(pollution) );
+				var FunctionType::ReferencePollution mut pollution
+				{
+					.dst{ .param_index= 0u8, .reference_index= u8(i) },
+					.src{ .param_index= 1u8, .reference_index= u8(i) },
+				};
+				function_type.references_pollution.push_back( move(pollution) );
+			}
 		}
 
 		// Prepare function variable.

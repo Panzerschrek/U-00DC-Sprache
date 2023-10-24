@@ -659,14 +659,18 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.references_pollution.clear();
 			}
 
-			// TODO - fix this.
-			// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
-			var FunctionType::ReferencePollution mut pollution
+			// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
+			// So, we can request it.
+			auto references_tags_count= class_type_non_null.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < references_tags_count; ++i )
 			{
-				.dst{ .param_index= 0u8, .reference_index= 0u8 },
-				.src{ .param_index= 1u8, .reference_index= 0u8 },
-			};
-			function_variable.t.references_pollution.push_back( move(pollution) );
+				var FunctionType::ReferencePollution mut pollution
+				{
+					.dst{ .param_index= 0u8, .reference_index= u8(i) },
+					.src{ .param_index= 1u8, .reference_index= u8(i) },
+				};
+				function_variable.t.references_pollution.push_back( move(pollution) );
+			}
 		}
 
 		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
