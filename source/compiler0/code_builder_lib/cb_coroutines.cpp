@@ -21,8 +21,10 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 	// Each reference param adds new inner reference.
 	// Each value param creates number of references equal to number of inner references of its type.
 	// For now reference params of types with references inside are not supported.
+	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
+		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
 		if( param.value_type == ValueType::Value )
 		{
 			// Require type completeness for value params in order to know inner references.
@@ -35,6 +37,41 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 		}
 		else
 			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+	}
+
+	// Fill references of return value.
+	for( const FunctionType::ParamReference& param_reference : generator_function_type.return_references )
+	{
+		if( param_reference.first >= generator_function_type.params.size() )
+			continue;
+
+		FunctionType::ParamReference out_reference;
+		out_reference.first= 0; // Always use param0 - coroutine itself.
+		if( param_reference.second == FunctionType::c_arg_reference_tag_number )
+			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+		else
+			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
+
+		coroutine_type_description.return_references.insert( out_reference );
+	}
+
+	coroutine_type_description.return_inner_references.resize( generator_function_type.return_inner_references.size() );
+	for( size_t i= 0u; i < generator_function_type.return_inner_references.size(); ++i )
+	{
+		for( const FunctionType::ParamReference& param_reference : generator_function_type.return_inner_references[i] )
+		{
+			if( param_reference.first >= generator_function_type.params.size() )
+				continue;
+
+			FunctionType::ParamReference out_reference;
+			out_reference.first= 0; // Always use param0 - coroutine itself.
+			if( param_reference.second == FunctionType::c_arg_reference_tag_number )
+				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+			else
+				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
+
+			coroutine_type_description.return_inner_references[i].insert( out_reference );
+		}
 	}
 
 	return GetCoroutineType( root_namespace, coroutine_type_description );
@@ -349,7 +386,8 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				return;
 			}
 
-			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, src_loc );
+			// TODO - fix it.
+			// CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -402,7 +440,8 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 			}
 
-			CheckReturnedReferenceIsAllowed( names, function_context, expression_result, src_loc );
+			// TODO - fix it.
+			// CheckReturnedReferenceIsAllowed( names, function_context, expression_result, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 

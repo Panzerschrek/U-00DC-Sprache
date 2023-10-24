@@ -691,6 +691,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				return
 					coroutine_type_description->kind == template_param.kind &&
 					coroutine_type_description->return_value_type == template_param.return_value_type &&
+					coroutine_type_description->return_references == template_param.return_references &&
+					coroutine_type_description->return_inner_references == template_param.return_inner_references &&
 					coroutine_type_description->inner_references == template_param.inner_references &&
 					coroutine_type_description->non_sync == template_param.non_sync &&
 					MatchTemplateArg( template_, args_names_scope, coroutine_type_description->return_type, *template_param.return_type );
