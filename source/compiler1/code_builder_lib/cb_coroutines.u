@@ -64,10 +64,14 @@ fn CodeBuilder::GetGeneratorFunctionReturnReferences( mut this, FunctionType& ge
 	{
 		if( param.value_type == ValueType::Value )
 		{
-			// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
-			// TODO - maybe check real inner reference kind here?
-			var FunctionType::ParamReference param_reference{ .param_index= u8(i), .reference_index= 0u8 };
-			result.push_back( param_reference );
+			EnsureTypeComplete( param.t );
+			if( param.t.ReferencesTagsCount() > 0u )
+			{
+				// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
+				// TODO - maybe check real inner reference kind here?
+				var FunctionType::ParamReference param_reference{ .param_index= u8(i), .reference_index= 0u8 };
+				result.push_back( param_reference );
+			}
 		}
 		else
 		{
