@@ -206,11 +206,40 @@ def InvalidParamNumber_Test1():
 def InvalidParamNumber_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
-		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "!_" ] ]; // '!' - wrong name/
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "!_" ] ]; // '!' - wrong name.
 		fn Foo( i32& x ) : S @( return_inner_references );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "InvalidParamNumber", 4 ) )
+
+
+def ParamNumberOutOfRange_Test0():
+	c_program_text= """
+		struct R{ i32 &imut r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "2_" ] ];
+		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Param number is 2, but function contains only 2 params.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ParamNumberOutOfRange", 4 ) )
+
+
+def InvalidParamNumber_Test1():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "3_" ];
+		fn Foo( i32 & x ) : i32 & @( return_references ); // Param number is 3, but function contains only 1 param.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ParamNumberOutOfRange", 3 ) )
+
+
+def InvalidParamNumber_Test2():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "4_" ] ];
+		fn Foo( i32& x ) : S @( return_inner_references ); // Param number is 4, but function contains only 1 param.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ParamNumberOutOfRange", 4 ) )
 
 
 def FunctionReferenceNotationIsNormalized_Test0():
@@ -219,8 +248,8 @@ def FunctionReferenceNotationIsNormalized_Test0():
 		var [ [ [char8, 2], 2 ], 2 ] pollution_0[ [ "0a", "1_" ], [ "0a", "2_" ] ];
 		var [ [ [char8, 2], 2 ], 2 ] pollution_1[ [ "0a", "2_" ], [ "0a", "1_" ] ];
 		struct S{ i32& x; }
-		type fn_0= ( fn( S &mut s, i32& x ) @(pollution_0) );
-		type fn_1= ( fn( S &mut s, i32& x ) @(pollution_1) );
+		type fn_0= ( fn( S &mut s, i32& x, i32& z ) @(pollution_0) );
+		type fn_1= ( fn( S &mut s, i32& x, i32& z ) @(pollution_1) );
 		static_assert( same_type</ fn_0, fn_1 /> );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -275,8 +304,8 @@ def DifferentReferenceNotationMeansDifferentFunctionType_Test0():
 		var [ [ [char8, 2], 2 ], 2 ] pollution_0[ [ "0a", "1_" ], [ "0a", "2_" ] ];
 		var [ [ [char8, 2], 2 ], 2 ] pollution_1[ [ "0b", "1_" ], [ "0a", "2_" ] ];
 		struct S{ i32& x; }
-		type fn_0= ( fn( S &mut s, i32& x ) @(pollution_0) );
-		type fn_1= ( fn( S &mut s, i32& x ) @(pollution_1) );
+		type fn_0= ( fn( S &mut s, i32& x, i32& y ) @(pollution_0) );
+		type fn_1= ( fn( S &mut s, i32& x, i32& y ) @(pollution_1) );
 		static_assert( ! same_type</ fn_0, fn_1 /> );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -287,8 +316,8 @@ def DifferentReferenceNotationMeansDifferentFunctionType_Test1():
 		var [ [ char8, 2 ], 3 ] return_references_0[ "0_", "1a", "2b" ];
 		var [ [ char8, 2 ], 3 ] return_references_1[ "0_", "3a", "2b" ];
 		struct S{ i32& x; }
-		type fn_0= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_0) );
-		type fn_1= ( fn( S& a, S& b, S& c ) : i32 & @(return_references_1) );
+		type fn_0= ( fn( S& a, S& b, S& c, S& d ) : i32 & @(return_references_0) );
+		type fn_1= ( fn( S& a, S& b, S& c, S& d ) : i32 & @(return_references_1) );
 		static_assert( !same_type</ fn_0, fn_1 /> );
 	"""
 	tests_lib.build_program( c_program_text )

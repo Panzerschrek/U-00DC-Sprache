@@ -1200,9 +1200,9 @@ private:
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
-	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression );
-	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression );
-	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression );
+	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
 	// Coroutines
