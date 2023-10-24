@@ -1212,6 +1212,7 @@ private:
 
 	ClassPtr GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type, bool non_sync );
 	std::set<FunctionType::ParamReference> GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type );
+	std::vector<std::set<FunctionType::ParamReference>> GetGeneratorFunctionReturnInnerReferences( const FunctionType& generator_function_type );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 

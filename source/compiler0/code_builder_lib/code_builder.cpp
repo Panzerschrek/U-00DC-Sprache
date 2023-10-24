@@ -1081,13 +1081,14 @@ size_t CodeBuilder::PrepareFunction(
 			// TODO - fix this. Allow specifying reference mapping for generators, as soon, as multiple inner reference tags will be introduced.
 			if( function_type.return_value_type == ValueType::Value )
 			{
-				generator_function_type.return_inner_references.clear();
-				auto return_references= GetGeneratorFunctionReturnReferences( function_type );
-				if( !return_references.empty() )
-					generator_function_type.return_inner_references.push_back( std::move(return_references) );
+				generator_function_type.return_inner_references= GetGeneratorFunctionReturnInnerReferences( function_type );;
+				generator_function_type.return_references.clear();
 			}
 			else
+			{
 				generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
+				generator_function_type.return_inner_references.clear();
+			}
 
 			// Disable auto-generators.
 			if( func_variable.return_type_is_auto )
