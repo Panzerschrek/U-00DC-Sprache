@@ -70,11 +70,11 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferencs( const FunctionT
 	{
 		if( param_reference.second != FunctionType::c_arg_reference_tag_number && param_reference.first < function_type.params.size()  )
 		{
-			const auto tags_count= function_type.params[ param_reference.first ].type.ReferencesTagsCount();
+			const Type& type= function_type.params[ param_reference.first ].type;
+			const auto tags_count= type.ReferencesTagsCount();
 			if( param_reference.second >= tags_count )
 			{
-				// TODO - use other error code.
-				REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, param_reference.second, tags_count );
+				REPORT_ERROR( ReferenceTagOutOfRange, errors_container, src_loc, param_reference.second, type, tags_count );
 			}
 		}
 	};

@@ -223,7 +223,7 @@ def ParamNumberOutOfRange_Test0():
 	assert( HaveError( errors_list, "ParamNumberOutOfRange", 4 ) )
 
 
-def InvalidParamNumber_Test1():
+def ParamNumberOutOfRange_Test1():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "3_" ];
 		fn Foo( i32 & x ) : i32 & @( return_references ); // Param number is 3, but function contains only 1 param.
@@ -232,7 +232,7 @@ def InvalidParamNumber_Test1():
 	assert( HaveError( errors_list, "ParamNumberOutOfRange", 3 ) )
 
 
-def InvalidParamNumber_Test2():
+def ParamNumberOutOfRange_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "4_" ] ];
@@ -240,6 +240,37 @@ def InvalidParamNumber_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "ParamNumberOutOfRange", 4 ) )
+
+
+def ReferenceTagOutOfRange_Test0():
+	c_program_text= """
+		struct R{ i32 &imut r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0b", "1_" ] ];
+		fn DoPollution( R& mut r, i32& r ) @( pollution ) {} // Tag number is 1, but type contains only 1 inner reference tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 4 ) )
+
+
+def ReferenceTagOutOfRange_Test1():
+	c_program_text= """
+		struct R{ i32 &imut r; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0c" ];
+		fn Foo( R & r ) : i32 & @( return_references ) { halt; } // Tag number is 2, but type contains only 1 inner reference tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 4 ) )
+
+
+def ReferenceTagOutOfRange_Test2():
+	c_program_text= """
+		struct R{ i32 &imut @("a"c8) r0; i32 &mut @("b"c8) r1; }
+		struct T{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0z" ] ];
+		fn Foo( R & r ) : R @( return_inner_references ) { halt; } // Tag number is 25, but type contains only 2 inner reference tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 5 ) )
 
 
 def FunctionReferenceNotationIsNormalized_Test0():
