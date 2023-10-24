@@ -1466,7 +1466,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	// Call this after types completion request.
 	// Perform this check while function body building, since the check requires type completeness, which can't be requested during prototype preparation.
-	CheckFunctionReferencesNotationInnerReferencs( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
+	CheckFunctionReferencesNotationInnerReferences( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
 
 	if( func_variable.is_generator )
 	{

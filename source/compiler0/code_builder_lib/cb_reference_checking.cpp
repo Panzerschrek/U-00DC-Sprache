@@ -63,7 +63,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 }
 
-void CodeBuilder::CheckFunctionReferencesNotationInnerReferencs( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	const auto check_param_reference=
 	[&]( const FunctionType::ParamReference& param_reference )
