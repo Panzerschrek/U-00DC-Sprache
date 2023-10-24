@@ -273,6 +273,26 @@ def ReferenceTagOutOfRange_Test2():
 	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 5 ) )
 
 
+def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test0():
+	c_program_text= """
+		struct R{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 0 ] ] return_inner_references[ [ "0z" ], [] ];
+		fn Foo( i32& x ) : R @( return_inner_references ) { halt; } // Expected 1 tag, got 2 tags.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
+
+
+def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test1():
+	c_program_text= """
+		struct R{ i32 &imut @("a"c8) r0; i32 &mut @("b"c8) r1; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0z" ] ];
+		fn Foo( i32& x, i32 &mut y ) : R @( return_inner_references ) { halt; } // Expected 2 tags, got 1 tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
+
+
 def FunctionReferenceNotationIsNormalized_Test0():
 	c_program_text= """
 		// Order of pollution doesn't matter.

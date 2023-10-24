@@ -92,7 +92,10 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferencs( const FunctionT
 		for( const FunctionType::ParamReference& param_reference : param_references )
 			check_param_reference(param_reference);
 
-	// TODO - check mismatch in return inner references size.
+	const auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+	if( !function_type.return_inner_references.empty() &&
+		function_type.return_inner_references.size() != return_type_tags_count )
+		REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tags_count, function_type.return_inner_references.size() );
 }
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
