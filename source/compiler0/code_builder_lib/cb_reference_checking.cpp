@@ -58,6 +58,40 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 }
 
+void CodeBuilder::CheckFunctionReferencesNotationInnerReferencs( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	const auto check_param_reference=
+	[&]( const FunctionType::ParamReference& param_reference )
+	{
+		if( param_reference.second != FunctionType::c_arg_reference_tag_number && param_reference.first < function_type.params.size()  )
+		{
+			const auto tags_count= function_type.params[ param_reference.first ].type.ReferencesTagsCount();
+			if( param_reference.second >= tags_count )
+			{
+				// TODO - use other error code.
+				REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, param_reference.second, tags_count );
+			}
+		}
+	};
+
+	// TODO - fix this.
+	/*
+	for( const auto& pollution : function_type.references_pollution )
+	{
+		check_param_reference(pollution.dst);
+		check_param_reference(pollution.src);
+	}*/
+
+	for( const FunctionType::ParamReference& param_reference : function_type.return_references )
+		check_param_reference(param_reference);
+
+	for( const auto& param_references : function_type.return_inner_references )
+		for( const FunctionType::ParamReference& param_reference : param_references )
+			check_param_reference(param_reference);
+
+	// TODO - check mismatch in return inner references size.
+}
+
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	if( dst_variable->type.ReferencesTagsCount() == 0u )

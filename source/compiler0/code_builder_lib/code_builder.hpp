@@ -1175,6 +1175,9 @@ private:
 		FunctionType& function_type,
 		ClassPtr base_class );
 
+	// Call this only when types of params and return value are complete.
+	void CheckFunctionReferencesNotationInnerReferencs( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
