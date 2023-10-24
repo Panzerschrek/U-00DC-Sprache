@@ -151,6 +151,8 @@ PROCESS_ERROR( ExpectedReferenceNotation, "Expected reference notation for field
 PROCESS_ERROR( InnerReferenceTagCountMismatch, "Mismatch in count of inner reference tags. Expected {0}, got {1}. " )
 PROCESS_ERROR( InvalidInnerReferenceTagName, "Invalid inner reference tag name \"{0}\". Expected letters in range a-z." )
 PROCESS_ERROR( InvalidParamNumber, "Invalid param number \"{0}\". Expected numbers in range 0-9." )
+PROCESS_ERROR( ParamNumberOutOfRange, "Param number {0} is out of range of function params {1}." )
+PROCESS_ERROR( ReferenceTagOutOfRange, "Reference tag number {0} is out of range of type {1} ({2})." )
 PROCESS_ERROR( UnusedReferenceTag, "Reference tag \"{0}\" is not used. Make sure there is no gaps in reference tags of the class." )
 PROCESS_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, "Reference tag \"{0}\" points both to mutable and immutable references." )
 

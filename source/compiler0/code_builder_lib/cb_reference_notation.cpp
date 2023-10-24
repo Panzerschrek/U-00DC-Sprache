@@ -9,7 +9,11 @@ namespace U
 namespace
 {
 
-std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference( const llvm::Constant* const constant, NamesScope& names_scope, const SrcLoc& src_loc )
+std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
+	const llvm::Constant* const constant,
+	const size_t num_params,
+	NamesScope& names_scope,
+	const SrcLoc& src_loc )
 {
 	const uint64_t param= constant->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
 	const uint64_t ref= constant->getAggregateElement( uint32_t(1) )->getUniqueInteger().getLimitedValue();
@@ -28,6 +32,13 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference( const 
 	FunctionType::ParamReference param_reference;
 	param_reference.first= uint8_t(param - '0');
 	param_reference.second= ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( ref - 'a' );
+
+	if( param_reference.first >= num_params )
+	{
+		REPORT_ERROR( ParamNumberOutOfRange, names_scope.GetErrors(), src_loc, param_reference.first, num_params );
+		return std::nullopt;
+	}
+
 	return param_reference;
 }
 
@@ -99,7 +110,10 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 	return std::move(result);
 }
 
-std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression )
+std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferencePollution(
+	NamesScope& names_scope,
+	const Synt::Expression& expression,
+	const size_t num_params )
 {
 	std::set<FunctionType::ReferencePollution> result;
 
@@ -126,8 +140,8 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
 		const llvm::Constant* const pollution_constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
-		const auto dst_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(0) ), names_scope, src_loc );
-		const auto src_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(1) ), names_scope, src_loc );
+		const auto dst_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(0) ), num_params, names_scope, src_loc );
+		const auto src_reference= ParseEvaluatedParamReference( pollution_constant->getAggregateElement( uint32_t(1) ), num_params, names_scope, src_loc );
 		if( dst_reference == std::nullopt || src_reference == std::nullopt )
 			continue;
 
@@ -152,7 +166,10 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 	return result;
 }
 
-std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression )
+std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnReferences(
+	NamesScope& names_scope,
+	const Synt::Expression& expression,
+	const size_t num_params )
 {
 	std::set<FunctionType::ParamReference> result;
 
@@ -178,14 +195,17 @@ std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnRefere
 
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
-		if( const auto param_reference= ParseEvaluatedParamReference( variable->constexpr_value->getAggregateElement( uint32_t(i) ), names_scope, src_loc ) )
+		if( const auto param_reference= ParseEvaluatedParamReference( variable->constexpr_value->getAggregateElement( uint32_t(i) ), num_params, names_scope, src_loc ) )
 			result.insert( *param_reference );
 	}
 
 	return result;
 }
 
-std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression )
+std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctionReturnInnerReferences(
+	NamesScope& names_scope,
+	const Synt::Expression& expression,
+	const size_t num_params )
 {
 	std::vector<std::set<FunctionType::ParamReference>> result;
 
@@ -222,7 +242,7 @@ std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctio
 		const auto tag_constant= variable->constexpr_value->getAggregateElement( uint32_t(i) );
 		for( uint64_t j= 0; j < array_type->element_count; ++j )
 		{
-			if( const auto param_reference= ParseEvaluatedParamReference( tag_constant->getAggregateElement( uint32_t(j) ), names_scope, src_loc ) )
+			if( const auto param_reference= ParseEvaluatedParamReference( tag_constant->getAggregateElement( uint32_t(j) ), num_params, names_scope, src_loc ) )
 				result[i].insert( *param_reference );
 		}
 	}

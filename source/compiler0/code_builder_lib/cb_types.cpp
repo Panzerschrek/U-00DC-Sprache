@@ -275,12 +275,13 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	function_type.unsafe= function_type_name.unsafe;
 	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
 
+	const size_t num_params= function_type.params.size();
 	if( function_type_name.references_pollution_expression != nullptr )
-		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression );
+		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression, num_params );
 	if( function_type_name.return_value_reference_expression != nullptr )
-		function_type.return_references= EvaluateFunctionReturnReferences( names_scope, *function_type_name.return_value_reference_expression );
+		function_type.return_references= EvaluateFunctionReturnReferences( names_scope, *function_type_name.return_value_reference_expression, num_params );
 	if( function_type_name.return_value_inner_references_expression != nullptr )
-		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *function_type_name.return_value_inner_references_expression );
+		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *function_type_name.return_value_inner_references_expression, num_params );
 
 	// Generate mapping of input references to output references if return reference notation is not specified.
 	// Assume that returned reference points to any reference param.

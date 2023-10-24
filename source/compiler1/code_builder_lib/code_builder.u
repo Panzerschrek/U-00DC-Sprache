@@ -659,14 +659,18 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.references_pollution.clear();
 			}
 
-			// TODO - fix this.
-			// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
-			var FunctionType::ReferencePollution mut pollution
+			// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
+			// So, we can request it.
+			auto references_tags_count= class_type_non_null.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < references_tags_count; ++i )
 			{
-				.dst{ .param_index= 0u8, .reference_index= 0u8 },
-				.src{ .param_index= 1u8, .reference_index= 0u8 },
-			};
-			function_variable.t.references_pollution.push_back( move(pollution) );
+				var FunctionType::ReferencePollution mut pollution
+				{
+					.dst{ .param_index= 0u8, .reference_index= u8(i) },
+					.src{ .param_index= 1u8, .reference_index= u8(i) },
+				};
+				function_variable.t.references_pollution.push_back( move(pollution) );
+			}
 		}
 
 		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
@@ -1106,6 +1110,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
+
+	CheckFunctionReferencesNotationInnerReferences( func_variable.t, names_scope, body_syntax_element.src_loc );
 
 	if( func_variable.is_generator )
 	{
@@ -1810,6 +1816,49 @@ fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, Va
 {
 	auto frame_index= function_context.variables_frames.size() - frame_index_from_top - 1s;
 	function_context.variables_frames[frame_index].push_back( move(variable) );
+}
+
+fn CodeBuilder::CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	foreach( &pollution : function_type.references_pollution )
+	{
+		CheckFunctionReferencesNotationParamReference( function_type, pollution.dst, names_scope, src_loc );
+		CheckFunctionReferencesNotationParamReference( function_type, pollution.src, names_scope, src_loc );
+	}
+
+	foreach( &param_reference : function_type.return_references )
+	{
+		CheckFunctionReferencesNotationParamReference( function_type, param_reference, names_scope, src_loc );
+	}
+	foreach( &param_references : function_type.return_inner_references )
+	{
+		foreach( &param_reference : param_references )
+		{
+			CheckFunctionReferencesNotationParamReference( function_type, param_reference, names_scope, src_loc );
+		}
+	}
+
+	if( !function_type.return_inner_references.empty() )
+	{
+		auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+		if( function_type.return_inner_references.size() != size_type(return_type_tags_count) )
+		{
+			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tags_count, function_type.return_inner_references.size() )
+		}
+	}
+}
+
+fn CodeBuilder::CheckFunctionReferencesNotationParamReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( param_reference.reference_index != FunctionType::c_param_reference_number && size_type(param_reference.param_index) < function_type.params.size()  )
+	{
+		var Type& t= function_type.params[ size_type( param_reference.param_index) ].t;
+		auto tags_count= t.ReferencesTagsCount();
+		if( u32(param_reference.reference_index) >= tags_count )
+		{
+			REPORT_ERROR( ReferenceTagOutOfRange, names_scope, src_loc, u32(param_reference.reference_index), t, tags_count )
+		}
+	}
 }
 
 fn CodeBuilder::CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc )

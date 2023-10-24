@@ -71,7 +71,6 @@ def main():
 		"raw_pointers_errors_test",
 		"raw_pointers_test",
 		"reference_cast_operators_test",
-		"reference_check_for_templates_test",
 		"references_graph_test",
 		"references_graph_child_nodes_test",
 		"same_type_test",

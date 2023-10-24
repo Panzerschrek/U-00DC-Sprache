@@ -77,7 +77,11 @@ fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_
 	}
 }
 
-fn CodeBuilder::EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</FunctionType::ReferencePollution/>
+fn CodeBuilder::EvaluateFunctionReferencePollution(
+	mut this,
+	NamesScopePtr& names_scope,
+	Synt::Expression& expression,
+	size_type num_params ) : ust::vector</FunctionType::ReferencePollution/>
 {
 	var ust::vector</FunctionType::ReferencePollution/> mut result;
 
@@ -100,8 +104,8 @@ fn CodeBuilder::EvaluateFunctionReferencePollution( mut this, NamesScopePtr& nam
 		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
 			auto pollution_constant= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) );
-			auto dst_reference= ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( pollution_constant, 0u ) ), names_scope, src_loc );
-			auto src_reference= ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( pollution_constant, 1u ) ), names_scope, src_loc );
+			auto dst_reference= ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( pollution_constant, 0u ) ), num_params, names_scope, src_loc );
+			auto src_reference= ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( pollution_constant, 1u ) ), num_params, names_scope, src_loc );
 			if( dst_reference.empty() || src_reference.empty() )
 			{
 				continue;
@@ -138,7 +142,11 @@ fn CodeBuilder::EvaluateFunctionReferencePollution( mut this, NamesScopePtr& nam
 	}
 }
 
-fn CodeBuilder::EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : FunctionType::ParamReferences
+fn CodeBuilder::EvaluateFunctionReturnReferences(
+	mut this,
+	NamesScopePtr& names_scope,
+	Synt::Expression& expression,
+	size_type num_params ) : FunctionType::ParamReferences
 {
 	var FunctionType::ParamReferences mut result;
 
@@ -160,7 +168,7 @@ fn CodeBuilder::EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names
 
 		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
-			if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ), names_scope, src_loc ) )
+			if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ), num_params, names_scope, src_loc ) )
 			{
 				result.push_back( param_reference );
 			}
@@ -176,7 +184,11 @@ fn CodeBuilder::EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</ FunctionType::ParamReferences />
+fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
+	mut this,
+	NamesScopePtr& names_scope,
+	Synt::Expression& expression,
+	size_type num_params ) : ust::vector</ FunctionType::ParamReferences />
 {
 	var ust::vector</ FunctionType::ParamReferences /> mut result;
 
@@ -201,7 +213,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& 
 				auto& mut tag_list= result[i];
 				for( auto mut j= 0u64; j < array_type.element_count; ++j )
 				{
-					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(j) ) ), names_scope, src_loc ) )
+					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(j) ) ), num_params, names_scope, src_loc ) )
 					{
 						tag_list.push_back( param_reference );
 					}
@@ -234,7 +246,7 @@ fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& na
 	}
 }
 
-fn ParseEvaluatedParamReference( LLVMValueRef constant, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />
+fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />
 {
 	var u64 param= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( constant, 0u ) ) );
 	var u64 ref= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( constant, 1u ) ) );
@@ -256,6 +268,12 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, NamesScopePtr& names_sco
 		.param_index= u8( param - u64( "0"c8 ) ),
 		.reference_index= select( ref == u64( "_"c8 ) ? FunctionType::c_param_reference_number : u8( ref - u64( "a"c8 ) ) )
 	};
+
+	if( size_type(result.param_index) >= num_params )
+	{
+		REPORT_ERROR( ParamNumberOutOfRange, names_scope, src_loc, size_type(result.param_index), num_params )
+		return ust::null_optional;
+	}
 
 	return result;
 }

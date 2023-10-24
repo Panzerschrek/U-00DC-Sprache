@@ -903,9 +903,9 @@ private:
 
 	fn EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>;
 	fn EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>;
-	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</FunctionType::ReferencePollution/> ;
-	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : FunctionType::ParamReferences;
-	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::vector</ FunctionType::ParamReferences />;
+	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</FunctionType::ReferencePollution/> ;
+	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
+	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</ FunctionType::ParamReferences />;
 	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
 
 	// Coroutines
@@ -962,6 +962,9 @@ private:
 	fn RegisterTemporaryVariable( FunctionContext& mut function_context, VariablePtr variable );
 	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
 	fn RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr variable, size_type frame_index_from_top );
+
+	fn CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn CheckFunctionReferencesNotationParamReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	fn CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;

@@ -425,12 +425,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
-		auto functions_set_ptr= member.value().Get</ FunctionsSet />();
-		if( !functions_set_ptr.empty() )
-		{
-			BuildFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable(), false );
-		}
-
 		// Type aliases required for class completeness.
 		auto type_alias_ptr= member.value().Get</ TypeAlias />();
 		if( !type_alias_ptr.empty() )
@@ -612,9 +606,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto mut lock= class_type.lock_mut();
 		lock.deref().fields_order= move(fields_order);
 	}
-
-	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
-	TryGenerateDestructorPrototype( class_type );
 
 	// Setup inner reference kind. Do this before methods generation and virtual table preparation.
 	{
@@ -880,6 +871,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 	}
+
+	// Prepare functions. Do it before generating methods, but after setting up inner references.
+	foreach( &member : class_members.lock_imut().deref() )
+	{
+		auto functions_set_ptr= member.value().Get</ FunctionsSet />();
+		if( !functions_set_ptr.empty() )
+		{
+			BuildFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable(), false );
+		}
+	}
+
+	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
+	TryGenerateDestructorPrototype( class_type );
 
 	// Prepare virtual table.
 	if( !syntax_element.parents.empty() ||

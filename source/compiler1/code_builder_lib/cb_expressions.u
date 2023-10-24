@@ -3906,20 +3906,19 @@ fn CodeBuilder::DoCallFunction(
 		foreach( &param_reference : function_type.return_references )
 		{
 			var size_type i(param_reference.param_index);
-			auto& arg_node= args_nodes[i];
-			if( arg_node.empty() )
+			if( i >= args_nodes.size() || args_nodes[i].empty() )
 			{
 				continue;
 			}
-			var VariablePtr arg_node_non_null= arg_node.try_to_non_nullable();
+			var VariablePtr arg_node= args_nodes[i].try_to_non_nullable();
 
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				function_context.references_graph.TryAddLink( arg_node_non_null, result_ptr, names_scope, src_loc );
+				function_context.references_graph.TryAddLink( arg_node, result_ptr, names_scope, src_loc );
 			}
 			else
 			{
-				with( &inner_reference_nodes : arg_node_non_null.lock_imut().deref().inner_reference_nodes )
+				with( &inner_reference_nodes : arg_node.lock_imut().deref().inner_reference_nodes )
 				{
 					if( size_type(param_reference.reference_index) < inner_reference_nodes.size() )
 					{
@@ -3937,20 +3936,19 @@ fn CodeBuilder::DoCallFunction(
 			foreach( &param_reference : function_type.return_inner_references[inner_tag_n] )
 			{
 				var size_type i(param_reference.param_index);
-				auto& arg_node= args_nodes[i];
-				if( arg_node.empty() )
+				if( i >= args_nodes.size() || args_nodes[i].empty() )
 				{
 					continue;
 				}
-				var VariablePtr arg_node_non_null= arg_node.try_to_non_nullable();
+				var VariablePtr arg_node= args_nodes[i].try_to_non_nullable();
 
 				if( param_reference.reference_index == FunctionType::c_param_reference_number )
 				{
-					function_context.references_graph.TryAddLink( arg_node_non_null, result_inner_reference_node, names_scope, src_loc );
+					function_context.references_graph.TryAddLink( arg_node, result_inner_reference_node, names_scope, src_loc );
 				}
 				else
 				{
-					with( &inner_reference_nodes : arg_node_non_null.lock_imut().deref().inner_reference_nodes )
+					with( &inner_reference_nodes : arg_node.lock_imut().deref().inner_reference_nodes )
 					{
 						if( size_type(param_reference.reference_index) < inner_reference_nodes.size() )
 						{
@@ -3967,7 +3965,10 @@ fn CodeBuilder::DoCallFunction(
 	{
 		var size_type src_arg(reference_pollution.src.param_index);
 		var size_type dst_arg(reference_pollution.dst.param_index);
-		if( args_nodes[src_arg].empty() ||
+		if(
+			src_arg >= args_nodes.size() ||
+			dst_arg >= args_nodes.size() ||
+			args_nodes[src_arg].empty() ||
 			args_nodes[dst_arg].empty() ||
 			function_type.params[ dst_arg ].value_type == ValueType::Value ) // Skip reference pollution for value params. TODO - is this correct?
 		{

@@ -23,20 +23,30 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		}
 	}
 
-	// TODO - fix this.
-	// We need to know exact number of inner reference tags in order to generate proper pollution for copy constructor and copy assignment operators.
+	const auto create_copy_pollution=
+	[&]
+	{
+		// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
+		// So, we can request it.
+		const size_t references_tags_count= base_class->inner_references.size();
+		for( size_t i= 0u; i < references_tags_count; ++i )
+		{
+			FunctionType::ReferencePollution ref_pollution;
+			ref_pollution.dst.first= 0u;
+			ref_pollution.dst.second= uint8_t(i);
+			ref_pollution.src.first= 1u;
+			ref_pollution.src.second= uint8_t(i);
+			function_type.references_pollution.insert(ref_pollution);
+		}
+	};
+
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
-		FunctionType::ReferencePollution ref_pollution;
-		ref_pollution.dst.first= 0u;
-		ref_pollution.dst.second= 0u;
-		ref_pollution.src.first= 1u;
-		ref_pollution.src.second= 0u;
-		function_type.references_pollution.insert(ref_pollution);
+		create_copy_pollution();
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
@@ -44,18 +54,48 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
-		FunctionType::ReferencePollution ref_pollution;
-		ref_pollution.dst.first= 0u;
-		ref_pollution.dst.second= 0u;
-		ref_pollution.src.first= 1u;
-		ref_pollution.src.second= 0u;
-		function_type.references_pollution.insert(ref_pollution);
+		create_copy_pollution();
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
 	{
 		if( func.type.references_pollution_expression != nullptr )
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc );
 	}
+}
+
+void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	const auto check_param_reference=
+	[&]( const FunctionType::ParamReference& param_reference )
+	{
+		if( param_reference.second != FunctionType::c_arg_reference_tag_number && param_reference.first < function_type.params.size()  )
+		{
+			const Type& type= function_type.params[ param_reference.first ].type;
+			const auto tags_count= type.ReferencesTagsCount();
+			if( param_reference.second >= tags_count )
+			{
+				REPORT_ERROR( ReferenceTagOutOfRange, errors_container, src_loc, param_reference.second, type, tags_count );
+			}
+		}
+	};
+
+	for( const auto& pollution : function_type.references_pollution )
+	{
+		check_param_reference(pollution.dst);
+		check_param_reference(pollution.src);
+	}
+
+	for( const FunctionType::ParamReference& param_reference : function_type.return_references )
+		check_param_reference(param_reference);
+
+	for( const auto& param_references : function_type.return_inner_references )
+		for( const FunctionType::ParamReference& param_reference : param_references )
+			check_param_reference(param_reference);
+
+	const auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+	if( !function_type.return_inner_references.empty() &&
+		function_type.return_inner_references.size() != return_type_tags_count )
+		REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tags_count, function_type.return_inner_references.size() );
 }
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )

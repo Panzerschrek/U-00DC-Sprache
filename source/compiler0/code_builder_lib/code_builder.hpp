@@ -1175,6 +1175,9 @@ private:
 		FunctionType& function_type,
 		ClassPtr base_class );
 
+	// Call this only when types of params and return value are complete.
+	void CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
@@ -1200,9 +1203,9 @@ private:
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
-	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression );
-	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression );
-	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression );
+	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
 	// Coroutines

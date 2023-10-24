@@ -257,7 +257,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		constructor_type.params[1].value_type= ValueType::ReferenceImut;
 
 		// Generate default reference pollution for copying.
-		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
+		for( size_t i= 0u; i < class_type->inner_references.size(); ++i )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
@@ -519,7 +519,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		op_type.params[1].value_type= ValueType::ReferenceImut;
 
 		// Generate default reference pollution for copying.
-		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
+		for( size_t i= 0u; i < class_type->inner_references.size(); ++i )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
