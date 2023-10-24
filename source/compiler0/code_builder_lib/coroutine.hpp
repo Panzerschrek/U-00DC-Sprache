@@ -18,7 +18,7 @@ public:
 	Type return_type;
 	ValueType return_value_type= ValueType::Value;
 
-	std::optional<InnerReferenceType> inner_reference_type;
+	llvm::SmallVector<InnerReferenceType, 4> inner_references;
 	bool non_sync= false;
 
 public:

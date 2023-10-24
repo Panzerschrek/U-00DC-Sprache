@@ -698,7 +698,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 		coroutine_type_description.kind= coroutine_param.kind;
 		coroutine_type_description.return_type= *t;
 		coroutine_type_description.return_value_type= coroutine_param.return_value_type;
-		coroutine_type_description.inner_reference_type= coroutine_param.inner_reference_type;
+		coroutine_type_description.inner_references= coroutine_param.inner_references;
 		coroutine_type_description.non_sync= coroutine_param.non_sync;
 
 		return Type( GetCoroutineType( *args_names_scope.GetRoot(), coroutine_type_description ) );

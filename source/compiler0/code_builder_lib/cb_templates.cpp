@@ -361,13 +361,11 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	else
 		coroutine_param.return_value_type= ValueType::Value;
 
-	if( generator_type_name.inner_reference_tag == nullptr )
-		coroutine_param.inner_reference_type= std::nullopt;
-	else
-		coroutine_param.inner_reference_type=
+	if( generator_type_name.inner_reference_tag != nullptr )
+		coroutine_param.inner_references.push_back(
 			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
 				? InnerReferenceType::Mut
-				: InnerReferenceType::Imut;
+				: InnerReferenceType::Imut );
 
 	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
@@ -693,7 +691,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				return
 					coroutine_type_description->kind == template_param.kind &&
 					coroutine_type_description->return_value_type == template_param.return_value_type &&
-					coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
+					coroutine_type_description->inner_references == template_param.inner_references &&
 					coroutine_type_description->non_sync == template_param.non_sync &&
 					MatchTemplateArg( template_, args_names_scope, coroutine_type_description->return_type, *template_param.return_type );
 			}

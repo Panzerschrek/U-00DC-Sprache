@@ -414,12 +414,12 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 		mangler_state.Push( "E" );
 	}
 
-	// Encode inner reference kind as variable template parameter.
-	if( coroutine_type_description->inner_reference_type != std::nullopt )
+	// Encode inner references as variable template parameters.
+	for( const InnerReferenceType inner_reference : coroutine_type_description->inner_references )
 	{
 		mangler_state.Push( "L" );
 		mangler_state.Push( EncodeFundamentalType( U_FundamentalType::u32_ ) );
-		mangler_state.Push( std::to_string( size_t( *coroutine_type_description->inner_reference_type ) ) );
+		mangler_state.Push( std::to_string( size_t( inner_reference ) ) );
 		mangler_state.Push( "E" );
 	}
 

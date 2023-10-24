@@ -15,39 +15,26 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 	coroutine_type_description.kind= CoroutineKind::Generator;
 	coroutine_type_description.return_type= generator_function_type.return_type;
 	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
-	coroutine_type_description.inner_reference_type= std::nullopt;
 	coroutine_type_description.non_sync= non_sync;
+
+	// Calculate inner references.
+	// Each reference param adds new inner reference.
+	// Each value param creates number of references equal to number of inner references of its type.
+	// For now reference params of types with references inside are not supported.
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner reference kind.
+			// Require type completeness for value params in order to know inner references.
 			if( EnsureTypeComplete( param.type ) )
 			{
 				const auto reference_tag_count= param.type.ReferencesTagsCount();
-				if( reference_tag_count > 0 )
-				{
-					InnerReferenceType param_type_inner_reference_type= InnerReferenceType::Imut;
-					for( size_t i= 0; i < reference_tag_count; ++i )
-						param_type_inner_reference_type= std::max( param_type_inner_reference_type, param.type.GetInnerReferenceType(i) );
-
-					if( param_type_inner_reference_type == InnerReferenceType::Mut )
-						coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
-					else if( param_type_inner_reference_type == InnerReferenceType::Imut && coroutine_type_description.inner_reference_type == std::nullopt )
-						coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
-				}
+				for( size_t i= 0; i < reference_tag_count; ++i )
+					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceType(i) );
 			}
 		}
 		else
-		{
-			// Assume this is a reference to type with no references inside.
-			// This is checked later - when building function code.
-			// Do this later in order to avoid full type building for reference params.
-			if( param.value_type == ValueType::ReferenceMut )
-				coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
-			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == std::nullopt )
-				coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
-		}
+			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 	}
 
 	return GetCoroutineType( root_namespace, coroutine_type_description );
@@ -88,10 +75,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->generated_class_data= coroutine_type_description;
-
-	if( coroutine_type_description.inner_reference_type != std::nullopt )
-		coroutine_class->inner_references.push_back( *coroutine_type_description.inner_reference_type );
-
+	coroutine_class->inner_references= coroutine_type_description.inner_references;
 	coroutine_class->members->SetClass( coroutine_class.get() );
 	coroutine_class->parents_list_prepared= true;
 	coroutine_class->is_default_constructible= false;
