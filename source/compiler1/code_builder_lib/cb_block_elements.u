@@ -1139,14 +1139,28 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, if_coro_advance_operator.src_loc );
 
-			if( result_type.ReferencesTagsCount() > 0u )
+			with( &inner_references : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
 			{
-				// TODO - perform proper reference mapping.
-				function_context.references_graph.TryAddInnerLinks(
-					coro_expr_lock,
-					variable_ptr,
-					names_scope,
-					if_coro_advance_operator.src_loc );
+				with( &variable_inner_references : variable_ptr.lock_imut().deref().inner_reference_nodes )
+				{
+					for( auto mut i= 0s; i < ust::min( variable_inner_references.size(), coroutine_type_description.return_inner_references.size() ); ++i )
+					{
+						var VariablePtr& varaible_inner_reference= variable_inner_references[i];
+						foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
+						{
+							debug_assert( param_reference.param_index == 0u8 );
+							debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+							if( size_type(param_reference.reference_index) < inner_references.size() )
+							{
+								function_context.references_graph.TryAddLink(
+									inner_references[ size_type(param_reference.reference_index) ],
+									varaible_inner_reference,
+									names_scope,
+									if_coro_advance_operator.src_loc );
+							}
+						}
+					}
+				}
 			}
 		}
 		else
@@ -1196,15 +1210,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, if_coro_advance_operator.src_loc );
 
-				if( result_type.ReferencesTagsCount() > 0u )
-				{
-					// TODO - perform proper reference mapping.
-					function_context.references_graph.TryAddInnerLinks(
-						coro_expr_lock,
-						variable_ptr,
-						names_scope,
-						if_coro_advance_operator.src_loc );
-				}
 				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
 			else
@@ -1221,16 +1226,17 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					lock.deref().llvm_value= coroutine_reference_result;
 				}
 
-				if( result_type.ReferencesTagsCount() > 0u )
+				with( &inner_references : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
 				{
-					// TODO - perform proper reference mapping.
-					with( &inner_reference_nodes : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
+					foreach( &param_reference : coroutine_type_description.return_references )
 					{
-						if( !inner_reference_nodes.empty() )
+						debug_assert( param_reference.param_index == 0u8 );
+						debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+						if( size_type(param_reference.reference_index) < inner_references.size() )
 						{
 							function_context.references_graph.TryAddLink(
-								inner_reference_nodes.front(),
-								variable_reference.lock_imut().deref().inner_reference_nodes.front(),
+								inner_references[ size_type(param_reference.reference_index) ],
+								variable_reference,
 								names_scope,
 								if_coro_advance_operator.src_loc );
 						}
