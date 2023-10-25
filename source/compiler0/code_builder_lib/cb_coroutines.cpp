@@ -66,7 +66,7 @@ void CodeBuilder::TransformGeneratorFunctionType(
 		if( param_reference.second == FunctionType::c_arg_reference_tag_number )
 			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
 		else
-			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
+			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
 
 		coroutine_type_description.return_references.insert( out_reference );
 	}

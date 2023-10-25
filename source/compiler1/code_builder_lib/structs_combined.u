@@ -905,6 +905,19 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 	{
 		hash= TypeHasher::hash_combine( hash, size_type(inner_reference) );
 	}
+	foreach( &param_reference : d.return_references )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type(param_reference.param_index) );
+		hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
+	}
+	foreach( &param_references : d.return_inner_references )
+	{
+		foreach( &param_reference : param_references )
+		{
+			hash= TypeHasher::hash_combine( hash, size_type(param_reference.param_index) );
+			hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
+		}
+	}
 	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
 	return hash;
 }

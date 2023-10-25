@@ -27,10 +27,15 @@ fn CodeBuilder::TransformGeneratorFunctionType(
 
 	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
 
+	var ust::vector</size_type/> mut param_to_first_inner_reference_tag;
+	param_to_first_inner_reference_tag.resize( generator_function_type.params.size(), 0s );
+
 	var ust::vector</ FunctionType::ParamReferences /> mut coroutine_return_inner_ferences;
 
-	foreach( &param : generator_function_type.params )
+	for( auto mut param_index= 0s; param_index < generator_function_type.params.size(); ++param_index )
 	{
+		var FunctionType::Param& param= generator_function_type.params[param_index];
+		param_to_first_inner_reference_tag[param_index]= coroutine_type_description.inner_references.size();
 		if( param.value_type == ValueType::Value )
 		{
 			// Require type completeness for value params in order to know inner references.
@@ -40,6 +45,11 @@ fn CodeBuilder::TransformGeneratorFunctionType(
 				for( auto mut i= 0u; i < reference_tags_count; ++i )
 				{
 					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
+
+					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_index), .reference_index= u8(i) };
+					var FunctionType::ParamReferences mut param_references;
+					param_references.push_back( move(param_reference) );
+					coroutine_return_inner_ferences.push_back( move(param_references) );
 				}
 			}
 		}
@@ -49,6 +59,54 @@ fn CodeBuilder::TransformGeneratorFunctionType(
 			// This is checked later - when building function code.
 			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back( select( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+
+			var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number };
+			var FunctionType::ParamReferences mut param_references;
+			param_references.push_back( move(param_reference) );
+			coroutine_return_inner_ferences.push_back( move(param_references) );
+		}
+	}
+
+	// Fill references of return value.
+	foreach( &param_reference : generator_function_type.return_references )
+	{
+		if( size_type( param_reference.param_index) >= generator_function_type.params.size() )
+		{
+			continue;
+		}
+
+		var FunctionType::ParamReference mut out_reference
+		{
+			.param_index(0),
+			.reference_index= select(
+				param_reference.reference_index == FunctionType::c_param_reference_number
+					? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
+					: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
+		};
+
+		coroutine_type_description.return_references.push_back( move(out_reference) );
+	}
+
+	coroutine_type_description.return_inner_references.resize( generator_function_type.return_inner_references.size() );
+	for( auto mut i= 0s; i < generator_function_type.return_inner_references.size(); ++i )
+	{
+		foreach( &param_reference : generator_function_type.return_inner_references[i] )
+		{
+			if( size_type( param_reference.param_index) >= generator_function_type.params.size() )
+			{
+				continue;
+			}
+
+			var FunctionType::ParamReference mut out_reference
+			{
+				.param_index(0),
+				.reference_index= select(
+					param_reference.reference_index == FunctionType::c_param_reference_number
+						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
+						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
+			};
+
+			coroutine_type_description.return_inner_references[i].push_back( move(out_reference) );
 		}
 	}
 
