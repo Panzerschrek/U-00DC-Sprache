@@ -1946,19 +1946,22 @@ fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 {
 	with( &inner_reference_nodes : node.lock_imut().deref().inner_reference_nodes )
 	{
-		for( var size_type mut i= 0s; i < ust::min( inner_reference_nodes.size(), coroutine_type_description.return_inner_references.size() ); ++i )
+		for( var size_type mut i= 0s; i < inner_reference_nodes.size(); ++i )
 		{
 			foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
 			{
 				auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
 
 				var bool mut found= false;
-				foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
+				if( i < coroutine_type_description.return_inner_references.size() )
 				{
-					if( coroutine_inner_reference == param_reference )
+					foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
 					{
-						found= true;
-						break;
+						if( coroutine_inner_reference == param_reference )
+						{
+							found= true;
+							break;
+						}
 					}
 				}
 
