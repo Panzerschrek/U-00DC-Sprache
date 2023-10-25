@@ -977,11 +977,11 @@ def ReturningUnallowedReference_ForGeneratorYield_Test9():
 	c_program_text= """
 		struct S{ i32& x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn generator Foo( i32 x ) : S
+		fn generator Foo( i32 x ) : S @(return_inner_references)
 		{
 			var S s{ .x= x };
 			yield s; // Returning reference inside a struct to value-argument. This is also forbidden.
-	}
+		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

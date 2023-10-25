@@ -413,10 +413,9 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 				return;
 			}
 
-			var VariableLite expr= expr_ptr.lock_imut().deref();
-
 			CheckYieldInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
 
+			var VariableLite expr= expr_ptr.lock_imut().deref();
 			if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
 			{
 				// Process composite value.

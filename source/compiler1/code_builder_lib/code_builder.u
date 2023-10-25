@@ -1944,14 +1944,14 @@ fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 {
 	with( &inner_reference_nodes : node.lock_imut().deref().inner_reference_nodes )
 	{
-		for( var size_type mut i= 0s; i < inner_reference_nodes.size(); ++i )
+		for( var size_type mut i= 0s; i < ust::min( inner_reference_nodes.size(), coroutine_type_description.return_inner_references.size() ); ++i )
 		{
 			foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
 			{
 				auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
 
 				var bool mut found= false;
-				foreach( &param_reference : coroutine_type_description.return_references )
+				foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
 				{
 					if( coroutine_inner_reference == param_reference )
 					{
@@ -1983,9 +1983,10 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 
 		if( param.value_type == ValueType::Value )
 		{
-			for( var size_type mut j= 0s; j < function_context.args_inner_variable_nodes[i].size(); ++j )
+			auto& inner_nodes= function_context.args_inner_variable_nodes[i];
+			for( var size_type mut j= 0s; j < inner_nodes.size(); ++j )
 			{
-				if( node == function_context.args_inner_variable_nodes[i][j] )
+				if( node == inner_nodes[j] )
 				{
 					var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
 					return move(param_reference);
