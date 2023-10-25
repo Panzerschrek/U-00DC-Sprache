@@ -760,6 +760,54 @@ def AccessingVariable_LinkedToGeneratorArgument_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def AccessingVariable_LinkedToGeneratorArgument_Test8():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn generator SomeGen( i32 &mut x, i32 &mut y ) : i32 &mut @( return_references );
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S mut s{ .x= a };
+			{
+				auto mut gen= SomeGen( b, c ); // Save references to "b" and "c" inside "gen".
+				if_coro_advance( &mut res : gen ) // "res" is now a reference to "b".
+				{
+					var S mut other_s{ .x= res };
+					s= move(other_s); // Save now reference to "res" inside "s".
+				}
+			}
+			auto& mut b_ref= b; // Error - a mutable reference to "b" still exists inside "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test9():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn generator SomeGen( i32 &mut x, i32 &mut y ) : i32 &mut @( return_references );
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S mut s{ .x= a };
+			{
+				auto mut gen= SomeGen( b, c ); // Save references to "b" and "c" inside "gen".
+				if_coro_advance( &mut res : gen ) // "res" is now a reference to "c".
+				{
+					var S mut other_s{ .x= res };
+					s= move(other_s); // Save now reference to "res" inside "s".
+				}
+			}
+			auto& mut b_ref= b; // Ok - create reference to "b". There is no reference to it inside "s".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AccessingGenerator_InsideIfCoroAdvance_Test0():
 	c_program_text= """
 		fn generator SomeGen() : i32;
