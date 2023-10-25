@@ -590,12 +590,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 	};
 
-	if( !signature_param.inner_reference_tag.empty() )
+	foreach( &m : signature_param.inner_reference_tags )
 	{
-		coroutine_type_param.inner_reference_kind=
-			select( signature_param.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable
-				? InnerReferenceKind::Mut
-				: InnerReferenceKind::Imut );
+		coroutine_type_param.inner_reference_kind= select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 	}
 
 	return move(coroutine_type_param);
