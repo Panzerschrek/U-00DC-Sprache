@@ -519,18 +519,13 @@ public:
 	GeneratorType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
-	struct InnerReferenceTag
-	{
-		std::string name;
-		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	};
 
 public:
 	SrcLoc src_loc;
 	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
-	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
+	std::vector<MutabilityModifier> inner_references;
 	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
 	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;

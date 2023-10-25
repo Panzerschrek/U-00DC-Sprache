@@ -181,11 +181,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	else
 		coroutine_type_description.return_value_type= ValueType::Value;
 
-	if( generator_type_name.inner_reference_tag != nullptr )
-		coroutine_type_description.inner_references.push_back(
-			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
-				? InnerReferenceType::Mut
-				: InnerReferenceType::Imut );
+	coroutine_type_description.inner_references.reserve( generator_type_name.inner_references.size() );
+	for( const Synt::MutabilityModifier m : generator_type_name.inner_references )
+		coroutine_type_description.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 
 	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 

@@ -28,7 +28,7 @@ def GeneratorMismatch_Test2():
 			fn generator Foo(this) : i32;
 		}
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn S::Foo(this) : ( generator'imut this_tag' : i32 ) @(return_inner_references) { }
+		fn S::Foo(this) : ( generator'imut' : i32 ) @(return_inner_references) { }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -40,7 +40,7 @@ def GeneratorMismatch_Test3():
 		struct S
 		{
 			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-			fn Foo(this) : ( generator'imut this_tag' : i32 ) @(return_inner_references);
+			fn Foo(this) : ( generator'imut' : i32 ) @(return_inner_references);
 		}
 		fn generator S::Foo(this) : i32 { }
 	"""
@@ -574,7 +574,7 @@ def IfCoroAdvance_UseAbstractType_Test1():
 		{
 			fn constructor(mut this, A& other)= default;
 		}
-		fn Foo( (generator'imut a' : A&) mut gen )
+		fn Foo( (generator'imut' : A&) mut gen )
 		{
 			if_coro_advance( a : gen ) // Bind here abstract reference to value. This is an error, because value is abstract.
 			{}
@@ -1064,7 +1064,7 @@ def VirtualGenerator_Test1():
 	c_program_text= """
 		class A polymorph
 		{
-			fn virtual Foo(this) : (generator'imut some_tag' : i32); // Ok - virtual method, returning generator.
+			fn virtual Foo(this) : (generator'imut' : i32); // Ok - virtual method, returning generator.
 		}
 		class B : A
 		{
@@ -1081,7 +1081,7 @@ def VirtualGenerator_Test2():
 	c_program_text= """
 		class A interface
 		{
-			fn virtual pure Foo(this) : (generator'imut some_tag' : i32); // Ok - virtual method, returning generator.
+			fn virtual pure Foo(this) : (generator'imut' : i32); // Ok - virtual method, returning generator.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

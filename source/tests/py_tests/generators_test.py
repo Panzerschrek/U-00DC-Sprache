@@ -460,15 +460,15 @@ def GeneratorTypeName_Test4():
 
 def GeneratorTypeName_Test5():
 	c_program_text= """
-		type Gen= generator'some_tag' : i32;
-		static_assert( typeinfo</Gen/>.references_tags_count == 1s );
+		type Gen= generator'mut, imut, mut' : i32;
+		static_assert( typeinfo</Gen/>.references_tags_count == 3s );
 	"""
 	tests_lib.build_program( c_program_text )
 
 
 def GeneratorTypeName_Test6():
 	c_program_text= """
-		type MutGen= generator'mut some_tag' : i32 &;
+		type MutGen= generator'imut' : i32 &;
 		static_assert( typeinfo</MutGen/>.references_tags_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -477,7 +477,7 @@ def GeneratorTypeName_Test6():
 def GeneratorTypeName_Test7():
 	c_program_text= """
 		struct S{ i32 &imut x; }
-		type ImutGen= generator'mut some_tag' : S;
+		type ImutGen= generator'mut' : S;
 		static_assert( typeinfo</ImutGen/>.references_tags_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -493,7 +493,7 @@ def GeneratorTypeName_Test8():
 
 def GeneratorTypeName_Test9():
 	c_program_text= """
-		type Gen= generator'imut some_tag' non_sync : i32;
+		type Gen= generator'imut' non_sync : i32;
 		static_assert( non_sync</ Gen /> );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -510,7 +510,7 @@ def GeneratorTypeName_Test10():
 def GeneratorTypeName_Test11():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		type Gen= generator'imut tag' : i32 & @(return_references);
+		type Gen= generator'imut' : i32 & @(return_references);
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -519,7 +519,7 @@ def GeneratorTypeName_Test12():
 	c_program_text= """
 		struct S{ i32& mut x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
-		type Gen= generator'mut tag' : S @(return_inner_references);
+		type Gen= generator'mut' : S @(return_inner_references);
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1247,7 +1247,7 @@ def Typeinfo_ForGenerators_Test0():
 
 def Typeinfo_ForGenerators_Test1():
 	c_program_text= """
-		type F64RefGen= generator'imut some_tag' : f64 &;
+		type F64RefGen= generator'imut' : f64 &;
 		auto& f64_ref_gen_typeinfo= typeinfo</F64RefGen/>;
 
 		static_assert( f64_ref_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
@@ -1265,7 +1265,7 @@ def Typeinfo_ForGenerators_Test1():
 
 def Typeinfo_ForGenerators_Test2():
 	c_program_text= """
-		type MutCharRefGen= generator'mut some_tag' : char8 &mut;
+		type MutCharRefGen= generator'mut' : char8 &mut;
 		auto& mut_ref_char_gen_typeinfo= typeinfo</MutCharRefGen/>;
 
 		static_assert( mut_ref_char_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
