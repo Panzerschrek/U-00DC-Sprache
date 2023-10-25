@@ -675,7 +675,8 @@ def AccessingVariable_LinkedToGeneratorArgument_Test3():
 			i32 &mut x;
 			op=(mut this, S& other);
 		}
-		fn generator SomeGen(i32 &mut x) : S;
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator SomeGen(i32 &mut x) : S @(return_inner_references);
 		fn Foo()
 		{
 			var i32 mut y= 0;
@@ -691,7 +692,72 @@ def AccessingVariable_LinkedToGeneratorArgument_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 19 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn generator SomeGen(this) : i32;
+		}
+		fn Foo()
+		{
+			var S mut s;
+			auto gen= s.SomeGen();
+			Bar( s ); // Error - taking mutable reference to "s", that has immutable reference inside "gen".
+		}
+		fn Bar( S &mut s );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn generator SomeGen(mut this) : i32;
+		}
+		fn Foo()
+		{
+			var S mut s;
+			auto gen= s.SomeGen();
+			auto& s_ref= s; // Error - taking immutable reference to "s", that has mutable reference inside "gen".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test6():
+	c_program_text= """
+		fn generator Gen( i32 &mut x, i32 &imut y ) {}
+		fn Foo()
+		{
+			var i32 mut x= 0, imut y= 0;
+			// Since generator type contains inner references for all input references immutable args linked only immutable.
+			auto gen= Gen( x, y );
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 2s );
+			auto& y_ref= y; // Ok - create second immutable reference when an immutable reference inside "gen" exists.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test7():
+	c_program_text= """
+		fn generator SomeGen(i32 x) : i32;
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			auto gen= SomeGen(x);
+			++x; // Ok, "x" is passed by value and was not linked to "gen".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def AccessingGenerator_InsideIfCoroAdvance_Test0():
@@ -745,71 +811,6 @@ def AccessingGenerator_InsideIfCoroAdvance_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "MovedVariableHaveReferences", 8 ) )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test3():
-	c_program_text= """
-		struct S
-		{
-			fn generator SomeGen(this) : i32;
-		}
-		fn Foo()
-		{
-			var S mut s;
-			auto gen= s.SomeGen();
-			Bar( x ); // Error - taking mutable reference to "s", that has immutable reference inside "gen".
-		}
-		fn Bar( S &mut s );
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test4():
-	c_program_text= """
-		struct S
-		{
-			fn generator SomeGen(mut this) : i32;
-		}
-		fn Foo()
-		{
-			var S mut s;
-			auto gen= s.SomeGen();
-			auto& s_ref= s; // Error - taking immutable reference to "s", that has mutable reference inside "gen".
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test5():
-	c_program_text= """
-		fn generator Gen( i32 &mut x, i32 &imut y ) {}
-		fn Foo()
-		{
-			var i32 mut x= 0, imut y= 0;
-			// Since generator type contains inner references for all input references immutable args linked only immutable.
-			auto gen= Gen( x, y );
-			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 2s );
-			auto& y_ref= y; // Ok - create second immutable reference when an immutable reference inside "gen" exists.
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test3():
-	c_program_text= """
-		fn generator SomeGen(i32 x) : i32;
-		fn Foo()
-		{
-			var i32 mut x= 42;
-			auto gen= SomeGen(x);
-			++x; // Ok, "x" is passed by value and was not linked to "gen".
-		}
-	"""
-	tests_lib.build_program( c_program_text )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test0():
