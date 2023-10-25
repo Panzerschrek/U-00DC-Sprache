@@ -482,6 +482,8 @@ fn CodeBuilder::PrepareFunction(
 	var bool is_generator= function_declaration.kind == Synt::Function::Kind::Generator;
 	if( is_generator )
 	{
+		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
+
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
 		TransformGeneratorFunctionType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
 
@@ -493,7 +495,7 @@ fn CodeBuilder::PrepareFunction(
 				{
 					if( name_lookup.name == KeywordToString( Keyword::auto_ ) )
 					{
-						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr,  function_declaration.src_loc )
+						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr, function_declaration.src_loc )
 					}
 				}
 			}

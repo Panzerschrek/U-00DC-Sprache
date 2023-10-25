@@ -1067,6 +1067,8 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( func_variable.is_generator )
 		{
+			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
+
 			TransformGeneratorFunctionType(
 				names_scope,
 				function_type,

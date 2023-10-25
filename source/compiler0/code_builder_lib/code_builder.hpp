@@ -1226,6 +1226,9 @@ private:
 
 	// Coroutines
 
+	// Call this before transforming function type.
+	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
 	// Make return type - generator type and prepare it properly. Modifies given function type.
 	void TransformGeneratorFunctionType( NamesScope& root_namespace, FunctionType& generator_function_type, bool non_sync );
 

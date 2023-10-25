@@ -910,6 +910,9 @@ private:
 
 	// Coroutines
 
+	// Call this before transforming function type.
+	fn PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
 	// Make return type - generator type and prepare it properly. Modifies given function type.
 	fn TransformGeneratorFunctionType( mut this, NamesScopePtr& root_namespace, FunctionType &mut generator_function_type, bool non_sync_ );
 

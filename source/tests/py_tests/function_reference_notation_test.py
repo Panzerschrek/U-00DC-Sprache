@@ -292,6 +292,14 @@ def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
 
+def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test2():
+	c_program_text= """
+		struct R{ i32& x; }
+		fn generator Foo( i32& x ) : R { halt; } // Expected 1 tags, got 0 tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 3 ) )
+
 
 def FunctionReferenceNotationIsNormalized_Test0():
 	c_program_text= """

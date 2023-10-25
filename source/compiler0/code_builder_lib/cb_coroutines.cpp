@@ -6,6 +6,28 @@
 namespace U
 {
 
+void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	// Require completeness of value params and return values before performing checks.
+
+	for( const FunctionType::Param& param : function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+			EnsureTypeComplete( param.type );
+	}
+
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		EnsureTypeComplete( function_type.return_type );
+		const size_t return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+		// For coroutines use strict criteria - require setting reference notation with exact size.
+		if( function_type.return_inner_references.size() != return_type_tags_count )
+			REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tags_count, function_type.return_inner_references.size() );
+	}
+
+	CheckFunctionReferencesNotationInnerReferences( function_type, errors_container, src_loc );
+}
+
 void CodeBuilder::TransformGeneratorFunctionType(
 	NamesScope& root_namespace,
 	FunctionType& generator_function_type,
