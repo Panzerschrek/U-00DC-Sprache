@@ -531,6 +531,8 @@ public:
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
 	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
+	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
+	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };

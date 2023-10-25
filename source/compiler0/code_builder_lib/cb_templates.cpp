@@ -369,6 +369,12 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
+	const size_t num_params= 1;
+	if( generator_type_name.return_value_reference_expression != nullptr )
+		coroutine_param.return_references= EvaluateFunctionReturnReferences( names_scope, *generator_type_name.return_value_reference_expression, num_params );
+	if( generator_type_name.return_value_inner_references_expression != nullptr )
+		coroutine_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *generator_type_name.return_value_inner_references_expression, num_params );
+
 	return coroutine_param;
 }
 

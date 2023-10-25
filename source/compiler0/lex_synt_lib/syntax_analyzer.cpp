@@ -1467,6 +1467,12 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		ExpectLexem( Lexem::Type::Colon );
 		generator_type.return_type= ParseTypeName();
 
+		if( it_->type == Lexem::Type::At )
+		{
+			NextLexem();
+			generator_type.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+		}
+
 		if( it_->type == Lexem::Type::And )
 		{
 			NextLexem();
@@ -1484,6 +1490,12 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 					generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
 					NextLexem();
 				}
+			}
+
+			if( it_->type == Lexem::Type::At )
+			{
+				NextLexem();
+				generator_type.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 			}
 		}
 

@@ -488,6 +488,7 @@ def GeneratorTypeName_Test8():
 		type Gen= generator non_sync : i32;
 		static_assert( non_sync</ Gen /> );
 	"""
+	tests_lib.build_program( c_program_text )
 
 
 def GeneratorTypeName_Test9():
@@ -495,6 +496,7 @@ def GeneratorTypeName_Test9():
 		type Gen= generator'imut some_tag' non_sync : i32;
 		static_assert( non_sync</ Gen /> );
 	"""
+	tests_lib.build_program( c_program_text )
 
 
 def GeneratorTypeName_Test10():
@@ -502,6 +504,24 @@ def GeneratorTypeName_Test10():
 		type Gen= generator non_sync(false) : i32;
 		static_assert( !non_sync</ Gen /> );
 	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorTypeName_Test11():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		type Gen= generator'imut tag' : i32 & @(return_references);
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorTypeName_Test12():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		type Gen= generator'mut tag' : S @(return_inner_references);
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def GeneratorTypeName_AsTemplateSignatureArgument_Test0():

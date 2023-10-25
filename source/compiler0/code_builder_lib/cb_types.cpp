@@ -192,8 +192,11 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc ) )
 		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc );
 
-	// For now there is no reason to process reference tags.
-	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
+	const size_t num_params= 1;
+	if( generator_type_name.return_value_reference_expression != nullptr )
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, *generator_type_name.return_value_reference_expression, num_params );
+	if( generator_type_name.return_value_inner_references_expression != nullptr )
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *generator_type_name.return_value_inner_references_expression, num_params );
 
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
