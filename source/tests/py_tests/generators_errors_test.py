@@ -596,27 +596,6 @@ def ReferencesPollution_ForGenerator_Test0():
 	assert( HaveError( errors_list, "NotImplemented", 4 ) )
 
 
-def ExplicitReturnReferenceTags_ForGenerators_Test0():
-	c_program_text= """
-		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
-		fn generator Foo( i32 & x ) : i32 & @(return_references);
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 3 ) )
-
-
-def ExplicitReturnReferenceTags_ForGenerators_Test1():
-	c_program_text= """
-		struct S{ i32 & x; }
-		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn generator Foo( i32 & x ) : S @(return_inner_references);
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 4 ) )
-
-
 def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
