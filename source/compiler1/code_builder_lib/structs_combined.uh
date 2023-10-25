@@ -730,6 +730,9 @@ public:
 
 		ust::vector</InnerReferenceKind/> inner_references;
 		bool non_sync_;
+
+		FunctionType::ParamReferences return_references;
+		ust::vector</FunctionType::ParamReferences/> return_inner_references;
 	}
 
 	struct SpecializedTemplateParam

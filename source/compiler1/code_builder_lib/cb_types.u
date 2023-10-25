@@ -177,6 +177,16 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		coroutine_type_description.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 	}
 
+	auto num_params= 1s;
+	if_var( &return_value_reference_expression : generator_type.return_value_reference_expression )
+	{
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression, num_params );
+	}
+	if_var( &return_value_inner_references_expression : generator_type.return_value_inner_references_expression )
+	{
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression, num_params );
+	}
+
 	// For now there is no reason to process reference tag.
 	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
 	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
