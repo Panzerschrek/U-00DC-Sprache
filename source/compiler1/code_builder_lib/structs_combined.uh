@@ -553,7 +553,7 @@ struct CoroutineTypeDescription
 	Type return_type;
 	ValueType return_value_type;
 
-	ust::optional</InnerReferenceKind/> inner_reference_kind;
+	ust::vector</InnerReferenceKind/> inner_references;
 	bool non_sync_;
 
 	type hasher= CoroutineTypeDescriptionHasher;
@@ -725,7 +725,7 @@ public:
 		TemplateSignatureParam return_type;
 		ValueType return_value_type;
 
-		ust::optional</InnerReferenceKind/> inner_reference_kind;
+		ust::vector</InnerReferenceKind/> inner_references;
 		bool non_sync_;
 	}
 

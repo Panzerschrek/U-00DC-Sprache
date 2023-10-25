@@ -6,7 +6,11 @@ import "error_reporting.uh"
 namespace U1
 {
 
-fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr
+fn CodeBuilder::TransformGeneratorFunctionType(
+	mut this,
+	NamesScopePtr& root_namespace,
+	FunctionType &mut generator_function_type,
+	bool non_sync_ )
 {
 	var CoroutineTypeDescription mut coroutine_type_description
 	{
@@ -16,24 +20,26 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 		.non_sync_= non_sync_,
 	};
 
+	// Calculate inner references.
+	// Each reference param adds new inner reference.
+	// Each value param creates number of references equal to number of inner references of its type.
+	// For now reference params of types with references inside are not supported.
+
+	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
+
+	var ust::vector</ FunctionType::ParamReferences /> mut coroutine_return_inner_ferences;
+
 	foreach( &param : generator_function_type.params )
 	{
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner reference kind.
+			// Require type completeness for value params in order to know inner references.
 			if( EnsureTypeComplete( param.t ) )
 			{
 				auto reference_tags_count= param.t.ReferencesTagsCount();
 				for( auto mut i= 0u; i < reference_tags_count; ++i )
 				{
-					auto inner_kind= param.t.GetInnerReferenceKind( size_type(i) );
-					if_var( &mut k : coroutine_type_description.inner_reference_kind )
-					{
-						k= ust::max( k, inner_kind );
-						continue;
-					}
-
-					coroutine_type_description.inner_reference_kind= inner_kind;
+					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
 				}
 			}
 		}
@@ -42,48 +48,17 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 			// Assume this is a reference to type with no references inside.
 			// This is checked later - when building function code.
 			// Do this later in order to avoid full type building for reference params.
-			if( param.value_type == ValueType::ReferenceMut )
-			{
-				coroutine_type_description.inner_reference_kind= InnerReferenceKind::Mut;
-			}
-			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_kind.empty() )
-			{
-				coroutine_type_description.inner_reference_kind= InnerReferenceKind::Imut;
-			}
+			coroutine_type_description.inner_references.push_back( select( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 		}
 	}
 
-	return GetCoroutineType( root_namespace, coroutine_type_description );
-}
+	// Coroutine function returns value of coroutine type.
+	generator_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	generator_function_type.return_value_type= ValueType::Value;
 
-fn CodeBuilder::GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>
-{
-	var ust::vector</FunctionType::ParamReference/> mut result;
-	auto mut i= 0u;
-	foreach( &param : generator_function_type.params )
-	{
-		if( param.value_type == ValueType::Value )
-		{
-			EnsureTypeComplete( param.t );
-			if( param.t.ReferencesTagsCount() > 0u )
-			{
-				// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
-				// TODO - maybe check real inner reference kind here?
-				var FunctionType::ParamReference param_reference{ .param_index= u8(i), .reference_index= 0u8 };
-				result.push_back( param_reference );
-			}
-		}
-		else
-		{
-			// Assume, that generator function returns a generator, which internal node points to all reference args.
-			var FunctionType::ParamReference param_reference{.param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
-			result.push_back( param_reference );
-		}
-		++i;
-	}
-
-	ust::sort(result.range());
-	return move(result);
+	// Params references and references inside param types are mapped to generator type inner references.
+	generator_function_type.return_inner_references= move(coroutine_return_inner_ferences);
+	generator_function_type.return_references.clear();
 }
 
 fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr
@@ -107,13 +82,9 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		// This class allocates heep memory and because of that can't be constexpr.
 		.can_be_constexpr= false,
 		.parents_list_prepared= true,
+		.inner_references= coroutine_type_description.inner_references,
 		.generated_class_data( coroutine_type_description ),
 	};
-
-	if_var( inner_reference_kind : coroutine_type_description.inner_reference_kind )
-	{
-		class_type.inner_references.push_back( inner_reference_kind );
-	}
 
 	var ClassTypePtr class_type_ptr( move(class_type) );
 

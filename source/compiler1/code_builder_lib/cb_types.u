@@ -174,7 +174,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	foreach( &m : generator_type.inner_reference_tags )
 	{
-		coroutine_type_description.inner_reference_kind= select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+		coroutine_type_description.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 	}
 
 	// For now there is no reason to process reference tag.
