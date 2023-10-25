@@ -1977,8 +1977,6 @@ fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>
 {
 	// Map coroutine function input references to returned coroutine inner references.
-	// Than check if this inner reference is present inside coroutine return references.
-
 	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
 
 	auto mut coroutine_inner_reference_index= 0s;

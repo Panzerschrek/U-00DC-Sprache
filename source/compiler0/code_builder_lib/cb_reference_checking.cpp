@@ -257,8 +257,6 @@ void CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 std::optional<FunctionType::ParamReference> CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, const VariablePtr& node )
 {
 	// Map coroutine function input references to returned coroutine inner references.
-	// Than check if this inner reference is present inside coroutine return references.
-
 	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
 
 	size_t coroutine_inner_reference_index= 0;
