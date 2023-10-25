@@ -1907,6 +1907,108 @@ fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& functio
 	return false;
 }
 
+fn CodeBuilder::CheckYieldReferenceIsAllowed(
+	NamesScopePtr& names,
+	FunctionContext& function_context,
+	CoroutineTypeDescription& coroutine_type_description,
+	VariablePtr& node,
+	SrcLoc& src_loc )
+{
+	foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( node ) )
+	{
+		auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+		var bool mut found= false;
+		foreach( &param_reference : coroutine_type_description.return_references )
+		{
+			if( coroutine_inner_reference == param_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+		}
+	}
+}
+
+fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+	NamesScopePtr& names,
+	FunctionContext& function_context,
+	CoroutineTypeDescription& coroutine_type_description,
+	VariablePtr& node,
+	SrcLoc& src_loc )
+{
+	with( &inner_reference_nodes : node.lock_imut().deref().inner_reference_nodes )
+	{
+		for( var size_type mut i= 0s; i < inner_reference_nodes.size(); ++i )
+		{
+			foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
+			{
+				auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+				var bool mut found= false;
+				foreach( &param_reference : coroutine_type_description.return_references )
+				{
+					if( coroutine_inner_reference == param_reference )
+					{
+						found= true;
+						break;
+					}
+				}
+
+				if( !found )
+				{
+					REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>
+{
+	// Map coroutine function input references to returned coroutine inner references.
+	// Than check if this inner reference is present inside coroutine return references.
+
+	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
+
+	auto mut coroutine_inner_reference_index= 0s;
+	for( var size_type mut i= 0s; i < function_context.function_type.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_context.function_type.params[i];
+
+		if( param.value_type == ValueType::Value )
+		{
+			for( var size_type mut j= 0s; j < function_context.args_inner_variable_nodes[i].size(); ++j )
+			{
+				if( node == function_context.args_inner_variable_nodes[i][j] )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
+					return move(param_reference);
+				}
+			}
+
+			coroutine_inner_reference_index+= size_type( param.t.ReferencesTagsCount() );
+		}
+		else
+		{
+			if( node == function_context.args_nodes[i] )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
+				return move(param_reference);
+			}
+
+			++coroutine_inner_reference_index;
+		}
+	}
+
+	return ust::null_optional;
+}
+
 fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc )
 {
 	auto& function_type= function_context.function_type;

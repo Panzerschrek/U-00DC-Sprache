@@ -415,8 +415,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 
 			var VariableLite expr= expr_ptr.lock_imut().deref();
 
-			// Check correctness of returning references.
-			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, src_loc );
+			CheckYieldInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
 
 			if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
 			{
@@ -472,9 +471,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
 			}
 
-			CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, src_loc );
-
-			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
+			CheckYieldReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
 
 			var LLVMValueRef ref_casted= CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
 			CreateTypedReferenceStore( function_context, yield_type, ref_casted, promise );
