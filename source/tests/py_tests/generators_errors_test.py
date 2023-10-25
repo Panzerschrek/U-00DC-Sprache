@@ -790,15 +790,13 @@ def AccessingVariable_LinkedToGeneratorArgument_Test5():
 		fn Foo()
 		{
 			var i32 mut x= 0, imut y= 0;
-			// Generator function with both mutable and immutable reference-params returns generator value with mutable inner reference kind.
-			// Because of that "y" immutable variable points to mutable inner reference node inside "gen", so, no immutable references can be created.
+			// Since generator type contains inner references for all input references immutable args linked only immutable.
 			auto gen= Gen( x, y );
-			auto& y_ref= y;
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 2s );
+			auto& y_ref= y; // Ok - create second immutable reference when an immutable reference inside "gen" exists.
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	tests_lib.build_program( c_program_text )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test3():
@@ -862,8 +860,59 @@ def ReturningUnallowedReference_ForGeneratorYield_Test3():
 
 def ReturningUnallowedReference_ForGeneratorYield_Test4():
 	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn generator Foo( i32& x, i32& y ) : i32& @(return_references)
+		{
+			yield x; // Error - only "x" is allowed for return.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test5():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn generator Foo( i32& x, i32& y ) : i32& @(return_references)
+		{
+			yield y; // Ok - return allowed reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test6():
+	c_program_text= """
 		struct S{ i32& x; }
-		fn generator Foo() : S
+		var [ [ char8, 2 ], 0 ] return_references[];
+		fn generator Foo( S s ) : i32& @(return_references)
+		{
+			yield s.x; // Error - there is no references allowed to return at all.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test7():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn generator Foo( S s ) : i32& @(return_references)
+		{
+			yield s.x; // Ok - return allowed reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test8():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 0 ] ] return_inner_references[ [ ] ];
+		fn generator Foo() : S @(return_inner_references)
 		{
 			var i32 x= 0;
 			var S s{ .x= x };
@@ -872,27 +921,29 @@ def ReturningUnallowedReference_ForGeneratorYield_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test5():
+def ReturningUnallowedReference_ForGeneratorYield_Test9():
 	c_program_text= """
 		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
 		fn generator Foo( i32 x ) : S
 		{
 			var S s{ .x= x };
 			yield s; // Returning reference inside a struct to value-argument. This is also forbidden.
-		}
+	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test6():
+def ReturningUnallowedReference_ForGeneratorYield_Test10():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn generator Foo( i32& x ) : S
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator Foo( i32& x ) : S @(return_inner_references)
 		{
 			var S s{ .x= x };
 			yield s; // Returning reference inside a struct to reference-argument. This is ok.
@@ -901,11 +952,12 @@ def ReturningUnallowedReference_ForGeneratorYield_Test6():
 	tests_lib.build_program( c_program_text )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test7():
+def ReturningUnallowedReference_ForGeneratorYield_Test11():
 	c_program_text= """
 		struct S{ i32& x; }
 		var i32 some_global= 0;
-		fn generator Foo() : S
+		var tup[ [ [ char8, 2 ], 0 ] ] return_inner_references[ [ ] ];
+		fn generator Foo() : S @(return_inner_references)
 		{
 			var S s{ .x= some_global };
 			yield s; // Returning reference inside a struct to global variable. This is ok.
