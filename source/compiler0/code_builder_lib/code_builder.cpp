@@ -1067,20 +1067,10 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( func_variable.is_generator )
 		{
-			FunctionType generator_function_type= function_type;
-
-			// Coroutine functions return value of coroutine type.
-			generator_function_type.return_type=
-				GetGeneratorFunctionReturnType(
-				*names_scope.GetRoot(),
+			TransformGeneratorFunctionType(
+				names_scope,
 				function_type,
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
-			generator_function_type.return_value_type= ValueType::Value;
-
-			// Generator function returns generator object by-value.
-			// Only inner references are required (to capturing reference args and args with references inside).
-			generator_function_type.return_inner_references= GetGeneratorFunctionReturnInnerReferences( function_type );
-			generator_function_type.return_references.clear();
 
 			// Disable auto-generators.
 			if( func_variable.return_type_is_auto )
@@ -1107,8 +1097,6 @@ size_t CodeBuilder::PrepareFunction(
 			// But this is still possible to return a generator value from virtual function.
 			if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
 				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type.src_loc );
-
-			function_type= std::move(generator_function_type);
 		}
 
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );

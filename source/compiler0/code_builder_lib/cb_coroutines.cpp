@@ -6,9 +6,9 @@
 namespace U
 {
 
-ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
+void CodeBuilder::TransformGeneratorFunctionType(
 	NamesScope& root_namespace,
-	const FunctionType& generator_function_type,
+	FunctionType& generator_function_type,
 	const bool non_sync )
 {
 	CoroutineTypeDescription coroutine_type_description;
@@ -21,9 +21,15 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 	// Each reference param adds new inner reference.
 	// Each value param creates number of references equal to number of inner references of its type.
 	// For now reference params of types with references inside are not supported.
+
+	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
+
 	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
+	std::vector<std::set<FunctionType::ParamReference>> coroutine_return_inner_ferences;
+
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
+		const size_t param_index= size_t(&param - generator_function_type.params.data());
 		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
 		if( param.value_type == ValueType::Value )
 		{
@@ -32,11 +38,21 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 			{
 				const auto reference_tag_count= param.type.ReferencesTagsCount();
 				for( size_t i= 0; i < reference_tag_count; ++i )
+				{
 					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceType(i) );
+					coroutine_return_inner_ferences.push_back(
+						std::set<FunctionType::ParamReference>{
+							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
+				}
 			}
 		}
 		else
+		{
 			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+			coroutine_return_inner_ferences.push_back(
+				std::set<FunctionType::ParamReference>{
+					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_arg_reference_tag_number } } );
+		}
 	}
 
 	// Fill references of return value.
@@ -74,39 +90,13 @@ ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
 		}
 	}
 
-	return GetCoroutineType( root_namespace, coroutine_type_description );
-}
+	// Coroutine function returns value of coroutine type.
+	generator_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	generator_function_type.return_value_type= ValueType::Value;
 
-std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::GetGeneratorFunctionReturnInnerReferences( const FunctionType& generator_function_type )
-{
 	// Params references and references inside param types are mapped to generator type inner references.
-
-	std::vector<std::set<FunctionType::ParamReference>> result;
-	for( const FunctionType::Param& param : generator_function_type.params )
-	{
-		const size_t i= size_t(&param - generator_function_type.params.data());
-		if( param.value_type == ValueType::Value )
-		{
-			if( EnsureTypeComplete( param.type ) )
-			{
-				const auto reference_tag_count= param.type.ReferencesTagsCount();
-				for( size_t j= 0; j < reference_tag_count; ++j )
-				{
-					FunctionType::ParamReference param_reference{ uint8_t(i), uint8_t(j) };
-					std::set<FunctionType::ParamReference> set{ param_reference };
-					result.push_back( std::move(set) );
-				}
-			}
-		}
-		else
-		{
-			FunctionType::ParamReference param_reference{ uint8_t(i), FunctionType::c_arg_reference_tag_number };
-			std::set<FunctionType::ParamReference> set{ param_reference };
-			result.push_back( std::move(set) );
-		}
-	}
-
-	return result;
+	generator_function_type.return_inner_references= std::move(coroutine_return_inner_ferences);
+	generator_function_type.return_references.clear();
 }
 
 ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
