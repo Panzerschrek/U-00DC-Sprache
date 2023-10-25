@@ -386,8 +386,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				return;
 			}
 
-			// TODO - fix it.
-			// CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, src_loc );
+			CheckYieldInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -440,8 +439,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 			}
 
-			// TODO - fix it.
-			// CheckReturnedReferenceIsAllowed( names, function_context, expression_result, src_loc );
+			CheckYieldReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 
