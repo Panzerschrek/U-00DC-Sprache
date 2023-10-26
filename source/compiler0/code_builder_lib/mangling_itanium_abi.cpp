@@ -387,7 +387,7 @@ void EncodeParamReference( ManglerState& mangler_state, const FunctionType::Para
 	mangler_state.Push( "L" );
 	mangler_state.Push( EncodeFundamentalType( U_FundamentalType::char8_ ) );
 	if( param_reference.second == FunctionType::c_arg_reference_tag_number )
-		mangler_state.Push(  std::to_string( int('_') ) );
+		mangler_state.Push( std::to_string( int('_') ) );
 	else
 		mangler_state.Push( std::to_string( int(param_reference.second) + 'a' ) );
 	mangler_state.Push( "E" );
@@ -414,6 +414,55 @@ void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set
 			EncodeParamReference( mangler_state, pollution_element.src );
 			mangler_state.Push( "E" );
 		}
+
+		mangler_state.Push( "E" );
+	}
+	mangler_state.Push( "E" );
+}
+
+void EncodeReferenceReturnReferencesAsType( ManglerState& mangler_state, const std::set<FunctionType::ParamReference>& return_references )
+{
+	const ManglerState::NodeHolder result_node( mangler_state );
+	{
+		const ManglerState::NodeHolder name_node( mangler_state );
+		mangler_state.PushLengthPrefixed( "_RR" );
+	}
+
+	mangler_state.Push( "I" );
+	{
+		mangler_state.Push( "X" );
+
+		mangler_state.Push( "il" );
+		for( const FunctionType::ParamReference& param_reference : return_references )
+			EncodeParamReference( mangler_state, param_reference );
+		mangler_state.Push( "E" );
+
+		mangler_state.Push( "E" );
+	}
+	mangler_state.Push( "E" );
+}
+
+void EncodeReferenceReturnInnerReferencesAsType( ManglerState& mangler_state, const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
+{
+	const ManglerState::NodeHolder result_node( mangler_state );
+	{
+		const ManglerState::NodeHolder name_node( mangler_state );
+		mangler_state.PushLengthPrefixed( "_RIR" );
+	}
+
+	mangler_state.Push( "I" );
+	{
+		mangler_state.Push( "X" );
+
+		mangler_state.Push( "il" );
+		for( const auto& return_references : return_inner_references )
+		{
+			mangler_state.Push( "il" );
+			for( const FunctionType::ParamReference& param_reference : return_references )
+				EncodeParamReference( mangler_state, param_reference );
+			mangler_state.Push( "E" );
+		}
+		mangler_state.Push( "E" );
 
 		mangler_state.Push( "E" );
 	}
@@ -583,46 +632,15 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 
 	EncodeFunctionParams( mangler_state, function_type.params );
 
-	if( !function_type.return_references.empty() )
-	{
-		const ManglerState::NodeHolder rr_node( mangler_state );
-		mangler_state.Push( "_RR" );
-		mangler_state.Push( Base36Digit(function_type.return_references.size()) );
-
-		for( const FunctionType::ParamReference& arg_and_tag : function_type.return_references )
-		{
-			U_ASSERT( arg_and_tag.first  < 36u );
-			U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );
-
-			mangler_state.Push( Base36Digit(arg_and_tag.first) );
-			mangler_state.Push(
-				arg_and_tag.second == FunctionType::c_arg_reference_tag_number
-				? '_'
-				: Base36Digit(arg_and_tag.second) );
-		}
-	}
-	for( size_t i= 0; i < function_type.return_inner_references.size(); ++i )
-	{
-		const ManglerState::NodeHolder rr_node( mangler_state );
-		mangler_state.Push( "_RRI" + std::to_string(i) );
-		mangler_state.Push( Base36Digit(function_type.return_inner_references.size()) );
-
-		for( const FunctionType::ParamReference& arg_and_tag : function_type.return_inner_references[i] )
-		{
-			U_ASSERT( arg_and_tag.first  < 36u );
-			U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );
-
-			mangler_state.Push( Base36Digit(arg_and_tag.first) );
-			mangler_state.Push(
-				arg_and_tag.second == FunctionType::c_arg_reference_tag_number
-				? '_'
-				: Base36Digit(arg_and_tag.second) );
-		}
-	}
 	if( !function_type.references_pollution.empty() )
-	{
 		EncodeReferencePollutionAsType( mangler_state, function_type.references_pollution );
-	}
+
+	if( !function_type.return_references.empty() )
+		EncodeReferenceReturnReferencesAsType( mangler_state, function_type.return_references );
+
+	if( !function_type.return_inner_references.empty() )
+		EncodeReferenceReturnInnerReferencesAsType( mangler_state, function_type.return_inner_references );
+
 	if( function_type.unsafe )
 	{
 		const ManglerState::NodeHolder unsafe_node( mangler_state );
