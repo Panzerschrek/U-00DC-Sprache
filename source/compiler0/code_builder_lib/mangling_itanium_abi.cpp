@@ -650,7 +650,7 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 	if( function_type.unsafe )
 	{
 		const ManglerState::NodeHolder unsafe_node( mangler_state );
-		mangler_state.Push( "unsafe" );
+		mangler_state.PushLengthPrefixed( "unsafe" );
 	}
 
 	mangler_state.Push( "E" );

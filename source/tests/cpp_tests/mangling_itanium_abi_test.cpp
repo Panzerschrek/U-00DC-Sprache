@@ -512,6 +512,7 @@ U_TEST( FunctionTypesMangling_Test0 )
 		fn Pass( (fn( OtherStruct& o ) : OtherStruct ) ptr ){}
 		fn Cold( (fn() call_conv("cold") ) void_fn ){}
 		fn Fast( (fn() call_conv("fast") ) void_fn ){}
+		fn Unsafe( (fn() unsafe) ptr ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -525,6 +526,7 @@ U_TEST( FunctionTypesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4ColdPU4coldFvvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FastPU4fastFvvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6UnsafePFvv6unsafeE" ) != nullptr );
 }
 
 U_TEST( FunctionTypesMangling_Test1 )
