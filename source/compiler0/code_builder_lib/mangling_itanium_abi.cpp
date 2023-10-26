@@ -420,7 +420,7 @@ void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set
 	mangler_state.Push( "E" );
 }
 
-void EncodeReferenceReturnReferencesAsType( ManglerState& mangler_state, const std::set<FunctionType::ParamReference>& return_references )
+void EncodeReturnReferencesAsType( ManglerState& mangler_state, const std::set<FunctionType::ParamReference>& return_references )
 {
 	const ManglerState::NodeHolder result_node( mangler_state );
 	{
@@ -442,7 +442,7 @@ void EncodeReferenceReturnReferencesAsType( ManglerState& mangler_state, const s
 	mangler_state.Push( "E" );
 }
 
-void EncodeReferenceReturnInnerReferencesAsType( ManglerState& mangler_state, const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
+void EncodeReturnInnerReferencesAsType( ManglerState& mangler_state, const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
 {
 	const ManglerState::NodeHolder result_node( mangler_state );
 	{
@@ -516,6 +516,12 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 		mangler_state.Push( std::to_string( size_t( inner_reference ) ) );
 		mangler_state.Push( "E" );
 	}
+
+	if( !coroutine_type_description->return_references.empty() )
+		EncodeReturnReferencesAsType( mangler_state, coroutine_type_description->return_references );
+
+	if( !coroutine_type_description->return_inner_references.empty() )
+		EncodeReturnInnerReferencesAsType( mangler_state, coroutine_type_description->return_inner_references );
 
 	// Do not encode coroutine kind here, because coroutine class name contains kind.
 
@@ -636,10 +642,10 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 		EncodeReferencePollutionAsType( mangler_state, function_type.references_pollution );
 
 	if( !function_type.return_references.empty() )
-		EncodeReferenceReturnReferencesAsType( mangler_state, function_type.return_references );
+		EncodeReturnReferencesAsType( mangler_state, function_type.return_references );
 
 	if( !function_type.return_inner_references.empty() )
-		EncodeReferenceReturnInnerReferencesAsType( mangler_state, function_type.return_inner_references );
+		EncodeReturnInnerReferencesAsType( mangler_state, function_type.return_inner_references );
 
 	if( function_type.unsafe )
 	{
