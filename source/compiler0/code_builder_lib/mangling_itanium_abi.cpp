@@ -407,6 +407,7 @@ void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set
 	{
 		mangler_state.Push( "X" );
 
+		mangler_state.Push( "il" );
 		for( const FunctionType::ReferencePollution& pollution_element : reference_pollution )
 		{
 			mangler_state.Push( "il" );
@@ -414,6 +415,7 @@ void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set
 			EncodeParamReference( mangler_state, pollution_element.src );
 			mangler_state.Push( "E" );
 		}
+		mangler_state.Push( "E" );
 
 		mangler_state.Push( "E" );
 	}

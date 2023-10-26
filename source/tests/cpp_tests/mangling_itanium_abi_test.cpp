@@ -534,8 +534,8 @@ U_TEST( FunctionTypesMangling_Test1 )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32& x; }
-		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Foo( ( fn( S &mut s, i32& x ) @(pollution) ) ptr ) {}
+		var [ [ [ char8, 2 ], 2 ], 2 ] pollution[ [ "0a", "1_" ], [ "0a", "2_" ] ];
+		fn Foo( ( fn( S &mut s, i32& x, i32& y ) @(pollution) ) ptr ) {}
 
 		var[ [ char8, 2 ], 3 ] return_references[ "0_", "1_", "1a" ];
 		fn Bar( ( fn( i32& x, S& s ) : i32 & @(return_references) ) ptr ) {}
@@ -548,7 +548,7 @@ U_TEST( FunctionTypesMangling_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooPFvR1SRKi3_RPIXililLc48ELc97EEilLc49ELc95EEEEEE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooPFvR1SRKiS2_3_RPIXilililLc48ELc97EEilLc49ELc95EEEililLc48ELc97EEilLc50ELc95EEEEEEE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BarPFRKiS0_RK1S3_RRIXililLc48ELc95EEilLc49ELc97EEilLc49ELc95EEEEEE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BazPF1SRKiRKS_4_RIRIXilililLc48ELc95EEEililLc49ELc97EEilLc49ELc95EEEEEEE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRKiLj0E3_RRIXililLc48ELc97EEEEEE" ) != nullptr );
