@@ -375,6 +375,51 @@ void EncodeFunctionParams( ManglerState& mangler_state, const llvm::ArrayRef<Fun
 		mangler_state.Push( "v" );
 }
 
+void EncodeParamReference( ManglerState& mangler_state, const FunctionType::ParamReference& param_reference )
+{
+	mangler_state.Push( "il" );
+
+	mangler_state.Push( "L" );
+	mangler_state.Push( EncodeFundamentalType( U_FundamentalType::char8_ ) );
+	mangler_state.Push( std::to_string( int(param_reference.first) + '0' ) );
+	mangler_state.Push( "E" );
+
+	mangler_state.Push( "L" );
+	mangler_state.Push( EncodeFundamentalType( U_FundamentalType::char8_ ) );
+	if( param_reference.second == FunctionType::c_arg_reference_tag_number )
+		mangler_state.Push(  std::to_string( int('_') ) );
+	else
+		mangler_state.Push( std::to_string( int(param_reference.second) + 'a' ) );
+	mangler_state.Push( "E" );
+
+	mangler_state.Push( "E" );
+}
+
+void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set<FunctionType::ReferencePollution>& reference_pollution )
+{
+	const ManglerState::NodeHolder result_node( mangler_state );
+	{
+		const ManglerState::NodeHolder name_node( mangler_state );
+		mangler_state.PushLengthPrefixed( "_RP" );
+	}
+
+	mangler_state.Push( "I" );
+	{
+		mangler_state.Push( "X" );
+
+		for( const FunctionType::ReferencePollution& pollution_element : reference_pollution )
+		{
+			mangler_state.Push( "il" );
+			EncodeParamReference( mangler_state, pollution_element.dst );
+			EncodeParamReference( mangler_state, pollution_element.src );
+			mangler_state.Push( "E" );
+		}
+
+		mangler_state.Push( "E" );
+	}
+	mangler_state.Push( "E" );
+}
+
 void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type )
 {
 	const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data );
@@ -576,29 +621,7 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 	}
 	if( !function_type.references_pollution.empty() )
 	{
-		const ManglerState::NodeHolder rp_node( mangler_state );
-		mangler_state.Push( "_RP" );
-		U_ASSERT( function_type.references_pollution.size() < 36u );
-		mangler_state.Push( Base36Digit(function_type.references_pollution.size()) );
-
-		for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
-		{
-			U_ASSERT( pollution.dst.first  < 36u );
-			U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == FunctionType::c_arg_reference_tag_number );
-			U_ASSERT( pollution.src.first  < 36u );
-			U_ASSERT( pollution.src.second < 36u || pollution.src.second == FunctionType::c_arg_reference_tag_number );
-
-			mangler_state.Push( Base36Digit(pollution.dst.first) );
-			mangler_state.Push(
-				pollution.dst.second == FunctionType::c_arg_reference_tag_number
-				? '_'
-				: Base36Digit(pollution.dst.second) );
-			mangler_state.Push( Base36Digit(pollution.src.first) );
-			mangler_state.Push(
-				pollution.src.second == FunctionType::c_arg_reference_tag_number
-				? '_'
-				: Base36Digit(pollution.src.second) );
-		}
+		EncodeReferencePollutionAsType( mangler_state, function_type.references_pollution );
 	}
 	if( function_type.unsafe )
 	{
