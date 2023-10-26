@@ -5,17 +5,24 @@ namespace U
 
 size_t CoroutineTypeDescription::Hash() const
 {
-	auto result=
+	auto hash=
 		llvm::hash_combine(
 			kind,
 			return_type.Hash(),
 			return_value_type,
 			non_sync );
 
-	if( inner_reference_type != std::nullopt )
-		result= llvm::hash_combine( result, *inner_reference_type );
+	for( const FunctionType::ParamReference& param_reference : return_references )
+		hash= llvm::hash_combine( hash, param_reference );
 
-	return result;
+	for( const auto& tags_set : return_inner_references )
+		for( const FunctionType::ParamReference& param_reference : tags_set )
+			hash= llvm::hash_combine( hash, param_reference );
+
+	for( const InnerReferenceType k : inner_references )
+		hash= llvm::hash_combine( hash, k );
+
+	return hash;
 }
 
 bool operator==( const CoroutineTypeDescription& l, const CoroutineTypeDescription& r )
@@ -24,7 +31,9 @@ bool operator==( const CoroutineTypeDescription& l, const CoroutineTypeDescripti
 		l.kind == r.kind &&
 		l.return_type == r.return_type &&
 		l.return_value_type == r.return_value_type &&
-		l.inner_reference_type == r.inner_reference_type &&
+		l.return_references == r.return_references &&
+		l.return_inner_references == r.return_inner_references &&
+		l.inner_references == r.inner_references &&
 		l.non_sync == r.non_sync;
 }
 

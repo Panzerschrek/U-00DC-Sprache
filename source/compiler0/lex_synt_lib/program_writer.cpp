@@ -165,11 +165,15 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::generator_ );
-	if( generator_name.inner_reference_tag != nullptr )
+	if( !generator_name.inner_references.empty() )
 	{
 		stream << "'";
-		ElementWrite( generator_name.inner_reference_tag->mutability_modifier, stream );
-		stream << generator_name.inner_reference_tag->name;
+		for( size_t i= 0; i < generator_name.inner_references.size(); ++i )
+		{
+			ElementWrite( generator_name.inner_references[i], stream );
+			if( i + 1 < generator_name.inner_references.size() )
+				stream << ", ";
+		}
 		stream << "'";
 	}
 

@@ -181,21 +181,20 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	else
 		coroutine_type_description.return_value_type= ValueType::Value;
 
-	if( generator_type_name.inner_reference_tag == nullptr )
-		coroutine_type_description.inner_reference_type= std::nullopt;
-	else
-		coroutine_type_description.inner_reference_type=
-			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
-				? InnerReferenceType::Mut
-				: InnerReferenceType::Imut;
+	coroutine_type_description.inner_references.reserve( generator_type_name.inner_references.size() );
+	for( const Synt::MutabilityModifier m : generator_type_name.inner_references )
+		coroutine_type_description.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 
 	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
 	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc ) )
 		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc );
 
-	// For now there is no reason to process reference tags.
-	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
+	const size_t num_params= 1;
+	if( generator_type_name.return_value_reference_expression != nullptr )
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, *generator_type_name.return_value_reference_expression, num_params );
+	if( generator_type_name.return_value_inner_references_expression != nullptr )
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *generator_type_name.return_value_inner_references_expression, num_params );
 
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }

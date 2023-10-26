@@ -216,6 +216,76 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 	return false;
 }
 
+void CodeBuilder::CheckYieldReferenceIsAllowed(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const CoroutineTypeDescription& coroutine_type_description,
+	const VariablePtr& node,
+	const SrcLoc& src_loc )
+{
+	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( node ) )
+	{
+		const auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+		if( coroutine_inner_reference == std::nullopt ||
+			coroutine_type_description.return_references.count( *coroutine_inner_reference ) == 0 )
+			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+	}
+}
+
+void CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const CoroutineTypeDescription& coroutine_type_description,
+	const VariablePtr& node,
+	const SrcLoc& src_loc )
+{
+	for( size_t i= 0; i < node->inner_reference_nodes.size(); ++i )
+	{
+		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( node->inner_reference_nodes[i] ) )
+		{
+			const auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+			if( coroutine_inner_reference == std::nullopt ||
+				i >= coroutine_type_description.return_inner_references.size() ||
+				coroutine_type_description.return_inner_references[i].count( *coroutine_inner_reference ) == 0 )
+				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+		}
+	}
+}
+
+std::optional<FunctionType::ParamReference> CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, const VariablePtr& node )
+{
+	// Map coroutine function input references to returned coroutine inner references.
+	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
+
+	size_t coroutine_inner_reference_index= 0;
+	for( size_t i= 0; i < function_context.function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_context.function_type.params[i];
+
+		if( param.value_type == ValueType::Value )
+		{
+			for( size_t j= 0; j < function_context.args_nodes[i].second.size(); ++j )
+			{
+				if( node == function_context.args_nodes[i].second[j] )
+					return FunctionType::ParamReference{ uint8_t(0), uint8_t(coroutine_inner_reference_index + j) };
+			}
+
+			coroutine_inner_reference_index+= param.type.ReferencesTagsCount();
+		}
+		else
+		{
+			if( node == function_context.args_nodes[i].first )
+				return FunctionType::ParamReference{ uint8_t(0), uint8_t(coroutine_inner_reference_index) };
+
+			++coroutine_inner_reference_index;
+		}
+	}
+
+	return std::nullopt;
+}
+
 void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,

@@ -1194,6 +1194,22 @@ private:
 	void CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
 	bool IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, size_t index );
 
+	void CheckYieldReferenceIsAllowed(
+		NamesScope& names,
+		FunctionContext& function_context,
+		const CoroutineTypeDescription& coroutine_type_description,
+		const VariablePtr& node,
+		const SrcLoc& src_loc );
+
+	void CheckYieldInnerReferencesAreAllowed(
+		NamesScope& names,
+		FunctionContext& function_context,
+		const CoroutineTypeDescription& coroutine_type_description,
+		const VariablePtr& node,
+		const SrcLoc& src_loc );
+
+	std::optional<FunctionType::ParamReference> GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, const VariablePtr& node );
+
 	void CheckReferencesPollutionBeforeReturn(
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
@@ -1210,8 +1226,11 @@ private:
 
 	// Coroutines
 
-	ClassPtr GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type, bool non_sync );
-	std::set<FunctionType::ParamReference> GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type );
+	// Call this before transforming function type.
+	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
+	// Make return type - generator type and prepare it properly. Modifies given function type.
+	void TransformGeneratorFunctionType( NamesScope& root_namespace, FunctionType& generator_function_type, bool non_sync );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 

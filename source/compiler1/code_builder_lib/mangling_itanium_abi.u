@@ -519,7 +519,7 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 		}
 
 		// Encode inner reference kind as variable template parameter.
-		if_var( inner_reference_kind : coroutine_type_description.inner_reference_kind )
+		foreach( inner_reference_kind : coroutine_type_description.inner_references )
 		{
 			mangler_state.Push( "L" );
 			mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );

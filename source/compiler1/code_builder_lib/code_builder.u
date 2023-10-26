@@ -482,28 +482,10 @@ fn CodeBuilder::PrepareFunction(
 	var bool is_generator= function_declaration.kind == Synt::Function::Kind::Generator;
 	if( is_generator )
 	{
-		// Generate for now own return references mapping.
-		auto mut return_references= GetGeneratorFunctionReturnReferences( function_type );
-		if( function_type.return_value_type == ValueType::Value )
-		{
-			if( !return_references.empty() )
-			{
-				function_type.return_inner_references.push_back( move(return_references) );
-			}
-			else
-			{
-				move(return_references);
-			}
-		}
-		else
-		{
-			function_type.return_references= move(return_references);
-		}
+		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
 
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
-		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
-		function_type.return_type= move(generator_return_type);
-		function_type.return_value_type= ValueType::Value;
+		TransformGeneratorFunctionType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
 
 		if_var( &type_name : function_declaration.function_type.return_type )
 		{
@@ -513,7 +495,7 @@ fn CodeBuilder::PrepareFunction(
 				{
 					if( name_lookup.name == KeywordToString( Keyword::auto_ ) )
 					{
-						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr,  function_declaration.src_loc )
+						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr, function_declaration.src_loc )
 					}
 				}
 			}
@@ -525,11 +507,6 @@ fn CodeBuilder::PrepareFunction(
 		if( function_type.calling_convention != LLVMCallConv::C )
 		{
 			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
-		}
-		// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-		if( !function_declaration.function_type.return_value_reference_expression.empty() || !function_declaration.function_type.return_value_inner_references_expression.empty() )
-		{
-			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "Explicit return tags for generators." )
 		}
 		// Disable references pollution for generator. It is too complicated for now.
 		if( !function_declaration.function_type.references_pollution_expression.empty() )
@@ -1930,6 +1907,110 @@ fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& functio
 		}
 	}
 	return false;
+}
+
+fn CodeBuilder::CheckYieldReferenceIsAllowed(
+	NamesScopePtr& names,
+	FunctionContext& function_context,
+	CoroutineTypeDescription& coroutine_type_description,
+	VariablePtr& node,
+	SrcLoc& src_loc )
+{
+	foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( node ) )
+	{
+		auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+		var bool mut found= false;
+		foreach( &param_reference : coroutine_type_description.return_references )
+		{
+			if( coroutine_inner_reference == param_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+		}
+	}
+}
+
+fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+	NamesScopePtr& names,
+	FunctionContext& function_context,
+	CoroutineTypeDescription& coroutine_type_description,
+	VariablePtr& node,
+	SrcLoc& src_loc )
+{
+	with( &inner_reference_nodes : node.lock_imut().deref().inner_reference_nodes )
+	{
+		for( var size_type mut i= 0s; i < inner_reference_nodes.size(); ++i )
+		{
+			foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
+			{
+				auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+				var bool mut found= false;
+				if( i < coroutine_type_description.return_inner_references.size() )
+				{
+					foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
+					{
+						if( coroutine_inner_reference == param_reference )
+						{
+							found= true;
+							break;
+						}
+					}
+				}
+
+				if( !found )
+				{
+					REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>
+{
+	// Map coroutine function input references to returned coroutine inner references.
+	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
+
+	auto mut coroutine_inner_reference_index= 0s;
+	for( var size_type mut i= 0s; i < function_context.function_type.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_context.function_type.params[i];
+
+		if( param.value_type == ValueType::Value )
+		{
+			auto& inner_nodes= function_context.args_inner_variable_nodes[i];
+			for( var size_type mut j= 0s; j < inner_nodes.size(); ++j )
+			{
+				if( node == inner_nodes[j] )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
+					return move(param_reference);
+				}
+			}
+
+			coroutine_inner_reference_index+= size_type( param.t.ReferencesTagsCount() );
+		}
+		else
+		{
+			if( node == function_context.args_nodes[i] )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
+				return move(param_reference);
+			}
+
+			++coroutine_inner_reference_index;
+		}
+	}
+
+	return ust::null_optional;
 }
 
 fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc )

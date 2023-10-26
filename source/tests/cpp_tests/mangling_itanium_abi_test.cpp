@@ -831,10 +831,10 @@ U_TEST( GeneratorsMangling_Test0 )
 		fn Foo( Gen gen ) {}
 		fn Bar( f32 x, Gen gen, u32 z ) {}
 
-		type ImutRefGen= generator'imut some_tag' : f64;
+		type ImutRefGen= generator'imut' : f64;
 		fn Baz( ImutRefGen gen ) {}
 
-		type MutRefRetGen= generator'mut some_tag' : char8 &mut;
+		type MutRefRetGen= generator'mut, imut' : char8 &mut;
 		fn Lol( MutRefRetGen gen ) {}
 
 		type NonSyncGen = generator non_sync : [i32, 4];
@@ -847,13 +847,13 @@ U_TEST( GeneratorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo9generatorIiE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Barf9generatorIiEj" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz9generatorIdLj0EE" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRcLj1EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRcLj1ELj0EE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Kek9generatorIA4_iLb1EE" ) != nullptr );
 
 	// Generated generator type destructors.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIiE10destructorERS0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIdLj0EE10destructorERS0_" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIRcLj1EE10destructorERS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIRcLj1ELj0EE10destructorERS1_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIA4_iLb1EE10destructorERS1_" ) != nullptr );
 }
 

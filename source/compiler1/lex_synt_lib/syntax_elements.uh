@@ -295,18 +295,14 @@ struct RawPointerType
 
 struct GeneratorType
 {
-	struct InnerReferenceTag
-	{
-		ust::string8 name;
-		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	}
-
 	SrcLoc src_loc;
 
 	ust::optional</MutabilityModifier/> inner_reference_mutability_modifier;
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
-	ust::box_nullable</InnerReferenceTag/> inner_reference_tag;
+	ust::vector</MutabilityModifier/> inner_reference_tags;
+	ust::box_nullable</Expression/> return_value_reference_expression;
+	ust::box_nullable</Expression/> return_value_inner_references_expression;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 }

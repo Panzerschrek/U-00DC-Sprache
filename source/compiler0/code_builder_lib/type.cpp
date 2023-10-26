@@ -507,20 +507,7 @@ std::string Type::ToString() const
 					result+= Keyword( Keywords::generator_ );
 				else U_ASSERT(false);
 
-				if( coroutine_type_description->inner_reference_type == std::nullopt )
-				{}
-				else if( coroutine_type_description->inner_reference_type == InnerReferenceType::Imut )
-				{
-					result+= "'";
-					result+= Keyword( Keywords::imut_ );
-					result+= "'";
-				}
-				else if( coroutine_type_description->inner_reference_type == InnerReferenceType::Mut )
-				{
-					result+= "'";
-					result+= Keyword( Keywords::mut_ );
-				}
-				else U_ASSERT(false);
+				// TODO - print inner references here.
 
 				result+= " ";
 

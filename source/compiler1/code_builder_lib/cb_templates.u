@@ -590,12 +590,19 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 	};
 
-	if( !signature_param.inner_reference_tag.empty() )
+	foreach( &m : signature_param.inner_reference_tags )
 	{
-		coroutine_type_param.inner_reference_kind=
-			select( signature_param.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable
-				? InnerReferenceKind::Mut
-				: InnerReferenceKind::Imut );
+		coroutine_type_param.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+	}
+
+	auto num_params= 1s;
+	if_var( &return_value_reference_expression : signature_param.return_value_reference_expression )
+	{
+		coroutine_type_param.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression, num_params );
+	}
+	if_var( &return_value_inner_references_expression : signature_param.return_value_inner_references_expression )
+	{
+		coroutine_type_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression, num_params );
 	}
 
 	return move(coroutine_type_param);
@@ -1537,7 +1544,9 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return
 					coroutine_type_description.kind == coroutine_type_param.kind &&
 					coroutine_type_description.return_value_type == coroutine_type_param.return_value_type &&
-					coroutine_type_description.inner_reference_kind == coroutine_type_param.inner_reference_kind &&
+					coroutine_type_description.inner_references == coroutine_type_param.inner_references &&
+					coroutine_type_description.return_references == coroutine_type_param.return_references &&
+					coroutine_type_description.return_inner_references == coroutine_type_param.return_inner_references &&
 					coroutine_type_description.non_sync_ == coroutine_type_param.non_sync_ &&
 					MatchTemplateArgument( names_scope, template_, coroutine_type_param.return_type, coroutine_type_description.return_type );
 			}

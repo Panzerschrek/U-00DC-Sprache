@@ -909,8 +909,12 @@ private:
 	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
 
 	// Coroutines
-	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
-	fn GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>;
+
+	// Call this before transforming function type.
+	fn PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	// Make return type - generator type and prepare it properly. Modifies given function type.
+	fn TransformGeneratorFunctionType( mut this, NamesScopePtr& root_namespace, FunctionType &mut generator_function_type, bool non_sync_ );
 
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 
@@ -971,6 +975,22 @@ private:
 
 	fn CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool;
+
+	fn CheckYieldReferenceIsAllowed(
+		NamesScopePtr& names,
+		FunctionContext& function_context,
+		CoroutineTypeDescription& coroutine_type_description,
+		VariablePtr& node,
+		SrcLoc& src_loc );
+
+	fn CheckYieldInnerReferencesAreAllowed(
+		NamesScopePtr& names,
+		FunctionContext& function_context,
+		CoroutineTypeDescription& coroutine_type_description,
+		VariablePtr& node,
+		SrcLoc& src_loc );
+
+	fn GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>;
 
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 

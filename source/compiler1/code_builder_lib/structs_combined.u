@@ -901,9 +901,22 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 	auto mut hash= size_type(d.kind);
 	hash= TypeHasher::hash_combine( hash, TypeHasher::hash(d.return_type) );
 	hash= TypeHasher::hash_combine( hash, size_type(d.return_value_type) );
-	if_var( inner_reference_kind : d.inner_reference_kind )
+	foreach( &inner_reference : d.inner_references )
 	{
-		hash= TypeHasher::hash_combine( hash, size_type(inner_reference_kind) );
+		hash= TypeHasher::hash_combine( hash, size_type(inner_reference) );
+	}
+	foreach( &param_reference : d.return_references )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type(param_reference.param_index) );
+		hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
+	}
+	foreach( &param_references : d.return_inner_references )
+	{
+		foreach( &param_reference : param_references )
+		{
+			hash= TypeHasher::hash_combine( hash, size_type(param_reference.param_index) );
+			hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
+		}
 	}
 	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
 	return hash;
@@ -1552,20 +1565,7 @@ fn NamesScope::ToString( this ) : ust::string8
 			}
 			else { halt; }
 
-			if_var( inner_reference_kind : coroutine_type_description.inner_reference_kind )
-			{
-				if( inner_reference_kind == InnerReferenceKind::Imut )
-				{
-					res+= "'";
-					res+= KeywordToString( Keyword::imut_ );
-					res+= "'";
-				}
-				else if( inner_reference_kind == InnerReferenceKind::Mut )
-				{
-					res+= "'";
-					res+= KeywordToString( Keyword::mut_ );
-				}
-			}
+			// TODO - print inner refernces.
 
 			res+= " ";
 

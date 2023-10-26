@@ -1067,27 +1067,12 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( func_variable.is_generator )
 		{
-			FunctionType generator_function_type= function_type;
+			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			// Coroutine functions return value of coroutine type.
-			generator_function_type.return_type=
-				GetGeneratorFunctionReturnType(
-				*names_scope.GetRoot(),
+			TransformGeneratorFunctionType(
+				names_scope,
 				function_type,
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
-			generator_function_type.return_value_type= ValueType::Value;
-
-			// Generate for now own return references mapping.
-			// TODO - fix this. Allow specifying reference mapping for generators, as soon, as multiple inner reference tags will be introduced.
-			if( function_type.return_value_type == ValueType::Value )
-			{
-				generator_function_type.return_inner_references.clear();
-				auto return_references= GetGeneratorFunctionReturnReferences( function_type );
-				if( !return_references.empty() )
-					generator_function_type.return_inner_references.push_back( std::move(return_references) );
-			}
-			else
-				generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
 
 			// Disable auto-generators.
 			if( func_variable.return_type_is_auto )
@@ -1103,10 +1088,6 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_generator= false;
 			}
 
-			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-			if( func.type.return_value_reference_expression != nullptr || func.type.return_value_inner_references_expression != nullptr )
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
-
 			// Disable references pollution for generator. It is too complicated for now.
 			if( func.type.references_pollution_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for generators." );
@@ -1118,8 +1099,6 @@ size_t CodeBuilder::PrepareFunction(
 			// But this is still possible to return a generator value from virtual function.
 			if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
 				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type.src_loc );
-
-			function_type= std::move(generator_function_type);
 		}
 
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );

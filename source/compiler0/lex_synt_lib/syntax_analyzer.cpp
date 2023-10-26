@@ -1439,33 +1439,45 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		{
 			NextLexem();
 
-			GeneratorType::InnerReferenceTag inner_reference_tag;
-
-			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+			if( it_->type == Lexem::Type::Apostrophe )
+				NextLexem(); // Empty list.
+			else
 			{
-				NextLexem();
-				inner_reference_tag.mutability_modifier= MutabilityModifier::Mutable;
+				while( NotEndOfFile() )
+				{
+					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+					{
+						NextLexem();
+						generator_type.inner_references.push_back( MutabilityModifier::Mutable );
+					}
+					else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+					{
+						NextLexem();
+						generator_type.inner_references.push_back( MutabilityModifier::Immutable );
+					}
+					else
+						PushErrorMessage();
+
+					if( it_->type == Lexem::Type::Comma )
+						NextLexem();
+					else
+						break;
+				}
+
+				ExpectLexem( Lexem::Type::Apostrophe );
 			}
-			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
-			{
-				NextLexem();
-				inner_reference_tag.mutability_modifier= MutabilityModifier::Immutable;
-			}
-
-			if( it_->type != Lexem::Type::Identifier )
-				PushErrorMessage();
-			inner_reference_tag.name= it_->text;
-			NextLexem();
-
-			ExpectLexem( Lexem::Type::Apostrophe );
-
-			generator_type.inner_reference_tag= std::make_unique<GeneratorType::InnerReferenceTag>( std::move(inner_reference_tag) );
 		}
 
 		generator_type.non_sync_tag= TryParseNonSyncTag();
 
 		ExpectLexem( Lexem::Type::Colon );
 		generator_type.return_type= ParseTypeName();
+
+		if( it_->type == Lexem::Type::At )
+		{
+			NextLexem();
+			generator_type.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+		}
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -1484,6 +1496,12 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 					generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
 					NextLexem();
 				}
+			}
+
+			if( it_->type == Lexem::Type::At )
+			{
+				NextLexem();
+				generator_type.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 			}
 		}
 

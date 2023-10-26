@@ -635,7 +635,7 @@ fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state,
 	}
 
 	// Inner reference kind.
-	if_var( inner_reference_kind : coroutine_type_description.inner_reference_kind )
+	foreach( inner_reference_kind : coroutine_type_description.inner_references )
 	{
 		template_mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );
 		template_mangler_state.PushElement( g_numeric_template_arg_prefix );
