@@ -1,6 +1,7 @@
 // This file contains definitions of types, that are used for functions reference notation.
 // Also it contains constants and helper functions for common reference notation patterns.
 
+import "composite.u"
 import "helpers.u"
 
 namespace ust
@@ -116,16 +117,16 @@ fn constexpr param_n_inner_reference_m( u8 n, u8 m ) : tup[ references_list</1s/
 
 // Assuming return type and param #0 have same number of inner references return inner references of param #0.
 template</size_type S/>
-fn constexpr param0_all_inner_references() : impl::tuple_of_lists</S/>::t
+fn constexpr param0_all_inner_references() : homogeneous_tuple</ references_list</1s/>, S />
 {
 	return param_n_all_inner_references</S/>( 0u8 );
 }
 
 // Assuming return type and param #n have same number of inner references return inner references of param #0.
 template</size_type S/>
-fn constexpr param_n_all_inner_references( u8 n ) : impl::tuple_of_lists</S/>::t
+fn constexpr param_n_all_inner_references( u8 n ) :  homogeneous_tuple</ references_list</1s/>, S />
 {
-	var impl::tuple_of_lists</S/>::t mut result= zero_init;
+	var homogeneous_tuple</ references_list</1s/>, S /> mut result= zero_init;
 	static_if( S == 0s )
 	{
 		ignore_unused(n);
@@ -143,19 +144,6 @@ fn constexpr param_n_all_inner_references( u8 n ) : impl::tuple_of_lists</S/>::t
 
 	return result;
 }
-
-namespace impl
-{
-
-// For now we can't create tuple of homogenous types just easy.
-// So, use some helper for it.
-template<//> struct tuple_of_lists</0s/> { type t= tup[]; }
-template<//> struct tuple_of_lists</1s/> { type t= tup[ references_list</1s/> ]; }
-template<//> struct tuple_of_lists</2s/> { type t= tup[ references_list</1s/>, references_list</1s/> ]; }
-template<//> struct tuple_of_lists</3s/> { type t= tup[ references_list</1s/>, references_list</1s/>, references_list</1s/> ]; }
-template<//> struct tuple_of_lists</4s/> { type t= tup[ references_list</1s/>, references_list</1s/>, references_list</1s/>, references_list</1s/> ]; }
-
-} // namespace impl
 
 } // return_inner_references
 

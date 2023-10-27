@@ -134,4 +134,18 @@ fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g, H m
 	return move(t);
 }
 
+//
+// homogeneous_tuple overloads - create tuple of N elements of type T
+//
+
+template</type T/> type homogeneous_tuple</T, 0s/> = tup[];
+template</type T/> type homogeneous_tuple</T, 1s/> = tup[ T ];
+template</type T/> type homogeneous_tuple</T, 2s/> = tup[ T, T ];
+template</type T/> type homogeneous_tuple</T, 3s/> = tup[ T, T, T ];
+template</type T/> type homogeneous_tuple</T, 4s/> = tup[ T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 5s/> = tup[ T, T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 6s/> = tup[ T, T, T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 7s/> = tup[ T, T, T, T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 8s/> = tup[ T, T, T, T, T, T, T, T ];
+
 } // namespace ust
