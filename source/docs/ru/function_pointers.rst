@@ -88,8 +88,10 @@
    fn SafeFn();
    var ( fn() unsafe ) unsafe_fn_ptr = SafeFn;  // Преобразуется модификатор небезопасности
    
-   fn FirstRetFn( i32 &'first x, i32 &'second y ) : i32 &'first;
-   var ( fn( i32 &'ret x, i32 &'ret y ) : i32 &'ret ) all_ret_fn_ptr = FirstRetFn; // Преобразуется модификатор возвращаемых ссылок
+   var [ [ char8, 2 ], 1 ] return_references_first[ "0_" ];
+   fn FirstRetFn( i32& x, i32& y ) : i32 & @(return_references_first);
+   var [ [ char8, 2 ], 2 ] return_references_first_and_second[ "0_", "1_" ];
+   var ( fn( i32& x, i32& y ) : i32 & @(return_references_first_and_second ) ) all_ret_fn_ptr = FirstRetFn; // Преобразуется модификатор возвращаемых ссылок
    
 При инициализации указателя на функцию с преобразованием компилятор проверяет, что возможно только одно преобразование. При возможности нескольких преобразований компилятор породит ошибку.
 

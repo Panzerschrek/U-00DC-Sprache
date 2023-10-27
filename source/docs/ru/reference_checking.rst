@@ -242,7 +242,8 @@
 .. code-block:: u_spr
 
    struct S{ i32& r; }
-   fn Foo( S &mut s'dst', i32 &'src r ) ' dst <- src '; // Функция создаёт производную ссылку от аргумента "r" внутри аргумента "s".
+   var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+   fn Foo( S &mut s, i32& r ) @(pollution); // Функция создаёт производную ссылку от аргумента "r" внутри аргумента "s".
    
    fn Bar()
    {
