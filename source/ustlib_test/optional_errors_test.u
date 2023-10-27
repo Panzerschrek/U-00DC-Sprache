@@ -1,26 +1,26 @@
 //##fail_test
 import "../ustlib/optional.u"
 
-/*
+var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+
 struct RI
 {
-	i32&imut r;
-	fn constructor( this'a', i32&'b imut in_r ) ' a <- b ' ( r= in_r ) {}
+	i32 &imut r;
+	fn constructor( this, i32 &imut in_r ) @(pollution) ( r= in_r ) {}
 }
 
 struct RM
 {
-	i32&mut r;
-	fn constructor( this'a', i32&'b mut in_r ) ' a <- b ' ( r= in_r ) {}
+	i32 &mut r;
+	fn constructor( this, i32 &mut in_r ) @(pollution) ( r= in_r ) {}
 }
-*/
+
 
 class C{}
 
 fn nomangle main() : i32
 {
 	// TODO - return possibility to store references inside optional.
-	/*
 	{ // constructor does reference-pollution.
 		var i32 mut x= 0;
 		var ust::optional</RM/> mut opt( RM(x) );
@@ -41,7 +41,6 @@ fn nomangle main() : i32
 		opt.reset( RI(x) );
 		++x; //  UNexpect_error ReferenceProtectionError
 	}
-	*/
 	{ // optional saves mutability.
 		var ust::optional</ i32 /> imut opt(0);
 		opt.try_deref()= 0; //##expect_error ExpectedReferenceValue

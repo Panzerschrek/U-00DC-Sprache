@@ -15,13 +15,16 @@ class Noncopyable{}
 
 struct R // Have destructor with side-effects.
 {
-	$(i32) r;
-	fn constructor( this, i32& mut in_r ) ( r= $<(in_r) ) {}
+	i32 &mut r;
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn constructor( this, i32& mut in_r ) @(pollution) ( r= in_r ) {}
 	fn destructor()
 	{
-		unsafe{  ++ $>(r);  }
+		unsafe{  ++r;  }
 	}
 }
+
+static_assert( typeinfo</ ust::optional</R/> />.references_tags_count == 1s );
 
 fn nomangle main() : i32
 {
