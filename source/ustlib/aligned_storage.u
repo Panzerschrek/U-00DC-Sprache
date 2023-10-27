@@ -3,17 +3,17 @@ import "memory.u"
 namespace ust
 {
 
+template<//> type byte_type_for_alignment</  1s /> = byte8  ;
+template<//> type byte_type_for_alignment</  2s /> = byte16 ;
+template<//> type byte_type_for_alignment</  4s /> = byte32 ;
+template<//> type byte_type_for_alignment</  8s /> = byte64 ;
+template<//> type byte_type_for_alignment</ 16s /> = byte128;
+template</ size_type S /> type byte_type_for_alignment</S/> = byte128;
+
 template</ size_type size, size_type alignment />
 struct aligned_storage
 {
-	template<//> struct byte_type_for_alignment</  1s />{ type t= byte8  ; }
-	template<//> struct byte_type_for_alignment</  2s />{ type t= byte16 ; }
-	template<//> struct byte_type_for_alignment</  4s />{ type t= byte32 ; }
-	template<//> struct byte_type_for_alignment</  8s />{ type t= byte64 ; }
-	template<//> struct byte_type_for_alignment</ 16s />{ type t= byte128; }
-	template</ size_type S /> struct byte_type_for_alignment { type t= byte128; }
-
-	type byte_type= byte_type_for_alignment</ alignment />::t;
+	type byte_type= byte_type_for_alignment</ alignment />;
 	auto constexpr byte_type_size= typeinfo</byte_type/>.size_of;
 	auto constexpr element_count= ( size + ( byte_type_size - 1s ) ) / byte_type_size;
 
