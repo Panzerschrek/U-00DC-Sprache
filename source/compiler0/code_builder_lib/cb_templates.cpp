@@ -1080,7 +1080,8 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	// if function is constexpr, body may be already generated.
 	// Skip building body if generated functions building is disabled and if this function can't be constexpr.
 	if( !function_variable.have_body &&
-		!( skip_building_generated_functions_ && function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr ) )
+		!( skip_building_generated_functions_ && function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr ) &&
+		function_declaration.block != nullptr )
 		BuildFuncCode(
 			function_variable,
 			function_template.base_class,
