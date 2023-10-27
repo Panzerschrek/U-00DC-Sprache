@@ -1,19 +1,20 @@
 //##fail_test
 import "../ustlib/vector.u"
 
-/*
+var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+
 struct RI
 {
 	i32&imut r;
-	fn constructor( this'a', i32&'b imut in_r ) ' a <- b ' ( r= in_r ) {}
+	fn constructor( this, i32 &imut in_r ) @(pollution) ( r= in_r ) {}
 }
 
 struct RM
 {
 	i32&mut r;
-	fn constructor( this'a', i32&'b mut in_r ) ' a <- b ' ( r= in_r ) {}
+	fn constructor( this, i32 &mut in_r ) @(pollution) ( r= in_r ) {}
 }
-*/
+
 
 struct S // Non-default-constructible.
 {
@@ -24,8 +25,6 @@ class C {} // Class is not copy-constructible by-default.
 
 fn nomangle main() : i32
 {
-	// TODO - return possibility to store structs with references inside in "vector".
-	/*
 	{ // "push_back" does reference-pollution.
 		var i32 mut x= 0;
 		var ust::vector</RM/> mut r;
@@ -47,7 +46,6 @@ fn nomangle main() : i32
 		r.push_back( RM(x) );
 		auto &mut second_ref= x; //  UNexpect_error ReferenceProtectionError
 	}
-	*/
 	{
 		// Can not fill vector with default values, because element type is not default-constructible.
 		var ust::vector</S/> vec( 64s ); //##expect_error CouldNotSelectOverloadedFunction

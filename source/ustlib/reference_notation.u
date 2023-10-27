@@ -1,6 +1,8 @@
 // This file contains definitions of types, that are used for functions reference notation.
 // Also it contains constants and helper functions for common reference notation patterns.
 
+import "helpers.u"
+
 namespace ust
 {
 
@@ -32,7 +34,31 @@ var pollution_list</1s/> constexpr param0_param_1_reference[ [ "0a", "1_" ] ];
 // Save inner reference #0 of param #1 into reference tag #0 of param #0.
 var pollution_list</1s/> constexpr param0_param_1_inner_reference[ [ "0a", "1a" ] ];
 
+// Assuming param #0 and param #1 have same number of inner references write all references from param #1 into param #0.
+template</size_type S/>
+fn constexpr param0_param1_all_inner_references() : pollution_list</S/>
+{
+	return param_n_param_m_all_inner_references</S/>( 0u8, 1u8 );
 }
+
+// Assuming param #n and param #m have same number of inner references write all references from param #m into param #n.
+template</size_type S/>
+fn constexpr param_n_param_m_all_inner_references( u8 n, u8 m ) : pollution_list</S/>
+{
+	var pollution_list</S/> mut result= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		// dst
+		result[i][0][0]= char8( u32("0"c8) + u32(n) );
+		result[i][0][1]= char8( size_type("a"c8) + i );
+		// src
+		result[i][1][0]= char8( u32("0"c8) + u32(m) );
+		result[i][1][1]= char8( size_type("a"c8) + i );
+	}
+	return result;
+}
+
+} // namespace pollution
 
 namespace return_references
 {
@@ -87,6 +113,49 @@ fn constexpr param_n_inner_reference_m( u8 n, u8 m ) : tup[ references_list</1s/
 	var tup[ references_list</1s/> ] result[ [ [ char8( u32("0"c8) + u32(n) ), char8( u32("a"c8) + u32(m) ) ] ] ];
 	return result;
 }
+
+// Assuming return type and param #0 have same number of inner references return inner references of param #0.
+template</size_type S/>
+fn constexpr param0_all_inner_references() : impl::tuple_of_lists</S/>::t
+{
+	return param_n_all_inner_references</S/>( 0u8 );
+}
+
+// Assuming return type and param #n have same number of inner references return inner references of param #0.
+template</size_type S/>
+fn constexpr param_n_all_inner_references( u8 n ) : impl::tuple_of_lists</S/>::t
+{
+	var impl::tuple_of_lists</S/>::t mut result= zero_init;
+	static_if( S == 0s )
+	{
+		ignore_unused(n);
+	}
+	else
+	{
+		auto mut i= 0s;
+		for( &mut el : result )
+		{
+			el[0][0]= char8( u32("0"c8) + u32(n) );
+			el[0][1]= char8( size_type("a"c8) + i );
+			++i;
+		}
+	}
+
+	return result;
+}
+
+namespace impl
+{
+
+// For now we can't create tuple of homogenous types just easy.
+// So, use some helper for it.
+template<//> struct tuple_of_lists</0s/> { type t= tup[]; }
+template<//> struct tuple_of_lists</1s/> { type t= tup[ references_list</1s/> ]; }
+template<//> struct tuple_of_lists</2s/> { type t= tup[ references_list</1s/>, references_list</1s/> ]; }
+template<//> struct tuple_of_lists</3s/> { type t= tup[ references_list</1s/>, references_list</1s/>, references_list</1s/> ]; }
+template<//> struct tuple_of_lists</4s/> { type t= tup[ references_list</1s/>, references_list</1s/>, references_list</1s/>, references_list</1s/> ]; }
+
+} // namespace impl
 
 } // return_inner_references
 
