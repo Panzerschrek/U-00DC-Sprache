@@ -16,8 +16,6 @@ public:
 	type this_type= vector</T/>;
 	type hasher= range_hasher;
 
-	static_assert( typeinfo</T/>.references_tags_count == 0s, "Currently vector doesn't support types with references inside." );
-
 public:
 	// Default constructor.
 	fn constructor()= default;
@@ -42,7 +40,7 @@ public:
 	}
 
 	// Fill constructor.
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( size_type count, T& value )
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( size_type count, T& value ) @( c_param2_pollution )
 		( size_(count) )
 	{
 		if( size_ == 0s ) { return; }
@@ -156,45 +154,53 @@ public:
 
 	// Indexing
 
-	op[](  mut this, size_type index ) : T & mut @( reference_notation::return_references::param0 )
+	op[](  mut this, size_type index )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		halt if( index >= size_ );
 		return unsafe( index_unchecked(index) );
 	}
 
-	op[]( imut this, size_type index ) : T &imut @( reference_notation::return_references::param0 )
+	op[]( imut this, size_type index )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		halt if( index >= size_ );
 		return unsafe( index_unchecked(index) );
 	}
 
-	fn index_unchecked(  mut this, size_type index ) unsafe : T & mut @( reference_notation::return_references::param0 )
+	fn index_unchecked(  mut this, size_type index ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + index) );
 	}
 
-	fn index_unchecked( imut this, size_type index ) unsafe : T &imut @( reference_notation::return_references::param0 )
+	fn index_unchecked( imut this, size_type index ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + index) );
 	}
 
-	op enable_if( c_size_type_is_u64_ ) [](  mut this, u32 index ) : T & mut @( reference_notation::return_references::param0 )
+	op enable_if( c_size_type_is_u64_ ) [](  mut this, u32 index )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		return this[ size_type(index) ];
 	}
 
-	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index ) : T &imut @( reference_notation::return_references::param0 )
+	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		return this[ size_type(index) ];
 	}
 
-	op enable_if( c_size_type_is_u32_ ) [](  mut this, u64 index ) : T & mut @( reference_notation::return_references::param0 )
+	op enable_if( c_size_type_is_u32_ ) [](  mut this, u64 index )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		halt if( index > u64(size_) );
 		return this[ size_type(index) ];
 	}
 
-	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index ) : T &imut @( reference_notation::return_references::param0 )
+	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		halt if( index > u64(size_) );
 		return this[ size_type(index) ];
@@ -202,46 +208,54 @@ public:
 
 	// front/back
 
-	fn front(  mut this ) : T & mut @( reference_notation::return_references::param0 )
+	fn front(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn front( imut this ) : T &imut @( reference_notation::return_references::param0 )
+	fn front( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn back(  mut this ) : T & mut @( reference_notation::return_references::param0 )
+	fn back(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked() );
 	}
 
-	fn back( imut this ) : T &imut @( reference_notation::return_references::param0 )
+	fn back( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked() );
 	}
 
-	fn front_unchecked(  mut this ) unsafe : T & mut @( reference_notation::return_references::param0 )
+	fn front_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_) );
 	}
 
-	fn front_unchecked( imut this ) unsafe : T &imut @( reference_notation::return_references::param0 )
+	fn front_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_) );
 	}
 
-	fn back_unchecked(  mut this ) unsafe : T & mut @( reference_notation::return_references::param0 )
+	fn back_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
 
-	fn back_unchecked( imut this ) unsafe : T &imut @( reference_notation::return_references::param0 )
+	fn back_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
@@ -256,7 +270,7 @@ public:
 	// modificators
 
 	// Append contents of other vector to this, leave "other" vector empty
-	fn append( mut this, this_type &mut other )
+	fn append( mut this, this_type &mut other ) @( c_param1_pollution )
 	{
 		auto new_size= add_overflow_check_halt( size_, other.size_ );
 
@@ -299,7 +313,7 @@ public:
 		swap( size_type(i0), size_type(i1) );
 	}
 
-	fn push_back( mut this, T mut val )
+	fn push_back( mut this, T mut val ) @( c_param1_pollution )
 	{
 		unsafe
 		{
@@ -312,7 +326,7 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this, size_type count, T& val )
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this, size_type count, T& val ) @( c_param2_pollution )
 	{
 		unsafe
 		{
@@ -346,7 +360,7 @@ public:
 		}
 	}
 
-	fn pop_back( mut this ) : T
+	fn pop_back( mut this ) : T @(c_return_inner_references)
 	{
 		halt if(empty());
 		unsafe
@@ -358,7 +372,7 @@ public:
 		}
 	}
 
-	fn pop_back_unchecked( mut this ) unsafe : T
+	fn pop_back_unchecked( mut this ) unsafe : T @(c_return_inner_references)
 	{
 		unsafe
 		{
@@ -369,7 +383,7 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this, size_type new_size, T& val )
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this, size_type new_size, T& val ) @( c_param2_pollution )
 	{
 		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )
@@ -404,13 +418,13 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</ T />.references_tags_count == 0s )
+	fn enable_if( c_references_tags_count == 0s )
 	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
-	fn enable_if( typeinfo</ T />.references_tags_count == 0s )
+	fn enable_if( c_references_tags_count == 0s )
 	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
@@ -456,9 +470,14 @@ private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</T/>.align_of;
 	auto constexpr c_first_allocation_size_= get_vector_first_allocation_size( c_element_size_ );
+	auto constexpr c_references_tags_count= typeinfo</T/>.references_tags_count;
 
 	auto c_size_type_is_u32_= typeinfo</ size_type />.size_of == typeinfo</ u32 />.size_of;
 	auto c_size_type_is_u64_= typeinfo</ size_type />.size_of == typeinfo</ u64 />.size_of;
+
+	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_references_tags_count />();
+	auto c_param2_pollution= reference_notation::pollution::param_n_param_m_all_inner_references</ c_references_tags_count />( 0u8, 2u8 );
+	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_references_tags_count />();
 
 private:
 	fn ensure_capacity( mut this, size_type new_size ) unsafe
