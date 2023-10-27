@@ -65,8 +65,9 @@
 .. code-block:: u_spr
 
    type IntGen= generator : i32; // Простейший генератор
-   type FloatRefGen= generator'imut some_tag' : f32 &'some_tag; // Генератор, возвращающий ссылку и хранящий внутри себя ссылки.
-   type NonSyncRefGen= generator'mut some_tag' non_sync : u64 &'some_tag mut; // non_sync генератор, возвращающий изменяемую ссылку и хранящий внутри себя изменяемые ссылки.
+   var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+   type FloatRefGen= generator'imut' : f32 & @(return_references); // Генератор, возвращающий ссылку и хранящий внутри себя ссылки.
+   type NonSyncRefGen= generator'mut' non_sync : u64 &mut @(return_references); // non_sync генератор, возвращающий изменяемую ссылку и хранящий внутри себя изменяемые ссылки.
 
 Как можно заметить, тип генератора не определяется конкретными особенностями конкретного генератора (как он был создан).
 Это позволяет использовать одну и ту же переменную для хранения генераторов, порождённых разными функциями-генераторами с разным телом и разными параметрами.
