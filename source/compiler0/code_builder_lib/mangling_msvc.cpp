@@ -476,6 +476,11 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
+		if( !function_type.references_pollution.empty() )
+		{
+			params_empty= false;
+			EncodeReferencePollution( mangler_state, function_type.references_pollution );
+		}
 		if( !function_type.return_references.empty() )
 		{
 			params_empty= false;
@@ -485,11 +490,6 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 		{
 			params_empty= false;
 			EncodeReturnInnerReferences( mangler_state, function_type.return_inner_references );
-		}
-		if( !function_type.references_pollution.empty() )
-		{
-			params_empty= false;
-			EncodeReferencePollution( mangler_state, function_type.references_pollution );
 		}
 	}
 
