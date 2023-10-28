@@ -512,6 +512,7 @@ U_TEST( FunctionTypesMangling_Test0 )
 		fn Pass( (fn( OtherStruct& o ) : OtherStruct ) ptr ){}
 		fn Cold( (fn() call_conv("cold") ) void_fn ){}
 		fn Fast( (fn() call_conv("fast") ) void_fn ){}
+		fn Unsafe( (fn() unsafe) ptr ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -525,6 +526,32 @@ U_TEST( FunctionTypesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4ColdPU4coldFvvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FastPU4fastFvvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6UnsafePFvv6unsafeE" ) != nullptr );
+}
+
+U_TEST( FunctionTypesMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 2 ] pollution[ [ "0a", "1_" ], [ "0a", "2_" ] ];
+		fn Foo( ( fn( S &mut s, i32& x, i32& y ) @(pollution) ) ptr ) {}
+
+		var[ [ char8, 2 ], 3 ] return_references[ "0_", "1_", "1a" ];
+		fn Bar( ( fn( i32& x, S& s ) : i32 & @(return_references) ) ptr ) {}
+
+		var tup[ [ [char8, 2], 1 ], [ [char8, 2], 2 ] ] return_inner_references[ [ "0_" ], [ "1_", "1a" ] ];
+		fn Baz( ( fn( i32& x, S& s ) : S @(return_inner_references) ) ptr ) {}
+
+		var[ [ char8, 2 ], 1 ] generator_return_references[ "0a" ];
+		fn Lol( ( generator'imut' : i32 & @(generator_return_references) ) gen ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooPFvR1SRKiS2_3_RPIXilililLc48ELc97EEilLc49ELc95EEEililLc48ELc97EEilLc50ELc95EEEEEEE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BarPFRKiS0_RK1S3_RRIXililLc48ELc95EEilLc49ELc97EEilLc49ELc95EEEEEE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BazPF1SRKiRKS_4_RIRIXilililLc48ELc95EEEililLc49ELc97EEilLc49ELc95EEEEEEE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRKiLj0E3_RRIXililLc48ELc97EEEEEE" ) != nullptr );
 }
 
 U_TEST( TupleTypesManglengTest )
