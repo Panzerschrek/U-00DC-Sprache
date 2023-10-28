@@ -14,6 +14,12 @@ bool ReferencesGraph::Link::operator==( const ReferencesGraph::Link& r ) const
 	return this->src == r.src && this->dst == r.dst;
 }
 
+void ReferencesGraph::Clear()
+{
+	nodes_.clear();
+	links_.clear();
+}
+
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );
@@ -228,7 +234,7 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 
 bool ReferencesGraph::NodeMoved( const VariablePtr& node ) const
 {
-	for( auto& node_pair : nodes_ )
+	for( const auto& node_pair : nodes_ )
 		if( node_pair.first == node )
 			return node_pair.second.moved;
 

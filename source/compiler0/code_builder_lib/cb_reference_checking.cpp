@@ -122,6 +122,15 @@ void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, 
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
+
+	if( &function_context == global_function_context_.get() )
+	{
+		// TODO - rework this. Clear global context specially.
+		temporary_variables_storage.variables_.clear();
+		function_context.variables_state.Clear();
+		return;
+	}
+
 	// Try to move unused nodes (variables and references) until we can't move anything.
 	// Multiple iterations needed to process complex references chains.
 	while(true)
@@ -131,9 +140,9 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 		{
 			// Destroy variables without links.
 			// Destroy all references, because all actual references that holds values should not yet be registered.
-			if( !function_context.variables_state.NodeMoved( variable ) &&
-				( variable->value_type != ValueType::Value ||
-					!function_context.variables_state.HaveOutgoingLinks( variable ) ) )
+			if( ( variable->value_type != ValueType::Value ||
+					!function_context.variables_state.HaveOutgoingLinks( variable ) ) &&
+					!function_context.variables_state.NodeMoved( variable ) )
 			{
 				if( variable->value_type == ValueType::Value && !function_context.is_functionless_context )
 				{
