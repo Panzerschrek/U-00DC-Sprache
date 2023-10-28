@@ -643,6 +643,32 @@ U_TEST( TuplesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?QwertyFunc@@YAXU?$tup@NM_N_JD@@AEAU1@AEBU1@@Z" ) != nullptr );
 }
 
+U_TEST( FunctionTypesMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Foo( ( fn( S &mut s, i32& x ) @(pollution) ) ptr ) {}
+
+		var[ [ char8, 2 ], 3 ] return_references[ "0_", "1_", "1a" ];
+		fn Bar( ( fn( i32& x, S& s ) : i32 & @(return_references) ) ptr ) {}
+
+		var tup[ [ [char8, 2], 1 ], [ [char8, 2], 2 ] ] return_inner_references[ [ "0_" ], [ "1_", "1a" ] ];
+		fn Baz( ( fn( i32& x, S& s ) : S @(return_inner_references) ) ptr ) {}
+
+		var[ [ char8, 2 ], 1 ] generator_return_references[ "0a" ];
+		fn Lol( ( generator'imut' : i32 & @(generator_return_references) ) gen ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXP6AXAEAUS@@AEBHU?$_RP@$2$$BY2011D2$$BY111D2$$BY01DD0DA@D0GB@@2$$BY01DD0DB@D0FP@@@@@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXP6AAEBHAEBHAEBUS@@U?$_RR@$2$$BY121D2$$BY01DD0DA@D0FP@@2$$BY01DD0DB@D0GB@@2$$BY01DD0DB@D0FP@@@@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXP6A?AUS@@AEBHAEBU1@U?$_RIR@$2Utup@@2$$BY101D2$$BY01DD0DA@D0FP@@@2$$BY111D2$$BY01DD0DB@D0GB@@2$$BY01DD0DB@D0FP@@@@@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEBHI$0A@U?$_RR@$2$$BY101D2$$BY01DD0DA@D0GB@@@@@@@@Z" ) != nullptr );
+}
+
 U_TEST( FunctionPointersManglingTest )
 {
 	static const char c_program_text[]=
@@ -680,9 +706,9 @@ U_TEST( FunctionPointersManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefRetFunc@@YAXP6AAEB_SXZ@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?MutRefRetFunc@@YAXP6AAEA_SXZ@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoRefArgsFunc@@YAXP6AXAEBI0@Z@Z" ) != nullptr ); // Should use params backreferences here
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassRefFunc@@YAXP6AAEBEAEBEU?$_RR@$0A@$0PP@@@@Z@Z" ) != nullptr ); // Should not use backreference - return value doesn't count
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassRefFunc@@YAXP6AAEBEAEBEU?$_RR@$2$$BY101D2$$BY01DD0DA@D0FP@@@@@@Z@Z" ) != nullptr ); // Should not use backreference - return value doesn't count
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassStructRefFunc@@YAXP6AAEBUSomeStruct@@AEBU1@U?$_RR@$0A@$0PP@@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassStructRefFunc@@YAXP6AAEBUSomeStruct@@AEBU1@U?$_RR@$2$$BY101D2$$BY01DD0DA@D0FP@@@@@@Z@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoStructMutRefArgsFunc@@YAXP6AXAEAUSomeStruct@@0@Z@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructRetFunc@@YAXP6A?AUSomeStruct@@XZ@Z" ) != nullptr );
 
@@ -988,20 +1014,12 @@ U_TEST( SpecialFunctionTypeDataManglingTest )
 		// Should encode unsafe flag
 		fn VoidParamUnsafeFunction( ( fn() unsafe ) f ) { }
 		fn IntParamUnsafeFunction( ( fn( i32 x ) unsafe ) f ) {}
-
-		fn RefPassFunction( ( fn( i32& x ) : i32& ) f ) {}
-
-		struct S{ i32& x; }
-		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1a", "0_" ] ];
-		fn RefPollutionFunction( ( fn( i32 & x, S &mut s ) @(pollution) ) f ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?VoidParamUnsafeFunction@@YAXP6AXUunsafe@@@Z@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntParamUnsafeFunction@@YAXP6AXHUunsafe@@@Z@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefPassFunction@@YAXP6AAEBHAEBHU?$_RR@$0A@$0PP@@@@Z@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefPollutionFunction@@YAXP6AXAEBHAEAUS@@U?$_RP@$00$0A@$0A@$0PP@@@@Z@Z" ) != nullptr );
 }
 
 U_TEST( TypeinfoClassManglingTest )
