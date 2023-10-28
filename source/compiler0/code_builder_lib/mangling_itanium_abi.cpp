@@ -18,7 +18,6 @@ private:
 	using LenType = uint16_t;
 
 public:
-	void Push( char c );
 	void Push( std::string_view name );
 	void PushLengthPrefixed( std::string_view name );
 
@@ -76,12 +75,6 @@ char Base36Digit( const size_t value )
 //
 // ManglerState
 //
-
-void ManglerState::Push( const char c )
-{
-	result_full_.push_back( c );
-	result_compressed_.push_back( c );
-}
 
 void ManglerState::Push( const std::string_view name )
 {
