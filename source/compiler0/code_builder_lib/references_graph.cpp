@@ -317,7 +317,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	return std::make_pair( std::move(result), std::move(errors) );
 }
 
-std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc )
+std::vector<CodeBuilderError> ReferencesGraph::CheckVariablesStateAfterLoop( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc )
 {
 	std::vector<CodeBuilderError> errors;
 

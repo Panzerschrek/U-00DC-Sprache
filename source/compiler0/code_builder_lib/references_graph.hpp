@@ -54,7 +54,7 @@ public:
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc );
-	static std::vector<CodeBuilderError> CheckWhileBlockVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
+	static std::vector<CodeBuilderError> CheckVariablesStateAfterLoop( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
 
 private:
 	struct NodeState

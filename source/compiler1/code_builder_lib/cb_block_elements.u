@@ -2342,8 +2342,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, Func
 		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 	}
 
+	var bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_references_graphs.empty();
+
 	// References graph state before loop iteration block is combination of references graph states of each branch terminated with "continue".
-	if( !function_context.loops_stack.back().continue_references_graphs.empty() )
+	if( loop_iteration_block_is_reachable )
 	{
 		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.deref().end_src_loc );
 	}
@@ -2369,7 +2371,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, Func
 
 	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
 
-	CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.deref().end_src_loc );
+	if( loop_iteration_block_is_reachable )
+	{
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.deref().end_src_loc );
+	}
+
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.deref().end_src_loc );
 
 	// Block after loop.

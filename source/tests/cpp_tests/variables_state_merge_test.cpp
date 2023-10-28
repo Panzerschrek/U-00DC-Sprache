@@ -782,15 +782,15 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop3 )
 			var i32 mut x= 0, mut y= 0;
 			var S mut s{ .x= x };
 
-			for(;; Link( s, y ) ) // error, mutable pollution for outer variables does not allowed.
+			for(; Cond(); Link( s, y ) ) // error, mutable pollution for outer variables does not allowed.
 			{
-				break;
 			}
 		}
+		fn Cond() : bool;
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
@@ -805,15 +805,15 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
 			var i32 imut x= 0, imut y= 0;
 			var S mut s{ .x= x };
 
-			for(;; Link( s, y ) ) // error, immutable pollution for outer variables does not allowed.
+			for(; Cond(); Link( s, y ) ) // error, immutable pollution for outer variables does not allowed.
 			{
-				break;
 			}
 		}
+		fn Cond() : bool;
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
@@ -830,13 +830,12 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
 
 			for( ; Link( s, y ) ; ) // error, mutable pollution for outer variables does not allowed.
 			{
-				break;
 			}
 		}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
@@ -853,13 +852,12 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
 
 			for( ; Link( s, y ) ; ) // error, immutable pollution for outer variables does not allowed.
 			{
-				break;
 			}
 		}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop7 )
@@ -977,6 +975,28 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop10 )
 				}
 			}
 			++y; // Pollution in branch with "return" have no effect, so, 'y' have no alive references.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( CStyleForMergeTest_PollutionInsideLoop11 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s, i32& mut x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			for(;; Link( s, y ) ) // Ok - pollution in iteration block is not reachable.
+			{
+				break;
+			}
 		}
 	)";
 

@@ -1020,8 +1020,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 	}
 
+	bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_variables_states.empty();
+
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
-	if( !function_context.loops_stack.back().continue_variables_states.empty() )
+	if( loop_iteration_block_is_reachable )
 		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
@@ -1042,9 +1044,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
-	// Disallow outer variables state change in loop iteration part and its predecessors.
-	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block.end_src_loc );
-	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	if( loop_iteration_block_is_reachable )
+	{
+		// Disallow outer variables state change in loop iteration part and its predecessors.
+		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block.end_src_loc );
+		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	}
 
 	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
@@ -1117,7 +1122,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, while_operator.block.end_src_loc );
+		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, variables_state, while_operator.block.end_src_loc );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
@@ -1160,7 +1165,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, loop_operator.block.end_src_loc );
+		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, variables_state, loop_operator.block.end_src_loc );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
