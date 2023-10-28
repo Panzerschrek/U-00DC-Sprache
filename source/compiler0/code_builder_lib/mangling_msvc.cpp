@@ -680,9 +680,9 @@ void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const C
 		}
 
 		if( !coroutine_type_description->return_references.empty() )
-			EncodeReturnReferences( mangler_state, coroutine_type_description->return_references );
+			EncodeReturnReferences( template_mangler_state, coroutine_type_description->return_references );
 		if( !coroutine_type_description->return_inner_references.empty() )
-			EncodeReturnInnerReferences( mangler_state, coroutine_type_description->return_inner_references );
+			EncodeReturnInnerReferences( template_mangler_state, coroutine_type_description->return_inner_references );
 
 		// Finish list of template arguments.
 		template_mangler_state.PushElement( g_terminator );
@@ -798,7 +798,7 @@ void ManglerMSVC::EncodeReturnReferences( ManglerState& mangler_state, const std
 		for( const FunctionType::ParamReference& param_reference : return_references )
 			EncodeParamReference( template_mangler_state, param_reference );
 
-		template_mangler_state.PushElement( "@" );
+		template_mangler_state.PushElement( g_terminator );
 
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
@@ -824,7 +824,12 @@ void ManglerMSVC::EncodeReturnInnerReferences( ManglerState& mangler_state, cons
 		template_mangler_state.PushElement( "$" );
 
 		template_mangler_state.PushElement( "2" );
-		template_mangler_state.PushElement( "H" ); // TODO - encode tuple name properly.
+
+		// Hack! Just use "tup" as type name, without specifying exact values.
+		template_mangler_state.PushElement( "U" );
+		template_mangler_state.PushElement( Keyword( Keywords::tup_ ) );
+		template_mangler_state.PushElement( g_terminator );
+		template_mangler_state.PushElement( g_terminator );
 
 		for( const auto& return_references : return_inner_references )
 		{
@@ -837,10 +842,10 @@ void ManglerMSVC::EncodeReturnInnerReferences( ManglerState& mangler_state, cons
 			for( const FunctionType::ParamReference& param_reference : return_references )
 				EncodeParamReference( template_mangler_state, param_reference );
 
-			template_mangler_state.PushElement( "@" );
+			template_mangler_state.PushElement( g_terminator );
 		}
 
-		template_mangler_state.PushElement( "@" );
+		template_mangler_state.PushElement( g_terminator );
 
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
@@ -860,13 +865,14 @@ void ManglerMSVC::EncodeParamReference( ManglerState& mangler_state, const Funct
 
 	mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
 	mangler_state.PushElement( '0' );
-	EncodeNumber( mangler_state, llvm::APInt( 64, param_reference.first ), false );
+	EncodeNumber( mangler_state, llvm::APInt( 64, uint32_t('0' + param_reference.first) ), false );
 
 	mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
 	mangler_state.PushElement( '0' );
-	EncodeNumber( mangler_state, llvm::APInt( 64, param_reference.second ), false );
+	const uint32_t param_reference_char= param_reference.second == FunctionType::c_arg_reference_tag_number ? '_' : ('a' + param_reference.second);
+	EncodeNumber( mangler_state, llvm::APInt( 64, param_reference_char ), false );
 
-	mangler_state.PushElement( "@" );
+	mangler_state.PushElement( g_terminator );
 }
 
 } // namespace
