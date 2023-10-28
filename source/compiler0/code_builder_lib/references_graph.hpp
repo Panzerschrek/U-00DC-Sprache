@@ -71,6 +71,7 @@ private:
 	};
 
 private:
+	bool HaveNode( const VariablePtr& node ) const;
 	bool HaveDirectOutgoingLinks( const VariablePtr& from ) const;
 	bool HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const;
 
@@ -83,7 +84,7 @@ private:
 	void TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 private:
-	std::unordered_map<VariablePtr, NodeState> nodes_;
+	std::vector< std::pair<VariablePtr, NodeState> > nodes_; // Check for duplicates before insertion!
 	std::vector<Link> links_; // Check for duplicates before insertion!
 };
 
