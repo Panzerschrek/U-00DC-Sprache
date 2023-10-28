@@ -14,11 +14,6 @@ bool ReferencesGraph::Link::operator==( const ReferencesGraph::Link& r ) const
 	return this->src == r.src && this->dst == r.dst;
 }
 
-size_t ReferencesGraph::LinkHasher::operator()( const Link& link ) const
-{
-	return llvm::hash_combine( reinterpret_cast<uintptr_t>(link.src.get()), reinterpret_cast<uintptr_t>(link.dst.get()) );
-}
-
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );
@@ -67,7 +62,13 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 	if( from == to )
 		return;
 
-	links_.insert( Link{from, to} );
+	Link link{from, to};
+	for( const Link& prev_lik : links_ )
+	{
+		if( link == prev_lik )
+			return;
+	}
+	links_.push_back( std::move(link) );
 }
 
 void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to )
@@ -77,10 +78,19 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
-	const bool erased= links_.erase( Link{ from, to } ) != 0;
-	(void)erased;
+	const Link link{from, to};
+	for( size_t i= 0; i < links_.size(); ++i )
+	{
+		if( link == links_[i] )
+		{
+			if( i + 1 < links_.size() )
+				links_[i]= std::move(links_.back());
+			links_.pop_back();
+			return;
+		}
+	}
 
-	U_ASSERT(erased); // Removing unexistent link.
+	U_ASSERT(false); // Removing unexistent link.
 }
 
 void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
@@ -305,7 +315,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 		for( const auto& src_link : branch_state.links_ )
 		{
 			if( std::find( result.links_.begin(), result.links_.end(), src_link ) == result.links_.end() )
-				result.links_.insert( src_link );
+				result.links_.push_back( src_link );
 		}
 	}
 
@@ -402,7 +412,7 @@ void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 	// Collect in/out nodes.
 	NodesSet in_nodes;
 	NodesSet out_nodes;
-	for( const auto& link : links_ )
+	for( const Link& link : links_ )
 	{
 		if( link.src == link.dst ) // Self loop link.
 			continue;
@@ -414,14 +424,16 @@ void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 	}
 
 	// Remove links.
-	for( auto it= links_.begin(); it != links_.end(); )
+	for( size_t i= 0; i < links_.size(); )
 	{
-		if( it->src == node || it->dst == node )
+		if( links_[i].src == node || links_[i].dst == node )
 		{
-			it= links_.erase(it);
+			if( i + 1 < links_.size() )
+				links_[i]= std::move( links_.back() );
+			links_.pop_back();
 		}
 		else
-			++it;
+			++i;
 	}
 
 	// Create new links.

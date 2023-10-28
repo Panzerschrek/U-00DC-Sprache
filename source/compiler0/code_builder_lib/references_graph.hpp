@@ -70,13 +70,6 @@ private:
 		bool operator==( const Link& r ) const;
 	};
 
-	struct LinkHasher
-	{
-		size_t operator()( const Link& link ) const;
-	};
-
-	using LinksSet= std::unordered_set< Link, LinkHasher >;
-
 private:
 	bool HaveDirectOutgoingLinks( const VariablePtr& from ) const;
 	bool HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const;
@@ -91,7 +84,7 @@ private:
 
 private:
 	std::unordered_map<VariablePtr, NodeState> nodes_;
-	LinksSet links_;
+	std::vector<Link> links_; // Check for duplicates before insertion!
 };
 
 } // namespace U
