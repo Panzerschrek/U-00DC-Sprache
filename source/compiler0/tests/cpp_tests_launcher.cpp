@@ -67,8 +67,6 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
-		// TODO - fix these reference-checking-relared tests.
-		"ReferencePollutionTest4_LinkAsImmutableIfAllLinkedVariablesAreMutable",
 	};
 
 	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
