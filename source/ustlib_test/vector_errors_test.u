@@ -15,7 +15,6 @@ struct RM
 	fn constructor( this, i32 &mut in_r ) @(pollution) ( r= in_r ) {}
 }
 
-
 struct S // Non-default-constructible.
 {
 	i32 x;
@@ -30,21 +29,21 @@ fn nomangle main() : i32
 		var ust::vector</RM/> mut r;
 
 		r.push_back( RM(x) );
-		var i32& y= x; //  UNexpect_error ReferenceProtectionError
+		var i32& y= x; //expect_error ReferenceProtectionError
 	}
 	{ // "push_back" does reference-pollution.
 		var i32 mut x= 0;
 		var ust::vector</RI/> mut r;
 
 		r.push_back( RI(x) );
-		++x; //  UNexpect_error ReferenceProtectionError
+		++x; //expect_error ReferenceProtectionError
 	}
 	{ // "front" returns correct inner reference.
 		var i32 mut x= 0;
 		var ust::vector</RM/> mut r;
 
 		r.push_back( RM(x) );
-		auto &mut second_ref= x; //  UNexpect_error ReferenceProtectionError
+		auto &mut second_ref= x; //expect_error ReferenceProtectionError
 	}
 	{
 		// Can not fill vector with default values, because element type is not default-constructible.

@@ -15,31 +15,29 @@ struct RM
 	fn constructor( this, i32 &mut in_r ) @(pollution) ( r= in_r ) {}
 }
 
-
 class C{}
 
 fn nomangle main() : i32
 {
-	// TODO - return possibility to store references inside optional.
 	{ // constructor does reference-pollution.
 		var i32 mut x= 0;
 		var ust::optional</RM/> mut opt( RM(x) );
 
-		var i32& y= x; //  UNexpect_error ReferenceProtectionError
+		var i32& y= x; //expect_error ReferenceProtectionError
 	}
 	{ // "reset" does reference-pollution.
 		var i32 mut x= 0;
 		var ust::optional</RM/> mut opt;
 
 		opt.reset( RM(x) );
-		++x; //  UNexpect_error ReferenceProtectionError
+		++x; //expect_error ReferenceProtectionError
 	}
 	{ // "reset" does reference-pollution.
 		var i32 mut x= 0;
 		var ust::optional</RI/> mut opt;
 
 		opt.reset( RI(x) );
-		++x; //  UNexpect_error ReferenceProtectionError
+		++x; //expect_error ReferenceProtectionError
 	}
 	{ // optional saves mutability.
 		var ust::optional</ i32 /> imut opt(0);
