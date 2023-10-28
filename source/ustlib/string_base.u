@@ -136,45 +136,45 @@ public:
 
 	// Indexing
 
-	op[]( mut this, size_type index ) : char_type &mut
+	op[](  mut this, size_type index ) : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		halt if( index >= size_ );
 		return unsafe( index_unchecked(index) );
 	}
 
-	op[]( imut this, size_type index ) : char_type &imut
+	op[]( imut this, size_type index ) : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		halt if( index >= size_ );
 		return unsafe( index_unchecked(index) );
 	}
 
-	fn index_unchecked( mut this, size_type index ) unsafe : char_type &mut
+	fn index_unchecked(  mut this, size_type index ) unsafe : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + index ) );
 	}
 
-	fn index_unchecked( imut this, size_type index ) unsafe : char_type &imut
+	fn index_unchecked( imut this, size_type index ) unsafe : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + index ) );
 	}
 
-	op enable_if( c_size_type_is_u64_ ) []( mut this, u32 index ) : char_type &mut
+	op enable_if( c_size_type_is_u64_ ) [](  mut this, u32 index ) : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		return this[ size_type(index) ];
 	}
 
-	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index ) : char_type &imut
+	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index ) : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		return this[ size_type(index) ];
 	}
 
-	op enable_if( c_size_type_is_u32_ ) []( mut this, u64 index ) : char_type &mut
+	op enable_if( c_size_type_is_u32_ ) [](  mut this, u64 index ) : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		halt if( index > u64(size_) );
 		return this[ size_type(index) ];
 	}
 
-	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index ) : char_type &imut
+	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index ) : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		halt if( index > u64(size_) );
 		return this[ size_type(index) ];
@@ -182,58 +182,58 @@ public:
 
 	// front/back
 
-	fn front( mut this ) : char_type &mut
+	fn front(  mut this ) : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn front( imut this ) : char_type &imut
+	fn front( imut this ) : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( front_unchecked() );
 	}
 
-	fn back( mut this ) : char_type &mut
+	fn back(  mut this ) : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked() );
 	}
 
-	fn back( imut this ) : char_type &imut
+	fn back( imut this ) : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		halt if(empty());
 		return unsafe( back_unchecked() );
 	}
 
-	fn front_unchecked( mut this ) unsafe : char_type &mut
+	fn front_unchecked(  mut this ) unsafe : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_) );
 	}
 
-	fn front_unchecked( imut this ) unsafe : char_type &imut
+	fn front_unchecked( imut this ) unsafe : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_) );
 	}
 
-	fn back_unchecked( mut this ) unsafe : char_type &mut
+	fn back_unchecked(  mut this ) unsafe : char_type & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
 
-	fn back_unchecked( imut this ) unsafe : char_type &imut
+	fn back_unchecked( imut this ) unsafe : char_type &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
 
 	// ranges
 
-	fn range(  mut this ) : range_mut'this'
+	fn range(  mut this ) : range_mut  @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( range_mut ( ptr_, size_ ) );
 	}
 
-	fn range( imut this ) : range_imut'this'
+	fn range( imut this ) : range_imut @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( range_imut( ptr_, size_ ) );
 	}

@@ -39,7 +39,7 @@ public:
 
 	// For reference checking. TODO - use single vector.
 	ust::vector</ VariableNullablePtr /> mut args_nodes; // Contains only variable nodes (not reference nodes).
-	ust::vector</ VariableNullablePtr /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
+	ust::vector</ ust::vector</VariablePtr /> /> mut args_inner_variable_nodes; // Contains inner variable nodes.
 
 	LLVMValueRef s_ret= LLVMValueRef::Null; // Also promise for coroutines
 
@@ -75,7 +75,7 @@ public:
 class VariablesFrameHolder
 {
 public:
-	fn constructor( mut this'x', FunctionContext &'y mut function_context ) ' x <- y '
+	fn constructor( mut this, FunctionContext & mut function_context ) @( ust::reference_notation::pollution::param0_param_1_reference )
 	( function_context_= function_context )
 	{
 		function_context_.variables_frames.push_back( FunctionContext::VariablesFrame() );
@@ -93,7 +93,7 @@ public:
 		function_context_.variables_frames.drop_back();
 	}
 
-	fn GetFunctionContext( this'x' ) : FunctionContext &'x mut
+	fn GetFunctionContext( this ) : FunctionContext &mut @( ust::reference_notation::return_references::param0_inner_reference0 )
 	{
 		return function_context_;
 	}

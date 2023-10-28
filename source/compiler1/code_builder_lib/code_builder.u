@@ -105,6 +105,27 @@ fn CodeBuilder::constructor(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
 
+	{
+		// A pair of chars.
+		// First - number of param from '0' up to '9'.
+		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+		var ArrayType mut a
+		{
+			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
+			.element_count(2),
+		};
+		reference_notation_param_reference_description_type_= move(a);
+	}
+	{
+		// A pair of reference param descriptions. First - destination, second - source.
+		var ArrayType mut a
+		{
+			.element_type= reference_notation_param_reference_description_type_,
+			.element_count(2),
+		};
+		reference_notation_pollution_element_type_= move(a);
+	}
+
 	virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u ));
 
 	unsafe
@@ -461,13 +482,10 @@ fn CodeBuilder::PrepareFunction(
 	var bool is_generator= function_declaration.kind == Synt::Function::Kind::Generator;
 	if( is_generator )
 	{
-		// Generate for now own return references mapping.
-		auto mut return_references= GetGeneratorFunctionReturnReferences( function_type );
+		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
+
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
-		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
-		function_type.return_references= move(return_references);
-		function_type.return_type= move(generator_return_type);
-		function_type.return_value_type= ValueType::Value;
+		TransformGeneratorFunctionType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
 
 		if_var( &type_name : function_declaration.function_type.return_type )
 		{
@@ -477,7 +495,7 @@ fn CodeBuilder::PrepareFunction(
 				{
 					if( name_lookup.name == KeywordToString( Keyword::auto_ ) )
 					{
-						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr,  function_declaration.src_loc )
+						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr, function_declaration.src_loc )
 					}
 				}
 			}
@@ -490,13 +508,8 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
 		}
-		// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-		if( !function_declaration.function_type.return_value_reference_tag.empty() )
-		{
-			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "Explicit return tags for generators." )
-		}
 		// Disable references pollution for generator. It is too complicated for now.
-		if( !function_declaration.function_type.references_pollution.empty() )
+		if( !function_declaration.function_type.references_pollution_expression.empty() )
 		{
 			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "References pollution for generators." )
 		}
@@ -610,7 +623,7 @@ fn CodeBuilder::PrepareFunction(
 		if( ( is_constructor && IsCopyConstructor( function_variable, class_type_non_null ) ) ||
 			( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) ) )
 		{
-			if( !function_declaration.function_type.references_pollution.empty() )
+			if( !function_declaration.function_type.references_pollution_expression.empty() )
 			{
 				if( is_constructor )
 				{
@@ -623,17 +636,23 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.references_pollution.clear();
 			}
 
-			var FunctionType::ReferencePollution mut pollution
+			// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
+			// So, we can request it.
+			auto references_tags_count= class_type_non_null.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < references_tags_count; ++i )
 			{
-				.dst{ .param_index= 0u8, .reference_index= 0u8 },
-				.src{ .param_index= 1u8, .reference_index= 0u8 },
-			};
-			function_variable.t.references_pollution.push_back( move(pollution) );
+				var FunctionType::ReferencePollution mut pollution
+				{
+					.dst{ .param_index= 0u8, .reference_index= u8(i) },
+					.src{ .param_index= 1u8, .reference_index= u8(i) },
+				};
+				function_variable.t.references_pollution.push_back( move(pollution) );
+			}
 		}
 
 		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
 			IsEqualityCompareOperator( function_variable, class_type_non_null ) &&
-			!function_declaration.function_type.references_pollution.empty() )
+			!function_declaration.function_type.references_pollution_expression.empty() )
 		{
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, names_scope_ptr, function_declaration.src_loc )
 			function_variable.t.references_pollution.clear();
@@ -641,9 +660,9 @@ fn CodeBuilder::PrepareFunction(
 
 		if( is_constructor )
 		{
-			foreach( &in_pollution : function_declaration.function_type.references_pollution )
+			foreach( &pollution : function_variable.t.references_pollution )
 			{
-				if( in_pollution.src == KeywordToString( Keyword::this_ ) )
+				if( pollution.src.param_index == 0u8 && pollution.src.reference_index == FunctionType::c_param_reference_number )
 				{
 					REPORT_ERROR( ConstructorThisReferencePollution, names_scope_ptr, function_declaration.src_loc )
 				}
@@ -1069,6 +1088,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
+	CheckFunctionReferencesNotationInnerReferences( func_variable.t, names_scope, body_syntax_element.src_loc );
+
 	if( func_variable.is_generator )
 	{
 		// TODO - avoid taking copy
@@ -1086,7 +1107,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for generators.
 			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
-			if( param.value_type != ValueType::Value && param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( param.value_type != ValueType::Value && param.t.ReferencesTagsCount() > 0u )
 			{
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, body_syntax_element.src_loc, "some arg" ) // TODO - use separate error code.
 			}
@@ -1205,8 +1226,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.referenced= type_param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(type_param.t)
 			};
 
-			var VariablePtr variable_ptr( move(variable) );
-			var VariablePtr mut variable_reference_ptr( move(variable_reference) );
+			var VariablePtr variable_ptr= move(variable).CreatePtr();
+			var VariablePtr mut variable_reference_ptr= move(variable_reference).CreatePtr();
 
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddNode( variable_reference_ptr );
@@ -1214,23 +1235,27 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 			function_context.args_nodes[arg_n]= variable_ptr;
 
-			if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			auto references_tags_count= type_param.t.ReferencesTagsCount();
+			for( auto mut i= 0u; i < references_tags_count; ++i )
 			{
+				var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
+				function_context.references_graph.AddLink(
+					variable_inner_reference_node,
+					variable_reference_ptr.lock_imut().deref().inner_reference_nodes[i] );
+
 				var Variable mut accesible_variable
 				{
+					.t= type_param.t,
 					.value_type= ValueType::Value,
 					.location= Variable::Location::Pointer,
 					.name= in_param.name + " referenced variable"
 				};
-				var VariablePtr accesible_variable_ptr( move(accesible_variable) );
+				var VariablePtr accesible_variable_ptr= move(accesible_variable).CreatePtr();
 				function_context.references_graph.AddNode( accesible_variable_ptr );
 
-				var VariablePtr inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
-					variable_ptr,
-					select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-				function_context.references_graph.AddLink( accesible_variable_ptr, inner_reference_node );
+				function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
 
-				function_context.args_inner_variable_nodes[arg_n]= accesible_variable_ptr;
+				function_context.args_inner_variable_nodes[arg_n].push_back( accesible_variable_ptr );
 			}
 
 			// Register arg for destruction and reference checking.
@@ -1770,6 +1795,60 @@ fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, Va
 	function_context.variables_frames[frame_index].push_back( move(variable) );
 }
 
+fn CodeBuilder::CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	foreach( &pollution : function_type.references_pollution )
+	{
+		CheckFunctionReferencesNotationParamReference( function_type, pollution.dst, names_scope, src_loc );
+		CheckFunctionReferencesNotationParamReference( function_type, pollution.src, names_scope, src_loc );
+	}
+
+	foreach( &param_reference : function_type.return_references )
+	{
+		CheckFunctionReferencesNotationParamReference( function_type, param_reference, names_scope, src_loc );
+	}
+	foreach( &param_references : function_type.return_inner_references )
+	{
+		foreach( &param_reference : param_references )
+		{
+			CheckFunctionReferencesNotationParamReference( function_type, param_reference, names_scope, src_loc );
+		}
+	}
+
+	if( !function_type.return_inner_references.empty() )
+	{
+		auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+		if( function_type.return_inner_references.size() != size_type(return_type_tags_count) )
+		{
+			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tags_count, function_type.return_inner_references.size() )
+		}
+	}
+}
+
+fn CodeBuilder::CheckFunctionReferencesNotationParamReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( param_reference.reference_index != FunctionType::c_param_reference_number && size_type(param_reference.param_index) < function_type.params.size()  )
+	{
+		var Type& t= function_type.params[ size_type( param_reference.param_index) ].t;
+		auto tags_count= t.ReferencesTagsCount();
+		if( u32(param_reference.reference_index) >= tags_count )
+		{
+			REPORT_ERROR( ReferenceTagOutOfRange, names_scope, src_loc, u32(param_reference.reference_index), t, tags_count )
+		}
+	}
+}
+
+fn CodeBuilder::CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc )
+{
+	foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( return_reference_node ) )
+	{
+		if( !IsReferenceAllowedForReturn( function_context, node ) )
+		{
+			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+		}
+	}
+}
+
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool
 {
 	foreach( &return_reference : function_context.function_type.return_references )
@@ -1780,14 +1859,158 @@ fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_con
 		{
 			return true;
 		}
-		if( return_reference.reference_index == 0u8 &&
-			variable_node == function_context.args_inner_variable_nodes[i] )
+		if( size_type(return_reference.reference_index) < function_context.args_inner_variable_nodes[i].size() &&
+			variable_node == function_context.args_inner_variable_nodes[i][size_type(return_reference.reference_index)] )
 		{
 			return true;
 		}
 	}
 
 	return false;
+}
+
+fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc )
+{
+	with( &inner_reference_nodes : return_reference_node.lock_imut().deref().inner_reference_nodes )
+	{
+		for( auto mut i= 0s; i < inner_reference_nodes.size(); ++i )
+		{
+			foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
+			{
+				if( !IsReferenceAllowedForInnerReturn( function_context, node, i ) )
+				{
+					REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool
+{
+	if( index >= function_context.function_type.return_inner_references.size() )
+	{
+		return false;
+	}
+	foreach( &return_reference : function_context.function_type.return_inner_references[index] )
+	{
+		auto param_n= size_type(return_reference.param_index);
+		if( return_reference.reference_index == FunctionType::c_param_reference_number &&
+			variable_node == function_context.args_nodes[param_n] )
+		{
+			return true;
+		}
+		if( size_type(return_reference.reference_index) < function_context.args_inner_variable_nodes[param_n].size() &&
+			variable_node == function_context.args_inner_variable_nodes[param_n][ size_type(return_reference.reference_index) ] )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+fn CodeBuilder::CheckYieldReferenceIsAllowed(
+	NamesScopePtr& names,
+	FunctionContext& function_context,
+	CoroutineTypeDescription& coroutine_type_description,
+	VariablePtr& node,
+	SrcLoc& src_loc )
+{
+	foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( node ) )
+	{
+		auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+		var bool mut found= false;
+		foreach( &param_reference : coroutine_type_description.return_references )
+		{
+			if( coroutine_inner_reference == param_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+		}
+	}
+}
+
+fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+	NamesScopePtr& names,
+	FunctionContext& function_context,
+	CoroutineTypeDescription& coroutine_type_description,
+	VariablePtr& node,
+	SrcLoc& src_loc )
+{
+	with( &inner_reference_nodes : node.lock_imut().deref().inner_reference_nodes )
+	{
+		for( var size_type mut i= 0s; i < inner_reference_nodes.size(); ++i )
+		{
+			foreach( &var_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
+			{
+				auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
+
+				var bool mut found= false;
+				if( i < coroutine_type_description.return_inner_references.size() )
+				{
+					foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
+					{
+						if( coroutine_inner_reference == param_reference )
+						{
+							found= true;
+							break;
+						}
+					}
+				}
+
+				if( !found )
+				{
+					REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>
+{
+	// Map coroutine function input references to returned coroutine inner references.
+	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
+
+	auto mut coroutine_inner_reference_index= 0s;
+	for( var size_type mut i= 0s; i < function_context.function_type.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_context.function_type.params[i];
+
+		if( param.value_type == ValueType::Value )
+		{
+			auto& inner_nodes= function_context.args_inner_variable_nodes[i];
+			for( var size_type mut j= 0s; j < inner_nodes.size(); ++j )
+			{
+				if( node == inner_nodes[j] )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
+					return move(param_reference);
+				}
+			}
+
+			coroutine_inner_reference_index+= size_type( param.t.ReferencesTagsCount() );
+		}
+		else
+		{
+			if( node == function_context.args_nodes[i] )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
+				return move(param_reference);
+			}
+
+			++coroutine_inner_reference_index;
+		}
+	}
+
+	return ust::null_optional;
 }
 
 fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc )
@@ -1800,59 +2023,62 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 		{
 			continue;
 		}
-		var VariableNullablePtr inner_reference_node= function_context.references_graph.GetNodeInnerReference( function_context.args_nodes[i].try_to_non_nullable() );
-		if( inner_reference_node.empty() )
+		with( &inner_reference_nodes : function_context.args_nodes[i].try_lock_imut().deref().inner_reference_nodes )
 		{
-			continue;
-		}
-		var VariablePtr inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
-
-		foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_non_null ) )
-		{
-			if( accessible_variable_node == function_context.args_inner_variable_nodes[i] )
+			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++ tag_i )
 			{
-				continue;
-			}
-
-			var ust::optional</FunctionType::ParamReference/> mut param_reference;
-			for( auto mut j= 0s; j < params.size(); ++j )
-			{
-				if( accessible_variable_node == function_context.args_nodes[j] )
+				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
+				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
-					var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
-					param_reference= move(r);
+					if( accessible_variable_node == function_context.args_inner_variable_nodes[i][tag_i] )
+					{
+						continue;
+					}
+
+					var ust::optional</FunctionType::ParamReference/> mut param_reference;
+					for( auto mut j= 0s; j < params.size(); ++j )
+					{
+						if( accessible_variable_node == function_context.args_nodes[j] )
+						{
+							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
+							param_reference= move(r);
+						}
+						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
+						{
+							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
+							{
+								var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index=u8(tag_j) };
+								param_reference= move(r);
+							}
+						}
+					}
+
+					if( param_reference.empty() )
+					{
+						continue;
+					}
+
+					var FunctionType::ReferencePollution actual_reference_pollution
+					{
+						.dst{ .param_index= u8(i), .reference_index= u8(tag_i) },
+						.src= param_reference.try_deref(),
+					};
+
+					var bool mut found= false;
+					foreach( &reference_pollution : function_type.references_pollution )
+					{
+						if( actual_reference_pollution == reference_pollution )
+						{
+							found= true;
+							break;
+						}
+					}
+
+					if( !found )
+					{
+						REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+					}
 				}
-				if( accessible_variable_node == function_context.args_inner_variable_nodes[j] )
-				{
-					var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= 0u8 };
-					param_reference= move(r);
-				}
-			}
-
-			if( param_reference.empty() )
-			{
-				continue;
-			}
-
-			var FunctionType::ReferencePollution actual_reference_pollution
-			{
-				.dst{ .param_index= u8(i), .reference_index= 0u8 },
-				.src= param_reference.try_deref(),
-			};
-
-			var bool mut found= false;
-			foreach( &reference_pollution : function_type.references_pollution )
-			{
-				if( actual_reference_pollution == reference_pollution )
-				{
-					found= true;
-					break;
-				}
-			}
-
-			if( !found )
-			{
-				REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
 			}
 		}
 	}
@@ -1881,52 +2107,21 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	VariablePtr& src_node,
 	SrcLoc& src_loc )
 {
-	var Type dst_type= dst_node.lock_imut().deref().t;
-	if( dst_type.GetInnerReferenceKind() == InnerReferenceKind::None )
+	auto reference_tag_count= dst_node.lock_imut().deref().t.ReferencesTagsCount();
+	if( reference_tag_count == 0u )
 	{
 		return;
 	}
 
-	var ReferencesGraph& mut references_graph= function_context.references_graph;
-
-	var ReferencesGraph::NodesSet dst_variable_nodes= references_graph.GetAllAccessibleVariableNodes( dst_node );
-	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAccessibleVariableNodesInnerReferences( src_node );
-
-	if( dst_variable_nodes.empty() || src_inner_reference_nodes.empty() )
+	auto src_lock= src_node.lock_imut();
+	auto dst_lock= dst_node.lock_imut();
+	for( auto mut i= 0u; i < reference_tag_count; ++i )
 	{
-		return;
-	}
-
-	var bool mut node_is_mutable= false;
-	foreach( &src_inner_reference_node : src_inner_reference_nodes )
-	{
-		node_is_mutable |= src_inner_reference_node.lock_imut().deref().value_type == ValueType::ReferenceMut;
-	}
-
-	node_is_mutable&= dst_type.GetInnerReferenceKind() == InnerReferenceKind::Mut;
-
-	foreach( &dst_variable_node : dst_variable_nodes )
-	{
-		var VariableNullablePtr mut dst_inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
-		if( dst_inner_reference_node.empty() )
-		{
-			dst_inner_reference_node= references_graph.CreateNodeInnerReference(
-				dst_variable_node,
-				select( node_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-		}
-		var VariablePtr dst_inner_reference_node_non_null= dst_inner_reference_node.try_to_non_nullable();
-		var ValueType inner_reference_value_type= dst_inner_reference_node_non_null.lock_imut().deref().value_type;
-
-		if( (  node_is_mutable && inner_reference_value_type == ValueType::ReferenceImut ) ||
-			( !node_is_mutable && inner_reference_value_type == ValueType::ReferenceMut ) )
-		{
-			REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, dst_inner_reference_node_non_null.lock_imut().deref().name )
-		}
-
-		foreach( &src_inner_reference_node : src_inner_reference_nodes )
-		{
-			references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node_non_null, names_scope, src_loc );
-		}
+		function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+			src_lock.deref().inner_reference_nodes[i],
+			dst_lock.deref().inner_reference_nodes[i],
+			names_scope,
+			src_loc );
 	}
 }
 

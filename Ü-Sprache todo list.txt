@@ -22,8 +22,8 @@ General:
 *) "nodiscard" for types (and/or) functions
 
 References:
-*) Multiple inner reference tags for some types
 *) Separate reference checking for array elements while accessing via constexpr index
+*) Support reference fields of types with references inside
 
 Templates:
 *) Default template arguments for short type template form
@@ -35,6 +35,9 @@ Templates:
 Standart library:
 *) Compilation speed-up - avoid generating some helper classes/functions
 *) Improve/fix unordered_map
+*) Support types with references inside in some containers (variant, result, unordered_map)
+*) Support reference notation for min/max
+*) Support reference notation for make_array/make_tuple
 *) switch-like macro for variant
 *) Associative containers - map, set, string_map
 *) More algorithms
@@ -50,6 +53,7 @@ Standart library:
 Compiler:
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
+*) Speed-up references graph code
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
@@ -76,6 +80,7 @@ QtCreator plugin:
 *) Language server features support
 
 Language server
+*) Fix crashes occuring sometimes during editing (possible because of broken code)
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)

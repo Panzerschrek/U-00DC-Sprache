@@ -49,7 +49,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
-	typeinfo_class->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
+	typeinfo_class->inner_references.push_back( InnerReferenceType::Imut ); // Almost all typeinfo have references to another typeinfo.
 
 	return typeinfo_class;
 }
@@ -58,11 +58,11 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 {
 	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			typeinfo_class,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			"typeinfo</" + type.ToString() + "/>");
+			"typeinfo</" + type.ToString() + "/>" );
 
 	result->constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
 	result->llvm_value= CreateGlobalConstantVariable( result->type, "", result->constexpr_value );
@@ -138,7 +138,15 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	}
 
 	add_size_field( "references_tags_count", type.ReferencesTagsCount() );
-	add_bool_field( "contains_mutable_references", type.GetInnerReferenceType() == InnerReferenceType::Mut );
+
+	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
+	{
+		bool contains_mutable_references= false;
+		for( size_t i= 0, reference_tag_count= type.ReferencesTagsCount(); i < reference_tag_count; ++i )
+			contains_mutable_references |= type.GetInnerReferenceType(i) == InnerReferenceType::Mut;
+
+		add_bool_field( "contains_mutable_references", contains_mutable_references );
+	}
 
 	add_bool_field( "is_fundamental"     , type.GetFundamentalType()     != nullptr );
 	add_bool_field( "is_enum"            , type.GetEnumType()            != nullptr );
@@ -414,7 +422,7 @@ VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<Typei
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
 	const VariableMutPtr result=
-		std::make_shared<Variable>(
+		Variable::Create(
 			std::move(list_type),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,

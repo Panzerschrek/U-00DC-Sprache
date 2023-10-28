@@ -64,7 +64,9 @@ bool TemplateSignatureParam::CoroutineParam::operator==( const CoroutineParam& o
 		this->kind == other.kind &&
 		*this->return_type == *other.return_type &&
 		this->return_value_type == other.return_value_type &&
-		this->inner_reference_type == other.inner_reference_type &&
+		this->return_references == other.return_references &&
+		this->return_inner_references == other.return_inner_references &&
+		this->inner_references == other.inner_references &&
 		this->non_sync == other.non_sync;
 }
 

@@ -243,8 +243,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		if( variable_entry.initializer == nullptr )
 			continue;
 
-		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+		const VariablePtr variable=
+			Variable::Create(
 				type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -252,8 +252,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 		function_context.variables_state.AddNode( variable );
 
-		const VariableMutPtr variable_for_initialization=
-			std::make_shared<Variable>(
+		const VariablePtr variable_for_initialization=
+			Variable::Create(
 				type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -479,6 +479,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 {
 	// Complete type name of class field.
 	PrepareType( class_field.type, names_scope, *global_function_context_ );
+
+	// Complete inside reference notation expressions.
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
+		BuildExpressionCode( class_field.reference_tag_expression, names_scope, *global_function_context_ );
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
+		BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, *global_function_context_ );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )
@@ -692,7 +698,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 		coroutine_type_description.kind= coroutine_param.kind;
 		coroutine_type_description.return_type= *t;
 		coroutine_type_description.return_value_type= coroutine_param.return_value_type;
-		coroutine_type_description.inner_reference_type= coroutine_param.inner_reference_type;
+		coroutine_type_description.inner_references= coroutine_param.inner_references;
 		coroutine_type_description.non_sync= coroutine_param.non_sync;
 
 		return Type( GetCoroutineType( *args_names_scope.GetRoot(), coroutine_type_description ) );
@@ -735,7 +741,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 				arg.constexpr_value= llvm::Constant::getNullValue( arg.type.GetLLVMType() );
 
 				const VariablePtr variable_for_insertion=
-					std::make_shared<Variable>(
+					Variable::Create(
 						arg.type,
 						ValueType::ReferenceImut,
 						Variable::Location::Pointer,
@@ -782,7 +788,7 @@ Type CodeBuilder::GetStubTemplateArgType()
 	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlaying_type.llvm_type );
 
 	const VariablePtr member_variable=
-		std::make_shared<Variable>(
+		Variable::Create(
 			enum_type,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,

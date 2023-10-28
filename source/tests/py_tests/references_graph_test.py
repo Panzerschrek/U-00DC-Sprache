@@ -146,7 +146,8 @@ def FunctionReferencePass_Test0():
 
 def FunctionReferencePass_Test1():
 	c_program_text= """
-		fn PassFirst( i32&'f x, i32&'s y ) : i32&'f { return x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn PassFirst( i32& x, i32& y ) : i32& @(return_references) { return x; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -205,10 +206,11 @@ def ReferenceInsideStruct_Test1():
 	assert( errors_list[0].src_loc.line == 7 )
 
 
-def ReturnReferenceInsideStruct_Test0():
+def ReturnReferenceInsideStruct_Test1():
 	c_program_text= """
 		struct S{ i32 &imut r; }
-		fn GetS( i32 &'a imut x ) : S'a'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32 & imut x ) : S @(return_inner_references)
 		{
 			var S s{ .r= x };
 			return s;
@@ -223,13 +225,14 @@ def ReturnReferenceInsideStruct_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 12 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def ReturnReferenceFromStruct_Test0():
 	c_program_text= """
 		struct S{ i32 &mut r; }
-		fn GetR( S& s'x' ) : i32 &'x mut
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn GetR( S& s ) : i32 &mut @(return_references)
 		{
 			return s.r;
 		}
@@ -244,13 +247,14 @@ def ReturnReferenceFromStruct_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 12 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def ReturnReferenceInsideStruct_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn GetS( i32&'r x ) : S'r'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn GetS( i32& x ) : S @(return_inner_references)
 		{
 			var S s{ .x= x };
 			return s;
@@ -265,13 +269,14 @@ def ReturnReferenceInsideStruct_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 12 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def PollutionTest0():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn Pollution( S &mut s'dst', i32&'src x ) ' dst <- src' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Pollution( S &mut s, i32& x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -283,13 +288,14 @@ def PollutionTest0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def PollutionTest1():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn Pollution( S &mut s'dst', i32&'src x ) ' dst <- src' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Pollution( S &mut s, i32& x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -302,13 +308,14 @@ def PollutionTest1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def PollutionTest2():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn Pollution( S &mut a'dst', S& b'src' ) ' dst <- src' {}
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+		fn Pollution( S &mut a, S& b ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -323,7 +330,7 @@ def PollutionTest2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 12 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def ReferenceFieldAccess_Test0():
@@ -420,15 +427,13 @@ def PassMutableReferenceTwoTimes_Tes4():
 		{
 			var i32 mut x= 0;
 			var S s{ .x= x };
-			auto& s0= s;
-			auto& s1= s;
-			Bar( s0, s1 );
+			Bar( s, s );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def PassMutableReferenceTwoTimes_Tes5():
@@ -439,15 +444,13 @@ def PassMutableReferenceTwoTimes_Tes5():
 		{
 			var i32 mut x= 0;
 			var S s{ .x= x };
-			auto& s0= s;
-			auto& s1= s;
-			Bar( s0, s1 );
+			Bar( s, s );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def PassMutableReferenceTwoTimes_Tes6():
@@ -480,7 +483,8 @@ def PassImmutableReferenceTwoTimes_Test0():
 def ReferencesLoop_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn DoPollution( S& mut s0'a', S &imut s1'b' ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+		fn DoPollution( S& mut s0, S &imut s1 ) @(pollution);
 		fn Foo()
 		{
 			var i32 x= 0;
@@ -513,7 +517,8 @@ def ReferencesLoop_Test1():
 def ReferencesLoop_Test3():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn DoPollution( S& mut s0'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S& mut s0, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 x= 0;
@@ -532,9 +537,11 @@ def InnerReferencesChain_Test0():
 			i32 &mut x;
 			i32 y;
 			fn Bar(this) : bool;
-			fn GetY(mut this) : i32  &'this mut;
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn GetY(mut this) : i32 &mut @(return_references);
 		}
-		fn MakeS( i32 &'f mut x ) : S'f';
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn MakeS( i32 & mut x ) : S @(return_inner_references);
 		fn Foo( S &mut s )
 		{
 			for( auto mut ss= MakeS( s.GetY() ); ss.Bar(); ){}
@@ -549,9 +556,11 @@ def InnerReferencesChain_Test1():
 		{
 			i32 &mut x;
 			i32 y;
-			fn constructor( this'b', i32 &'f mut x ) ' b <- f ';
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut x ) @(pollution);
 			fn Bar(this) : bool;
-			fn GetY(mut this) : i32  &'this mut;
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn GetY(mut this) : i32  & mut @(return_references);
 		}
 		fn Foo( S &mut s )
 		{
@@ -564,7 +573,9 @@ def InnerReferencesChain_Test1():
 def PollutionAndReturn_Test0():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn DoPollution( S& mut s'a', i32 &'b mut x ) ' a <- b ' : i32 &'b mut;
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn DoPollution( S& mut s, i32 & mut x ) @(pollution) : i32 &mut @(return_references);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -575,13 +586,15 @@ def PollutionAndReturn_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 8 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def PollutionAndReturn_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn DoPollution( S& mut s0'a', S& mut s1'b' ) ' a <- b ' : i32 &'b mut;
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+		var [ [ char8, 2 ], 1 ] return_references[ "1a" ];
+		fn DoPollution( S& mut s0, S& mut s1 ) @(pollution) : i32 &mut @(return_references);
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -592,13 +605,14 @@ def PollutionAndReturn_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 8 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def DoublePollution_Test0():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn DoPollution( S& mut s0'a', S& mut s1'a', i32 &'b mut x ) ' a <- b '; // Call to this function will always produce error.
+		var [ [ [char8, 2], 2 ], 2 ] pollution[ [ "0a", "2_" ], [ "1a", "2_" ] ];
+		fn DoPollution( S& mut s0, S& mut s1, i32 & mut x ) @(pollution); // Call to this function will always produce error.
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0, mut z= 0;
@@ -609,14 +623,15 @@ def DoublePollution_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 8 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def DoublePollution_Test1():
 	c_program_text= """
 		struct Smut { i32 & mut x; }
 		struct Simut{ i32 &imut x; }
-		fn DoPollution( Smut& mut s0'a', Simut& mut s1'a', i32 &'b mut x ) ' a <- b '; // Call to this function will always produce error.
+		var [ [ [char8, 2], 2 ], 2 ] pollution[ [ "0a", "2_" ], [ "1a", "2_" ] ];
+		fn DoPollution( Smut& mut s0, Simut& mut s1, i32 & mut x ) @(pollution); // Call to this function will always produce error.
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0, mut z= 0;
@@ -628,153 +643,7 @@ def DoublePollution_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 10 )
-
-
-def InnerReferenceMutabilityChanging_Test0():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		fn Foo()
-		{
-			var i32 mut o= 0, mut p= 0;
-			var tup[ Smut, Simut ] mut ss[ { .x= o }, { .x= p } ];
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 7 )
-
-
-def InnerReferenceMutabilityChanging_Test1():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		type T= tup[ [ Smut, 0 ], [ Simut, 0 ] ];
-		fn PollutionMut ( T &mut t'a', i32 &'b  mut x ) ' a <- b ';
-		fn PollutionImut( T &mut t'a', i32 &'b imut x ) ' a <- b ';
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var T mut t;
-			PollutionMut ( t, x );
-			PollutionImut( t, y ); // Change mut -> imut
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 12 )
-
-
-def InnerReferenceMutabilityChanging_Test2():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		type T= tup[ [ Smut, 0 ], [ Simut, 0 ] ];
-		fn PollutionMut ( T &mut t'a', i32 &'b  mut x ) ' a <- b ';
-		fn PollutionImut( T &mut t'a', i32 &'b imut x ) ' a <- b ';
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var T mut t;
-			PollutionImut( t, x );
-			PollutionMut ( t, y ); // Change mut -> imut
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 12 )
-
-
-def InnerReferenceMutabilityChanging_Test3():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		type T= tup[ [ Smut, 0 ], [ Simut, 0 ] ];
-		fn PollutionMut ( T &mut t'a', i32 &'b  mut x ) ' a <- b ';
-		fn PollutionImut( T &mut t'a', i32 &'b imut x ) ' a <- b ';
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var T mut t0, mut t1;
-			PollutionImut( t0, x );
-			PollutionMut ( t1, y );
-			t0= t1; // Change imut -> mut in assignment operator
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 13 )
-
-
-def InnerReferenceMutabilityChanging_Test4():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		type T= tup[ [ Smut, 0 ], [ Simut, 0 ] ];
-		fn PollutionMut ( T &mut t'a', i32 &'b  mut x ) ' a <- b ';
-		fn PollutionImut( T &mut t'a', i32 &'b imut x ) ' a <- b ';
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var T mut t0, mut t1;
-			PollutionMut ( t0, x );
-			PollutionImut( t1, y );
-			t0= t1; // Change mut -> imut in assignment operator
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 13 )
-
-
-def InnerReferenceMutabilityChanging_Test5():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		type T= tup[ [ Smut, 0 ], [ Simut, 0 ] ];
-		fn PollutionMut ( T &mut t'a', i32 &'b  mut x ) ' a <- b ';
-		fn PollutionImut( T &mut t'a', i32 &'b imut x ) ' a <- b ';
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var T mut t0, mut t1;
-			PollutionImut( t0, x );
-			PollutionMut ( t1, y );
-			t0= move(t1); // Change imut -> mut in move-assignment
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 13 )
-
-
-def InnerReferenceMutabilityChanging_Test6():
-	c_program_text= """
-		struct Smut { i32 & mut x; }
-		struct Simut{ i32 &imut x; }
-		type T= tup[ [ Smut, 0 ], [ Simut, 0 ] ];
-		fn PollutionMut ( T &mut t'a', i32 &'b  mut x ) ' a <- b ';
-		fn PollutionImut( T &mut t'a', i32 &'b imut x ) ' a <- b ';
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var T mut t0, mut t1;
-			PollutionMut ( t0, x );
-			PollutionImut( t1, y );
-			t0= move(t1); // Change mut -> imut in move-assignment
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
-	assert( errors_list[0].src_loc.line == 13 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def TemporaryReferenceRemoving_Test0():
@@ -834,3 +703,171 @@ def ReferenceFieldNode_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].src_loc.line == 10 )
+
+
+def ReferenceInnerReferenceNode_Test0():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref0= s; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			auto& s_ref1= s; // Create here inner reference node for "s_ref1". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test1():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref0= s; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			var S& s_ref1= s; // Create here inner reference node for "s_ref1". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test2():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_proxy_ref= s;
+			var S& s_ref0= s_proxy_ref; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			var S& s_ref1= s_proxy_ref; // Create here inner reference node for "s_ref1". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test3():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref0= s; // Create here inner reference node for "s_ref0". Create link to inner reference node of "s".
+			cast_imut(s); // Create here inner reference node for result of "cast_imut". Create second mutable link to inner reference node of "s", which causes an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test4():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( S& s0, S& s1 );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			Bar( s, s ); // Create here two inner reference nodes for two reference args, causing reference protection error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceInnerReferenceNode_Test5():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Foo( bool cond )
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			var i32 mut y= 0;
+			var S other_s{ .r= y };
+			auto& s_ref= s;
+			select( cond ? s : other_s ); // Create inner reference node for result of "select" and make to it link from "s". This is a second mutable link, which causes reference protection error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def ReferenceInnerReferenceNode_Test6():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( S& s );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			auto& s_ref= s;
+			Bar( s ); // Create here inner reference node for arg node, causing creation of second mutable link to inner node of "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test7():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		struct T { S s; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var T t{ .s{ .r= x } };
+			auto& s_ref= t.s; // Create inner reference node, that is linked with "t" inner reference node.
+			auto& t_ref= t; // Create inner reference node, that is linked with "t" inner reference node (second mutable link).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test8():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		struct T { S s; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var T t{ .s{ .r= x } };
+			auto& t_ref= t; // Create inner reference node, that is linked with "t" inner reference node.
+			auto& s_ref= t.s; // Create inner reference node, that is linked with "t" inner reference node (second mutable link).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceInnerReferenceNode_Test9():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		struct T { S s; }
+		fn Bar( T& t, S& s );
+		fn Bar( S& s, T& t );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var T t{ .s{ .r= x } };
+			Bar( t, t.s ); // Create two inner nodes, linked with inner node of "t".
+			Bar( t.s, t ); // Create two inner nodes, linked with inner node of "t".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )

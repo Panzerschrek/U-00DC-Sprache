@@ -129,21 +129,48 @@ public:
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	mutable std::vector<VariablePtr> children;
 
+	// For variables of types with references inside.
+	// Size is equal to number of reference tags of the variable type.
+	// Null values are not possible.
+	llvm::SmallVector<VariablePtr, 1> inner_reference_nodes;
+
+	// Mark inner reference nodes of variables using this flag.
+	// Do this in order to stop references graph search on these nodes while performing reference pollution.
+	bool is_variable_inner_reference_node= false;
+
+private:
+	Variable(
+		Type in_type,
+		ValueType in_value_type,
+		Location in_location,
+		std::string in_name,
+		llvm::Value* in_llvm_value,
+		llvm::Constant* in_constexpr_value );
 public:
-	Variable()= default;
+	Variable()= delete;
 	Variable(const Variable&)= delete;
 	Variable(Variable&&)= default;
 
 	Variable& operator=(const Variable&)= delete;
 	Variable& operator=(Variable&&)= default;
 
-	Variable(
-		Type in_type,
-		ValueType in_value_type,
-		Location in_location,
-		std::string in_name= "",
-		llvm::Value* in_llvm_value= nullptr,
-		llvm::Constant* in_constexpr_value= nullptr );
+	static VariableMutPtr Create(
+		Type type,
+		ValueType value_type,
+		Location location,
+		std::string name= "",
+		llvm::Value* llvm_value= nullptr,
+		llvm::Constant* constexpr_value= nullptr );
+
+	// Create child node but do not fill inner nodes (only resize it to proper size).
+	static VariableMutPtr CreateChildNode(
+		const VariablePtr& parent,
+		Type type,
+		ValueType value_type,
+		Location location,
+		std::string name= "",
+		llvm::Value* llvm_value= nullptr,
+		llvm::Constant* constexpr_value= nullptr );
 };
 
 // Used for displaying of template args.
@@ -155,10 +182,12 @@ struct ClassField final
 	Type type;
 	ClassPtr class_= nullptr;
 	const Synt::ClassField* syntax_element= nullptr;
+	llvm::SmallVector<uint8_t, 4> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
 	uint32_t index= ~0u;
 	uint32_t original_index= ~0u;
 	bool is_mutable= true;
 	bool is_reference= false;
+	uint8_t reference_tag= 0u; // For reference fields - mapping of class inner reference tag to reference tag.
 
 	ClassField()= default;
 	ClassField( ClassPtr in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );

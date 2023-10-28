@@ -164,7 +164,6 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 						? ValueType::ReferenceMut
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
-		.inner_reference_kind= InnerReferenceKind::None, // Set later
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type.non_sync_tag ),
 	};
 
@@ -173,30 +172,19 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		REPORT_ERROR( GeneratorNonSyncRequired, names_scope, generator_type.src_loc )
 	}
 
-	if( generator_type.inner_reference_tag.empty() )
+	foreach( &m : generator_type.inner_reference_tags )
 	{
-		coroutine_type_description.inner_reference_kind= InnerReferenceKind::None;
-	}
-	else
-	{
-		coroutine_type_description.inner_reference_kind=
-			select( generator_type.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable
-				? InnerReferenceKind::Mut
-				: InnerReferenceKind::Imut );
+		coroutine_type_description.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 	}
 
-	if( !generator_type.return_value_reference_tag.empty() )
+	auto num_params= 1s;
+	if_var( &return_value_reference_expression : generator_type.return_value_reference_expression )
 	{
-		var bool mut found= false;
-		if( !generator_type.inner_reference_tag.empty() && generator_type.inner_reference_tag.try_deref().name == generator_type.return_value_reference_tag )
-		{
-			found= true;
-		}
-
-		if( !found )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, generator_type.src_loc, generator_type.return_value_reference_tag )
-		}
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression, num_params );
+	}
+	if_var( &return_value_inner_references_expression : generator_type.return_value_inner_references_expression )
+	{
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression, num_params );
 	}
 
 	// For now there is no reason to process reference tag.
@@ -277,31 +265,26 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		res.params.push_back( move(out_param) );
 	}
 
-	// Setup return references mapping.
-	if( !function_type.return_value_reference_tag.empty() )
+	auto num_params= res.params.size();
+	if_var( &references_pollution_expression : function_type.references_pollution_expression )
 	{
-		for( auto mut i= 0s; i < res.params.size(); ++i )
-		{
-			if( function_type.return_value_reference_tag == function_type.params[i].reference_tag )
-			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
-				res.return_references.push_back( move(param_reference) );
-			}
-			if( function_type.return_value_reference_tag == function_type.params[i].inner_reference_tag )
-			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= 0u8 };
-				res.return_references.push_back( move(param_reference) );
-			}
-		}
-
-		if( res.return_references.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, function_type.return_value_reference_tag )
-		}
+		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, references_pollution_expression, num_params );
 	}
-	else if( res.return_value_type != ValueType::Value ) // Auto-generate return reference mapping if return tag is empty, but only for returning references and not for returning values.
+	if_var( &return_value_reference_expression : function_type.return_value_reference_expression )
 	{
-		// If there is no tag for return reference, assume, that it may refer to any reference param, but not inner reference of any param.
+		res.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression, num_params );
+	}
+	if_var( &return_value_inner_references_expression : function_type.return_value_inner_references_expression )
+	{
+		res.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression, num_params );
+	}
+
+	// Generate mapping of input references to output references if return reference notation is not specified.
+	// Assume that returned reference points to any reference param.
+	if( res.return_value_type != ValueType::Value &&
+		function_type.return_value_reference_expression.empty() &&
+		function_type.return_value_inner_references_expression.empty() )
+	{
 		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
 			if( res.params[i].value_type != ValueType::Value )
@@ -311,65 +294,8 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				res.return_references.push_back( move(param_reference) );
 			}
 		}
+		ust::sort( res.return_references.range() );
 	}
-
-	// Prepare reference pollution.
-	foreach( &in_pollution : function_type.references_pollution )
-	{
-		if( in_pollution.dst == in_pollution.src )
-		{
-			REPORT_ERROR( SelfReferencePollution, names_scope, function_type.src_loc )
-			continue;
-		}
-
-		var ust::vector</FunctionType::ParamReference/> mut pollutions_dst, mut pollutions_src;
-
-		for( auto mut i= 0s; i < res.params.size(); ++i )
-		{
-			if( in_pollution.dst == function_type.params[i].inner_reference_tag )
-			{
-				var FunctionType::ParamReference mut dst{ .param_index= u8(i), .reference_index= 0u8 };
-				pollutions_dst.push_back( move(dst) );
-			}
-			else if( in_pollution.dst == function_type.params[i].reference_tag )
-			{
-				REPORT_ERROR( ArgReferencePollution, names_scope, function_type.src_loc )
-			}
-		}
-		for( auto mut i= 0s; i < res.params.size(); ++i )
-		{
-			if( in_pollution.src == function_type.params[i].inner_reference_tag )
-			{
-				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= 0u8 };
-				pollutions_src.push_back( move(src) );
-			}
-			if( in_pollution.src == function_type.params[i].reference_tag )
-			{
-				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number};
-				pollutions_src.push_back( move(src) );
-			}
-		}
-
-		if( pollutions_dst.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.dst )
-		}
-		if( pollutions_src.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.src )
-		}
-
-		foreach( dst : pollutions_dst )
-		{
-			foreach( src : pollutions_src )
-			{
-				var FunctionType::ReferencePollution mut pollution{ .dst= dst, .src= src };
-				res.references_pollution.push_back( move(pollution) );
-			}
-		}
-
-	}
-	ust::sort( res.references_pollution.range() );
 
 	return move(res);
 }

@@ -464,7 +464,8 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_4 )
 	R"(
 		struct S{ i32& x; }
 		fn GetS() : S;
-		fn DoPollution( S &mut x'a', i32 &'b y ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut x, i32 & y ) @(pollution);
 		fn Foo() : S
 		{
 			var S mut s= GetS();
@@ -477,7 +478,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_4 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 11u ) );
 }
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )

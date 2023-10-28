@@ -23,6 +23,7 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		l_type.return_type == r_type.return_type &&
 		l_type.return_value_type == r_type.return_value_type &&
 		l_type.return_references == r_type.return_references &&
+		l_type.return_inner_references == r_type.return_inner_references &&
 		l_type.references_pollution == r_type.references_pollution &&
 		l_type.unsafe == r_type.unsafe &&
 		l_type.calling_convention == r_type.calling_convention &&
@@ -37,11 +38,11 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 
 Variable::Variable(
 	Type in_type,
-	ValueType in_value_type,
-	Location in_location,
+	const ValueType in_value_type,
+	const Location in_location,
 	std::string in_name,
-	llvm::Value* in_llvm_value,
-	llvm::Constant* in_constexpr_value )
+	llvm::Value* const in_llvm_value,
+	llvm::Constant* const in_constexpr_value )
 	: type(std::move(in_type))
 	, llvm_value(in_llvm_value)
 	, constexpr_value(in_constexpr_value)
@@ -49,6 +50,54 @@ Variable::Variable(
 	, value_type(in_value_type)
 	, location(in_location)
 {
+}
+
+VariableMutPtr Variable::Create(
+	Type type,
+	const ValueType value_type,
+	const Location location,
+	std::string name,
+	llvm::Value* const llvm_value,
+	llvm::Constant* const constexpr_value )
+{
+	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
+
+	const size_t reference_tag_count= result->type.ReferencesTagsCount();
+	result->inner_reference_nodes.resize( reference_tag_count );
+	for( size_t i= 0; i < reference_tag_count; ++i )
+	{
+		const auto inner_reference_node= std::make_shared<Variable>(
+			Variable(
+				FundamentalType( U_FundamentalType::InvalidType ),
+				// Mutability of inner reference node is determined only by type properties itself.
+				result->type.GetInnerReferenceType(i) == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				result->name + " inner reference " + std::to_string(i),
+				nullptr,
+				nullptr ) );
+		inner_reference_node->is_variable_inner_reference_node= result->value_type == ValueType::Value;
+
+		result->inner_reference_nodes[i]= inner_reference_node;
+	}
+	return result;
+}
+
+VariableMutPtr Variable::CreateChildNode(
+	const VariablePtr& parent,
+	Type type,
+	const ValueType value_type,
+	const Location location,
+	std::string name,
+	llvm::Value* const llvm_value,
+	llvm::Constant* const constexpr_value )
+{
+	U_ASSERT( parent != nullptr );
+	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
+	result->parent= parent;
+
+	result->inner_reference_nodes.resize( result->type.ReferencesTagsCount() );
+
+	return result;
 }
 
 std::string ConstantVariableToString( const TemplateVariableArg& variable )

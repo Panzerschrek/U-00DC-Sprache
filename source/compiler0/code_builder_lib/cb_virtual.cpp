@@ -19,12 +19,13 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	U_ASSERT( src_function_type.params.front().type.GetClassType() != nullptr );
 	U_ASSERT( new_function_type.params.front().type.GetClassType() != nullptr );
 	U_ASSERT( src_function_type.return_references == new_function_type.return_references );
+	U_ASSERT( src_function_type.return_inner_references == new_function_type.return_inner_references );
 	U_ASSERT( src_function_type.references_pollution == new_function_type.references_pollution );
 
-	const auto src_class_inner_reference_kind= src_function_type.params.front().type.GetClassType()->inner_reference_type;
-	const auto new_class_inner_reference_kind= new_function_type.params.front().type.GetClassType()->inner_reference_type;
+	const auto& src_class_inner_references= src_function_type.params.front().type.GetClassType()->inner_references;
+	const auto& new_class_inner_references= new_function_type.params.front().type.GetClassType()->inner_references;
 
-	if( src_class_inner_reference_kind == new_class_inner_reference_kind )
+	if( src_class_inner_references == new_class_inner_references )
 	{
 		// Ok - nothing changed.
 		return;
@@ -42,6 +43,11 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	for( const FunctionType::ParamReference& return_reference : src_function_type.return_references )
 		if( return_reference == this_inner_reference )
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
+
+	for( const auto& inner_referencs_set : src_function_type.return_inner_references )
+		for( const FunctionType::ParamReference& return_reference : inner_referencs_set )
+			if( return_reference == this_inner_reference )
+				REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
 
 	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
 	for( const FunctionType::ReferencePollution& reference_pollution : src_function_type.references_pollution )
@@ -505,7 +511,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	// Cast "this" into type of class, where this virtual function is declared.
 	// This is needed to perform (possible) pointer correction later.
 	const VariableMutPtr this_casted=
-		std::make_shared<Variable>(
+		Variable::Create(
 			function_this_type,
 			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -513,6 +519,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			CreateReferenceCast( this_->llvm_value, this_->type, function_this_type, function_context ) );
 	function_context.variables_state.AddNode( this_casted );
 	function_context.variables_state.TryAddLink( this_, this_casted, errors_container, src_loc );
+	function_context.variables_state.TryAddInnerLinks( this_, this_casted, errors_container, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted );
 

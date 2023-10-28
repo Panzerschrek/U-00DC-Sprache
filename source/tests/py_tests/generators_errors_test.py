@@ -27,24 +27,26 @@ def GeneratorMismatch_Test2():
 		{
 			fn generator Foo(this) : i32;
 		}
-		fn S::Foo(this) : ( generator'imut this_tag' : i32 )'this' { }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn S::Foo(this) : ( generator'imut' : i32 ) @(return_inner_references) { }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 6 ) )
+	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 7 ) )
 
 
 def GeneratorMismatch_Test3():
 	c_program_text= """
 		struct S
 		{
-			fn Foo(this) : ( generator'imut this_tag' : i32 )'this';
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+			fn Foo(this) : ( generator'imut' : i32 ) @(return_inner_references);
 		}
 		fn generator S::Foo(this) : i32 { }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 6 ) )
+	assert( HaveError( errors_list, "GeneratorMismatch", 5 ) or HaveError( errors_list, "GeneratorMismatch", 7 ) )
 
 
 def NonDefaultCallingConventionForGenerator_Test0():
@@ -542,25 +544,6 @@ def IfCoroAdvance_ForNonCopyableValue_Test0():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
 
 
-def NameNotFound_ForGeneratorTypeTag_Test0():
-	c_program_text= """
-		struct S{ i32 &imut x; }
-		type Gen= generator : S'unknown_tag';
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 3 ) )
-
-
-def NameNotFound_ForGeneratorTypeTag_Test1():
-	c_program_text= """
-		type Gen= generator'imut known_tag' : i32 &'unknow_tag;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 2 ) )
-
-
 def IfCoroAdvance_UseAbstractType_Test0():
 	c_program_text= """
 		class A abstract
@@ -591,7 +574,7 @@ def IfCoroAdvance_UseAbstractType_Test1():
 		{
 			fn constructor(mut this, A& other)= default;
 		}
-		fn Foo( (generator'imut a' : A&) mut gen )
+		fn Foo( (generator'imut' : A&) mut gen )
 		{
 			if_coro_advance( a : gen ) // Bind here abstract reference to value. This is an error, because value is abstract.
 			{}
@@ -605,30 +588,12 @@ def IfCoroAdvance_UseAbstractType_Test1():
 def ReferencesPollution_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn generator Foo( S &mut s'a', i32 &'b x ) ' a <- b ' : i32;
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn generator Foo( S &mut s, i32 & x ) @(pollution) : i32;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 3 ) )
-
-
-def ExplicitReturReferenceTags_ForGenerators_Test0():
-	c_program_text= """
-		fn generator Foo( i32 &'a x ) : i32 &'a;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 2 ) )
-
-
-def ExplicitReturReferenceTags_ForGenerators_Test1():
-	c_program_text= """
-		struct S{ i32 & x; }
-		fn generator Foo( i32 &'a x ) : S'a';
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 3 ) )
+	assert( HaveError( errors_list, "NotImplemented", 4 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():
@@ -710,7 +675,8 @@ def AccessingVariable_LinkedToGeneratorArgument_Test3():
 			i32 &mut x;
 			op=(mut this, S& other);
 		}
-		fn generator SomeGen(i32 &mut x) : S;
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator SomeGen(i32 &mut x) : S @(return_inner_references);
 		fn Foo()
 		{
 			var i32 mut y= 0;
@@ -726,7 +692,120 @@ def AccessingVariable_LinkedToGeneratorArgument_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 19 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn generator SomeGen(this) : i32;
+		}
+		fn Foo()
+		{
+			var S mut s;
+			auto gen= s.SomeGen();
+			Bar( s ); // Error - taking mutable reference to "s", that has immutable reference inside "gen".
+		}
+		fn Bar( S &mut s );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn generator SomeGen(mut this) : i32;
+		}
+		fn Foo()
+		{
+			var S mut s;
+			auto gen= s.SomeGen();
+			auto& s_ref= s; // Error - taking immutable reference to "s", that has mutable reference inside "gen".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test6():
+	c_program_text= """
+		fn generator Gen( i32 &mut x, i32 &imut y ) {}
+		fn Foo()
+		{
+			var i32 mut x= 0, imut y= 0;
+			// Since generator type contains inner references for all input references immutable args linked only immutable.
+			auto gen= Gen( x, y );
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 2s );
+			auto& y_ref= y; // Ok - create second immutable reference when an immutable reference inside "gen" exists.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test7():
+	c_program_text= """
+		fn generator SomeGen(i32 x) : i32;
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			auto gen= SomeGen(x);
+			++x; // Ok, "x" is passed by value and was not linked to "gen".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test8():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn generator SomeGen( i32 &mut x, i32 &mut y ) : i32 &mut @( return_references );
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S mut s{ .x= a };
+			{
+				auto mut gen= SomeGen( b, c ); // Save references to "b" and "c" inside "gen".
+				if_coro_advance( &mut res : gen ) // "res" is now a reference to "b".
+				{
+					var S mut other_s{ .x= res };
+					s= move(other_s); // Save now reference to "res" inside "s".
+				}
+			}
+			auto& mut b_ref= b; // Error - a mutable reference to "b" still exists inside "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test9():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn generator SomeGen( i32 &mut x, i32 &mut y ) : i32 &mut @( return_references );
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S mut s{ .x= a };
+			{
+				auto mut gen= SomeGen( b, c ); // Save references to "b" and "c" inside "gen".
+				if_coro_advance( &mut res : gen ) // "res" is now a reference to "c".
+				{
+					var S mut other_s{ .x= res };
+					s= move(other_s); // Save now reference to "res" inside "s".
+				}
+			}
+			auto& mut b_ref= b; // Ok - create reference to "b". There is no reference to it inside "s".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def AccessingGenerator_InsideIfCoroAdvance_Test0():
@@ -782,73 +861,6 @@ def AccessingGenerator_InsideIfCoroAdvance_Test2():
 	assert( HaveError( errors_list, "MovedVariableHaveReferences", 8 ) )
 
 
-def AccessingVariable_LinkedToGeneratorArgument_Test3():
-	c_program_text= """
-		struct S
-		{
-			fn generator SomeGen(this) : i32;
-		}
-		fn Foo()
-		{
-			var S mut s;
-			auto gen= s.SomeGen();
-			Bar( x ); // Error - taking mutable reference to "s", that has immutable reference inside "gen".
-		}
-		fn Bar( S &mut s );
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test4():
-	c_program_text= """
-		struct S
-		{
-			fn generator SomeGen(mut this) : i32;
-		}
-		fn Foo()
-		{
-			var S mut s;
-			auto gen= s.SomeGen();
-			auto& s_ref= s; // Error - taking immutable reference to "s", that has mutable reference inside "gen".
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test5():
-	c_program_text= """
-		fn generator Gen( i32 &mut x, i32 &imut y ) {}
-		fn Foo()
-		{
-			var i32 mut x= 0, imut y= 0;
-			// Generator function with both mutable and immutable reference-params returns generator value with mutable inner reference kind.
-			// Because of that "y" immutable variable points to mutable inner reference node inside "gen", so, no immutable references can be created.
-			auto gen= Gen( x, y );
-			auto& y_ref= y;
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
-
-
-def AccessingVariable_LinkedToGeneratorArgument_Test3():
-	c_program_text= """
-		fn generator SomeGen(i32 x) : i32;
-		fn Foo()
-		{
-			var i32 mut x= 42;
-			auto gen= SomeGen(x);
-			++x; // Ok, "x" is passed by value and was not linked to "gen".
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def ReturningUnallowedReference_ForGeneratorYield_Test0():
 	c_program_text= """
 		fn generator Foo() : i32&
@@ -897,8 +909,59 @@ def ReturningUnallowedReference_ForGeneratorYield_Test3():
 
 def ReturningUnallowedReference_ForGeneratorYield_Test4():
 	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn generator Foo( i32& x, i32& y ) : i32& @(return_references)
+		{
+			yield x; // Error - only "x" is allowed for return.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test5():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn generator Foo( i32& x, i32& y ) : i32& @(return_references)
+		{
+			yield y; // Ok - return allowed reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test6():
+	c_program_text= """
 		struct S{ i32& x; }
-		fn generator Foo() : S
+		var [ [ char8, 2 ], 0 ] return_references[];
+		fn generator Foo( S s ) : i32& @(return_references)
+		{
+			yield s.x; // Error - there is no references allowed to return at all.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test7():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn generator Foo( S s ) : i32& @(return_references)
+		{
+			yield s.x; // Ok - return allowed reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test8():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 0 ] ] return_inner_references[ [ ] ];
+		fn generator Foo() : S @(return_inner_references)
 		{
 			var i32 x= 0;
 			var S s{ .x= x };
@@ -907,13 +970,14 @@ def ReturningUnallowedReference_ForGeneratorYield_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test5():
+def ReturningUnallowedReference_ForGeneratorYield_Test9():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn generator Foo( i32 x ) : S
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator Foo( i32 x ) : S @(return_inner_references)
 		{
 			var S s{ .x= x };
 			yield s; // Returning reference inside a struct to value-argument. This is also forbidden.
@@ -921,13 +985,14 @@ def ReturningUnallowedReference_ForGeneratorYield_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test6():
+def ReturningUnallowedReference_ForGeneratorYield_Test10():
 	c_program_text= """
 		struct S{ i32& x; }
-		fn generator Foo( i32& x ) : S
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator Foo( i32& x ) : S @(return_inner_references)
 		{
 			var S s{ .x= x };
 			yield s; // Returning reference inside a struct to reference-argument. This is ok.
@@ -936,11 +1001,12 @@ def ReturningUnallowedReference_ForGeneratorYield_Test6():
 	tests_lib.build_program( c_program_text )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test7():
+def ReturningUnallowedReference_ForGeneratorYield_Test11():
 	c_program_text= """
 		struct S{ i32& x; }
 		var i32 some_global= 0;
-		fn generator Foo() : S
+		var tup[ [ [ char8, 2 ], 0 ] ] return_inner_references[ [ ] ];
+		fn generator Foo() : S @(return_inner_references)
 		{
 			var S s{ .x= some_global };
 			yield s; // Returning reference inside a struct to global variable. This is ok.
@@ -956,7 +1022,8 @@ def UnallowedReferencePollution_ForGenerator_Test0():
 		{
 			DoPollution( s, x );
 		}
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -971,7 +1038,8 @@ def UnallowedReferencePollution_ForGenerator_Test1():
 			DoPollution( s, x );
 			return;
 		}
-		fn DoPollution( S &mut s'a', i32 &'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s, i32 & mut x ) @(pollution);
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1044,7 +1112,7 @@ def VirtualGenerator_Test1():
 	c_program_text= """
 		class A polymorph
 		{
-			fn virtual Foo(this) : (generator'imut some_tag' : i32); // Ok - virtual method, returning generator.
+			fn virtual Foo(this) : (generator'imut' : i32); // Ok - virtual method, returning generator.
 		}
 		class B : A
 		{
@@ -1061,7 +1129,7 @@ def VirtualGenerator_Test2():
 	c_program_text= """
 		class A interface
 		{
-			fn virtual pure Foo(this) : (generator'imut some_tag' : i32); // Ok - virtual method, returning generator.
+			fn virtual pure Foo(this) : (generator'imut' : i32); // Ok - virtual method, returning generator.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -1272,7 +1340,8 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 	c_program_text= """
 		fn generator SomeGen() : i32;
 		struct S{ i32& x; }
-		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s, i32 & x ) @(pollution);
 		fn Foo()
 		{
 			var i32 x= 0, mut y= 0;
@@ -1287,7 +1356,7 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 14 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test2():

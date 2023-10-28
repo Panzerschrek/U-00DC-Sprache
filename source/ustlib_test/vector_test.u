@@ -16,8 +16,9 @@ struct C // Default-constructible, non-empty
 
 struct R // Have destructor with side-effects.
 {
-	i32&mut r;
-	fn constructor( this'a', i32&'b mut in_r ) ' a <- b ' ( r= in_r ) {}
+	i32 &mut r;
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn constructor( this, i32& mut in_r ) @(pollution) ( r= in_r ) {}
 	fn destructor()
 	{
 		++r;
@@ -34,6 +35,13 @@ type BVec= ust::vector</B/>;
 type CVec= ust::vector</C/>;
 type RVec= ust::vector</R/>;
 type NCVec= ust::vector</NC/>;
+
+static_assert( typeinfo</I32Vec/>.references_tags_count == 0s );
+static_assert( typeinfo</AVec/>.references_tags_count == 0s );
+static_assert( typeinfo</BVec/>.references_tags_count == 0s );
+static_assert( typeinfo</CVec/>.references_tags_count == 0s );
+static_assert( typeinfo</RVec/>.references_tags_count == 1s );
+static_assert( typeinfo</NCVec/>.references_tags_count == 0s );
 
 template</ type T /> fn IsMutableReference( T & mut r ) : bool { ust::ignore_unused(r); return true ; }
 template</ type T /> fn IsMutableReference( T &imut r ) : bool { ust::ignore_unused(r); return false; }

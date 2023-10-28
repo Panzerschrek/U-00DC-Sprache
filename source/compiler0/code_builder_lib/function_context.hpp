@@ -63,8 +63,8 @@ public:
 	llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
 	// For reference checks.
-	// arg variable node + optional inner reference variable node.
-	ArgsVector< std::pair< VariablePtr, VariablePtr > > args_nodes;
+	// arg variable node + inner reference nodes.
+	ArgsVector< std::pair< VariablePtr, llvm::SmallVector< VariablePtr, 1 > > > args_nodes;
 
 	llvm::Value* s_ret= nullptr; // Value for assignment for "sret" functions. Also it is a promise for coroutines.
 

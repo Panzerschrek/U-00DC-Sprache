@@ -826,7 +826,7 @@ private:
 
 	// Overloading
 
-	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x';
+	fn GetFunctionWithSameType( FunctionsSet & mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable /> @(ust::reference_notation::return_inner_references::param0);
 
 	fn ApplyOverloadedFunction(
 		FunctionsSet &mut functions_set,
@@ -899,9 +899,22 @@ private:
 		ust::array_view_imut</TypeTemplatePtr/> type_templates,
 		size_type signature_args_to_check ) : size_type;
 
+	// Reference notation.
+
+	fn EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>;
+	fn EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>;
+	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</FunctionType::ReferencePollution/> ;
+	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
+	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</ FunctionType::ParamReferences />;
+	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
+
 	// Coroutines
-	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
-	fn GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>;
+
+	// Call this before transforming function type.
+	fn PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	// Make return type - generator type and prepare it properly. Modifies given function type.
+	fn TransformGeneratorFunctionType( mut this, NamesScopePtr& root_namespace, FunctionType &mut generator_function_type, bool non_sync_ );
 
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 
@@ -954,7 +967,31 @@ private:
 	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
 	fn RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr variable, size_type frame_index_from_top );
 
+	fn CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn CheckFunctionReferencesNotationParamReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	fn CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;
+
+	fn CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
+	fn IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool;
+
+	fn CheckYieldReferenceIsAllowed(
+		NamesScopePtr& names,
+		FunctionContext& function_context,
+		CoroutineTypeDescription& coroutine_type_description,
+		VariablePtr& node,
+		SrcLoc& src_loc );
+
+	fn CheckYieldInnerReferencesAreAllowed(
+		NamesScopePtr& names,
+		FunctionContext& function_context,
+		CoroutineTypeDescription& coroutine_type_description,
+		VariablePtr& node,
+		SrcLoc& src_loc );
+
+	fn GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>;
+
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
@@ -1104,6 +1141,8 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	Type reference_notation_param_reference_description_type_;
+	Type reference_notation_pollution_element_type_;
 	LLVMTypeRef virtual_function_pointer_type_= LLVMTypeRef::Null; // Use common type for all function pointers in virtual table - for simplicity.
 	LLVMTypeRef polymorph_type_id_table_element_type_= LLVMTypeRef::Null;
 

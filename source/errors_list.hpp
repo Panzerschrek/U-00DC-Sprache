@@ -132,7 +132,6 @@ PROCESS_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, "Could not select more
 
 // Reference checking
 PROCESS_ERROR( ReferenceProtectionError, "Reference protection check for variable \"{0}\" failed." )
-PROCESS_ERROR( InnerReferenceMutabilityChanging, "Changing inner reference \"{0}\" mutability." )
 PROCESS_ERROR( DestroyedVariableStillHaveReferences, "Destroyed variable \"{0}\" still have reference(s)." )
 PROCESS_ERROR( AccessingMovedVariable, "Accessing moved variable \"{0}\"." )
 PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference." )
@@ -148,6 +147,14 @@ PROCESS_ERROR( ExplicitReferencePollutionForCopyConstructor, "Explicit reference
 PROCESS_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, "Explicit reference pollution for equality compare operator. Reference pollution for such operators is not allowed." )
 PROCESS_ERROR( ReferenceFieldOfTypeWithReferencesInside, "Reference field \"{0}\" have type, with other references inside." )
+PROCESS_ERROR( ExpectedReferenceNotation, "Expected reference notation for field \"{0}\"." )
+PROCESS_ERROR( InnerReferenceTagCountMismatch, "Mismatch in count of inner reference tags. Expected {0}, got {1}. " )
+PROCESS_ERROR( InvalidInnerReferenceTagName, "Invalid inner reference tag name \"{0}\". Expected letters in range a-z." )
+PROCESS_ERROR( InvalidParamNumber, "Invalid param number \"{0}\". Expected numbers in range 0-9." )
+PROCESS_ERROR( ParamNumberOutOfRange, "Param number {0} is out of range of function params {1}." )
+PROCESS_ERROR( ReferenceTagOutOfRange, "Reference tag number {0} is out of range of type {1} ({2})." )
+PROCESS_ERROR( UnusedReferenceTag, "Reference tag \"{0}\" is not used. Make sure there is no gaps in reference tags of the class." )
+PROCESS_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, "Reference tag \"{0}\" points both to mutable and immutable references." )
 
 // Operators overloading
 PROCESS_ERROR( OperatorDeclarationOutsideClass, "Operator declaration outside class. Operators can be declared only inside classes." )

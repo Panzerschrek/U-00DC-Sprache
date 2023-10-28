@@ -165,11 +165,15 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::generator_ );
-	if( generator_name.inner_reference_tag != nullptr )
+	if( !generator_name.inner_references.empty() )
 	{
 		stream << "'";
-		ElementWrite( generator_name.inner_reference_tag->mutability_modifier, stream );
-		stream << generator_name.inner_reference_tag->name;
+		for( size_t i= 0; i < generator_name.inner_references.size(); ++i )
+		{
+			ElementWrite( generator_name.inner_references[i], stream );
+			if( i + 1 < generator_name.inner_references.size() )
+				stream << ", ";
+		}
 		stream << "'";
 	}
 
@@ -179,12 +183,7 @@ void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 	ElementWrite( generator_name.return_type, stream );
 
 	ElementWrite( generator_name.return_value_reference_modifier, stream );
-	if( generator_name.return_value_reference_modifier == ReferenceModifier::Reference && !generator_name.return_value_reference_tag.empty() )
-		stream << "'" << generator_name.return_value_reference_tag;
-
 	ElementWrite( generator_name.return_value_mutability_modifier, stream );
-	if( generator_name.return_value_reference_modifier != ReferenceModifier::Reference && !generator_name.return_value_reference_tag.empty() )
-		stream << "'" << generator_name.return_value_reference_tag << "'";
 }
 
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
@@ -223,24 +222,11 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 
 		ElementWrite( param.reference_modifier, stream );
 
-		if( !param.reference_tag.empty() )
-		{
-			stream << "'";
-			stream << param.reference_tag;
-		}
-
 		ElementWrite( param.mutability_modifier, stream );
 
 		if( param.mutability_modifier != MutabilityModifier::None )
 			stream << " ";
 		stream << param.name;
-	}
-
-	if( !param.inner_arg_reference_tag.empty() )
-	{
-		stream << "'";
-		stream << param.inner_arg_reference_tag;
-		stream << "'";
 	}
 }
 
@@ -807,11 +793,28 @@ void ElementWrite( const ClassField& class_field, std::ostream& stream )
 {
 	stream << "\t";
 	ElementWrite( class_field.type, stream );
+
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
+	{
+		stream << " @(";
+		ElementWrite( class_field.inner_reference_tags_expression, stream );
+		stream << ") ";
+	}
+
 	ElementWrite( class_field.reference_modifier, stream );
 	stream << " ";
+
 	ElementWrite( class_field.mutability_modifier, stream );
 	if( class_field.mutability_modifier != MutabilityModifier::None )
 		stream << " ";
+
+	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
+	{
+		stream << " @(";
+		ElementWrite( class_field.reference_tag_expression, stream );
+		stream << ") ";
+	}
+
 	stream << class_field.name << ";\n";
 }
 
@@ -950,6 +953,13 @@ void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostr
 
 void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
+	if( function_type.references_pollution_expression != nullptr )
+	{
+		stream << " @( ";
+		ElementWrite( *function_type.references_pollution_expression, stream );
+		stream << " )";
+	}
+
 	if( function_type.unsafe )
 		stream << Keyword( Keywords::unsafe_ ) << " ";
 
@@ -959,11 +969,11 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	else
 		stream << Keyword( Keywords::void_ );
 
-	if( !function_type.return_value_inner_reference_tag.empty() )
+	if( function_type.return_value_inner_references_expression != nullptr )
 	{
-		stream << "'";
-		stream << function_type.return_value_inner_reference_tag;
-		stream << "'";
+		stream << " @( ";
+		ElementWrite( *function_type.return_value_inner_references_expression, stream );
+		stream << " )";
 	}
 
 	if( function_type.return_value_reference_modifier != ReferenceModifier::None )
@@ -971,15 +981,14 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 		stream << " ";
 
 		ElementWrite( function_type.return_value_reference_modifier, stream );
-		if( !function_type.return_value_reference_tag.empty() )
-			stream << "'" << function_type.return_value_reference_tag;
+		ElementWrite( function_type.return_value_mutability_modifier, stream );
 
-		ElementWrite( function_type.return_value_mutability_modifier, stream );
-	}
-	else if( function_type.return_value_mutability_modifier != MutabilityModifier::None )
-	{
-		stream << " ";
-		ElementWrite( function_type.return_value_mutability_modifier, stream );
+		if( function_type.return_value_reference_expression != nullptr )
+		{
+			stream << " @( ";
+			ElementWrite( *function_type.return_value_reference_expression, stream );
+			stream << " )";
+		}
 	}
 }
 

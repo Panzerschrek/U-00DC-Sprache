@@ -176,16 +176,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
-		if( variable_declaration.reference_modifier != ReferenceModifier::Reference ||
-			variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
+		// Full completeness required for both values and references..
+		if( !EnsureTypeComplete( type ) )
 		{
-			// Full completeness required for value-variables and any constexpr variable.
-			if( !EnsureTypeComplete( type ) )
-			{
-				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), variables_declaration.src_loc, type );
-				continue;
-			}
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), variables_declaration.src_loc, type );
+			continue;
 		}
+
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsAbstract() )
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), variables_declaration.src_loc, type );
 
@@ -209,7 +206,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		const VariableMutPtr variable_reference =
-			std::make_shared<Variable>(
+			Variable::Create(
 				type,
 				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -219,7 +216,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const VariableMutPtr variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					type,
 					ValueType::Value,
 					Variable::Location::Pointer,
@@ -235,7 +232,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			{
 				const VariableMutPtr variable_for_initialization=
-					std::make_shared<Variable>(
+					Variable::Create(
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
@@ -243,6 +240,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names.GetErrors(), variable_declaration.src_loc );
 
 				variable->constexpr_value=
 					variable_declaration.initializer == nullptr
@@ -257,6 +255,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			prev_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
+			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), variable_declaration.src_loc );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -316,6 +315,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			function_context.variables_state.TryAddLink( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
+			function_context.variables_state.TryAddInnerLinks( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
 		}
 		else U_ASSERT(false);
 
@@ -385,7 +385,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	const VariableMutPtr variable_reference=
-		std::make_shared<Variable>(
+		Variable::Create(
 			initializer_experrsion->type,
 			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -414,6 +414,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
 		function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -421,7 +422,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				initializer_experrsion->type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -448,7 +449,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateVariableInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
-		SetupReferencesInCopyOrMove( function_context, variable, initializer_experrsion, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable, names.GetErrors(), auto_variable_declaration.src_loc );
 
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
@@ -578,7 +580,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	const VariablePtr return_value_node=
-		std::make_shared<Variable>(
+		Variable::Create(
 			*function_context.return_type,
 			function_context.function_type.return_value_type,
 			Variable::Location::Pointer,
@@ -599,21 +601,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		// Check correctness of returning references.
-		if( expression_result->type.ReferencesTagsCount() > 0u )
-		{
-			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
-			{
-				for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
-				{
-					if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-						REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc );
-				}
-			}
-		}
-
-		// Setup references in order to catch errors, when referene to local variable is returned inside struct.
-		SetupReferencesInCopyOrMove( function_context, return_value_node, expression_result, names.GetErrors(), return_operator.src_loc );
+		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
 			expression_result->type.GetEnumType() != nullptr ||
@@ -705,15 +694,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
 		}
 
-		// Check correctness of returning reference.
-		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
-		{
-			if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc );
-		}
+		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
-		function_context.variables_state.AddLink( expression_result, return_value_node );
+		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context );
 	}
@@ -762,7 +748,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence, names, function_context );
 
 	const VariablePtr sequence_lock=
-		std::make_shared<Variable>(
+		Variable::Create(
 			sequence_expression->type,
 			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -770,6 +756,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	function_context.variables_state.AddNode( sequence_lock );
 	function_context.variables_state.TryAddLink( sequence_expression, sequence_lock,  names.GetErrors(), range_for_operator.src_loc );
+	function_context.variables_state.TryAddInnerLinks( sequence_expression, sequence_lock, names.GetErrors(), range_for_operator.src_loc );
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
@@ -789,7 +776,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
 			const VariableMutPtr variable_reference=
-				std::make_shared<Variable>(
+				Variable::Create(
 					element_type,
 					is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
@@ -816,11 +803,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable_reference, element_index, names.GetErrors(), range_for_operator.src_loc );
 			}
 			else
 			{
 				const VariableMutPtr variable=
-					std::make_shared<Variable>(
+					Variable::Create(
 						element_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
@@ -855,7 +843,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				CreateLifetimeStart( function_context, variable->llvm_value );
 				debug_info_builder_->CreateVariableInfo( *variable, variable_name, range_for_operator.src_loc, function_context );
 
-				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable, element_index, names.GetErrors(), range_for_operator.src_loc );
 
 				BuildCopyConstructorPart(
 					variable->llvm_value,
@@ -1262,7 +1251,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression, names, function_context );
 
 	const VariableMutPtr variable_reference=
-		std::make_shared<Variable>(
+		Variable::Create(
 			expr->type,
 			with_operator.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -1308,11 +1297,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, with_operator.variable_name, with_operator.src_loc, function_context );
 
 		function_context.variables_state.TryAddLink( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
 	}
 	else if( with_operator.reference_modifier == ReferenceModifier::None )
 	{
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				expr->type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -1341,7 +1331,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateVariableInfo( *variable, with_operator.variable_name, with_operator.src_loc, function_context );
 
-		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expr, variable, names.GetErrors(), with_operator.src_loc );
 
 		if( expr->value_type == ValueType::Value )
 		{
@@ -1550,13 +1541,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	 // TODO - maybe disallow this operator for temporary coroutines?
 	const VariableMutPtr coro_expr_lock=
-		std::make_shared<Variable>(
+		Variable::Create(
 			coro_expr->type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
 			coro_expr->name + "lock" );
 	function_context.variables_state.AddNode( coro_expr_lock );
 	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
+	function_context.variables_state.TryAddInnerLinks( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
+
 	variables_storage.RegisterVariable( coro_expr_lock );
 
 	ReferencesGraph variables_state_before_branching= function_context.variables_state;
@@ -1634,7 +1627,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const ValueType result_value_type= coroutine_type_description->return_value_type;
 
 		const VariableMutPtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				result_type,
 				if_coro_advance.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -1648,7 +1641,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Create variable for value result of coroutine.
 			is_variable= true;
 			const VariableMutPtr variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					result_type,
 					ValueType::Value,
 					Variable::Location::Pointer,
@@ -1668,20 +1661,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			coro_result_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
 
-			if( result_type.ReferencesTagsCount() > 0 )
+			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+			for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
 			{
-				const auto accessible_innder_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr_lock );
-				if( !accessible_innder_nodes.empty() )
+				for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
 				{
-					bool inner_reference_is_mutable= false;
-					for( const VariablePtr& accessible_inner_node : accessible_innder_nodes )
-						inner_reference_is_mutable|= accessible_inner_node->value_type == ValueType::ReferenceMut;
-
-					const VariablePtr inner_node=
-						function_context.variables_state.CreateNodeInnerReference( variable, inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-
-					for( const VariablePtr& accessible_inner_node : accessible_innder_nodes )
-						function_context.variables_state.TryAddLink( accessible_inner_node, inner_node, names.GetErrors(), if_coro_advance.src_loc );
+					U_ASSERT( param_reference.first == 0u );
+					U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+						function_context.variables_state.TryAddLink(
+							coro_expr_lock->inner_reference_nodes[param_reference.second],
+							variable->inner_reference_nodes[i],
+							names.GetErrors(),
+							if_coro_advance.src_loc );
 				}
 			}
 
@@ -1699,7 +1691,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), if_coro_advance.src_loc, result_type );
 
 				const VariableMutPtr variable=
-					std::make_shared<Variable>(
+					Variable::Create(
 						result_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
@@ -1726,6 +1718,22 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				coro_result_variables_storage.RegisterVariable( variable );
 				function_context.variables_state.AddLink( variable, variable_reference );
 
+				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
+				{
+					for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
+					{
+						U_ASSERT( param_reference.first == 0u );
+						U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+						if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+							function_context.variables_state.TryAddLink(
+								coro_expr_lock->inner_reference_nodes[param_reference.second],
+								variable->inner_reference_nodes[i],
+								names.GetErrors(),
+								if_coro_advance.src_loc );
+					}
+				}
+
 				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
 			else
@@ -1737,8 +1745,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable_reference->llvm_value= coroutine_reference_result;
 
-				for( const VariablePtr& internal_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr ) )
-					function_context.variables_state.TryAddLink( internal_reference_node, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_references )
+				{
+					U_ASSERT( param_reference.first == 0u );
+					U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+						function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_nodes[param_reference.second], variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				}
 			}
 		}
 
@@ -2422,7 +2435,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			r_var=
-				std::make_shared<Variable>(
+				Variable::Create(
 					r_var->type,
 					ValueType::Value,
 					Variable::Location::LLVMRegister,

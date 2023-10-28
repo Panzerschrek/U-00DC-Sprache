@@ -47,7 +47,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 {
 	if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		if(  initializer.initializers.size() != array_type->element_count )
+		if( initializer.initializers.size() != array_type->element_count )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names.GetErrors(),
@@ -59,7 +59,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 
 		const VariableMutPtr array_member=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -67,6 +67,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		function_context.variables_state.AddNode( array_member );
 		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, array_member, names.GetErrors(), initializer.src_loc );
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		llvm::SmallVector<llvm::Constant*, 16> members_constants;
@@ -109,7 +110,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
 			const VariablePtr tuple_element=
-				std::make_shared<Variable>(
+				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -118,6 +119,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( tuple_element );
 			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, tuple_element, i, names.GetErrors(), initializer.src_loc );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -216,7 +218,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 		{
 			const VariablePtr struct_member=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -225,6 +227,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names.GetErrors(), initializer.src_loc );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -257,7 +260,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 		{
 			const VariablePtr struct_member=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -266,6 +269,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names.GetErrors(), initializer.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -459,7 +463,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	else if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
 		const VariableMutPtr array_member=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -467,6 +471,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		function_context.variables_state.AddNode( array_member );
 		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, array_member, names.GetErrors(), initializer.src_loc );
 
 		GenerateLoop(
 			array_type->element_count,
@@ -490,7 +495,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			const VariablePtr tuple_element=
-				std::make_shared<Variable>(
+				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -499,6 +504,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( tuple_element );
 			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, tuple_element, i, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( tuple_element, names, function_context, initializer );
 
@@ -531,7 +537,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 
 			const VariablePtr struct_member=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -540,6 +546,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 
@@ -595,7 +602,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	else if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
 		const VariableMutPtr array_member=
-			std::make_shared<Variable>(
+			Variable::Create(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -603,6 +610,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 		function_context.variables_state.AddNode( array_member );
 		function_context.variables_state.TryAddLink( variable, array_member, block_names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, array_member, block_names.GetErrors(), src_loc );
 
 		llvm::Constant* constant_initializer= nullptr;
 
@@ -633,7 +641,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			const VariablePtr tuple_element=
-				std::make_shared<Variable>(
+				Variable::Create(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -642,6 +650,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 			function_context.variables_state.AddNode( tuple_element );
 			function_context.variables_state.TryAddLink( variable, tuple_element, block_names.GetErrors(), src_loc );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, tuple_element, i, block_names.GetErrors(), src_loc );
 
 			llvm::Constant* const constant_initializer=
 				ApplyEmptyInitializer( variable_name, src_loc, tuple_element, block_names, function_context );
@@ -1071,7 +1080,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
 			const VariablePtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -1080,6 +1089,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			function_context.variables_state.AddNode( field_variable );
 			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
+			function_context.variables_state.TryAddInnerLinksForClassField( this_, field_variable, *field, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
@@ -1141,7 +1151,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
 			const VariablePtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -1150,6 +1160,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			function_context.variables_state.AddNode( field_variable );
 			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), Synt::GetInitializerSrcLoc(field_initializer.initializer) );
+			function_context.variables_state.TryAddInnerLinksForClassField( this_, field_variable, *field, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 
@@ -1225,22 +1236,12 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Link references.
-	for( const VariablePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( variable ) )
-	{
-		VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
-		if( inner_reference == nullptr )
-			inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-		else
-		{
-			if( ( inner_reference->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
-				( inner_reference->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
-			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
-				return nullptr;
-			}
-		}
-		function_context.variables_state.TryAddLink( initializer_variable, inner_reference, block_names.GetErrors(), initializer_src_loc );
-	}
+	U_ASSERT( field.reference_tag < variable->inner_reference_nodes.size() );
+	function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+		initializer_variable,
+		variable->inner_reference_nodes[field.reference_tag],
+		block_names.GetErrors(),
+		initializer_src_loc );
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );
 
@@ -1453,19 +1454,20 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 		if( field->is_reference )
 		{
 			const VariablePtr this_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					field->GetName() );
 			function_context.variables_state.AddNode( this_variable );
+
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( this_variable );
 		}
 		else
 		{
 			const VariablePtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,

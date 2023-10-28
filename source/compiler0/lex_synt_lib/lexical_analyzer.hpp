@@ -69,6 +69,7 @@ struct Lexem
 		Not, // !
 
 		Apostrophe, // '
+		At, // @
 
 		Increment, // ++
 		Decrement, // --
@@ -99,7 +100,6 @@ struct Lexem
 		AssignShiftLeft , // <<=
 		AssignShiftRight, // >>=
 
-		LeftArrow,  // <-
 		RightArrow, // ->
 
 		PointerTypeMark, // $

@@ -36,6 +36,7 @@ Other functionality:
 * Minimum/maximum functions (minmax.u)
 * Functions for polymorph objects manipulation (polymorph.u)
 * Pthread library prototypes (used internally) (pthread.u)
+* Reference notation helpers (reference_notation.u)
 * Sorting routines (sort.u)
 * stdout support (unfinished) (stdout.u)
 * Number to string conversion utilities (string_conversions.u)

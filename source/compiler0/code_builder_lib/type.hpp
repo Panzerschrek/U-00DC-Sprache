@@ -32,8 +32,7 @@ class Type;
 
 enum class InnerReferenceType : uint8_t
 {
-	None, // Type have no innere references
-	Imut, // Type have immutable inner ereference
+	Imut, // Type have immutable inner reference
 	Mut, // Type have mutable inner reference
 };
 
@@ -105,7 +104,7 @@ public:
 	bool IsAbstract() const;
 
 	size_t ReferencesTagsCount() const;
-	InnerReferenceType GetInnerReferenceType() const;
+	InnerReferenceType GetInnerReferenceType(size_t index) const;
 
 	llvm::Type* GetLLVMType() const;
 
@@ -192,9 +191,12 @@ public:
 
 	// Use "std::set" for references description, because we needs stable order for function type mangling.
 
-	// for functions, returning references this is references of reference itslef.
-	// For function, returning values, this is inner references.
+	// Tags of returned reference.
 	std::set<ParamReference> return_references;
+
+	// Tags for each inner reference node for returned value/reference.
+	std::vector<std::set<ParamReference>> return_inner_references;
+
 	std::set<ReferencePollution> references_pollution;
 
 	// Do not store llvm type here, because calculating exact llvm type requires complete types of arguments and return value.

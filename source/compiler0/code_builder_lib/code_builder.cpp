@@ -145,6 +145,23 @@ CodeBuilder::CodeBuilder(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
 
+	{
+		// A pair of chars.
+		// First - number of param from '0' up to '9'.
+		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+		ArrayType a;
+		a.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+		a.element_count= 2;
+		reference_notation_param_reference_description_type_= std::move(a);
+	}
+	{
+		// A pair of reference param descriptions. First - destination, second - source.
+		ArrayType a;
+		a.element_type= reference_notation_param_reference_description_type_;
+		a.element_count= 2;
+		reference_notation_pollution_element_type_= std::move(a);
+	}
+
 	virtual_function_pointer_type_= llvm::PointerType::get( llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, true ), 0u );
 
 	// Use named struct for polymorph type id table element, because this is recursive struct.
@@ -1050,18 +1067,12 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( func_variable.is_generator )
 		{
-			FunctionType generator_function_type= function_type;
+			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			// Coroutine functions return value of coroutine type.
-			generator_function_type.return_type=
-				GetGeneratorFunctionReturnType(
-				*names_scope.GetRoot(),
+			TransformGeneratorFunctionType(
+				names_scope,
 				function_type,
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
-			generator_function_type.return_value_type= ValueType::Value;
-
-			// Generate for now own return references mapping.
-			generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
 
 			// Disable auto-generators.
 			if( func_variable.return_type_is_auto )
@@ -1077,12 +1088,8 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_generator= false;
 			}
 
-			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-			if( !func.type.return_value_reference_tag.empty() || !func.type.return_value_inner_reference_tag.empty() )
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
-
 			// Disable references pollution for generator. It is too complicated for now.
-			if( !func.type.references_pollution_list.empty() )
+			if( func.type.references_pollution_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for generators." );
 
 			if( function_type.calling_convention != llvm::CallingConv::C )
@@ -1092,8 +1099,6 @@ size_t CodeBuilder::PrepareFunction(
 			// But this is still possible to return a generator value from virtual function.
 			if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
 				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type.src_loc );
-
-			function_type= std::move(generator_function_type);
 		}
 
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
@@ -1438,6 +1443,10 @@ Type CodeBuilder::BuildFuncCode(
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
+	// Call this after types completion request.
+	// Perform this check while function body building, since the check requires type completeness, which can't be requested during prototype preparation.
+	CheckFunctionReferencesNotationInnerReferences( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
+
 	if( func_variable.is_generator )
 	{
 		const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &function_type.return_type.GetClassType()->generated_class_data );
@@ -1452,7 +1461,7 @@ Type CodeBuilder::BuildFuncCode(
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for generators.
 			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
-			if( arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
+			if( arg.value_type != ValueType::Value && arg.type.ReferencesTagsCount() > 0u )
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
 
 			// Generator is not declared as non-sync, but param is non-sync. This is an error.
@@ -1498,7 +1507,7 @@ Type CodeBuilder::BuildFuncCode(
 		const std::string& arg_name= declaration_arg.name;
 
 		const VariableMutPtr variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				param.type,
 				ValueType::Value,
 				Variable::Location::Pointer,
@@ -1558,28 +1567,26 @@ Type CodeBuilder::BuildFuncCode(
 
 		function_context.args_nodes[ arg_number ].first= variable;
 
-		if (param.type.ReferencesTagsCount() > 0u )
+		const auto reference_tag_count= param.type.ReferencesTagsCount();
+		function_context.args_nodes[ arg_number ].second.resize( reference_tag_count );
+		for( size_t i= 0; i < reference_tag_count; ++i )
 		{
-			// Create inner node + root variable.
+			// Create root variable.
 			const VariablePtr accesible_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					arg_name + " referenced variable" );
+					arg_name + " referenced variable " + std::to_string(i) );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference=
-				function_context.variables_state.CreateNodeInnerReference(
-					variable,
-					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-			function_context.variables_state.AddLink( accesible_variable, inner_reference );
+			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 
-			function_context.args_nodes[ arg_number ].second= accesible_variable;
+			function_context.args_nodes[ arg_number ].second[i]= accesible_variable;
 		}
 
 		const VariablePtr variable_reference=
-			std::make_shared<Variable>(
+			Variable::Create(
 				param.type,
 				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
@@ -1589,6 +1596,9 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddNode( variable_reference );
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
+		for( size_t i= 0; i < reference_tag_count; ++i )
+			function_context.variables_state.AddLink( variable->inner_reference_nodes[i], variable_reference->inner_reference_nodes[i] );
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{

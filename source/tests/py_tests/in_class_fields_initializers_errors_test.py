@@ -33,7 +33,8 @@ def InClassFieldInitializerCheck_Test2():
 		struct S
 		{
 			i32& x= 42;
-			fn constructor( this'a', i32&'b in_x ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& in_x ) @(pollution)
 			( x= in_x )
 			{}  // Prevent calling of initializer in default constructor generation.
 		}

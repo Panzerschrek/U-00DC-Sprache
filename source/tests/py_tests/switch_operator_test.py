@@ -546,7 +546,8 @@ def VariablesStateMerge_ForSwitchOperator_Test4():
 def VariablesStateMerge_ForSwitchOperator_Test5():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn DoPollution( S &mut s'a', i32 &'b mut x ) ' a <- b ';
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn DoPollution( S &mut s, i32 & mut x ) @(pollution);
 		fn Foo( i32 a )
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -561,4 +562,4 @@ def VariablesStateMerge_ForSwitchOperator_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 14 ) )

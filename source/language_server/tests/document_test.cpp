@@ -1110,7 +1110,7 @@ U_TEST( DocumentSignatureHelp_Test6 )
 	documents[path]= &document;
 
 	// Should properly suggest signature of method call.
-	document.SetText( "fn bar(S& s){} struct S{ fn foo( imut this'x' ) : bool; i32& ref_field; }" );
+	document.SetText( "fn bar(S& s){} struct S{ fn foo( imut this ) : bool; i32& ref_field; }" );
 
 	document.StartRebuild( g_tests_thread_pool );
 	document.WaitUntilRebuildFinished();
@@ -1118,7 +1118,7 @@ U_TEST( DocumentSignatureHelp_Test6 )
 	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
 
 	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
-	const SignatureHelpResultNormalized expected_result{ "foo( imut this'x' ) : bool" };
+	const SignatureHelpResultNormalized expected_result{ "foo( imut this ) : bool" };
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 

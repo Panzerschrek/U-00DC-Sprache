@@ -179,9 +179,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) ),
 				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
-			var VariablePtr element_variable_ptr( move(element_variable) );
+			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, sequence_initializer.src_loc );
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, element_initializer.deref() );
 
@@ -234,9 +235,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
-			var VariablePtr element_variable_ptr( move(element_variable) );
+			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, sequence_initializer.src_loc );
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i].deref() );
 
@@ -362,9 +364,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.llvm_value= CreateClassFieldGEP( function_context, variable, class_field ),
 				.name= variable_ptr.lock_imut().deref().name + "." + member_initializer.name,
 			};
-			var VariablePtr member_variable_ptr( move(member_variable) );
+			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, class_field, names_scope, member_initializer.src_loc );
 
 			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer.deref() );
 
@@ -407,9 +410,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 			.name= variable_ptr.lock_imut().deref().name + "." + field_name,
 		};
-		var VariablePtr member_variable_ptr( move(member_variable) );
-			function_context.references_graph.AddNode( member_variable_ptr );
-			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+		var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
+		function_context.references_graph.AddNode( member_variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+		function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, struct_named_initializer.src_loc );
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.deref().initializer;
@@ -491,9 +495,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
 					.name= variable_ptr.lock_imut().deref().name + "[]",
 				};
-				var VariablePtr element_variable_ptr( move(element_variable) );
+				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 				function_context.references_graph.AddNode( element_variable_ptr );
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, zero_initializer.src_loc );
 
 				BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
@@ -519,9 +524,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
-			var VariablePtr element_variable_ptr( move(element_variable) );
+			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, zero_initializer.src_loc );
 
 			BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
@@ -568,9 +574,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 				.name= variable_ptr.lock_imut().deref().name + "." + field_pair[0],
 			};
-			var VariablePtr member_variable_ptr( move(member_variable) );
+			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, zero_initializer.src_loc );
 
 			BuildInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
 
@@ -630,9 +637,11 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
 					.name= variable_ptr.lock_imut().deref().name + "[]",
 				};
-				var VariablePtr element_variable_ptr( move(element_variable) );
+				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 				function_context.references_graph.AddNode( element_variable_ptr );
+
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, src_loc );
 
 				constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
@@ -660,9 +669,11 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
-			var VariablePtr element_variable_ptr( move(element_variable) );
+			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
+
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, src_loc );
 
 			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
@@ -1254,32 +1265,11 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	auto address_of_reference= CreateClassFieldGEP( function_context, variable, field );
 	CreateTypedReferenceStore( function_context, field.t, reference_converted, address_of_reference );
 
-	{
-		var ReferencesGraph &mut references_graph= function_context.references_graph;
-
-		foreach( &dst_variable_node : references_graph.GetAllAccessibleVariableNodes( variable_ptr ) )
-		{
-			var VariableNullablePtr mut inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
-			if( inner_reference_node.empty() )
-			{
-				inner_reference_node= references_graph.CreateNodeInnerReference(
-					dst_variable_node,
-					select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
-			}
-
-			var VariablePtr inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
-			auto inner_reference_value_type= inner_reference_node_non_null.lock_imut().deref().value_type;
-			if(
-				(  field.is_mutable && inner_reference_value_type != ValueType::ReferenceMut ) ||
-				( !field.is_mutable && inner_reference_value_type != ValueType::ReferenceImut ) )
-			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, initializer_src_loc, inner_reference_node_non_null.lock_imut().deref().name )
-			}
-
-			references_graph.TryAddLink( initializer_variable_ptr, inner_reference_node_non_null, names_scope, initializer_src_loc );
-
-		}
-	}
+	function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+		initializer_variable_ptr,
+		variable_ptr.lock_imut().deref().inner_reference_nodes[ size_type( field.reference_tag ) ],
+		names_scope,
+		initializer_expression_src_loc );
 
 	// Destroy temporary variables after creating links to prevent destruction of variables, linked with initializer reference.
 	DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_expression_src_loc );
@@ -1430,9 +1420,10 @@ fn CodeBuilder::BuildConstructorInitialization(
 					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
 					.name= this_ptr.lock_imut().deref().name + "." + field_name,
 				};
-				var VariablePtr field_variable_ptr( move(field_variable) );
+				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
 				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 
@@ -1462,9 +1453,10 @@ fn CodeBuilder::BuildConstructorInitialization(
 					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
 					.name= this_ptr.lock_imut().deref().name + "." + field_name,
 				};
-				var VariablePtr field_variable_ptr( move(field_variable) );
+				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
 				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 
@@ -1513,9 +1505,10 @@ fn CodeBuilder::BuildConstructorInitialization(
 				.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
 				.name= this_ptr.lock_imut().deref().name + "." + member_initializer.name,
 			};
-			var VariablePtr field_variable_ptr( move(field_variable) );
+			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 			function_context.references_graph.AddNode( field_variable_ptr );
 			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
 			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
 
@@ -1550,7 +1543,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) ),
 		.name= KeywordToString( Keyword::this_ ),
 	};
-	var VariablePtr this_variable_ptr( move(this_variable) );
+	var VariablePtr this_variable_ptr= move(this_variable).CreatePtr();
 	function_context.references_graph.AddNode( this_variable_ptr );
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
@@ -1579,14 +1572,16 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 				.llvm_value= CreateClassFieldGEP( function_context, this_variable_ptr.lock_imut().deref(), class_field ),
 				.name= field_pair[0],
 			};
-			var VariablePtr field_variable_ptr( move(field_variable) );
+			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
 			function_context.references_graph.AddNode( field_variable_ptr );
+
 			BuildInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
+
 			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 	}
 
-		function_context.references_graph.RemoveNode( this_variable_ptr );
+	function_context.references_graph.RemoveNode( this_variable_ptr );
 }
 
 } // namespace U1

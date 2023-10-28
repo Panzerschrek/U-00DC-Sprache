@@ -194,8 +194,6 @@ private:
 	ComplexName ParseComplexName();
 	ComplexName ParseComplexNameTail( ComplexName base );
 	ComplexName TryParseComplexNameTailWithTemplateArgs( ComplexName base );
-	std::string ParseInnerReferenceTag();
-	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
 	struct SignatureHelpTag{};
 	std::variant<std::vector<Expression>, SignatureHelpTag> ParseCall();
@@ -1216,23 +1214,6 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
-
-		if( it_->type == Lexem::Type::Apostrophe )
-		{
-			NextLexem();
-
-			if( it_->type == Lexem::Type::Identifier )
-			{
-				result.reference_tag = it_->text;
-				NextLexem();
-			}
-			else
-			{
-				PushErrorMessage();
-				TryRecoverAfterError( g_function_arguments_list_control_lexems );
-				return result;
-			}
-		}
 	}
 
 	if( it_->type != Lexem::Type::Identifier )
@@ -1264,16 +1245,16 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	result.src_loc= it_->src_loc;
 	NextLexem();
 
-	if( it_->type == Lexem::Type::Apostrophe )
-		result.inner_arg_reference_tag= ParseInnerReferenceTag();
-
 	return result;
 }
 
 void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 {
-	if( it_->type == Lexem::Type::Apostrophe )
-		result.references_pollution_list= ParseFunctionReferencesPollutionList();
+	if( it_->type == Lexem::Type::At )
+	{
+		NextLexem();
+		result.references_pollution_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+	}
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
 	{
@@ -1301,27 +1282,16 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 
 		result.return_type= std::make_unique<TypeName>( ParseTypeName() );
 
+		if( it_->type == Lexem::Type::At )
+		{
+			NextLexem();
+			result.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+		}
+
 		if( it_->type == Lexem::Type::And )
 		{
 			result.return_value_reference_modifier= ReferenceModifier::Reference;
 			NextLexem();
-
-			if( it_->type == Lexem::Type::Apostrophe )
-			{
-				NextLexem();
-
-				if( it_->type == Lexem::Type::Identifier )
-				{
-					result.return_value_reference_tag = it_->text;
-					NextLexem();
-				}
-				else
-				{
-					PushErrorMessage();
-					TryRecoverAfterError( { ExpectedLexem(Lexem::Type::BraceLeft), ExpectedLexem(Lexem::Type::BraceLeft), ExpectedLexem(Lexem::Type::Semicolon) } );
-					return;
-				}
-			}
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
@@ -1333,9 +1303,13 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 					PushErrorMessage();
 				NextLexem();
 			}
+
+			if( it_->type == Lexem::Type::At )
+			{
+				NextLexem();
+				result.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			}
 		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-			result.return_value_inner_reference_tag= ParseInnerReferenceTag();
 	}
 }
 
@@ -1465,27 +1439,33 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		{
 			NextLexem();
 
-			GeneratorType::InnerReferenceTag inner_reference_tag;
-
-			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+			if( it_->type == Lexem::Type::Apostrophe )
+				NextLexem(); // Empty list.
+			else
 			{
-				NextLexem();
-				inner_reference_tag.mutability_modifier= MutabilityModifier::Mutable;
+				while( NotEndOfFile() )
+				{
+					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+					{
+						NextLexem();
+						generator_type.inner_references.push_back( MutabilityModifier::Mutable );
+					}
+					else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+					{
+						NextLexem();
+						generator_type.inner_references.push_back( MutabilityModifier::Immutable );
+					}
+					else
+						PushErrorMessage();
+
+					if( it_->type == Lexem::Type::Comma )
+						NextLexem();
+					else
+						break;
+				}
+
+				ExpectLexem( Lexem::Type::Apostrophe );
 			}
-			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
-			{
-				NextLexem();
-				inner_reference_tag.mutability_modifier= MutabilityModifier::Immutable;
-			}
-
-			if( it_->type != Lexem::Type::Identifier )
-				PushErrorMessage();
-			inner_reference_tag.name= it_->text;
-			NextLexem();
-
-			ExpectLexem( Lexem::Type::Apostrophe );
-
-			generator_type.inner_reference_tag= std::make_unique<GeneratorType::InnerReferenceTag>( std::move(inner_reference_tag) );
 		}
 
 		generator_type.non_sync_tag= TryParseNonSyncTag();
@@ -1493,23 +1473,16 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		ExpectLexem( Lexem::Type::Colon );
 		generator_type.return_type= ParseTypeName();
 
+		if( it_->type == Lexem::Type::At )
+		{
+			NextLexem();
+			generator_type.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+		}
+
 		if( it_->type == Lexem::Type::And )
 		{
 			NextLexem();
 			generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
-
-			if( it_->type == Lexem::Type::Apostrophe )
-			{
-				NextLexem();
-
-				if( it_->type == Lexem::Type::Identifier )
-				{
-					generator_type.return_value_reference_tag= it_->text;
-					NextLexem();
-				}
-				else
-					PushErrorMessage();
-			}
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
@@ -1524,9 +1497,13 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 					NextLexem();
 				}
 			}
+
+			if( it_->type == Lexem::Type::At )
+			{
+				NextLexem();
+				generator_type.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			}
 		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-			generator_type.return_value_reference_tag= ParseInnerReferenceTag();
 
 		return std::make_unique<GeneratorType>(std::move(generator_type));
 	}
@@ -1693,105 +1670,6 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 	}
 	else
 		return ParseComplexNameTail( std::move(base) );
-}
-
-std::string SyntaxAnalyzer::ParseInnerReferenceTag()
-{
-	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
-	NextLexem();
-
-	std::string result;
-
-	if( it_->type == Lexem::Type::Apostrophe )
-	{
-		// Empty list
-		// TODO - remove it
-		NextLexem();
-		return result;
-	}
-
-	if( it_->type == Lexem::Type::Identifier )
-	{
-		result= it_->text;
-		NextLexem();
-	}
-	else
-	{
-		PushErrorMessage();
-		return result;
-	}
-
-	if( it_->type == Lexem::Type::Apostrophe )
-	{
-		NextLexem();
-	}
-	else
-	{
-		PushErrorMessage();
-		return result;
-	}
-
-	return result;
-}
-
-FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollutionList()
-{
-	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
-	NextLexem();
-
-	FunctionReferencesPollutionList result;
-
-	if( it_->type == Lexem::Type::Apostrophe )
-	{
-		// Empty list
-		NextLexem();
-		return result;
-	}
-
-	while( NotEndOfFile() )
-	{
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.emplace_back();
-			result.back().first = it_->text;
-			NextLexem();
-		}
-		else
-		{
-			PushErrorMessage();
-			return result;
-		}
-
-		ExpectLexem( Lexem::Type::LeftArrow );
-
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.back().second= it_->text;
-			NextLexem();
-		}
-		else
-		{
-			PushErrorMessage();
-			return result;
-		}
-
-		if( it_->type == Lexem::Type::Comma )
-		{
-			NextLexem();
-			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
-			{
-				PushErrorMessage();
-				return result;
-			}
-		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-		{
-			NextLexem();
-			break;
-		}
-	}
-
-	return result;
 }
 
 std::variant<std::vector<Expression>, SyntaxAnalyzer::SignatureHelpTag> SyntaxAnalyzer::ParseCall()
@@ -3316,10 +3194,6 @@ Function SyntaxAnalyzer::ParseFunction()
 
 		const SrcLoc& src_loc= it_->src_loc;
 
-		std::string inner_reference_tag;
-		if( it_->type == Lexem::Type::Apostrophe )
-			inner_reference_tag= ParseInnerReferenceTag();
-
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
@@ -3335,8 +3209,6 @@ Function SyntaxAnalyzer::ParseFunction()
 		this_param.name= Keyword( Keywords::this_ );
 		this_param.reference_modifier= reference_modifier;
 		this_param.mutability_modifier= mutability_modifier;
-		this_param.reference_tag= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
-		this_param.inner_arg_reference_tag= std::move(inner_reference_tag);
 		params.push_back( std::move( this_param ) );
 	}
 
@@ -3371,12 +3243,11 @@ Function SyntaxAnalyzer::ParseFunction()
 	if( ( result.name.back().name == Keywords::constructor_ || result.name.back().name == Keywords::destructor_ ) &&
 		( params.empty() || params.front().name != Keywords::this_ ) )
 	{
-		FunctionParam this_argument( result.src_loc );
-		this_argument.name= Keyword( Keywords::this_ );
-		this_argument.mutability_modifier= MutabilityModifier::Mutable;
-		this_argument.reference_modifier= ReferenceModifier::Reference;
-		this_argument.reference_tag= Keyword( Keywords::this_ );
-		params.insert( params.begin(), std::move( this_argument ) );
+		FunctionParam this_param( result.src_loc );
+		this_param.name= Keyword( Keywords::this_ );
+		this_param.mutability_modifier= MutabilityModifier::Mutable;
+		this_param.reference_modifier= ReferenceModifier::Reference;
+		params.insert( params.begin(), std::move( this_param ) );
 	}
 
 	ParseFunctionTypeEnding( result.type );
@@ -3579,30 +3450,56 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 
 			field.type= ParseTypeName();
 
-			bool is_reference= false;
-			if( it_->type == Lexem::Type::And )
+			if( it_->type == Lexem::Type::At )
 			{
-				is_reference= true;
 				NextLexem();
-				field.reference_modifier= ReferenceModifier::Reference;
+				field.inner_reference_tags_expression= ParseExpressionInBrackets();
 			}
 
-			if( it_->type == Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::And )
 			{
-				if( it_->text == Keywords::mut_ )
+				NextLexem();
+				field.reference_modifier= ReferenceModifier::Reference;
+
+				if( it_->type == Lexem::Type::Identifier )
 				{
-					NextLexem();
-					field.mutability_modifier= MutabilityModifier::Mutable;
+					if( it_->text == Keywords::mut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Mutable;
+					}
+					else if( it_->text == Keywords::imut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Immutable;
+					}
+					else if( it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Constexpr;
+					}
 				}
-				if( it_->text == Keywords::imut_ )
+
+				if( it_->type == Lexem::Type::At )
 				{
 					NextLexem();
-					field.mutability_modifier= MutabilityModifier::Immutable;
+					field.reference_tag_expression= ParseExpressionInBrackets();
 				}
-				if( is_reference && it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
+			}
+			else
+			{
+				if( it_->type == Lexem::Type::Identifier )
 				{
-					NextLexem();
-					field.mutability_modifier= MutabilityModifier::Constexpr;
+					if( it_->text == Keywords::mut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Mutable;
+					}
+					else if( it_->text == Keywords::imut_ )
+					{
+						NextLexem();
+						field.mutability_modifier= MutabilityModifier::Immutable;
+					}
 				}
 			}
 

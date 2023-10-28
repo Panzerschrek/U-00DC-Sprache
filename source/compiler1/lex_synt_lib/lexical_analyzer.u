@@ -68,6 +68,8 @@ fn ParseIdentifier( Iterator &mut it ) : Lexem
 	var Lexem mut result;
 	result.lexem_type= Lexem::Type::Identifier;
 
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
+
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
@@ -92,6 +94,8 @@ fn ParseMacroUniqueIdentifier( Iterator &mut it ) : Lexem
 	it.drop_front(); // Skip '?'
 	it.drop_front(); // Skip '?'
 
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
+
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
@@ -114,6 +118,8 @@ fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 	result.lexem_type= Lexem::Type::MacroIdentifier;
 
 	it.drop_front(); // Skip '?'
+
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
 
 	while( !it.empty() )
 	{
@@ -458,8 +464,8 @@ fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 
 var tup[
 	[ tup[ [ char8, 3 ], Lexem::Type ],  4 ],
-	[ tup[ [ char8, 2 ], Lexem::Type ], 27 ],
-	[ tup[ [ char8, 1 ], Lexem::Type ], 26 ] ]
+	[ tup[ [ char8, 2 ], Lexem::Type ], 26 ],
+	[ tup[ [ char8, 1 ], Lexem::Type ], 27 ] ]
 c_fixed_lexems_table
 [
 	[
@@ -492,7 +498,6 @@ c_fixed_lexems_table
 		[ "^=", Lexem::Type::AssignXor ],
 		[ "<<", Lexem::Type::ShiftLeft  ],
 		[ ">>", Lexem::Type::ShiftRight ],
-		[ "<-", Lexem::Type::LeftArrow  ],
 		[ "->", Lexem::Type::RightArrow ],
 		[ "$<", Lexem::Type::ReferenceToPointer ],
 		[ "$>", Lexem::Type::PointerToReference ],
@@ -523,6 +528,7 @@ c_fixed_lexems_table
 		[ "~", Lexem::Type::Tilda ],
 		[ "!", Lexem::Type::Not ],
 		[ "'", Lexem::Type::Apostrophe ],
+		[ "@", Lexem::Type::At ],
 		[ "$", Lexem::Type::PointerTypeMark ],
 	]
 ];
@@ -532,6 +538,8 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 	var LexicalAnalysisResult mut result;
 
 	auto mut it= program_text;
+
+	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
 
 	if( !it.empty() && GetUTF8FirstChar(it) == char32(0xFEFF) )
 	{

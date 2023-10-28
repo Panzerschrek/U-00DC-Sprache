@@ -249,6 +249,12 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		}
 	}
 
+	// TODO - perform checks for inner tags.
+	if( this.return_inner_references != dst.return_inner_references )
+	{
+		return false;
+	}
+
 	// Can convert function, linkink less references to function, linking more references.
 	foreach( &src_pollution : this.references_pollution )
 	{
@@ -351,12 +357,12 @@ fn Type::conversion_constructor( EnumTypePtr mut enum_type )
 	( something_( move(enum_type) ) )
 {}
 
-fn Type::GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType />'this'
+fn Type::GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType /> @( ret_tags )
 {
 	return something_.get</FundamentalType/>();
 }
 
-fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
+fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</ArrayType/>/>() )
 	{
@@ -366,7 +372,7 @@ fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
 	return ust::null_optional_ref;
 }
 
-fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
+fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</TupleType/>/>() )
 	{
@@ -376,7 +382,7 @@ fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
 	return ust::null_optional_ref;
 }
 
-fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this'
+fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</RawPointerType/>/>() )
 	{
@@ -386,7 +392,7 @@ fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType
 	return ust::null_optional_ref;
 }
 
-fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this'
+fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType /> @( ret_tags )
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</FunctionPointerType/>/>() )
 	{
@@ -396,12 +402,12 @@ fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionP
 	return ust::null_optional_ref;
 }
 
-fn Type::GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this'
+fn Type::GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr /> @( ret_tags )
 {
 	return something_.get</ClassTypePtr/>();
 }
 
-fn Type::GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this'
+fn Type::GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr /> @( ret_tags )
 {
 	return something_.get</EnumTypePtr/>();
 }
@@ -645,31 +651,56 @@ fn Type::IsAbstract( this ) : bool
 	return false;
 }
 
-fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
+fn Type::ReferencesTagsCount( this ) : u32
 {
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_type.GetInnerReferenceKind();
+		return array_type.element_type.ReferencesTagsCount();
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		var InnerReferenceKind mut inner_reference_type= InnerReferenceKind::None;
+		// Combine all tags of tuple elements.
+		auto mut result= 0u;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			var InnerReferenceKind element_inner_reference_type= element_type.GetInnerReferenceKind();
-			if( u32(element_inner_reference_type) > u32(inner_reference_type) )
-			{
-				inner_reference_type= element_inner_reference_type;
-			}
+			result+= element_type.ReferencesTagsCount();
 		}
-		return inner_reference_type;
+		return result;
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().deref().inner_reference_kind;
+		return u32( class_type.lock_imut().deref().inner_references.size() );
 	}
 
-	return InnerReferenceKind::None;
+	return 0u;
+}
+
+fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.GetInnerReferenceKind(index);
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		var size_type mut offset= 0s;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			var size_type count( element_type.ReferencesTagsCount() );
+			if( index >= offset && index < offset + count )
+			{
+				return element_type.GetInnerReferenceKind( index - offset );
+			}
+			offset+= count;
+		}
+		halt; // Unreachable.
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().inner_references[index];
+	}
+
+	halt; // Unreachable.
 }
 
 fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
@@ -816,6 +847,14 @@ fn TypeHasher::hash( FunctionType& t ) : size_type
 		res= hash_combine( res, size_type(return_reference.param_index) );
 		res= hash_combine( res, size_type(return_reference.reference_index) );
 	}
+	foreach( &tag_references : t.return_inner_references )
+	{
+		foreach( &return_reference : tag_references )
+		{
+			res= hash_combine( res, size_type(return_reference.param_index) );
+			res= hash_combine( res, size_type(return_reference.reference_index) );
+		}
+	}
 	foreach( &reference_pollution : t.references_pollution )
 	{
 		res= hash_combine( res, size_type(reference_pollution.dst.param_index) );
@@ -862,7 +901,23 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 	auto mut hash= size_type(d.kind);
 	hash= TypeHasher::hash_combine( hash, TypeHasher::hash(d.return_type) );
 	hash= TypeHasher::hash_combine( hash, size_type(d.return_value_type) );
-	hash= TypeHasher::hash_combine( hash, size_type(d.inner_reference_kind) );
+	foreach( &inner_reference : d.inner_references )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type(inner_reference) );
+	}
+	foreach( &param_reference : d.return_references )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type(param_reference.param_index) );
+		hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
+	}
+	foreach( &param_references : d.return_inner_references )
+	{
+		foreach( &param_reference : param_references )
+		{
+			hash= TypeHasher::hash_combine( hash, size_type(param_reference.param_index) );
+			hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
+		}
+	}
 	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
 	return hash;
 }
@@ -912,6 +967,37 @@ fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
 //
 // Value
 //
+
+fn Variable::CreatePtr( byval mut this ) : VariablePtr
+{
+	auto reference_tag_count= this.t.ReferencesTagsCount();
+	for( auto mut i= 0u; i < reference_tag_count; ++i )
+	{
+		// Create inner reference node.
+
+		auto mut name= this.name;
+		name+= " inner reference ";
+		name+= ust::to_string8(i);
+
+		var Variable mut node_src
+		{
+			.value_type= select( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= move(name),
+			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
+		};
+
+		this.inner_reference_nodes.push_back( VariablePtr( move(node_src) ) );
+	}
+
+	return VariablePtr( move(this) );
+}
+
+fn Variable::CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr
+{
+	this.parent= parent;
+	return VariablePtr( move(this) );
+}
 
 fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8
 {
@@ -1013,6 +1099,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.params.size() > 0s &&
 		tl.params.front().value_type == tr.params.front().value_type &&
 		tl.return_references == tr.return_references &&
+		tl.return_inner_references == tl.return_inner_references &&
 		tl.references_pollution == tr.references_pollution
 		) )
 	{
@@ -1123,22 +1210,22 @@ fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut 
 	( something_( ust::make_shared_ptr_final( move(specialized_template_param) ) ) )
 {}
 
-fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this'
+fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags)
 {
 	return something_.get</TemplateParam/>();
 }
 
-fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypeParam />'this'
+fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags)
 {
 	return something_.get</TypeParam/>();
 }
 
-fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam />'this'
+fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags)
 {
 	return something_.get</VariableParam/>();
 }
 
-fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this'
+fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags)
 {
 	if_var( &array_type_param : something_.get</ ust::shared_ptr_final</ArrayTypeParam/> />() )
 	{
@@ -1148,7 +1235,7 @@ fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ Ar
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this'
+fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags)
 {
 	if_var( &tuple_type_param : something_.get</ ust::shared_ptr_final</TupleTypeParam/> />() )
 	{
@@ -1158,7 +1245,7 @@ fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ Tu
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this'
+fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags)
 {
 	if_var( &raw_pointer_type_param : something_.get</ ust::shared_ptr_final</RawPointerTypeParam/> />() )
 	{
@@ -1168,7 +1255,7 @@ fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this'
+fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam /> @(ret_tags)
 {
 	if_var( &function_type_param : something_.get</ ust::shared_ptr_final</FunctionTypeParam/> />() )
 	{
@@ -1178,7 +1265,7 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this'
+fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam /> @(ret_tags)
 {
 	if_var( &coroutine_type_param : something_.get</ ust::shared_ptr_final</CoroutineTypeParam/> />() )
 	{
@@ -1188,7 +1275,7 @@ fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut<
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
+fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam /> @(ret_tags)
 {
 	if_var( &specialized_template_param : something_.get</ ust::shared_ptr_final</SpecializedTemplateParam/> />() )
 	{
@@ -1348,7 +1435,7 @@ fn NamesScope::constructor(
 {
 }
 
-fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue />'this'
+fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags)
 {
 	return names_map_.find( name );
 }
@@ -1368,7 +1455,7 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 	return false;
 }
 
-fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue />'this'
+fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags)
 {
 	if( !names_map_.find(name).empty() )
 	{
@@ -1398,7 +1485,7 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 	return errors_container_;
 }
 
-fn NamesScope::range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/>'this'
+fn NamesScope::range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/> @(ret_tags)
 {
 	return names_map_.range();
 }
@@ -1478,20 +1565,7 @@ fn NamesScope::ToString( this ) : ust::string8
 			}
 			else { halt; }
 
-			if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
-			{}
-			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Imut )
-			{
-				res+= "'";
-				res+= KeywordToString( Keyword::imut_ );
-				res+= "'";
-			}
-			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Mut )
-			{
-				res+= "'";
-				res+= KeywordToString( Keyword::mut_ );
-			}
-			else { halt; }
+			// TODO - print inner refernces.
 
 			res+= " ";
 

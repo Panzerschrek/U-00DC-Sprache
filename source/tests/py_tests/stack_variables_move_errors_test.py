@@ -459,7 +459,8 @@ def MovedVariableHaveReferences_Test3():
 		struct S
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b x ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& x ) @(pollution)
 			( r= x ) {}
 		}
 		fn Bar( S s, i32 x ){}
@@ -470,4 +471,4 @@ def MovedVariableHaveReferences_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 12 ) )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 13 ) )

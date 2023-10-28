@@ -12,7 +12,6 @@ var null_optional_type constexpr null_optional{};
 template</ type T />
 class optional
 {
-	// TODO - disable optional for types with references inside?
 public:
 	type hasher= optional_hasher;
 
@@ -29,7 +28,7 @@ public:
 	}
 	
 	// Construct with value.
-	fn conversion_constructor( mut this'a', T mut val'b' ) ' a <- b '
+	fn conversion_constructor( mut this, T mut val ) @(c_param1_pollution)
 	( storage_= zero_init, has_value_= true  ) // TODO - initialize with unsafe 
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(val) ) );
@@ -95,7 +94,7 @@ public:
 	}
 
 	// Assign value
-	op=( mut this'a', T mut val'b' ) ' a <- b '
+	op=( mut this, T mut val ) @(c_param1_pollution)
 	{
 		unsafe
 		{
@@ -133,24 +132,28 @@ public:
 		return !has_value_;
 	}
 
-	fn try_deref( mut this ) : T &mut
+	fn try_deref(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		halt if( empty() );
 		return unsafe( deref_unchecked() );
 	}
 
-	fn try_deref( imut this ) : T &imut
+	fn try_deref( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		halt if( empty() );
 		return unsafe( deref_unchecked() );
 	}
 
-	fn deref_unchecked( mut this ) unsafe : T &mut
+	fn deref_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( cast_ref_unsafe</T/>(storage_) );
 	}
 
-	fn deref_unchecked( imut this ) unsafe : T &imut
+	fn deref_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( cast_ref_unsafe</T/>(storage_) );
 	}
@@ -164,7 +167,7 @@ public:
 		} 
 	}
 
-	fn reset( mut this'a', T mut val'b' ) ' a <- b '
+	fn reset( mut this, T mut val ) @(c_param1_pollution)
 	{
 		unsafe
 		{
@@ -179,7 +182,7 @@ public:
 
 	fn
 	enable_if( typeinfo</T/>.references_tags_count == 0s )
-	as_ref( mut this ) : optional_ref_mut</T/>'this'
+	as_ref( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( has_value_ )
 		{
@@ -193,7 +196,7 @@ public:
 
 	fn
 	enable_if( typeinfo</T/>.references_tags_count == 0s )
-	as_ref( imut this ) : optional_ref_imut</T/>'this'
+	as_ref( imut this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( has_value_ )
 		{
@@ -206,7 +209,7 @@ public:
 	}
 
 	// Take value, leave optional empty.
-	fn try_take( mut this'a' ) : T'a'
+	fn try_take( mut this ) : T @(c_return_inner_references)
 	{
 		halt if(empty());
 		has_value_ = false;
@@ -274,6 +277,10 @@ public:
 
 private:
 	type this_type= optional</T/>;
+
+	auto constexpr c_references_tags_count= typeinfo</T/>.references_tags_count;
+	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_references_tags_count />();
+	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_references_tags_count />();
 
 private:
 	ContainerTag</ T /> container_tag_;

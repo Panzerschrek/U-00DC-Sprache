@@ -1,0 +1,306 @@
+import "/sort.u"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>
+{
+	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+
+	var FundamentalType expected_type( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+	if( variable.t != expected_type )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, Type(expected_type), variable.t )
+		return ust::null_optional;
+	}
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+		return ust::null_optional;
+	}
+
+	var u64 value= unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) );
+	if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
+	{
+		return u8( value - u64( "a"c8 ) );
+	}
+	else
+	{
+		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope, src_loc, value )
+		return ust::null_optional;
+	}
+}
+
+fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>
+{
+	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		var FundamentalType expected_type( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+		if( array_type.element_type != expected_type )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, Type(expected_type), variable.t )
+			return ust::null_optional;
+		}
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+			return ust::null_optional;
+		}
+
+		var ust::vector</u8/> mut result;
+		result.resize( size_type(array_type.element_count), 0u8 );
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			var u64 value= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ) );
+			if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
+			{
+				result[i]= u8( value - u64( "a"c8 ) );
+			}
+			else
+			{
+				REPORT_ERROR( InvalidInnerReferenceTagName, names_scope, src_loc, value )
+				return ust::null_optional;
+			}
+		}
+		return move(result);
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of char8", variable.t )
+		return ust::null_optional;
+	}
+}
+
+fn CodeBuilder::EvaluateFunctionReferencePollution(
+	mut this,
+	NamesScopePtr& names_scope,
+	Synt::Expression& expression,
+	size_type num_params ) : ust::vector</FunctionType::ReferencePollution/>
+{
+	var ust::vector</FunctionType::ReferencePollution/> mut result;
+
+	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( array_type.element_type != reference_notation_pollution_element_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_pollution_element_type_, variable.t )
+			return result;
+		}
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+			return result;
+		}
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			auto pollution_constant= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) );
+			auto dst_reference= ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( pollution_constant, 0u ) ), num_params, names_scope, src_loc );
+			auto src_reference= ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( pollution_constant, 1u ) ), num_params, names_scope, src_loc );
+			if( dst_reference.empty() || src_reference.empty() )
+			{
+				continue;
+			}
+
+			var FunctionType::ReferencePollution pollution
+			{
+				.dst= dst_reference.try_deref(),
+				.src= src_reference.try_deref(),
+			};
+
+			if( pollution.dst.reference_index == FunctionType::c_param_reference_number )
+			{
+				REPORT_ERROR( ArgReferencePollution, names_scope, src_loc )
+				continue;
+			}
+
+			if( pollution.dst == pollution.src )
+			{
+				REPORT_ERROR( SelfReferencePollution, names_scope, src_loc )
+				continue;
+			}
+
+			result.push_back( pollution );
+		}
+
+		NormalizeList(result);
+		return result;
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_pollution_element_type_.ToString(), variable.t )
+		return result;
+	}
+}
+
+fn CodeBuilder::EvaluateFunctionReturnReferences(
+	mut this,
+	NamesScopePtr& names_scope,
+	Synt::Expression& expression,
+	size_type num_params ) : FunctionType::ParamReferences
+{
+	var FunctionType::ParamReferences mut result;
+
+	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( array_type.element_type != reference_notation_param_reference_description_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_pollution_element_type_, variable.t )
+			return result;
+		}
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+			return result;
+		}
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ), num_params, names_scope, src_loc ) )
+			{
+				result.push_back( param_reference );
+			}
+		}
+
+		NormalizeList(result);
+		return result;
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_pollution_element_type_.ToString(), variable.t )
+		return result;
+	}
+}
+
+fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
+	mut this,
+	NamesScopePtr& names_scope,
+	Synt::Expression& expression,
+	size_type num_params ) : ust::vector</ FunctionType::ParamReferences />
+{
+	var ust::vector</ FunctionType::ParamReferences /> mut result;
+
+	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
+
+	if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		result.resize( tuple_type.element_types.size() );
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var Type& tuple_element_type= tuple_type.element_types[i];
+			if_var( &array_type : tuple_element_type.GetArrayType() )
+			{
+				if( array_type.element_type != reference_notation_param_reference_description_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_param_reference_description_type_, array_type.element_type )
+					continue;
+				}
+
+				auto tag_constant= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) );
+				auto& mut tag_list= result[i];
+				for( auto mut j= 0u64; j < array_type.element_count; ++j )
+				{
+					if_var( &param_reference : ParseEvaluatedParamReference( unsafe( LLVMGetAggregateElement( tag_constant, u32(j) ) ), num_params, names_scope, src_loc ) )
+					{
+						tag_list.push_back( param_reference );
+					}
+				}
+				NormalizeList( tag_list );
+			}
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), tuple_element_type )
+				continue;
+			}
+		}
+
+		return result;
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "tuple of " + reference_notation_param_reference_description_type_.ToString() + " arrays", variable.t )
+		return result;
+	}
+}
+
+fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite
+{
+	auto mut function_context= CreateGlobalFunctionContext();
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+	}
+}
+
+fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />
+{
+	var u64 param= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( constant, 0u ) ) );
+	var u64 ref= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( constant, 1u ) ) );
+
+	if( !( param >= u64( "0"c8 ) && param <= u64( "9"c8 ) ) )
+	{
+		REPORT_ERROR( InvalidParamNumber, names_scope, src_loc, param )
+		return ust::null_optional;
+	}
+
+	if( !( ( ref >= u64( "a"c8 ) && ref <= u64( "z"c8 ) ) || ref == u64( "_"c8 ) ) )
+	{
+		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope, src_loc, ref )
+		return ust::null_optional;
+	}
+
+	var FunctionType::ParamReference result
+	{
+		.param_index= u8( param - u64( "0"c8 ) ),
+		.reference_index= select( ref == u64( "_"c8 ) ? FunctionType::c_param_reference_number : u8( ref - u64( "a"c8 ) ) )
+	};
+
+	if( size_type(result.param_index) >= num_params )
+	{
+		REPORT_ERROR( ParamNumberOutOfRange, names_scope, src_loc, size_type(result.param_index), num_params )
+		return ust::null_optional;
+	}
+
+	return result;
+}
+
+// TODO - create special method in standard library for doing this.
+template</type T/>
+fn NormalizeList( ust::vector</T/> &mut v )
+{
+	if( v.size() <= 1s )
+	{
+		return;
+	}
+	ust::sort( v.range() );
+
+	var size_type mut dst(1), mut src(1), end= v.size();
+	while( src < end )
+	{
+		if( cast_imut(v)[dst - 1s] != cast_imut(v)[src] )
+		{
+			v.swap( dst, src );
+			++dst;
+		}
+		++src;
+	}
+
+	auto dummy= v.front();
+	v.resize( dst, dummy );
+}
+
+} // namespace U1

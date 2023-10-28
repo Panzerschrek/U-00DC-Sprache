@@ -258,6 +258,10 @@ void FindImpl( const Synt::FunctionType& function_type )
 
 	for( const Synt::FunctionParam& param : function_type.params )
 		FindImpl( param.type );
+
+	FindImpl( function_type.references_pollution_expression );
+	FindImpl( function_type.return_value_reference_expression );
+	FindImpl( function_type.return_value_inner_references_expression );
 }
 
 void FindImpl( const Synt::TupleType& tuple_type )
@@ -508,6 +512,8 @@ void FindImpl( const Synt::Namespace& namespace_ )
 void FindImpl( const Synt::ClassField& class_field )
 {
 	FindImpl( class_field.type );
+	FindImpl( class_field.reference_tag_expression );
+	FindImpl( class_field.inner_reference_tags_expression );
 }
 
 void FindImpl( const Synt::ClassVisibilityLabel& visibiliy_label )

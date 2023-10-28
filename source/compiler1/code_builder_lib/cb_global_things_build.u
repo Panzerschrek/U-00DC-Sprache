@@ -417,18 +417,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.deref().src_loc, field.t )
 				continue;
 			}
-			if( field.is_reference && field.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( field.is_reference && field.t.ReferencesTagsCount() > 0u )
 			{
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
 				field.t= invalid_type_;
 				continue;
 			}
-		}
-
-		auto functions_set_ptr= member.value().Get</ FunctionsSet />();
-		if( !functions_set_ptr.empty() )
-		{
-			BuildFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable(), false );
 		}
 
 		// Type aliases required for class completeness.
@@ -613,43 +607,283 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		lock.deref().fields_order= move(fields_order);
 	}
 
-	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
-	TryGenerateDestructorPrototype( class_type );
-
 	// Setup inner reference kind. Do this before methods generation and virtual table preparation.
-	with( mut lock : class_type.lock_mut() )
 	{
-		auto &mut class_= lock.deref();
+		var ust::vector</ClassFieldPtr/> mut reference_fields;
+		var ust::vector</ClassFieldPtr/> mut fields_with_references_inside;
+		var ust::vector</ClassFieldPtr/> mut fields_with_no_references_inside_but_inner_references_notation;
 
-		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
+		var bool mut has_parents_with_references_inside= false;
+		var bool mut has_fields_with_reference_notation= false;
 
-		foreach( &parent : class_.parents )
+		with( mut lock : class_type.lock_mut() )
 		{
-			auto parent_inner_reference_kind= parent.class_.lock_imut().deref().inner_reference_kind;
-			if( u32(parent_inner_reference_kind) > u32(class_inner_reference_kind) )
+			auto &mut class_= lock.deref();
+
+			// Inherit inner references of parents.
+			// Normally any reference may be inhhereted only from base, but not interfaces.
+			class_.inner_references.clear();
+			foreach( &parent : class_.parents )
 			{
-				class_inner_reference_kind= parent_inner_reference_kind;
+				with( &parent_class : parent.class_.lock_imut().deref() )
+				{
+					auto s= ust::max( class_.inner_references.size(), parent_class.inner_references.size() );
+					class_.inner_references.resize( s, InnerReferenceKind::Imut );
+					for( auto mut i= 0s; i < parent_class.inner_references.size(); ++i )
+					{
+						auto& mut t= class_.inner_references[i];
+						t= ust::max( t, parent_class.inner_references[i] );
+					}
+				}
+			}
+			has_parents_with_references_inside= !class_.inner_references.empty();
+
+			// Collect fields for which reference notation is required.
+			foreach( &field_pair : class_.fields_order )
+			{
+				auto& field_ptr= field_pair[1];
+				auto field_lock= field_ptr.lock_imut();
+				var ClassField& field= field_lock.deref();
+
+				if( field.is_reference )
+				{
+					reference_fields.push_back( field_ptr );
+				}
+
+				if( field.t.ReferencesTagsCount() > 0u )
+				{
+					fields_with_references_inside.push_back( field_ptr );
+				}
+				else
+				{
+					fields_with_no_references_inside_but_inner_references_notation.push_back( field_ptr );
+				}
+
+				has_fields_with_reference_notation |=
+					field.syntax_element.deref().reference_tag_expression.get</Synt::EmptyVariant/>().empty() ||
+					field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty();
 			}
 		}
 
-		foreach( &field_pair : class_.fields_order )
+		foreach( & field_ptr : fields_with_no_references_inside_but_inner_references_notation )
 		{
-			auto field_lock= field_pair[1].lock_imut();
+			auto field_lock= field_ptr.lock_imut();
 			var ClassField& field= field_lock.deref();
 
-			auto field_inner_reference_kind=
-				select( field.is_reference
-					? select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut )
-					: field.t.GetInnerReferenceKind() );
-
-			if( u32(field_inner_reference_kind) > u32(class_inner_reference_kind) )
+			if( field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty() )
 			{
-				class_inner_reference_kind= field_inner_reference_kind;
+				if_var( &reference_tags : EvaluateReferenceFieldInnerTags( class_members, field.syntax_element.deref().inner_reference_tags_expression ) )
+				{
+					if( !reference_tags.empty() )
+					{
+						REPORT_ERROR( InnerReferenceTagCountMismatch,class_members, field.syntax_element.deref().src_loc, 0, reference_tags.size() )
+					}
+				}
 			}
 		}
 
-		class_.inner_reference_kind= class_inner_reference_kind;
+		if( reference_fields.size() == 1s && fields_with_references_inside.size() == 0s && !has_fields_with_reference_notation && !has_parents_with_references_inside )
+		{
+			// Special case - class contains single reference field.
+			auto mut field_lock= reference_fields.front().lock_mut();
+			var ClassField &mut field= field_lock.deref();
+
+			auto mut class_lock= class_type.lock_mut();
+			var ClassType& mut class_= class_lock.deref();
+
+			field.reference_tag= 0u8;
+			if( class_.inner_references.empty() )
+			{
+				class_.inner_references.push_back( InnerReferenceKind::Imut );
+			}
+			auto &mut t= class_.inner_references[ size_type(field.reference_tag) ];
+			t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+		}
+		else if( reference_fields.size() == 0s && fields_with_references_inside.size() == 1s && !has_fields_with_reference_notation && !has_parents_with_references_inside )
+		{
+			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.
+			auto mut field_lock= fields_with_references_inside.front().lock_mut();
+			var ClassField &mut field= field_lock.deref();
+
+			auto mut class_lock= class_type.lock_mut();
+			var ClassType& mut class_= class_lock.deref();
+
+			auto reference_tag_count= field.t.ReferencesTagsCount();
+			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
+			class_.inner_references.resize( size_type(reference_tag_count), InnerReferenceKind::Imut );
+			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			{
+				field.inner_reference_tags[i]= u8(i);
+				class_.inner_references[i]= field.t.GetInnerReferenceKind( size_type(i) );
+			}
+		}
+		else
+		{
+			// General case - require reference notation.
+
+			foreach( &field_ptr : reference_fields )
+			{
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.deref();
+
+				var ust::optional</u8/> mut reference_tag;
+				if( field.syntax_element.deref().reference_tag_expression.get</Synt::EmptyVariant/>().empty() )
+				{
+					reference_tag= EvaluateReferenceFieldTag( class_members, field.syntax_element.deref().reference_tag_expression );
+				}
+				else
+				{
+					REPORT_ERROR( ExpectedReferenceNotation, class_members, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
+				}
+
+				auto mut class_lock= class_type.lock_mut();
+				var ClassType& mut class_= class_lock.deref();
+
+				if_var( tag : reference_tag )
+				{
+					field.reference_tag= tag;
+
+					auto s= ust::max( size_type(tag) + 1s, class_.inner_references.size() );
+					class_.inner_references.resize( s, InnerReferenceKind::Imut );
+
+					auto &mut t= class_.inner_references[ size_type(tag) ];
+					t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+				}
+				else
+				{
+					// Fallback for cases with no notation - link reference field with tag 0.
+					field.reference_tag= 0u8;
+					if( class_.inner_references.empty() )
+					{
+						class_.inner_references.push_back( InnerReferenceKind::Imut );
+					}
+					auto &mut t= class_.inner_references[ size_type(field.reference_tag) ];
+					t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+				}
+			}
+
+			foreach( &field_ptr : fields_with_references_inside )
+			{
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.deref();
+
+				var ust::optional</ust::vector</u8/>/> mut reference_tags;
+				if( field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty() )
+				{
+					reference_tags= EvaluateReferenceFieldInnerTags( class_members, field.syntax_element.deref().inner_reference_tags_expression );
+				}
+				else
+				{
+					REPORT_ERROR( ExpectedReferenceNotation, class_members, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
+				}
+
+				auto mut class_lock= class_type.lock_mut();
+				var ClassType& mut class_= class_lock.deref();
+
+				auto reference_tag_count= field.t.ReferencesTagsCount();
+
+				if( !reference_tags.empty() )
+				{
+					field.inner_reference_tags= reference_tags.try_take();
+					if( field.inner_reference_tags.size() != size_type(reference_tag_count) )
+					{
+						REPORT_ERROR( InnerReferenceTagCountMismatch,class_.members, field.syntax_element.deref().src_loc, reference_tag_count, field.inner_reference_tags.size() )
+						field.inner_reference_tags.resize( size_type(reference_tag_count), 0u8 );
+					}
+
+					for( auto mut i= 0u; i < reference_tag_count; ++i )
+					{
+						auto tag= field.inner_reference_tags[i];
+						auto s= ust::max( size_type(tag) + 1s, class_.inner_references.size() );
+						class_.inner_references.resize( s, InnerReferenceKind::Imut );
+
+						auto &mut t= class_.inner_references[ size_type(tag) ];
+						t= ust::max( t, field.t.GetInnerReferenceKind( size_type(i) ) );
+					}
+				}
+				else
+				{
+					// Fallback for cases with no notation - link all field tags with tag 0.
+					field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
+					if( class_.inner_references.empty() )
+					{
+						class_.inner_references.push_back( InnerReferenceKind::Imut );
+					}
+				}
+			}
+		}
+
+		with( &class_ : class_type.lock_imut().deref() )
+		{
+			// Perform additional checks.
+			var ust::vector</bool/> mut reference_tags_usage_flags;
+			reference_tags_usage_flags.resize( class_.inner_references.size(), false );
+
+			foreach( &parent : class_.parents )
+			{
+				for( var size_type mut i= 0s, s= parent.class_.lock_imut().deref().inner_references.size(); i < s; ++i )
+				{
+					reference_tags_usage_flags[i] = true;
+				}
+			}
+
+			foreach( &field_pair : class_.fields_order )
+			{
+				auto& field_ptr= field_pair[1];
+				auto field_lock= field_ptr.lock_imut();
+				var ClassField& field= field_lock.deref();
+
+				if( field.is_reference )
+				{
+					reference_tags_usage_flags[ size_type(field.reference_tag) ]= true;
+					if(
+						(  field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Imut ) ||
+						( !field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Mut ) )
+					{
+						var ust::string8 mut s;
+						s.push_back( char8( size_type( "a"c8 ) + size_type(field.reference_tag) ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
+					}
+				}
+
+				for( auto mut i= 0s; i < field.inner_reference_tags.size(); ++i )
+				{
+					auto tag= field.inner_reference_tags[i];
+					reference_tags_usage_flags[ size_type(tag) ]= true;
+
+					if( class_.inner_references[ size_type(tag) ] != field.t.GetInnerReferenceKind(i) )
+					{
+						var ust::string8 mut s;
+						s.push_back( char8( size_type( "a"c8 ) + size_type(tag) ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
+					}
+				}
+			}
+
+			for( auto mut i= 0s; i < class_.inner_references.size(); ++i )
+			{
+				if( !reference_tags_usage_flags[i] )
+				{
+					var ust::string8 mut s;
+					s.push_back( char8( size_type( "a"c8 ) + i ) );
+					REPORT_ERROR( UnusedReferenceTag, class_.members, syntax_element.src_loc, s )
+				}
+			}
+		}
 	}
+
+	// Prepare functions. Do it before generating methods, but after setting up inner references.
+	foreach( &member : class_members.lock_imut().deref() )
+	{
+		auto functions_set_ptr= member.value().Get</ FunctionsSet />();
+		if( !functions_set_ptr.empty() )
+		{
+			BuildFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable(), false );
+		}
+	}
+
+	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
+	TryGenerateDestructorPrototype( class_type );
 
 	// Prepare virtual table.
 	if( !syntax_element.parents.empty() ||
@@ -1217,7 +1451,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		.location= Variable::Location::Pointer,
 		.name= variable_declaration.name,
 	};
-	auto mut variable_ptr= VariablePtr( move(variable) );
+	auto mut variable_ptr= move(variable).CreatePtr();
 
 	auto mut constexpr_value= LLVMValueRef::Null;
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
@@ -1243,7 +1477,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 				.llvm_value= llvm_value,
 			};
 
-			var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+			var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
 			function_context.references_graph.AddNode( variable_for_initialization_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
 
@@ -1428,7 +1662,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	// Finally, set result variable.
 	auto mut lock= global_auto_variable_ptr.lock_mut();
-	lock.deref().variable.reset( move(variable) );
+	lock.deref().variable= move(variable).CreatePtr();
 }
 
 } // namespace U1

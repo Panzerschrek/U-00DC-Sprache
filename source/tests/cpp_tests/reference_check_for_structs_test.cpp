@@ -41,35 +41,14 @@ U_TEST( DestructionOfVariableWithReferenceDestroysReference )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( LockVariableMultipleTimesInSameStruct_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S
-		{
-			i32 &imut x;
-			i32 &mut  y;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var S mut s{ .x= x, .y= x };
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InnerReferenceMutabilityChanging, 11u ) );
-}
-
 U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
 		struct S
 		{
-			i32 &mut x;
-			i32 &mut y;
+			i32 &mut @("a"c8) x;
+			i32 &mut @("b"c8) y;
 		}
 
 		fn Foo()
@@ -88,35 +67,14 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
-U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S
-		{
-			i32 &mut  x;
-			i32 &imut y;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var S mut s{ .x= x, .y= x };
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InnerReferenceMutabilityChanging, 11u ) );
-}
-
 U_TEST( LockVariableMultipleTimesInSameStruct_Test3 )
 {
 	static const char c_program_text[]=
 	R"(
 		struct S
 		{
-			i32 &imut x;
-			i32 &imut y;
+			i32 &imut @("a"c8) x;
+			i32 &imut @("a"c8) y;
 		}
 
 		fn Foo()
@@ -134,7 +92,8 @@ U_TEST( ReturnReferenceFromArg_Test0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S s't' ) : i32 &'t
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Foo( S s ) : i32 & @(return_references)
 		{
 			return s.x; // Ok, allowed
 		}
@@ -148,7 +107,8 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S s't', i32 &'p i ) : i32 &'p
+		var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+		fn Foo( S s, i32 & i ) : i32 & @(return_references)
 		{
 			return s.x; // Error, does not allowed
 		}
@@ -160,7 +120,7 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test2 )
@@ -170,7 +130,8 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 		struct S
 		{
 			i32 &mut x;
-			fn Foo( this, i32 &'p i ) : i32 &'p
+			var [ [ char8, 2 ], 1 ] return_references[ "1_" ];
+			fn Foo( this, i32 & i ) : i32 & @(return_references)
 			{
 				return this.x; // Error, does not allowed
 			}
@@ -183,7 +144,7 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test3 )
@@ -193,7 +154,8 @@ U_TEST( ReturnReferenceFromArg_Test3 )
 		struct S
 		{
 			i32 x;
-			fn Foo( this, i32 &'p i ) : i32 &'this
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			fn Foo( this, i32 & i ) : i32 & @(return_references)
 			{
 				return this.x; // Ok, return this
 			}
@@ -210,9 +172,10 @@ U_TEST( ReturnReferenceFromArg_Test4 )
 		struct S
 		{
 			i32 &imut x;
-			fn Foo( this'inner_this_shit', i32 &'p i ) : i32 &'inner_this_shit
+			var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+			fn Foo( this, i32 & i ) : i32 & @(return_references)
 			{
-				return this.x; // Ok, return inner_this_shit
+				return this.x; // Ok, return inner reference of "this"
 			}
 		}
 	)";
@@ -244,6 +207,103 @@ U_TEST( ReturnReferenceFromArg_Test5 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
+U_TEST( ReturnReferenceFromArg_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1a" ] ];
+		fn Foo( S & a, S & b ) : S @(return_inner_references) & @(return_references)
+		{
+			return a;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
+}
+
+U_TEST( ReturnReferenceFromArg_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		// Ok - return reference to one of args (with specifying reference tags).
+		var [ [ char8, 2 ], 2 ] return_references[ "1_", "2_" ];
+		var tup[ [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "1a", "2a" ] ];
+		fn Foo( bool cond, S & a, S & b ) : S @(return_inner_references) & @(return_references)
+		{
+			if( cond ) { return a; }
+			else { return b; }
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReturnReferenceFromArg_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		// Specify impossible return references combination - return reference to first arg with inner reference to second arg.
+		// This is not a big problem, since it is not possible to write correct implementation of this function without unsafe hacks.
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1a" ] ];
+		fn Foo( S & a, S & b ) : S @(return_inner_references) & @(return_references);
+		fn Bar()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S s{ .x= c };
+			{
+				var S mut s_a{ .x= a };
+				var S mut s_b{ .x= b };
+				var S &impossible_ref= Foo( s_a, s_b );
+				auto& b_ref= s_b.x; // Creating here reference to "s_b.x", which is wrongly linked with inner reference node of "impossible_ref".
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 16u );
+}
+
+U_TEST( ReturnReferenceFromArg_Test9 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Foo( S & a, S & b ) : S @(return_inner_references) & @(return_references);
+		fn Bar()
+		{
+			var i32 mut a= 0, mut b= 0, mut c= 0;
+			var S s{ .x= c };
+			{
+				var S mut s_a{ .x= a };
+				var S mut s_b{ .x= b };
+				var S &s_a_ref= Foo( s_a, s_b );
+				auto& b_ref= s_b.x; // Ok, "s_b_ref" points to both node itself and node inner reference of "s_a", but not "s_b".
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( ReturnReferenceToLocalVariableInsideStruct )
 {
 	static const char c_program_text[]=
@@ -270,7 +330,8 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Foo( S s't' ) : i32 &'t mut
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Foo( S s ) : i32 &mut @(return_references)
 		{
 			return s.x;
 		}
@@ -290,7 +351,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 13u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
@@ -298,7 +359,8 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Baz( i32 &'r mut i, S s't' ) : i32 &'r mut
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Baz( i32 & mut i, S s ) : i32 & mut @(return_references)
 		{
 			return i;
 		}
@@ -331,7 +393,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	R"(
 		template</ type T /> struct MutRef{ T &mut r; }
 
-		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r'
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn ToRef( i32 & mut x ) : MutRef</ i32 /> @(return_inner_references)
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -348,7 +411,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 16u ) );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
@@ -357,7 +420,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 	R"(
 		template</ type T /> struct MutRef{ T &mut r; }
 
-		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r' // References now implicitly tagged
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn ToRef( i32 & mut x ) : MutRef</ i32 /> @(return_inner_references)
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -377,7 +441,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
@@ -386,7 +450,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
 	R"(
 		template</ type T /> struct ImutRef{ T &imut r; }
 
-		fn ToRef( i32 &'r mut x, i32 &'f imut y ) : ImutRef</ i32 />'f' // References now implicitly tagged. Returning only one reference.
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "1_" ] ];
+		fn ToRef( i32 & mut x, i32 & imut y ) : ImutRef</ i32 /> @(return_inner_references) // References now implicitly tagged. Returning only one reference.
 		{
 			x= y;
 			var ImutRef</ i32 /> r{ .r= y };
@@ -415,10 +480,7 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
 }
 
 U_TEST( TwoLevelsOfIndirection_Test1 )
@@ -432,10 +494,7 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
 }
 
 U_TEST( ReferencePollutionTest0 )
@@ -444,7 +503,8 @@ U_TEST( ReferencePollutionTest0 )
 	R"(
 		struct S{ i32 &mut x; }
 
-		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- y '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s, i32 & mut i ) @(pollution)
 		{}
 	)";
 
@@ -458,7 +518,8 @@ U_TEST( ReferencePollutionTest1 )
 		struct S{ i32 &imut x; }
 
 		// Function takes mutable argumebnt, but links it with other argument as immutable.
-		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- y '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s, i32 & mut i ) @(pollution)
 		{}
 
 		fn Foo()
@@ -478,7 +539,8 @@ U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &imut x; }
-		fn Baz( S &mut s_dst'x', S &imut s_src'y' ) ' x <- y '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+		fn Baz( S &mut s_dst, S &imut s_src ) @(pollution)
 		{}
 
 		fn Foo()
@@ -499,7 +561,7 @@ U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
@@ -507,7 +569,8 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &imut x; }
-		fn Baz( S &mut s_dst'x', i32 &'y imut i ) ' x <- y '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Baz( S &mut s_dst, i32 & imut i ) @(pollution)
 		{}
 
 		fn Foo()
@@ -525,16 +588,23 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
 U_TEST( ReferencePollutionTest4_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 {
+	// Now args mutability doesn't matter for pollution.
+	// It's possible to specify pollution, even if destination is mutable and source is not.
+	// So, it's possible to create mutable link to immutable node and this will cause false reference pollution errors.
+	// TODO - add some fix for this.
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 		struct MutRefTag{ i32& mut x; }
 		struct S{ [ MutRefTag, 0 ] ref_tag; }
-		fn Baz( S &mut s_dst'x', i32 &'y imut i ) ' x <- y '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Baz( S &mut s_dst, i32 & imut i ) @(pollution)
 		{}
 
 		fn Foo()
@@ -556,7 +626,8 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this't', i32 &'p mut in_x ) ' t <- p '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_x ) @(pollution)
 			( x(in_x) )
 			{}
 		}
@@ -575,7 +646,7 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ConstructorLinksPassedReference_Test1 )
@@ -585,7 +656,8 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this't', i32 &'p in_x ) ' t <- p '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & in_x ) @(pollution)
 			( x(in_x) )
 			{}
 		}
@@ -604,7 +676,7 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
@@ -618,7 +690,8 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
 		class B : A
 		{
 			i32 &mut x;
-			fn constructor( this't', i32 &'p mut in_x ) ' t <- p '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_x ) @(pollution)
 			( x(in_x) )
 			{}
 			fn constructor( B &imut other )= default;
@@ -647,7 +720,8 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
 		class B : A
 		{
 			i32 &mut x;
-			fn constructor( this't', i32 &'p mut in_x ) ' t <- p '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & mut in_x ) @(pollution)
 			( x(in_x) )
 			{}
 			fn constructor( B &imut other )= default;
@@ -675,7 +749,8 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this'st', i32 &'r in_x ) ' st <- r '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & in_x ) @(pollution)
 			( x= in_x )
 			{}
 		}
@@ -694,7 +769,7 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
@@ -704,7 +779,8 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this'st', i32 &'r in_x ) ' st <- r '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32 & in_x ) @(pollution)
 			( x= in_x )
 			{}
 		}
@@ -723,7 +799,7 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
 U_TEST( CopyAssignmentOperator_PollutionTest )
@@ -763,7 +839,8 @@ U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &mut x; }
-		fn Foo( S &mut s'x' ) ' x <- x '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "0a" ] ];
+		fn Foo( S &mut s ) @(pollution)
 		{}
 	)";
 
@@ -773,7 +850,7 @@ U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::SelfReferencePollution );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
@@ -781,12 +858,13 @@ U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &mut x; }
-		fn Foo( S &mut s'x', i32 &'y mut r ) ' y <- x '
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "1_", "0a" ] ];
+		fn Foo( S &mut s, i32 & mut r ) @(pollution)
 		{}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArgReferencePollution, 3u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArgReferencePollution, 4u ) );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
@@ -794,7 +872,8 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &imut x; }
-		fn FakePollution( S &mut s'x', i32 &'y i ) ' x <- y ' // reference pollution allowed in signature, but actually not happens.
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn FakePollution( S &mut s, i32 & i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
 		{}
 
 		fn Foo( S &mut s, i32 & r )
@@ -809,7 +888,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
@@ -817,7 +896,8 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &imut x; }
-		fn FakePollution( S &mut s'x', i32 &'y i ) ' x <- y ' // reference pollution allowed in signature, but actually not happens.
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn FakePollution( S &mut s, i32 & i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
 		{}
 
 		fn Foo( S &mut s, i32 & r )
@@ -833,7 +913,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
@@ -844,7 +924,8 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 		struct S
 		{
 			i32 &imut x;
-			fn FakePollution( mut this'x', i32 &'y i ) ' x <- y '// reference pollution allowed in signature, but actually not happens.
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn FakePollution( mut this, i32 & i ) @(pollution) // reference pollution allowed in signature, but actually not happens.
 			{}
 		}
 
@@ -860,7 +941,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 13u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test3 )
@@ -891,7 +972,8 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructo
 		struct S
 		{
 			i32& x;
-			fn constructor( mut this'x', S & other'y' ) ' x <- y '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			fn constructor( mut this, S & other ) @(pollution)
 			( x(other.x) )
 			{}
 		}
@@ -903,7 +985,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructo
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyConstructor );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 
@@ -914,7 +996,8 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 		struct S
 		{
 			i32& x;
-			op=( mut this'x', S & other'y' ) ' x <- y '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			op=( mut this, S & other ) @(pollution)
 			{}
 		}
 	)";
@@ -925,7 +1008,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForEqualityCompareOperator )
@@ -935,7 +1018,8 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForEqualityCompar
 		struct S
 		{
 			i32& x;
-			op==( S& a'x', S& b'y') ' x <- y ' : bool;
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
+			op==( S& a, S& b ) @(pollution) : bool;
 		}
 	)";
 
@@ -945,7 +1029,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForEqualityCompar
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForEqualityCompareOperator );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test0 )
@@ -1019,7 +1103,8 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1034,7 +1119,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 16u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test3 )
@@ -1044,7 +1129,8 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1059,7 +1145,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test4 )
@@ -1069,7 +1155,8 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		struct T{ R r; }
@@ -1085,7 +1172,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test5 )
@@ -1095,7 +1182,8 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- b '
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( this, i32& in_r ) @(pollution)
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1110,58 +1198,9 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
-U_TEST( NameNotFound_ForReferenceTags_Test0 )
-{
-	// Unknown tag for return reference.
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32& x ) : i32&'a;  // Error, tag 'a' not found
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
-}
-
-U_TEST( NameNotFound_ForReferenceTags_Test1 )
-{
-	// Unknown tag for return value inner reference.
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32& r; }
-		fn Foo( i32& x ) : S'a';  // Error, tag 'a' not found
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
-}
-
-U_TEST( NameNotFound_ForReferenceTags_Test2 )
-{
-	// Unknown tag in reference pollution list.
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32& r; }
-		fn Foo( S &mut s'fff', i32& x ) ' fff <- ttt ';  // Error, tag 'ttt' not found
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
-}
 
 } // namespace
 

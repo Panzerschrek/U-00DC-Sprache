@@ -25,8 +25,7 @@ namespace U1
 
 enum InnerReferenceKind
 {
-	None, // Type have no inner references
-	Imut, // Type have immutable inner ereference
+	Imut, // Type have immutable inner reference
 	Mut, // Type have mutable inner reference
 }
 
@@ -81,6 +80,8 @@ struct FunctionType
 	}
 	var u8 c_param_reference_number= ~0u8;
 
+	type ParamReferences= ust::vector</ParamReference/>; // Sorted by param index.
+
 	struct ReferencePollution
 	{
 		ParamReference dst;
@@ -96,9 +97,8 @@ struct FunctionType
 	LLVMCallConvID calling_convention = LLVMCallConv::C;
 	bool is_unsafe= false;
 
-	// for functions, returning references this is references of reference itslef.
-	// For function, returning values, this is inner references.
-	ust::vector</ParamReference/> return_references; // Sorted by param index.
+	ParamReferences return_references;
+	ust::vector</ ParamReferences /> return_inner_references; // References for inner reference tags.
 
 	// Sorted.
 	ust::vector</ReferencePollution/> references_pollution;
@@ -228,7 +228,7 @@ struct ClassType
 	bool have_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
 
-	InnerReferenceKind inner_reference_kind= InnerReferenceKind::None;
+	ust::vector</InnerReferenceKind/> inner_references;
 	Kind kind= Kind::Struct;
 
 	ust::shared_ptr_nullable_mut</ClassType/> base_class;
@@ -266,13 +266,13 @@ public:
 	fn conversion_constructor( ClassTypePtr mut class_type );
 	fn conversion_constructor( EnumTypePtr mut enum_type );
 
-	fn GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType />'this';
-	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this';
-	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this';
-	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this';
-	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this';
-	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this';
-	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this';
+	fn GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType /> @( ret_tags );
+	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType /> @( ret_tags );
+	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType /> @( ret_tags );
+	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType /> @( ret_tags );
+	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType /> @( ret_tags );
+	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr /> @( ret_tags );
+	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr /> @( ret_tags );
 
 	fn GetLLVMType( this ) : LLVMTypeRef;
 
@@ -284,7 +284,8 @@ public:
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
 
-	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
+	fn ReferencesTagsCount( this ) : u32;
+	fn GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 
@@ -292,6 +293,9 @@ public:
 	fn ToString( this ) : ust::string8;
 
 	op==( Type& l, Type& r ) : bool;
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
 private:
 	ust::variant</ tup[
@@ -358,11 +362,24 @@ struct Variable
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	ust::vector</VariableNullablePtr/> children;
 
+	/// For variables of types with references inside.
+	// Size is equal to number of reference tags of the variable type.
+	ust::vector</VariablePtr/> inner_reference_nodes;
+
+	// Mark inner reference nodes of variables using this flag.
+	// Do this in order to stop references graph search on these nodes while performing reference pollution.
+	bool is_variable_inner_reference_node= false;
+
 	bool referenced= false;
 
 	// This struct is non-copyable.
 	fn constructor( mut this, Variable& other )= delete;
 	op=( mut this, Variable& other )= delete;
+
+	// Various methods.
+
+	fn CreatePtr( byval mut this ) : VariablePtr;
+	fn CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr;
 }
 
 type VariablePtr= ust::shared_ptr_mut</Variable/>;
@@ -489,6 +506,9 @@ struct ClassField
 	bool used= false;
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 
+	u8 reference_tag= 0u8; // For reference fields - mapping of class inner reference tag to reference tag.
+	ust::vector</ u8 /> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
+
 	// Class, where this field is defined. May be not same class in case of inheritance.
 	ClassTypePtr source_class;
 }
@@ -533,8 +553,11 @@ struct CoroutineTypeDescription
 	Type return_type;
 	ValueType return_value_type;
 
-	InnerReferenceKind inner_reference_kind;
+	ust::vector</InnerReferenceKind/> inner_references;
 	bool non_sync_;
+
+	FunctionType::ParamReferences return_references;
+	ust::vector</FunctionType::ParamReferences/> return_inner_references;
 
 	type hasher= CoroutineTypeDescriptionHasher;
 }
@@ -705,8 +728,11 @@ public:
 		TemplateSignatureParam return_type;
 		ValueType return_value_type;
 
-		InnerReferenceKind inner_reference_kind;
+		ust::vector</InnerReferenceKind/> inner_references;
 		bool non_sync_;
+
+		FunctionType::ParamReferences return_references;
+		ust::vector</FunctionType::ParamReferences/> return_inner_references;
 	}
 
 	struct SpecializedTemplateParam
@@ -728,17 +754,20 @@ public:
 	fn conversion_constructor( CoroutineTypeParam mut generator_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
-	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this';
-	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam />'this';
-	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam />'this';
-	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this';
-	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this';
-	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this';
-	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this';
-	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this';
-	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this';
+	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);
+	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags);
+	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags);
+	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags);
+	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags);
+	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags);
+	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam /> @(ret_tags);
+	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam /> @(ret_tags);
+	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam /> @(ret_tags);
 
 	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
 private:
 	type Container= ust::variant</ tup[
@@ -878,9 +907,9 @@ class NamesScope
 public:
 	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
 
-	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue />'this';
+	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags);
 
-	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue />'this';
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags);
 
 	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
 
@@ -888,7 +917,7 @@ public:
 	fn GetErrors( this ) : ErrorsContainerPtr;
 
 	// For iteration over NamesScope values
-	fn range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/>'this';
+	fn range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/> @(ret_tags);
 
 	fn GetThisNamespaceName( this ) : ust::string8&;
 
@@ -905,6 +934,9 @@ public:
 	fn AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility );
 	fn GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility;
 	fn CopyAccessRightsFrom( mut this, NamesScope& src );
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
 private:
 	ust::string8 name_;

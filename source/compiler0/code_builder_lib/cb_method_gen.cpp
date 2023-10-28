@@ -128,7 +128,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	if( the_class.base_class != nullptr )
 	{
 		const VariablePtr base_variable=
-			std::make_shared<Variable>(
+			Variable::Create(
 				the_class.base_class,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
@@ -151,7 +151,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 			U_ASSERT( field->syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
 
 			const VariablePtr this_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -166,7 +166,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		else
 		{
 			const VariablePtr field_variable=
-				std::make_shared<Variable>(
+				Variable::Create(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
@@ -257,7 +257,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		constructor_type.params[1].value_type= ValueType::ReferenceImut;
 
 		// Generate default reference pollution for copying.
-		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
+		for( size_t i= 0u; i < class_type->inner_references.size(); ++i )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
@@ -393,7 +393,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 	this_llvm_value->setName( StringViewToStringRef( Keyword( Keywords::this_ ) ) );
 
 	const VariablePtr this_=
-		std::make_shared<Variable>(
+		Variable::Create(
 			class_type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
@@ -519,7 +519,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		op_type.params[1].value_type= ValueType::ReferenceImut;
 
 		// Generate default reference pollution for copying.
-		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
+		for( size_t i= 0u; i < class_type->inner_references.size(); ++i )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;

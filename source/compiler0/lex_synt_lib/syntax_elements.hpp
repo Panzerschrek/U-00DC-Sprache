@@ -491,8 +491,6 @@ struct FunctionParam
 	SrcLoc src_loc;
 	std::string name;
 	TypeName type;
-	std::string reference_tag;
-	std::string inner_arg_reference_tag;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
@@ -503,12 +501,12 @@ struct FunctionType
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
+	std::vector<FunctionParam> params;
 	std::optional<std::string> calling_convention;
 	std::unique_ptr<const TypeName> return_type;
-	std::string return_value_reference_tag;
-	FunctionReferencesPollutionList references_pollution_list;
-	std::vector<FunctionParam> params;
-	std::string return_value_inner_reference_tag;
+	std::unique_ptr<const Expression> references_pollution_expression; // May be nullptr.
+	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
+	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
 
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
@@ -521,19 +519,15 @@ public:
 	GeneratorType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
-	struct InnerReferenceTag
-	{
-		std::string name;
-		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	};
 
 public:
 	SrcLoc src_loc;
 	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
-	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
-	std::string return_value_reference_tag; // Inner tag for values, reference tag for references.
+	std::vector<MutabilityModifier> inner_references;
+	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
+	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };
@@ -1240,6 +1234,8 @@ struct ClassField
 	TypeName type;
 	std::string name;
 	std::unique_ptr<const Initializer> initializer; // May be null.
+	Expression reference_tag_expression; // EmptyVariant if none.
+	Expression inner_reference_tags_expression; // EmptyVariant if none.
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };

@@ -361,25 +361,17 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	else
 		coroutine_param.return_value_type= ValueType::Value;
 
-	if( generator_type_name.inner_reference_tag == nullptr )
-		coroutine_param.inner_reference_type= InnerReferenceType::None;
-	else
-		coroutine_param.inner_reference_type=
-			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
-				? InnerReferenceType::Mut
-				: InnerReferenceType::Imut;
+	coroutine_param.inner_references.reserve( generator_type_name.inner_references.size() );
+	for( const Synt::MutabilityModifier m : generator_type_name.inner_references )
+		coroutine_param.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 
 	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
-	if( !generator_type_name.return_value_reference_tag.empty() )
-	{
-		bool found= false;
-		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == generator_type_name.return_value_reference_tag )
-			found= true;
-
-		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, generator_type_name.return_value_reference_tag );
-	}
+	const size_t num_params= 1;
+	if( generator_type_name.return_value_reference_expression != nullptr )
+		coroutine_param.return_references= EvaluateFunctionReturnReferences( names_scope, *generator_type_name.return_value_reference_expression, num_params );
+	if( generator_type_name.return_value_inner_references_expression != nullptr )
+		coroutine_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *generator_type_name.return_value_inner_references_expression, num_params );
 
 	return coroutine_param;
 }
@@ -549,7 +541,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			// Create global variable for given variable.
 			// We can't just use given variable itself, because its address may be local for instantiation point.
 			const VariablePtr variable_for_insertion=
-				std::make_shared<Variable>(
+				Variable::Create(
 					given_variable->type,
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
@@ -703,7 +695,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				return
 					coroutine_type_description->kind == template_param.kind &&
 					coroutine_type_description->return_value_type == template_param.return_value_type &&
-					coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
+					coroutine_type_description->return_references == template_param.return_references &&
+					coroutine_type_description->return_inner_references == template_param.return_inner_references &&
+					coroutine_type_description->inner_references == template_param.inner_references &&
 					coroutine_type_description->non_sync == template_param.non_sync &&
 					MatchTemplateArg( template_, args_names_scope, coroutine_type_description->return_type, *template_param.return_type );
 			}
@@ -1250,7 +1244,7 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 			else if( const auto variable= std::get_if<TemplateVariableArg>( &known_template_arg ) )
 			{
 				const VariablePtr variable_for_insertion=
-					std::make_shared<Variable>(
+					Variable::Create(
 						variable->type,
 						ValueType::ReferenceImut,
 						Variable::Location::Pointer,

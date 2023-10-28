@@ -208,7 +208,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		v.llvm_value= AddGlobalConstantVariable( "\0", llvm_type, v.constexpr_value );
 	}
 
-	var VariablePtr mut v_ptr( move(v) );
+	var VariablePtr mut v_ptr= move(v).CreatePtr();
 	var TypeinfoCacheElement mut cache_element{ .variable= v_ptr };
 	typeinfo_cache_.insert( t, move(cache_element) );
 
@@ -255,8 +255,18 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_SIZE_FIELD( "align_of", LLVMABIAlignmentOfType( data_layout_, llvm_type ) )
 	}
 
-	ADD_SIZE_FIELD( "references_tags_count", select( t.GetInnerReferenceKind() == InnerReferenceKind::None ? 0s : 1s ) )
-	ADD_BOOL_FIELD( "contains_mutable_references", t.GetInnerReferenceKind() == InnerReferenceKind::Mut )
+	ADD_SIZE_FIELD( "references_tags_count", t.ReferencesTagsCount() )
+
+	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
+	{
+		var bool mut contains_mutable_references= false;
+		auto reference_tags_count= t.ReferencesTagsCount();
+		for( auto mut i= 0u; i < reference_tags_count; ++i )
+		{
+			contains_mutable_references|= t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut;
+		}
+		ADD_BOOL_FIELD( "contains_mutable_references", contains_mutable_references )
+	}
 
 	ADD_BOOL_FIELD( "is_fundamental"     , !t.GetFundamentalType    ().empty() )
 	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )
@@ -420,6 +430,8 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 		.generated_class_data( move(typeinfo_class_description) ),
 		.can_be_constexpr= true,
 	};
+
+	class_type.inner_references.push_back( InnerReferenceKind::Imut );
 
 	var ClassTypePtr mut class_type_ptr( move(class_type) );
 
@@ -960,7 +972,7 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 	auto name_nt= "\0"; // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
 	v.llvm_value= unsafe( AddGlobalConstantVariable( name_nt, v.t.GetLLVMType(), v.constexpr_value ) );
 
-	return VariablePtr( move(v) );
+	return move(v).CreatePtr();
 }
 
 } // namespace U1

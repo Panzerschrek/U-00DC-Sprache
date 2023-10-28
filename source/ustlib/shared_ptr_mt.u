@@ -176,36 +176,36 @@ public:
 
 	// Lock operations.
 
-	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t 'this'
+	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t  @( reference_notation::return_inner_references::param0 )
 	{
 		halt if( empty() );
 		return unsafe( lock_mut_unchecked() );
 	}
 
-	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t'this'
+	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
 		halt if( empty() );
 		return unsafe( lock_imut_unchecked() );
 	}
 
-	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t 'this'
+	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_mut_unchecked() );
 	}
 
-	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t'this'
+	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_imut_unchecked() );
 	}
 
-	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t 'this'
+	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_t ( $>(value_), counter_ ) );
+		return unsafe( lock_mut_t ( value_, counter_ ) );
 	}
 
-	fn lock_imut_unchecked( this ) unsafe : lock_imut_t'this'
+	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_imut_t( $>(value_), counter_ ) );
+		return unsafe( lock_imut_t( value_, counter_ ) );
 	}
 
 	// Compare.
@@ -448,8 +448,8 @@ template</ type T />
 class lock_mut
 {
 public:
-	fn constructor( mut this'a', T &'b  mut value, $(counter) c ) ' a <- b ' unsafe
-		( value_(value), counter_(c) )
+	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
+		( value_(v), counter_(c) )
 	{
 		halt if( unsafe( pthread_rwlock_wrlock( $>(counter_).rwlock ) ) != 0 );
 	}
@@ -460,13 +460,17 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn deref( mut this ) : T &'this  mut
+	fn deref( mut this ) : T & mut @( reference_notation::return_references::param0 )
 	{
-		return unsafe( $>( $<(value_) ) );
+		return unsafe( $>( value_ ) );
 	}
 
 private:
-	T & mut value_;
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - "counter".
+	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+
+	$(T) value_;
 	$(counter) counter_= zero_init;
 }
 
@@ -474,8 +478,8 @@ template</ type T />
 class lock_imut
 {
 public:
-	fn constructor( mut this'a', T &'b imut value, $(counter) c) ' a <- b ' unsafe
-		( value_(value), counter_(c) )
+	fn constructor( mut this, $(T) v, $(counter) c)  unsafe
+		( value_(v), counter_(c) )
 	{
 		halt if( unsafe( pthread_rwlock_rdlock( $>(counter_).rwlock ) ) != 0 );
 	}
@@ -486,13 +490,17 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn deref( this ) : T &'this imut
+	fn deref( this ) : T & imut @( reference_notation::return_references::param0 )
 	{
-		return unsafe( $>($<(cast_mut(value_))) );
+		return unsafe( $>(value_) );
 	}
 
 private:
-	T &imut value_;
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - "counter".
+	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+
+	$(T) value_;
 	$(counter) counter_= zero_init;
 }
 

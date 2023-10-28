@@ -24,8 +24,16 @@ public:
 	// May emit ReferenceProtectionError.
 	void TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	VariablePtr GetNodeInnerReference( const VariablePtr& node ) const;
-	VariablePtr CreateNodeInnerReference( const VariablePtr& node, ValueType kind );
+	// Destination should contain no more inner references than source.
+	void TryAddInnerLinks( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
+	// Create inner links between tuple node and tuple element node.
+	// "from" shold be tuple.
+	void TryAddInnerLinksForTupleElement( const VariablePtr& from, const VariablePtr& to, size_t element_index, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
+	// Create inner links between class node and class field node.
+	// "from" shold be class.
+	void TryAddInnerLinksForClassField( const VariablePtr& from, const VariablePtr& to, const ClassField& field, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
@@ -38,8 +46,11 @@ public:
 
 	using NodesSet= std::unordered_set<VariablePtr>;
 	NodesSet GetAllAccessibleVariableNodes( const VariablePtr& node ) const;
-	NodesSet GetAccessibleVariableNodesInnerReferences( const VariablePtr& node ) const;
 	NodesSet GetNodeInputLinks( const VariablePtr& node ) const;
+
+	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
+	// Than create link between "from" and this node.
+	void TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc );
@@ -49,7 +60,6 @@ private:
 	struct NodeState
 	{
 		bool moved= false;
-		VariablePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 	};
 
 	struct Link
@@ -76,7 +86,8 @@ private:
 
 	void RemoveNodeLinks( const VariablePtr& node );
 	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
-	void GetAccessibleVariableNodesInnerReferences_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+
+	void TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 private:
 	std::unordered_map<VariablePtr, NodeState> nodes_;

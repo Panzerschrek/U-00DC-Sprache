@@ -181,7 +181,7 @@ public:
 	class NodeHolder
 	{
 	public:
-		fn constructor( mut this'a', ManglerState &'b mut state ) ' a <- b '
+		fn constructor( mut this, ManglerState & mut state ) @( ust::reference_notation::pollution::param0_param_1_reference )
 			( state_(state), start_= state_.GetCurrentPos(), compressed_start_= state_.GetCurrentCompressedPos() )
 		{}
 
@@ -190,7 +190,7 @@ public:
 			state_.FinalizePart( start_, compressed_start_ );
 		}
 
-		fn GetManglerState( this'x' ) : ManglerState &'x mut
+		fn GetManglerState( this ) : ManglerState & mut @( ust::reference_notation::return_references::param0_inner_reference0 )
 		{
 			return state_;
 		}
@@ -453,6 +453,116 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionT
 	}
 }
 
+fn EncodeParamReference( ManglerState &mut mangler_state, FunctionType::ParamReference& param_reference )
+{
+	mangler_state.Push( "il" );
+
+	mangler_state.Push( "L" );
+	mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
+	mangler_state.PushDecimalNumber( u64(param_reference.param_index) + u64("0"c8) );
+	mangler_state.Push( "E" );
+
+	mangler_state.Push( "L" );
+	mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
+	if( param_reference.reference_index == FunctionType::c_param_reference_number )
+	{
+		mangler_state.PushDecimalNumber( u64("_"c8) );
+	}
+	else
+	{
+		mangler_state.PushDecimalNumber( u64(param_reference.reference_index) + u64("a"c8) );
+	}
+	mangler_state.Push( "E" );
+
+	mangler_state.Push( "E" );
+}
+
+fn EncodeReferencePollutionAsType( ManglerState& mut mangler_state, ust::vector</FunctionType::ReferencePollution/>& reference_pollution )
+{
+	ADD_NODE( mangler_state )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.PushLengthPrefixed( "_RP" );
+		}
+
+		mangler_state.Push( "I" );
+		{
+			mangler_state.Push( "X" );
+
+			mangler_state.Push( "il" );
+			foreach( &pollution_element : reference_pollution )
+			{
+				mangler_state.Push( "il" );
+				EncodeParamReference( mangler_state, pollution_element.dst );
+				EncodeParamReference( mangler_state, pollution_element.src );
+				mangler_state.Push( "E" );
+			}
+			mangler_state.Push( "E" );
+
+			mangler_state.Push( "E" );
+		}
+		mangler_state.Push( "E" );
+	}
+}
+
+fn EncodeReturnReferencesAsType( ManglerState& mut mangler_state, FunctionType::ParamReferences& return_references )
+{
+	ADD_NODE( mangler_state )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.PushLengthPrefixed( "_RR" );
+		}
+
+		mangler_state.Push( "I" );
+		{
+			mangler_state.Push( "X" );
+
+			mangler_state.Push( "il" );
+			foreach( &param_reference : return_references )
+			{
+				EncodeParamReference( mangler_state, param_reference );
+			}
+			mangler_state.Push( "E" );
+
+			mangler_state.Push( "E" );
+		}
+		mangler_state.Push( "E" );
+	}
+}
+
+fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, ust::vector</FunctionType::ParamReferences/>& return_inner_references )
+{
+	ADD_NODE( mangler_state )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.PushLengthPrefixed( "_RIR" );
+		}
+
+		mangler_state.Push( "I" );
+		{
+			mangler_state.Push( "X" );
+
+			mangler_state.Push( "il" );
+			foreach( &return_references : return_inner_references )
+			{
+				mangler_state.Push( "il" );
+				foreach( &param_reference : return_references )
+				{
+					EncodeParamReference( mangler_state, param_reference );
+				}
+				mangler_state.Push( "E" );
+			}
+			mangler_state.Push( "E" );
+
+			mangler_state.Push( "E" );
+		}
+		mangler_state.Push( "E" );
+	}
+}
+
 fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
 	auto& base_template= class_type.generated_class_data.get</ ClassType::BaseTemplate />().try_deref();
@@ -519,10 +629,22 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 		}
 
 		// Encode inner reference kind as variable template parameter.
-		mangler_state.Push( "L" );
-		mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );
-		mangler_state.PushDecimalNumber( u64(coroutine_type_description.inner_reference_kind) );
-		mangler_state.Push( "E" );
+		foreach( inner_reference_kind : coroutine_type_description.inner_references )
+		{
+			mangler_state.Push( "L" );
+			mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );
+			mangler_state.PushDecimalNumber( u64(inner_reference_kind) );
+			mangler_state.Push( "E" );
+		}
+
+		if( !coroutine_type_description.return_references.empty() )
+		{
+			EncodeReturnReferencesAsType( mangler_state, coroutine_type_description.return_references );
+		}
+		if( !coroutine_type_description.return_inner_references.empty() )
+		{
+			EncodeReturnInnerReferencesAsType( mangler_state, coroutine_type_description.return_inner_references );
+		}
 
 		// Do not encode coroutine kind here, because coroutine class name contains kind.
 
@@ -676,60 +798,22 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 
 		EncodeFunctionParams( mangler_state, function_type.params );
 
-		if( !function_type.return_references.empty() )
-		{
-			ADD_NODE( mangler_state )
-			{
-				mangler_state.Push( "_RR" );
-
-				debug_assert( function_type.return_references.size() < 36s );
-				mangler_state.Push( Base36Digit( u32( function_type.return_references.size()) ) );
-
-				foreach( &param_reference : function_type.return_references )
-				{
-					halt if( param_reference.param_index >= 36u8 );
-					halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
-
-					mangler_state.Push( Base36Digit( u32(param_reference.param_index) ) );
-					mangler_state.Push( select(
-						param_reference.reference_index == FunctionType::c_param_reference_number
-						? "_"c8
-						: Base36Digit( u32(param_reference.reference_index) ) ) );
-				}
-			}
-		}
 		if( !function_type.references_pollution.empty() )
 		{
-			ADD_NODE( mangler_state )
-			{
-				mangler_state.Push( "_RP" );
-
-				debug_assert( function_type.references_pollution.size() < 36s );
-				mangler_state.Push( Base36Digit(u32(function_type.references_pollution.size())) );
-
-				foreach( &pollution : function_type.references_pollution )
-				{
-					halt if( pollution.dst.param_index >= 36u8 );
-					halt if( pollution.dst.reference_index >= 36u8 && pollution.dst.reference_index != FunctionType::c_param_reference_number );
-					halt if( pollution.src.param_index >= 36u8 );
-					halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
-
-					mangler_state.Push( Base36Digit( u32(pollution.dst.param_index) ) );
-					mangler_state.Push( select(
-						pollution.dst.reference_index == FunctionType::c_param_reference_number
-						? "_"c8
-						: Base36Digit( u32(pollution.dst.reference_index) ) ) );
-					mangler_state.Push( Base36Digit( u32(pollution.src.param_index) ) );
-					mangler_state.Push( select(
-						pollution.src.reference_index == FunctionType::c_param_reference_number
-						? "_"c8
-						: Base36Digit( u32(pollution.src.reference_index) ) ) );
-				}
-			}
+			EncodeReferencePollutionAsType( mangler_state, function_type.references_pollution );
 		}
+		if( !function_type.return_references.empty() )
+		{
+			EncodeReturnReferencesAsType( mangler_state, function_type.return_references );
+		}
+		if( !function_type.return_inner_references.empty() )
+		{
+			EncodeReturnInnerReferencesAsType( mangler_state, function_type.return_inner_references );
+		}
+
 		if( function_type.is_unsafe )
 		{
-			mangler_state.Push( "unsafe" );
+			mangler_state.PushLengthPrefixed( "unsafe" );
 		}
 
 		mangler_state.Push( "E" );

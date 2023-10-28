@@ -30,10 +30,7 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	ust::ignore_unused( new_function ); // Leave it for simmetry reasons.
 	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
 
-	auto src_class_inner_reference_kind= src_function_this_type.lock_imut().deref().inner_reference_kind;
-	auto new_class_inner_reference_kind= new_class_type.inner_reference_kind;
-
-	if( src_class_inner_reference_kind == new_class_inner_reference_kind )
+	if( src_function_this_type.lock_imut().deref().inner_references == new_class_type.inner_references )
 	{
 		// Ok - nothing changed.
 		return;
@@ -48,9 +45,19 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	// Disable inner reference kind change if function returns "this" inner reference.
 	foreach( &return_reference : src_function.t.return_references )
 	{
-		if( return_reference == this_inner_reference)
+		if( return_reference == this_inner_reference )
 		{
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+		}
+	}
+	foreach( &tag_inner_references : src_function.t.return_inner_references )
+	{
+		foreach( &return_reference : tag_inner_references )
+		{
+			if( return_reference == this_inner_reference )
+			{
+				REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+			}
 		}
 	}
 
@@ -817,9 +824,12 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		this_casted.llvm_value= unsafe( LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), g_null_string ) );
 	}
 
-	var VariablePtr mut this_casted_ptr( move(this_casted) );
+	var VariablePtr mut this_casted_ptr= move(this_casted).CreatePtr();
 	function_context.references_graph.AddNode( this_casted_ptr );
+
 	function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
+	function_context.references_graph.TryAddInnerLinks( this_ptr, this_casted_ptr, names_scope, src_loc );
+
 	RegisterTemporaryVariable( function_context, this_casted_ptr );
 	return ust::make_tuple( move(this_casted_ptr), function_ptr );
 }
