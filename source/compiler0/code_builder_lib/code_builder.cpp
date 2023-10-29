@@ -1002,9 +1002,12 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr &&
-		!EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) )
-		return ~0u;
+	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr )
+	{
+		const StackVariablesStorage temp_variables_storage( *global_function_context_ );
+		if( !EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) )
+			return ~0u;
+	}
 
 	FunctionVariable func_variable;
 
@@ -1030,7 +1033,7 @@ size_t CodeBuilder::PrepareFunction(
 			}
 		}
 
-		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
+		FunctionType function_type= PrepareFunctionTypeInGlobalContext( names_scope, func.type, base_class );
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
@@ -1069,10 +1072,13 @@ size_t CodeBuilder::PrepareFunction(
 		{
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			TransformGeneratorFunctionType(
-				names_scope,
-				function_type,
-				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
+			bool non_sync_tag= false;
+			{
+				const StackVariablesStorage temp_variables_storage( *global_function_context_ );
+				non_sync_tag= ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag );
+			}
+
+			TransformGeneratorFunctionType( names_scope, function_type, non_sync_tag );
 
 			// Disable auto-generators.
 			if( func_variable.return_type_is_auto )
@@ -1780,7 +1786,6 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 	BuildBlockElementImpl( names, function_context, *static_assert_.syntax_element );
 	static_assert_.syntax_element= nullptr;
 }
-
 
 llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
 {

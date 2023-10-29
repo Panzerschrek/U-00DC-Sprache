@@ -371,7 +371,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 	NamesScope& class_parent_namespace= *class_type->members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents )
 	{
-		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
+		const Value parent_value= ResolveValueInGlobalContext( class_parent_namespace, parent );
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
@@ -480,7 +480,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			class_field->class_= class_type;
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, *global_function_context_ );
+			class_field->type= PrepareTypeInGlobalContext( class_field->syntax_element->type, *the_class.members );
 
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
@@ -1146,7 +1146,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	// Process custom underlaying type.
 	if( enum_decl.underlaying_type_name != std::nullopt )
 	{
-		const Value type_value= ResolveValue( names_scope, *global_function_context_, *enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValueInGlobalContext( names_scope, *enum_decl.underlaying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc, *enum_decl.underlaying_type_name );
@@ -1227,7 +1227,7 @@ void CodeBuilder::GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& typ
 	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc );
 
 	// Replace value in names map, when type alias is comlete.
-	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
+	type_alias_value= PrepareTypeInGlobalContext( syntax_element.value, names_scope );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -1267,7 +1267,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			FAIL_RETURN;
 		}
 
-		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
+		const Type type= PrepareTypeInGlobalContext( variables_declaration->type, names_scope );
 		if( !EnsureTypeComplete( type ) ) // Type completeness required for variable or reference declaration.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.src_loc, type );

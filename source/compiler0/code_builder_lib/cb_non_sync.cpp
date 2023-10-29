@@ -113,7 +113,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				{
 					// Process "non_sync</T/>" expression specially to handle cases with recursive dependencies.
 					// TODO - handle also simple logical expressions with "non_sync" tag?
-					const Type dependent_type= PrepareType( (*non_sync_expression_ptr)->type, class_parent_scope, *global_function_context_ );
+					const Type dependent_type= PrepareTypeInGlobalContext( (*non_sync_expression_ptr)->type, class_parent_scope );
 					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
 						prev_types_stack.pop_back();
@@ -123,6 +123,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				else
 				{
 					// Process general non_sync expression. This approach can't resolve circular dependency.
+					const StackVariablesStorage temp_variables_storage( *global_function_context_ );
 					if( EvaluateBoolConstantExpression( class_parent_scope, *global_function_context_, expression ) )
 					{
 						prev_types_stack.pop_back();
@@ -202,7 +203,8 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 	if( class_type->syntax_element != nullptr )
 	{
 		// Evaluate non_sync condition using initial class members parent scope.
-		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
+		const StackVariablesStorage temp_variables_storage( *global_function_context_ );
+		ImmediateEvaluateNonSyncTag( *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
 	}
 }
 
