@@ -22,7 +22,7 @@ public:
 
 public:
 	FunctionContext& function_context_;
-	std::vector<VariablePtr> variables_;
+	llvm::SmallVector<VariablePtr, 8> variables_;
 };
 
 struct LoopFrame final
@@ -85,7 +85,7 @@ public:
 	// Each block adds new storage for it`s variables.
 	// Also, evaluation of some operators and expressions adds their variables storages.
 	// Do not push/pop to this stack manually!
-	std::vector<StackVariablesStorage*> stack_variables_stack;
+	llvm::SmallVector<StackVariablesStorage*, 8> stack_variables_stack;
 	ReferencesGraph variables_state;
 
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
