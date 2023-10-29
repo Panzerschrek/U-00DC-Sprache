@@ -23,8 +23,8 @@ void ReferencesGraph::Clear()
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );
-	U_ASSERT( !HaveNode(node) );
-	nodes_.emplace_back( node, NodeState() );
+	U_ASSERT( nodes_.count(node) == 0 );
+	nodes_.emplace( node, NodeState() );
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
@@ -33,8 +33,8 @@ void ReferencesGraph::AddNode( const VariablePtr& node )
 
 void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 {
-	if( !HaveNode( node ) )
-		nodes_.emplace_back( node, NodeState() );
+	if( nodes_.count( node ) == 0 )
+		nodes_.emplace( node, NodeState() );
 
 	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
 		AddNodeIfNotExists( inner_reference_node );
@@ -42,7 +42,7 @@ void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 
 void ReferencesGraph::RemoveNode( const VariablePtr& node )
 {
-	if( !HaveNode( node ) )
+	if( nodes_.count(node) == 0 )
 		return;
 
 	if( node->parent.lock() == nullptr )
@@ -55,24 +55,15 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 
 	RemoveNodeLinks( node );
 
-	for( size_t i= 0; i < nodes_.size(); ++i )
-	{
-		if( nodes_[i].first == node )
-		{
-			if( i + 1 < nodes_.size() )
-				nodes_[i]= std::move( nodes_.back() );
-			nodes_.pop_back();
-			return;
-		}
-	}
+	nodes_.erase( node );
 }
 
 void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 {
 	U_ASSERT( from != nullptr );
 	U_ASSERT( to != nullptr );
-	U_ASSERT( HaveNode(from) );
-	U_ASSERT( HaveNode(to) );
+	U_ASSERT( nodes_.count(from) != 0 );
+	U_ASSERT( nodes_.count(to  ) != 0 );
 
 	if( from == to )
 		return;
@@ -90,8 +81,8 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 {
 	U_ASSERT( from != nullptr );
 	U_ASSERT( to != nullptr );
-	U_ASSERT( HaveNode(from) );
-	U_ASSERT( HaveNode(to) );
+	U_ASSERT( nodes_.count(from) != 0 );
+	U_ASSERT( nodes_.count(to  ) != 0 );
 
 	const Link link{from, to};
 	for( size_t i= 0; i < links_.size(); ++i )
@@ -209,24 +200,19 @@ bool ReferencesGraph::HaveOutgoingMutableNodes( const VariablePtr& from ) const
 
 void ReferencesGraph::MoveNode( const VariablePtr& node )
 {
-	U_ASSERT( HaveNode(node) );
+	U_ASSERT( nodes_.count(node) != 0 );
 
-	for( auto& node_pair : nodes_ )
-	{
-		if( node_pair.first == node )
-		{
-			U_ASSERT( !node_pair.second.moved );
-			node_pair.second.moved= true;
-			break;
-		}
-	}
+	NodeState& node_state= nodes_[node];
+
+	U_ASSERT( !node_state.moved );
+	node_state.moved= true;
 
 	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
 		RemoveNodeLinks( inner_reference_node );
 
 	// Move child nodes first in order to replace links from children with links from parent.
 	for( const VariablePtr& child : node->children )
-		if( child != nullptr && HaveNode(child) ) // Children nodes are lazily-added.
+		if( child != nullptr && nodes_.count(child) != 0 ) // Children nodes are lazily-added.
 			MoveNode( child );
 
 	RemoveNodeLinks( node );
@@ -234,11 +220,11 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 
 bool ReferencesGraph::NodeMoved( const VariablePtr& node ) const
 {
-	for( const auto& node_pair : nodes_ )
-		if( node_pair.first == node )
-			return node_pair.second.moved;
+	const auto it= nodes_.find(node);
+	if( it == nodes_.end() ) // Can be for global constants, for example.
+		return false;
 
-	return false;
+	return it->second.moved;
 }
 
 ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleVariableNodes( const VariablePtr& node ) const
@@ -275,7 +261,7 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	NodesSet& visited_nodes_set,
 	NodesSet& result_set ) const
 {
-	U_ASSERT( HaveNode(node) );
+	U_ASSERT( nodes_.find(node) != nodes_.end() );
 
 	if( !visited_nodes_set.insert(node).second )
 		return; // Already visited
@@ -322,18 +308,14 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	{
 		for( const auto& node_pair : branch_state.nodes_ )
 		{
-			bool node_found= false;
-			for( const auto& result_node_pair : result.nodes_ )
-			{
-				if( result_node_pair.first == node_pair.first )
-				{
-					node_found= true;
-					if( result_node_pair.second.moved != node_pair.second.moved )
-						REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
-				}
-			}
-			if( !node_found )
-				result.nodes_.push_back( node_pair );
+			if( result.nodes_.find( node_pair.first ) == result.nodes_.end() )
+				result.nodes_[ node_pair.first ]= node_pair.second;
+
+			const NodeState& src_state= node_pair.second;
+			const NodeState& result_state= result.nodes_[ node_pair.first ];
+
+			if( result_state.moved != src_state.moved )
+				REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
 		}
 
 		for( const auto& src_link : branch_state.links_ )
@@ -360,17 +342,11 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckVariablesStateAfterLoop( con
 	for( const auto& var_before : state_before.nodes_ )
 	{
 		const VariablePtr& node= var_before.first;
-		if( !var_before.second.moved )
-		{
-			for( const auto& node_pair_after : state_after.nodes_ )
-			{
-				if( node_pair_after.first == node )
-				{
-					if( node_pair_after.second.moved )
-						REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, node->name );
-				}
-			}
-		}
+		U_ASSERT( state_after.nodes_.find(node) != state_after.nodes_.end() );
+		const auto& var_after= *state_after.nodes_.find( node );
+
+		if( !var_before.second.moved && var_after.second.moved )
+			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
 
 		if( node->value_type == ValueType::Value )
 		{
@@ -391,14 +367,6 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckVariablesStateAfterLoop( con
 	return errors;
 }
 
-bool ReferencesGraph::HaveNode( const VariablePtr& node ) const
-{
-	for( const auto& node_pair : nodes_ )
-		if( node == node_pair.first )
-			return true;
-	return false;
-}
-
 bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const
 {
 	for( const auto& link : links_ )
@@ -415,7 +383,7 @@ bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariableP
 
 	for( const VariablePtr& child : from->children )
 		if( child != nullptr &&
-			HaveNode(child) && // Children nodes are lazily-added.
+			nodes_.count(child) != 0 && // Children nodes are lazily-added.
 			HaveOutgoingLinksIncludingChildrenLinks_r( child ) )
 			return true;
 
@@ -438,7 +406,7 @@ bool ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( const Va
 
 	for( const VariablePtr& child : from->children )
 		if( child != nullptr &&
-			HaveNode(child) && // Children nodes are lazily-added.
+			nodes_.count(child) != 0 && // Children nodes are lazily-added.
 			HaveOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
 			return true;
 
