@@ -42,8 +42,6 @@ void CodeBuilder::PrepareTypeTemplate(
 		template_parameters,
 		template_parameters_usage_flags );
 
-	FunctionContext& function_context= *global_function_context_;
-
 	if( type_template_declaration.is_short_form )
 	{
 		U_ASSERT( type_template_declaration.signature_params.empty() );
@@ -58,30 +56,31 @@ void CodeBuilder::PrepareTypeTemplate(
 	}
 	else
 	{
-		// Check and fill signature args.
-		type_template->first_optional_signature_param= 0u;
-		for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params )
-		{
-			type_template->signature_params.push_back(
-				CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.name ) );
-
-			if( std::get_if<Synt::EmptyVariant>( &signature_param.default_value ) == nullptr )
+		WithGlobalFunctionContext(
+			[&]( FunctionContext& function_context )
 			{
-				CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.default_value );
-			}
-			else
-			{
-				const size_t index= type_template->signature_params.size() - 1u;
-				if (index > type_template->first_optional_signature_param )
-					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc );
+				// Check and fill signature args.
+				type_template->first_optional_signature_param= 0u;
+				for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params )
+				{
+					type_template->signature_params.push_back(
+						CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.name ) );
+					if( std::get_if<Synt::EmptyVariant>( &signature_param.default_value ) == nullptr )
+					{
+						CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.default_value );
+					}
+					else
+					{
+						const size_t index= type_template->signature_params.size() - 1u;
+						if (index > type_template->first_optional_signature_param )
+							REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc );
 
-				++type_template->first_optional_signature_param;
-			}
-		}
+						++type_template->first_optional_signature_param;
+					}
+				}
+			} );
 	}
 	U_ASSERT( type_template->first_optional_signature_param <= type_template->signature_params.size() );
-
-	ClearGlobalFunctionContext();
 
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
@@ -130,8 +129,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	FunctionContext& function_context= *global_function_context_;
-
 	for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
 	{
 		if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
@@ -139,11 +136,13 @@ void CodeBuilder::PrepareFunctionTemplate(
 		else
 		{
 			function_template->signature_params.push_back(
-				CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
+				WithGlobalFunctionContext(
+					[&]( FunctionContext& function_context )
+					{
+						return CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type );
+					} ) );
 		}
 	}
-
-	ClearGlobalFunctionContext();
 
 	// Do not report about unused template parameters because they may not be used in function signature or even in function type but used only inside body.
 	// For example:
@@ -186,20 +185,22 @@ void CodeBuilder::ProcessTemplateParams(
 
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
 
-	FunctionContext& function_context= *global_function_context_;
-
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
 		if( params[i].param_type == std::nullopt )
 			continue;
 
 		template_parameters[i].type=
-			CreateTemplateSignatureParameter(
-				names_scope,
-				function_context,
-				template_parameters,
-				template_parameters_usage_flags,
-				*params[i].param_type );
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					return CreateTemplateSignatureParameter(
+						names_scope,
+						function_context,
+						template_parameters,
+						template_parameters_usage_flags,
+						*params[i].param_type );
+				} );
 
 		if( const auto type_param= template_parameters[i].type->GetType() )
 		{
@@ -210,8 +211,6 @@ void CodeBuilder::ProcessTemplateParams(
 		else
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
 	}
-
-	ClearGlobalFunctionContext();
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
@@ -814,8 +813,6 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 	result.signature_args.resize( type_template.signature_params.size() );
 
-	FunctionContext& function_context= *global_function_context_;
-
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
 		TemplateArg& out_signature_arg= result.signature_args[i];
@@ -824,7 +821,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		else
 		{
 			const auto& expr= type_template.syntax_element->signature_params[i].default_value;
-			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, function_context );
+			const Value value= WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return BuildExpressionCode( expr, *result.template_args_namespace, function_context ); } );
 			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 			if( template_arg_opt != std::nullopt )
 				out_signature_arg= std::move( *template_arg_opt );
@@ -833,8 +830,6 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		if( !MatchTemplateArg( type_template, *result.template_args_namespace, out_signature_arg, type_template.signature_params[i] ) )
 			return result;
 	} // for signature arguments
-
-	ClearGlobalFunctionContext();
 
 	result.type_template= type_template_ptr;
 
@@ -964,13 +959,9 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	} // for template function arguments
 
 	// Process "enable_if" here - fail template function preparation if condition is false.
-	if( std::get_if<Synt::EmptyVariant>( &function_declaration.condition ) == nullptr )
-	{
-		const bool expression_result= EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition );
-		ClearGlobalFunctionContext();
-		if( !expression_result )
-			return result;
-	}
+	if( std::get_if<Synt::EmptyVariant>( &function_declaration.condition ) == nullptr &&
+		! WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return EvaluateBoolConstantExpression( *result.template_args_namespace, function_context, function_declaration.condition ); } ) )
+		return result;
 
 	result.function_template= function_template_ptr;
 	return result;

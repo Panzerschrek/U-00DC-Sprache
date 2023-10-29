@@ -252,9 +252,7 @@ std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctio
 
 VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression )
 {
-	auto result= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-	ClearGlobalFunctionContext();
-	return result;
+	return WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context ); } );
 }
 
 } // namespace U

@@ -662,7 +662,7 @@ private:
 	void GenerateLoop(
 		uint64_t iteration_count,
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
-		FunctionContext& function_context);
+		FunctionContext& function_context );
 
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
@@ -1337,7 +1337,19 @@ private:
 	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );
 	void RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state );
 
-	void ClearGlobalFunctionContext();
+	template<typename Func>
+	auto WithGlobalFunctionContext( Func&& func )
+	{
+		FunctionContext function_context(
+			global_function_context_->function_type,
+			global_function_context_->return_type,
+			llvm_context_,
+			global_function_context_->function );
+		function_context.is_functionless_context= true;
+
+		StackVariablesStorage temp_variables_storage( function_context );
+		return func( function_context );
+	}
 
 private:
 	llvm::LLVMContext& llvm_context_;

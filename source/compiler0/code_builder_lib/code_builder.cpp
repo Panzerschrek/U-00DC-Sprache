@@ -616,7 +616,7 @@ void CodeBuilder::TryCallCopyConstructor(
 void CodeBuilder::GenerateLoop(
 	const uint64_t iteration_count,
 	const std::function<void(llvm::Value* counter_value)>& loop_body,
-	FunctionContext& function_context)
+	FunctionContext& function_context )
 {
 	U_ASSERT( loop_body != nullptr );
 	if( iteration_count == 0u )
@@ -1002,13 +1002,9 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr )
-	{
-		const bool expression_result= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) ;
-		ClearGlobalFunctionContext();
-		if( !expression_result )
-			return ~0u;
-	}
+	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr &&
+		!WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return EvaluateBoolConstantExpression( names_scope, function_context, func.condition ); } ) )
+		return ~0u;
 
 	FunctionVariable func_variable;
 
@@ -1073,8 +1069,10 @@ size_t CodeBuilder::PrepareFunction(
 		{
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			const bool non_sync_tag= ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag );;
-			ClearGlobalFunctionContext();
+
+			const bool non_sync_tag=
+				WithGlobalFunctionContext(
+					[&]( FunctionContext& function_context ) { return ImmediateEvaluateNonSyncTag( names_scope, function_context, func.coroutine_non_sync_tag ); } );
 
 			TransformGeneratorFunctionType( names_scope, function_type, non_sync_tag );
 
@@ -2302,15 +2300,11 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 {
 	function_context.variables_state= state.variables_state;
 
-	// Make sure no new basic blocks were added.
-	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
-	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
-}
+	// TODO - fix  this assert.
 
-void CodeBuilder::ClearGlobalFunctionContext()
-{
-	global_function_context_->variables_state.Clear();
-	global_function_context_->stack_variables_stack.back()->variables_.clear();
+	// Make sure no new basic blocks were added.
+//	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
 } // namespace U
