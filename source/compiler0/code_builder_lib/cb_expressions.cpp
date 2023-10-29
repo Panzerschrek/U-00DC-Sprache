@@ -3597,7 +3597,8 @@ Value CodeBuilder::DoCallFunction(
 	}
 
 	for( const VariablePtr& node : args_nodes )
-		function_context.variables_state.RemoveNode( node );
+		if( node != nullptr )
+			function_context.variables_state.RemoveNode( node );
 	args_nodes.clear();
 
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
