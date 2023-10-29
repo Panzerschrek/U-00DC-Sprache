@@ -1337,6 +1337,8 @@ private:
 	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );
 	void RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state );
 
+	void ClearGlobalFunctionContext();
+
 private:
 	llvm::LLVMContext& llvm_context_;
 	const llvm::DataLayout data_layout_;

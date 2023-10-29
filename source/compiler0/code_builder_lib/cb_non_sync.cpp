@@ -123,8 +123,9 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				else
 				{
 					// Process general non_sync expression. This approach can't resolve circular dependency.
-					const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-					if( EvaluateBoolConstantExpression( class_parent_scope, *global_function_context_, expression ) )
+					const bool expression_result= EvaluateBoolConstantExpression( class_parent_scope, *global_function_context_, expression );
+					ClearGlobalFunctionContext();
+					if( expression_result )
 					{
 						prev_types_stack.pop_back();
 						return true;
@@ -203,8 +204,8 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 	if( class_type->syntax_element != nullptr )
 	{
 		// Evaluate non_sync condition using initial class members parent scope.
-		const StackVariablesStorage temp_variables_storage( *global_function_context_ );
 		ImmediateEvaluateNonSyncTag( *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
+		ClearGlobalFunctionContext();
 	}
 }
 

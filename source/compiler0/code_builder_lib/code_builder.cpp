@@ -1004,8 +1004,9 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr )
 	{
-		const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-		if( !EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) )
+		const bool expression_result= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) ;
+		ClearGlobalFunctionContext();
+		if( !expression_result )
 			return ~0u;
 	}
 
@@ -1072,11 +1073,8 @@ size_t CodeBuilder::PrepareFunction(
 		{
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			bool non_sync_tag= false;
-			{
-				const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-				non_sync_tag= ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag );
-			}
+			const bool non_sync_tag= ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag );;
+			ClearGlobalFunctionContext();
 
 			TransformGeneratorFunctionType( names_scope, function_type, non_sync_tag );
 
@@ -2307,6 +2305,12 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 	// Make sure no new basic blocks were added.
 	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
 	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
+}
+
+void CodeBuilder::ClearGlobalFunctionContext()
+{
+	global_function_context_->variables_state.Clear();
+	global_function_context_->stack_variables_stack.back()->variables_.clear();
 }
 
 } // namespace U

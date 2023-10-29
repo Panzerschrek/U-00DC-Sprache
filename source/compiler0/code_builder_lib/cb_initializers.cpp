@@ -1441,7 +1441,6 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 	U_ASSERT( class_.is_complete );
 
 	FunctionContext& function_context= *global_function_context_;
-	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
 	for( const ClassFieldPtr& field : class_.fields_order )
 	{
@@ -1477,6 +1476,8 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}
+
+	ClearGlobalFunctionContext();
 }
 
 } // namespace U

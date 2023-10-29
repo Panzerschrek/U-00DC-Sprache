@@ -123,14 +123,6 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 
-	if( &function_context == global_function_context_.get() )
-	{
-		// TODO - rework this. Clear global context specially.
-		temporary_variables_storage.variables_.clear();
-		function_context.variables_state.Clear();
-		return;
-	}
-
 	// Try to move unused nodes (variables and references) until we can't move anything.
 	// Multiple iterations needed to process complex references chains.
 	while(true)

@@ -43,7 +43,6 @@ void CodeBuilder::PrepareTypeTemplate(
 		template_parameters_usage_flags );
 
 	FunctionContext& function_context= *global_function_context_;
-	const StackVariablesStorage temp_variables_storage( function_context );
 
 	if( type_template_declaration.is_short_form )
 	{
@@ -81,6 +80,8 @@ void CodeBuilder::PrepareTypeTemplate(
 		}
 	}
 	U_ASSERT( type_template->first_optional_signature_param <= type_template->signature_params.size() );
+
+	ClearGlobalFunctionContext();
 
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
@@ -130,7 +131,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 		template_parameters_usage_flags );
 
 	FunctionContext& function_context= *global_function_context_;
-	const StackVariablesStorage temp_variables_storage( function_context );
 
 	for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
 	{
@@ -142,6 +142,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 				CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
 		}
 	}
+
+	ClearGlobalFunctionContext();
 
 	// Do not report about unused template parameters because they may not be used in function signature or even in function type but used only inside body.
 	// For example:
@@ -185,7 +187,6 @@ void CodeBuilder::ProcessTemplateParams(
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
 
 	FunctionContext& function_context= *global_function_context_;
-	const StackVariablesStorage temp_variables_storage( function_context );
 
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
@@ -209,6 +210,8 @@ void CodeBuilder::ProcessTemplateParams(
 		else
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
 	}
+
+	ClearGlobalFunctionContext();
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
@@ -812,7 +815,6 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	result.signature_args.resize( type_template.signature_params.size() );
 
 	FunctionContext& function_context= *global_function_context_;
-	const StackVariablesStorage temp_variables_storage( function_context );
 
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
@@ -831,6 +833,8 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		if( !MatchTemplateArg( type_template, *result.template_args_namespace, out_signature_arg, type_template.signature_params[i] ) )
 			return result;
 	} // for signature arguments
+
+	ClearGlobalFunctionContext();
 
 	result.type_template= type_template_ptr;
 
@@ -962,9 +966,10 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	// Process "enable_if" here - fail template function preparation if condition is false.
 	if( std::get_if<Synt::EmptyVariant>( &function_declaration.condition ) == nullptr )
 	{
-		const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-		if( !EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition ) )
-		return result;
+		const bool expression_result= EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition );
+		ClearGlobalFunctionContext();
+		if( !expression_result )
+			return result;
 	}
 
 	result.function_template= function_template_ptr;

@@ -17,8 +17,9 @@ namespace U
 
 Type CodeBuilder::PrepareTypeInGlobalContext( const Synt::TypeName& type_name, NamesScope& names_scope )
 {
-	const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-	return PrepareType( type_name, names_scope, *global_function_context_ );
+	auto result= PrepareType( type_name, names_scope, *global_function_context_ );
+	ClearGlobalFunctionContext();
+	return result;
 }
 
 Type CodeBuilder::PrepareType(
@@ -217,8 +218,9 @@ Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, cons
 
 FunctionType CodeBuilder::PrepareFunctionTypeInGlobalContext( NamesScope& names_scope, const Synt::FunctionType& function_type_name, const ClassPtr class_ )
 {
-	const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-	return PrepareFunctionType( names_scope, *global_function_context_, function_type_name, class_ );
+	auto result= PrepareFunctionType( names_scope, *global_function_context_, function_type_name, class_ );
+	ClearGlobalFunctionContext();
+	return result;
 }
 
 FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, const ClassPtr class_ )

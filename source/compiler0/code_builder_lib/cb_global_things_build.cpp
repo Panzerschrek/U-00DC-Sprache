@@ -226,7 +226,10 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( value.GetVariable() != nullptr ){}
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= value.GetStaticAssert() )
+			{
 				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
+				ClearGlobalFunctionContext();
+			}
 			else if( value.GetTypeAlias() != nullptr )
 				GlobalThingBuildTypeAlias( names_scope, value );
 			else if( value.GetIncompleteGlobalVariable() != nullptr )
@@ -1250,7 +1253,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		name= incomplete_global_variable.auto_variable_declaration->name;
 
 	DETECT_GLOBALS_LOOP( &global_variable_value, std::string(name), src_loc );
-	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
+	#define FAIL_RETURN { global_variable_value= ErrorValue(); ClearGlobalFunctionContext(); return; }
 
 	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack( function_context );
@@ -1478,6 +1481,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		global_variable_value= variable_reference;
 	}
 	else U_ASSERT(false);
+
+	ClearGlobalFunctionContext();
 
 	#undef FAIL_RETURN
 }

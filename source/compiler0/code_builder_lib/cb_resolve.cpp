@@ -9,8 +9,9 @@ namespace U
 
 Value CodeBuilder::ResolveValueInGlobalContext( NamesScope& names_scope, const Synt::ComplexName& complex_name )
 {
-	const StackVariablesStorage temp_variables_storage( *global_function_context_ );
-	return ResolveValue( names_scope, *global_function_context_, complex_name );
+	auto result= ResolveValue( names_scope, *global_function_context_, complex_name );
+	ClearGlobalFunctionContext();
+	return result;
 }
 
 Value CodeBuilder::ResolveValue(
