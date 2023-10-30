@@ -10,69 +10,77 @@ namespace U
 {
 
 
-void ReferencesGraph::Delta::AddNodeOperation( const NodeOperationKind kind, const VariablePtr& node )
+void ReferencesGraph::Delta::ProcessAddNode( const VariablePtr& node )
 {
-	if( kind == NodeOperationKind::Add || kind == NodeOperationKind::Remove )
-		node_operations.push_back( NodeOperation{ kind, node } );
-	else if( kind == NodeOperationKind::Remove )
-	{
-		// If this is remove node iteration, search for corresponding add node and move node.
-		// Remove all "move" operations and "add" operations.
-		// If add operation was removed - do not add remove operation.
-		bool add_node_removed= false;
-		const auto new_end= std::remove_if(
-			node_operations.begin(), node_operations.end(),
-			[&]( const NodeOperation& op )
-			{
-				if( op.node == node )
-				{
-					if( op.kind == NodeOperationKind::Add )
-					{
-						add_node_removed= true;
-						return true;
-					}
-					if( op.kind == NodeOperationKind::Move )
-						return true;
-				}
-				return false;
-			} );
-
-		node_operations.erase( new_end, node_operations.end() );
-
-		if( !add_node_removed )
-			node_operations.push_back( NodeOperation{ kind, node } );
-	}
-	else U_ASSERT(false);
+	operations.push_back( AddNodeOp{ node } );
 }
 
-void ReferencesGraph::Delta::AddLinkOperation( const LinkOperationKind kind, const VariablePtr& from, const VariablePtr& to )
+void ReferencesGraph::Delta::ProcessMoveNode( const VariablePtr& node )
 {
-	if( kind == LinkOperationKind::Add )
-		link_operations.push_back( LinkOperation{ kind, from, to } );
-	else if( kind == LinkOperationKind::Remove )
-	{
-		// if this is link removal operation - try to find and remove link addition operation.
-		// If found - do not bother to add link removal operation.
+	operations.push_back( MoveNodeOp{ node } );
+}
 
-		bool add_link_removed= false;
-		const auto new_end= std::remove_if(
-			link_operations.begin(), link_operations.end(),
-			[&]( const LinkOperation& op )
+void ReferencesGraph::Delta::ProcessRemoveNode( const VariablePtr& node )
+{
+	// Remove all previoys "move" operations and "add" operations for this node.
+	// If "add" operation was removed - do not add "remove" operation.
+
+	bool add_node_removed= false;
+	const auto new_end= std::remove_if(
+		operations.begin(), operations.end(),
+		[&]( const Operation& op )
+		{
+			if( const auto add_op= std::get_if<AddNodeOp>( &op ) )
 			{
-				if( op.kind == LinkOperationKind::Add && op.from == from && op.to == to )
+				if( add_op->node == node )
+				{
+					add_node_removed= true;
+					return true;
+				}
+			}
+			if( const auto move_op= std::get_if<MoveNodeOp>( &op ) )
+			{
+				if( move_op->node == node )
+					return true;
+			}
+
+			return false;
+		} );
+
+	operations.erase( new_end, operations.end() );
+
+	if( !add_node_removed )
+		operations.push_back( RemoveNodeOp{ node } );
+}
+
+void ReferencesGraph::Delta::ProcessAddLink( const VariablePtr& from, const VariablePtr& to )
+{
+	operations.push_back( AddLinkOp{ from, to } );
+}
+
+void ReferencesGraph::Delta::ProcessRemoveLink( const VariablePtr& from, const VariablePtr& to )
+{
+	bool add_link_removed= false;
+	const auto new_end= std::remove_if(
+		operations.begin(), operations.end(),
+		[&]( const Operation& op )
+		{
+			if( const auto add_link_op= std::get_if<AddLinkOp>( &op ) )
+			{
+				if( add_link_op->from == from && add_link_op->to == to )
 				{
 					add_link_removed= true;
 					return true;
 				}
-				return false;
-			} );
+			}
 
-		link_operations.erase( new_end, link_operations.end() );
+			return false;
+		} );
 
-		if( !add_link_removed )
-			link_operations.push_back( LinkOperation{ kind, from, to } );
-	}
-	else U_ASSERT(false);
+	operations.erase( new_end, operations.end() );
+
+	if( !add_link_removed )
+		operations.push_back( RemoveLinkOp{ from, to } );
 }
 
 ReferencesGraph::Delta ReferencesGraph::TakeDeltaState()
@@ -92,35 +100,22 @@ void ReferencesGraph::RollbackChanges( Delta prev_delta_state )
 	// Take current delta, because rollback methods may modify it.
 	const Delta cur_delta= std::move(delta_);
 
-	// TODO - maybe interleave link and node operations?
-	for( auto it= cur_delta.node_operations.rbegin(); it != cur_delta.node_operations.rend(); ++it )
+	for( auto it= cur_delta.operations.rbegin(); it != cur_delta.operations.rend(); ++it )
 	{
-		switch(it->kind)
+		if( const auto add_node_op= std::get_if<Delta::AddNodeOp>( &*it ) )
+			RemoveNode(add_node_op->node);
+		else if( const auto remove_node_op= std::get_if<Delta::RemoveNodeOp>( &*it ) )
+			AddNode(remove_node_op->node);
+		else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &*it ) )
 		{
-		case Delta::NodeOperationKind::Add:
-			RemoveNode(it->node);
-			break;
-		case Delta::NodeOperationKind::Remove:
-			AddNode(it->node);
-			break;
-		case Delta::NodeOperationKind::Move:
-			if( const auto node_state_it= nodes_.find(it->node); node_state_it != nodes_.end() )
+			if( const auto node_state_it= nodes_.find(move_node_op->node); node_state_it != nodes_.end() )
 				node_state_it->second.moved= false;
-			break;
 		}
-	}
-
-	for( auto it= cur_delta.link_operations.rbegin(); it != cur_delta.link_operations.rend(); ++it )
-	{
-		switch(it->kind)
-		{
-		case Delta::LinkOperationKind::Add:
-			RemoveLink( it->from, it->to );
-			break;
-		case Delta::LinkOperationKind::Remove:
-			AddLink( it->from, it->to );
-			break;
-		}
+		else if( const auto add_link_op= std::get_if<Delta::AddLinkOp>( &*it ) )
+			RemoveLink( add_link_op->from, add_link_op->to );
+		else if( const auto remove_link_op= std::get_if<Delta::RemoveLinkOp>( &*it ) )
+			AddLink( remove_link_op->from, remove_link_op->to );
+		else U_ASSERT(false);
 	}
 
 	delta_= std::move(prev_delta_state);
@@ -137,7 +132,7 @@ void ReferencesGraph::AddNode( const VariablePtr& node )
 	U_ASSERT( nodes_.count(node) == 0 );
 	nodes_.emplace( node, NodeState() );
 
-	delta_.AddNodeOperation( Delta::NodeOperationKind::Add, node );
+	delta_.ProcessAddNode( node );
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
@@ -149,7 +144,7 @@ void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 	if( nodes_.count( node ) == 0 )
 	{
 		nodes_.emplace( node, NodeState() );
-		delta_.AddNodeOperation( Delta::NodeOperationKind::Add, node );
+		delta_.ProcessAddNode( node );
 	}
 
 	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
@@ -160,8 +155,6 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 {
 	if( nodes_.count(node) == 0 )
 		return;
-
-	delta_.AddNodeOperation( Delta::NodeOperationKind::Remove, node );
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
@@ -174,6 +167,7 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 	RemoveNodeLinks( node );
 
 	nodes_.erase( node );
+	delta_.ProcessRemoveNode( node );
 }
 
 void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
@@ -197,7 +191,7 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 		if( in_link == to )
 			return;
 
-	delta_.AddLinkOperation( Delta::LinkOperationKind::Add, from, to );
+	delta_.ProcessAddLink( from, to );
 
 	from_state.out_links.push_back( to );
 	to_state.in_links.push_back( from );
@@ -210,7 +204,7 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
-	delta_.AddLinkOperation( Delta::LinkOperationKind::Remove, from, to );
+	delta_.ProcessRemoveLink( from, to );
 
 	NodeState& from_state= nodes_[from];
 	for( size_t i= 0; i < from_state.out_links.size(); ++i )
@@ -336,7 +330,7 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 {
 	U_ASSERT( nodes_.count(node) != 0 );
 
-	delta_.AddNodeOperation( Delta::NodeOperationKind::Move, node );
+	delta_.ProcessMoveNode( node );
 
 	NodeState& node_state= nodes_[node];
 
@@ -572,12 +566,12 @@ void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 	for( const VariablePtr& in_link : it->second.in_links )
 	{
 		in_links.push_back( in_link );
-		delta_.AddLinkOperation( Delta::LinkOperationKind::Remove, in_link, node );
+		delta_.ProcessRemoveLink( in_link, node );
 	}
 	for( const VariablePtr& out_link : it->second.out_links )
 	{
 		out_links.push_back( out_link );
-		delta_.AddLinkOperation( Delta::LinkOperationKind::Remove, node, out_link );
+		delta_.ProcessRemoveLink( node, out_link );
 	}
 
 	// Remove links.

@@ -15,29 +15,22 @@ public:
 	struct Delta
 	{
 	public:
-		enum class NodeOperationKind : uint8_t { Add, Remove, Move };
-		enum class LinkOperationKind : uint8_t { Add, Remove };
+		struct AddNodeOp{ VariablePtr node; };
+		struct MoveNodeOp{ VariablePtr node; };
+		struct RemoveNodeOp{ VariablePtr node; };
+		struct AddLinkOp{ VariablePtr from; VariablePtr to; };
+		struct RemoveLinkOp{ VariablePtr from; VariablePtr to; };
 
-		struct NodeOperation
-		{
-			NodeOperationKind kind= NodeOperationKind::Add;
-			VariablePtr node;
-		};
-
-		struct LinkOperation
-		{
-			LinkOperationKind kind= LinkOperationKind::Add;
-			VariablePtr from;
-			VariablePtr to;
-		};
+		using Operation= std::variant<AddNodeOp, MoveNodeOp, RemoveNodeOp, AddLinkOp, RemoveLinkOp>;
+	public:
+		std::vector<Operation> operations;
 
 	public:
-		std::vector<NodeOperation> node_operations;
-		std::vector<LinkOperation> link_operations;
-
-	public:
-		void AddNodeOperation( NodeOperationKind kind, const VariablePtr& node );
-		void AddLinkOperation( LinkOperationKind kind, const VariablePtr& from, const VariablePtr& to );
+		void ProcessAddNode( const VariablePtr& node );
+		void ProcessMoveNode( const VariablePtr& node );
+		void ProcessRemoveNode( const VariablePtr& node );
+		void ProcessAddLink( const VariablePtr& from, const VariablePtr& to );
+		void ProcessRemoveLink( const VariablePtr& from, const VariablePtr& to );
 	};
 
 public: // Delta stuff.
