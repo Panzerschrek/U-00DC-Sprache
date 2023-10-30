@@ -62,14 +62,9 @@ private:
 	struct NodeState
 	{
 		bool moved= false;
-	};
-
-	struct Link
-	{
-		VariablePtr src;
-		VariablePtr dst;
-
-		bool operator==( const Link& r ) const;
+		// Duplicates are not allowed.
+		llvm::SmallVector<VariablePtr, 3> in_links;
+		llvm::SmallVector<VariablePtr, 3> out_links;
 	};
 
 private:
@@ -86,7 +81,6 @@ private:
 
 private:
 	std::unordered_map<VariablePtr, NodeState> nodes_;
-	std::vector<Link> links_; // Check for duplicates before insertion!
 };
 
 } // namespace U

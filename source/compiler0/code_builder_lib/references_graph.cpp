@@ -9,15 +9,10 @@
 namespace U
 {
 
-bool ReferencesGraph::Link::operator==( const ReferencesGraph::Link& r ) const
-{
-	return this->src == r.src && this->dst == r.dst;
-}
 
 void ReferencesGraph::Clear()
 {
 	nodes_.clear();
-	links_.clear();
 }
 
 void ReferencesGraph::AddNode( const VariablePtr& node )
@@ -68,13 +63,19 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 	if( from == to )
 		return;
 
-	Link link{from, to};
-	for( const Link& prev_lik : links_ )
-	{
-		if( link == prev_lik )
+	NodeState& from_state= nodes_[from];
+	NodeState& to_state= nodes_[to];
+
+	for( const VariablePtr& out_link : from_state.out_links )
+		if( out_link == to )
 			return;
-	}
-	links_.push_back( std::move(link) );
+
+	for( const VariablePtr& in_link : to_state.out_links )
+		if( in_link == to )
+			return;
+
+	from_state.out_links.push_back( to );
+	to_state.in_links.push_back( from );
 }
 
 void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to )
@@ -84,19 +85,25 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
-	const Link link{from, to};
-	for( size_t i= 0; i < links_.size(); ++i )
-	{
-		if( link == links_[i] )
+	NodeState& from_state= nodes_[from];
+	for( size_t i= 0; i < from_state.out_links.size(); ++i )
+		if( from_state.out_links[i] == to )
 		{
-			if( i + 1 < links_.size() )
-				links_[i]= std::move(links_.back());
-			links_.pop_back();
-			return;
+			if( i + 1 < from_state.out_links.size() )
+				from_state.out_links[i]= std::move(from_state.out_links.back());
+			from_state.out_links.pop_back();
+			break;
 		}
-	}
 
-	U_ASSERT(false); // Removing unexistent link.
+	NodeState& to_state= nodes_[to];
+	for( size_t i= 0; i < to_state.in_links.size(); ++i )
+		if( to_state.in_links[i] == from )
+		{
+			if( i + 1 < to_state.in_links.size() )
+				to_state.in_links[i]= std::move(to_state.in_links.back());
+			to_state.in_links.pop_back();
+			break;
+		}
 }
 
 void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
@@ -241,9 +248,10 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 	VariablePtr current_node= node;
 	while( current_node != nullptr )
 	{
-		for( const Link& link : links_ )
-			if( link.dst == current_node )
-				result.insert( link.src );
+		const auto it= nodes_.find( current_node );
+		U_ASSERT( it != nodes_.end() );
+		for( const VariablePtr& in_link : it->second.in_links )
+			result.insert( in_link );
 
 		current_node= current_node->parent.lock();
 	}
@@ -269,9 +277,10 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	if( node->value_type == ValueType::Value )
 		result_set.emplace( node );
 
-	for( const auto& link : links_ )
-		if( link.dst == node )
-			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
+	const auto it= nodes_.find( node );
+	U_ASSERT( it != nodes_.end() );
+	for( const VariablePtr& in_link : it->second.in_links )
+		GetAllAccessibleVariableNodes_r( in_link, visited_nodes_set, result_set );
 
 	if( const VariablePtr parent= node->parent.lock() )
 		GetAllAccessibleVariableNodes_r( parent, visited_nodes_set, result_set );
@@ -288,9 +297,10 @@ void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( c
 		// Fill container with reachable nodes and only that perform recursive calls.
 		// Do this in order to avoid iteration over container of links, which may be modified in recursive call.
 		llvm::SmallVector< VariablePtr, 12 > src_nodes;
-		for( const Link& link : links_ )
-			if( link.dst == to )
-				src_nodes.push_back( link.src );
+		const auto it= nodes_.find( to );
+		U_ASSERT( it != nodes_.end() );
+		for( const VariablePtr& in_link : it->second.in_links )
+			src_nodes.push_back( in_link );
 
 		for( const VariablePtr& src_node : src_nodes )
 			TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src_node, errors_container, src_loc );
@@ -310,18 +320,25 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 		{
 			if( result.nodes_.find( node_pair.first ) == result.nodes_.end() )
 				result.nodes_[ node_pair.first ]= node_pair.second;
+			else
+			{
+				const NodeState& src_state= node_pair.second;
+				NodeState& result_state= result.nodes_[ node_pair.first ];
 
-			const NodeState& src_state= node_pair.second;
-			const NodeState& result_state= result.nodes_[ node_pair.first ];
+				if( result_state.moved != src_state.moved )
+					REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
 
-			if( result_state.moved != src_state.moved )
-				REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
-		}
-
-		for( const auto& src_link : branch_state.links_ )
-		{
-			if( std::find( result.links_.begin(), result.links_.end(), src_link ) == result.links_.end() )
-				result.links_.push_back( src_link );
+				for( const VariablePtr& in_link : src_state.in_links )
+				{
+					if( std::find( result_state.in_links.begin(), result_state.in_links.end(), in_link ) == result_state.in_links.end() )
+						result_state.in_links.push_back( in_link );
+				}
+				for( const VariablePtr& out_link : src_state.out_links )
+				{
+					if( std::find( result_state.out_links.begin(), result_state.out_links.end(), out_link ) == result_state.out_links.end() )
+						result_state.out_links.push_back( out_link );
+				}
+			}
 		}
 	}
 
@@ -369,11 +386,9 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckVariablesStateAfterLoop( con
 
 bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
-		if( link.src == from )
-			return true;
-
-	return false;
+	const auto it= nodes_.find(from);
+	U_ASSERT( it != nodes_.end() );
+	return !it->second.out_links.empty();
 }
 
 bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const
@@ -392,9 +407,13 @@ bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariableP
 
 bool ReferencesGraph::HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
-		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
+	const auto it= nodes_.find(from);
+	U_ASSERT( it != nodes_.end() );
+	for( const VariablePtr& link : it->second.out_links )
+	{
+		if( link->value_type == ValueType::ReferenceMut )
 			return true;
+	}
 
 	return false;
 }
@@ -415,44 +434,63 @@ bool ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( const Va
 
 void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 {
-	// Collect in/out nodes.
-	NodesSet in_nodes;
-	NodesSet out_nodes;
-	for( const Link& link : links_ )
-	{
-		if( link.src == link.dst ) // Self loop link.
-			continue;
+	const auto it= nodes_.find(node);
+	U_ASSERT( it != nodes_.end() );
 
-		if( link.src == node )
-			out_nodes.insert( link.dst );
-		if( link.dst == node )
-			in_nodes.insert( link.src );
-	}
+	// Collect in/out nodes.
+	llvm::SmallVector<VariablePtr, 8> in_links;
+	llvm::SmallVector<VariablePtr, 8> out_links;
+	for( const VariablePtr& in_link : it->second.in_links )
+		in_links.push_back( in_link );
+	for( const VariablePtr& out_link : it->second.out_links )
+		out_links.push_back( out_link );
 
 	// Remove links.
-	for( size_t i= 0; i < links_.size(); )
+	it->second.in_links.clear();
+	for( const VariablePtr& in_link : in_links )
 	{
-		if( links_[i].src == node || links_[i].dst == node )
+		const auto in_it= nodes_.find(in_link);
+		U_ASSERT( in_it != nodes_.end() );
+		for( size_t i= 0; i < in_it->second.out_links.size(); ++i )
 		{
-			if( i + 1 < links_.size() )
-				links_[i]= std::move( links_.back() );
-			links_.pop_back();
+			if( in_it->second.out_links[i] == node )
+			{
+				if( i + 1 < in_it->second.out_links.size() )
+					in_it->second.out_links[i]= std::move(in_it->second.out_links.back());
+				in_it->second.out_links.pop_back();
+				break;
+			}
 		}
-		else
-			++i;
+	}
+
+	it->second.out_links.clear();
+	for( const VariablePtr& out_link : out_links )
+	{
+		const auto out_it= nodes_.find(out_link);
+		U_ASSERT( out_it != nodes_.end() );
+		for( size_t i= 0; i < out_it->second.in_links.size(); ++i )
+		{
+			if( out_it->second.in_links[i] == node )
+			{
+				if( i + 1 < out_it->second.in_links.size() )
+					out_it->second.in_links[i]= std::move(out_it->second.in_links.back());
+				out_it->second.in_links.pop_back();
+				break;
+			}
+		}
 	}
 
 	// Create new links.
-	for( const VariablePtr& from : in_nodes )
-		for( const VariablePtr& to : out_nodes )
+	for( const VariablePtr& from : in_links )
+		for( const VariablePtr& to : out_links )
 			AddLink( from, to );
 
 	// If this is a child node, replace links from it with links from parent.
 	if( const VariablePtr parent= node->parent.lock() )
 	{
-		U_ASSERT( in_nodes.empty() ); // Child node has no input links, it has only parent.
+		U_ASSERT( in_links.empty() ); // Child node has no input links, it has only parent.
 
-		for( const VariablePtr& to : out_nodes )
+		for( const VariablePtr& to : out_links )
 			AddLink( parent, to );
 	}
 }
