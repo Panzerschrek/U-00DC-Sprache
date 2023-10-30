@@ -12,6 +12,35 @@ namespace U
 class ReferencesGraph
 {
 public:
+	struct Delta
+	{
+	public:
+		enum class NodeOperationKind : uint8_t { Add, Remove, Move };
+		enum class LinkOperationKind : uint8_t { Add, Remove };
+
+		struct NodeOperation
+		{
+			NodeOperationKind kind= NodeOperationKind::Add;
+			VariablePtr node;
+		};
+
+		struct LinkOperation
+		{
+			LinkOperationKind kind= LinkOperationKind::Add;
+			VariablePtr from;
+			VariablePtr to;
+		};
+
+	public:
+		std::vector<NodeOperation> node_operations;
+		std::vector<LinkOperation> link_operations;
+
+	public:
+		void AddNodeOperation( NodeOperationKind kind, const VariablePtr& node );
+		void AddLinkOperation( LinkOperationKind kind, const VariablePtr& from, const VariablePtr& to );
+	};
+
+public:
 	void AddNode( const VariablePtr& node );
 	void AddNodeIfNotExists( const VariablePtr& node );
 
@@ -79,6 +108,7 @@ private:
 
 private:
 	std::unordered_map<VariablePtr, NodeState> nodes_;
+	Delta delta_;
 };
 
 } // namespace U

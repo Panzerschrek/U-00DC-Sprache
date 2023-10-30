@@ -9,11 +9,79 @@
 namespace U
 {
 
+
+void ReferencesGraph::Delta::AddNodeOperation( const NodeOperationKind kind, const VariablePtr& node )
+{
+	if( kind == NodeOperationKind::Add || kind == NodeOperationKind::Remove )
+		node_operations.push_back( NodeOperation{ kind, node } );
+	else if( kind == NodeOperationKind::Remove )
+	{
+		// If this is remove node iteration, search for corresponding add node and move node.
+		// Remove all "move" operations and "add" operations.
+		// If add operation was removed - do not add remove operation.
+		bool add_node_removed= false;
+		const auto new_end= std::remove_if(
+			node_operations.begin(), node_operations.end(),
+			[&]( const NodeOperation& op )
+			{
+				if( op.node == node )
+				{
+					if( op.kind == NodeOperationKind::Add )
+					{
+						add_node_removed= true;
+						return true;
+					}
+					if( op.kind == NodeOperationKind::Move )
+						return true;
+				}
+				return false;
+			} );
+
+		node_operations.erase( new_end, node_operations.end() );
+
+		if( !add_node_removed )
+			node_operations.push_back( NodeOperation{ kind, node } );
+	}
+	else U_ASSERT(false);
+}
+
+void ReferencesGraph::Delta::AddLinkOperation( const LinkOperationKind kind, const VariablePtr& from, const VariablePtr& to )
+{
+	if( kind == LinkOperationKind::Add )
+		link_operations.push_back( LinkOperation{ kind, from, to } );
+	else if( kind == LinkOperationKind::Remove )
+	{
+		// if this is link removal operation - try to find and remove link addition operation.
+		// If found - do not bother to add link removal operation.
+
+		bool add_link_removed= false;
+		const auto new_end= std::remove_if(
+			link_operations.begin(), link_operations.end(),
+			[&]( const LinkOperation& op )
+			{
+				if( op.kind == LinkOperationKind::Add && op.from == from && op.to == to )
+				{
+					add_link_removed= true;
+					return true;
+				}
+				return false;
+			} );
+
+		link_operations.erase( new_end, link_operations.end() );
+
+		if( !add_link_removed )
+			link_operations.push_back( LinkOperation{ kind, from, to } );
+	}
+	else U_ASSERT(false);
+}
+
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );
 	U_ASSERT( nodes_.count(node) == 0 );
 	nodes_.emplace( node, NodeState() );
+
+	delta_.AddNodeOperation( Delta::NodeOperationKind::Add, node );
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
@@ -23,7 +91,10 @@ void ReferencesGraph::AddNode( const VariablePtr& node )
 void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 {
 	if( nodes_.count( node ) == 0 )
+	{
 		nodes_.emplace( node, NodeState() );
+		delta_.AddNodeOperation( Delta::NodeOperationKind::Add, node );
+	}
 
 	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
 		AddNodeIfNotExists( inner_reference_node );
@@ -33,6 +104,8 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 {
 	if( nodes_.count(node) == 0 )
 		return;
+
+	delta_.AddNodeOperation( Delta::NodeOperationKind::Remove, node );
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
@@ -68,6 +141,8 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 		if( in_link == to )
 			return;
 
+	delta_.AddLinkOperation( Delta::LinkOperationKind::Add, from, to );
+
 	from_state.out_links.push_back( to );
 	to_state.in_links.push_back( from );
 }
@@ -78,6 +153,8 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 	U_ASSERT( to != nullptr );
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
+
+	delta_.AddLinkOperation( Delta::LinkOperationKind::Remove, from, to );
 
 	NodeState& from_state= nodes_[from];
 	for( size_t i= 0; i < from_state.out_links.size(); ++i )
@@ -202,6 +279,8 @@ bool ReferencesGraph::HaveOutgoingMutableNodes( const VariablePtr& from ) const
 void ReferencesGraph::MoveNode( const VariablePtr& node )
 {
 	U_ASSERT( nodes_.count(node) != 0 );
+
+	delta_.AddNodeOperation( Delta::NodeOperationKind::Move, node );
 
 	NodeState& node_state= nodes_[node];
 
