@@ -22,7 +22,8 @@ void ReferencesGraph::Delta::ProcessMoveNode( const VariablePtr& node )
 
 void ReferencesGraph::Delta::ProcessRemoveNode( const VariablePtr& node )
 {
-	// Remove all previoys "move" operations and "add" operations for this node.
+	// Remove all previous operations for this node.
+	// This is fine, until "move", "add link", "remove link" operations are performed only between "add node" and "remove node".
 	// If "add" operation was removed - do not add "remove" operation.
 
 	bool add_node_removed= false;
@@ -38,10 +39,23 @@ void ReferencesGraph::Delta::ProcessRemoveNode( const VariablePtr& node )
 					return true;
 				}
 			}
-			if( const auto move_op= std::get_if<MoveNodeOp>( &op ) )
+			if( add_node_removed )
 			{
-				if( move_op->node == node )
-					return true;
+				if( const auto move_op= std::get_if<MoveNodeOp>( &op ) )
+				{
+					if( move_op->node == node )
+						return true;
+				}
+				if( const auto add_link_op= std::get_if<AddLinkOp>( &op ) )
+				{
+					if( add_link_op->from == node || add_link_op->to == node )
+						return true;
+				}
+				if( const auto remove_link_op= std::get_if<RemoveLinkOp>( &op ) )
+				{
+					if( remove_link_op->from == node || remove_link_op->to == node )
+						return true;
+				}
 			}
 
 			return false;
@@ -123,7 +137,34 @@ void ReferencesGraph::RollbackChanges( Delta prev_delta_state )
 
 void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches_states )
 {
-	// TODO
+	for( const Delta& branch_delta : branches_states )
+	{
+		// Iterate over all operations in this branch and apply them.
+		// Normally no nodes should be added or removed.
+		// Nodes may be moved.
+		// Links may be added and removed (in case of move).
+		// It is fine to add same links from multiple branches - links deduplication should work properly.
+
+		for( const Delta::Operation& op : branch_delta.operations )
+		{
+			if( const auto add_node_op= std::get_if<Delta::AddNodeOp>( &op ) )
+				AddNode(add_node_op->node);
+			else if( const auto remove_node_op= std::get_if<Delta::RemoveNodeOp>( &op ) )
+				RemoveNode(remove_node_op->node);
+			else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &op ) )
+			{
+				// TODO - detect conditional move.
+				const auto node_state_it= nodes_.find(move_node_op->node);
+				if( node_state_it != nodes_.end() && !node_state_it->second.moved )
+					MoveNode( move_node_op->node );
+			}
+			else if( const auto add_link_op= std::get_if<Delta::AddLinkOp>( &op ) )
+				AddLink( add_link_op->from, add_link_op->to );
+			else if( const auto remove_link_op= std::get_if<Delta::RemoveLinkOp>( &op ) )
+				RemoveLink( remove_link_op->from, remove_link_op->to );
+			else U_ASSERT(false);
+		}
+	}
 }
 
 void ReferencesGraph::AddNode( const VariablePtr& node )
