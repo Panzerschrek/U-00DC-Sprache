@@ -40,6 +40,14 @@ public:
 		void AddLinkOperation( LinkOperationKind kind, const VariablePtr& from, const VariablePtr& to );
 	};
 
+public: // Delta stuff.
+	Delta TakeDeltaState();
+	Delta CopyDeltaState() const;
+
+	void RollbackChanges( Delta prev_delta_state );
+
+	void ApplyBranchingStates( llvm::ArrayRef<Delta> branches_states );
+
 public:
 	void AddNode( const VariablePtr& node );
 	void AddNodeIfNotExists( const VariablePtr& node );

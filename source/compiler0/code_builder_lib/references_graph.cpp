@@ -75,6 +75,62 @@ void ReferencesGraph::Delta::AddLinkOperation( const LinkOperationKind kind, con
 	else U_ASSERT(false);
 }
 
+ReferencesGraph::Delta ReferencesGraph::TakeDeltaState()
+{
+	Delta result;
+	std::swap( result, delta_ );
+	return result;
+}
+
+ReferencesGraph::Delta ReferencesGraph::CopyDeltaState() const
+{
+	return delta_;
+}
+
+void ReferencesGraph::RollbackChanges( Delta prev_delta_state )
+{
+	// Take current delta, because rollback methods may modify it.
+	const Delta cur_delta= std::move(delta_);
+
+	// TODO - maybe interleave link and node operations?
+	for( auto it= cur_delta.node_operations.rbegin(); it != cur_delta.node_operations.rend(); ++it )
+	{
+		switch(it->kind)
+		{
+		case Delta::NodeOperationKind::Add:
+			RemoveNode(it->node);
+			break;
+		case Delta::NodeOperationKind::Remove:
+			AddNode(it->node);
+			break;
+		case Delta::NodeOperationKind::Move:
+			if( const auto node_state_it= nodes_.find(it->node); node_state_it != nodes_.end() )
+				node_state_it->second.moved= false;
+			break;
+		}
+	}
+
+	for( auto it= cur_delta.link_operations.rbegin(); it != cur_delta.link_operations.rend(); ++it )
+	{
+		switch(it->kind)
+		{
+		case Delta::LinkOperationKind::Add:
+			RemoveLink( it->from, it->to );
+			break;
+		case Delta::LinkOperationKind::Remove:
+			AddLink( it->from, it->to );
+			break;
+		}
+	}
+
+	delta_= std::move(prev_delta_state);
+}
+
+void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches_states )
+{
+	// TODO
+}
+
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );
