@@ -9,12 +9,6 @@
 namespace U
 {
 
-
-void ReferencesGraph::Clear()
-{
-	nodes_.clear();
-}
-
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );

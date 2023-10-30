@@ -12,8 +12,6 @@ namespace U
 class ReferencesGraph
 {
 public:
-	void Clear();
-
 	void AddNode( const VariablePtr& node );
 	void AddNodeIfNotExists( const VariablePtr& node );
 
