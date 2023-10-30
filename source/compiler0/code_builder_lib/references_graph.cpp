@@ -514,9 +514,15 @@ void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 	llvm::SmallVector<VariablePtr, 8> in_links;
 	llvm::SmallVector<VariablePtr, 8> out_links;
 	for( const VariablePtr& in_link : it->second.in_links )
+	{
 		in_links.push_back( in_link );
+		delta_.AddLinkOperation( Delta::LinkOperationKind::Remove, in_link, node );
+	}
 	for( const VariablePtr& out_link : it->second.out_links )
+	{
 		out_links.push_back( out_link );
+		delta_.AddLinkOperation( Delta::LinkOperationKind::Remove, node, out_link );
+	}
 
 	// Remove links.
 	it->second.in_links.clear();
