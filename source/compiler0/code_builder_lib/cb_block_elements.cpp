@@ -771,6 +771,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 
 		llvm::SmallVector<ReferencesGraph::Delta, 4> break_variables_states;
+		auto variables_state_before_loop= function_context.variables_state.TakeDeltaState();
 
 		U_ASSERT( sequence_expression->location == Variable::Location::Pointer );
 		for( const Type& element_type : tuple_type->element_types )
@@ -935,6 +936,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				break;
 			}
 		}
+
+		function_context.variables_state.RollbackChanges( std::move(variables_state_before_loop) );
 
 		if( tuple_type->element_types.empty() )
 		{} // Just keep variables state.
@@ -1227,6 +1230,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, break_operator.src_loc );
+	// TODO - fix this! This is wrong delta state.
 	loop_frame->break_variables_states.push_back( function_context.variables_state.CopyDeltaState() );
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_break );
 
@@ -1256,6 +1260,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc );
+	// TODO - fix this! This is wrong delta state.
 	loop_frame->continue_variables_states.push_back( function_context.variables_state.CopyDeltaState() );
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_continue );
 
@@ -1452,7 +1457,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	}
 
-	auto variables_state_before_branching= function_context.variables_state.TakeDeltaState();
+	auto variables_state_before_if= function_context.variables_state.TakeDeltaState();
 	auto variables_state_in_empty_alternative= function_context.variables_state.TakeDeltaState();
 
 	llvm::SmallVector<ReferencesGraph::Delta, 2> branches_variable_states;
@@ -1466,7 +1471,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( !if_block_build_info.have_terminal_instruction_inside )
 		branches_variable_states.push_back( function_context.variables_state.CopyDeltaState() );
 
-	function_context.variables_state.RollbackChanges( variables_state_before_branching );
+	function_context.variables_state.RollbackChanges( std::move(variables_state_before_if) );
 
 	BlockBuildInfo block_build_info;
 
@@ -1493,6 +1498,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.function->getBasicBlockList().push_back( alternative_block );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
+		auto variables_state_before_alternative= function_context.variables_state.TakeDeltaState();
+
 		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names, function_context, *if_operator.alternative );
 
 		if( !alternative_block_build_info.have_terminal_instruction_inside )
@@ -1501,7 +1508,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			branches_variable_states.push_back( function_context.variables_state.CopyDeltaState() );
 		}
 
-		function_context.variables_state.RollbackChanges( std::move(variables_state_before_branching) );
+		function_context.variables_state.RollbackChanges( std::move(variables_state_before_alternative) );
 
 		block_build_info.have_terminal_instruction_inside=
 			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
