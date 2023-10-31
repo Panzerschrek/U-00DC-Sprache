@@ -1014,7 +1014,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 	}
 
-	auto variables_state_after_test_block= function_context.variables_state.TakeDeltaState();
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 	auto variables_state_after_test_block_without_entering_loop= function_context.variables_state.TakeDeltaState();
 
 	// Loop block code.
@@ -1030,7 +1030,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state.CopyDeltaState() );
 	}
 
-	function_context.variables_state.RollbackChanges( std::move(variables_state_after_test_block) );
+	function_context.variables_state.RollbackChanges( std::move(function_context.variables_state_rollback_points.back()) );
+	function_context.variables_state_rollback_points.pop_back();
 
 	bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_variables_states.empty();
 
@@ -1113,13 +1114,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// While block code.
 
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+	auto variables_state_without_entering_loop= function_context.variables_state.CopyDeltaState();
+
 	AddLoopFrame( names, function_context, block_after_while, test_block, while_operator.label );
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
-
-	auto variables_state_before_loop_body= function_context.variables_state.TakeDeltaState();
-	auto variables_state_without_entering_loop= function_context.variables_state.TakeDeltaState();
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, while_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
@@ -1137,7 +1138,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// Result variables state is combination of variables state before loop and variables state of all branches terminated with "break".
 
-	function_context.variables_state.RollbackChanges( std::move( variables_state_before_loop_body ) );
+	function_context.variables_state.RollbackChanges( std::move( function_context.variables_state_rollback_points.back() ) );
+	function_context.variables_state_rollback_points.pop_back();
+
 	function_context.variables_state.ApplyBranchingStates( variables_state_for_merge, names.GetErrors(), while_operator.block.end_src_loc );
 
 	// Disallow outer variables state change in "continue" branches.
@@ -1169,7 +1172,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	auto variables_state_before_loop_body= function_context.variables_state.TakeDeltaState();
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, loop_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
@@ -1189,8 +1192,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	std::vector<ReferencesGraph::Delta> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 
+	function_context.variables_state.RollbackChanges( std::move(function_context.variables_state_rollback_points.back()) );
+	function_context.variables_state_rollback_points.pop_back();
+
 	// Result variables state is combination of variables state of all branches terminated with "break".
-	function_context.variables_state.RollbackChanges( std::move( variables_state_before_loop_body ) );
 	function_context.variables_state.ApplyBranchingStates( variables_state_for_merge, names.GetErrors(), loop_operator.block.end_src_loc );
 
 	function_context.loops_stack.pop_back();
@@ -1230,8 +1235,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, break_operator.src_loc );
-	// TODO - fix this! This is wrong delta state.
-	loop_frame->break_variables_states.push_back( function_context.variables_state.CopyDeltaState() );
+
+	auto deltas=
+		llvm::ArrayRef<ReferencesGraph::Delta>( function_context.variables_state_rollback_points )
+		.drop_front( loop_frame->variables_state_rollback_points_size );
+	auto combined_delta= ReferencesGraph::CombineDeltas( deltas, function_context.variables_state.CopyDeltaState() );
+
+	loop_frame->break_variables_states.push_back( std::move(combined_delta) );
+
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_break );
 
 	return block_info;
@@ -1260,8 +1271,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc );
-	// TODO - fix this! This is wrong delta state.
-	loop_frame->continue_variables_states.push_back( function_context.variables_state.CopyDeltaState() );
+
+	auto deltas=
+		llvm::ArrayRef<ReferencesGraph::Delta>( function_context.variables_state_rollback_points )
+		.drop_front( loop_frame->variables_state_rollback_points_size );
+	auto combined_delta= ReferencesGraph::CombineDeltas( deltas, function_context.variables_state.CopyDeltaState() );
+
+	loop_frame->continue_variables_states.push_back( std::move(combined_delta) );
+
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_continue );
 
 	return block_info;
@@ -1457,8 +1474,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	}
 
-	auto variables_state_before_if= function_context.variables_state.TakeDeltaState();
-	auto variables_state_in_empty_alternative= function_context.variables_state.TakeDeltaState();
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+	auto variables_state_in_empty_alternative= function_context.variables_state.CopyDeltaState();
 
 	llvm::SmallVector<ReferencesGraph::Delta, 2> branches_variable_states;
 
@@ -1471,7 +1488,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( !if_block_build_info.have_terminal_instruction_inside )
 		branches_variable_states.push_back( function_context.variables_state.CopyDeltaState() );
 
-	function_context.variables_state.RollbackChanges( std::move(variables_state_before_if) );
+	function_context.variables_state.RollbackChanges( std::move(function_context.variables_state_rollback_points.back()) );
+	function_context.variables_state_rollback_points.pop_back();
 
 	BlockBuildInfo block_build_info;
 
@@ -1498,7 +1516,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.function->getBasicBlockList().push_back( alternative_block );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
-		auto variables_state_before_alternative= function_context.variables_state.TakeDeltaState();
+		function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 
 		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names, function_context, *if_operator.alternative );
 
@@ -1508,7 +1526,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			branches_variable_states.push_back( function_context.variables_state.CopyDeltaState() );
 		}
 
-		function_context.variables_state.RollbackChanges( std::move(variables_state_before_alternative) );
+		function_context.variables_state.RollbackChanges( std::move(function_context.variables_state_rollback_points.back()) );
+		function_context.variables_state_rollback_points.pop_back();
 
 		block_build_info.have_terminal_instruction_inside=
 			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
@@ -2204,7 +2223,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				default_branch_synt_block->src_loc );
 	}
 
-	const ReferencesGraph::Delta variables_state_before_branching= function_context.variables_state.TakeDeltaState();
 	llvm::SmallVector<ReferencesGraph::Delta, c_expected_num_branches> breances_states_after_case;
 	breances_states_after_case.reserve( switch_operator.cases.size() + 1 );
 
@@ -2264,6 +2282,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.function->getBasicBlockList().push_back( case_handle_block );
 		function_context.llvm_ir_builder.SetInsertPoint( case_handle_block );
 
+		function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+
 		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, case_.block );
 
 		if( !block_build_info.have_terminal_instruction_inside )
@@ -2272,7 +2292,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			breances_states_after_case.push_back( function_context.variables_state.CopyDeltaState() );
 			all_branches_are_terminal= false;
 		}
-		function_context.variables_state.RollbackChanges( variables_state_before_branching );
+		function_context.variables_state.RollbackChanges( function_context.variables_state_rollback_points.back() );
+		function_context.variables_state_rollback_points.pop_back();
 
 		// Next case block
 		function_context.function->getBasicBlockList().push_back( next_case_block );
@@ -2293,6 +2314,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.function->getBasicBlockList().push_back( default_branch );
 		function_context.llvm_ir_builder.SetInsertPoint( default_branch );
 
+		function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+
 		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, *default_branch_synt_block );
 
 		if( !block_build_info.have_terminal_instruction_inside )
@@ -2301,7 +2324,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			breances_states_after_case.push_back( function_context.variables_state.CopyDeltaState() );
 			all_branches_are_terminal= false;
 		}
-		function_context.variables_state.RollbackChanges( variables_state_before_branching );
+		function_context.variables_state.RollbackChanges( function_context.variables_state_rollback_points.back() );
+		function_context.variables_state_rollback_points.pop_back();
 	}
 	else
 	{
@@ -2758,6 +2782,7 @@ void CodeBuilder::AddLoopFrame(
 	loop_frame.block_for_break= break_block;
 	loop_frame.block_for_continue= continue_block;
 	loop_frame.stack_variables_stack_size= function_context.stack_variables_stack.size();
+	loop_frame.variables_state_rollback_points_size= function_context.variables_state_rollback_points.size();
 
 	if( label != std::nullopt )
 	{

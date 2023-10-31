@@ -47,6 +47,9 @@ public: // Delta stuff.
 	void ApplyBranchingStates( llvm::ArrayRef<Delta> branches_states, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 	void CheckLoopBodyState( CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	static Delta CombineDeltas( llvm::ArrayRef<Delta> deltas, const Delta& current_state );
+	static void CombineDeltasImpl( Delta& dst, const Delta& src );
+
 public:
 	void AddNode( const VariablePtr& node );
 	void AddNodeIfNotExists( const VariablePtr& node );

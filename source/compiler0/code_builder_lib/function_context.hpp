@@ -32,6 +32,8 @@ struct LoopFrame final
 	// Number of stack variable storages at stack before loop block creation.
 	size_t stack_variables_stack_size= 0u;
 
+	size_t variables_state_rollback_points_size= 0u;
+
 	std::string name; // Contains label or is empty for non-labeled loops.
 
 	// Populated during loop body building.
@@ -87,6 +89,8 @@ public:
 	// Do not push/pop to this stack manually!
 	llvm::SmallVector<StackVariablesStorage*, 8> stack_variables_stack;
 	ReferencesGraph variables_state;
+
+	std::vector<ReferencesGraph::Delta> variables_state_rollback_points;
 
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.

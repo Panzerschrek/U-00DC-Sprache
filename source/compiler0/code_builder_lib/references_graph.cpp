@@ -176,6 +176,40 @@ void ReferencesGraph::CheckLoopBodyState( CodeBuilderErrorsContainer& errors_con
 	(void)src_loc;
 }
 
+ReferencesGraph::Delta ReferencesGraph::CombineDeltas( const llvm::ArrayRef<Delta> deltas, const Delta& current_state )
+{
+	Delta result;
+
+	if( deltas.empty() )
+		return current_state;
+
+	result= deltas.front();
+	for( size_t i= 1; i < deltas.size(); ++i )
+		CombineDeltasImpl( result, deltas[i] );
+
+	CombineDeltasImpl( result, current_state );
+
+	return result;
+}
+
+void ReferencesGraph::CombineDeltasImpl( Delta& dst, const Delta& src )
+{
+	for( const Delta::Operation& op : src.operations )
+	{
+		if( const auto add_node_op= std::get_if<Delta::AddNodeOp>( &op ) )
+			dst.ProcessAddNode( add_node_op->node );
+		else if( const auto remove_node_op= std::get_if<Delta::RemoveNodeOp>( &op ) )
+			dst.ProcessRemoveNode( remove_node_op->node );
+		else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &op ) )
+			dst.ProcessMoveNode( move_node_op->node );
+		else if( const auto add_link_op= std::get_if<Delta::AddLinkOp>( &op ) )
+			dst.ProcessAddLink( add_link_op->from, add_link_op->to );
+		else if( const auto remove_link_op= std::get_if<Delta::RemoveLinkOp>( &op ) )
+			dst.ProcessRemoveLink( remove_link_op->from, remove_link_op->to );
+		else U_ASSERT(false);
+	}
+}
+
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
 	U_ASSERT( node != nullptr );
