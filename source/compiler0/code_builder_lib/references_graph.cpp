@@ -135,8 +135,11 @@ void ReferencesGraph::RollbackChanges( Delta prev_delta_state )
 	delta_= std::move(prev_delta_state);
 }
 
-void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches_states )
+void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches_states, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
+	(void)errors_container;
+	(void)src_loc;
+
 	for( const Delta& branch_delta : branches_states )
 	{
 		// Iterate over all operations in this branch and apply them.
@@ -165,6 +168,12 @@ void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches
 			else U_ASSERT(false);
 		}
 	}
+}
+
+void ReferencesGraph::CheckLoopBodyState( CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	(void)errors_container;
+	(void)src_loc;
 }
 
 void ReferencesGraph::AddNode( const VariablePtr& node )
@@ -469,83 +478,6 @@ void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( c
 		for( const VariablePtr& src_node : src_nodes )
 			TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src_node, errors_container, src_loc );
 	}
-}
-
-ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc )
-{
-	ReferencesGraph result;
-	std::vector<CodeBuilderError> errors;
-
-	// Number of nodes in different branches may be different - child nodes and global variable nodes may be added.
-
-	for( const ReferencesGraph& branch_state : branches_variables_state )
-	{
-		for( const auto& node_pair : branch_state.nodes_ )
-		{
-			if( result.nodes_.find( node_pair.first ) == result.nodes_.end() )
-				result.nodes_[ node_pair.first ]= node_pair.second;
-			else
-			{
-				const NodeState& src_state= node_pair.second;
-				NodeState& result_state= result.nodes_[ node_pair.first ];
-
-				if( result_state.moved != src_state.moved )
-					REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
-
-				for( const VariablePtr& in_link : src_state.in_links )
-				{
-					if( std::find( result_state.in_links.begin(), result_state.in_links.end(), in_link ) == result_state.in_links.end() )
-						result_state.in_links.push_back( in_link );
-				}
-				for( const VariablePtr& out_link : src_state.out_links )
-				{
-					if( std::find( result_state.out_links.begin(), result_state.out_links.end(), out_link ) == result_state.out_links.end() )
-						result_state.out_links.push_back( out_link );
-				}
-			}
-		}
-	}
-
-	// Technically it's possible to create mutliple mutable references to same node or mutable reference + immutable reference.
-	// But this is not an error, actually, because only one reference is created in runtime (depending on executed branch).
-	// Seeming reference rules violation happens, because we perform variables state merging instead of maintaining two or more separate states.
-	// Maintaining multiple variables states after each branching is computationally too costly.
-
-	return std::make_pair( std::move(result), std::move(errors) );
-}
-
-std::vector<CodeBuilderError> ReferencesGraph::CheckVariablesStateAfterLoop( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc )
-{
-	std::vector<CodeBuilderError> errors;
-
-	U_ASSERT( state_before.nodes_.size() <= state_after.nodes_.size() ); // Child nodes and global variable nodes may be added.
-
-	for( const auto& var_before : state_before.nodes_ )
-	{
-		const VariablePtr& node= var_before.first;
-		U_ASSERT( state_after.nodes_.find(node) != state_after.nodes_.end() );
-		const auto& var_after= *state_after.nodes_.find( node );
-
-		if( !var_before.second.moved && var_after.second.moved )
-			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
-
-		if( node->value_type == ValueType::Value )
-		{
-			// If this is a variable node with inner references check if no input links was added in loop body.
-			// Reference nodes also may have inner reference nodes, but adding of input links (pollution) for them is not possible, so, ignore them.
-			for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
-			{
-				const NodesSet nodes_before= state_before.GetNodeInputLinks( inner_reference_node );
-				NodesSet nodes_after= state_after.GetNodeInputLinks( inner_reference_node );
-				for( const auto& node : nodes_before )
-					nodes_after.erase(node);
-
-				for( const auto& newly_linked_node : nodes_after )
-					REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, node->name, newly_linked_node->name );
-			}
-		}
-	}
-	return errors;
 }
 
 bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const

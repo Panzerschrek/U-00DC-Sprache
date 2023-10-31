@@ -1188,11 +1188,6 @@ private:
 	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	ReferencesGraph MergeVariablesStateAfterIf(
-		llvm::ArrayRef<ReferencesGraph> bracnhes_variables_state,
-		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& src_loc );
-
 	void CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
 	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node );
 
@@ -1330,7 +1325,7 @@ private:
 
 	struct FunctionContextState
 	{
-		ReferencesGraph variables_state;
+		ReferencesGraph::Delta variables_state;
 		size_t block_count= 0;
 	};
 

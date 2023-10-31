@@ -2291,14 +2291,14 @@ void CodeBuilder::CreateLifetimeEnd( FunctionContext& function_context, llvm::Va
 CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( FunctionContext& function_context )
 {
 	FunctionContextState result;
-	result.variables_state= function_context.variables_state;
+	result.variables_state= function_context.variables_state.TakeDeltaState();
 	result.block_count= function_context.function->getBasicBlockList().size();
 	return result;
 }
 
 void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state )
 {
-	function_context.variables_state= state.variables_state;
+	function_context.variables_state.RollbackChanges( state.variables_state );
 
 	// TODO - fix  this assert.
 

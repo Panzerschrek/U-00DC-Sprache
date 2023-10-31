@@ -795,11 +795,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::Value* branches_reference_values[2] { nullptr, nullptr };
 	llvm::Constant* branches_constexpr_values[2] { nullptr, nullptr };
 	llvm::BasicBlock* branches_end_basic_blocks[2]{ nullptr, nullptr };
-	ReferencesGraph variables_state_before= function_context.variables_state;
-	ReferencesGraph branches_variables_state[2];
+	const ReferencesGraph::Delta variables_state_before_branching= function_context.variables_state.TakeDeltaState();
+	ReferencesGraph::Delta branches_variables_state[2];
 	for( size_t i= 0u; i < 2u; ++i )
 	{
-		function_context.variables_state= variables_state_before;
 		{
 			const StackVariablesStorage branch_temp_variables_storage( function_context );
 
@@ -866,10 +865,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context.llvm_ir_builder.CreateBr( result_block );
 		}
 		branches_end_basic_blocks[i]= function_context.llvm_ir_builder.GetInsertBlock();
-		branches_variables_state[i]= function_context.variables_state;
+
+		branches_variables_state[i]= function_context.variables_state.CopyDeltaState();
+		function_context.variables_state.RollbackChanges( variables_state_before_branching );
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variables_state, names.GetErrors(), ternary_operator.src_loc );
+	function_context.variables_state.ApplyBranchingStates( branches_variables_state, names.GetErrors(), ternary_operator.src_loc );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -2869,7 +2870,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
 	}
 
-	ReferencesGraph variables_state_before_r_branch= function_context.variables_state;
+	auto variables_state_before_branch= function_context.variables_state.TakeDeltaState();
+	auto variables_state_false_condition= function_context.variables_state.TakeDeltaState();
+	ReferencesGraph::Delta variables_state_true_condition;
 
 	llvm::Value* r_var_in_register= nullptr;
 	llvm::Constant* r_var_constepxr_value= nullptr;
@@ -2889,8 +2892,11 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 		// Destroy r_var temporaries in this branch.
 		CallDestructors( r_var_temp_variables_storage, names, function_context, src_loc );
+
+		variables_state_true_condition= function_context.variables_state.CopyDeltaState();
+		function_context.variables_state.RollbackChanges( variables_state_before_branch );
 	}
-	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, names.GetErrors(), src_loc );
+	function_context.variables_state.ApplyBranchingStates( { std::move(variables_state_false_condition), std::move(variables_state_true_condition) }, names.GetErrors(), src_loc );
 
 	const VariableMutPtr result=
 		Variable::Create(

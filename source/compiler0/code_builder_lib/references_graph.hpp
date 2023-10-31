@@ -33,13 +33,19 @@ public:
 		void ProcessRemoveLink( const VariablePtr& from, const VariablePtr& to );
 	};
 
+public:
+	ReferencesGraph()= default;
+	ReferencesGraph( const ReferencesGraph& )= delete;
+	ReferencesGraph operator=( const ReferencesGraph& )= delete;
+
 public: // Delta stuff.
 	Delta TakeDeltaState();
 	Delta CopyDeltaState() const;
 
 	void RollbackChanges( Delta prev_delta_state );
 
-	void ApplyBranchingStates( llvm::ArrayRef<Delta> branches_states );
+	void ApplyBranchingStates( llvm::ArrayRef<Delta> branches_states, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	void CheckLoopBodyState( CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 public:
 	void AddNode( const VariablePtr& node );
@@ -81,10 +87,6 @@ public:
 	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
 	// Than create link between "from" and this node.
 	void TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
-
-	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
-	static MergeResult MergeVariablesStateAfterIf( llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc );
-	static std::vector<CodeBuilderError> CheckVariablesStateAfterLoop( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
 
 private:
 	struct NodeState

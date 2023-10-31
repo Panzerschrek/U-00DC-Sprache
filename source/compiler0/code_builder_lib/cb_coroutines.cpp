@@ -485,9 +485,9 @@ void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& fu
 	function_context.function->getBasicBlockList().push_back( destroy_block );
 	function_context.llvm_ir_builder.SetInsertPoint( destroy_block );
 	{
-		ReferencesGraph references_graph= function_context.variables_state;
+		auto state= function_context.variables_state.TakeDeltaState();
 		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
-		function_context.variables_state= std::move(references_graph);
+		function_context.variables_state.RollbackChanges( std::move(state) );
 	}
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_cleanup_bb );
 

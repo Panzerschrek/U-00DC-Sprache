@@ -153,16 +153,6 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 	}
 }
 
-ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
-	const llvm::ArrayRef<ReferencesGraph> bracnhes_variables_state,
-	CodeBuilderErrorsContainer& errors_container,
-	const SrcLoc& src_loc )
-{
-	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, src_loc );
-	errors_container.insert( errors_container.end(), res.second.begin(), res.second.end() );
-	return std::move(res.first);
-}
-
 void CodeBuilder::CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
 {
 	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )

@@ -35,8 +35,8 @@ struct LoopFrame final
 	std::string name; // Contains label or is empty for non-labeled loops.
 
 	// Populated during loop body building.
-	std::vector<ReferencesGraph> break_variables_states;
-	std::vector<ReferencesGraph> continue_variables_states;
+	std::vector<ReferencesGraph::Delta> break_variables_states;
+	std::vector<ReferencesGraph::Delta> continue_variables_states;
 };
 
 struct FunctionContext
