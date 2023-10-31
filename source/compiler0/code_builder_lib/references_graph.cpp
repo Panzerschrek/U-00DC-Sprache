@@ -220,7 +220,11 @@ void ReferencesGraph::AddNode( const VariablePtr& node )
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
-			AddNode( inner_reference_node );
+		{
+			U_ASSERT( inner_reference_node != nullptr );
+			U_ASSERT( nodes_.count(inner_reference_node) == 0 );
+			nodes_.emplace( inner_reference_node, NodeState() );
+		}
 }
 
 void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
@@ -232,7 +236,10 @@ void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 	}
 
 	for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
-		AddNodeIfNotExists( inner_reference_node );
+	{
+		if( nodes_.count( inner_reference_node ) == 0 )
+			nodes_.emplace( inner_reference_node, NodeState() );
+	}
 }
 
 void ReferencesGraph::RemoveNode( const VariablePtr& node )
@@ -242,7 +249,13 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 
 	if( node->parent.lock() == nullptr )
 		for( const VariablePtr& inner_reference_node : node->inner_reference_nodes )
-			RemoveNode( inner_reference_node );
+		{
+			if( nodes_.count(inner_reference_node) != 0 )
+			{
+				RemoveNodeLinks( inner_reference_node );
+				nodes_.erase(inner_reference_node);
+			}
+		}
 
 	for( const VariablePtr& child : node->children )
 		if( child != nullptr )

@@ -124,24 +124,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else if( block.safety == Synt::ScopeBlock::Safety::None ) {}
 	else U_ASSERT(false);
 
-	llvm::BasicBlock* break_block= nullptr;
+	BlockBuildInfo block_build_info;
 	if( block.label != std::nullopt )
 	{
-		break_block= llvm::BasicBlock::Create( llvm_context_ );
-		AddLoopFrame( names, function_context, break_block, nullptr, block.label );
-	}
+		function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 
-	BlockBuildInfo block_build_info;
-	if( break_block != nullptr )
-	{
-		auto variables_state_before_block= function_context.variables_state.TakeDeltaState();
+		llvm::BasicBlock* const break_block= llvm::BasicBlock::Create( llvm_context_ );
+		AddLoopFrame( names, function_context, break_block, nullptr, block.label );
+
 		block_build_info= BuildBlock( names, function_context, block );
 
 		std::vector<ReferencesGraph::Delta> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 		if( !block_build_info.have_terminal_instruction_inside )
 			variables_state_for_merge.push_back( function_context.variables_state.CopyDeltaState() );
 
-		function_context.variables_state.RollbackChanges( std::move( variables_state_before_block ) );
+		function_context.variables_state.RollbackChanges( function_context.variables_state_rollback_points.back() );
+		function_context.variables_state_rollback_points.pop_back();
+
 		function_context.variables_state.ApplyBranchingStates( variables_state_for_merge, names.GetErrors(), block.end_src_loc );
 
 		function_context.loops_stack.pop_back();
@@ -1015,7 +1014,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
-	auto variables_state_after_test_block_without_entering_loop= function_context.variables_state.TakeDeltaState();
+	auto variables_state_after_test_block_without_entering_loop= function_context.variables_state.CopyDeltaState();
 
 	// Loop block code.
 	AddLoopFrame( names, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label );
@@ -1036,8 +1035,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_variables_states.empty();
 
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
-	if( loop_iteration_block_is_reachable )
-		function_context.variables_state.ApplyBranchingStates( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+	//if( loop_iteration_block_is_reachable )
+	//	function_context.variables_state.ApplyBranchingStates( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	std::vector<ReferencesGraph::Delta> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 	variables_state_for_merge.push_back( std::move(variables_state_after_test_block_without_entering_loop) );
@@ -1048,12 +1047,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( loop_iteration_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_iteration_block );
 
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 	c_style_for_operator.iteration_part_elements.Iter(
 		[&]( const auto& el )
 		{
 			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
 			BuildBlockElementImpl( loop_names_scope, function_context, el );
 		} );
+	function_context.variables_state.RollbackChanges( std::move(function_context.variables_state_rollback_points.back()) );
+	function_context.variables_state_rollback_points.pop_back();
 
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
