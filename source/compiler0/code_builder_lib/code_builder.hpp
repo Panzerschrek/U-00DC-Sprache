@@ -1330,7 +1330,7 @@ private:
 	};
 
 	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );
-	void RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state );
+	void RestoreFunctionContextState( FunctionContext& function_context, FunctionContextState state );
 
 	template<typename Func>
 	auto WithGlobalFunctionContext( Func&& func )

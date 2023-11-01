@@ -122,14 +122,14 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const bool prev_is_functionless_context= function_context.is_functionless_context;
 	function_context.is_functionless_context= true;
 
-	const auto state= SaveFunctionContextState( function_context );
+	auto state= SaveFunctionContextState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 		const VariablePtr variable= BuildExpressionCodeEnsureVariable( typeof_type_name.expression, names_scope, function_context );
 		result= variable->type;
 	}
 
-	RestoreFunctionContextState( function_context, state );
+	RestoreFunctionContextState( function_context, std::move(state) );
 	function_context.is_functionless_context= prev_is_functionless_context;
 
 	return result;

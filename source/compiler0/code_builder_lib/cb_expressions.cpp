@@ -731,7 +731,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.is_functionless_context= true;
 		for( size_t i= 0u; i < 2u; ++i )
 		{
-			const auto state= SaveFunctionContextState( function_context );
+			auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 				const VariablePtr var= BuildExpressionCodeEnsureVariable( ternary_operator.branches[i], names, function_context );
@@ -739,7 +739,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				branches_value_types[i]= var->value_type;
 				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), ternary_operator.src_loc );
 			}
-			RestoreFunctionContextState( function_context, state );
+			RestoreFunctionContextState( function_context, std::move(state) );
 		}
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
@@ -1884,14 +1884,14 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		const bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
-		const auto state= SaveFunctionContextState( function_context );
+		auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 			for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
 				args.push_back( PreEvaluateArg( *in_arg, names, function_context ) );
 		}
 
-		RestoreFunctionContextState( function_context, state );
+		RestoreFunctionContextState( function_context, std::move(state) );
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
@@ -2182,7 +2182,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	{
 		const bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
-		const auto state= SaveFunctionContextState( function_context );
+		auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 			actual_args.push_back( GetArgExtendedType( *variable ) );
@@ -2190,7 +2190,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 		}
 
-		RestoreFunctionContextState( function_context, state );
+		RestoreFunctionContextState( function_context, std::move(state) );
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
@@ -3088,7 +3088,7 @@ Value CodeBuilder::CallFunctionValue(
 		{
 			const bool prev_is_functionless_context= function_context.is_functionless_context;
 			function_context.is_functionless_context= true;
-			const auto state= SaveFunctionContextState( function_context );
+			auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
@@ -3099,7 +3099,7 @@ Value CodeBuilder::CallFunctionValue(
 					actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 			}
 
-			RestoreFunctionContextState( function_context, state );
+			RestoreFunctionContextState( function_context, std::move(state) );
 			function_context.is_functionless_context= prev_is_functionless_context;
 		}
 

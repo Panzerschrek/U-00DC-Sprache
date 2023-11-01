@@ -2296,9 +2296,9 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 	return result;
 }
 
-void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state )
+void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context, FunctionContextState state )
 {
-	function_context.variables_state.RollbackChanges( state.variables_state );
+	function_context.variables_state.RollbackChanges( std::move(state.variables_state) );
 
 	// TODO - fix  this assert.
 
