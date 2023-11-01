@@ -988,6 +988,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+
 	if( std::get_if<Synt::EmptyVariant>( &c_style_for_operator.loop_condition ) != nullptr )
 		function_context.llvm_ir_builder.CreateBr( loop_block );
 	else
@@ -1013,7 +1015,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 	}
 
-	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 	auto variables_state_after_test_block_without_entering_loop= function_context.variables_state.CopyDeltaState();
 
 	// Loop block code.
@@ -1035,8 +1036,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_variables_states.empty();
 
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
-	//if( loop_iteration_block_is_reachable )
-	//	function_context.variables_state.ApplyBranchingStates( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+	if( loop_iteration_block_is_reachable )
+	{
+		for( const ReferencesGraph::Delta& variables_state : function_context.loops_stack.back().continue_variables_states )
+			ReferencesGraph::CheckLoopBodyState( variables_state, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+
+		function_context.variables_state.ApplyBranchingStates( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+	}
 
 	std::vector<ReferencesGraph::Delta> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 	variables_state_for_merge.push_back( std::move(variables_state_after_test_block_without_entering_loop) );
@@ -1054,17 +1060,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
 			BuildBlockElementImpl( loop_names_scope, function_context, el );
 		} );
+
+	if( loop_iteration_block_is_reachable )
+		ReferencesGraph::CheckLoopBodyState( function_context.variables_state.CopyDeltaState(), names.GetErrors(), c_style_for_operator.block.end_src_loc );
+
 	function_context.variables_state.RollbackChanges( std::move(function_context.variables_state_rollback_points.back()) );
 	function_context.variables_state_rollback_points.pop_back();
 
 	function_context.llvm_ir_builder.CreateBr( test_block );
-
-	if( loop_iteration_block_is_reachable )
-	{
-		// Disallow outer variables state change in loop iteration part and its predecessors.
-	//	const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block.end_src_loc );
-	//	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
-	}
 
 	function_context.variables_state.ApplyBranchingStates( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 

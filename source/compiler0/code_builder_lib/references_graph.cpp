@@ -151,7 +151,11 @@ void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches
 		for( const Delta::Operation& op : branch_delta.operations )
 		{
 			if( const auto add_node_op= std::get_if<Delta::AddNodeOp>( &op ) )
-				AddNode(add_node_op->node);
+			{
+				// Lazy-added nodes (global variables, children nodes) may be added more than in one branch.
+				if( nodes_.count( add_node_op->node ) == 0 )
+					AddNode(add_node_op->node);
+			}
 			else if( const auto remove_node_op= std::get_if<Delta::RemoveNodeOp>( &op ) )
 				RemoveNode(remove_node_op->node);
 			else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &op ) )
