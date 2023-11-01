@@ -137,8 +137,8 @@ void ReferencesGraph::RollbackChanges( Delta prev_delta_state )
 
 void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches_states, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	(void)errors_container;
-	(void)src_loc;
+	// TODO optimize this - use faster container.
+	std::unordered_map<VariablePtr, uint32_t> moved_variables;
 
 	for( const Delta& branch_delta : branches_states )
 	{
@@ -160,10 +160,17 @@ void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches
 				RemoveNode(remove_node_op->node);
 			else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &op ) )
 			{
-				// TODO - detect conditional move.
 				const auto node_state_it= nodes_.find(move_node_op->node);
-				if( node_state_it != nodes_.end() && !node_state_it->second.moved )
-					MoveNode( move_node_op->node );
+				if( node_state_it != nodes_.end() )
+				{
+					if( !node_state_it->second.moved )
+						MoveNode( move_node_op->node );
+
+					if( moved_variables.count( move_node_op->node ) == 0 )
+						moved_variables[move_node_op->node]= 1;
+					else
+						++moved_variables[move_node_op->node];
+				}
 			}
 			else if( const auto add_link_op= std::get_if<Delta::AddLinkOp>( &op ) )
 				AddLink( add_link_op->from, add_link_op->to );
@@ -172,6 +179,10 @@ void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches
 			else U_ASSERT(false);
 		}
 	}
+
+	for( const auto& node_pair : moved_variables )
+		if( node_pair.second != branches_states.size() )
+			REPORT_ERROR( ConditionalMove, errors_container, src_loc, node_pair.first->name );
 }
 
 void ReferencesGraph::CheckLoopBodyState( const Delta& delta, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )

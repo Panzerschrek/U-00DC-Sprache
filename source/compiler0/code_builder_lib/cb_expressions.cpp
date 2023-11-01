@@ -795,10 +795,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::Value* branches_reference_values[2] { nullptr, nullptr };
 	llvm::Constant* branches_constexpr_values[2] { nullptr, nullptr };
 	llvm::BasicBlock* branches_end_basic_blocks[2]{ nullptr, nullptr };
-	const ReferencesGraph::Delta variables_state_before_branching= function_context.variables_state.TakeDeltaState();
 	ReferencesGraph::Delta branches_variables_state[2];
 	for( size_t i= 0u; i < 2u; ++i )
 	{
+		ReferencesGraph::Delta variables_state_before_branching= function_context.variables_state.TakeDeltaState();
+
 		{
 			const StackVariablesStorage branch_temp_variables_storage( function_context );
 
@@ -867,7 +868,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		branches_end_basic_blocks[i]= function_context.llvm_ir_builder.GetInsertBlock();
 
 		branches_variables_state[i]= function_context.variables_state.CopyDeltaState();
-		function_context.variables_state.RollbackChanges( variables_state_before_branching );
+		function_context.variables_state.RollbackChanges( std::move(variables_state_before_branching) );
 	}
 
 	function_context.variables_state.ApplyBranchingStates( branches_variables_state, names.GetErrors(), ternary_operator.src_loc );
@@ -2871,7 +2872,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	}
 
 	auto variables_state_before_branch= function_context.variables_state.TakeDeltaState();
-	auto variables_state_false_condition= function_context.variables_state.TakeDeltaState();
+	auto variables_state_false_condition= function_context.variables_state.CopyDeltaState();
 	ReferencesGraph::Delta variables_state_true_condition;
 
 	llvm::Value* r_var_in_register= nullptr;
@@ -2894,7 +2895,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		CallDestructors( r_var_temp_variables_storage, names, function_context, src_loc );
 
 		variables_state_true_condition= function_context.variables_state.CopyDeltaState();
-		function_context.variables_state.RollbackChanges( variables_state_before_branch );
+		function_context.variables_state.RollbackChanges( std::move(variables_state_before_branch) );
 	}
 	function_context.variables_state.ApplyBranchingStates( { std::move(variables_state_false_condition), std::move(variables_state_true_condition) }, names.GetErrors(), src_loc );
 
