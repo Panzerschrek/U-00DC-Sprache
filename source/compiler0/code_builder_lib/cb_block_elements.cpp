@@ -1584,7 +1584,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	 // TODO - maybe disallow this operator for temporary coroutines?
+
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+	auto variables_state_in_empty_alternative= function_context.variables_state.CopyDeltaState();
+
+	// TODO - maybe disallow this operator for temporary coroutines?
 	const VariableMutPtr coro_expr_lock=
 		Variable::Create(
 			coro_expr->type,
@@ -1596,9 +1600,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.variables_state.TryAddInnerLinks( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
 
 	variables_storage.RegisterVariable( coro_expr_lock );
-
-	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
-	auto variables_state_in_empty_alternative= function_context.variables_state.CopyDeltaState();
 
 	llvm::Value* const coro_handle=
 		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), coro_expr->llvm_value, false, "coro_handle" );
