@@ -1082,6 +1082,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::WhileOperator& while_operator )
 {
+	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
+
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
@@ -1116,7 +1118,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// While block code.
 
-	function_context.variables_state_rollback_points.push_back( function_context.variables_state.TakeDeltaState() );
 	auto variables_state_without_entering_loop= function_context.variables_state.CopyDeltaState();
 
 	AddLoopFrame( names, function_context, block_after_while, test_block, while_operator.label );
@@ -1146,12 +1147,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.variables_state.ApplyBranchingStates( variables_state_for_merge, names.GetErrors(), while_operator.block.end_src_loc );
 
 	// Disallow outer variables state change in "continue" branches.
-	//for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
-	{
-
-		//const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, variables_state, while_operator.block.end_src_loc );
-		//names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
-	}
+	for( const ReferencesGraph::Delta& variables_state : function_context.loops_stack.back().continue_variables_states )
+		ReferencesGraph::CheckLoopBodyState( variables_state, names.GetErrors(), while_operator.block.end_src_loc );
 
 	function_context.loops_stack.pop_back();
 
@@ -1183,14 +1180,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state.CopyDeltaState() );
 	}
 
-	/*
 	// Disallow outer variables state change in "continue" branches.
-	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
-	{
-		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, variables_state, loop_operator.block.end_src_loc );
-		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
-	}
-	*/
+	for( const ReferencesGraph::Delta& variables_state : function_context.loops_stack.back().continue_variables_states )
+		ReferencesGraph::CheckLoopBodyState( variables_state, names.GetErrors(), loop_operator.block.end_src_loc );
 
 	std::vector<ReferencesGraph::Delta> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 

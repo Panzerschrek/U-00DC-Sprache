@@ -170,10 +170,19 @@ void ReferencesGraph::ApplyBranchingStates( const llvm::ArrayRef<Delta> branches
 	}
 }
 
-void ReferencesGraph::CheckLoopBodyState( CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+void ReferencesGraph::CheckLoopBodyState( const Delta& delta, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	(void)errors_container;
-	(void)src_loc;
+	for( const Delta::Operation& op : delta.operations )
+	{
+		if( const auto move_op = std::get_if<Delta::MoveNodeOp>( &op ) )
+		{
+			REPORT_ERROR( OuterVariableMoveInsideLoop, errors_container, src_loc, move_op->node->name );
+		}
+		else if( const auto add_link_op= std::get_if<Delta::AddLinkOp>( &op ) )
+		{
+			REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors_container, src_loc, add_link_op->to->name, add_link_op->from->name );
+		}
+	}
 }
 
 ReferencesGraph::Delta ReferencesGraph::CombineDeltas( const llvm::ArrayRef<Delta> deltas, const Delta& current_state )

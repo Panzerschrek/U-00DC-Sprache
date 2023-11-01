@@ -45,7 +45,7 @@ public: // Delta stuff.
 	void RollbackChanges( Delta prev_delta_state );
 
 	void ApplyBranchingStates( llvm::ArrayRef<Delta> branches_states, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
-	void CheckLoopBodyState( CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	static void CheckLoopBodyState( const Delta& delta, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	static Delta CombineDeltas( llvm::ArrayRef<Delta> deltas, const Delta& current_state );
 	static void CombineDeltasImpl( Delta& dst, const Delta& src );
