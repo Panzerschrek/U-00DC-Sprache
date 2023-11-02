@@ -20,7 +20,7 @@ void ReferencesGraph::Delta::ProcessMoveNode( const VariablePtr& node )
 	operations.push_back( MoveNodeOp{ node } );
 }
 
-void ReferencesGraph::Delta::ProcessRemoveNode( const VariablePtr& node )
+void ReferencesGraph::Delta::ProcessRemoveNode( const VariablePtr& node, const bool was_moved )
 {
 	// Remove all previous operations for this node.
 	// This is fine, until "move", "add link", "remove link" operations are performed only between "add node" and "remove node".
@@ -64,7 +64,7 @@ void ReferencesGraph::Delta::ProcessRemoveNode( const VariablePtr& node )
 	operations.erase( new_end, operations.end() );
 
 	if( !add_node_removed )
-		operations.push_back( RemoveNodeOp{ node } );
+		operations.push_back( RemoveNodeOp{ node, was_moved } );
 }
 
 void ReferencesGraph::Delta::ProcessAddLink( const VariablePtr& from, const VariablePtr& to )
@@ -119,7 +119,11 @@ void ReferencesGraph::RollbackChanges( Delta prev_delta_state )
 		if( const auto add_node_op= std::get_if<Delta::AddNodeOp>( &*it ) )
 			RemoveNode(add_node_op->node);
 		else if( const auto remove_node_op= std::get_if<Delta::RemoveNodeOp>( &*it ) )
+		{
 			AddNode(remove_node_op->node);
+			if( remove_node_op->was_moved )
+				MoveNode( remove_node_op->node );
+		}
 		else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &*it ) )
 		{
 			if( const auto node_state_it= nodes_.find(move_node_op->node); node_state_it != nodes_.end() )
@@ -223,7 +227,7 @@ void ReferencesGraph::CombineDeltasImpl( Delta& dst, const Delta& src )
 		if( const auto add_node_op= std::get_if<Delta::AddNodeOp>( &op ) )
 			dst.ProcessAddNode( add_node_op->node );
 		else if( const auto remove_node_op= std::get_if<Delta::RemoveNodeOp>( &op ) )
-			dst.ProcessRemoveNode( remove_node_op->node );
+			dst.ProcessRemoveNode( remove_node_op->node, remove_node_op->was_moved );
 		else if( const auto move_node_op= std::get_if<Delta::MoveNodeOp>( &op ) )
 			dst.ProcessMoveNode( move_node_op->node );
 		else if( const auto add_link_op= std::get_if<Delta::AddLinkOp>( &op ) )
@@ -287,8 +291,8 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 
 	RemoveNodeLinks( node );
 
+	delta_.ProcessRemoveNode( node, nodes_[node].moved );
 	nodes_.erase( node );
-	delta_.ProcessRemoveNode( node );
 }
 
 void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )

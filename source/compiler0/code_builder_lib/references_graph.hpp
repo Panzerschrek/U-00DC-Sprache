@@ -17,7 +17,7 @@ public:
 	public:
 		struct AddNodeOp{ VariablePtr node; };
 		struct MoveNodeOp{ VariablePtr node; };
-		struct RemoveNodeOp{ VariablePtr node; };
+		struct RemoveNodeOp{ VariablePtr node; bool was_moved= false; };
 		struct AddLinkOp{ VariablePtr from; VariablePtr to; };
 		struct RemoveLinkOp{ VariablePtr from; VariablePtr to; };
 
@@ -28,7 +28,7 @@ public:
 	public:
 		void ProcessAddNode( const VariablePtr& node );
 		void ProcessMoveNode( const VariablePtr& node );
-		void ProcessRemoveNode( const VariablePtr& node );
+		void ProcessRemoveNode( const VariablePtr& node, bool was_moved );
 		void ProcessAddLink( const VariablePtr& from, const VariablePtr& to );
 		void ProcessRemoveLink( const VariablePtr& from, const VariablePtr& to );
 	};
