@@ -78,7 +78,7 @@ fn nomangle main() : i32
 		s.push_back( "t"u32[0u] );
 		halt if( s.front() != "R"u32[0u] );
 		halt if( s.back () != "t"u32[0u] );
-		s[0u]= "Ä"u32[0u];
+		s[0s]= "Ä"u32[0u];
 		halt if( s.front() != "Ä"u32[0u] );
 		halt if( s.back () != "t"u32[0u] );
 	}
@@ -117,21 +117,21 @@ fn nomangle main() : i32
 	{ // swap
 		var ust::string8 mut s("0123456789");
 
-		s.swap( 2u, 7u );
+		s.swap( 2s, 7s );
 		halt if( s != "0173456289" );
-		s.swap( 1u, 1u );
+		s.swap( 1s, 1s );
 		halt if( s != "0173456289" );
-		s.swap( 0u, 8u );
+		s.swap( 0s, 8s );
 		halt if( s != "8173456209" );
 	}
 	{ // Indexing.
 		var ust::string8 s0("HjN"), mut s1("tyuio");
 
-		halt if( s0[0u] != "H"[0u] );
-		halt if( s0[1u] != "j"[0u] );
-		halt if( s0[2u] != "N"[0u] );
+		halt if( s0[0s] != "H"[0u] );
+		halt if( s0[1s] != "j"[0u] );
+		halt if( s0[2s] != "N"[0u] );
 
-		s1[2u]= "&"[0u]; // Can modify.
+		s1[2s]= "&"[0u]; // Can modify.
 		halt if( s1 != "ty&io" );
 	}
 	{ // +

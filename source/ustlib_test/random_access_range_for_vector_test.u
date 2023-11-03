@@ -26,7 +26,7 @@ fn nomangle main() : i32
 		var VecType mut vec;
 		vec.push_back( 66 );
 		foreach( &mut x : vec ){ x*= 2; }
-		halt if( vec[0u] != 132 );
+		halt if( vec[0s] != 132 );
 	}
 	{
 		var VecType mut vec;

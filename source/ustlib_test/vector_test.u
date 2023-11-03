@@ -152,11 +152,11 @@ fn nomangle main() : i32
 		i.push_back(6);
 		i.push_back(7);
 
-		i.swap( 1u, 7u );
-		halt if( i[1u] != 7 );
-		halt if( i[7u] != 1 );
+		i.swap( 1s, 7s );
+		halt if( i[1s] != 7 );
+		halt if( i[7s] != 1 );
 
-		i.swap( 2u, 2u ); // Does nothing, if indeces are equal.
+		i.swap( 2s, 2s ); // Does nothing, if indeces are equal.
 	}
 	{ // "front" and "back"
 		var I32Vec mut i;
@@ -185,25 +185,15 @@ fn nomangle main() : i32
 		i.push_back(1);
 		i.push_back(2);
 		i.push_back(3);
-		halt if( i[0u] != 0 );
-		halt if( i[1u] != 1 );
-		halt if( i[2u] != 2 );
-		halt if( i[3u] != 3 );
+		halt if( i[0s] != 0 );
+		halt if( i[1s] != 1 );
+		halt if( i[2s] != 2 );
+		halt if( i[3s] != 3 );
 
-		i[0u]= 666; // If vector is mutable, op[] returns mutable reference.
+		i[0s]= 666; // If vector is mutable, op[] returns mutable reference.
 
 		auto &r= i; // If vector is immutable, op[] returns immutable reference.
-		halt if( IsMutableReference( r[1u] ) );
-	}
-	{ // Indexing for u32 and u64 indexes.
-		var I32Vec mut i;
-
-		i.push_back(0);
-		i.push_back(1);
-		i.push_back(2);
-		halt if( i[ 0u   ] != 0 );
-		halt if( i[ 1u32 ] != 1 );
-		halt if( i[ 2u64 ] != 2 );
+		halt if( IsMutableReference( r[1s] ) );
 	}
 
 	{ // Vectors copying.
@@ -229,9 +219,9 @@ fn nomangle main() : i32
 		var I32Vec i_copy(i);
 
 		halt if( i_copy.size() != 3s );
-		halt if( i_copy[0u] != 0 );
-		halt if( i_copy[1u] != 1 );
-		halt if( i_copy[2u] != 2 );
+		halt if( i_copy[0s] != 0 );
+		halt if( i_copy[1s] != 1 );
+		halt if( i_copy[2s] != 2 );
 	}
 	{ // Copy-assign to empty vector.
 		var I32Vec mut i, mut j;
@@ -241,9 +231,9 @@ fn nomangle main() : i32
 		i.push_back(2);
 
 		j= i;
-		halt if( j[0u] != 0 );
-		halt if( j[1u] != 1 );
-		halt if( j[2u] != 2 );
+		halt if( j[0s] != 0 );
+		halt if( j[1s] != 1 );
+		halt if( j[2s] != 2 );
 	}
 	{ // Copy-assign empty vector.
 		var I32Vec mut i, mut j;
@@ -270,11 +260,11 @@ fn nomangle main() : i32
 		i= j;
 
 		halt if( j.size() != 5s );
-		halt if( i[0u] != 10 );
-		halt if( i[1u] != 11 );
-		halt if( i[2u] != 12 );
-		halt if( i[3u] != 13 );
-		halt if( i[4u] != 14 );
+		halt if( i[0s] != 10 );
+		halt if( i[1s] != 11 );
+		halt if( i[2s] != 12 );
+		halt if( i[3s] != 13 );
+		halt if( i[4s] != 14 );
 	}
 	{ // Copy-assign, element count decrease.
 		var I32Vec mut i, mut j;
@@ -291,9 +281,9 @@ fn nomangle main() : i32
 		j= i;
 
 		halt if( j.size() != 3s );
-		halt if( j[0u] != 0 );
-		halt if( j[1u] != 1 );
-		halt if( j[2u] != 2 );
+		halt if( j[0s] != 0 );
+		halt if( j[1s] != 1 );
+		halt if( j[2s] != 2 );
 	}
 	{ // Assignment of empty vector calls all destructors of destination vector.
 		var i32 mut x= 0;
@@ -338,11 +328,11 @@ fn nomangle main() : i32
 		v.push_back( 2s, 1 );
 
 		halt if( v.size() != 5s );
-		halt if( v[0u] != 0 );
-		halt if( v[1u] != 0 );
-		halt if( v[2u] != 0 );
-		halt if( v[3u] != 1 );
-		halt if( v[4u] != 1 );
+		halt if( v[0s] != 0 );
+		halt if( v[1s] != 0 );
+		halt if( v[2s] != 0 );
+		halt if( v[3s] != 1 );
+		halt if( v[4s] != 1 );
 
 		v.drop_back( 0s );
 		halt if( v.size() != 5s );
@@ -358,10 +348,10 @@ fn nomangle main() : i32
 		v.resize( 4s, 333 );
 
 		halt if( v.size() != 4s );
-		halt if( v[0u] != 333 );
-		halt if( v[1u] != 333 );
-		halt if( v[2u] != 333 );
-		halt if( v[3u] != 333 );
+		halt if( v[0s] != 333 );
+		halt if( v[1s] != 333 );
+		halt if( v[2s] != 333 );
+		halt if( v[3s] != 333 );
 
 		v.resize( 0s, 0 );
 		halt if( !v.empty() );

@@ -180,32 +180,6 @@ public:
 		return unsafe( $>(ptr_ + index) );
 	}
 
-	op enable_if( c_size_type_is_u64_ ) [](  mut this, u32 index )
-		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
-	{
-		return this[ size_type(index) ];
-	}
-
-	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index )
-		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
-	{
-		return this[ size_type(index) ];
-	}
-
-	op enable_if( c_size_type_is_u32_ ) [](  mut this, u64 index )
-		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
-	{
-		halt if( index > u64(size_) );
-		return this[ size_type(index) ];
-	}
-
-	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index )
-		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
-	{
-		halt if( index > u64(size_) );
-		return this[ size_type(index) ];
-	}
-
 	// front/back
 
 	fn front(  mut this )
@@ -299,18 +273,6 @@ public:
 		if( i0 == i1 ){ return; }
 
 		unsafe( ust::swap( $>(ptr_ + i0), $>(ptr_ + i1) ) );
-	}
-
-	fn enable_if( c_size_type_is_u64_ ) swap( mut this, u32 i0, u32 i1 )
-	{
-		swap( size_type(i0), size_type(i1) );
-	}
-
-	fn enable_if( c_size_type_is_u32_ ) swap( mut this, u64 i0, u64 i1 )
-	{
-		halt if( i0 >= u64(size_) );
-		halt if( i1 >= u64(size_) );
-		swap( size_type(i0), size_type(i1) );
 	}
 
 	fn push_back( mut this, T mut val ) @( c_param1_pollution )
@@ -471,9 +433,6 @@ private:
 	auto constexpr c_element_alignment_= typeinfo</T/>.align_of;
 	auto constexpr c_first_allocation_size_= get_vector_first_allocation_size( c_element_size_ );
 	auto constexpr c_references_tags_count= typeinfo</T/>.references_tags_count;
-
-	auto c_size_type_is_u32_= typeinfo</ size_type />.size_of == typeinfo</ u32 />.size_of;
-	auto c_size_type_is_u64_= typeinfo</ size_type />.size_of == typeinfo</ u64 />.size_of;
 
 	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_references_tags_count />();
 	auto c_param2_pollution= reference_notation::pollution::param_n_param_m_all_inner_references</ c_references_tags_count />( 0u8, 2u8 );

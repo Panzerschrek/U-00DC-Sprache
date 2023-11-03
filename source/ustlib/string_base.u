@@ -158,28 +158,6 @@ public:
 		return unsafe( $>(ptr_ + index ) );
 	}
 
-	op enable_if( c_size_type_is_u64_ ) [](  mut this, u32 index ) : char_type & mut @( reference_notation::return_references::param0 )
-	{
-		return this[ size_type(index) ];
-	}
-
-	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index ) : char_type &imut @( reference_notation::return_references::param0 )
-	{
-		return this[ size_type(index) ];
-	}
-
-	op enable_if( c_size_type_is_u32_ ) [](  mut this, u64 index ) : char_type & mut @( reference_notation::return_references::param0 )
-	{
-		halt if( index > u64(size_) );
-		return this[ size_type(index) ];
-	}
-
-	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index ) : char_type &imut @( reference_notation::return_references::param0 )
-	{
-		halt if( index > u64(size_) );
-		return this[ size_type(index) ];
-	}
-
 	// front/back
 
 	fn front(  mut this ) : char_type & mut @( reference_notation::return_references::param0 )
@@ -315,18 +293,6 @@ public:
 			$>(ptr_ + i0)= c1;
 			$>(ptr_ + i1)= c0;
 		}
-	}
-
-	fn enable_if( c_size_type_is_u64_ ) swap( mut this, u32 i0, u32 i1 )
-	{
-		return swap( size_type(i0), size_type(i1) );
-	}
-
-	fn enable_if( c_size_type_is_u32_ ) swap( mut this, u64 i0, u64 i1 )
-	{
-		halt if( i0 >= u64(size_) );
-		halt if( i1 >= u64(size_) );
-		return swap( size_type(i0), size_type(i1) );
 	}
 
 	fn push_back( mut this, char_type val )
@@ -502,9 +468,6 @@ private:
 	auto constexpr c_element_size_= typeinfo</char_type/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</char_type/>.align_of;
 	auto constexpr c_first_allocation_size_= get_vector_first_allocation_size( c_element_size_ );
-
-	auto c_size_type_is_u32_= typeinfo</ size_type />.size_of == typeinfo</ u32 />.size_of;
-	auto c_size_type_is_u64_= typeinfo</ size_type />.size_of == typeinfo</ u64 />.size_of;
 
 private:
 	fn ensure_capacity( mut this, size_type new_size ) unsafe
