@@ -306,16 +306,16 @@ FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_ty
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
-	llvm::SmallVector<llvm::Type*, 16> args_llvm_types;
+	llvm::SmallVector<llvm::Type*, 16> params_llvm_types;
 
 	// Require complete type in order to know how to return values.
 	if( function_type.return_value_type == ValueType::Value )
 		EnsureTypeComplete( function_type.return_type );
 
-	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
+	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
 
-	if( first_arg_is_sret )
-		args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
+	if( first_param_is_sret )
+		params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 
 	for( const FunctionType::Param& param : function_type.params )
 	{
@@ -354,13 +354,13 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 			type= type->getPointerTo();
 		}
 
-		args_llvm_types.push_back( type );
+		params_llvm_types.push_back( type );
 	}
 
 	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
 	if( function_type.return_value_type == ValueType::Value )
 	{
-		if( first_arg_is_sret || function_type.return_type == void_type_ )
+		if( first_param_is_sret || function_type.return_type == void_type_ )
 		{
 			// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
 			llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
@@ -374,7 +374,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	else
 		llvm_function_return_type= llvm_function_return_type->getPointerTo();
 
-	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
+	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
 }
 
 llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(

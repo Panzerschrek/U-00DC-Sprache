@@ -2112,13 +2112,13 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	if( function_variable.is_generator )
 		llvm_function->addFnAttr( llvm::Attribute::PresplitCoroutine );
 
-	// Prepare args attributes.
+	// Prepare params attributes.
 
-	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
+	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto param_attr_index= uint32_t(i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool pass_value_param_by_hidden_ref=
@@ -2143,7 +2143,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	}
 
 	// Prepare ret attributes.
-	if( first_arg_is_sret )
+	if( first_param_is_sret )
 	{
 		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
 
@@ -2172,11 +2172,11 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	const FunctionType& function_type= function_variable.type;
 
-	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
+	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto param_attr_index= uint32_t(i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool pass_value_param_by_hidden_ref=
@@ -2198,7 +2198,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 	if( !llvm_ret_type->isSized() )
 		return; // May be in case of error.
 
-	if( first_arg_is_sret )
+	if( first_param_is_sret )
 		llvm_function->addDereferenceableParamAttr( 0, data_layout_.getTypeAllocSize( llvm_ret_type ) );
 	else if( function_type.return_value_type != ValueType::Value )
 	{

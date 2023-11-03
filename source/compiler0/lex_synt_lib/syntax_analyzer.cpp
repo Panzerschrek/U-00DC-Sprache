@@ -3706,7 +3706,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				PushErrorMessage();
 				TryRecoverAfterError( g_template_arguments_list_control_lexems );
 			}
-		} // for signature args
+		} // for signature params
 	}
 	else
 		is_short_form= true;

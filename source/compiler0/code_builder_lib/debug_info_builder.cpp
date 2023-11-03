@@ -401,14 +401,14 @@ llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionTy
 {
 	U_ASSERT(builder_ != nullptr);
 
-	llvm::SmallVector<llvm::Metadata*, 16> args;
-	args.reserve( type.params.size() + 1u );
+	llvm::SmallVector<llvm::Metadata*, 16> params;
+	params.reserve( type.params.size() + 1u );
 
 	{
 		llvm::DIType* di_type= CreateDIType( type.return_type );
 		if( type.return_value_type != ValueType::Value )
 			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
-		args.push_back( di_type );
+		params.push_back( di_type );
 	}
 
 	for( const FunctionType::Param& param : type.params )
@@ -416,10 +416,10 @@ llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionTy
 		llvm::DIType* di_type= CreateDIType( param.type );
 		if( param.value_type != ValueType::Value )
 			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
-		args.push_back( di_type );
+		params.push_back( di_type );
 	}
 
-	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
+	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(params) );
 }
 
 void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
