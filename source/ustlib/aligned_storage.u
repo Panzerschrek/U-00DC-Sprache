@@ -26,8 +26,12 @@ template</ size_type alignment />
 struct aligned_storage</ 0s, alignment />
 {}
 
+// Unsafe, since caller must ensure that logical reference pollution doesn't actually happens with "swap".
+// It is totally fine to call "swap" for types without references inside.
+// It's also fine to call it inside containers to swap contained values.
+// But swapping different variables with references inside isn't supported yet.
 template</type T/>
-fn swap( T &mut a, T &mut b )
+fn swap( T &mut a, T &mut b ) unsafe
 {
 	auto constexpr size= typeinfo</T/>.size_of;
 	auto constexpr alignment= typeinfo</T/>.align_of;

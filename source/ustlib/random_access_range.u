@@ -207,7 +207,7 @@ public:
 
 		if( i0 == i1 ){ return; }
 
-		ust::swap( unsafe( $>(begin_ + i0) ), unsafe( $>(begin_ + i1) ) );
+		unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
 	}
 
 private:
