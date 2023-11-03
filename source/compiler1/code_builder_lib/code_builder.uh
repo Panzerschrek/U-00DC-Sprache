@@ -789,13 +789,7 @@ private:
 	fn FinishTypeinfoList( mut this, ust::vector</Type/> mut element_types, ust::array_view_imut</LLVMValueRef/> initializers ) : VariablePtr;
 
 	// Virtual stuff
-	fn CheckvirtualFunctionOverridingReferenceNotation(
-		this,
-		NamesScopePtr& names_scope,
-		SrcLoc& src_loc,
-		FunctionVariable& src_function,
-		FunctionVariable& new_function,
-		ClassType& new_class_type );
+
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type_ptr );
 

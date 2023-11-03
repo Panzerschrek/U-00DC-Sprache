@@ -201,7 +201,6 @@ PROCESS_ERROR( VirtualForPrivateFunction, "Virtual for private function \"{0}\".
 PROCESS_ERROR( VirtualForFunctionTemplate, "\"virtual\" for template function \"{0}\"." )
 PROCESS_ERROR( VirtualForFunctionImplementation, "\"virtual\" for function implementation \"{0}\"." )
 PROCESS_ERROR( VirtualMismatch, "\"virtual\" specifiers mismatch for function \"{0}\"." )
-PROCESS_ERROR( FunctionOverridingWithReferencesNotationChange, "Function overriding causes changes in references notation (return references or references pollution)." )
 
 // NoMangle
 PROCESS_ERROR( NoMangleForNonglobalFunction, "\"nomangle\" for non-global function \"{0}\"." )

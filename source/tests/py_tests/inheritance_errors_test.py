@@ -633,67 +633,6 @@ def TakeForNonFinalPolymorphClass_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def FunctionOverridingWithReferencesNotationChange_Test2():
-	c_program_text= """
-	class A polymorph
-	{
-		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		fn virtual Foo(this) : i32 & @(return_references)
-		{
-			return x;
-		}
-		i32& x;
-	}
-	class B : A
-	{
-		// Ok, inner reference kind doesn't changed.
-		fn virtual override Foo(this) : i32 & @(return_references);
-		i32& @("a"c8) y;
-	}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test2():
-	c_program_text= """
-	struct S{ i32& x; }
-	class A abstract
-	{
-		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1a" ] ];
-		fn virtual pure Foo( mut this, S& s ) @(pollution);
-		i32& x;
-	}
-	class B : A
-	{
-		// Ok, inner reference kind doesn't changed.
-		fn virtual override Foo( mut this, S& s ) @(pollution);
-		i32& @("a"c8) y;
-	}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test6():
-	c_program_text= """
-	class A polymorph
-	{
-		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn virtual Foo( mut this, i32& x ) @(pollution);
-		i32& x;
-	}
-	class B : A
-	{
-		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because inner reference kind was changed ("imut" to "mut").
-		fn virtual override Foo( mut this, i32& x ) @(pollution);
-		i32 &mut x;
-	}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
-	assert( errors_list[0].src_loc.line == 11 )
-
-
 def EqualityCompareOperatorIsNotInherited_Test0():
 	c_program_text= """
 		class Base polymorph

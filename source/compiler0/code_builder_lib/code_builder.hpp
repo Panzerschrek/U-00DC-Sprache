@@ -308,11 +308,7 @@ private:
 	static llvm::Type* GetSingleScalarType( llvm::Type* type );
 
 	// Virtual stuff
-	void CheckvirtualFunctionOverridingReferenceNotation(
-		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& src_loc,
-		const FunctionVariable& src_function,
-		const FunctionVariable& new_function );
+
 	void PrepareClassVirtualTable( Class& the_class );
 	void PrepareClassVirtualTableType( ClassPtr class_type );
 

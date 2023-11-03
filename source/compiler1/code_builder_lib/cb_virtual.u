@@ -19,58 +19,6 @@ struct VirtualFunctionWithName
 	}
 }
 
-fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
-	this,
-	NamesScopePtr& names_scope,
-	SrcLoc& src_loc,
-	FunctionVariable& src_function,
-	FunctionVariable& new_function,
-	ClassType& new_class_type )
-{
-	ust::ignore_unused( new_function ); // Leave it for simmetry reasons.
-	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
-
-	if( src_function_this_type.lock_imut().deref().inner_references == new_class_type.inner_references )
-	{
-		// Ok - nothing changed.
-		return;
-	}
-
-	// In case if inner reference kind changed - check this function.
-
-	// TODO - maybe allow returning of "this" inner references if inner reference kind "imut" to "mut" was changed?
-
-	var FunctionType::ParamReference this_inner_reference{ .param_index(0), .reference_index(0) };
-
-	// Disable inner reference kind change if function returns "this" inner reference.
-	foreach( &return_reference : src_function.t.return_references )
-	{
-		if( return_reference == this_inner_reference )
-		{
-			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
-		}
-	}
-	foreach( &tag_inner_references : src_function.t.return_inner_references )
-	{
-		foreach( &return_reference : tag_inner_references )
-		{
-			if( return_reference == this_inner_reference )
-			{
-				REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
-			}
-		}
-	}
-
-	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
-	foreach( &reference_pollution : src_function.t.references_pollution )
-	{
-		if( reference_pollution.src == this_inner_reference || reference_pollution.dst == this_inner_reference )
-		{
-			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
-		}
-	}
-}
-
 fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 {
 	// Class now should not be complete, but parents and functions should be known.
@@ -199,7 +147,6 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
 			if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
 			{
-				CheckvirtualFunctionOverridingReferenceNotation( class_members_ptr, src_loc, entry.function_variable, function, class_type );
 				virtual_table_index= i;
 				break;
 			}

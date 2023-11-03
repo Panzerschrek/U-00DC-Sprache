@@ -6,55 +6,6 @@
 namespace U
 {
 
-void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
-	CodeBuilderErrorsContainer& errors_container,
-	const SrcLoc& src_loc,
-	const FunctionVariable& src_function,
-	const FunctionVariable& new_function )
-{
-	const FunctionType& src_function_type= src_function.type;
-	const FunctionType& new_function_type= new_function.type;
-	U_ASSERT( !src_function_type.params.empty() );
-	U_ASSERT( !new_function_type.params.empty() );
-	U_ASSERT( src_function_type.params.front().type.GetClassType() != nullptr );
-	U_ASSERT( new_function_type.params.front().type.GetClassType() != nullptr );
-	U_ASSERT( src_function_type.return_references == new_function_type.return_references );
-	U_ASSERT( src_function_type.return_inner_references == new_function_type.return_inner_references );
-	U_ASSERT( src_function_type.references_pollution == new_function_type.references_pollution );
-
-	const auto& src_class_inner_references= src_function_type.params.front().type.GetClassType()->inner_references;
-	const auto& new_class_inner_references= new_function_type.params.front().type.GetClassType()->inner_references;
-
-	if( src_class_inner_references == new_class_inner_references )
-	{
-		// Ok - nothing changed.
-		return;
-	}
-
-	// In case if inner reference kind changed - check this function.
-
-	// TODO - maybe allow returning of "this" inner references if inner reference kind "imut" to "mut" was changed?
-
-	FunctionType::ParamReference this_inner_reference;
-	this_inner_reference.first= 0;
-	this_inner_reference.second= 0;
-
-	// Disable inner reference kind change if function returns "this" inner reference.
-	for( const FunctionType::ParamReference& return_reference : src_function_type.return_references )
-		if( return_reference == this_inner_reference )
-			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
-
-	for( const auto& inner_referencs_set : src_function_type.return_inner_references )
-		for( const FunctionType::ParamReference& return_reference : inner_referencs_set )
-			if( return_reference == this_inner_reference )
-				REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
-
-	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
-	for( const FunctionType::ReferencePollution& reference_pollution : src_function_type.references_pollution )
-		if( reference_pollution.src == this_inner_reference || reference_pollution.dst == this_inner_reference )
-			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, errors_container, src_loc );
-}
-
 void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 {
 	U_ASSERT( !the_class.is_complete );
@@ -150,7 +101,6 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 		{
 			if( e.name == function_name && e.function_variable.VirtuallyEquals( function ) )
 			{
-				CheckvirtualFunctionOverridingReferenceNotation( errors_container, src_loc, e.function_variable, function );
 				virtual_table_entry= &e;
 				break;
 			}
