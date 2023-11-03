@@ -1,4 +1,4 @@
-static_assert( compiler::version == "0.6" );
+static_assert( compiler::version == "0.7" );
 static_assert( compiler::generation <= 10s );
 static_assert( typeinfo</ typeof(compiler::git_revision) />.element_count == 40s );
 
