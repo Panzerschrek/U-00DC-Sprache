@@ -1236,7 +1236,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			function_context.args_nodes[arg_n]= variable_ptr;
 
 			auto references_tags_count= type_param.t.ReferencesTagsCount();
-			for( auto mut i= 0u; i < references_tags_count; ++i )
+			for( auto mut i= 0s; i < size_type(references_tags_count); ++i )
 			{
 				var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
 				function_context.references_graph.AddLink(
@@ -1517,7 +1517,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 		{
 			with( &global_variable : global_variable_ptr.try_lock_imut().deref() )
 			{
-				var SrcLoc& src_loc= global_variable.syntax_element.deref().variables[global_variable.variable_index].src_loc;
+				var SrcLoc& src_loc= global_variable.syntax_element.deref().variables[ size_type(global_variable.variable_index) ].src_loc;
 				if( !global_variable.referenced && src_loc.GetFileIndex() == 0u )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )

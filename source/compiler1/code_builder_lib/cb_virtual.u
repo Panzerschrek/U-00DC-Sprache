@@ -193,14 +193,14 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			virtual_kind= el.virtual_kind;
 		}
 
-		auto mut virtual_table_index= ~0u;
+		auto mut virtual_table_index= ~0s;
 		for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
 		{
 			var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
 			if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
 			{
 				CheckvirtualFunctionOverridingReferenceNotation( class_members_ptr, src_loc, entry.function_variable, function, class_type );
-				virtual_table_index= u32(i);
+				virtual_table_index= i;
 				break;
 			}
 		}
@@ -217,9 +217,9 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			{
 				// For destructors virtual specifiers are optional.
 				// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
-				if( virtual_table_index != ~0u )
+				if( virtual_table_index != ~0s )
 				{
-					function.virtual_table_index= virtual_table_index;
+					function.virtual_table_index= u32(virtual_table_index);
 					class_type.virtual_table[virtual_table_index].function_variable= function;
 				}
 				else if(
@@ -243,14 +243,14 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 					++own_virtual_table_index;
 				}
 			}
-			else if( virtual_table_index != ~0u )
+			else if( virtual_table_index != ~0s )
 			{
 				REPORT_ERROR( VirtualRequired, class_members_ptr, src_loc, function_name )
 			}
 		}
 		else if( virtual_kind == Synt::Function::VirtualKind::DeclareVirtual )
 		{
-			if( virtual_table_index != ~0u )
+			if( virtual_table_index != ~0s )
 			{
 				REPORT_ERROR( OverrideRequired, class_members_ptr, src_loc, function_name )
 			}
@@ -273,7 +273,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		}
 		else if( virtual_kind == Synt::Function::VirtualKind::VirtualOverride )
 		{
-			if( virtual_table_index == ~0u )
+			if( virtual_table_index == ~0s )
 			{
 				REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, src_loc, function_name )
 			}
@@ -283,15 +283,15 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			}
 			else
 			{
-				function.virtual_table_index= virtual_table_index;
-				var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+				function.virtual_table_index= u32(virtual_table_index);
+				var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[ size_type(virtual_table_index) ];
 				entry.function_variable= function;
 				entry.is_pure= false;
 			}
 		}
 		else if( virtual_kind == Synt::Function::VirtualKind::VirtualFinal )
 		{
-			if( virtual_table_index == ~0u )
+			if( virtual_table_index == ~0s )
 			{
 				REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, src_loc, function_name )
 			}
@@ -301,7 +301,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			}
 			else
 			{
-				function.virtual_table_index= virtual_table_index;
+				function.virtual_table_index= u32(virtual_table_index);
 				var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
 				entry.function_variable= function;
 				entry.is_pure= false;
@@ -310,7 +310,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		}
 		else if( virtual_kind == Synt::Function::VirtualKind::VirtualPure )
 		{
-			if( virtual_table_index != ~0u )
+			if( virtual_table_index != ~0s )
 			{
 				REPORT_ERROR( OverrideRequired, class_members_ptr, src_loc, function_name )
 			}
@@ -712,7 +712,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		MarkInstructionWithTBAAMetadata( virtual_table_ptr, access_tag );
 	}
 
-	var ClassType::VirtualTableEntry& first_virtual_table_entry= class_type.virtual_table[ function.virtual_table_index ];
+	var ClassType::VirtualTableEntry& first_virtual_table_entry= class_type.virtual_table[ size_type(function.virtual_table_index) ];
 	auto mut parent_virtual_table_index= first_virtual_table_entry.parent_virtual_table_index;
 	auto mut index_in_table= first_virtual_table_entry.index_in_table;
 	var ClassTypePtr mut current_class_ptr= class_type_ptr;
@@ -724,7 +724,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		auto& current_class= current_class_lock.deref();
 
 		auto mut field_index= ~0u;
-		if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
+		if( current_class.parents[ size_type(parent_virtual_table_index) ].field_number == 0u )
 		{
 			field_index= 0u;
 		}
@@ -750,11 +750,11 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			function_virtual_table= LLVMBuildGEP2( function_context.llvm_ir_builder,current_class.virtual_table_llvm_type, function_virtual_table, $<(index_list[0]), 2u, g_null_string );
 		}
 
-		auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
+		auto next_class_ptr= current_class.parents[ size_type(parent_virtual_table_index) ].class_;
 
 		auto next_class_lock= next_class_ptr.lock_imut();
 		auto& next_class= next_class_lock.deref();
-		var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
+		var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ size_type(index_in_table) ];
 		parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
 		index_in_table= next_virtual_table_entry.index_in_table;
 

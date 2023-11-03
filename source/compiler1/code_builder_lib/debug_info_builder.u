@@ -94,7 +94,7 @@ fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variab
 
 	with( &lazy_function : func_variable.llvm_function.lock_imut().deref() )
 	{
-		var LLVMMetadataRef file= source_file_entries_[ src_loc.GetFileIndex() ];
+		var LLVMMetadataRef file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
 
 		var ust::string8& linkage_name= lazy_function.name_mangled;
 
@@ -149,7 +149,7 @@ fn DebugInfoBuilder::StartBlock( mut this, FunctionContext &mut function_context
 	function_context.current_debug_info_scope= unsafe( LLVMDIBuilderCreateLexicalBlock(
 		builder_,
 		function_context.current_debug_info_scope,
-		source_file_entries_[ src_loc.GetFileIndex() ],
+		source_file_entries_[ size_type(src_loc.GetFileIndex()) ],
 		src_loc.GetLine(),
 		src_loc.GetColumn() ) );
 
@@ -179,7 +179,7 @@ fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_con
 			builder_,
 			function_context.current_debug_info_scope,
 			cast_mut(name).data(), name.size(),
-			source_file_entries_[ src_loc.GetFileIndex() ],
+			source_file_entries_[ size_type(src_loc.GetFileIndex()) ],
 			src_loc.GetLine(),
 			CreateDIType( variable.t ),
 			LLVMBool::False, // AlwaysPreserve
@@ -224,7 +224,7 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 			builder_,
 			function_context.current_debug_info_scope,
 			cast_mut(name).data(), name.size(),
-			source_file_entries_[ src_loc.GetFileIndex() ],
+			source_file_entries_[ size_type(src_loc.GetFileIndex()) ],
 			src_loc.GetLine(),
 			di_type,
 			LLVMBool::False, // AlwaysPreserve
@@ -433,7 +433,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadat
 		src_loc= syntax_element.src_loc;
 	}
 
-	auto di_file= source_file_entries_[ src_loc.GetFileIndex() ];
+	auto di_file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
 
 	var ust::string8 name= Type(t).ToString();
 
@@ -484,7 +484,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 	}
 
 	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
-	auto di_file= source_file_entries_[ src_loc.GetFileIndex() ];
+	auto di_file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
 
 	var ust::string8 name= Type(t).ToString();
 
@@ -569,7 +569,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 		src_loc= syntax_element.src_loc;
 	}
 
-	auto di_file= source_file_entries_[ src_loc.GetFileIndex() ];
+	auto di_file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
 
 	var ust::vector</LLVMMetadataRef/> mut elements;
 	var u64 mut size_in_bits(1);

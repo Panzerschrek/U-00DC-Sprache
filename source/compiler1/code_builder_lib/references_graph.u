@@ -113,7 +113,7 @@ fn ReferencesGraph::TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& 
 
 		with( &from_val : from.lock_imut().deref() )
 		{
-			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
 			{
 				TryAddLink( from_val.inner_reference_nodes[i], to_val.inner_reference_nodes[i], names_scope, src_loc );
 			}
@@ -162,7 +162,7 @@ fn ReferencesGraph::TryAddInnerLinksForClassField( mut this, VariablePtr& from, 
 
 		with( &from_val : from.lock_imut().deref() )
 		{
-			for( auto mut i= 0u; i < field_type_reference_tag_count; ++i )
+			for( auto mut i= 0s; i < size_type(field_type_reference_tag_count); ++i )
 			{
 				auto src_tag_number= size_type( field.inner_reference_tags[i] );
 				TryAddLink( from_val.inner_reference_nodes[src_tag_number], to_val.inner_reference_nodes[i], names_scope, src_loc );

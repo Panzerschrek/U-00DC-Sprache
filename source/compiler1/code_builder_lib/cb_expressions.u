@@ -2000,7 +2000,7 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 	};
 
 	// Child class reference tags are mapped 1 to 1 to parent class tags.
-	for( var u32 mut i= 0u, reference_tag_count= base_type.ReferencesTagsCount(); i < reference_tag_count; ++i )
+	for( var size_type mut i= 0s, reference_tag_count= size_type(base_type.ReferencesTagsCount()); i < reference_tag_count; ++i )
 	{
 		base_.inner_reference_nodes.push_back( variable.inner_reference_nodes[i] );
 	}
@@ -2160,7 +2160,7 @@ fn CodeBuilder::AccessDirectClassField(
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
 
-		for( var u32 mut i= 0u, reference_tag_count= field.t.ReferencesTagsCount(); i < reference_tag_count; ++i )
+		for( var size_type mut i= 0s, reference_tag_count= size_type(field.t.ReferencesTagsCount()); i < reference_tag_count; ++i )
 		{
 			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( field.inner_reference_tags[i] ) ] );
 		}

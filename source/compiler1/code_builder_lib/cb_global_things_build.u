@@ -116,7 +116,7 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		{
 			auto lock= global_variable_ptr.try_lock_imut();
 			var GlobalVariable& global_variable= lock.deref();
-			return global_variable.syntax_element.deref().variables[ global_variable.variable_index ].name;
+			return global_variable.syntax_element.deref().variables[ size_type(global_variable.variable_index) ].name;
 		}
 	}
 	{
@@ -509,22 +509,22 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// TODO - use libary sorting function.
 			while( !fields_left.empty() )
 			{
-				var u32 mut min_index= ~0u;
-				var u32 mut min_index_index= ~0u;
+				var size_type mut min_index= ~0s;
+				var size_type mut min_index_index= ~0s;
 				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
 					auto field_lock= fields_left[i].lock_imut();
 					var ClassField& field= field_lock.deref();
-					if( field.original_index < min_index )
+					if( size_type(field.original_index) < min_index )
 					{
-						min_index= field.original_index;
-						min_index_index= u32(i);
+						min_index= size_type(field.original_index);
+						min_index_index= i;
 					}
 				}
 
 				auto field_ptr= fields_left[min_index_index];
 
-				if( min_index_index + 1u < u32(fields_left.size()) )
+				if( min_index_index + 1s < fields_left.size() )
 				{
 					auto f= fields_left.back();
 					fields_left[min_index_index]= f;
@@ -711,10 +711,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto reference_tag_count= field.t.ReferencesTagsCount();
 			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
 			class_.inner_references.resize( size_type(reference_tag_count), InnerReferenceKind::Imut );
-			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
 			{
 				field.inner_reference_tags[i]= u8(i);
-				class_.inner_references[i]= field.t.GetInnerReferenceKind( size_type(i) );
+				class_.inner_references[i]= field.t.GetInnerReferenceKind(i);
 			}
 		}
 		else
@@ -791,7 +791,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						field.inner_reference_tags.resize( size_type(reference_tag_count), 0u8 );
 					}
 
-					for( auto mut i= 0u; i < reference_tag_count; ++i )
+					for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
 					{
 						auto tag= field.inner_reference_tags[i];
 						auto s= ust::max( size_type(tag) + 1s, class_.inner_references.size() );
@@ -1424,7 +1424,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	auto variables_declaration_ptr= global_variable_ptr.lock_imut().deref().syntax_element;
 	auto& variables_declaration= variables_declaration_ptr.deref();
-	auto& variable_declaration= variables_declaration.variables[ global_variable_ptr.lock_imut().deref().variable_index ];
+	auto& variable_declaration= variables_declaration.variables[ size_type(global_variable_ptr.lock_imut().deref().variable_index) ];
 
 	var bool externally_available= variables_declaration.src_loc.GetFileIndex() != 0u;
 

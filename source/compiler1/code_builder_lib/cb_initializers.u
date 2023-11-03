@@ -351,7 +351,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			}
 			if( is_constexpr )
 			{
-				constant_initializers[class_field.index]= initializer;
+				constant_initializers[ size_type(class_field.index) ]= initializer;
 			}
 		}
 		else
@@ -379,7 +379,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			}
 			if( is_constexpr )
 			{
-				constant_initializers[class_field.index]= initializer;
+				constant_initializers[ size_type(class_field.index) ]= initializer;
 			}
 		}
 	}
@@ -447,7 +447,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		if( is_constexpr )
 		{
-			constant_initializers[field.index]= constexpr_initializer;
+			constant_initializers[ size_type(field.index) ]= constexpr_initializer;
 		}
 	}
 
@@ -1469,7 +1469,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			}
 		}
 
-		function_context.initialized_this_fields[ class_field.index ]= true;
+		function_context.initialized_this_fields[ size_type(class_field.index) ]= true;
 	}
 
 	// Apply explicit initializers.
@@ -1520,7 +1520,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
 		}
 
-		function_context.initialized_this_fields[ class_field.index ]= true;
+		function_context.initialized_this_fields[ size_type(class_field.index) ]= true;
 	}
 
 	function_context.whole_this_is_unavailable= false;

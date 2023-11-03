@@ -933,7 +933,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 		auto& param= function_template.signature_params[i];
 		if_var( &template_param : param.GetTemplateParam() )
 		{
-			auto& param_name= function_template.params[template_param.index].name;
+			auto& param_name= function_template.params[ size_type(template_param.index) ].name;
 			auto template_arg_value= result_names_scope.lock_imut().deref().GetThisScopeValue( param_name ).try_deref();
 			auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
@@ -1258,14 +1258,14 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateSignatureParam::TemplateParam& template_param,
 	TemplateArgFinished& given_arg ) : bool
 {
-	auto& param_name= template_.params[template_param.index].name;
+	auto& param_name= template_.params[ size_type(template_param.index) ].name;
 	auto template_arg_value= names_scope.lock_imut().deref().GetThisScopeValue( param_name ).try_deref();
 	auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
 	auto mut template_arg_lock= template_arg_ptr.try_lock_mut();
 	auto &mut template_arg= template_arg_lock.deref();
 
-	auto& param_type= template_.params[template_param.index].t;
+	auto& param_type= template_.params[ size_type(template_param.index) ].t;
 	if( !param_type.empty() )
 	{
 		// Value param
