@@ -1440,7 +1440,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			v.children.resize( tuple_type.element_types.size() );
 			{
-				var VariableNullablePtr prev_node= v.children[ type_index ];
+				var VariableNullablePtr prev_node= v.children[ size_type(type_index) ];
 				if( !prev_node.empty() )
 				{
 					var VariablePtr mut prev_node_non_null= prev_node.try_to_non_nullable();
@@ -1449,7 +1449,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			var Type& element_type= tuple_type.element_types[type_index];
+			var Type& element_type= tuple_type.element_types[ size_type(type_index) ];
 			var Variable mut result
 			{
 				.t= element_type,
@@ -1480,7 +1480,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			var VariablePtr mut result_ptr= move(result).CreateChildPtr( variable_ptr );
 			function_context.references_graph.AddNode( result_ptr );
-			v.children[ type_index ]= result_ptr;
+			v.children[ size_type(type_index) ]= result_ptr;
 			return move(result_ptr);
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, index.t )

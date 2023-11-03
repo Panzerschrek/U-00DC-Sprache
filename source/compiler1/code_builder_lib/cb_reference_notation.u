@@ -60,7 +60,7 @@ fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_
 			var u64 value= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ) );
 			if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
 			{
-				result[i]= u8( value - u64( "a"c8 ) );
+				result[ size_type(i) ]= u8( value - u64( "a"c8 ) );
 			}
 			else
 			{
