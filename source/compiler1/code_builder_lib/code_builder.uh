@@ -967,6 +967,8 @@ private:
 	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
 	fn RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr variable, size_type frame_index_from_top );
 
+	// Reference checking.
+
 	fn CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
 	fn CheckFunctionReferencesNotationParamReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
