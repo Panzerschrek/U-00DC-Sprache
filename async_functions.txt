@@ -1,0 +1,48 @@
+V Ü hotelosj by imetj asinhronnyje funkçii i mehanizm raboty s nimi.
+
+Bazirovatjsä oni dolžny na korutinah iz "LLVM", kak i raneje realizovanyje generatory.
+Dlä nih poetomu çelesoobrazno ispoljzovatj suscestvujuscij operator "if_coro_advance".
+
+Asinhornnyje funkçii dolžny objavlätjsä tak že, kak i generatory, no s klücevym slovom "async", vmesto "generator".
+Vnutri oni dolžny bytj realizovany shožim obrazom.
+Tip vozvrascajemogo znacenija asinhronnoj funkçii - eto speçialjnyj sozdavajemyj kompilätorom klass (kak i dlä generatorov).
+
+Vozvrat iz asinhronnyh funkçij možno realizovatj cerez klücevoje slovo "return" - kak i v obycnyh funkçijah.
+Razniça toljko budet vo vnutrennej realizaçii, kotoraja budet sohranätj rezuljtat v speçialjnom hranilisce objekta-korutiny, i delatj okoncateljnyj "suspend".
+
+Operator "if_coro_advance" dolžen bytj dorabotan dlä ispoljzovanija dlä asinhronnyh funkçij - s ucötom togo fakta, cto oni vozvrascajut znacenije toljko odin raz.
+
+Takže budet polezno imetj sposob priostanovitj vypolnenije asinhronnoj funkçii v proizvoljnom meste.
+Dlä etogo možno, naprimer, zaispoljzovatj operator "yield".
+No pri etom v asinhronnyh funkçijah budet razrešeno ispoljzovatj toljko pustoj "yield" (bez znacenija).
+
+Nužen takže sintaksis tipa dlä objektov asihronnyh funkçij, analogicno tipu generatorov.
+Možno prosto sdelatj tak že, no s drugim klücevym slovom, "async", naprimer, ili "async fn".
+
+Dlä udobstva vyzova asinhronnyh funkçij iz drugih asinhronnyh funkçij udobno bylo by imetj operator "await".
+Etot operator dolžen rabotatj so znacenijami (i toljko znacenijami, a ne ssylkami) peremennyh-asinhronnyh funkçij.
+Kak tocno jego realizovatj - poka ne do konça ponätno.
+
+Odna iz vozmožnyh realizaçij "await" vyglädit sledujuscim obrazom:
+1) Vyzvatj "halt", jesli asinhronnaja funkçija uže zaveršilasj.
+2) Vyzvatj "resume" u peredannoj asinhronnoj funkçii.
+3) Proveritj, gotov li rezuljtat u vyzvannoj funkçii.
+4) Jesli rezuljtat gotov - izvlecj jego i razrušitj objekt asinhronnoj funkçii, prodolžitj posledujusceje vypolnenije tekuscej funkçii.
+5) Jesli rezuljtat ne gotov - vyzvatj "suspend" tekuscej asinhronnoj funkçii, posle kotorogo budet sledovatj perehod k punktu 2 ili že (v slucaje razrušenija tekuscej asinhronnoj funkçii) vyzov destruktorov, vklücaja destruktor operanda operatora "await".
+Podobnyj podhod ispoljzujetsä v "Rust".
+
+Plüs dannogo podhoda - otnositeljnaja prostota.
+Možno s nim pri želanii vyzyvatj asinhronnyje funkçii iz sinhronnyh (cerez "if_coro_advance").
+Netu nicego lišnego.
+
+Minus - pereklücenije konteksta budet vesjma složnym v slucaje, jesli rezuljtat asinhronnoj funkçii, nahodäscejsä na boljšoj glubine vyzovov, jescö ne gotov.
+"suspend" budet kaskadnym, kak i "resume".
+
+Pri lüboj vozmožnoj rezlizaçii operatora "await" stoit ucestj tot fakt, cto etot operator sozdajot skrytuju tocku vozvrata iz funkçii, jesli objekt asinhronnoj funkçii byl na polputi razrušen.
+Eto možet privesti k tomu, cto nekotoryje vremennyje peremennyje, sozdavajemyje kompilätorom, no ne uctönnyje v hranilisce peremennyh dlä razrušenija, mogut ne bytj razrušeny.
+Takovymi vremennymi peremennymi javläjutsä argumenty-znacenija funkçij i cleny kompositnyh tipov pri iniçializaçii (iniçializatory {} i []).
+Vozmožno, jestj jescö drugije mesta, gde takije vremennyje peremennyje vozmožny.
+V slucaje s argumentami funkçij možno vsö-že ih pomescatj v hranilisce dlä razrušenija ot momenta sozdanija do momenta vyzova.
+V slucaje s iniçializatorami tak tože možno postupatj, a možno i prosto zapretitj ispoljzovatj v nih "await".
+
+Sintaksis operatora "await" možno ispoljzovatj kak v "Rust" - kak postfiksnyj operator, shožij s "Member Access Operator", no s klücevym slovom "await" vmesto imeni clena.
