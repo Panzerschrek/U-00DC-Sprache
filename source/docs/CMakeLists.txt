@@ -4,6 +4,7 @@ foreach( LANG_DIR ${LANG_DIRS} )
 		get_filename_component( LANG_NAME ${LANG_DIR} NAME )
 		set( DOC_TARGET_NAME SpracheDocs_${LANG_NAME} )
 		file( GLOB_RECURSE DOC_FILES "${LANG_DIR}/*" )
+		set( DST_DIR ${CMAKE_CURRENT_BINARY_DIR}/${LANG_NAME} )
 		add_custom_target(
 			${DOC_TARGET_NAME}
 			ALL
@@ -14,11 +15,11 @@ foreach( LANG_DIR ${LANG_DIRS} )
 			-b html
 			-q # Be quiet
 			${LANG_DIR} #src
-			${CMAKE_BINARY_DIR}/docs/${LANG_NAME} #dst
+			${DST_DIR} #dst
 			)
 
 		# Install all generated files from target docs directory (html files, styles, etc.).
-		install( CODE " file( INSTALL ${CMAKE_BINARY_DIR}/docs/${LANG_NAME} DESTINATION \${CMAKE_INSTALL_PREFIX}/docs ) " )
+		install( CODE " file( INSTALL ${DST_DIR} DESTINATION \${CMAKE_INSTALL_PREFIX}/docs ) " )
 
 	endif()
 endforeach()
