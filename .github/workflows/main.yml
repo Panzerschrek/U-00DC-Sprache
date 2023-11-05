@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: build project
       run: |
-        sudo apt-get update && sudo apt-get install ninja-build sphinx-doc sphinx-common python-stemmer
+        sudo apt-get update && sudo apt-get install ninja-build python3-sphinx sphinx-doc sphinx-common python-stemmer
         ./ci/build_release_llvm_bin.sh
     - uses: actions/upload-artifact@v3
       with:
