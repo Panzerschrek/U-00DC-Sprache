@@ -17,7 +17,7 @@ foreach( LANG_DIR ${LANG_DIRS} )
 			${CMAKE_BINARY_DIR}/docs/${LANG_NAME} #dst
 			)
 
-		# Install all generated files from target tocs directory (html files, styles, etc.).
+		# Install all generated files from target docs directory (html files, styles, etc.).
 		install( CODE " file( INSTALL ${CMAKE_BINARY_DIR}/docs/${LANG_NAME} DESTINATION \${CMAKE_INSTALL_PREFIX}/docs ) " )
 
 	endif()
