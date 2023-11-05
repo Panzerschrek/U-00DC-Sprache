@@ -241,7 +241,7 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 	return false;
 }
 
-std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const text )
+std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const text, const bool allow_errors )
 {
 	const std::string file_path= "_";
 	MultiFileVfs vfs( file_path, text );
@@ -265,9 +265,12 @@ std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const te
 			options,
 			source_graph );
 
-	const auto errors= code_builder->TakeErrors();
-	PrinteErrors_r( errors );
-	U_TEST_ASSERT( errors.empty() );
+	if( !allow_errors )
+	{
+		const auto errors= code_builder->TakeErrors();
+		PrinteErrors_r( errors );
+		U_TEST_ASSERT( errors.empty() );
+	}
 
 	return code_builder;
 }

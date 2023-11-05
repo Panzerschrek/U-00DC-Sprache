@@ -3103,7 +3103,17 @@ Value CodeBuilder::CallFunctionValue(
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
 	if( function_ptr == nullptr )
+	{
+		if( function_value_src_loc != std::nullopt && !functions_set->functions.empty() )
+		{
+			// Collect definition point for some function if selection is failed.
+			// This may help in language server - to go to some definition in order to know exact signature and fix error point.
+			CollectFunctionDefinition( functions_set->functions.front(), *function_value_src_loc );
+		}
+
 		return ErrorValue();
+	}
+
 	const FunctionVariable& function= *function_ptr;
 	const FunctionType& function_type= function.type;
 

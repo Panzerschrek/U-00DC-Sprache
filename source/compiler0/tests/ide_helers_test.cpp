@@ -711,6 +711,34 @@ U_TEST( GoToDefinition_Test21 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 4 ) == SrcLoc( 0, 13,  5 ) );
 }
 
+U_TEST( GoToDefinition_Test22 )
+{
+	// Should suggest some funciton even if selection is failed.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x );
+		fn Bar()
+		{
+			Foo(); // Too few args.
+			Foo( 42, 24 ); // Too many args.
+			Foo( "lol" ); // Invalid arg type.
+			Foo( false ); // Invalid arg type.
+			Foo( 0.25f ); // Invalid arg type.
+			Foo( 66 ); // Correct arg type.
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text, true );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5, 3 ) == SrcLoc( 0,  2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  6, 3 ) == SrcLoc( 0,  2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  7, 3 ) == SrcLoc( 0,  2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  8, 3 ) == SrcLoc( 0,  2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 3 ) == SrcLoc( 0,  2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 3 ) == SrcLoc( 0,  2, 5 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=
