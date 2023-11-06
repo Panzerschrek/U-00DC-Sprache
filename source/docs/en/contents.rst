@@ -1,0 +1,5 @@
+Contents
+========
+.. toctree::
+   index
+   basics
