@@ -105,7 +105,7 @@ Access to global mutable variables is possible only in ``unsafe`` code - includi
 It's necessory, since there is no reference checking or any synchronization mechanisms for global variables.
 A programmer should manually guarantee that no reference checking rules are violated and no data races happen during access to global mutable variables.
 
-Global mutable variables are declared like immutable ones, but with ``mut` modifier.
+Global mutable variables are declared like immutable ones, but with ``mut`` modifier.
 
 .. code-block:: u_spr
 
