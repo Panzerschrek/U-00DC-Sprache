@@ -4,3 +4,4 @@ Contents
    index
    basics
    functions
+   variables
