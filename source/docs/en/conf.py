@@ -1,5 +1,6 @@
 import os, sys
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from sprache_lexer import *
 from sphinx.highlighting import lexers
 
 
@@ -11,3 +12,4 @@ language = "en"
 html_title = "Ü documentation"
 html_copy_source = False
 
+lexers['u_spr'] = SpracheLexer(startinline=False)
