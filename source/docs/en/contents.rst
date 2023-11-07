@@ -11,3 +11,4 @@ Contents
    fundametal_types_operations
    enums
    function_pointers
+   raw_pointers
