@@ -9,3 +9,4 @@ Contents
    control_flow
    types
    fundametal_types_operations
+   enums
