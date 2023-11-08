@@ -13,3 +13,4 @@ Contents
    function_pointers
    raw_pointers
    numeric_literals
+   string_literals
