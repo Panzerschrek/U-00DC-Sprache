@@ -16,3 +16,4 @@ Contents
    string_literals
    namespaces
    structs
+   constructors
