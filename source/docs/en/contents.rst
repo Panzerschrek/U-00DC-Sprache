@@ -17,3 +17,4 @@ Contents
    namespaces
    structs
    constructors
+   destructors

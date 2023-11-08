@@ -2,11 +2,11 @@ Constructors
 ============
 
 A constructor is a special method which is automatically called during a struct or class instance creation.
-It is required in order to initialize fields and perform any other operations that are required for proper initialization.
+It's required in order to initialize fields and perform any other operations that are required for proper initialization.
 
 A constructor is a method with special name ``constructor``.
 It's possible to avoid specifying of ``this`` parameter, in such case an implicit ``this`` will be created.
-``this`` inside a constructor can't be declared as ``byval``.
+``this`` in a constructor can't be declared as ``byval``.
 It's possible to overload a constructor - like any other function.
 
 A constructor may have special section inside it - fields initialization list.
@@ -15,7 +15,7 @@ Struct/class fields may be initialzied inside this list.
 Fields without default initializer, ``imut`` fields, reference fields may be explicitely initialized in this list.
 
 A constructor is called not like any othe method, but with usage of ``()`` initializer.
-A constructor with no params (default-constructor) may be implicitely called.
+A constructor with no params (default-constructor) may be implicitly called.
 Directly accessing a constructor is allowed only inside ``unsafe`` code.
 
 Constructor usage example:
@@ -39,7 +39,7 @@ Constructor usage example:
    fn Foo()
    {
        var Vec v0(); // Explicitely call default-constructor
-       var Vec v1; // Implicitely call default-constructor Неявно зовём конструктор по умолчанию
+       var Vec v1; // Implicitly call default-constructor
        var Vec v2( 5, -3 ); // Call the constructor with two arguments
    }
 
@@ -87,7 +87,7 @@ This constructor is defined via ``conversion_constructor`` keyword as function n
 This constructor must have only one param (except ``this``).
 
 A conversion constructor may be used as any other constructor.
-Additionaly it may be called implicitely where a type conversion is required.
+Additionaly it may be called implicitly where a type conversion is required.
 
 .. code-block:: u_spr
 
