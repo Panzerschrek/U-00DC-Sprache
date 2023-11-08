@@ -18,3 +18,4 @@ Contents
    structs
    constructors
    destructors
+   classes
