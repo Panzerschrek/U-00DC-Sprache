@@ -21,3 +21,4 @@ Contents
    classes
    initializers
    method_gen
+   halt
