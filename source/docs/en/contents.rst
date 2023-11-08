@@ -22,3 +22,4 @@ Contents
    initializers
    method_gen
    halt
+   constexpr
