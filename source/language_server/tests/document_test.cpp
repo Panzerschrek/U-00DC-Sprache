@@ -510,7 +510,7 @@ U_TEST( DocumentCompletion_Test8 )
 		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x= s.f" );
 		U_TEST_ASSERT( document.GetCurrentText() == "auto x= s.f struct S{ i32 field0; i32 field1; i32 other_field; f32 rr; type ll= bool; fn some_func(); type typef= i32; type ftype= i32; struct Inner_f{} } var S s= zero_init;" );
 
-		// With name after "." items are filedered.
+		// With name after "." items are filled.
 		const auto completion_result= document.Complete( DocumentPosition{ 1, 11 } );
 		const CompletionItemsNormalized expected_completion_result{ "field0", "field1", "ftype", "Inner_f", "other_field", "some_func", "typef" };
 		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );

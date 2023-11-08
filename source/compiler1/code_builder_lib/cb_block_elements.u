@@ -1145,7 +1145,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				{
 					for( auto mut i= 0s; i < ust::min( variable_inner_references.size(), coroutine_type_description.return_inner_references.size() ); ++i )
 					{
-						var VariablePtr& varaible_inner_reference= variable_inner_references[i];
+						var VariablePtr& variable_inner_reference= variable_inner_references[i];
 						foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
 						{
 							debug_assert( param_reference.param_index == 0u8 );
@@ -1154,7 +1154,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							{
 								function_context.references_graph.TryAddLink(
 									inner_references[ size_type(param_reference.reference_index) ],
-									varaible_inner_reference,
+									variable_inner_reference,
 									names_scope,
 									if_coro_advance_operator.src_loc );
 							}

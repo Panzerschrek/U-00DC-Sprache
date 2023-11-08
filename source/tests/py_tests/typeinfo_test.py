@@ -55,7 +55,7 @@ def TypeAdditionalCommonFields_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def EqualityComparable_TypeinfoFiled():
+def EqualityComparable_TypeinfoField():
 	c_program_text= """
 		static_assert( typeinfo</void/>.is_equality_comparable );
 		static_assert( typeinfo</i32/>.is_equality_comparable );

@@ -2506,7 +2506,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	// Varaibles declaration
+	// Variables declaration
 	if( IsKeyword( it_.front(), Keyword::var_ ) )
 	{
 		for_operator.variable_declaration_part= ParseVariablesDeclaration();
