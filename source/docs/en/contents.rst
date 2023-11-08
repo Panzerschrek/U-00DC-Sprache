@@ -20,3 +20,4 @@ Contents
    destructors
    classes
    initializers
+   method_gen
