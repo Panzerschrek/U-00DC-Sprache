@@ -14,3 +14,4 @@ Contents
    raw_pointers
    numeric_literals
    string_literals
+   namespaces
