@@ -93,12 +93,12 @@
        // Изменяющий метод, в нём можно изменять поля "this"
        fn SetWidth( mut this, u32 new_w )
        {
-               w= new_w;
+           w= new_w;
        }
        
        fn SetHeight( mut this, u32 new_h )
        {
-            this.h= new_h; // Можно обращаться к полям явно, используя "this"
+           this.h= new_h; // Можно обращаться к полям явно, используя "this"
        }
    }
 

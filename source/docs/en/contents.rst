@@ -15,3 +15,4 @@ Contents
    numeric_literals
    string_literals
    namespaces
+   structs
