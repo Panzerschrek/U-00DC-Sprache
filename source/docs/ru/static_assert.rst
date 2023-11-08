@@ -40,6 +40,6 @@ static_assert
 
    static_assert( false, "es tut mir leid" );
 
-Компилятор выдаст ошибку примерно следующего содержания::
+Компилятор выдаст ошибку примерно следующего содержания:
 
    error: Static assertion failed: Es tut mir leid.

@@ -23,3 +23,4 @@ Contents
    method_gen
    halt
    constexpr
+   static_assert
