@@ -50,7 +50,7 @@ Constructor usage example:
 A constructor with single immutable reference param with type equal to ``this`` type is considered to be a copy constructor.
 This constructor may be explicitely called by the compiler in places where a copying of a value is required.
 
-A struct, that has explicit constructor (except copy-constructor) can't be initialized with memberwise initializer.
+A struct, that has explicit constructor (except copy-constructor) can't be initialized with member-by-member initializer.
 Initialization of this struct is possible only via some constructor.
 
 *************************

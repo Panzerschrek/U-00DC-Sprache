@@ -19,3 +19,4 @@ Contents
    constructors
    destructors
    classes
+   initializers
