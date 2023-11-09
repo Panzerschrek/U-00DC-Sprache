@@ -26,3 +26,4 @@ Contents
    static_assert
    move
    operators_overloading
+   inheritance
