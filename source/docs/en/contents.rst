@@ -25,3 +25,4 @@ Contents
    constexpr
    static_assert
    move
+   operators_overloading
