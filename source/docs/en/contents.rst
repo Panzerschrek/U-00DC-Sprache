@@ -24,3 +24,4 @@ Contents
    halt
    constexpr
    static_assert
+   move
