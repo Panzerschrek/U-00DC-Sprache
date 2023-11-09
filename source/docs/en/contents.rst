@@ -30,3 +30,4 @@ Contents
    typedefs
    type_templates
    function_templates
+   reference_checking
