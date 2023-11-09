@@ -27,3 +27,4 @@ Contents
    move
    operators_overloading
    inheritance
+   typedefs
