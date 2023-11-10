@@ -36,3 +36,4 @@ Contents
    same_type
    unsafe
    non_sync_tag
+   macros
