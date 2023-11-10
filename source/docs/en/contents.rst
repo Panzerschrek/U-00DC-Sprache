@@ -37,3 +37,4 @@ Contents
    unsafe
    non_sync_tag
    macros
+   modules
