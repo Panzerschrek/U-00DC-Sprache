@@ -33,3 +33,4 @@ Contents
    reference_checking
    reference_casting
    typeinfo
+   same_type
