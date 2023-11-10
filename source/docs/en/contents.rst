@@ -39,3 +39,4 @@ Contents
    macros
    modules
    coroutines
+   generators
