@@ -38,3 +38,4 @@ Contents
    non_sync_tag
    macros
    modules
+   coroutines
