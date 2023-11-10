@@ -34,3 +34,4 @@ Contents
    reference_casting
    typeinfo
    same_type
+   unsafe
