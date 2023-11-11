@@ -1,7 +1,7 @@
 C interaction
 =============
 
-In Ü it's possible to interact with C code.
+Ü code may interact with C code.
 C functions may be called from Ü.
 Ü functions also may be called from C.
 
@@ -13,8 +13,8 @@ For C interaction Ü has some mechanisms.
 
 Unlike in C function names in Ü are specially encoded in order to produce different symbol names for overloaded functions and functions with the same name in different scopes.
 In order to disable such encoding a function may be marked as ``nomangle``.
-This marker is specified after ``fn`` and optinal ``constexpr`` marker.
-The name of a function marked as ``nomangle`` will be the same as in C.
+This marker is specified after ``fn`` and optiщnal ``constexpr`` marker.
+A name of a function marked as ``nomangle`` will be the same as in C.
 Thus such function may be called from C.
 It's also possible to declare a ``nomangle`` prototype for an implemented in C function in order to call it from Ü.
 
@@ -45,7 +45,7 @@ It's also possible to declare a ``nomangle`` prototype for an implemented in C f
 *********************
 
 Functions and function pointers may have a calling convention specified.
-It is specified after function parameters list and after ``unsafe`` (if it is present).
+It's specified after function parameters list and after ``unsafe`` (if it is present).
 
 .. code-block:: u_spr
 
@@ -57,15 +57,15 @@ It is specified after function parameters list and after ``unsafe`` (if it is pr
 
 There are following calling convention names: ``C``, ``default``, ``Ü``, ``fast``, ``cold``, ``system``.
 
-``C`` - default calling convention that is used in C and C++.
+``C`` is the default calling convention that is used in C and C++.
 ``default`` and ``Ü`` are aliases for ``C``.
 If no calling convention is specified it is assumed to be ``C``.
 This calling convention should be generally used for C interaction.
 
-``fast`` and ``cold`` are calling conventions respectively for fast and complact calls.
-They are not compatible with similar calling conventions in other languages and may be used only in Ü code if that has sense.
+``fast`` and ``cold`` are calling conventions respectively for fast and compact calls.
+They are not compatible with similar calling conventions in other languages and may be used only in Ü code if this has sense.
 
-``system`` is a platform-dependent alias for a calling of system functions.
+``system`` is a platform-dependent alias for calling system functions.
 For most of the platforms it is an alias for the ``C`` calling convention.
 For 32-bit Windows it is an alias for ``stdcall`` calling convention that is used in WinAPI.
 
@@ -75,12 +75,12 @@ For 32-bit Windows it is an alias for ``stdcall`` calling convention that is use
 
 Regular structs and classes have no strong predefined fields order.
 The compiler may reorder them for better performance and/or to reduce padding.
-But in C this is different - fields order is guaranted to be in the order of fields definitions.
+But in C this is different - fields order is guaranteed to be in the order of fields definitions.
 In order  to use same order of fields like in C Ü has special marker for structs and classes - ``ordered``.
 This marker is specified in a struct or class definition after optional class kind, parents list, optional ``non_sync`` tag.
-A struct with this marker will have the same order of fields as they are defined - like in C.
+A struct with this marker will have the same order of its fields as they are defined - like in C.
 
-In the examle below both struct will have identical layout.
+In the example below both structs will have identical layout.
 
 .. code-block:: u_spr
   :caption: Ü cide
@@ -109,13 +109,13 @@ In the examle below both struct will have identical layout.
 Not each Ü function may be called from Ü and vice versa.
 There are some limitations for calls.
 Ü compiler doesn't know if a function is implemented in C and thus can't check a call correctness.
-Thus the call correctness is a programmer's responsibility.
+Ensuring the call correctness is a programmer's responsibility.
 
-Value-params and return values may be of fundamental types, enum types, function pointer types and raw pointer types.
+Value-parameters and return values may be of fundamental types, enum types, function pointer types and raw pointer types.
 Composite types (structs or classes, arrays, tuples) are not supported.
 But it's allowed to pass and return references, they are represented internally like pointers in C.
 
-Structs passed into C code or obtained from it should have the same contents and layout as in C.
+Structs which are passed into C code or obtained from it should have the same contents and layout as in C.
 Exceptions are structs which fields are not accessed within Ü code and which are passed one by one (not in arrays).
 Such structs may have different field count and fields types, it's only important for them to have size and alignment not less than in C code.
 
@@ -123,7 +123,7 @@ Tuples in Ü are equivalent to C structs with the same fields types and fields o
 Because of that equivalent structs should be used in C code for Ü tuples.
 
 There is no (obviously) reference checking in C code.
-Thus it's important to pay attention in C interaction.
+Thus it's important to pay attention in C interaction that no reference checking rules are violated.
 
 For better safety it's recommended to mark functions implemented in C as ``unsafe``.
-This forces a programmer to use ``unsafe`` blocks to call these functions and thus be more carefull.
+This forces a programmer to use ``unsafe`` blocks to call these functions and thus be more careful.

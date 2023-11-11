@@ -2,18 +2,18 @@ Constant expressions
 ====================
 
 There are expressions in Ü, that are named constant expressions, which value may be calculated in compile-time.
-Such expressions may be used in some places where it is neccessary - for array sizes, for template arguments, in constructions like ``static_assert`` and ``static_if``.
+Such expressions may be used in some places where it is necessary - for array sizes, for template arguments, in constructions like ``static_assert`` and ``static_if``.
 
 An expression may be constant if:
 
-* All variables insede it are constant
-* Functions and operators in this expressions are ``constexpr``.
+* All variables inside it are constant
+* Functions and operators in this expression are ``constexpr``.
 
 *****************
 *constexpr types*
 *****************
 
-Variables inside a constant expressions should be constant.
+Variables inside constant expressions should be constant.
 Constant can be only variables of one of ``constexpr`` types.
 
 ``constexpr`` types are:
@@ -40,7 +40,7 @@ Such functions should have a body, ``constexpr`` for prototype declarations is n
 
 ``constexpr`` function requirements:
 
-* Param types and return types should be ``constexpr``, but not function pointers
+* Parameter types and return types should be ``constexpr``, but not function pointers
 * They can't be marked as ``unsafe``
 * They should not contain ``unsafe`` blocks
 * They should not do reference pollution (see corresponding chapter)
@@ -48,7 +48,7 @@ Such functions should have a body, ``constexpr`` for prototype declarations is n
 * They can't contain calls to non-``constexpr`` functions
 * They can't call functions via pointers
 
-``constexpr`` functions may have mutable reference params, but such functions can't be called with ``constexpr`` arguments in order to produce ``constexpr`` result.
+``constexpr`` functions may have mutable reference parameters, but such functions can't be called with ``constexpr`` arguments in order to produce ``constexpr`` result.
 Almost all constructions are allowed inside ``constexpr`` functions (except some forbidden ones) this includes conditions, loops, ``halt``, etc.
 
 ``constexpr`` function example:
@@ -72,16 +72,16 @@ Almost all constructions are allowed inside ``constexpr`` functions (except some
 *********************
 
 Immutable variables of ``constexpr`` type which are constantly-initialized are considered to be ``constexpr``.
-If it's neccessary to ensure that a variable is ``constexpr``, ``constexpr`` modifier should be used.
+If it's necessary to ensure that a variable is ``constexpr``, ``constexpr`` mutability modifier should be used.
 
 .. code-block:: u_spr
 
    auto x= 0; // Variable is immutable, its initializer is constant, thus variable is constexpr
-   auto imut y= x + 5; // Same as above, but variable is explicitely marked as immutable
+   auto imut y= x + 5; // Same as above, but variable is explicitly marked as immutable
    var i32 z(66), imut v(-5), w= y / 2; // All these variables are constexpr
    var [ i32, 2 ] arr[ 0 + z, w * 10 ]; // These are constexpr too
-   auto constexpr x_copy= x; // Explicitely specify constexpr
-   var i32 constexpr ensure_constant(y); // Explicitely specify constexpr
+   auto constexpr x_copy= x; // Explicitly specify constexpr
+   var i32 constexpr ensure_constant(y); // Explicitly specify constexpr
    
-   var i32 mut nonconst= 0; // Initializer is constant, but variable isn't because it is mutable
+   var i32 mut nonconst= 0; // Initializer is constant, but the variable itself isn't because it is mutable
    auto constexpr wtf= nonconst; // An error will be generated - initializer of constexpr variable is not constexpr
