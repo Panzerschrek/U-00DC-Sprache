@@ -1,11 +1,10 @@
 Function templates
 ==================
 
-It's possible to create abstract functions and methods in Ü, that are parametrized by with types and values.
+It's possible to create abstract functions and methods in Ü, that are parameterized with types and values.
 Such functions are template functions.
 
-
-It's needed to use ``template`` keyword with template params listed in ``<//>`` in order to create function template - much like in type templates.
+It's needed to use ``template`` keyword with template parameters listed in ``<//>`` in order to create a function template - much like in type templates.
 It's possible to instantiate a template function by calling it.
 
 .. code-block:: u_spr
@@ -33,8 +32,8 @@ It's possible to instantiate a template function by calling it.
        FillWithZeros( arr );
    }
 
-Tempate arguments are deduced based on the provided function arguments.
-If such deduction is not possible, template arguments may be specified explicitely or at least some of them.
+Template arguments are deduced basing on the provided function arguments.
+If such deduction is not possible, template arguments may be specified explicitly or at least some of them.
 
 .. code-block:: u_spr
 
@@ -52,7 +51,7 @@ If such deduction is not possible, template arguments may be specified explicite
 ***************************************************
 
 It's possible to define multiple template and non-template functions with the same name in the same scope.
-In a call the most specialized template function will be instatiated.
+In a call the most specialized template function will be instantiated.
 Specialization rules are similar to specialization rules of type templates.
 
 .. code-block:: u_spr
@@ -81,7 +80,7 @@ Specialization rules are similar to specialization rules of type templates.
    }
    
    template</ type T, type U />
-   fn GetSequenceSize( tup[T, U] &t ) : size_type // Specialization for tuples of size 1.
+   fn GetSequenceSize( tup[T, U] &t ) : size_type // Specialization for tuples of size 2.
    {
        return 2s;
    }
@@ -116,4 +115,4 @@ Specialization rules are similar to specialization rules of type templates.
 
 It's possible to mark a template function as ``constexpr``.
 In such case the compiler will ensure that the body of an instantiated template function may be ``constexpr``.
-But if a template function isn't marked as ``constexpr`` its instantiations still may be ``constexpr``, if ``constexpr`` requiremens are met for the function with its body and with given template args.
+But if a template function isn't marked as ``constexpr`` its instantiations still may be ``constexpr``, if ``constexpr`` requirements are met for the function with its body and with given template arguments.

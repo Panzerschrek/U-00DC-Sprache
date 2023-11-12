@@ -2,11 +2,11 @@ Inheritance
 ===========
 
 Ü supports inheritance for classes.
-Inheritance allows to create classes which borrow contents and behavior of parent classes.
+Inheritance allows to create classes that borrow contents and behavior of parent classes.
 Inheritance allows also to implement dynamic polymorphism.
 
 Only polymorph classes can participate in inheritance.
-Polymorh are classes that are defined with usage of keywords ``polymorph``, ``abstract`` or ``inteface`` or that have parents.
+Polymorh are classes which are defined with usage of keywords ``polymorph``, ``abstract`` or ``interface`` or which have parents.
 
 .. code-block:: u_spr
 
@@ -22,7 +22,7 @@ Polymorh are classes that are defined with usage of keywords ``polymorph``, ``ab
    class D : C // Also a polymorph class, because it has a parent.
    {}
    
-   class E : B // A polymorph class with interface parent.
+   class E : B // A polymorph class with an interface parent.
    {}
    
    class F : A, B // A polymorph class with two parents one of which is an interface.
@@ -54,7 +54,7 @@ There are following polymorph class kinds:
 Abstract and interface classes are not like other classes, they have some limitations:
 
 * It's not allowed to construct an instance of abstract or interface class.
-  It's possible only to inherit from such class and create an instance of a child class.
+  It's possible only to inherit from a such class and create an instance of a child class.
 * Interfaces can't have constructors.
   There is no necessity for them to have one, because they have no fields that need to be initialized.
 * Abstract classes may have constructors, but whole ``this`` is not available inside them.
@@ -62,7 +62,7 @@ Abstract and interface classes are not like other classes, they have some limita
 * Interfaces and abstract classes may have destructors, but whole ``this`` within them is not available.
 
 **********************
-*Reference convertion*
+*Reference conversion*
 **********************
 
 A reference to a child class may be implicitly converted into a reference to parent class.
@@ -78,14 +78,14 @@ Implicit conversions are possible:
 
 A child class inherit from its parent ``public`` and ``protected`` members, ``private`` members are not inherited.
 Constructors, destructors, assignment operators, equality compare operators are not inherited.
-Other methods are inherited, but ``this`` remains that of parent class type, except a virtual method is overrided.
+Other methods are inherited, but ``this`` remains that of parent class type, except a virtual method is overridden.
 
 *****************
 *Virtual methods*
 *****************
 
 A virtual method is a method that is indirectly called and its implementation may be different.
-A virtual method defined in a class may be overrided in a child class.
+A virtual method defined in a class may be overridden in a child class.
 
 A virtual method is defined with usage of following keywords:
 
@@ -95,7 +95,7 @@ A virtual method is defined with usage of following keywords:
   It's not allowed to implement it.
 * ``virtual override`` - a method overrides at least one parent method.
 * ``virtual final`` - a method overrides at least one parent method.
-  Furter override of this method is not allowed.
+  Further override of this method is not allowed.
 
 All virtual methods should have ``this`` parameter.
 It should be mutable or immutable reference, ``byval`` ``this`` is not allowed in virtual methods.
@@ -138,4 +138,4 @@ It should be mutable or immutable reference, ``byval`` ``this`` is not allowed i
    }
 
 A destructor of a polymorph class is always virtual.
-It may be defined as virtual explicitlely, but there is no reason to do this.
+It may be defined as virtual explicitly, but there is no reason to do this.

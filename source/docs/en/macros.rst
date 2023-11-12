@@ -1,21 +1,21 @@
 Macros
 ======
 
-Ü has a mechanism for program syntax extention via user-defined constructions.
+Ü has a mechanism for program syntax extension via user-defined constructions.
 Such mechanism is implemented via macros.
 
 A programmer may define a macro that starts with some name.
-When encounting this name syntax analyzer of the compiler will apply described in the macro syntax rules, perform parsing and expand the result.
+When the syntax analyzer of the compiler sees this name it applies described in the macro syntax rules, performs parsing and expands the result.
 
-Simpliest example:
+Simplest example:
 
 .. code-block:: u_spr
 
    ?macro <? Double:expr ( ?e:expr ) ?>  ->  <? ?e * 2 ?>
    var i32 x= Double(10);
 
-In the example abouve a macro named ``Double`` is defined, which contains from an expression in ``()``.
-This macro expands itno an expression multiplied by 2.
+In the example above a macro named ``Double`` is defined, which consists of an expression in ``()``.
+This macro expands into an expression multiplied by 2.
 
 *******************
 *Macros definition*
@@ -23,7 +23,7 @@ This macro expands itno an expression multiplied by 2.
 
 Macros are defined at the beginning of a source file - after imports list but before other code.
 Macros are imported from imported files.
-Macros are global - are available averywhere and are located in the single scope (with context separation).
+Macros are global - are available everywhere and are located in the single scope (with context separation).
 
 Also, what are macros made of?
 A macro definition starts with ``?macro`` identifier with following pair of brackets ``<?`` and ``?>``.
@@ -51,14 +51,14 @@ But for the same context it's not allowed to define more than one macro with the
 *Match block elements*
 **********************
 
-The simpliest match elements are regular lexems.
+The simplest match elements are regular lexems.
 This includes identifiers, brackets, operators symbols, etc.
 They are matched directly.
 
 Other elements are named.
 They begin with ```?``` symbol and an identifier.
 Than follows ``:``, after which follows element class.
-Inside single match block it's not allowed to define elements with the same name.
+Inside a single match block it's not allowed to define elements with the same name.
 But it's allowed to use same names for elements of different (even nested) match blocks.
 
 Elements may be simple and composite.
@@ -103,7 +103,7 @@ Macros are expanded according to the rules specified inside macro expansion bloc
 
 Fixed lexems are allowed inside it, they will be expanded directly.
 
-Also a macro expansion block may contain macro-variabled defined previously in the match block.
+Also a macro expansion block may contain macro-variables defined previously in the match block.
 They begin with ``?`` symbol.
 In a macro expansion they are replaced with passed macro-arguments.
 
@@ -159,7 +159,7 @@ It's possible to specify unique macro-identifiers in a macro expansion block.
 These identifiers start with ``??``.
 They are replaced with unique for this macro expansion identifiers, that are guaranteed to be unique compared to any other identifiers (including other macro unique identifiers expansions).
 
-Such unique macro identifiers allow to perform macro expansion without any possile name collisions against names defined somewhere else.
+Such unique macro identifiers allow to perform macro expansion without any possible name collisions with names defined somewhere else.
 
 Example:
 

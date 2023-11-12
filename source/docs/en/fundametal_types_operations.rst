@@ -5,11 +5,11 @@ Fundamental types and operations for them
 *void type*
 ***********
 
-``void`` type is used mostly as return type for functions that return nothing.
+``void`` type is used mostly as return type for functions which return nothing.
 It has zero size.
 It may be initialized with empty initializer.
 All ``void`` values are equal.
-It's possible to assign ``void`` values, pass them by value oder by reference into a function, return values and references of this type.
+It's possible to assign ``void`` values, pass them by value or by reference into a function, return values and references of this type.
 
 **************
 *boolean type*
@@ -67,7 +67,7 @@ Following arithmetic operations are possible for values of numeric types:
 * ``%`` - binary reminder.
 * ``-`` - Unary minus. It is equivalent to subtraction of a value from 0.
 
-The exact bahavior of an arithmetic operation is different for different numeric type kinds.
+The exact behavior of an arithmetic operation is different for different numeric type kinds.
 Operations for integer types may overflow.
 Operations for floating point types may be saturated instead.
 
@@ -94,17 +94,17 @@ It's possible to use bit shifts for values of integer types - left shift ``<<`` 
 The first operand is a shifted value, the second - number of bits to shift.
 
 ``<<`` operator performs left shift.
-Most left bits are missing, most right bits are replaced by zeros.
+The most left bits are missing, the most right bits are replaced by zeros.
 
 ``>>`` operator performs right shift.
-Most right bits are missing, most left bits are replaced by 0 (for unsigned types) or by sign bit (for signed types).
+The most right bits are missing, the most left bits are replaced by 0 (for unsigned types) or by sign bit (for signed types).
 
 ***********
 *size_type*
 ***********
 
 ``size_type`` is a built-in alias for one of unsigned integer types.
-It points to a type with size equal to size of pointer on the target platform.
+It aliases to a type with size equal to size of pointer on the target platform.
 It is used in containers code, for indexing, etc.
 
 ************
@@ -144,7 +144,7 @@ Conversion is performed by simply reinterpret bit-representation (even for float
 ************
 
 There are several comparison operators in Ü.
-Result of all of them is of type ``bool``.
+Result of all of them is of ``bool`` type.
 
 There are equality comparison operators ``==`` and ``!=`` for each fundamental type.
 
@@ -160,9 +160,9 @@ For chars comparison follows char number.
 
 There are some caveats for floating point comparisons:
 
-* ``+0`` и ``-0`` have different bit representation but in comparison are equal.
+* ``+0`` and ``-0`` have different bit representation but in comparison are equal.
 * Any comparison against ``NaN`` excluding ``!=`` returns ``false``.
-  ``!=`` against ``NaN`` returns always ``true``. Also ``==`` with both ``NaN`` operatods returns ``false``.
+  ``!=`` against ``NaN`` returns always ``true``. Also ``==`` with both ``NaN`` operands returns ``false``.
   From all this follows that ``NaN`` isn't equal to any value, even to itself.
 
 For all types, for which order compare operators are supported, special operator ``<=>`` exists.
@@ -175,7 +175,7 @@ It returns result of ``i32`` type, -1 if left operand is less than right operand
 Ü has operator for selection of one of two variants - ``select``.
 It consists of ``select`` keyword and a body inside ``()``.
 The body consists of a logical expression, of an expression for true value after ``?`` and of an expression after ``:`` for false value.
-It works like this: evaluate first expression (that should be of type ``bool``, then if the result is true - evaluate the second expression - else - the third.
+It works like this: evaluates first expression (that should be of ``bool`` type, then if its result is true - evaluate the second expression - else - the third.
 
 .. code-block:: u_spr
 
@@ -191,8 +191,8 @@ It works like this: evaluate first expression (that should be of type ``bool``, 
 *operators priority*
 ********************
 
-In a complex expressions consisting of mutliple operators calculation is performed in order of operators priority.
-Unary operators have hightest priority - are applied before any others.
+In a complex expressions consisting of multiple operators calculation is performed in order of operators priority.
+Unary operators have highest priority - are applied before any others.
 Binary operators are calculated in priority from weak to strong:
 
 * ``/``, ``*``, ``%``
@@ -209,4 +209,4 @@ Binary operators are calculated in priority from weak to strong:
 
 The priorities above are like in C++.
 Binary operator with the same priority are evaluated in left-to-right order.
-It is possible to ise ``()`` in order to change default priority.
+It is possible to use ``()`` in order to change default priority.

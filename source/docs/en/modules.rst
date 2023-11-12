@@ -5,11 +5,11 @@ Modules
 *Build model*
 *************
 
-Am Ü program consists of one or more source fieles.
-Each file is being build by the compiler into platform-specific object file.
+An Ü program consists of one or more source files.
+Each file is built by the compiler into platform-specific object file.
 Result object files are linked together into result executable, static or shared library.
 
-Technically linking is possible with object files produced by compilers of other languages like C or C++.в, например C или C++.
+Technically linking is possible with object files produced by compilers of other languages like C or C++.
 
 ********
 *Import*
@@ -18,23 +18,23 @@ Technically linking is possible with object files produced by compilers of other
 Sometimes it's necessary to use same declarations/definitions (for functions, classes, etc.) in different source files.
 It's possible to move these definitions into a separate file and import it in all source files where it is necessary.
 
-Imports are specified at the beginning of a source file via ``import`` derictive than cotains file path in ``""``.
-A path may be absolutie (starting with ``/``) or relative otherwise.
-If a path is absolute imported file will be searched starting from one of the root import directories that are specified via corresponding compiler option.
+Imports are specified at the beginning of a source file via ``import`` directive that contains a file path in ``""``.
+A path may be absolute (starting with ``/``) or relative otherwise.
+If a path is absolute imported file will be searched starting from one of the root import directories that are specified via the corresponding compiler option.
 If a path is relative it will be searched relative to the current file.
 
 .. code-block:: u_spr
 
    import "a.u" // Import a file located in the same directory as the current file
    import "../b.u" // Import a file located in one directory above the directory of the current file
-   import "cc/c.u" // Import a file from subdirectory "cc" of directory containing the current fille
+   import "cc/c.u" // Import a file from subdirectory "cc" of directory containing the current file
    import "/d.u" // Import a file that is located in one of the root directories (specified in the compiler options)
 
 *******************
 *How imports works*
 *******************
 
-In improted file is compiled as usuaall, sometimes even with imports of another files.
+An imported file is compiled as usual, sometimes even with imports of another files.
 Than definitions/declarations from each imported files are merged into this file.
 Import order doesn't matter for both imported files and current file.
 With any imports order result imported names set will be the same.
@@ -89,5 +89,5 @@ During import the compiler checks that things from different imported files are 
 
 But the compiler can't always check that one definition rule is not violated.
 A programmer may technically define in two source files things with non-``private`` visibility and the same name, compile these files and try to link them.
-The compiler can't find this error and it's not guaranteed either that a linked will find this error.
-Thus a programmer is responsible for absense of one definition rule violations.
+The compiler can't find this error and it's not guaranteed either that a linked will find it.
+Thus a programmer is responsible for absence of the one definition rule violations.

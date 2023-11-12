@@ -22,7 +22,7 @@ DocumentRange MakeRange(
 		return std::move(*range);
 
 	// Backup range creation.
-	// It is wrong, since it uses no valid utf32->utf16 convertion and doesn't extract correct identifier ranges,
+	// It is wrong, since it uses no valid utf32->utf16 convesion and doesn't extract correct identifier ranges,
 	// but this is better than nothing.
 	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn()+ 1 } };
 }

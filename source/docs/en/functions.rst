@@ -2,39 +2,39 @@ Functions
 =========
 
 Ü supports free functions.
-Functions have zero or more params and can return values.
+Functions have zero or more parameters and can return values.
 
 Exaples of function declarations:
 
 .. code-block:: u_spr
 
-   fn Add( i32 x, i32 y ) : i32; // Function has two params of type "i32" and returns a value of type "i32".
-   fn Sleep( f32 sec ); // Function has single param of type "f32" and returns no value.
-   fn GetPi() : f64; // Function has no params and returns a value of type "f64".
-   fn Max( i64& x, i64& y ) : i64&; // Function has two reference params of type "i64" and returns a reference of the same type.
+   fn Add( i32 x, i32 y ) : i32; // Function has two parameters of type "i32" and returns a value of type "i32".
+   fn Sleep( f32 sec ); // Function has single parameter of type "f32" and returns no value.
+   fn GetPi() : f64; // Function has no parameters and returns a value of type "f64".
+   fn Max( i64& x, i64& y ) : i64&; // Function has two reference parameters of type "i64" and returns a reference of the same type.
 
-********
-*Params*
-********
+************
+*Parameters*
+************
 
-Functions can have value-params and reference-params.
-Reference params are defined with ``&`` after the name of the param.
-Params may have mutability modifiers ``mut`` or ``imut``, that are specified after the type name or after ``&`` (for reference params).
-If there is no mutability modifier specified for the param it is assumed to be ``imut``.
+Functions can have value-parameters and reference-parameters.
+Reference parameters are defined with ``&`` after the type of the parameter.
+Parameters may have mutability modifiers ``mut`` or ``imut``, that are specified after the type name or after ``&`` (for reference parameters).
+If there is no mutability modifier specified for a parameter it is assumed to be ``imut``.
 
-For reference params mutability modifiers are important for the caller.
-An immutable reference can't be passed to mutable reference param.
-For value params mutability modifiers have a meaning only inside function body.
+For reference parameters mutability modifiers are important for the caller.
+An immutable reference can't be passed to mutable reference parameter.
+For value parameters mutability modifiers have meaning only inside function body.
 Immutable value arguments can't be changed inside function body.
 
 Params example:
 
 .. code-block:: u_spr
 
-   fn Add( i32 imut x, i32 y ) : i32; // Immutable value params. The second param is by-default immutable.
-   fn Inc( u32 &mut x ); // Mutable reference param
-   fn GetLength( ust::string8 &imut str ) : size_type; // Immutable reference param
-   fn GetNumZeros( ust::string8 & str ) : size_type;  // Immutable by-default reference param
+   fn Add( i32 imut x, i32 y ) : i32; // Immutable value parameters. The second parameter is by-default immutable.
+   fn Inc( u32 &mut x ); // Mutable reference parameter
+   fn GetLength( ust::string8 &imut str ) : size_type; // Immutable reference parameter
+   fn GetNumZeros( ust::string8 & str ) : size_type;  // Immutable by-default reference parameter
 
 **************
 *Return value*
@@ -63,7 +63,7 @@ If there is no mutability modifier it is assumed to be ``imut``.
 .. code-block:: u_spr
 
    fn Max( i64& x, i64& y ) : i64 &imut; // Function returns immutable reference of type "i64"
-   fn Max( u64& x, u64& y ) : u64 &; // Function returns immutable reference of type  "u64", "imut" modifier is implicitely applied
+   fn Max( u64& x, u64& y ) : u64 &; // Function returns immutable reference of type  "u64", "imut" modifier is implicitly applied
    fn Max( u64 &mut x, u64 &mut y ) : i64 &mut; // Function returns mutable reference of type "u64"
 
 ***********************
@@ -71,34 +71,34 @@ If there is no mutability modifier it is assumed to be ``imut``.
 ***********************
 
 It's possible to declare more than one function with the same name in one namespace.
-But all these functions should have different params - different number of params, different types, different mutability (for reference params).
+But all these functions should have different parameters - different number of them, different types, different mutability (for reference parameters).
 
 .. code-block:: u_spr
 
    fn Foo();
-   fn Foo(i32 x); // Ok - an overloading with different number of params
-   fn Foo(f32 &imut x); // Ok - an overloading with different param type
-   fn Foo(f32 &mut x); // Ok - an overloading with different param mutability
+   fn Foo(i32 x); // Ok - an overloading with different number of parameters
+   fn Foo(f32 &imut x); // Ok - an overloading with different parameter type
+   fn Foo(f32 &mut x); // Ok - an overloading with different parameter mutability
 
-If functions differ by non-param properties (return value, ``unsafe`` modifier), overloading isn't possible.
-Also it's impossible to overoad a function with only difference in the mutability of a value param or with overloading of a value param by an immutable reference param.
+If functions differ by non-parameter properties (return value, ``unsafe`` modifier), overloading isn't possible.
+Also it's impossible to overload a function with only difference in the mutability of a value parameter or with overloading of a value parameter by an immutable reference parameter.
 
 .. code-block:: u_spr
 
    fn Foo() : i32;
-   fn Foo() unsafe : f32; // Error, overliading is not possible - same signature
+   fn Foo() unsafe : f32; // Error, overloading is not possible - same signature
 
    fn Bar(i32 mut x);
-   fn Bar(i32 imut x); // Error, overliading is not possible - only mutability modifier of a value param differs
+   fn Bar(i32 imut x); // Error, overloading is not possible - only mutability modifier of a value parameter differs
 
    fn Baz(i32 imut x);
-   fn Baz(i32 &imut x); // Error, overliading is not possible - the only difference is a reference modifier of an immutable param
+   fn Baz(i32 &imut x); // Error, overloading is not possible - the only difference is a reference modifier of an immutable parameter
 
 ********************************
 *Prototypes and implementations*
 ********************************
 
-A function declaration with ``;`` at  is only a prototype.
+A function declaration with ``;`` at end is only a prototype.
 But if after the function declaration follows a body block, this is a function implementation.
 
 .. code-block:: u_spr
@@ -123,7 +123,7 @@ In that case the compiler can automatically deduce the return type.
 
    fn Div( i32 x, i32 y ) : auto
    {
-       return x / y; // Return type is"i32"
+       return x / y; // Return type is "i32"
    }
    
    fn Abs( f32 x ) : auto
@@ -136,15 +136,15 @@ In that case the compiler can automatically deduce the return type.
 Functions with return type deduction have some limitations:
 
 * They must have a body
-* They can't recursivelly call itself
+* They can't recursively call itself
 * They can't be struct or class members
 
 *******************************
-*Conditional function presense*
+*Conditional function presence*
 *******************************
 
-Sometimes it is necessary to control presense of a function - depending on some condition.
-Especially it may be usefull in template code.
+Sometimes it is necessary to control presence of a function - depending on some condition.
+Especially it may be useful in template code.
 For that Ü has a special syntax construction - ``enable_if``.
 This construction may be specified after ``fn`, optional ``constexpr``, ``virtual``, ``nomangle`` modifiers in a function declaration.
 After that follows an expression in ``()``.
@@ -159,5 +159,5 @@ If the result of the expression is ``false``, this function will not be compiled
    
    fn Foo()
    {
-       Bar(); // A compilation error "function not found" will be producesd on a 64-bit platform.
+       Bar(); // A compilation error "function not found" will be produced on a 64-bit platform.
    }

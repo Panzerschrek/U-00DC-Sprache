@@ -1,7 +1,7 @@
 Introduction
 ============
 
-Welcome into Ü programming language documentation!
+Welcome to the Ü programming language documentation!
 
 :doc:`basics`
 

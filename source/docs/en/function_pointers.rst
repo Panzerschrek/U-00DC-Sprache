@@ -4,7 +4,7 @@ Function pointers
 There is a possibility in Ü to save a function address into a pointer and than call this function with it.
 
 Function pointer is a separate type kind.
-Its name is started with ``fn`` keyword, than follow args description, (optional) reference pollution, (optional) ``unsafe`` modifer, return value description.
+Its name is started with ``fn`` keyword, than follow parameters description, (optional) reference pollution, (optional) ``unsafe`` modifier, return value description.
 
 .. code-block:: u_spr
 
@@ -29,7 +29,7 @@ Usually a function pointer is initialized with a function.
        fn_ptr(); // "Bar" function will be called
    }
 
-When multiple functions with the same name exist, the function with matching type will be choosen.
+When multiple functions with the same name exist, the function with matching type will be chosen.
 
 .. code-block:: u_spr
 
@@ -38,7 +38,7 @@ When multiple functions with the same name exist, the function with matching typ
    
    fn Foo()
    {
-       var ( fn(f32 x) : f32 ) fn_ptr = Bar; // "Bar(f32 x) : f32" function will be choosen
+       var ( fn(f32 x) : f32 ) fn_ptr = Bar; // "Bar(f32 x) : f32" function will be chosen
        var f32 res= fn_ptr(0.0f);
    }
 
@@ -71,19 +71,19 @@ Compatibility rules are following:
 
 * Return types must be equal
 * Return reference modifiers must be the same
-* It's allowed to convert a function pointer returning ``mut`` reference to a function pointer returning ``imut`` reference. Backward convertion is not allowed.
-* The number of params must be the same
-* All param types must be the same
-* Reference modifiers of params must be the same
-* It's allowed to convert a function pointer wuth ``imut`` reference param to a function pointer with ``mut`` reference param. Backward convertion is not allowed.
-* Conversion is possible while converting pointer returning less logical references to function pointer returning more logical references
-* Conversion is possible while converting pointer performing less reference pollution to function pointer performing more reference pollution
+* It's allowed to convert a function pointer returning ``mut`` reference to a function pointer returning ``imut`` reference. Backward conversion isn't allowed.
+* The number of parameters must be the same
+* All parameter types must be the same
+* Reference modifiers of parameters must be the same
+* It's allowed to convert a function pointer with ``imut`` reference parameter to a function pointer with ``mut`` reference parameter. Backward conversion is not allowed.
+* Conversion is possible while converting a pointer returning less logical references to function pointer returning more logical references
+* Conversion is possible while converting a pointer performing less reference pollution to function pointer performing more reference pollution
 * It's possible to convert pointer to safe function into pointer to ``unsafe`` function.
 
 .. code-block:: u_spr
 
    fn IMutArgFn( i32 &imut x );
-   var ( fn( i32 &mut x ) ) mut_arg_fn_ptr = IMutArgFn; // Convert param mutability
+   var ( fn( i32 &mut x ) ) mut_arg_fn_ptr = IMutArgFn; // Convert parameter mutability
    
    fn MutRetFn( f32 &mut x ) : f32 &mut;
    var ( fn( f32 &mut x ) : f32 &imut ) imut_ret_fn_ptr = MutRetFn;  // Convert return reference mutability

@@ -8,7 +8,7 @@ Control flow
 ************
 
 ``if`` operator allows to execute some code part conditionally.
-The condition inside ``if`` operator must be of type ``bool``.
+The condition expression inside ``if`` operator must be of ``bool`` type.
 
 .. code-block:: u_spr
 
@@ -104,7 +104,7 @@ For example this code:
    }
    else
    {
-       Action3(x);
+       Action3();
    }
 
 Is equivalent to this code:
@@ -129,7 +129,7 @@ Is equivalent to this code:
            }
            else
            {
-               Action3(x);
+               Action3();
            }
        }
    }
@@ -160,7 +160,7 @@ Values to compare must be ``constexpr``.
 ``switch`` operator allows to specify several values for single block of code - via comma.
 
 It's also possible to specify value ranges.
-Control flow will be transfered to a block if a value is greater or equial to minimum range value and less or equal to maximum range value.
+Control flow will be transferred to a block if a value is greater or equal to minimum range value and less or equal to maximum range value.
 It's allowed to skip specifying lower/upper range values, in such cases minimum/maximum value of the type will be used.
 
 For not listed values ``default`` handler may be used.
@@ -193,8 +193,8 @@ If this is not true - an error will be produced.
        }
    }
 
-If a ``default`` handler exists it is assumed that it handles all values not listed explicitely.
-But if ``default`` if unnecessary, the compiler will produce an error.
+If a ``default`` handler exists it is assumed that it handles all values not listed explicitly.
+But if ``default`` is unnecessary, the compiler will produce an error.
 
 .. code-block:: u_spr
 
@@ -215,7 +215,7 @@ But if ``default`` if unnecessary, the compiler will produce an error.
 ************
 
 ``while`` operator allows to repeat some operations until the condition is true.
-The condition should be ``bool`` type.
+The condition should be of ``bool`` type.
 
 .. code-block:: u_spr
 
@@ -328,7 +328,7 @@ If no condition is specified a loop is considered to be unconditional - ends onl
 *simple loop*
 *************
 
-Ü has simple undconditional loop - ``loop``
+Ü has simple unconditional loop - ``loop``
 It is (almost) equivalent to the ``while`` loop with always true condition.
 The only way to end this loop is to use ``break``, ``return`` or ``continue`` to some other outer loop.
 There is a reason to use it in cases when a loop end/continue condition may be calculated only inside the body of the loop.
@@ -376,7 +376,7 @@ But if it necessary to end it earlier, ``return`` operator may be used.
    }
 
 Functions that return a value should always end with ``return`` with a value.
-A type of ``return`` expession must be the same as function return type (or convertible to it).
+A type of ``return`` expression must be the same as function return type (or convertible to it).
 
 .. code-block:: u_spr
 

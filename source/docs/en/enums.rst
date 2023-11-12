@@ -1,7 +1,7 @@
 Enums
 =====
 
-Enum is a type which values may be equal to one of named values specifeid in enum declaration.
+An enum is a type which values may be equal to one of named values specified in its declaration.
 
 Enum declaration example:
 
@@ -19,7 +19,7 @@ Enum declaration example:
        Cyan,
    };
 
-   enum Component : i16 // Underlaying type is specified
+   enum Component : i16 // Underlying type is specified
    {
        One,
        Two,
@@ -35,14 +35,14 @@ Usage:
    if( c == FixedColor::Red ) {}
 
 Enum values may be assigned, compared, converted into an integer and used as template arguments.
-Result of enum to integer conversion is an integer value that is equal to the number of this enum value in enum declaration.
+Result of enum to integer conversion is an integer value that is equal to the index of this enum value in the enum declaration.
 
-It is possible to compare enum values via ``==``, ``!=``, ``<``, ``<=``, ``>``, ``>=``, ``<=>``.
+It's possible to compare enum values via ``==``, ``!=``, ``<``, ``<=``, ``>``, ``>=``, ``<=>``.
 One enum value is greater than other, if it is declared later.
 
-It is possible to specify underlaying integer type for an enum.
-The size of enum values will be equal to the size of underlaying type values.
-If no underlaying type is specified it will be chosen automatically - ``u8``, ``u16`` or ``u32`` depending on the number of possible enum values.
+I's possible to specify underlying integer type for an enum.
+The size of enum values will be equal to the size of underlying type values.
+If no underlying type is specified it will be chosen automatically - ``u8``, ``u16`` or ``u32`` depending on the number of possible enum values.
 
 Enums can't be empty - they should have at least one value.
 An enum may have no more values than maximum value of its underlaying type.

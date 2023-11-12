@@ -4,7 +4,7 @@ Halt
 ``halt`` is a special operator for abnormal program termination.
 It should be used in places where further program execution isn't possible.
 ``halt`` is terminal, which means, that no other operators and code constructions are possible after it.
-For control flow analysis inside the compiler it is threated much like ``return``.
+For control flow analysis inside the compiler it is treated much like ``return``.
 
 .. code-block:: u_spr
 
