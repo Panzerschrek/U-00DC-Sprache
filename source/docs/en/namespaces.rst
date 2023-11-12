@@ -1,12 +1,12 @@
 Namespaces
 ==========
 
-Ü has a namespaces mechanism, that allows to structure a program.
+Ü has a namespaces mechanism, that allows to structure programs.
 Each namespace has a name and can contain definitions inside, including nested namespaces.
-Namespaced are defined with usage of ``namespace`` keyword and ``{}``.
+Namespaces are defined with usage of ``namespace`` keyword and ``{}``.
 Inside ``{}`` namespace members are specified.
-It's allowed to define same namespace multiple times, further defenitions will extend previous ones.
-All namespaces and other things are located inside the global namespace or in one of nested namespaces.
+It's allowed to define same namespace multiple times, further definitions will extend previous ones.
+All namespaces and other things are located inside the root namespace or in one of nested namespaces.
 
 .. code-block:: u_spr
 
@@ -30,7 +30,7 @@ All namespaces and other things are located inside the global namespace or in on
        class SomeClass{ f32 y; } // A class with the same name already exists, but in other namespace, which means that this is not a redefinition error.
    }
    
-   // Global namespace elements.
+   // Root namespace elements.
    struct S{}
    fn Foo();
 
@@ -41,7 +41,7 @@ In the last case child namespace names will shadow same names in the parent name
 *Name lookup*
 *************
 
-When encounting a name the compiler performs name lookup.
+The compiler performs name lookup (almost) for each name usage in a program text.
 Lookup starts in current namespace and continues to its ancestors until target name will be found.
 
 .. code-block:: u_spr
@@ -63,8 +63,8 @@ Lookup starts in current namespace and continues to its ancestors until target n
 
 
 It is possible to perform lookup from specific namespace by specifying partial name address with ``::`` separator.
-In this case namespace lookup happens first (using rules describing above) and than specific namespace lookup is performed.
-For global namespace specifying a name should start with ``::``.
+In this case namespace lookup happens first (using rules describing above) and than lookup within a specific namespace is performed.
+For root namespace specifying a name should start with ``::``.
 
 .. code-block:: u_spr
 
@@ -121,8 +121,8 @@ It's possible to access their members with ``::``.
    
    fn Foo()
    {
-       var S::Int i= 0; // Access to an type alias which is a struct member.
-       C::Bar(); // Access to a function which is a class member.
-       var C::F::FT f= 0.0; // Access to a type alias which is a member of struct inside a class.
-       var E e= E::G; // Access to an enum element.
+       var S::Int i= 0; // Access a type alias which is a struct member.
+       C::Bar(); // Access a function which is a class member.
+       var C::F::FT f= 0.0; // Access a type alias which is a member of struct inside a class.
+       var E e= E::G; // Access an enum element.
    }

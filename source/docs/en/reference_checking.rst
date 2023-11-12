@@ -1,7 +1,7 @@
 Reference checking
 ==================
 
-Reference checking is one of the key features of Ü, that allows to reduce number of errors in programs.
+Reference checking is one of the key features of Ü, which allows to reduce number of errors in programs.
 This mechanism allows to find in compile-time use-after-free errors, aliasing errors, dangling references errors, etc.
 
 **************************
@@ -15,7 +15,7 @@ The compiler ensures in compile-time that this rule is not violated and may prod
 *Derived references*
 ********************
 
-Derived reference is a reference produced with source varaible or reference.
+Derived reference is a reference produced with source variable or reference.
 
 .. code-block:: u_spr
 
@@ -36,8 +36,8 @@ Reference to an array element is a derived from this array reference.
        var f64 &a_ref= a[2]; // "a_ref" - derived from "a" reference
    }
 
-A reference that is a function call result is considered to be derived from reference args of the function.
-Such reference may be derived for more than one source variable/reference.
+A reference that is a function call result is considered to be derived from reference arguments of the function.
+Such reference may be derived from more than one source variable/reference.
 
 .. code-block:: u_spr
 
@@ -77,10 +77,10 @@ A reference inside a struct value is also derived.
 *Child references*
 ******************
 
-Child references are different from dirived references.
+Child references are different from derived references.
 A child reference is a reference to a non-reference struct or class field or to a tuple element.
 The main difference with derived references is that it's allowed to create more than one mutable child reference to a variable, but only if these references are to different variable members (fields or tuple elements).
-This allows, for example, simultaniously to change different fields of the same struct instantce.
+This allows, for example, simultaneously to change different fields of the same struct instance.
 
 .. code-block:: u_spr
 
@@ -92,7 +92,7 @@ This allows, for example, simultaniously to change different fields of the same 
        var tup[i32, i32] mut t= zero_init;
        var i32 &mut x_ref= s.x; // First child reference is created - to "x" struct field.
        var i32 &mut y_ref= s.y; // Second child reference is created - to different field "y".
-       Swap( t[0], t[1] ); // Simultaniously mutate different elements of the same tuple instance.
+       Swap( t[0], t[1] ); // Simultaneously mutate different elements of the same tuple instance.
    }
 
 ******************************************
@@ -100,14 +100,14 @@ This allows, for example, simultaniously to change different fields of the same 
 ******************************************
 
 By-default it's assumed that a reference result of a function is derived from all reference arguments.
-But there are functions that return references that are derived only from some of the argumens.
+But there are functions which return references that are derived only from some of the arguments.
 There is a way to annotate a function in order to avoid creating unnecessary derived references for its result.
 
-After specifying of the return reference modifier it's possible to specify ``@`` symobol with following expression in ``()``.
+After specifying of the return reference modifier it's possible to specify ``@`` symbol with following expression in ``()``.
 The expression must be constant and be an array of ``[ char8, 2 ]`` elements.
-Each element of the array is a description of one of the function parameters in some special format.
+Each element of the array is a description of one of the function parameter references in some special format.
 The first value is a symbol from ``0`` to ``9`` for parameter index designating.
-The second value is ``_`` symbol for designating of reference of the param itself or a symobol in a range from ``a`` to ``z`` for designating of one of the inner reference tags of the param type.
+The second value is ``_`` symbol for designating of reference of the parameter itself or a symbol in a range from ``a`` to ``z`` for designating of one of the inner reference tags of the parameter type.
 The whole array designates a possible set of a references which this function returns.
 
 .. code-block:: u_spr
@@ -125,7 +125,7 @@ The whole array designates a possible set of a references which this function re
        var f32 &f_ref= Bar(f0, f1, f2); // "f_ref" is a derived from "f0" and "f2" reference, but not from "f1"
    }
 
-The compiler ensures that only allowed reference are returned:
+The compiler ensures that only allowed references are returned:
 
 .. code-block:: u_spr
 
@@ -137,7 +137,7 @@ The compiler ensures that only allowed reference are returned:
 
 It's possible to specify an expression inside ``@()`` after the type of the return value.
 This expression should be a tuple of arrays of ``[ char8, 2 ]`` elements.
-Each tuple element designates a set of references for corresponding innter reference tag of the return value.
+Each tuple element designates a set of references for corresponding inner reference tag of the return value.
 
 .. code-block:: u_spr
 
@@ -167,7 +167,7 @@ This is named "reference pollution".
 For a function that performs reference pollution special notation is required - via expression in ``@()`` after the parameters list.
 This expression must be constant array of ``[ [ char8, 2 ], 2 ]`` elements.
 Each element is a pair of reference descriptions - for the destination and for the source.
-References are designated like in return reference notation.
+References are designated like in return references notation.
 
 .. code-block:: u_spr
 
@@ -198,35 +198,35 @@ If a function performs reference pollution but this is not specified, the compil
 It's not allowed to specify reference pollution notation for copy-constructors and copy-assignment operators.
 The compiler generates such notation automatically according to the copying semantics.
 
-******************************
-*Referene notation for fields*
-******************************
+*******************************
+*Reference notation for fields*
+*******************************
 
 Structs and classes may also have references inside.
 And there is a necessity for the compiler to track them.
-Thus the compiler creates logical references for such types (named reference tags).
+Because of that the compiler creates logical references for such types (named reference tags).
 
 A struct without reference fields and fields with references inside has 0 inner reference tags.
 A struct with single reference field has 1 reference tag.
 A struct with single field that contains N reference tags (N > 0) has N reference tags.
 
-It's more complicated with struct that contain several reference fields and/or fields with references inside.
+It's more complicated with a struct that contain several reference fields and/or fields with references inside.
 There is a special notation in order to perform mapping of these references to struct's reference tags.
 
 For reference fields it's possible to specify an expression in ``@()`` after a reference modifier.
 The expression should be constant and be of ``char8`` type.
-Allowed values are symbols in a range from ``a`` up to ``z`` that designate corrseponding inner reference tags of the struct.
-This expression allows to associate a reference field with the reference tags of the struct.
+Allowed values are symbols in a range from ``a`` up to ``z`` that designate corresponding inner reference tags of the struct.
+This expression allows to associate a reference field with a reference tag of the struct.
 
-For fields it's possible to specify an expression in ``@()`` after the type of the field.
+For non-reference fields it's possible to specify an expression in ``@()`` after the type of the field.
 The expression should be constant and be an array of ``char8`` elements.
-Allowed values are symbols in a range from ``a`` up to ``z`` that designate corrseponding inner reference tags of the struct.
-This expression allows to associate inner reference tags of the type with the reference tags of the struct.
+Allowed values are symbols in a range from ``a`` up to ``z`` that designate corresponding inner reference tags of the struct.
+This expression allows to associate inner reference tags of the type with reference tags of the struct.
 
 Eventually a struct will have a number of reference tags one more than maximum index of the specified tags.
 But skipping some reference tags isn't allowed.
 
-A way described above allows to specify mapping between struct fields and reference tags that are specified in the reference notation(s) of functions.
+The way described above allows to specify mapping between struct fields and reference tags that are specified in the reference notation(s) of functions.
 Example:
 
 .. code-block:: u_spr
@@ -251,8 +251,8 @@ Example:
    static_assert( typeinfo</T/>.references_tags_count == 5s );
 
    // Function returns a struct, different inner reference tags of which are pointing to different reference arguments.
-   // "x" reference marked with "a" tag (#0) will point to reference arg "x".
-   // "y" reference marked with "b" tag (#1) will point to reference arg "y".
+   // "x" reference marked with "a" tag (#0) will point to reference argument "x".
+   // "y" reference marked with "b" tag (#1) will point to reference argument "y".
    var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ], [ "1_" ] ];
    fn MakeS( i32& x, i32& y ) : S @(return_inner_references)
    {
@@ -315,7 +315,7 @@ Reference checking allows also to find dangling references.
 
    struct S{ i32& r; }
    var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-   fn Foo( S &mut s, i32& r ) @(pollution); // Function creates derived fro argument "r" reference inside "s" argument.
+   fn Foo( S &mut s, i32& r ) @(pollution); // Function creates a derived from argument "r" reference inside the "s" argument.
    
    fn Bar()
    {
@@ -327,7 +327,7 @@ Reference checking allows also to find dangling references.
        } // An error will be produced - destroyed variable "y" still has references.
    }
 
-Reference checking doesn't allow to refern references to local variables.
+Reference checking doesn't allow to return references to local variables.
 
 .. code-block:: u_spr
 

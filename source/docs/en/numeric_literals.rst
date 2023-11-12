@@ -6,8 +6,8 @@ Numeric literals
 There are following numeric literals properties:
 
 * base
-* presense/absense of fractional point
-* presense/absense of exponent
+* presence/absence of fractional point
+* presence/absence of exponent
 * type
 
 There are following numeric literals bases:
@@ -20,18 +20,18 @@ There are following numeric literals bases:
 Fractional part is specified via ``.`` after integer part of the literal.
 
 Exponent is allowed only for decimal literals.
-It is specified after ``e`` symbol, floowing by optional sign (``+`` or ``-``) and a value of the exponent.
+It is specified after ``e`` symbol, following by optional sign (``+`` or ``-``) and a value of the exponent.
 
 Numeric literals examples:
 
 .. code-block:: u_spr
 
-   42 // Simpliest decimal literal
+   42 // Simplest decimal literal
    3.1415926535 // Decimal literal with fractional part
    1e5 // Decimal literal without fractional part but with exponent
    1.5e20 // Decimal literal with fractional part and with exponent
    25.3e-5 // Decimal literal with fractional part and with negative exponent
-   695e+7 // Decimal literal with explicitely-specified positive exponent
+   695e+7 // Decimal literal with explicitly-specified positive exponent
    
    0b1110 // Binary literal
    0b1.101 // Binary literal with fractional part
@@ -48,8 +48,8 @@ Numeric literals examples:
 **********************
 
 Each numeric literal has a type.
-The numeric literal type may be explicitely specified - via type suffix.
-If a literal has no suffix, its type will be automatically choosen.
+A numeric literal type may be explicitly specified - via type suffix.
+If a literal has no suffix, its type will be automatically chosen.
 
 A name of any fundamental type may be used as type suffix.
 There are also additional type suffixes:
@@ -61,7 +61,7 @@ There are also additional type suffixes:
 * ``c16`` - suffix for ``char16`` type.
 * ``c32`` - suffix for ``char32`` type.
 
-If no explicit suffix is specified, the type will be choosen according to the following rule: if a literal has fractional part it is assumed to be of ``f64`` type, otherwise - of ``i32`` type.
+If no explicit suffix is specified, the type will be chosen according to the following rule: if a literal has fractional part it is assumed to be of ``f64`` type, otherwise - of ``i32`` type.
 
 .. code-block:: u_spr
 

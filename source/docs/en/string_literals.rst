@@ -34,9 +34,9 @@ It's also possible to specify symbol code via its hexadecimal number:
 *String literal type*
 *********************
 
-A string literal is an array with one of types ``char8``, ``char16`` or ``char32``as elemet type.
+A string literal is an array with one of types ``char8``, ``char16`` or ``char32``as element type.
 Array size is determined by the literal size.
-By-default element type is ``char8``, but it's possible to specifiy it via special suffixes - ``u8`` for ``char8``, ``u16`` for ``char16``, ``u32`` for ``char32``.
+By-default element type is ``char8``, but it's possible to specify it via special suffixes - ``u8`` for ``char8``, ``u16`` for ``char16``, ``u32`` for ``char32``.
 ``u8`` means UTF-8, ``u16`` - UTF-16, ``u32`` - UTF-32.
 
 .. code-block:: u_spr
@@ -50,7 +50,7 @@ By-default element type is ``char8``, but it's possible to specifiy it via speci
 ******************
 
 Unlike in C, C++ and other languages string literals in Ü are NOT terminating with zero.
-If terminating zero is required, for C code interaction for example, it may be explicitely specified via ``\0`` at the literal end.
+If terminating zero is required, for C code interaction for example, it may be explicitly specified via ``\0`` at the literal end.
 
 .. code-block:: u_spr
 
@@ -64,7 +64,7 @@ If terminating zero is required, for C code interaction for example, it may be e
 **************************************
 
 A string literal specifies usually an array of symbols.
-But if it is necessary to specifiy literal for single symbol, one of special suffixes ``c8``, ``c16``, ``c32`` may be used.
+But if it is necessary to specify a literal for a single symbol, one of special suffixes ``c8``, ``c16``, ``c32`` may be used.
 Full type names as suffixes may be used too - ``char8``, ``char16``, ``char32``.
 
 .. code-block:: u_spr

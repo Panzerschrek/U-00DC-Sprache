@@ -17,7 +17,7 @@ Examples:
    type bool_ptr_ptr = $($(bool)); // pointer to pointer to "bool".
 
 A value of raw pointer type may be obtained from a mutable reference via special operator, that consists of ``$<`` and following expression in ``()``.
-Backward convertion (from a raw pointer to reference) is performed via dereference operator ``$>``.
+Backward conversion (from a raw pointer to reference) is performed via dereference operator ``$>``.
 
 .. code-block:: u_spr
 
@@ -36,22 +36,22 @@ Thus a raw pointer may be obtained only from a mutable reference and dereference
 ********************
 
 It's possible to perform some arithmetic operations with raw pointers.
-Following operatoions are possible:
+Following operations are possible:
 
 * Pointer and integer number addition.
-  It's allowed to perform additon with signed and unsigned integers, but with size no more than pointer size.
-  It's possible to add a number to pointer or a pointer to number (the order of operands doesn't matter).
+  It's allowed to perform addition with signed and unsigned integers, but with integer size no more than pointer size.
+  It's possible to add a number to pointer or a pointer to number (the order of the operands doesn't matter).
   There is ``+=`` operator for a pointer and a number.
-  The result of the addition is a pointer that points to address that is greater than original by value of the integer multiplied by element size in bytes.
+  The result of the addition is a pointer that points to address that is greater than original by value of the integer multiplied by the pointer element size in bytes.
 * Subtraction of an integer from a pointer.
   It's allowed to subtract signed or unsigned integer from a pointer.
   The size of an integer must be no more than pointer size.
-  There is ``-=`` operator for a pointer abd a number.
-  The result of the subtraction is a pointer that points to address that is less that original by value of the integer multiplied by element size in bytes.
+  There is ``-=`` operator for a pointer and a number.
+  The result of the subtraction is a pointer that points to address that is less that original by value of the integer multiplied by the pointer element size in bytes.
 * Pointers difference.
   It's allowed to calculate pointers difference via ``-`` operator.
   The element type should have non-zero size.
-  The result of the pointer difference is a signed integer number with size equal to pointer size that is equal to address difference divided by the element size.
+  The result of the pointer difference is a signed integer number with size equal to pointer size that is equal to address difference divided by the pointer element size.
 * Increment and decrement.
   It's allowed to use ``++`` and ``--`` for pointers.
   The value of a pointer will be increased or decreased by the element size.

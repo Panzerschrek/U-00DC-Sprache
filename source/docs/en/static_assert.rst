@@ -1,8 +1,8 @@
 static_assert
 =============
 
-``static_assert`` is a way to check during compile-time that some condition is true.
-This operator consists of ``static_assrt`` keyword and a constant expression in ``()`` after this keyword.
+``static_assert`` is a way to check in compile-time that some condition is true.
+This operator consists of ``static_assert`` keyword and a constant expression in ``()`` after this keyword.
 The type of the expression must be ``bool``.
 If the result of the expression is false the compiler will produce an error.
 

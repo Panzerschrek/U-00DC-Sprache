@@ -3,7 +3,7 @@ Operators overloading
 
 For struct and class types it's possible to overload some operators.
 Overloaded operator is a function inside a struct or class with special name and with some restrictions.
-All overloaded operators should have at least one param with type equal to struct or class where this operator is defined.
+All overloaded operators should have at least one parameter with type equal to struct or class where this operator is defined.
 
 An overloaded operator is defined with usage of ``op`` keyword and operator name after it.
 
@@ -118,7 +118,7 @@ There is no overloaded ``!=`` operator.
 For obtaining of ``!=`` result the result of ``==`` is inverted.
 
 For order compare operators (``<``, ``<=``, ``>``, ``>=``) overloaded operator ``<=>`` is called.
-Its result is compared against zero in order to obrain final result.
+Its result is compared against zero in order to obtain final result.
 Overloaded ``<=>`` is not required to return only -1 or +1 for less/more, only the sign of the result is significant.
 
 *******************
@@ -128,7 +128,7 @@ Overloaded ``<=>`` is not required to return only -1 or +1 for less/more, only t
 Postifx operators are somewhat special.
 All postfix operators should have first parameter of struct or class type where this operator is defined.
 
-Indexation operator ``[]`` allows to access struct or class like this is an array.
+Indexation operator ``[]`` allows to access struct or class like it is an array.
 Any type may be used as index type.
 This allows, for example, to implement associative containers with key access via this operator.
 

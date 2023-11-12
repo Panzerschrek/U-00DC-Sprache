@@ -1,7 +1,7 @@
 Reference casting
 =================
 
-Ü allows to convert references of one type to references of another type - explicitely or implicitly.
+Ü allows to convert references of one type into references of another type - explicitly or implicitly.
 
 ***********************
 *Mutability conversion*
@@ -17,7 +17,7 @@ A mutable (``mut``) reference may be converted into immutable(``imut``) referenc
    {
        var i32 mut x= 0;
        var i32 &mut r= x;
-       Bar( r ); // Implicit conversion of mutable reference "r" into immutablre reference - function argument.
+       Bar( r ); // Implicit conversion of mutable reference "r" into immutable reference - function argument.
        var S s{ .r= r }; // Implicit conversion of mutable reference "r" into immutable reference - struct member.
        var i32 &imut r2= r;// Implicit conversion of mutable reference "r" into immutable local reference.
    }
@@ -51,8 +51,8 @@ It's possible to convert a reference of polymorph class type into reference to a
 *Explicit reference conversions*
 ********************************
 
-Sometimes it's necessary to convert a reference explicitely.
-Special convertion operators exist for that.
+Sometimes it's necessary to convert a reference explicitly.
+Special conversion operators exist for that.
 
 ``cast_ref`` operator is used for explicit reference type conversion.
 Destination type should be specified.
@@ -96,7 +96,7 @@ Because of that it may be used only in ``unsafe`` code.
        var i32 mut x= 0;
        unsafe
        {
-           var void &x_ref_v= cast_ref_unsafe</void/>(x); // Reference to "i32" will be casted into "void" reference
+           var void &x_ref_v= cast_ref_unsafe</void/>(x); // Reference to "i32" will be converted into "void" reference
            var i32 &x_ref_i= cast_ref_unsafe</i32/>(x_ref_v); // Reference to "void" will be converted into "i32" reference
        }
    }

@@ -11,7 +11,7 @@ Usage example:
 
    static_assert( same_type</ u32, size_type /> || same_type</ u64, size_type /> );
 
-This operator is indended for unsage in template code for cases, where it is necessary to check if two types are equal.
+This operator is intended for usage in template code for cases, where it is necessary to check if two types are equal.
 Like this, for example:
 
 .. code-block:: u_spr
@@ -40,10 +40,10 @@ Exception - ``size_type``, which is for now a type alias for one of unsigned int
 
 Function pointer types are different if function types are different.
 But there are some caveats.
-Implicit ``void`` for return value is equal to explicitely-specified ``void``.
-``imut`` and ``mut`` modifiers for value params doesn't affect function type.
+Implicit ``void`` for return value is equal to explicitly-specified ``void``.
+``imut`` and ``mut`` modifiers for value parameters doesn't affect function type.
 There are also calling convention names that are different but internally represent the same calling convention, like "Ü" and "C".
-``this`` param is equal to non-``this`` reference param of the struct or class type.
+``this`` parameter is equal to non-``this`` reference parameter of the struct or class type.
 
 It's also important to mention that type aliases *doesn't* create different types.
 For example:

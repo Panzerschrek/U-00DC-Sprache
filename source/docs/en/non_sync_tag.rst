@@ -4,10 +4,10 @@ non_sync Tag
 Most of the types in Ü should obey nested mutability rule.
 This means, that with an immutable reference to some value it's not allowed to mutate nested values - fields, containers contents, etc.
 Such property is useful in a multithreaded environment.
-Immutable references of such types are possible to pass into different thread without any synchronization problems.
+Immutable references of such types are possible to pass into a different thread without any synchronization problems.
 
 But there are cases where interior mutability is required.
-For shared pointers, for example, it is necessary to modify usage counters.
+For shared pointers, for example, it's necessary to modify usage counters.
 Such types are not safe to use in a multithreaded environment.
 In order to prevent usage of such types in a multithreaded environment Ü has ``non_sync`` tag.
 
@@ -44,7 +44,7 @@ If at least one field in a struct or class is of ``non_sync`` type, all struct o
    static_assert( non_sync</F/> );
 
 It's possible to create dependency loop via ``non_sync`` tag definition.
-But it's not so bad, until an expression inside a ``non_sync`` tag is ``non_sync`` expression.
+But it's not an error until an expression inside a ``non_sync`` tag is ``non_sync`` expression.
 
 .. code-block:: u_spr
 
@@ -62,8 +62,8 @@ But it's not so bad, until an expression inside a ``non_sync`` tag is ``non_sync
    static_assert( non_sync</E/> );
 
 It's not allowed to change ``non_sync`` property in inheritance.
-If a ``non_sync`` class has non-``non_sync`` parent, the compoiler will produce an error.
-It's important in order to avoid missing ``non_sync`` property when storing a value of derived class via a reference or inside a constainer for base class.
+If a ``non_sync`` class has non-``non_sync`` parent, the compiler will produce an error.
+It's important in order to avoid missing ``non_sync`` property when storing a value of derived class via a reference or inside a container for base class.
 
 ********************
 *non_sync tag usage*
@@ -71,20 +71,20 @@ It's important in order to avoid missing ``non_sync`` property when storing a va
 
 There is almost no need to use ``non_sync`` tag in regular code, because it's not possible to make something ``non_sync`` without usage of ``unsafe`` code.
 
-It's necessary to use ``non_sync`` tag only in containers which via ``unsafe`` code implement some thread-unsafe interrior mutability.
-Also containers with indirect values storage (box, vector, variant, etc) should use coniditonal ``non_sync`` tag - depending on the contained type in order to propagate ``non_sync`` tag through these containers.
+It's necessary to use ``non_sync`` tag only in containers which via ``unsafe`` code implement some thread-unsafe interior mutability.
+Also containers with indirect values storage (box, vector, variant, etc) should use conditional ``non_sync`` tag - depending on the contained type in order to propagate ``non_sync`` tag through these containers.
 
-In a code that somehow creates threads or in a code where an object is transferred into another thread it's necessary to add ``static_assert( !non_sync</T/> )`` in order to prevent usage of unsafe for multithreaded usage types.
+In a code that somehow creates threads or in a code where an object is transferred into another thread it's necessary to add ``static_assert( !non_sync</T/> )`` in order to prevent usage of unsafe for multithreaded environment types.
 
 *******************************
 *Safe multithreaded mutability*
 *******************************
 
-As mentioned above, values of ``non_sync`` types can't be used in a multithreaded environment.
-But what if some sort of interrior mutability is needed in combination with multithreading?
-Solution - use types, which implement thread-safe interrior mutability.
+As it was mentioned above, values of ``non_sync`` types can't be used in a multithreaded environment.
+But what if some sort of interior mutability is needed in combination with multithreading?
+Solution - use types, that implement thread-safe interior mutability.
 Such types are not marked as ``non_sync``.
 Internally they use some synchronization primitives in order to prevent race conditions.
 Such primitives are mutex, rw_lock, atomics, etc.
 
-Container types with interrior mutability synchronization should check contained type for absense of thread-unsafe interrior mutability - via ``static_assert( !non_sync</T/> )``.
+Container types with interior mutability synchronization should check contained type for absence of thread-unsafe interior mutability - via ``static_assert( !non_sync</T/> )``.
