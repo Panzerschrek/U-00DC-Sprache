@@ -7,7 +7,7 @@ A variable may be defined like this:
 
    var i32 x= 0;
 
-It's possible to define multiple variables of the same time in single definition:
+It's possible to define multiple variables of the same type in a single definition:
 
 .. code-block:: u_spr
 
@@ -27,7 +27,7 @@ Reference modifier ``&`` means that a variable is a reference.
 This means, that this reference will point to some another variable.
 A modification of a reference means modification of the source variable.
 
-Reference declaration doesn't create copy of a value, that may be usefull, when copying is a performance-heavy operation.
+Reference declaration doesn't create copy of a value, that may be useful, when copying is a performance-heavy operation.
 
 ************
 *Mutability*
@@ -56,7 +56,7 @@ You can read more about initialization in the :doc:`corresponding chapther </ini
 
 There is a possibility to define a variable without explicit type specification, the type may be deduced from the initializer.
 There is a special syntax for this - ``auto`` variable declaration.
-It consists of ``auto`` keyword, optional reference and mutability modifiers, variable name and initializer expression after ``==``.
+It consists of ``auto`` keyword, optional reference and mutability modifiers, variable name and initializer expression after ``=``.
 
 .. code-block:: u_spr
 
@@ -74,8 +74,8 @@ It consists of ``auto`` keyword, optional reference and mutability modifiers, va
 *Global variables*
 ******************
 
-It's possible to define variables outside functions - in global namespace, namespaces, inside structs and classes.
-But these variables have a limitiation - they must be compile-time constants (``constexpr``).
+It's possible to define variables outside functions - in the root namespace, namespaces, inside structs and classes.
+But these variables have a limitation - they must be compile-time constants (``constexpr``).
 
 .. code-block:: u_spr
 
@@ -98,11 +98,11 @@ But these variables have a limitiation - they must be compile-time constants (``
 *Global mutable variables*
 **************************
 
-Global mutable variables are similar to immitable global variables.
+Global mutable variables are similar to immutable global variables.
 They must be a ``constexpr`` type and have ``constexpr`` initializer.
 
 Access to global mutable variables is possible only in ``unsafe`` code - including reading and writing.
-It's necessory, since there is no reference checking or any synchronization mechanisms for global variables.
+It's necessary, since there is no reference checking or any synchronization mechanisms for global variables.
 A programmer should manually guarantee that no reference checking rules are violated and no data races happen during access to global mutable variables.
 
 Global mutable variables are declared like immutable ones, but with ``mut`` modifier.
@@ -112,5 +112,5 @@ Global mutable variables are declared like immutable ones, but with ``mut`` modi
    auto mut global_int = 66;
    var f32 mut global_float = 0.25f;
 
-The only substantial difference between mutable and immutable global variables is a possiblility of mutable references creation.
+The only substantial difference between mutable and immutable global variables is a possibility of mutable references creation.
 There are forbidden, since it's not possible to synchronize access properly.

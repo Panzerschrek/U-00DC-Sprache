@@ -2,9 +2,9 @@ Structs
 =======
 
 A structure is a named type that contains a set of named values of (possible) different types.
-Additionaly a struct may contain functions (including special), types, variables.
+Additionally a struct may contain functions (including special), types, variables.
 
-Structute definition example:
+Structure definition example:
 
 .. code-block:: u_spr
 
@@ -17,7 +17,7 @@ Structute definition example:
    
    struct EmptyStruct {} // it's allowed to define empty structs
    
-   // Struct with mutliple values of different types, including arrays and tuples
+   // Struct with multiple values of different types, including arrays and tuples
    struct ComplexStruct
    {
        i32 x;
@@ -55,13 +55,13 @@ A struct may contain functions inside:
        }
    }
 
-In the example above an ordinary free function is defined, even if it is located inside a struct.
+In the example above a regular free function is defined, even if it is located inside a struct.
 It's possible to call it like this:
 
 .. code-block:: u_spr
 
    var SomeStruct s= zero_init;
-   auto x= s.GetFieldCount(); // It's possible to access the function via a variable of the struct type
+   auto x= s.GetFieldCount(); // It's possible to access a function via a variable of the struct type
    auto y= SomeStruct::GetFieldCount(); // Such way of functions access is also possible, without usage of any variable of the struct type
 
 
@@ -70,7 +70,7 @@ It's possible to call it like this:
 *********
 
 Methods are struct/class functions with first parameter named ``this``.
-The type of this parameter is not specified - it is explicitely assumed to be of struct or class type where this metod if located.
+The type of this parameter is not specified - it is explicitly assumed to be of struct or class type where this method if located.
 It's possible to specify mutability modifier before ``this`` - ``mut`` or ``imut``.
 The meaning of this modifier is like for any other parameter.
 ``this`` parameter always must be defined as first parameter, it's forbidden to use name ``this`` for other parameters.
@@ -88,7 +88,7 @@ Methods definition example:
        
        fn GetArea( this ) : u32
        {
-           return w * h; // Fields "w" и "h" are "this" members
+           return w * h; // Fields "w" and "h" are "this" members
        }
        
        // Mutable method, "this" fields may be modified inside it
@@ -113,7 +113,7 @@ Methods usage example:
    auto area= rect.GetArea();
 
 ``this`` parameter is by-default a reference parameter.
-But it may be changed via ``byval`` prefix.
+But this behavior may be changed via ``byval`` prefix.
 In such case ``this`` will be a value parameter like any other non-this value parameters in any other function.
 
 .. code-block:: u_spr
@@ -125,8 +125,8 @@ In such case ``this`` will be a value parameter like any other non-this value pa
        fn Baz( byval imut this ) : bool;
    }
 
-During ``byval`` ``this`` method call a struct value will be copied or moved into the arg, if the instance of the struct that is used for call is an immediate value.
-``byval`` ``this`` argument will be destroyed (destructor will be called) at the method end, but only if it was not moved.
+In ``byval`` ``this`` method call a struct value will be copied or moved into the argument, if the instance of the struct that is used for call is an immediate value.
+``byval`` ``this`` argument will be destroyed (its destructor will be called) at the method end, but only if it was not moved.
 
 ***********************
 *Other struct contents*

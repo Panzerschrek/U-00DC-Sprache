@@ -1,17 +1,17 @@
 Type templates
 ==============
 
-It's possible to create abstract types in Ü, that are parametrized with other types and values.
+It's possible to create abstract types in Ü, that are parameterized with other types and values.
 Such types are named template types.
 
 ****************************
 *Struct and class templates*
 ****************************
 
-It's needed to use ``template`` keyword with template params listed in ``<//>`` in order to create a struct or class template.
-There are two kinds of paramters: types and values.
-For a type param ``type`` keyword should be specified before the param name.
-For a value param type name should be used before the param name.
+It's needed to use ``template`` keyword with template parameters listed in ``<//>`` in order to create a struct or class template.
+There are two kinds of parameters - types and values.
+For a type parameter ``type`` keyword should be specified before the parameter name.
+For a value parameter type name should be used before the parameter name.
 
 .. code-block:: u_spr
 
@@ -46,7 +46,7 @@ Template arguments in ``<//>`` should be specified after the name of the templat
 
 In examples above short form of type templates is used.
 But there is also a full form of type templates.
-This form contains signature params of the template, which are specified after the name of the template struct or class.
+This form contains signature parameters of the template, which are specified after the name of the template struct or class.
 It's possible to specify complex type names - arrays, tuples, functions and other templates.
 Default signature arguments are also possible.
 
@@ -83,9 +83,9 @@ Default signature arguments are also possible.
    }
 
 It's allowed to define multiple type templates with the same name, but different signature parameters.
-In case if it's possible to instantiate more than one template, more specialized one will be choosen.
+In case if it's possible to instantiate more than one template, more specialized one will be chosen.
 
-Specialization rules are following: a specific type is better than an array, tuple, template type. An array, tuple, template type is better that template parameter.
+Specialization rules are the following: a specific type is better than an array, tuple, template type. An array, tuple, template type is better that a template parameter.
 
 .. code-block:: u_spr
 

@@ -14,7 +14,7 @@ Unsafe code
 * ``unsafe`` function call
 
 But if such operation is necessary it should be used inside ``unsafe`` block.
-This block consists of ``unsafe`` keyword and block body after it.
+This block consists of ``unsafe`` keyword and a block body after it.
 In such block all unsafe operations are allowed.
 
 .. code-block:: u_spr
@@ -65,7 +65,7 @@ There are also ``safe`` expressions.
 Unsafe functions are functions that can't be simple called without any consideration, it's required to satisfy some preconditions in order to call them.
 Unsafe functions are marked with usage of ``unsafe`` keyword - after parameters list and reference pollution notation.
 Such functions may be called only within an ``unsafe`` block or expression.
-The body of an ``unsafe`` function is not a ``unsafe`` block, if it is necessary to perform some unsafe operations inside it ``unsafe`` block or expression should be used explicitely.
+The body of an ``unsafe`` function is not a ``unsafe`` block, if it is necessary to perform some unsafe operations inside it ``unsafe`` block or expression should be used explicitly.
 
 .. code-block:: u_spr
 

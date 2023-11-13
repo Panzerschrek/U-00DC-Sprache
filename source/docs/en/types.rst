@@ -27,7 +27,7 @@ Numeric suffix of some type names means size in bits.
 *Arrays*
 ********
 
-Arrays are sequentions of single type values with size known at compile-time.
+Arrays are sequences of single type values with size known at compile-time.
 
 Array types declaration examples:
 
@@ -54,7 +54,7 @@ Array elements are accessed via ``[]`` operator.
 *Tuples*
 ********
 
-Tuples are sequentions of values.
+Tuples are sequences of values.
 Each element in the sequence may have different type.
 
 Tuple types declaration examples:
@@ -63,7 +63,7 @@ Tuple types declaration examples:
 
    tup[ i32, f32 ] // Tuple of two elements of different types
    tup[] // Empty tuple
-   tup[ i32, i32, i32 ] // Tuple of elements of same type
+   tup[ i32, i32, i32 ] // Tuple of three elements of same type
    tup[ i32, f32, f32, bool, [ i32, 2 ], char8, [ char16, 8 ], tup[ bool, f64 ], u64 ] // Tuple may contain arrays and other tuples
    
 
