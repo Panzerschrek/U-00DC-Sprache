@@ -8,7 +8,7 @@ Their violation may lead to unforeseen consequences.
 Uninitialized data
 ~~~~~~~~~~~~~~~~~~
 
-With ``uninitialized_initializer`` or via external allocation functions it's possible to obtain uninitialized (garbage) data.
+With ``uninitialized`` initializer via external allocation functions it's possible to obtain uninitialized (garbage) data.
 Reading of uninitialized data is an undefined behavior.
 Before reading a value should be written first in order to avoid undefined behavior.
 

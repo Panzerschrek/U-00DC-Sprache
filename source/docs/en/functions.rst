@@ -146,10 +146,10 @@ Functions with return type deduction have some limitations:
 Sometimes it is necessary to control presence of a function - depending on some condition.
 Especially it may be useful in template code.
 For that Ü has a special syntax construction - ``enable_if``.
-This construction may be specified after ``fn`, optional ``constexpr``, ``virtual``, ``nomangle`` modifiers in a function declaration.
+This construction may be specified after ``fn``, optional ``constexpr``, ``virtual``, ``nomangle`` modifiers in a function declaration.
 After that follows an expression in ``()``.
 The expression must be a compile-time constant of type ``bool``.
-If the result of the expression is ``false``, this function will not be compiled (nether the declaration nor the body).
+If the result of the expression is ``false``, this function will not be compiled (neither the declaration nor the body).
 
 .. code-block:: u_spr
 

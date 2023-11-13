@@ -7,7 +7,7 @@ Reference casting
 *Mutability conversion*
 ***********************
 
-A mutable (``mut``) reference may be converted into immutable(``imut``) reference.
+A mutable (``mut``) reference may be converted into immutable (``imut``) reference.
 
 .. code-block:: u_spr
 

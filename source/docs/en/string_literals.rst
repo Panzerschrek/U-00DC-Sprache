@@ -34,7 +34,7 @@ It's also possible to specify symbol code via its hexadecimal number:
 *String literal type*
 *********************
 
-A string literal is an array with one of types ``char8``, ``char16`` or ``char32``as element type.
+A string literal is an array with one of types ``char8``, ``char16`` or ``char32`` as element type.
 Array size is determined by the literal size.
 By-default element type is ``char8``, but it's possible to specify it via special suffixes - ``u8`` for ``char8``, ``u16`` for ``char16``, ``u32`` for ``char32``.
 ``u8`` means UTF-8, ``u16`` - UTF-16, ``u32`` - UTF-32.

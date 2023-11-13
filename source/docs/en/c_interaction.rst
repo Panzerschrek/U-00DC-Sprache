@@ -83,7 +83,7 @@ A struct with this marker will have the same order of its fields as they are def
 In the example below both structs will have identical layout.
 
 .. code-block:: u_spr
-  :caption: Ü cide
+  :caption: Ü code
 
    struct A ordered
    {
