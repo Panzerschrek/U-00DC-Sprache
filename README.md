@@ -47,6 +47,7 @@ For more information/examples see build scripts in *ci* directory.
 
 [plugin for QtCreator](source/qt_creator_plugin/README.md)
 
+[documentation](source/docs/README.md)
 
 ### Authors
 Copyright © 2016-2023 "Panzerscrek".
