@@ -20,7 +20,6 @@ public:
 
 	bool IsAncestorFor( const NamesScope& other ) const;
 	const std::string& GetThisNamespaceName() const;
-	void SetThisNamespaceName( std::string name );
 
 	// Get full name (with enclosing namespaces) un human-readable format.
 	std::string ToString() const;
@@ -45,7 +44,7 @@ public:
 	ClassMemberVisibility GetAccessFor( ClassPtr class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
 
-	static const std::string c_template_args_namespace_name;
+	static const std::string_view c_template_args_namespace_name;
 	bool IsInsideTemplate() const;
 
 	void SetErrors( std::shared_ptr<CodeBuilderErrorsContainer> errors );
@@ -88,8 +87,8 @@ public:
 	}
 
 private:
-	std::string name_;
-	NamesScope* parent_;
+	const std::string name_;
+	NamesScope* const parent_;
 
 	ClassPtr class_= nullptr;
 

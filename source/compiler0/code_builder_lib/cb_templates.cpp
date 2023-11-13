@@ -796,7 +796,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		template_arguments.size() > type_template.signature_params.size() )
 		return result;
 
-	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template.parent_namespace );
+	result.template_args_namespace= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), type_template.parent_namespace );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
 		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), param.src_loc ) );
 
@@ -906,7 +906,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	if( given_arg_count != function_declaration.type.params.size() )
 		return result;
 
-	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
+	result.template_args_namespace= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), function_template.parent_namespace );
 	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace );
 
 	for( size_t i= 0u; i < function_declaration.type.params.size(); ++i )
@@ -968,7 +968,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 
 	TemplateFunctionPreparationResult result;
 	result.function_template= function_template_ptr;
-	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
+	result.template_args_namespace= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), function_template.parent_namespace );
 	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace );
 
 	return FinishTemplateFunctionGeneration( errors_container, src_loc, result );

@@ -10,7 +10,7 @@ namespace U
 class Class final
 {
 public:
-	static const std::string c_template_class_name; // Each template class have same name.
+	static const std::string_view c_template_class_name; // Each template class have same name.
 
 public:
 	Class( std::string name, NamesScope* parent_scope );

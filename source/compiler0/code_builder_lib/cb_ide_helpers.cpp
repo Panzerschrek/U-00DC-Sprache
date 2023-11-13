@@ -496,7 +496,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template )
 {
-	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template->parent_namespace );
+	const auto template_args_scope= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), type_template->parent_namespace );
 
 	// Since (normally) template args should be evaluated during matching of signature params,
 	// pefrorm dummy signature args creation.
@@ -542,7 +542,7 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 
 void CodeBuilder::InstantiateFunctionTemplateWithDummyArgs( const FunctionTemplatePtr& function_template )
 {
-	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template->parent_namespace );
+	const auto template_args_scope= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), function_template->parent_namespace );
 
 	// Since it is not always possible to calculate template args from signature args for function template,
 	// perform direct args filling.

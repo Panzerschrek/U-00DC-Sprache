@@ -31,11 +31,6 @@ const std::string& NamesScope::GetThisNamespaceName() const
 	return name_;
 }
 
-void NamesScope::SetThisNamespaceName( std::string name )
-{
-	name_= std::move(name);
-}
-
 std::string NamesScope::ToString() const
 {
 	if( parent_ == nullptr ) // Global namespace have no name.
@@ -123,7 +118,7 @@ void NamesScope::CopyAccessRightsFrom( const NamesScope& src )
 	access_rights_= src.access_rights_;
 }
 
-const std::string NamesScope::c_template_args_namespace_name= "_tp_ns";
+const std::string_view NamesScope::c_template_args_namespace_name= "_tp_ns";
 
 bool NamesScope::IsInsideTemplate() const
 {
