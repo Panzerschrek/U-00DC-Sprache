@@ -1,4 +1,4 @@
-## Ü-Sprache
+## The Ü programming language
 Experimental programming language.  
 It is a compilable, statically-typed C++/Rust-like language.
 
@@ -7,7 +7,7 @@ Here is a compiler for this language.
 
 ### Documentation
 
-Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/contents.html). Currently only russian documentation exists.
+Documentation is available here: [russian](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/ru/contents.html), [english](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/en/contents.html).
 
 
 ### How to build
