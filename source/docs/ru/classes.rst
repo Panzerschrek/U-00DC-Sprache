@@ -28,10 +28,10 @@
    {
    public:
        fn GetX(this) : i32 { return x_; }
-       fn SetX(mut this, i32 in_x) { x= in_x; }
+       fn SetX(mut this, i32 in_x) { x_= in_x; }
 
    private:
-       i32 x_;
+       i32 x_= 0;
    }
    
    fn Foo()

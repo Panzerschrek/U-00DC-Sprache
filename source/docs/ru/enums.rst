@@ -22,7 +22,7 @@
    enum Component : i16 // Указан нижележащий тип для перечисления
    {
        One,
-       Twoo,
+       Two,
        Three,
    };
 

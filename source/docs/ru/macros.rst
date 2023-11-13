@@ -137,7 +137,7 @@
 
    DECLARE_VAR x 0 i32 MUT
    // Раскроется в
-   var mut i32 pi = 0;
+   var i32 mut pi = 0;
 
 .. code-block:: u_spr
 

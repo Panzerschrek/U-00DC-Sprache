@@ -72,7 +72,7 @@
 .. code-block:: u_spr
   :caption: b.u
 
-    fn SomeLocal(){}
+   fn SomeLocal(){}
 
 При компоновке программы из файлов ``"b.u"`` и ``"c.u"`` конфликтов из-за функции ``SomeLocal()`` не будет.
 
