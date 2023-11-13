@@ -184,7 +184,6 @@ fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 	}
 }
 
-
 fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>
 {
 	// Map coroutine function input references to returned coroutine inner references.
@@ -228,20 +227,20 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 {
 	auto& function_type= function_context.function_type;
 	auto& params= function_type.params;
-	for( auto mut i= 0s; i < params.size(); ++i )
+	for( auto mut param_i= 0s; param_i < params.size(); ++param_i )
 	{
-		if( params[i].value_type == ValueType::Value )
+		if( params[param_i].value_type == ValueType::Value )
 		{
 			continue;
 		}
-		with( &inner_reference_nodes : function_context.args_nodes[i].try_lock_imut().deref().inner_reference_nodes )
+		with( &inner_reference_nodes : function_context.args_nodes[param_i].try_lock_imut().deref().inner_reference_nodes )
 		{
-			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++ tag_i )
+			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++tag_i )
 			{
 				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
 				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
-					if( accessible_variable_node == function_context.args_inner_variable_nodes[i][tag_i] )
+					if( accessible_variable_node == function_context.args_inner_variable_nodes[param_i][tag_i] )
 					{
 						continue;
 					}
@@ -271,7 +270,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 
 					var FunctionType::ReferencePollution actual_reference_pollution
 					{
-						.dst{ .param_index= u8(i), .reference_index= u8(tag_i) },
+						.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
 						.src= param_reference.try_deref(),
 					};
 
