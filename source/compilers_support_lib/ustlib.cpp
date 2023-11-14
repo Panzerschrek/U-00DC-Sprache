@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/Triple.h>
 #include <llvm/Bitcode/BitcodeReader.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
@@ -29,6 +30,8 @@ bool LinkUstLibModules( llvm::Module& result_module, const HaltMode halt_mode, c
 	#include "bc_files_headers/math.h"
 	#include "bc_files_headers/memory_32.h"
 	#include "bc_files_headers/memory_64.h"
+	#include "bc_files_headers/stdout_unix.h"
+	#include "bc_files_headers/stdout_windows.h"
 	#include "bc_files_headers/volatile.h"
 
 	// Prepare stdlib modules set.
@@ -53,6 +56,9 @@ bool LinkUstLibModules( llvm::Module& result_module, const HaltMode halt_mode, c
 
 	const bool is_32_bit= result_module.getDataLayout().getPointerSizeInBits() == 32u ;
 
+	const llvm::Triple triple( result_module.getTargetTriple() );
+	const bool is_windows= triple.isOSWindows();
+
 	const llvm::StringRef asm_funcs_modules[]=
 	{
 		STRING_REF(atomic),
@@ -62,6 +68,8 @@ bool LinkUstLibModules( llvm::Module& result_module, const HaltMode halt_mode, c
 		STRING_REF(math),
 		no_libc_alloc ? STRING_REF(alloc_dummy) : ( is_32_bit ? STRING_REF(alloc_32) : STRING_REF(alloc_64) ),
 		is_32_bit ? STRING_REF(memory_32) : STRING_REF(memory_64),
+		// TODO - support stdout stubs for unknown systems.
+		is_windows ? STRING_REF(stdout_windows) : STRING_REF(stdout_unix),
 		STRING_REF(volatile),
 	};
 	#undef STRING_REF
