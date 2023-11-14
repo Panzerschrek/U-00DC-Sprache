@@ -30,8 +30,10 @@ bool LinkUstLibModules( llvm::Module& result_module, const HaltMode halt_mode, c
 	#include "bc_files_headers/math.h"
 	#include "bc_files_headers/memory_32.h"
 	#include "bc_files_headers/memory_64.h"
-	#include "bc_files_headers/stdout_unix.h"
-	#include "bc_files_headers/stdout_windows.h"
+	#include "bc_files_headers/stdout_unix_32.h"
+	#include "bc_files_headers/stdout_unix_64.h"
+	#include "bc_files_headers/stdout_windows_32.h"
+	#include "bc_files_headers/stdout_windows_64.h"
 	#include "bc_files_headers/volatile.h"
 
 	// Prepare stdlib modules set.
@@ -69,7 +71,7 @@ bool LinkUstLibModules( llvm::Module& result_module, const HaltMode halt_mode, c
 		no_libc_alloc ? STRING_REF(alloc_dummy) : ( is_32_bit ? STRING_REF(alloc_32) : STRING_REF(alloc_64) ),
 		is_32_bit ? STRING_REF(memory_32) : STRING_REF(memory_64),
 		// TODO - support stdout stubs for unknown systems.
-		is_windows ? STRING_REF(stdout_windows) : STRING_REF(stdout_unix),
+		is_windows ? ( is_32_bit ? STRING_REF(stdout_windows_32) : STRING_REF(stdout_windows_64) ) : ( is_32_bit ? STRING_REF(stdout_unix_32) : STRING_REF(stdout_unix_64) ),
 		STRING_REF(volatile),
 	};
 	#undef STRING_REF
