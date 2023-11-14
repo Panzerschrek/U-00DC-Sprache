@@ -312,7 +312,12 @@ int Main( int argc, const char* argv[] )
 	if( have_some_errors )
 		return 1;
 
-	if( !LinkUstLibModules( *result_module, HaltMode::Abort, false ) )
+	if( !LinkUstLibModules(
+			*result_module,
+			HaltMode::Abort,
+			false, // Enable libc allocations
+			true // Disable stdout implementations - use our own stdout function
+				) )
 		return 1;
 
 	// TODO - run here optimizations?
