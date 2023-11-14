@@ -1,0 +1,11 @@
+//##success_test
+import "../ustlib/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Test stdout - " );
+	ust::stdout_print( " ok\n" );
+	ust::stdout_print( "End stdout print test.\n" );
+
+	return 0;
+}
