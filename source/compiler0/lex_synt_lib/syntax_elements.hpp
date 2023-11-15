@@ -63,6 +63,7 @@ struct CallOperatorSignatureHelp;
 struct IndexationOperator;
 struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
+struct AwaitOperator;
 struct UnaryPlus;
 struct UnaryMinus;
 struct LogicalNot;
@@ -180,6 +181,7 @@ using Expression= std::variant<
 	std::unique_ptr<const IndexationOperator>,
 	std::unique_ptr<const MemberAccessOperator>,
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
+	std::unique_ptr<const AwaitOperator>,
 	std::unique_ptr<const UnaryPlus>,
 	std::unique_ptr<const UnaryMinus>,
 	std::unique_ptr<const LogicalNot>,
@@ -609,6 +611,15 @@ struct MemberAccessOperator
 	Expression expression;
 	std::string member_name;
 	std::optional<std::vector<Expression>> template_parameters;
+};
+
+struct AwaitOperator
+{
+	explicit AwaitOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	Expression expression;
 };
 
 // Variant of member access, used internally by language server for completion.

@@ -902,7 +902,16 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 		{
 			NextLexem();
 
-			if( it_->type == Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::await_ )
+			{
+				auto await_operator= std::make_unique<AwaitOperator>( it_->src_loc );
+				NextLexem();
+
+				await_operator->expression= std::move(expr);
+
+				return TryParseBinaryOperatorComponentPostfixOperator( std::move(await_operator) );
+			}
+			else if( it_->type == Lexem::Type::Identifier )
 			{
 				auto member_access_operator= std::make_unique<MemberAccessOperator>( it_->src_loc );
 				member_access_operator->member_name= it_->text;

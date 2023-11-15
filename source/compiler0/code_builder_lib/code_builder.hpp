@@ -732,6 +732,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::AwaitOperator& await_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );

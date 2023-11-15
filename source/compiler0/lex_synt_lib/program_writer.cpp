@@ -478,6 +478,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 				stream << "/>";
 			}
 		}
+		void operator()( const std::unique_ptr<const AwaitOperator>& await_operator ) const
+		{
+			ElementWrite( await_operator->expression, stream );
+			stream << "." << Keyword( Keywords::await_ );
+		}
 		void operator()( const std::unique_ptr<const MemberAccessOperatorCompletion>& member_access_operator_completion ) const
 		{
 			ElementWrite( member_access_operator_completion->expression, stream );

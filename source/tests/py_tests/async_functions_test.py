@@ -55,3 +55,27 @@ def SimpleAsyncFunction_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def SimpleAsyncFunction_Test2():
+	c_program_text= """
+		fn async SimpleFunc() : i32
+		{
+			return 8877;
+		}
+		fn async SimpleFuncWrapper() : i32
+		{
+			return SimpleFunc().await;
+		}
+		fn Foo()
+		{
+			auto mut f= SimpleFuncWrapper();
+			if_coro_advance( x : f )
+			{
+				halt if( x != 8877 );
+			}
+			else { halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
