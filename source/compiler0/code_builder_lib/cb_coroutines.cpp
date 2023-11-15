@@ -627,6 +627,22 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
 		return ErrorValue();
 
+	const Type& return_type= coroutine_type_description->return_type;
+
+	if( function_context.is_functionless_context )
+	{
+		const VariableMutPtr result=
+			Variable::Create(
+				return_type,
+				coroutine_type_description->return_value_type,
+				Variable::Location::Pointer,
+				async_func_variable->name + " await result" );
+		function_context.variables_state.AddNode( result );
+
+		RegisterTemporaryVariable( function_context, result );
+		return result;
+	}
+
 	auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
 	auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop_enter" );
 	auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
@@ -676,8 +692,6 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 	// Done block.
 	function_context.function->getBasicBlockList().push_back( done_block );
 	function_context.llvm_ir_builder.SetInsertPoint( done_block );
-
-	const Type& return_type= coroutine_type_description->return_type;
 
 	llvm::Type* const promise_llvm_type=
 		coroutine_type_description->return_value_type == ValueType::Value
