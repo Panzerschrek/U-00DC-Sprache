@@ -1,27 +1,27 @@
 from py_tests_common import *
 
 
-def GeneratorMismatch_Test0():
+def CoroutineMismatch_Test0():
 	c_program_text= """
 		fn generator Foo() : i32;
 		fn Foo() : ( generator : i32 ) { }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
+	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
 
 
-def GeneratorMismatch_Test1():
+def CoroutineMismatch_Test1():
 	c_program_text= """
 		fn generator Foo() : i32 {}
 		fn Foo() : ( generator : i32 );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
+	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
 
 
-def GeneratorMismatch_Test2():
+def CoroutineMismatch_Test2():
 	c_program_text= """
 		struct S
 		{
@@ -32,10 +32,10 @@ def GeneratorMismatch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 7 ) )
+	assert( HaveError( errors_list, "CoroutineMismatch", 4 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
 
 
-def GeneratorMismatch_Test3():
+def CoroutineMismatch_Test3():
 	c_program_text= """
 		struct S
 		{
@@ -46,42 +46,42 @@ def GeneratorMismatch_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorMismatch", 5 ) or HaveError( errors_list, "GeneratorMismatch", 7 ) )
+	assert( HaveError( errors_list, "CoroutineMismatch", 5 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
 
 
-def NonDefaultCallingConventionForGenerator_Test0():
+def NonDefaultCallingConventionForCoroutine_Test0():
 	c_program_text= """
 		fn generator Foo() call_conv("fast") : i32 {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonDefaultCallingConventionForGenerator", 2 ) )
+	assert( HaveError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
-def NonDefaultCallingConventionForGenerator_Test1():
+def NonDefaultCallingConventionForCoroutine_Test1():
 	c_program_text= """
 		fn generator Foo() call_conv("cold") : i32 {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonDefaultCallingConventionForGenerator", 2 ) )
+	assert( HaveError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
-def NonDefaultCallingConventionForGenerator_Test2():
+def NonDefaultCallingConventionForCoroutine_Test2():
 	c_program_text= """
 		fn generator Foo() call_conv("default") : i32 {} // Ok - using default calling convention.
 	"""
 	tests_lib.build_program( c_program_text )
 
 
-def NonDefaultCallingConventionForGenerator_Test3():
+def NonDefaultCallingConventionForCoroutine_Test3():
 	c_program_text= """
 		fn generator Foo() call_conv("C") : i32 {} // Ok - "C" is default calling convention.
 	"""
 	tests_lib.build_program( c_program_text )
 
 
-def YieldOutsideGenerator_Test0():
+def YieldOutsideCoroutine_Test0():
 	c_program_text= """
 		fn Foo() : i32
 		{
@@ -90,10 +90,10 @@ def YieldOutsideGenerator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "YieldOutsideGenerator", 4 ) )
+	assert( HaveError( errors_list, "YieldOutsideCoroutine", 4 ) )
 
 
-def YieldOutsideGenerator_Test1():
+def YieldOutsideCoroutine_Test1():
 	c_program_text= """
 		struct S
 		{
@@ -105,7 +105,7 @@ def YieldOutsideGenerator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "YieldOutsideGenerator", 6 ) )
+	assert( HaveError( errors_list, "YieldOutsideCoroutine", 6 ) )
 
 
 def Yield_TypesMismatch_Test0():
@@ -1096,7 +1096,7 @@ def GeneratorsCanNotBeConstexpr_Test4():
 	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
 
 
-def VirtualGenerator_Test0():
+def VirtualCoroutine_Test0():
 	c_program_text= """
 		class A polymorph
 		{
@@ -1105,10 +1105,10 @@ def VirtualGenerator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VirtualGenerator", 4 ) )
+	assert( HaveError( errors_list, "VirtualCoroutine", 4 ) )
 
 
-def VirtualGenerator_Test1():
+def VirtualCoroutine_Test1():
 	c_program_text= """
 		class A polymorph
 		{
@@ -1121,11 +1121,11 @@ def VirtualGenerator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "VirtualGenerator", 4 ) )
-	assert( HaveError( errors_list, "VirtualGenerator", 8 ) )
+	assert( not HaveError( errors_list, "VirtualCoroutine", 4 ) )
+	assert( HaveError( errors_list, "VirtualCoroutine", 8 ) )
 
 
-def VirtualGenerator_Test2():
+def VirtualCoroutine_Test2():
 	c_program_text= """
 		class A interface
 		{
@@ -1135,7 +1135,7 @@ def VirtualGenerator_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def GeneratorSpecialMethod_Test0():
+def CoroutineSpecialMethod_Test0():
 	c_program_text= """
 		struct S
 		{
@@ -1145,11 +1145,11 @@ def GeneratorSpecialMethod_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorSpecialMethod", 4 ) )
-	assert( HaveError( errors_list, "GeneratorSpecialMethod", 5 ) )
+	assert( HaveError( errors_list, "CoroutineSpecialMethod", 4 ) )
+	assert( HaveError( errors_list, "CoroutineSpecialMethod", 5 ) )
 
 
-def GeneratorSpecialMethod_Test1():
+def CoroutineSpecialMethod_Test1():
 	c_program_text= """
 		struct S
 		{
@@ -1158,7 +1158,7 @@ def GeneratorSpecialMethod_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorSpecialMethod", 4 ) )
+	assert( HaveError( errors_list, "CoroutineSpecialMethod", 4 ) )
 
 
 def InvalidReturnTypeForOperator_ForGeneratorOperator_Test0():
@@ -1221,13 +1221,13 @@ def InvalidReturnTypeForOperator_ForGeneratorOperator_Test4():
 	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
 
 
-def AutoReturnGenerator_Test0():
+def AutoReturnCoroutine_Test0():
 	c_program_text= """
 		fn generator Foo() : auto {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoReturnGenerator", 2 ) )
+	assert( HaveError( errors_list, "AutoReturnCoroutine", 2 ) )
 
 
 def GlobalsLoopDetected_ForGenerators_Test0():
@@ -1255,47 +1255,47 @@ def GlobalsLoopDetected_ForGenerators_Test1():
 	tests_lib.build_program( c_program_text )
 
 
-def GeneratorNonSyncRequired_Test0():
+def CoroutineNonSyncRequired_Test0():
 	c_program_text= """
 		struct S non_sync {}
 		fn generator Foo(S s){} // Generator value argument is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
+	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
-def GeneratorNonSyncRequired_Test1():
+def CoroutineNonSyncRequired_Test1():
 	c_program_text= """
 		struct S non_sync {}
 		fn generator non_sync(false) Foo(S& s){} // Generator value argument is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
+	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
-def GeneratorNonSyncRequired_Test2():
+def CoroutineNonSyncRequired_Test2():
 	c_program_text= """
 		struct S non_sync {}
 		fn generator Foo() : S {} // Generator return value is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
+	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
-def GeneratorNonSyncRequired_Test3():
+def CoroutineNonSyncRequired_Test3():
 	c_program_text= """
 		struct S non_sync {}
 		fn generator Foo() : S& {} // Generator return reference is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
+	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
-def GeneratorNonSyncRequired_Test4():
+def CoroutineNonSyncRequired_Test4():
 	c_program_text= """
 		struct S non_sync {}
 		// Ok - non_sync tag exists and args/return value are non-sync.
@@ -1308,14 +1308,14 @@ def GeneratorNonSyncRequired_Test4():
 	tests_lib.build_program( c_program_text )
 
 
-def GeneratorNonSyncRequired_Test5():
+def CoroutineNonSyncRequired_Test5():
 	c_program_text= """
 		struct S non_sync {}
 		type Gen= generator : S; // "S" is "non_sync", so, "non_sync" is required for generator type.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
+	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test0():

@@ -1547,7 +1547,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
-	if( coro_class_type == nullptr)
+	if( coro_class_type == nullptr )
 	{
 		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
 		return BlockBuildInfo();
@@ -1771,7 +1771,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					}
 				}
 
-				//No need to setup references here, because we can't return from generator reference to type with references inside.
+				// No need to setup references here, because we can't return from a coroutine reference to type with references inside.
 			}
 			else
 			{

@@ -30,13 +30,13 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 
 void CodeBuilder::TransformCoroutineFunctionType(
 	NamesScope& root_namespace,
-	FunctionType& generator_function_type,
+	FunctionType& coroutine_function_type,
 	const FunctionVariable::Kind kind,
 	const bool non_sync )
 {
 	CoroutineTypeDescription coroutine_type_description;
-	coroutine_type_description.return_type= generator_function_type.return_type;
-	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
+	coroutine_type_description.return_type= coroutine_function_type.return_type;
+	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;
 	coroutine_type_description.non_sync= non_sync;
 
 	if( kind == FunctionVariable::Kind::Generator )
@@ -55,9 +55,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
 	std::vector<std::set<FunctionType::ParamReference>> coroutine_return_inner_ferences;
 
-	for( const FunctionType::Param& param : generator_function_type.params )
+	for( const FunctionType::Param& param : coroutine_function_type.params )
 	{
-		const size_t param_index= size_t(&param - generator_function_type.params.data());
+		const size_t param_index= size_t(&param - coroutine_function_type.params.data());
 		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
 		if( param.value_type == ValueType::Value )
 		{
@@ -84,9 +84,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	}
 
 	// Fill references of return value.
-	for( const FunctionType::ParamReference& param_reference : generator_function_type.return_references )
+	for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_references )
 	{
-		if( param_reference.first >= generator_function_type.params.size() )
+		if( param_reference.first >= coroutine_function_type.params.size() )
 			continue;
 
 		FunctionType::ParamReference out_reference;
@@ -99,12 +99,12 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		coroutine_type_description.return_references.insert( out_reference );
 	}
 
-	coroutine_type_description.return_inner_references.resize( generator_function_type.return_inner_references.size() );
-	for( size_t i= 0u; i < generator_function_type.return_inner_references.size(); ++i )
+	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
+	for( size_t i= 0u; i < coroutine_function_type.return_inner_references.size(); ++i )
 	{
-		for( const FunctionType::ParamReference& param_reference : generator_function_type.return_inner_references[i] )
+		for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_inner_references[i] )
 		{
-			if( param_reference.first >= generator_function_type.params.size() )
+			if( param_reference.first >= coroutine_function_type.params.size() )
 				continue;
 
 			FunctionType::ParamReference out_reference;
@@ -119,12 +119,12 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	}
 
 	// Coroutine function returns value of coroutine type.
-	generator_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
-	generator_function_type.return_value_type= ValueType::Value;
+	coroutine_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	coroutine_function_type.return_value_type= ValueType::Value;
 
-	// Params references and references inside param types are mapped to generator type inner references.
-	generator_function_type.return_inner_references= std::move(coroutine_return_inner_ferences);
-	generator_function_type.return_references.clear();
+	// Params references and references inside param types are mapped to coroutine type inner references.
+	coroutine_function_type.return_inner_references= std::move(coroutine_return_inner_ferences);
+	coroutine_function_type.return_references.clear();
 }
 
 ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
@@ -158,7 +158,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	coroutine_class->is_equality_comparable= true;
 
 	// Coroutines can't be constexpr, because heap memory allocation is required in order to call coroutine function.
-	// So, we can't just call constexpr generator and save result into some global variable.
+	// So, we can't just call constexpr coroutine and save result into some global variable.
 	// We can't allocate heap memory in consexpr context and store it somehow later.
 	// And we can't deallocate memory too (for global variables of coroutine types).
 	coroutine_class->can_be_constexpr= false;
@@ -375,7 +375,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 {
 	if( function_context.coro_suspend_bb == nullptr )
 	{
-		REPORT_ERROR( YieldOutsideGenerator, names.GetErrors(), src_loc );
+		REPORT_ERROR( YieldOutsideCoroutine, names.GetErrors(), src_loc );
 		return;
 	}
 

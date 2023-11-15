@@ -1225,13 +1225,14 @@ private:
 	// Call this before transforming function type.
 	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	// Make return type - generator type and prepare it properly. Modifies given function type.
+	// Make return type - coroutine type and prepare it properly. Modifies given function type.
 	void TransformCoroutineFunctionType( NamesScope& root_namespace, FunctionType& generator_function_type, FunctionVariable::Kind kind, bool non_sync );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
-	// This function should be called for generator function just after aruments preparation.
+	// This function should be called for coroutine function just after aruments preparation.
 	void PrepareCoroutineBlocks( FunctionContext& function_context );
+
 	void CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void AsyncFuncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );

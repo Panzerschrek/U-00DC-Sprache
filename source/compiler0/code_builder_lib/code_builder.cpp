@@ -1078,14 +1078,14 @@ size_t CodeBuilder::PrepareFunction(
 			// Disable auto-coroutines.
 			if( func_variable.return_type_is_auto )
 			{
-				REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type.src_loc );
+				REPORT_ERROR( AutoReturnCoroutine, names_scope.GetErrors(), func.type.src_loc );
 				func_variable.kind= FunctionVariable::Kind::Regular;
 			}
 
 			// Disable coroutines special methods.
 			if( is_special_method )
 			{
-				REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type.src_loc );
+				REPORT_ERROR( CoroutineSpecialMethod, names_scope.GetErrors(), func.type.src_loc );
 				func_variable.kind= FunctionVariable::Kind::Regular;
 			}
 
@@ -1094,12 +1094,12 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for coroutines." );
 
 			if( function_type.calling_convention != llvm::CallingConv::C )
-				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type.src_loc );
+				REPORT_ERROR( NonDefaultCallingConventionForCoroutine, names_scope.GetErrors(), func.type.src_loc );
 
 			// It is too complicated to support virtual coroutines. It is simplier to just forbid such coroutines.
 			// But this is still possible to return a coroutine value from virtual function.
 			if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
-				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type.src_loc );
+				REPORT_ERROR( VirtualCoroutine, names_scope.GetErrors(), func.type.src_loc );
 		}
 
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
@@ -1219,7 +1219,7 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->kind != func_variable.kind )
-			REPORT_ERROR( GeneratorMismatch, names_scope.GetErrors(), func.src_loc, func_name );
+			REPORT_ERROR( CoroutineMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
 			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc );
@@ -1458,21 +1458,21 @@ Type CodeBuilder::BuildFuncCode(
 
 		for( const FunctionType::Param& arg : function_type.params )
 		{
-			// Generator is an object, that holds references to reference-args of generator function.
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
 			// It's forbidden to create types with references inside to types with other references inside.
-			// So, check if this rule is not violated for generators.
-			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
+			// So, check if this rule is not violated for coroutines.
+			// Do this now, because it's impossible to check this in coroutine declaration, because this check requires complete types of parameters.
 			if( arg.value_type != ValueType::Value && arg.type.ReferencesTagsCount() > 0u )
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
 
-			// Generator is not declared as non-sync, but param is non-sync. This is an error.
+			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
 			if( !coroutine_type_description->non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc ) )
-				REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
+				REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
 		}
 
 		if( !coroutine_type_description->non_sync && GetTypeNonSync( coroutine_type_description->return_type, parent_names_scope, block.src_loc ) )
-			REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc );
+			REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc );
 	}
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1547,7 +1547,7 @@ Type CodeBuilder::BuildFuncCode(
 					if( func_variable.IsCoroutine() )
 					{
 						// In coroutines we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
-						// This is needed, because address, allocated by generator function initial call, does not live long enough.
+						// This is needed, because address, allocated by coroutine function initial call, does not live long enough.
 						variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
 						CreateLifetimeStart( function_context, variable->llvm_value );
 						CopyBytes( variable->llvm_value, &llvm_arg, param.type, function_context );
@@ -1622,7 +1622,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	if( func_variable.IsCoroutine() )
 	{
-		// Create generator entry block after saving args to stack.
+		// Create coroutine entry block after saving args to stack.
 		PrepareCoroutineBlocks( function_context );
 		// Generate also initial suspend.
 		CoroutineSuspend( function_names, function_context, block.src_loc );
