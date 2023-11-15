@@ -517,10 +517,7 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 
 	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 	if( expression_result->type == invalid_type_ )
-	{
-		CoroutineFinalSuspend( names, function_context, src_loc );
 		return;
-	}
 
 	const VariablePtr return_value_node=
 		Variable::Create(
@@ -540,7 +537,6 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
-			CoroutineFinalSuspend( names, function_context, src_loc );
 			return;
 		}
 
@@ -612,7 +608,7 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
 	function_context.variables_state.RemoveNode( return_value_node );
 
-	CoroutineFinalSuspend( names, function_context, src_loc );
+	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
 }
 
 Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
