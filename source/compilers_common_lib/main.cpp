@@ -713,7 +713,7 @@ int Main( int argc, const char* argv[] )
 	else
 		U_ASSERT(false);
 
-	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_libc_alloc ) )
+	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_libc_alloc, false ) )
 		return 1;
 
 	if( Options::verify_module )

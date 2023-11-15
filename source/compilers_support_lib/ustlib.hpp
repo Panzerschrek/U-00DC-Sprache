@@ -8,6 +8,6 @@ namespace U
 
 enum class HaltMode{ Trap, Abort, ConfigurableHandler, Unreachable, };
 
-bool LinkUstLibModules( llvm::Module& result_module, HaltMode halt_mode, bool no_libc_alloc );
+bool LinkUstLibModules( llvm::Module& result_module, HaltMode halt_mode, bool no_libc_alloc, bool no_stdout );
 
 } // namespace U
