@@ -615,6 +615,103 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 	CoroutineFinalSuspend( names, function_context, src_loc );
 }
 
+Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+{
+	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	if( async_func_variable->type == invalid_type_ )
+		return ErrorValue();
+
+	// TODO - generate errors if expression is not an async function.
+
+	const Class* const class_type= async_func_variable->type.GetClassType();
+	if( class_type == nullptr )
+		return ErrorValue();
+
+	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data );
+	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
+		return ErrorValue();
+
+	llvm::Value* const coro_handle=
+		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
+
+	// TODO - halt if coroutine is already finished.
+
+	auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop_enter" );
+	auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
+	auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
+
+	// Loop block.
+	function_context.function->getBasicBlockList().push_back( loop_block );
+	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+	function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_resume ),
+		{ coro_handle } );
+
+	llvm::Value* const done_after_resume= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+		{ coro_handle },
+		"coro_done_after_resume" );
+
+	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, done_block, not_done_block );
+
+	// Not done block.
+	function_context.function->getBasicBlockList().push_back( not_done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
+
+	// TODO - perform context save independent on suspend?
+	CoroutineSuspend( names, function_context, src_loc );
+	function_context.llvm_ir_builder.CreateBr( loop_block ); // Continue to check if the coroutine is done.
+
+	// Done block.
+	function_context.function->getBasicBlockList().push_back( done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( done_block );
+
+	const Type& return_type= coroutine_type_description->return_type;
+
+	llvm::Type* const promise_llvm_type=
+		coroutine_type_description->return_value_type == ValueType::Value
+			? return_type.GetLLVMType()
+			: llvm::PointerType::get( llvm_context_, 0 );
+
+	llvm::Value* const promise=
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
+			{
+				coro_handle,
+				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+				llvm::ConstantInt::getFalse( llvm_context_ ),
+			},
+			"promise" );
+
+	const VariableMutPtr result=
+		Variable::Create(
+			return_type,
+			coroutine_type_description->return_value_type,
+			Variable::Location::Pointer,
+			async_func_variable->name + " await result" );
+	function_context.variables_state.AddNode( result );
+
+	if( result->value_type == ValueType::Value )
+	{
+		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType(), nullptr, result->name );
+		CopyBytes( result->llvm_value, promise, return_type, function_context );
+
+		// TODO - setup inner references.
+	}
+	else
+	{
+		result->llvm_value= CreateTypedReferenceLoad( function_context, return_type, promise );
+
+		// TODO - setup references.
+	}
+
+	// TODO - require value of the coroutine type, move it in the operator.
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
 // Perform initial suspend or suspend in "yield".
 void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {

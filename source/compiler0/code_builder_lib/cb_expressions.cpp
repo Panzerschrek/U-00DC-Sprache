@@ -449,10 +449,7 @@ Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& 
 
 Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::AwaitOperator& await_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( await_operator.expression, names, function_context );
-	// TODO
-	U_UNUSED(variable);
-	return ErrorValue();
+	return BuildAwait( names, function_context, await_operator.expression, await_operator.src_loc );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
