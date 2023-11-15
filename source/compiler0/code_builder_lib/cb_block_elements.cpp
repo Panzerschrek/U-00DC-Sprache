@@ -550,12 +550,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	if( function_context.coro_suspend_bb != nullptr )
+	if( function_context.coro_suspend_bb != nullptr && function_context.return_type != std::nullopt )
 	{
-		// For generators process "return" with value as combination "yield" and empty "return".
-		GeneratorYield( names, function_context, return_operator.expression, return_operator.src_loc );
-		GeneratorFinalSuspend( names, function_context, return_operator.src_loc );
-		return block_info;
+		if( const auto class_type= function_context.return_type->GetClassType() )
+		{
+			if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
+			{
+				if( coroutine_type_description->kind == CoroutineKind::Generator )
+				{
+					// For generators process "return" with value as combination "yield" and empty "return".
+					GeneratorYield( names, function_context, return_operator.expression, return_operator.src_loc );
+					GeneratorFinalSuspend( names, function_context, return_operator.src_loc );
+					return block_info;
+				}
+			}
+		}
 	}
 
 	// Destruction frame for temporary variables of result expression.
