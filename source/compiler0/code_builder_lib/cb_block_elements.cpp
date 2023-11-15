@@ -527,7 +527,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( function_context.coro_suspend_bb != nullptr )
 		{
 			// For generators enter into final suspend state in case of manual "return".
-			GeneratorFinalSuspend( names, function_context, return_operator.src_loc );
+			CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
 			return block_info;
 		}
 		if( function_context.return_type == std::nullopt )
@@ -560,9 +560,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 					// For generators process "return" with value as combination "yield" and empty "return".
 					GeneratorYield( names, function_context, return_operator.expression, return_operator.src_loc );
-					GeneratorFinalSuspend( names, function_context, return_operator.src_loc );
+					CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
 					return block_info;
 				}
+				else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+				{
+					AsyncFuncReturn( names, function_context, return_operator.expression, return_operator.src_loc );
+					return block_info;
+				}
+				else U_ASSERT(false);
 			}
 		}
 	}

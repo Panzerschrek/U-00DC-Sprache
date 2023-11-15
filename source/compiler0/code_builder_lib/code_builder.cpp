@@ -1739,7 +1739,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( func_variable.kind == FunctionVariable::Kind::Generator )
 		{
 			// Add final suspention point for generators.
-			GeneratorFinalSuspend( function_names, function_context, block.end_src_loc );
+			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
 		else
 		{

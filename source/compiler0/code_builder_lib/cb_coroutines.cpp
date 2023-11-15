@@ -485,6 +485,121 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	CoroutineSuspend( names, function_context, src_loc );
 }
 
+void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+{
+	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	U_ASSERT( coroutine_class != nullptr );
+	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
+	U_ASSERT( coroutine_type_description != nullptr );
+
+	const Type& return_type= coroutine_type_description->return_type;
+
+	llvm::Value* const promise= function_context.s_ret;
+	U_ASSERT( promise != nullptr );
+
+	// Destruction frame for temporary variables of result expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	if( expression_result->type == invalid_type_ )
+	{
+		CoroutineFinalSuspend( names, function_context, src_loc );
+		return;
+	}
+
+	const VariablePtr return_value_node=
+		Variable::Create(
+			return_type,
+			function_context.function_type.return_value_type,
+			Variable::Location::Pointer,
+			"return value lock" );
+	function_context.variables_state.AddNode( return_value_node );
+
+	if( function_context.function_type.return_value_type == ValueType::Value )
+	{
+		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
+		{}
+		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names.GetErrors(), src_loc ) )
+			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names, function_context, src_loc );
+		else
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			function_context.variables_state.RemoveNode( return_value_node );
+			CoroutineFinalSuspend( names, function_context, src_loc );
+			return;
+		}
+
+		// CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
+
+		if( expression_result->type.GetFundamentalType() != nullptr||
+			expression_result->type.GetEnumType() != nullptr ||
+			expression_result->type.GetRawPointerType() != nullptr ||
+			expression_result->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
+		{
+			if( expression_result->type != void_type_ )
+				CreateTypedStore( function_context, return_type, CreateMoveToLLVMRegisterInstruction( *expression_result, function_context ), promise );
+		}
+		else if( expression_result->value_type == ValueType::Value && expression_result->type == return_type ) // Move composite value.
+		{
+			CopyBytes( promise, expression_result->llvm_value, return_type, function_context );
+
+			function_context.variables_state.MoveNode( expression_result );
+
+			if( expression_result->location == Variable::Location::Pointer )
+				CreateLifetimeEnd( function_context, expression_result->llvm_value );
+		}
+		else // Copy composite value.
+		{
+			if( !expression_result->type.IsCopyConstructible() )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, expression_result->type );
+			else if( return_type.IsAbstract() )
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, return_type );
+			else
+			{
+				BuildCopyConstructorPart(
+					promise,
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
+					return_type,
+					function_context );
+			}
+		}
+	}
+	else
+	{
+		if( !ReferenceIsConvertible( expression_result->type, return_type, names.GetErrors(), src_loc ) )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			return;
+		}
+
+		if( expression_result->value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			return;
+		}
+		if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+		}
+
+		// CheckYieldReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+
+		// Add link to return value in order to catch error, when reference to local variable is returned.
+		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
+
+		llvm::Value* const ref_casted= CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context );
+		CreateTypedReferenceStore( function_context, return_type, ref_casted, promise );
+	}
+
+	CallDestructorsBeforeReturn( names, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+	function_context.variables_state.RemoveNode( return_value_node );
+
+	CoroutineFinalSuspend( names, function_context, src_loc );
+}
+
 // Perform initial suspend or suspend in "yield".
 void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
@@ -513,7 +628,7 @@ void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& fu
 	function_context.llvm_ir_builder.SetInsertPoint( next_block );
 }
 
-void CodeBuilder::GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	// We can destroy all local variables right now. Leave only coroutine cleanup code in destroy block.
 	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
