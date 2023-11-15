@@ -636,6 +636,8 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 	auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
 	auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
 
+	function_context.llvm_ir_builder.CreateBr( loop_block );
+
 	// Loop block.
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
