@@ -627,16 +627,28 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
 		return ErrorValue();
 
-	llvm::Value* const coro_handle=
-		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
-
-	// TODO - halt if coroutine is already finished.
-
+	auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
 	auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop_enter" );
 	auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
 	auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
 
-	function_context.llvm_ir_builder.CreateBr( loop_block );
+	llvm::Value* const coro_handle=
+		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
+
+	llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+		{ coro_handle },
+		"coro_done" );
+
+	function_context.llvm_ir_builder.CreateCondBr( done, already_done_block, loop_block );
+
+	// Already done block.
+	function_context.function->getBasicBlockList().push_back( already_done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( already_done_block );
+	// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
+	// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
+	function_context.llvm_ir_builder.CreateCall( halt_func_ );
+	function_context.llvm_ir_builder.CreateUnreachable();
 
 	// Loop block.
 	function_context.function->getBasicBlockList().push_back( loop_block );
