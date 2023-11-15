@@ -1547,7 +1547,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
-	if( coro_class_type == nullptr || std::get_if< CoroutineTypeDescription >( &coro_class_type->generated_class_data ) == nullptr )
+	if( coro_class_type == nullptr)
+	{
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
+		return BlockBuildInfo();
+	}
+	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coro_class_type->generated_class_data );
+	if( coroutine_type_description == nullptr)
 	{
 		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
 		return BlockBuildInfo();
@@ -1586,7 +1592,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					auto promise= llvm.coro.promise( coro_handle );
 				}
 			}
-		// TODO - adopt this code for async functions (that return value only once and when they are done).
+	 */
+	/* for async functions code looks like this:
+			if( !llvm.coro.done( coro_handle ) )
+			{
+				llvm.coro.resume( coro_handle )
+				if( llvm.coro.done( coro_handle ) )
+				{
+					auto promise= llvm.coro.promise( coro_handle );
+				}
+			}
 	 */
 
 	llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
@@ -1613,14 +1628,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		"coro_done_after_resume" );
 
 	const auto not_done_after_resume_block= llvm::BasicBlock::Create( llvm_context_, "not_done_after_resume" );
-	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, alternative_block, not_done_after_resume_block );
+
+	if( coroutine_type_description->kind == CoroutineKind::Generator )
+		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, alternative_block, not_done_after_resume_block );
+	else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, not_done_after_resume_block, alternative_block );
+	else U_ASSERT(false);
 
 	// Not done after resume block.
 	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
 	function_context.llvm_ir_builder.SetInsertPoint( not_done_after_resume_block );
-
-	const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &coro_class_type->generated_class_data );
-	U_ASSERT( coroutine_type_description != nullptr );
 
 	EnsureTypeComplete( coroutine_type_description->return_type );
 
