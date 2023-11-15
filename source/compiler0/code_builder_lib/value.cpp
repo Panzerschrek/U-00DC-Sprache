@@ -32,6 +32,21 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		std::equal( l_type.params.begin() + 1, l_type.params.end(), r_type.params.begin() + 1 );  // Compare params, except first.
 }
 
+bool FunctionVariable::IsCoroutine() const
+{
+	switch(kind)
+	{
+	case Kind::Regular:
+		return false;
+	case Kind::Generator:
+	case Kind::Async:
+		return true;
+	}
+
+	U_ASSERT(false);
+	return false;
+}
+
 //
 // Variable
 //

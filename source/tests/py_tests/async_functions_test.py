@@ -16,7 +16,7 @@ def SimpleAsyncFunction_Test0():
 			}
 			else { halt; }
 
-			if_coro_advance( x : gen )
+			if_coro_advance( x : f )
 			{
 				halt;
 			}

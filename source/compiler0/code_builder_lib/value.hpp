@@ -35,9 +35,6 @@ using LazyLLVMFunctionPtr= std::shared_ptr<LazyLLVMFunction>;
 
 struct FunctionVariable final
 {
-	const Synt::Function* syntax_element= nullptr;
-	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
-
 	enum class ConstexprKind : uint8_t
 	{
 		NonConstexpr,
@@ -45,6 +42,12 @@ struct FunctionVariable final
 		ConstexprComplete,
 		ConstexprAuto, // May be, or may be not constexpr.
 	};
+
+	using Kind= Synt::Function::Kind;
+
+public:
+	const Synt::Function* syntax_element= nullptr;
+	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
 
 	FunctionType type;
 
@@ -58,7 +61,7 @@ struct FunctionVariable final
 	bool is_conversion_constructor= false;
 	bool return_type_is_auto= false; // true, if return type must be deduced and not deduced yet.
 	bool is_inherited= false;
-	bool is_generator= false;
+	Kind kind= Kind::Regular;
 	mutable bool referenced= false;
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
@@ -69,7 +72,9 @@ struct FunctionVariable final
 	SrcLoc prototype_src_loc;
 	SrcLoc body_src_loc;
 
+public:
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
+	bool IsCoroutine() const;
 };
 
 struct OverloadedFunctionsSet;

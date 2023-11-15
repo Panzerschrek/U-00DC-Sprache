@@ -28,16 +28,22 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 	CheckFunctionReferencesNotationInnerReferences( function_type, errors_container, src_loc );
 }
 
-void CodeBuilder::TransformGeneratorFunctionType(
+void CodeBuilder::TransformCoroutineFunctionType(
 	NamesScope& root_namespace,
 	FunctionType& generator_function_type,
+	const FunctionVariable::Kind kind,
 	const bool non_sync )
 {
 	CoroutineTypeDescription coroutine_type_description;
-	coroutine_type_description.kind= CoroutineKind::Generator;
 	coroutine_type_description.return_type= generator_function_type.return_type;
 	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
 	coroutine_type_description.non_sync= non_sync;
+
+	if( kind == FunctionVariable::Kind::Generator )
+		coroutine_type_description.kind= CoroutineKind::Generator;
+	else if( kind == FunctionVariable::Kind::Async )
+		coroutine_type_description.kind= CoroutineKind::AsyncFunc;
+	else U_ASSERT(false);
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
@@ -126,7 +132,19 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
 		return it->second.get();
 
-	auto coroutine_class= std::make_unique<Class>( std::string( Keyword( Keywords::generator_ ) ), &root_namespace );
+	std::string_view class_base_name;
+	switch( coroutine_type_description.kind )
+	{
+	case CoroutineKind::Generator:
+		class_base_name= Keyword( Keywords::generator_ );
+		break;
+	case CoroutineKind::AsyncFunc:
+		class_base_name= Keyword( Keywords::async_ );
+		break;
+	};
+	U_ASSERT( !class_base_name.empty() );
+
+	auto coroutine_class= std::make_unique<Class>( std::string( class_base_name ), &root_namespace );
 	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->generated_class_data= coroutine_type_description;
@@ -223,7 +241,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	return res_type;
 }
 
-void CodeBuilder::PrepareGeneratorBlocks( FunctionContext& function_context )
+void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 {
 	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
 
@@ -374,7 +392,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, void_type_ );
 
-		GeneratorSuspend( names, function_context, src_loc );
+		CoroutineSuspend( names, function_context, src_loc );
 		return;
 	}
 
@@ -464,11 +482,11 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	}
 
 	// Suspend generator. Now generator caller will receive filled promise.
-	GeneratorSuspend( names, function_context, src_loc );
+	CoroutineSuspend( names, function_context, src_loc );
 }
 
 // Perform initial suspend or suspend in "yield".
-void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),

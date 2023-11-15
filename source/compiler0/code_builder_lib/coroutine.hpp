@@ -8,6 +8,7 @@ namespace U
 enum class CoroutineKind : uint8_t
 {
 	Generator,
+	AsyncFunc,
 };
 
 struct CoroutineTypeDescription

@@ -1008,7 +1008,7 @@ size_t CodeBuilder::PrepareFunction(
 
 	FunctionVariable func_variable;
 
-	func_variable.is_generator= func.kind == Synt::Function::Kind::Generator;
+	func_variable.kind= func.kind;
 
 	{ // Prepare and process function type.
 
@@ -1065,38 +1065,39 @@ size_t CodeBuilder::PrepareFunction(
 			( func_variable.is_this_call || func.overloaded_operator != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc );
 
-		if( func_variable.is_generator )
+		if( func_variable.IsCoroutine() )
 		{
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			TransformGeneratorFunctionType(
+			TransformCoroutineFunctionType(
 				names_scope,
 				function_type,
+				func_variable.kind,
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
 
-			// Disable auto-generators.
+			// Disable auto-coroutines.
 			if( func_variable.return_type_is_auto )
 			{
 				REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type.src_loc );
-				func_variable.is_generator= false;
+				func_variable.kind= FunctionVariable::Kind::Regular;
 			}
 
-			// Disable generator special methods.
+			// Disable coroutines special methods.
 			if( is_special_method )
 			{
 				REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type.src_loc );
-				func_variable.is_generator= false;
+				func_variable.kind= FunctionVariable::Kind::Regular;
 			}
 
-			// Disable references pollution for generator. It is too complicated for now.
+			// Disable references pollution for coroutine. It is too complicated for now.
 			if( func.type.references_pollution_expression != nullptr )
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for generators." );
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for coroutines." );
 
 			if( function_type.calling_convention != llvm::CallingConv::C )
 				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type.src_loc );
 
-			// It is too complicated to support virtual generators. It is simplier to just forbid such generators.
-			// But this is still possible to return a generator value from virtual function.
+			// It is too complicated to support virtual coroutines. It is simplier to just forbid such coroutines.
+			// But this is still possible to return a coroutine value from virtual function.
 			if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
 				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type.src_loc );
 		}
@@ -1217,7 +1218,7 @@ size_t CodeBuilder::PrepareFunction(
 		if( prev_function->no_mangle != func_variable.no_mangle )
 			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
-		if( prev_function->is_generator != func_variable.is_generator )
+		if( prev_function->kind != func_variable.kind )
 			REPORT_ERROR( GeneratorMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
@@ -1447,7 +1448,7 @@ Type CodeBuilder::BuildFuncCode(
 	// Perform this check while function body building, since the check requires type completeness, which can't be requested during prototype preparation.
 	CheckFunctionReferencesNotationInnerReferences( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
 
-	if( func_variable.is_generator )
+	if( func_variable.IsCoroutine() )
 	{
 		const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &function_type.return_type.GetClassType()->generated_class_data );
 		U_ASSERT( coroutine_type_description != nullptr );
@@ -1543,9 +1544,9 @@ Type CodeBuilder::BuildFuncCode(
 				else
 				{
 					// Values of composite types are passed via pointer.
-					if( func_variable.is_generator )
+					if( func_variable.IsCoroutine() )
 					{
-						// In generators we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
+						// In coroutines we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
 						// This is needed, because address, allocated by generator function initial call, does not live long enough.
 						variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
 						CreateLifetimeStart( function_context, variable->llvm_value );
@@ -1619,12 +1620,12 @@ Type CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
-	if( func_variable.is_generator )
+	if( func_variable.IsCoroutine() )
 	{
 		// Create generator entry block after saving args to stack.
-		PrepareGeneratorBlocks( function_context );
+		PrepareCoroutineBlocks( function_context );
 		// Generate also initial suspend.
-		GeneratorSuspend( function_names, function_context, block.src_loc );
+		CoroutineSuspend( function_names, function_context, block.src_loc );
 	}
 
 	if( is_constructor )
@@ -1735,7 +1736,7 @@ Type CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		if( func_variable.is_generator )
+		if( func_variable.kind == FunctionVariable::Kind::Generator )
 		{
 			// Add final suspention point for generators.
 			GeneratorFinalSuspend( function_names, function_context, block.end_src_loc );
@@ -2109,7 +2110,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		llvm_function->addFnAttrs( builder );
 	}
 
-	if( function_variable.is_generator )
+	if( function_variable.IsCoroutine() )
 		llvm_function->addFnAttr( llvm::Attribute::PresplitCoroutine );
 
 	// Prepare params attributes.

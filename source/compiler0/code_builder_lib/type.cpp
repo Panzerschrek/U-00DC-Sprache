@@ -505,6 +505,8 @@ std::string Type::ToString() const
 			{
 				if( coroutine_type_description->kind == CoroutineKind::Generator )
 					result+= Keyword( Keywords::generator_ );
+				else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+					result+= Keyword( Keywords::async_ );
 				else U_ASSERT(false);
 
 				// TODO - print inner references here.
