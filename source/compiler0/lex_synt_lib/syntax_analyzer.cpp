@@ -2986,13 +2986,20 @@ Function SyntaxAnalyzer::ParseFunction()
 			}
 		}
 	}
+
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
 	{
 		NextLexem();
 		result.kind= Function::Kind::Generator;
-
 		result.coroutine_non_sync_tag= TryParseNonSyncTag();
 	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::async_ )
+	{
+		NextLexem();
+		result.kind= Function::Kind::Async;
+		result.coroutine_non_sync_tag= TryParseNonSyncTag();
+	}
+
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
 	{
 		NextLexem();

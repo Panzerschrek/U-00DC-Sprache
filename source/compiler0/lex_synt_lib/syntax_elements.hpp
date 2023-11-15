@@ -1159,6 +1159,7 @@ struct Function
 	{
 		Regular,
 		Generator,
+		Async,
 	};
 
 	struct NameComponent
