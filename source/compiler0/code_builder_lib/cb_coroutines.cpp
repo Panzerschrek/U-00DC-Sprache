@@ -371,7 +371,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
-void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == nullptr )
 	{
@@ -384,11 +384,26 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
 
+	if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+	{
+		// Allow empty "yield" for async functions.
+		if( std::get_if<Synt::EmptyVariant>(&expression) == nullptr )
+		{
+			// TODO - use separate error code.
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, "some expression", void_type_ );
+		}
+
+		CoroutineSuspend( names, function_context, src_loc );
+		return;
+	}
+
+	// Proces "yield" for generators.
+
 	const Type& yield_type= coroutine_type_description->return_type;
 
 	if( std::get_if<Synt::EmptyVariant>(&expression) != nullptr )
 	{
-		// Allow empty expression "yield" for void-return coroutines.
+		// Allow empty expression "yield" for void-return generators.
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, void_type_ );
 

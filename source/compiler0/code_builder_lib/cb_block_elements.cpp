@@ -559,7 +559,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( coroutine_type_description->kind == CoroutineKind::Generator )
 				{
 					// For generators process "return" with value as combination "yield" and empty "return".
-					GeneratorYield( names, function_context, return_operator.expression, return_operator.src_loc );
+					CoroutineYield( names, function_context, return_operator.expression, return_operator.src_loc );
 					CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
 					return block_info;
 				}
@@ -748,7 +748,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::YieldOperator& yield_operator )
 {
 	// "Yield" is not a terminal operator. Execution (logically) continues after it.
-	GeneratorYield( names, function_context, yield_operator.expression, yield_operator.src_loc );
+	CoroutineYield( names, function_context, yield_operator.expression, yield_operator.src_loc );
 	return BlockBuildInfo();
 }
 
