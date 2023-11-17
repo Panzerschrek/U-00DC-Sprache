@@ -146,43 +146,43 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return FunctionTypeToPointer( move(res) );
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type_ptr ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::CoroutineType/>& coroutine_type_ptr ) : Type
 {
-	return PrepareType( names_scope, function_context, generator_type_ptr.deref() );
+	return PrepareType( names_scope, function_context, coroutine_type_ptr.deref() );
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::GeneratorType& generator_type ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type
 {
 	var CoroutineTypeDescription mut coroutine_type_description
 	{
-		.kind= CoroutineKind::Generator,
-		.return_type= PrepareType( names_scope, function_context, generator_type.return_type ),
+		.kind= coroutine_type.kind,
+		.return_type= PrepareType( names_scope, function_context, coroutine_type.return_type ),
 		.return_value_type= select(
-			generator_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
+			coroutine_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
 				? select(
-					generator_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+					coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
 						? ValueType::ReferenceMut
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
-		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type.non_sync_tag ),
+		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
 	};
 
-	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type.src_loc  ) )
+	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type.src_loc  ) )
 	{
-		REPORT_ERROR( CoroutineNonSyncRequired, names_scope, generator_type.src_loc )
+		REPORT_ERROR( CoroutineNonSyncRequired, names_scope, coroutine_type.src_loc )
 	}
 
-	foreach( &m : generator_type.inner_reference_tags )
+	foreach( &m : coroutine_type.inner_reference_tags )
 	{
 		coroutine_type_description.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 	}
 
 	auto num_params= 1s;
-	if_var( &return_value_reference_expression : generator_type.return_value_reference_expression )
+	if_var( &return_value_reference_expression : coroutine_type.return_value_reference_expression )
 	{
 		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, return_value_reference_expression, num_params );
 	}
-	if_var( &return_value_inner_references_expression : generator_type.return_value_inner_references_expression )
+	if_var( &return_value_inner_references_expression : coroutine_type.return_value_inner_references_expression )
 	{
 		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, return_value_inner_references_expression, num_params );
 	}

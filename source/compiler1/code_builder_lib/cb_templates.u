@@ -301,9 +301,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.deref(), template_params_usage_flags );
 	}
-	if_var( &generator_type : param.get</ ust::box</Synt::GeneratorType/> />() )
+	if_var( &coroutine_type : param.get</ ust::box</Synt::CoroutineType/> />() )
 	{
-		return CreateTemplateSignatureParam( names_scope, function_context, template_params, generator_type.deref(), template_params_usage_flags );
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, coroutine_type.deref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular expression
@@ -399,9 +399,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.deref(), template_params_usage_flags );
 	}
-	if_var( &generator_type : param.get</ ust::box</Synt::GeneratorType/> />() )
+	if_var( &coroutine_type : param.get</ ust::box</Synt::CoroutineType/> />() )
 	{
-		return CreateTemplateSignatureParam( names_scope, function_context, template_params, generator_type.deref(), template_params_usage_flags );
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, coroutine_type.deref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular type name.
@@ -562,7 +562,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::array_view_imut</TemplateBase::Param/> template_params,
-	Synt::GeneratorType& signature_param,
+	Synt::CoroutineType& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam mut return_type=
@@ -578,7 +578,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	var TemplateSignatureParam::CoroutineTypeParam mut coroutine_type_param
 	{
-		.kind= CoroutineKind::Generator,
+		.kind= signature_param.kind,
 		.return_type= move(return_type),
 		.return_value_type= select(
 			signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference

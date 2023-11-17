@@ -544,11 +544,7 @@ struct TypeAlias
 	bool referenced= false;
 }
 
-enum CoroutineKind
-{
-	Generator,
-	AsyncFunc,
-}
+type CoroutineKind= Synt::CoroutineType::Kind;
 
 struct CoroutineTypeDescription
 {
@@ -754,7 +750,7 @@ public:
 	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
 	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
-	fn conversion_constructor( CoroutineTypeParam mut generator_type_param );
+	fn conversion_constructor( CoroutineTypeParam mut coroutine_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
 	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);

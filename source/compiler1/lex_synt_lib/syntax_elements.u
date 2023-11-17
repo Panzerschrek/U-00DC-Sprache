@@ -61,7 +61,7 @@ fn GetSrcLoc( Expression& expression ) : SrcLoc
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( same_type</ ElementT, ust::box</GeneratorType/> /> )
+		else static_if( same_type</ ElementT, ust::box</CoroutineType/> /> )
 		{
 			return el.deref().src_loc;
 		}

@@ -3017,7 +3017,7 @@ fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& e ) : bool { ust:
 fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::box</Synt::TupleType/>& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::box</Synt::RawPointerType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::GeneratorType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::CoroutineType/>& e ) : bool { ust::ignore_unused(e); return true; }
 
 fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::optional_ref_imut</ Synt::Block /> @( ust::reference_notation::return_inner_references::param0 )
 {
