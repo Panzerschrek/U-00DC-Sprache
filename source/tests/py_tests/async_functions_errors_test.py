@@ -132,7 +132,7 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test4():
 	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
 
 
-def TypesMismatch_ForASyncFunctionReturn_Test0():
+def TypesMismatch_ForAsyncFunctionReturn_Test0():
 	c_program_text= """
 		fn async Foo()
 		{
@@ -144,7 +144,7 @@ def TypesMismatch_ForASyncFunctionReturn_Test0():
 	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
 
 
-def TypesMismatch_ForASyncFunctionReturn_Test1():
+def TypesMismatch_ForAsyncFunctionReturn_Test1():
 	c_program_text= """
 		fn async Foo() : bool
 		{
@@ -156,7 +156,7 @@ def TypesMismatch_ForASyncFunctionReturn_Test1():
 	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
 
 
-def TypesMismatch_ForASyncFunctionReturn_Test2():
+def TypesMismatch_ForAsyncFunctionReturn_Test2():
 	c_program_text= """
 		fn async Foo() : i32
 		{
@@ -166,6 +166,42 @@ def TypesMismatch_ForASyncFunctionReturn_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
+def TypesMismatch_ForAsyncFunctionReturn_Test3():
+	c_program_text= """
+		fn async Foo( i32& x ) : f32 &
+		{
+			return; // Expected "f32" reference, got "i32" reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
+def ExpectedReferenceValue_ForAsyncFunctionReturn_Test0():
+	c_program_text= """
+		fn async Foo() : f32 &
+		{
+			return 0.25f; // Expected reference, got value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+
+
+def BindingConstReferenceToNonconstReference_ForAsyncFunctionReturn_Test0():
+	c_program_text= """
+		fn async Foo( i32& x ) : i32 &mut
+		{
+			return x; // Expected mutable reference, got immutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
 
 
 def NonEmptyYieldInAsyncFunction_Test0():
@@ -396,3 +432,161 @@ def CoroutineMismatch_ForAsyncFunction_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "CoroutineMismatch", 5 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
+
+
+def AsyncReturn_ForNonCopyableValue_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor();
+			fn constructor(mut this, S& other)= delete;
+		}
+		fn async Foo() : S
+		{
+			var S s;
+			return s; // Can't copy "s" here - it is non-copyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def AsyncReturn_ForAbstractValue_Test0():
+	c_program_text= """
+		class A abstract
+		{
+			fn constructor( mut this, A& other )= default;
+		}
+		fn async Foo( A& a ) : A
+		{
+			return a; // Trying to copy-construct abstract value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test0():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Foo()
+		{
+			auto f= SomeFunc();
+			auto f_copy= f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test1():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Foo()
+		{
+			auto f= SomeFunc();
+			var (async : i32) f_copy= f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test2():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Foo()
+		{
+			auto f= SomeFunc();
+			var (async : i32) f_copy(f);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ClassHaveNoConstructors", 6 ) or HaveError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test3():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		struct S{ (async : i32) f; }
+		fn Foo()
+		{
+			auto f= SomeFunc();
+			var S s { .f= f };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test4():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Foo()
+		{
+			auto f= SomeFunc();
+			var [ (async : i32 ), 1 ] arr[ f ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test5():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Foo()
+		{
+			auto mut f0= SomeFunc();
+			auto mut f1= SomeFunc();
+			f0= f1; // Try to call copy assignment operator here.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test6():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Foo() : (async : i32)
+		{
+			auto f= SomeFunc();
+			return f; // Try to call copy constructor for return value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test7():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn Pass( (async : i32) f );
+		fn Foo()
+		{
+			auto f= SomeFunc();
+			Pass( f ); // Try to call copy constructor for argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+
+
+def AsyncFunctionIsNonCopyable_Test8():
+	c_program_text= """
+		type AsyncFunc= async : i32;
+		static_assert( !typeinfo</AsyncFunc/>.is_copy_constructible );
+		static_assert( !typeinfo</AsyncFunc/>.is_copy_assignable );
+	"""
+	tests_lib.build_program( c_program_text )
