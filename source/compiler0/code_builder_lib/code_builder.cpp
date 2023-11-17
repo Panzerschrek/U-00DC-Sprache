@@ -1741,9 +1741,23 @@ Type CodeBuilder::BuildFuncCode(
 			// Add final suspention point for generators.
 			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
+		else if( func_variable.kind == FunctionVariable::Kind::Async )
+		{
+			// Automatically generate "return" for void-return async functions.
+
+			const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &function_type.return_type.GetClassType()->generated_class_data );
+			U_ASSERT( coroutine_type_description != nullptr );
+
+			if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
+			{
+				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );
+				return function_type.return_type;
+			}
+			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
+		}
 		else
 		{
-			// Manually generate "return" for void-return functions.
+			// Automatically generate "return" for void-return functions.
 			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 			{
 				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );

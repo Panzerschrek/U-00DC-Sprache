@@ -274,3 +274,25 @@ def ReturnForAsyncFunction_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnForAsyncFunction_Test6():
+	c_program_text= """
+		fn async Foo()
+		{
+			// It's fine to have no "return" in async function returning void.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnForAsyncFunction_Test7():
+	c_program_text= """
+		fn async Foo()
+		{
+			return; // Empty return for void-return async function.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

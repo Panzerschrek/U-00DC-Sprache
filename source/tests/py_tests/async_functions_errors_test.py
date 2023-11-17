@@ -73,3 +73,60 @@ def ReturningUnallowedReference_ForAsyncReturn_Test4():
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
 	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
+
+
+def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():
+	c_program_text= """
+		fn async Foo() : i32
+		{
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
+
+
+def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test1():
+	c_program_text= """
+		fn async Foo( bool cond ) : i32
+		{
+			if( cond ) { return 42; }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
+
+
+def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test2():
+	c_program_text= """
+		fn async Foo( i32& x ) : i32&
+		{
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
+
+
+def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test3():
+	c_program_text= """
+		fn async Foo( void& x ) : void&
+		{
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
+
+
+def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test4():
+	c_program_text= """
+		fn async Foo( bool cond, f32& x ) : f32&
+		{
+			if( cond ) { return x; }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
