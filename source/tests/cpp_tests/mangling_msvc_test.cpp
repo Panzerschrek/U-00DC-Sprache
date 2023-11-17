@@ -932,16 +932,16 @@ U_TEST( OperatorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$?RM@Box@@YAXAEBU0@M@Z" ) != nullptr ); // Template op()</f32/>
 }
 
-U_TEST( GeneratorsMangling_Test0 )
+U_TEST( CoroutinesMangling_Test0 )
 {
-	// Generator type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
+	// Coroutine type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
 	// 0 - means no references inside, 1 - immutable references inside, 2 - mutable references inside.
 
 	static const char c_program_text[]=
 	R"(
-		type Gen= generator : i32;
-		fn Foo( Gen gen ) {}
-		fn Bar( f32 x, Gen gen, u32 z ) {}
+		type AsyncFunc= async : i32;
+		fn Foo( AsyncFunc f ) {}
+		fn Bar( f32 x, AsyncFunc gen, u32 z ) {}
 
 		type ImutRefGen= generator'imut' : f64;
 		fn Baz( ImutRefGen gen ) {}
@@ -955,21 +955,21 @@ U_TEST( GeneratorsMangling_Test0 )
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
-	// Functions with generator param.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$generator@H@@@Z" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXMU?$generator@H@@I@Z" ) != nullptr );
+	// Functions with coroutine param.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$async@H@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXMU?$async@H@@I@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXU?$generator@NI$0A@@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEADI$00I$0A@@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Kek@@YAXU?$generator@G_N$00@@@Z" ) != nullptr );
 
-	// Generated generator type destructors.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@H@@YAXAEAU1@@Z" ) != nullptr );
+	// Generated coroutine type destructors.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$async@H@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@NI$0A@@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@AEADI$00I$0A@@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@G_N$00@@YAXAEAU1@@Z" ) != nullptr );
 }
 
-U_TEST( GeneratorsMangling_Test1 )
+U_TEST( CoroutinesMangling_Test1 )
 {
 	// In MSVC mangling return type is also encoded in function name.
 	// For generator function return type is generator type.
@@ -977,12 +977,14 @@ U_TEST( GeneratorsMangling_Test1 )
 	R"(
 		fn generator Foo() : i32 {}
 		fn Bar() : (generator : i32) { halt; } // Type of this function is identical to previous.
+		fn async AsyncFunc() : f32 { return 0.25f; }
 		fn generator nomangle NoMangleGenerator() : f32 {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YA?AU?$generator@H@@XZ" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YA?AU?$generator@H@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?AsyncFunc@@YA?AU?$async@M@@XZ" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "NoMangleGenerator" ) != nullptr );
 }
 

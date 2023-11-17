@@ -348,3 +348,51 @@ def CoroutineNonSyncRequired_ForAsyncFunction_Test4():
 		fn async non_sync Lol() : S& { halt; }
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def CoroutineMismatch_ForAsyncFunction_Test0():
+	c_program_text= """
+		fn async Foo() : i32;
+		fn Foo() : ( async : i32 ) { halt; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
+
+
+def CoroutineMismatch_ForAsyncFunction_Test1():
+	c_program_text= """
+		fn async Foo() : i32 { return 0; }
+		fn Foo() : ( async : i32 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
+
+
+def CoroutineMismatch_ForAsyncFunction_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn async Foo(this) : i32;
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn S::Foo(this) : ( async'imut' : i32 ) @(return_inner_references) { halt; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CoroutineMismatch", 4 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
+
+
+def CoroutineMismatch_ForAsyncFunction_Test3():
+	c_program_text= """
+		struct S
+		{
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+			fn Foo(this) : ( async'imut' : i32 ) @(return_inner_references);
+		}
+		fn async S::Foo(this) : i32 { return 0; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CoroutineMismatch", 5 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
