@@ -1096,7 +1096,7 @@ def GeneratorsCanNotBeConstexpr_Test4():
 	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
 
 
-def VirtualCoroutine_Test0():
+def VirtualGenerator_Test0():
 	c_program_text= """
 		class A polymorph
 		{
@@ -1108,7 +1108,7 @@ def VirtualCoroutine_Test0():
 	assert( HaveError( errors_list, "VirtualCoroutine", 4 ) )
 
 
-def VirtualCoroutine_Test1():
+def VirtualGenerator_Test1():
 	c_program_text= """
 		class A polymorph
 		{
@@ -1125,7 +1125,7 @@ def VirtualCoroutine_Test1():
 	assert( HaveError( errors_list, "VirtualCoroutine", 8 ) )
 
 
-def VirtualCoroutine_Test2():
+def VirtualGenerator_Test2():
 	c_program_text= """
 		class A interface
 		{
