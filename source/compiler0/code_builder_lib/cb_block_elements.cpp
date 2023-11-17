@@ -526,10 +526,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression) != nullptr )
 	{
-		if( function_context.coro_suspend_bb != nullptr )
+		if( function_context.coro_suspend_bb != nullptr && function_context.return_type != std::nullopt )
 		{
-			// For generators enter into final suspend state in case of manual "return".
-			CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+			if( const auto class_type= function_context.return_type->GetClassType() )
+			{
+				if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
+				{
+					if( coroutine_type_description->kind == CoroutineKind::Generator )
+					{
+						// For generators enter into final suspend state in case of manual "return".
+						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+					}
+					else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+					{
+						// For void-return async functions do not evaluate result - just return.
+						if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
+							REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, void_type_, *function_context.return_type );
+
+						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+					}
+					else U_ASSERT(false);
+				}
+			}
 			return block_info;
 		}
 		if( function_context.return_type == std::nullopt )

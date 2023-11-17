@@ -130,3 +130,39 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
+
+
+def TypesMismatch_ForASyncFunctionReturn_Test0():
+	c_program_text= """
+		fn async Foo()
+		{
+			return 12345; // Expected "void", got "i32"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
+def TypesMismatch_ForASyncFunctionReturn_Test1():
+	c_program_text= """
+		fn async Foo() : bool
+		{
+			return 12345; // Expected "bool", got "i32"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
+def TypesMismatch_ForASyncFunctionReturn_Test2():
+	c_program_text= """
+		fn async Foo() : i32
+		{
+			return; // Expected "i32", got "void"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
