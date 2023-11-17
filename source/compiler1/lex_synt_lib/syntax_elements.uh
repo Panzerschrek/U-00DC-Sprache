@@ -672,6 +672,7 @@ struct Function
 	{
 		Regular,
 		Generator,
+		Async,
 	}
 
 	enum VirtualKind

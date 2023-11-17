@@ -1310,12 +1310,20 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			NextLexem();
 		}
 	}
+
 	if( IsKeyword( it_.front(), Keyword::generator_ ) )
 	{
 		NextLexem();
 		res.kind= Function::Kind::Generator;
 		res.coroutine_non_sync_tag= TryParseNonSyncTag();
 	}
+	else if( IsKeyword( it_.front(), Keyword::async_ ) )
+	{
+		NextLexem();
+		res.kind= Function::Kind::Async;
+		res.coroutine_non_sync_tag= TryParseNonSyncTag();
+	}
+
 	if( IsKeyword( it_.front(), Keyword::constexpr_ ) )
 	{
 		res.constexpr_= true;
