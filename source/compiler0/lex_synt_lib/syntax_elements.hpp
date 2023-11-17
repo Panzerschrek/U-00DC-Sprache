@@ -47,7 +47,7 @@ struct TupleType;
 struct RawPointerType;
 struct ArrayTypeName;
 struct FunctionType;
-struct GeneratorType;
+struct CoroutineType;
 
 // Expression
 struct NumericConstant;
@@ -161,7 +161,7 @@ using TypeName= std::variant<
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
-	std::unique_ptr<const GeneratorType>
+	std::unique_ptr<const CoroutineType>
 	>;
 
 using Expression= std::variant<
@@ -210,7 +210,7 @@ using Expression= std::variant<
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
-	std::unique_ptr<const GeneratorType>
+	std::unique_ptr<const CoroutineType>
 	>;
 
 using Initializer= std::variant<
@@ -515,12 +515,18 @@ struct FunctionType
 	bool unsafe= false;
 };
 
-struct GeneratorType
+struct CoroutineType
 {
 public:
-	GeneratorType( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
+	enum class Kind : uint8_t
+	{
+		Generator,
+		AsyncFunc,
+	};
 
+public:
+	CoroutineType( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 public:
 	SrcLoc src_loc;
@@ -530,6 +536,7 @@ public:
 	std::vector<MutabilityModifier> inner_references;
 	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
 	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
+	Kind kind= Kind::Generator;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };

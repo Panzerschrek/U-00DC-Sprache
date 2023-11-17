@@ -1181,7 +1181,11 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(expr);
 		}
-		if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
+		if( it_->text == Keywords::fn_ ||
+			it_->text == Keywords::typeof_ ||
+			it_->text == Keywords::tup_ ||
+			it_->text == Keywords::generator_ ||
+			it_->text == Keywords::async_ )
 			return TypeNameToExpression( ParseTypeName() );
 		if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 		{
@@ -1439,9 +1443,11 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 		return std::move(raw_pointer_type);
 	}
-	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
+	else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::generator_ || it_->text == Keywords::async_ ) )
 	{
-		GeneratorType generator_type( it_->src_loc );
+		CoroutineType coroutine_type( it_->src_loc );
+
+		coroutine_type.kind= it_->text == Keywords::generator_ ? CoroutineType::Kind::Generator : CoroutineType::Kind::AsyncFunc;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Apostrophe )
@@ -1457,12 +1463,12 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
 					{
 						NextLexem();
-						generator_type.inner_references.push_back( MutabilityModifier::Mutable );
+						coroutine_type.inner_references.push_back( MutabilityModifier::Mutable );
 					}
 					else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
 					{
 						NextLexem();
-						generator_type.inner_references.push_back( MutabilityModifier::Immutable );
+						coroutine_type.inner_references.push_back( MutabilityModifier::Immutable );
 					}
 					else
 						PushErrorMessage();
@@ -1477,32 +1483,32 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			}
 		}
 
-		generator_type.non_sync_tag= TryParseNonSyncTag();
+		coroutine_type.non_sync_tag= TryParseNonSyncTag();
 
 		ExpectLexem( Lexem::Type::Colon );
-		generator_type.return_type= ParseTypeName();
+		coroutine_type.return_type= ParseTypeName();
 
 		if( it_->type == Lexem::Type::At )
 		{
 			NextLexem();
-			generator_type.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			coroutine_type.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 		}
 
 		if( it_->type == Lexem::Type::And )
 		{
 			NextLexem();
-			generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
+			coroutine_type.return_value_reference_modifier= ReferenceModifier::Reference;
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				if( it_->text == Keywords::mut_ )
 				{
-					generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+					coroutine_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
 					NextLexem();
 				}
 				else if( it_->text == Keywords::imut_ )
 				{
-					generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+					coroutine_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
 					NextLexem();
 				}
 			}
@@ -1510,11 +1516,11 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			if( it_->type == Lexem::Type::At )
 			{
 				NextLexem();
-				generator_type.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+				coroutine_type.return_value_reference_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 			}
 		}
 
-		return std::make_unique<GeneratorType>(std::move(generator_type));
+		return std::make_unique<CoroutineType>(std::move(coroutine_type));
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return std::make_unique<FunctionType>( ParseFunctionType() );

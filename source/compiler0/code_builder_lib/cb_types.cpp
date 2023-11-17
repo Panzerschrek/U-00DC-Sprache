@@ -167,34 +167,35 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name )
 {
 	CoroutineTypeDescription coroutine_type_description;
-	coroutine_type_description.kind= CoroutineKind::Generator;
-	coroutine_type_description.return_type= PrepareType( generator_type_name.return_type, names_scope, function_context );
+	coroutine_type_description.kind= coroutine_type_name.kind;
 
-	if( generator_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
+	coroutine_type_description.return_type= PrepareType( coroutine_type_name.return_type, names_scope, function_context );
+
+	if( coroutine_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
 		coroutine_type_description.return_value_type=
-			generator_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable
+			coroutine_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable
 				? ValueType::ReferenceMut
 				: ValueType::ReferenceImut;
 	else
 		coroutine_type_description.return_value_type= ValueType::Value;
 
-	coroutine_type_description.inner_references.reserve( generator_type_name.inner_references.size() );
-	for( const Synt::MutabilityModifier m : generator_type_name.inner_references )
+	coroutine_type_description.inner_references.reserve( coroutine_type_name.inner_references.size() );
+	for( const Synt::MutabilityModifier m : coroutine_type_name.inner_references )
 		coroutine_type_description.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 
-	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
+	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type_name.non_sync_tag );
 
-	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc ) )
-		REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc );
+	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type_name.src_loc ) )
+		REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), coroutine_type_name.src_loc );
 
 	const size_t num_params= 1;
-	if( generator_type_name.return_value_reference_expression != nullptr )
-		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, *generator_type_name.return_value_reference_expression, num_params );
-	if( generator_type_name.return_value_inner_references_expression != nullptr )
-		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *generator_type_name.return_value_inner_references_expression, num_params );
+	if( coroutine_type_name.return_value_reference_expression != nullptr )
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, *coroutine_type_name.return_value_reference_expression, num_params );
+	if( coroutine_type_name.return_value_inner_references_expression != nullptr )
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *coroutine_type_name.return_value_inner_references_expression, num_params );
 
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }

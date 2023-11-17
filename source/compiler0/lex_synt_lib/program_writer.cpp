@@ -27,7 +27,7 @@ void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
 void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream );
-void ElementWrite( const GeneratorType& generator_type_name, std::ostream& stream );
+void ElementWrite( const CoroutineType& coroutine_type_name, std::ostream& stream );
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
 void ElementWrite( const FunctionParam& param, std::ostream& stream );
@@ -162,28 +162,37 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 	stream << ")";
 }
 
-void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
+void ElementWrite( const CoroutineType& coroutine_name, std::ostream& stream )
 {
-	stream << Keyword( Keywords::generator_ );
-	if( !generator_name.inner_references.empty() )
+	switch( coroutine_name.kind )
+	{
+	case CoroutineType::Kind::Generator:
+		stream << Keyword( Keywords::generator_ );
+		break;
+	case CoroutineType::Kind::AsyncFunc:
+		stream << Keyword( Keywords::async_ );
+		break;
+	};
+
+	if( !coroutine_name.inner_references.empty() )
 	{
 		stream << "'";
-		for( size_t i= 0; i < generator_name.inner_references.size(); ++i )
+		for( size_t i= 0; i < coroutine_name.inner_references.size(); ++i )
 		{
-			ElementWrite( generator_name.inner_references[i], stream );
-			if( i + 1 < generator_name.inner_references.size() )
+			ElementWrite( coroutine_name.inner_references[i], stream );
+			if( i + 1 < coroutine_name.inner_references.size() )
 				stream << ", ";
 		}
 		stream << "'";
 	}
 
-	ElementWrite( generator_name.non_sync_tag, stream );
+	ElementWrite( coroutine_name.non_sync_tag, stream );
 
 	stream << ":";
-	ElementWrite( generator_name.return_type, stream );
+	ElementWrite( coroutine_name.return_type, stream );
 
-	ElementWrite( generator_name.return_value_reference_modifier, stream );
-	ElementWrite( generator_name.return_value_mutability_modifier, stream );
+	ElementWrite( coroutine_name.return_value_reference_modifier, stream );
+	ElementWrite( coroutine_name.return_value_mutability_modifier, stream );
 }
 
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
@@ -539,9 +548,9 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( *raw_pointer_type, stream );
 		}
-		void operator()( const std::unique_ptr<const GeneratorType>& generator_type ) const
+		void operator()( const std::unique_ptr<const CoroutineType>& coroutine_type ) const
 		{
-			ElementWrite( *generator_type, stream );
+			ElementWrite( *coroutine_type, stream );
 		}
 
 	private:
