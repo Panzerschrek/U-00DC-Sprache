@@ -610,6 +610,13 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 
 Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
+	// TODO - finish this code. Now just produce an error.
+	if( true )
+	{
+		REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "await operator" );
+		return ErrorValue();
+	}
+
 	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 	if( async_func_variable->type == invalid_type_ )
 		return ErrorValue();
