@@ -394,7 +394,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 {
 	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
 	{
-		REPORT_ERROR( YieldOutsideGenerator, names_scope, src_loc )
+		REPORT_ERROR( YieldOutsideCoroutine, names_scope, src_loc )
 		return;
 	}
 

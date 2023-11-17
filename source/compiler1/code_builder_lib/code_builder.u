@@ -495,18 +495,18 @@ fn CodeBuilder::PrepareFunction(
 				{
 					if( name_lookup.name == KeywordToString( Keyword::auto_ ) )
 					{
-						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr, function_declaration.src_loc )
+						REPORT_ERROR( AutoReturnCoroutine, names_scope_ptr, function_declaration.src_loc )
 					}
 				}
 			}
 		}
 		if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
 		{
-			REPORT_ERROR( VirtualGenerator, names_scope_ptr, function_declaration.src_loc )
+			REPORT_ERROR( VirtualCoroutine, names_scope_ptr, function_declaration.src_loc )
 		}
 		if( function_type.calling_convention != LLVMCallConv::C )
 		{
-			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
+			REPORT_ERROR( NonDefaultCallingConventionForCoroutine, names_scope_ptr, function_declaration.src_loc )
 		}
 		// Disable references pollution for generator. It is too complicated for now.
 		if( !function_declaration.function_type.references_pollution_expression.empty() )
@@ -553,7 +553,7 @@ fn CodeBuilder::PrepareFunction(
 
 	if( function_variable.is_generator && ( is_constructor || is_destructor ) )
 	{
-		REPORT_ERROR( GeneratorSpecialMethod, names_scope_ptr, function_declaration.src_loc )
+		REPORT_ERROR( CoroutineSpecialMethod, names_scope_ptr, function_declaration.src_loc )
 	}
 
 	function_variable.is_constructor= is_constructor;
@@ -828,7 +828,7 @@ fn CodeBuilder::PrepareFunction(
 
 		if( prev_function.is_generator != function_variable.is_generator )
 		{
-			REPORT_ERROR( GeneratorMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
+			REPORT_ERROR( CoroutineMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 			return false;
 		}
 
@@ -1116,13 +1116,13 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
 			if( !coroutine_type_description.non_sync_ && GetTypeNonSync( param.t, names_scope, body_syntax_element.src_loc ) )
 			{
-				REPORT_ERROR( GeneratorNonSyncRequired, names_scope, body_syntax_element.src_loc )
+				REPORT_ERROR( CoroutineNonSyncRequired, names_scope, body_syntax_element.src_loc )
 			}
 		}
 
 		if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, body_syntax_element.src_loc  ) )
 		{
-			REPORT_ERROR( GeneratorNonSyncRequired, names_scope, body_syntax_element.src_loc )
+			REPORT_ERROR( CoroutineNonSyncRequired, names_scope, body_syntax_element.src_loc )
 		}
 	}
 

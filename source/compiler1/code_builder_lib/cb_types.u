@@ -169,7 +169,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type.src_loc  ) )
 	{
-		REPORT_ERROR( GeneratorNonSyncRequired, names_scope, generator_type.src_loc )
+		REPORT_ERROR( CoroutineNonSyncRequired, names_scope, generator_type.src_loc )
 	}
 
 	foreach( &m : generator_type.inner_reference_tags )
