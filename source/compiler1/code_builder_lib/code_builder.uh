@@ -915,6 +915,7 @@ private:
 	// This function should be called for generator function just after aruments preparation.
 	fn PrepareCoroutineBlocks( this, FunctionContext &mut function_context );
 	fn CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
+	fn AsyncFuncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
 	fn CoroutineSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 	fn CoroutineFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
@@ -972,14 +973,14 @@ private:
 	fn CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool;
 
-	fn CheckYieldReferenceIsAllowed(
+	fn CheckAsyncReturnReferenceIsAllowed(
 		NamesScopePtr& names,
 		FunctionContext& function_context,
 		CoroutineTypeDescription& coroutine_type_description,
 		VariablePtr& node,
 		SrcLoc& src_loc );
 
-	fn CheckYieldInnerReferencesAreAllowed(
+	fn CheckAsyncReturnInnerReferencesAreAllowed(
 		NamesScopePtr& names,
 		FunctionContext& function_context,
 		CoroutineTypeDescription& coroutine_type_description,

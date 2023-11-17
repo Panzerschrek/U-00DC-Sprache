@@ -119,7 +119,7 @@ fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& functio
 	return false;
 }
 
-fn CodeBuilder::CheckYieldReferenceIsAllowed(
+fn CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 	NamesScopePtr& names,
 	FunctionContext& function_context,
 	CoroutineTypeDescription& coroutine_type_description,
@@ -147,7 +147,7 @@ fn CodeBuilder::CheckYieldReferenceIsAllowed(
 	}
 }
 
-fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+fn CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 	NamesScopePtr& names,
 	FunctionContext& function_context,
 	CoroutineTypeDescription& coroutine_type_description,

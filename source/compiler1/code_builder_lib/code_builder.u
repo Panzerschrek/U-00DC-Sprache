@@ -1339,11 +1339,24 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			if( func_variable.kind == FunctionVariable::Kind::Generator )
 			{
+				// Finish generator function with final suspend.
+				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
+			}
+			else if( func_variable.kind == FunctionVariable::Kind::Async )
+			{
+				// Automatically generate final suspend for void-return async functions.
+				auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+				if( !( coroutine_type_description.return_type == void_type_ && coroutine_type_description.return_value_type == ValueType::Value ) )
+				{
+					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
+					return;
+				}
+
 				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
 			}
 			else
 			{
-				// Manually generate "return" for void-return functions.
+				// Automatically generate "return" for void-return functions.
 				if( !( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value ) )
 				{
 					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
