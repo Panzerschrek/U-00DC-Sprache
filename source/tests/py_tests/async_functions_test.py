@@ -527,3 +527,60 @@ def AsyncFunctionTypeName_AsTemplateSignatureArgument_Test4():
 		static_assert( SForAsyncFunc::is_async_func );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForAsyncFunctions_Test0():
+	c_program_text= """
+		type IntAsyncFunc= async : i32;
+		auto& int_async_func_typeinfo= typeinfo</IntAsyncFunc/>;
+
+		static_assert( int_async_func_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
+		static_assert( int_async_func_typeinfo.is_class ); // Async functions are classes, because they have destructor method.
+		static_assert( int_async_func_typeinfo.is_coroutine );
+		static_assert( !int_async_func_typeinfo.is_generator );
+		static_assert( int_async_func_typeinfo.is_async_func );
+		static_assert( int_async_func_typeinfo.coroutine_return_type.is_integer );
+		static_assert( int_async_func_typeinfo.coroutine_return_type.size_of == 4s );
+		static_assert( !int_async_func_typeinfo.coroutine_return_value_is_mutable );
+		static_assert( !int_async_func_typeinfo.coroutine_return_value_is_reference );
+		static_assert( int_async_func_typeinfo.references_tags_count == 0s ); // This coroutine type has no references inside.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForAsyncFunctions_Test1():
+	c_program_text= """
+		type F64RefAsyncFunc= async'imut' : f64 &;
+		auto& f64_async_func_gen_typeinfo= typeinfo</F64RefAsyncFunc/>;
+
+		static_assert( f64_async_func_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
+		static_assert( f64_async_func_gen_typeinfo.is_class ); // Async functions are classes, because they have destructor method.
+		static_assert( f64_async_func_gen_typeinfo.is_coroutine );
+		static_assert( !f64_async_func_gen_typeinfo.is_generator );
+		static_assert( f64_async_func_gen_typeinfo.is_async_func );
+		static_assert( f64_async_func_gen_typeinfo.coroutine_return_type.is_float );
+		static_assert( f64_async_func_gen_typeinfo.coroutine_return_type.size_of == 8s );
+		static_assert( !f64_async_func_gen_typeinfo.coroutine_return_value_is_mutable );
+		static_assert( f64_async_func_gen_typeinfo.coroutine_return_value_is_reference );
+		static_assert( f64_async_func_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForAsyncFunctions_Test2():
+	c_program_text= """
+		type MutCharRefAsyncFunc= async'mut' : char8 &mut;
+		auto& mut_ref_char_async_func_typeinfo= typeinfo</MutCharRefAsyncFunc/>;
+
+		static_assert( mut_ref_char_async_func_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
+		static_assert( mut_ref_char_async_func_typeinfo.is_class ); // Generators are classes, because they have destructor method.
+		static_assert( mut_ref_char_async_func_typeinfo.is_coroutine );
+		static_assert( !mut_ref_char_async_func_typeinfo.is_generator );
+		static_assert( mut_ref_char_async_func_typeinfo.is_async_func );
+		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_type.is_char );
+		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_type.size_of == 1s );
+		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_value_is_mutable );
+		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_value_is_reference );
+		static_assert( mut_ref_char_async_func_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+	"""
+	tests_lib.build_program( c_program_text )
