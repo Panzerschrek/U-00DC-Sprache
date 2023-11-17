@@ -228,6 +228,7 @@ PROCESS_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, "Can not calcula
 
 // Coroutines
 PROCESS_ERROR( YieldOutsideCoroutine, "Yield operator is allowed only inside coroutine functions." )
+PROCESS_ERROR( NonEmptyYieldInAsyncFunction, "Yield with a value in async function. Only empty yield is allowed in async functions." )
 PROCESS_ERROR( IfCoroAdvanceForNonCoroutineValue, "if_coro_advance used for non-coroutine value of type \"{0}\"." )
 PROCESS_ERROR( CoroutineMismatch, "\"generator\" or \"async\" specifiers mismatch for function \"{0}\"." )
 PROCESS_ERROR( NonDefaultCallingConventionForCoroutine, "coroutine function can have only default calling convention." )

@@ -166,3 +166,43 @@ def TypesMismatch_ForASyncFunctionReturn_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
+def NonEmptyYieldInAsyncFunction_Test0():
+	c_program_text= """
+		fn async Foo() : i32
+		{
+			yield 123;
+			return 42;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NonEmptyYieldInAsyncFunction", 4 ) )
+
+
+def NonEmptyYieldInAsyncFunction_Test1():
+	c_program_text= """
+		fn async Foo(i32& x) : i32&
+		{
+			yield 123;
+			return x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NonEmptyYieldInAsyncFunction", 4 ) )
+
+
+def NonEmptyYieldInAsyncFunction_Test2():
+	c_program_text= """
+		fn async Foo() : i32
+		{
+			var void v;
+			yield v; // For now even an usage of void-type expression in "yield" for async functions is an error.
+			return 42;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NonEmptyYieldInAsyncFunction", 5 ) )

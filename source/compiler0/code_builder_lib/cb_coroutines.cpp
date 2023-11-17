@@ -388,10 +388,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 	{
 		// Allow empty "yield" for async functions.
 		if( std::get_if<Synt::EmptyVariant>(&expression) == nullptr )
-		{
-			// TODO - use separate error code.
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, "some expression", void_type_ );
-		}
+			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names.GetErrors(), src_loc );
 
 		CoroutineSuspend( names, function_context, src_loc );
 		return;
