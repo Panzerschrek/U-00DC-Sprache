@@ -431,7 +431,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 				return;
 			}
 
-			CheckYieldInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+			CheckAsyncReturnInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -484,7 +484,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 			}
 
-			CheckYieldReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+			CheckAsyncReturnReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 
@@ -540,7 +540,7 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 			return;
 		}
 
-		// CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		CheckAsyncReturnInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
@@ -594,7 +594,7 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 		}
 
-		// CheckYieldReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+		CheckAsyncReturnReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
 		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), src_loc );

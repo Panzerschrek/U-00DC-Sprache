@@ -216,7 +216,7 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 	return false;
 }
 
-void CodeBuilder::CheckYieldReferenceIsAllowed(
+void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
@@ -233,7 +233,7 @@ void CodeBuilder::CheckYieldReferenceIsAllowed(
 	}
 }
 
-void CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
