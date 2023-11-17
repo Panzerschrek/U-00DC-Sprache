@@ -522,12 +522,12 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 	const VariablePtr return_value_node=
 		Variable::Create(
 			return_type,
-			function_context.function_type.return_value_type,
+			coroutine_type_description->return_value_type,
 			Variable::Location::Pointer,
 			"return value lock" );
 	function_context.variables_state.AddNode( return_value_node );
 
-	if( function_context.function_type.return_value_type == ValueType::Value )
+	if( coroutine_type_description->return_value_type == ValueType::Value )
 	{
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}

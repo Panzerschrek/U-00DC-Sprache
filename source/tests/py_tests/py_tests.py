@@ -23,6 +23,7 @@ def GetTestsList( tests_modules_list ):
 def main():
 	tests_modules_list= [
 		"arrays_test",
+		"async_functions_errors_test",
 		"async_functions_test",
 		"auto_constexpr_function_templates_test",
 		"auto_for_return_type_test",
