@@ -216,7 +216,7 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 	return false;
 }
 
-void CodeBuilder::CheckYieldReferenceIsAllowed(
+void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
@@ -233,7 +233,7 @@ void CodeBuilder::CheckYieldReferenceIsAllowed(
 	}
 }
 
-void CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
@@ -257,7 +257,7 @@ void CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 std::optional<FunctionType::ParamReference> CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, const VariablePtr& node )
 {
 	// Map coroutine function input references to returned coroutine inner references.
-	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
+	// If this changed, "TransformCoroutineFunctionType" function must be changed too!
 
 	size_t coroutine_inner_reference_index= 0;
 	for( size_t i= 0; i < function_context.function_type.params.size(); ++i )

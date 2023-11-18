@@ -447,6 +447,11 @@ Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& 
 	return ErrorValue();
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::AwaitOperator& await_operator )
+{
+	return BuildAwait( names, function_context, await_operator.expression, await_operator.src_loc );
+}
+
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -1688,7 +1693,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::GeneratorType& type_name )
+	const Synt::CoroutineType& type_name )
 {
 	return PrepareTypeImpl( names, function_context, type_name );
 }

@@ -1249,7 +1249,7 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size
 
 	std::swap( call_frame, current_function_frame_ );
 
-	{ // Set resuly of "suspend" instriction.
+	{ // Set result of "suspend" instriction.
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 8u, destroy ? uint64_t(1) : uint64_t(0) );
 		current_function_frame_.instructions_map[ coroutine_data.suspend_instruction ]= val;

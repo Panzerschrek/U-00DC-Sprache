@@ -413,6 +413,15 @@ struct VariableTypeExtended
 
 struct FunctionVariable
 {
+	type Kind= Synt::Function::Kind;
+	enum ConstexprKind
+	{
+		NonConstexpr,
+		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
+		ConstexprComplete,
+		ConstexprAuto, // May be, or may be not constexpr. Becomes "NonConstexpr" or "ConstexprComplete" after function code building.
+	}
+
 	FunctionType t;
 	LazyLLVMFunctionPtr llvm_function;
 
@@ -423,16 +432,8 @@ struct FunctionVariable
 	bool is_deleted= false;
 	bool no_mangle= false;
 	bool is_inherited= false;
-	bool is_generator= false;
+	Kind kind= Kind::Regular;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
-
-	enum ConstexprKind
-	{
-		NonConstexpr,
-		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
-		ConstexprComplete,
-		ConstexprAuto, // May be, or may be not constexpr. Becomes "NonConstexpr" or "ConstexprComplete" after function code building.
-	}
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 
@@ -440,6 +441,7 @@ struct FunctionVariable
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 
 	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
+	fn IsCoroutine( this ) : bool;
 }
 
 type LazyLLVMFunctionPtr= ust::shared_ptr_mut</LazyLLVMFunction/>;
@@ -542,10 +544,7 @@ struct TypeAlias
 	bool referenced= false;
 }
 
-enum CoroutineKind
-{
-	Generator,
-}
+type CoroutineKind= Synt::CoroutineType::Kind;
 
 struct CoroutineTypeDescription
 {
@@ -751,7 +750,7 @@ public:
 	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
 	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
-	fn conversion_constructor( CoroutineTypeParam mut generator_type_param );
+	fn conversion_constructor( CoroutineTypeParam mut coroutine_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
 	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);

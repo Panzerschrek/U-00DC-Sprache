@@ -28,16 +28,29 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 	CheckFunctionReferencesNotationInnerReferences( function_type, errors_container, src_loc );
 }
 
-void CodeBuilder::TransformGeneratorFunctionType(
+void CodeBuilder::TransformCoroutineFunctionType(
 	NamesScope& root_namespace,
-	FunctionType& generator_function_type,
+	FunctionType& coroutine_function_type,
+	const FunctionVariable::Kind kind,
 	const bool non_sync )
 {
 	CoroutineTypeDescription coroutine_type_description;
-	coroutine_type_description.kind= CoroutineKind::Generator;
-	coroutine_type_description.return_type= generator_function_type.return_type;
-	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
+	coroutine_type_description.return_type= coroutine_function_type.return_type;
+	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;
 	coroutine_type_description.non_sync= non_sync;
+
+	switch( kind )
+	{
+	case FunctionVariable::Kind::Regular:
+		U_ASSERT(false);
+		break;
+	case FunctionVariable::Kind::Generator:
+		coroutine_type_description.kind= CoroutineKind::Generator;
+		break;
+	case FunctionVariable::Kind::Async:
+		coroutine_type_description.kind= CoroutineKind::AsyncFunc;
+		break;
+	}
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
@@ -49,9 +62,9 @@ void CodeBuilder::TransformGeneratorFunctionType(
 	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
 	std::vector<std::set<FunctionType::ParamReference>> coroutine_return_inner_ferences;
 
-	for( const FunctionType::Param& param : generator_function_type.params )
+	for( const FunctionType::Param& param : coroutine_function_type.params )
 	{
-		const size_t param_index= size_t(&param - generator_function_type.params.data());
+		const size_t param_index= size_t(&param - coroutine_function_type.params.data());
 		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
 		if( param.value_type == ValueType::Value )
 		{
@@ -78,9 +91,9 @@ void CodeBuilder::TransformGeneratorFunctionType(
 	}
 
 	// Fill references of return value.
-	for( const FunctionType::ParamReference& param_reference : generator_function_type.return_references )
+	for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_references )
 	{
-		if( param_reference.first >= generator_function_type.params.size() )
+		if( param_reference.first >= coroutine_function_type.params.size() )
 			continue;
 
 		FunctionType::ParamReference out_reference;
@@ -93,12 +106,12 @@ void CodeBuilder::TransformGeneratorFunctionType(
 		coroutine_type_description.return_references.insert( out_reference );
 	}
 
-	coroutine_type_description.return_inner_references.resize( generator_function_type.return_inner_references.size() );
-	for( size_t i= 0u; i < generator_function_type.return_inner_references.size(); ++i )
+	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
+	for( size_t i= 0u; i < coroutine_function_type.return_inner_references.size(); ++i )
 	{
-		for( const FunctionType::ParamReference& param_reference : generator_function_type.return_inner_references[i] )
+		for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_inner_references[i] )
 		{
-			if( param_reference.first >= generator_function_type.params.size() )
+			if( param_reference.first >= coroutine_function_type.params.size() )
 				continue;
 
 			FunctionType::ParamReference out_reference;
@@ -113,12 +126,12 @@ void CodeBuilder::TransformGeneratorFunctionType(
 	}
 
 	// Coroutine function returns value of coroutine type.
-	generator_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
-	generator_function_type.return_value_type= ValueType::Value;
+	coroutine_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	coroutine_function_type.return_value_type= ValueType::Value;
 
-	// Params references and references inside param types are mapped to generator type inner references.
-	generator_function_type.return_inner_references= std::move(coroutine_return_inner_ferences);
-	generator_function_type.return_references.clear();
+	// Params references and references inside param types are mapped to coroutine type inner references.
+	coroutine_function_type.return_inner_references= std::move(coroutine_return_inner_ferences);
+	coroutine_function_type.return_references.clear();
 }
 
 ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
@@ -126,7 +139,19 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
 		return it->second.get();
 
-	auto coroutine_class= std::make_unique<Class>( std::string( Keyword( Keywords::generator_ ) ), &root_namespace );
+	std::string_view class_base_name;
+	switch( coroutine_type_description.kind )
+	{
+	case CoroutineKind::Generator:
+		class_base_name= Keyword( Keywords::generator_ );
+		break;
+	case CoroutineKind::AsyncFunc:
+		class_base_name= Keyword( Keywords::async_ );
+		break;
+	};
+	U_ASSERT( !class_base_name.empty() );
+
+	auto coroutine_class= std::make_unique<Class>( std::string( class_base_name ), &root_namespace );
 	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->generated_class_data= coroutine_type_description;
@@ -140,7 +165,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	coroutine_class->is_equality_comparable= true;
 
 	// Coroutines can't be constexpr, because heap memory allocation is required in order to call coroutine function.
-	// So, we can't just call constexpr generator and save result into some global variable.
+	// So, we can't just call constexpr coroutine and save result into some global variable.
 	// We can't allocate heap memory in consexpr context and store it somehow later.
 	// And we can't deallocate memory too (for global variables of coroutine types).
 	coroutine_class->can_be_constexpr= false;
@@ -223,7 +248,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	return res_type;
 }
 
-void CodeBuilder::PrepareGeneratorBlocks( FunctionContext& function_context )
+void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 {
 	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
 
@@ -353,11 +378,11 @@ void CodeBuilder::PrepareGeneratorBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
-void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == nullptr )
 	{
-		REPORT_ERROR( YieldOutsideGenerator, names.GetErrors(), src_loc );
+		REPORT_ERROR( YieldOutsideCoroutine, names.GetErrors(), src_loc );
 		return;
 	}
 
@@ -366,15 +391,27 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
 
+	if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+	{
+		// Allow empty "yield" for async functions.
+		if( std::get_if<Synt::EmptyVariant>(&expression) == nullptr )
+			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names.GetErrors(), src_loc );
+
+		CoroutineSuspend( names, function_context, src_loc );
+		return;
+	}
+
+	// Proces "yield" for generators.
+
 	const Type& yield_type= coroutine_type_description->return_type;
 
 	if( std::get_if<Synt::EmptyVariant>(&expression) != nullptr )
 	{
-		// Allow empty expression "yield" for void-return coroutines.
+		// Allow empty expression "yield" for void-return generators.
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, void_type_ );
 
-		GeneratorSuspend( names, function_context, src_loc );
+		CoroutineSuspend( names, function_context, src_loc );
 		return;
 	}
 
@@ -398,7 +435,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				return;
 			}
 
-			CheckYieldInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+			CheckAsyncReturnInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -451,7 +488,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 			}
 
-			CheckYieldReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+			CheckAsyncReturnReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 
@@ -464,11 +501,256 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	}
 
 	// Suspend generator. Now generator caller will receive filled promise.
-	GeneratorSuspend( names, function_context, src_loc );
+	CoroutineSuspend( names, function_context, src_loc );
+}
+
+void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+{
+	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	U_ASSERT( coroutine_class != nullptr );
+	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
+	U_ASSERT( coroutine_type_description != nullptr );
+
+	const Type& return_type= coroutine_type_description->return_type;
+
+	llvm::Value* const promise= function_context.s_ret;
+	U_ASSERT( promise != nullptr );
+
+	// Destruction frame for temporary variables of result expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	if( expression_result->type == invalid_type_ )
+		return;
+
+	const VariablePtr return_value_node=
+		Variable::Create(
+			return_type,
+			coroutine_type_description->return_value_type,
+			Variable::Location::Pointer,
+			"return value lock" );
+	function_context.variables_state.AddNode( return_value_node );
+
+	if( coroutine_type_description->return_value_type == ValueType::Value )
+	{
+		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
+		{}
+		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names.GetErrors(), src_loc ) )
+			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names, function_context, src_loc );
+		else
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			function_context.variables_state.RemoveNode( return_value_node );
+			return;
+		}
+
+		CheckAsyncReturnInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
+
+		if( expression_result->type.GetFundamentalType() != nullptr||
+			expression_result->type.GetEnumType() != nullptr ||
+			expression_result->type.GetRawPointerType() != nullptr ||
+			expression_result->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
+		{
+			if( expression_result->type != void_type_ )
+				CreateTypedStore( function_context, return_type, CreateMoveToLLVMRegisterInstruction( *expression_result, function_context ), promise );
+		}
+		else if( expression_result->value_type == ValueType::Value && expression_result->type == return_type ) // Move composite value.
+		{
+			CopyBytes( promise, expression_result->llvm_value, return_type, function_context );
+
+			function_context.variables_state.MoveNode( expression_result );
+
+			if( expression_result->location == Variable::Location::Pointer )
+				CreateLifetimeEnd( function_context, expression_result->llvm_value );
+		}
+		else // Copy composite value.
+		{
+			if( !expression_result->type.IsCopyConstructible() )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, expression_result->type );
+			else if( return_type.IsAbstract() )
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, return_type );
+			else
+			{
+				BuildCopyConstructorPart(
+					promise,
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
+					return_type,
+					function_context );
+			}
+		}
+	}
+	else
+	{
+		if( !ReferenceIsConvertible( expression_result->type, return_type, names.GetErrors(), src_loc ) )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			function_context.variables_state.RemoveNode( return_value_node );
+			return;
+		}
+
+		if( expression_result->value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			function_context.variables_state.RemoveNode( return_value_node );
+			return;
+		}
+		if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+		}
+
+		CheckAsyncReturnReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+
+		// Add link to return value in order to catch error, when reference to local variable is returned.
+		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
+
+		llvm::Value* const ref_casted= CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context );
+		CreateTypedReferenceStore( function_context, return_type, ref_casted, promise );
+	}
+
+	CallDestructorsBeforeReturn( names, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+	function_context.variables_state.RemoveNode( return_value_node );
+
+	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
+}
+
+Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+{
+	// TODO - finish this code. Now just produce an error.
+	if( true )
+	{
+		REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "await operator" );
+		return ErrorValue();
+	}
+
+	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	if( async_func_variable->type == invalid_type_ )
+		return ErrorValue();
+
+	// TODO - generate errors if expression is not an async function.
+
+	const Class* const class_type= async_func_variable->type.GetClassType();
+	if( class_type == nullptr )
+		return ErrorValue();
+
+	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data );
+	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
+		return ErrorValue();
+
+	const Type& return_type= coroutine_type_description->return_type;
+
+	if( function_context.is_functionless_context )
+	{
+		const VariableMutPtr result=
+			Variable::Create(
+				return_type,
+				coroutine_type_description->return_value_type,
+				Variable::Location::Pointer,
+				async_func_variable->name + " await result" );
+		function_context.variables_state.AddNode( result );
+
+		RegisterTemporaryVariable( function_context, result );
+		return result;
+	}
+
+	auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
+	auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop_enter" );
+	auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
+	auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
+
+	llvm::Value* const coro_handle=
+		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
+
+	llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+		{ coro_handle },
+		"coro_done" );
+
+	function_context.llvm_ir_builder.CreateCondBr( done, already_done_block, loop_block );
+
+	// Already done block.
+	function_context.function->getBasicBlockList().push_back( already_done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( already_done_block );
+	// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
+	// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
+	function_context.llvm_ir_builder.CreateCall( halt_func_ );
+	function_context.llvm_ir_builder.CreateUnreachable();
+
+	// Loop block.
+	function_context.function->getBasicBlockList().push_back( loop_block );
+	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+	function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_resume ),
+		{ coro_handle } );
+
+	llvm::Value* const done_after_resume= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+		{ coro_handle },
+		"coro_done_after_resume" );
+
+	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, done_block, not_done_block );
+
+	// Not done block.
+	function_context.function->getBasicBlockList().push_back( not_done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
+
+	// TODO - perform context save independent on suspend?
+	CoroutineSuspend( names, function_context, src_loc );
+	function_context.llvm_ir_builder.CreateBr( loop_block ); // Continue to check if the coroutine is done.
+
+	// Done block.
+	function_context.function->getBasicBlockList().push_back( done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( done_block );
+
+	llvm::Type* const promise_llvm_type=
+		coroutine_type_description->return_value_type == ValueType::Value
+			? return_type.GetLLVMType()
+			: llvm::PointerType::get( llvm_context_, 0 );
+
+	llvm::Value* const promise=
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
+			{
+				coro_handle,
+				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+				llvm::ConstantInt::getFalse( llvm_context_ ),
+			},
+			"promise" );
+
+	const VariableMutPtr result=
+		Variable::Create(
+			return_type,
+			coroutine_type_description->return_value_type,
+			Variable::Location::Pointer,
+			async_func_variable->name + " await result" );
+	function_context.variables_state.AddNode( result );
+
+	if( result->value_type == ValueType::Value )
+	{
+		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType(), nullptr, result->name );
+		CopyBytes( result->llvm_value, promise, return_type, function_context );
+
+		// TODO - setup inner references.
+	}
+	else
+	{
+		result->llvm_value= CreateTypedReferenceLoad( function_context, return_type, promise );
+
+		// TODO - setup references.
+	}
+
+	// TODO - require value of the coroutine type, move it in the operator.
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 // Perform initial suspend or suspend in "yield".
-void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
@@ -495,7 +777,7 @@ void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& fu
 	function_context.llvm_ir_builder.SetInsertPoint( next_block );
 }
 
-void CodeBuilder::GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	// We can destroy all local variables right now. Leave only coroutine cleanup code in destroy block.
 	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );

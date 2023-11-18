@@ -847,9 +847,9 @@ U_TEST( FunctionTemplatesMangling_Test3 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashI9OuterTypeEEvRKS2_" ) != nullptr );
 }
 
-U_TEST( GeneratorsMangling_Test0 )
+U_TEST( CoroutinesMangling_Test0 )
 {
-	// Generator type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
+	// Coroutine type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
 	// 0 - means no references inside, 1 - immutable references inside, 2 - mutable references inside.
 
 	static const char c_program_text[]=
@@ -861,8 +861,8 @@ U_TEST( GeneratorsMangling_Test0 )
 		type ImutRefGen= generator'imut' : f64;
 		fn Baz( ImutRefGen gen ) {}
 
-		type MutRefRetGen= generator'mut, imut' : char8 &mut;
-		fn Lol( MutRefRetGen gen ) {}
+		type MutRefRetAsnycFunc= async'mut, imut' : char8 &mut;
+		fn Lol( MutRefRetAsnycFunc f ) {}
 
 		type NonSyncGen = generator non_sync : [i32, 4];
 		fn Kek( NonSyncGen gen ) {}
@@ -870,17 +870,17 @@ U_TEST( GeneratorsMangling_Test0 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	// Functions with generator param.
+	// Functions with coroutine param.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo9generatorIiE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Barf9generatorIiEj" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz9generatorIdLj0EE" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRcLj1ELj0EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol5asyncIRcLj1ELj0EE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Kek9generatorIA4_iLb1EE" ) != nullptr );
 
-	// Generated generator type destructors.
+	// Generated coroutine type destructors.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIiE10destructorERS0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIdLj0EE10destructorERS0_" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIRcLj1ELj0EE10destructorERS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN5asyncIRcLj1ELj0EE10destructorERS1_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIA4_iLb1EE10destructorERS1_" ) != nullptr );
 }
 

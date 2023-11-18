@@ -271,7 +271,7 @@ type Expression= ust::variant</ tup[
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>,
-	ust::box</GeneratorType/>
+	ust::box</CoroutineType/>
 	] />;
 
 struct ArrayType
@@ -293,8 +293,14 @@ struct RawPointerType
 	TypeName element_type;
 }
 
-struct GeneratorType
+struct CoroutineType
 {
+	enum Kind
+	{
+		Generator,
+		AsyncFunc,
+	}
+
 	SrcLoc src_loc;
 
 	ust::optional</MutabilityModifier/> inner_reference_mutability_modifier;
@@ -303,6 +309,7 @@ struct GeneratorType
 	ust::vector</MutabilityModifier/> inner_reference_tags;
 	ust::box_nullable</Expression/> return_value_reference_expression;
 	ust::box_nullable</Expression/> return_value_inner_references_expression;
+	Kind kind;
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 }
@@ -337,7 +344,7 @@ type TypeName= ust::variant</ tup[
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>,
-	ust::box</GeneratorType/>
+	ust::box</CoroutineType/>
 	] />;
 
 struct SequenceInitializer
@@ -672,6 +679,7 @@ struct Function
 	{
 		Regular,
 		Generator,
+		Async,
 	}
 
 	enum VirtualKind

@@ -286,7 +286,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name );
 	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionType PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, ClassPtr class_= nullptr );
@@ -444,7 +444,7 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::GeneratorType& generator_type_name );
+		const Synt::CoroutineType& coroutine_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
@@ -732,6 +732,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::AwaitOperator& await_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
@@ -767,7 +768,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CoroutineType& type_name );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(
@@ -1190,14 +1191,14 @@ private:
 	void CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
 	bool IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, size_t index );
 
-	void CheckYieldReferenceIsAllowed(
+	void CheckAsyncReturnReferenceIsAllowed(
 		NamesScope& names,
 		FunctionContext& function_context,
 		const CoroutineTypeDescription& coroutine_type_description,
 		const VariablePtr& node,
 		const SrcLoc& src_loc );
 
-	void CheckYieldInnerReferencesAreAllowed(
+	void CheckAsyncReturnInnerReferencesAreAllowed(
 		NamesScope& names,
 		FunctionContext& function_context,
 		const CoroutineTypeDescription& coroutine_type_description,
@@ -1225,16 +1226,19 @@ private:
 	// Call this before transforming function type.
 	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	// Make return type - generator type and prepare it properly. Modifies given function type.
-	void TransformGeneratorFunctionType( NamesScope& root_namespace, FunctionType& generator_function_type, bool non_sync );
+	// Make return type - coroutine type and prepare it properly. Modifies given function type.
+	void TransformCoroutineFunctionType( NamesScope& root_namespace, FunctionType& coroutine_function_type, FunctionVariable::Kind kind, bool non_sync );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
-	// This function should be called for generator function just after aruments preparation.
-	void PrepareGeneratorBlocks( FunctionContext& function_context );
-	void GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
-	void GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
-	void GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+	// This function should be called for coroutine function just after aruments preparation.
+	void PrepareCoroutineBlocks( FunctionContext& function_context );
+
+	void CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	void AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	Value BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	void CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+	void CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 
 	// NamesScope fill
 

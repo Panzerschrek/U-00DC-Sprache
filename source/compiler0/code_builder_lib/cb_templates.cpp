@@ -335,7 +335,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::GeneratorType& generator_type_name )
+	const Synt::CoroutineType& coroutine_type_name )
 {
 	TemplateSignatureParam::CoroutineParam coroutine_param;
 
@@ -346,32 +346,32 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 				function_context,
 				template_parameters,
 				template_parameters_usage_flags,
-				generator_type_name.return_type ) );
+				coroutine_type_name.return_type ) );
 
 	if( coroutine_param.return_type->IsType() )
-		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, generator_type_name ) };
+		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, coroutine_type_name ) };
 
-	coroutine_param.kind= CoroutineKind::Generator;
+	coroutine_param.kind= coroutine_type_name.kind;
 
-	if( generator_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
+	if( coroutine_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
 		coroutine_param.return_value_type=
-			generator_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable
+			coroutine_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable
 				? ValueType::ReferenceMut
 				: ValueType::ReferenceImut;
 	else
 		coroutine_param.return_value_type= ValueType::Value;
 
-	coroutine_param.inner_references.reserve( generator_type_name.inner_references.size() );
-	for( const Synt::MutabilityModifier m : generator_type_name.inner_references )
+	coroutine_param.inner_references.reserve( coroutine_type_name.inner_references.size() );
+	for( const Synt::MutabilityModifier m : coroutine_type_name.inner_references )
 		coroutine_param.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 
-	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
+	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type_name.non_sync_tag );
 
 	const size_t num_params= 1;
-	if( generator_type_name.return_value_reference_expression != nullptr )
-		coroutine_param.return_references= EvaluateFunctionReturnReferences( names_scope, *generator_type_name.return_value_reference_expression, num_params );
-	if( generator_type_name.return_value_inner_references_expression != nullptr )
-		coroutine_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *generator_type_name.return_value_inner_references_expression, num_params );
+	if( coroutine_type_name.return_value_reference_expression != nullptr )
+		coroutine_param.return_references= EvaluateFunctionReturnReferences( names_scope, *coroutine_type_name.return_value_reference_expression, num_params );
+	if( coroutine_type_name.return_value_inner_references_expression != nullptr )
+		coroutine_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *coroutine_type_name.return_value_inner_references_expression, num_params );
 
 	return coroutine_param;
 }

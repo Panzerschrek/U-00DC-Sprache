@@ -40,5 +40,6 @@ Contents
    modules
    coroutines
    generators
+   async_functions
    c_interaction
    unsafe_code_requirements

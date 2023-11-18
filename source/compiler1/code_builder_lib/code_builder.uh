@@ -258,8 +258,8 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type_ptr ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::GeneratorType& generator_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::CoroutineType/>& coroutine_type_ptr ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
 	fn GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef;
 
@@ -396,7 +396,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::CoroutineType/>& coroutine_type ) : Value;
 
 	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;
 
@@ -612,7 +612,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::array_view_imut</TemplateBase::Param/> template_params,
-		Synt::GeneratorType& signature_param,
+		Synt::CoroutineType& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam;
@@ -907,16 +907,17 @@ private:
 	// Call this before transforming function type.
 	fn PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
-	// Make return type - generator type and prepare it properly. Modifies given function type.
-	fn TransformGeneratorFunctionType( mut this, NamesScopePtr& root_namespace, FunctionType &mut generator_function_type, bool non_sync_ );
+	// Make return type - coroutine type and prepare it properly. Modifies given function type.
+	fn TransformCoroutineFunctionType( mut this, NamesScopePtr& root_namespace, FunctionType &mut coroutine_function_type, FunctionVariable::Kind kind, bool non_sync_ );
 
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 
-	// This function should be called for generator function just after aruments preparation.
-	fn PrepareGeneratorBlocks( this, FunctionContext &mut function_context );
-	fn GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
-	fn GeneratorSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
-	fn GeneratorFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	// This function should be called for coroutine function just after aruments preparation.
+	fn PrepareCoroutineBlocks( this, FunctionContext &mut function_context );
+	fn CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
+	fn AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
+	fn CoroutineSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CoroutineFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
 	// Methods generation
 
@@ -972,14 +973,14 @@ private:
 	fn CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool;
 
-	fn CheckYieldReferenceIsAllowed(
+	fn CheckAsyncReturnReferenceIsAllowed(
 		NamesScopePtr& names,
 		FunctionContext& function_context,
 		CoroutineTypeDescription& coroutine_type_description,
 		VariablePtr& node,
 		SrcLoc& src_loc );
 
-	fn CheckYieldInnerReferencesAreAllowed(
+	fn CheckAsyncReturnInnerReferencesAreAllowed(
 		NamesScopePtr& names,
 		FunctionContext& function_context,
 		CoroutineTypeDescription& coroutine_type_description,

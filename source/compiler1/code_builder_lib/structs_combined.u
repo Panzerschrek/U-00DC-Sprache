@@ -1119,6 +1119,15 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 	return true;
 }
 
+fn FunctionVariable::IsCoroutine( this ) : bool
+{
+	switch(kind)
+	{
+		Kind::Regular -> { return false; },
+		Kind::Generator, Kind::Async -> { return true; },
+	}
+}
+
 namespace ValueKindHelper
 {
 
@@ -1559,11 +1568,11 @@ fn NamesScope::ToString( this ) : ust::string8
 		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
 		{
 			var ust::string8 mut res;
-			if( coroutine_type_description.kind == CoroutineKind::Generator )
+			switch( coroutine_type_description.kind )
 			{
-				res+= KeywordToString( Keyword::generator_ );
+				CoroutineKind::Generator -> { res+= KeywordToString( Keyword::generator_ ); },
+				CoroutineKind::AsyncFunc -> { res+= KeywordToString( Keyword::async_ ); },
 			}
-			else { halt; }
 
 			// TODO - print inner refernces.
 

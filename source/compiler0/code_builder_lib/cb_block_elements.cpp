@@ -34,6 +34,8 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::IndexationOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperatorCompletion>& ) { return true; }
+		// Await operator is basically an operator for an async call.
+		bool operator()( const std::unique_ptr<const Synt::AwaitOperator>& ) { return false; }
 		bool operator()( const std::unique_ptr<const Synt::UnaryPlus>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::UnaryMinus>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::LogicalNot>& ) { return true; }
@@ -76,7 +78,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::FunctionType>& ) { return true; }
 		bool operator()( const Synt::TupleType& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::RawPointerType>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::GeneratorType>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CoroutineType>& ) { return true; }
 	};
 
 	return std::visit( Visitor(), expression );
@@ -524,10 +526,29 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression) != nullptr )
 	{
-		if( function_context.coro_suspend_bb != nullptr )
+		if( function_context.coro_suspend_bb != nullptr && function_context.return_type != std::nullopt )
 		{
-			// For generators enter into final suspend state in case of manual "return".
-			GeneratorFinalSuspend( names, function_context, return_operator.src_loc );
+			if( const auto class_type= function_context.return_type->GetClassType() )
+			{
+				if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
+				{
+					switch( coroutine_type_description->kind )
+					{
+					case CoroutineKind::Generator:
+						// For generators enter into final suspend state in case of manual "return".
+						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+						break;
+
+					case CoroutineKind::AsyncFunc:
+						// For void-return async functions do not evaluate result - just return.
+						if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
+							REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, void_type_, *function_context.return_type );
+
+						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+						break;
+					}
+				}
+			}
 			return block_info;
 		}
 		if( function_context.return_type == std::nullopt )
@@ -550,12 +571,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	if( function_context.coro_suspend_bb != nullptr )
+	if( function_context.coro_suspend_bb != nullptr && function_context.return_type != std::nullopt )
 	{
-		// For generators process "return" with value as combination "yield" and empty "return".
-		GeneratorYield( names, function_context, return_operator.expression, return_operator.src_loc );
-		GeneratorFinalSuspend( names, function_context, return_operator.src_loc );
-		return block_info;
+		if( const auto class_type= function_context.return_type->GetClassType() )
+		{
+			if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
+			{
+				switch( coroutine_type_description->kind )
+				{
+				case CoroutineKind::Generator:
+					// For generators process "return" with value as combination "yield" and empty "return".
+					CoroutineYield( names, function_context, return_operator.expression, return_operator.src_loc );
+					CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+					return block_info;
+
+				case CoroutineKind::AsyncFunc:
+					AsyncReturn( names, function_context, return_operator.expression, return_operator.src_loc );
+					return block_info;
+				}
+				U_ASSERT(false);
+			}
+		}
 	}
 
 	// Destruction frame for temporary variables of result expression.
@@ -733,7 +769,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::YieldOperator& yield_operator )
 {
 	// "Yield" is not a terminal operator. Execution (logically) continues after it.
-	GeneratorYield( names, function_context, yield_operator.expression, yield_operator.src_loc );
+	CoroutineYield( names, function_context, yield_operator.expression, yield_operator.src_loc );
 	return BlockBuildInfo();
 }
 
@@ -1532,7 +1568,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
-	if( coro_class_type == nullptr || std::get_if< CoroutineTypeDescription >( &coro_class_type->generated_class_data ) == nullptr )
+	if( coro_class_type == nullptr )
+	{
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
+		return BlockBuildInfo();
+	}
+	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coro_class_type->generated_class_data );
+	if( coroutine_type_description == nullptr)
 	{
 		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
 		return BlockBuildInfo();
@@ -1571,7 +1613,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					auto promise= llvm.coro.promise( coro_handle );
 				}
 			}
-		// TODO - adopt this code for async functions (that return value only once and when they are done).
+	 */
+	/* for async functions code looks like this:
+			if( !llvm.coro.done( coro_handle ) )
+			{
+				llvm.coro.resume( coro_handle )
+				if( llvm.coro.done( coro_handle ) )
+				{
+					auto promise= llvm.coro.promise( coro_handle );
+				}
+			}
 	 */
 
 	llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
@@ -1598,14 +1649,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		"coro_done_after_resume" );
 
 	const auto not_done_after_resume_block= llvm::BasicBlock::Create( llvm_context_, "not_done_after_resume" );
-	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, alternative_block, not_done_after_resume_block );
+
+	switch( coroutine_type_description->kind )
+	{
+	case CoroutineKind::Generator:
+		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, alternative_block, not_done_after_resume_block );
+		break;
+	case CoroutineKind::AsyncFunc:
+		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, not_done_after_resume_block, alternative_block );
+		break;
+	}
 
 	// Not done after resume block.
 	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
 	function_context.llvm_ir_builder.SetInsertPoint( not_done_after_resume_block );
-
-	const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &coro_class_type->generated_class_data );
-	U_ASSERT( coroutine_type_description != nullptr );
 
 	EnsureTypeComplete( coroutine_type_description->return_type );
 
@@ -1739,7 +1796,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					}
 				}
 
-				//No need to setup references here, because we can't return from generator reference to type with references inside.
+				// No need to setup references here, because we can't return from a coroutine reference to type with references inside.
 			}
 			else
 			{

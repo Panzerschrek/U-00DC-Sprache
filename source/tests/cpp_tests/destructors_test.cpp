@@ -2754,6 +2754,170 @@ U_TEST(CoroutineDestruction_Test5)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 954, 774411 } ) );
 }
 
+U_TEST(CoroutineDestruction_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async SomeFunc( S s )
+		{
+			// Destroy here argument.
+		}
+		fn Foo()
+		{
+			auto f= SomeFunc( S( 123 ) );
+			var S s( 456 );
+			// Destroy "s" here.
+			// Destroy "f" here, inlcuding its arguments.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 456, 123 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async SomeFunc( S s ) : i32
+		{
+			// Destroy here argument in return.
+			return s.x;
+		}
+		fn Foo()
+		{
+			auto mut f= SomeFunc( S( 789 ) );
+			var S s( 543 );
+			if_coro_advance( x : f ) // Advance async function and destroy its argument inside.
+			{
+				halt if( x != 789 );
+				var S s( 178 );
+			} // Destroy s(178) here.
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 789, 178, 543 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test8)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async SomeFunc( S s ) : i32
+		{
+			yield;
+			var S s_local( 77777 );
+			// Destroy here local variable and argument in return.
+			return s.x;
+		}
+		fn Foo()
+		{
+			auto mut f= SomeFunc( S( 111 ) );
+			var S s0( 222 );
+			if_coro_advance( x : f ) // Advance async function  - should stop on first yield.
+			{
+				halt;
+			}
+			var S s1( 333 );
+			if_coro_advance( x : f ) // Advance async function  - should reach its end and destroy both local variable and argument.
+			{
+				halt if( x != 111 );
+				var S s2( 444 );
+			} // Destroy s2.
+			// Destroy s1.
+			// Destroy s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 77777, 111, 444, 333, 222 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test9)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async SomeFunc( S s ) : i32
+		{
+			var S s_local0( 654 );
+			yield;
+			var S s_local1( 765 );
+			// Destroy here local variable and argument in return.
+			return s.x;
+		}
+		fn Foo()
+		{
+			auto mut f= SomeFunc( S( 321 ) );
+			var S s0( 432 );
+			if_coro_advance( x : f ) // Advance async function  - should stop on first yield.
+			{
+				halt;
+			}
+			var S s1( 543 );
+			// Destroy s1.
+			// Destroy s0.
+			// Destroy f without reaching the end. Its current locals and arguments shoudl be destroyed here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 543, 432, 654, 321 } ) );
+}
+
 U_TEST(IfCoroAdvance_Destruction_Test0)
 {
 	static const char c_program_text[]=

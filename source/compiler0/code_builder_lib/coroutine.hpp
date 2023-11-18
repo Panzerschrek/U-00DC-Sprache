@@ -1,14 +1,12 @@
 #pragma once
 #include <optional>
+#include "../lex_synt_lib/syntax_elements.hpp"
 #include "type.hpp"
 
 namespace U
 {
 
-enum class CoroutineKind : uint8_t
-{
-	Generator,
-};
+using CoroutineKind= Synt::CoroutineType::Kind;
 
 struct CoroutineTypeDescription
 {

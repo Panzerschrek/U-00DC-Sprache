@@ -1236,6 +1236,7 @@ def Typeinfo_ForGenerators_Test0():
 		static_assert( int_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
 		static_assert( int_gen_typeinfo.is_coroutine );
 		static_assert( int_gen_typeinfo.is_generator );
+		static_assert( !int_gen_typeinfo.is_async_func );
 		static_assert( int_gen_typeinfo.coroutine_return_type.is_integer );
 		static_assert( int_gen_typeinfo.coroutine_return_type.size_of == 4s );
 		static_assert( !int_gen_typeinfo.coroutine_return_value_is_mutable );
@@ -1254,6 +1255,7 @@ def Typeinfo_ForGenerators_Test1():
 		static_assert( f64_ref_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
 		static_assert( f64_ref_gen_typeinfo.is_coroutine );
 		static_assert( f64_ref_gen_typeinfo.is_generator );
+		static_assert( !f64_ref_gen_typeinfo.is_async_func );
 		static_assert( f64_ref_gen_typeinfo.coroutine_return_type.is_float );
 		static_assert( f64_ref_gen_typeinfo.coroutine_return_type.size_of == 8s );
 		static_assert( !f64_ref_gen_typeinfo.coroutine_return_value_is_mutable );
@@ -1272,6 +1274,7 @@ def Typeinfo_ForGenerators_Test2():
 		static_assert( mut_ref_char_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
 		static_assert( mut_ref_char_gen_typeinfo.is_coroutine );
 		static_assert( mut_ref_char_gen_typeinfo.is_generator );
+		static_assert( !mut_ref_char_gen_typeinfo.is_async_func );
 		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_type.is_char );
 		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_type.size_of == 1s );
 		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_value_is_mutable );

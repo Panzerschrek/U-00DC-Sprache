@@ -174,7 +174,7 @@ private:
 	fn ParseTupleType( mut this ) : TupleType;
 	fn ParseRawPointerType( mut this ) : RawPointerType;
 	fn ParseFunctionType( mut this ) : FunctionType;
-	fn ParseGeneratorType( mut this ) : GeneratorType;
+	fn ParseCoroutineType( mut this ) : CoroutineType;
 	fn ParseFunctionParam( mut this ) : FunctionType::Param;
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
 
@@ -795,9 +795,9 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	{
 		return ust::make_box( ParseFunctionType() );
 	}
-	if( IsKeyword( it_.front(), Keyword::generator_ ) )
+	if( IsKeyword( it_.front(), Keyword::generator_ ) || IsKeyword( it_.front(), Keyword::async_ ) )
 	{
-		return ust::make_box( ParseGeneratorType() );
+		return ust::make_box( ParseCoroutineType() );
 	}
 	if( IsKeyword( it_.front(), Keyword::typeinfo_ ) )
 	{
@@ -949,9 +949,9 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	{
 		return ust::make_box( ParseFunctionType() );
 	}
-	else if( IsKeyword( it_.front(), Keyword::generator_ ) )
+	else if( IsKeyword( it_.front(), Keyword::generator_ ) || IsKeyword( it_.front(), Keyword::async_ ) )
 	{
-		return ust::make_box( ParseGeneratorType() );
+		return ust::make_box( ParseCoroutineType() );
 	}
 	else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
@@ -1094,14 +1094,27 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 	return move(function_type);
 }
 
-fn SyntaxAnalyzer::ParseGeneratorType( mut this ) : GeneratorType
+fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 {
-	var GeneratorType mut generator_type{ .src_loc= it_.front().src_loc };
+	var CoroutineType mut coroutine_type
+	{
+		.src_loc= it_.front().src_loc,
+		.kind= CoroutineType::Kind::Generator, // Set later.
+	};
 
-	if( !IsKeyword( it_.front(), Keyword::generator_ ) )
+	if( IsKeyword( it_.front(), Keyword::generator_ ) )
+	{
+		coroutine_type.kind= CoroutineType::Kind::Generator;
+	}
+	else if( IsKeyword( it_.front(), Keyword::async_ ) )
+	{
+		coroutine_type.kind= CoroutineType::Kind::AsyncFunc;
+	}
+	else
 	{
 		PushErrorMessage();
 	}
+
 	NextLexem();
 
 	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
@@ -1119,12 +1132,12 @@ fn SyntaxAnalyzer::ParseGeneratorType( mut this ) : GeneratorType
 				if( IsKeyword( it_.front(), Keyword::mut_ ) )
 				{
 					NextLexem();
-					generator_type.inner_reference_tags.push_back( MutabilityModifier::Mutable );
+					coroutine_type.inner_reference_tags.push_back( MutabilityModifier::Mutable );
 				}
 				else if( IsKeyword( it_.front(), Keyword::imut_ ) )
 				{
 					NextLexem();
-					generator_type.inner_reference_tags.push_back( MutabilityModifier::Immutable );
+					coroutine_type.inner_reference_tags.push_back( MutabilityModifier::Immutable );
 				}
 
 				if( it_.front().lexem_type == Lexem::Type::Comma )
@@ -1141,42 +1154,42 @@ fn SyntaxAnalyzer::ParseGeneratorType( mut this ) : GeneratorType
 		}
 	}
 
-	generator_type.non_sync_tag= TryParseNonSyncTag();
+	coroutine_type.non_sync_tag= TryParseNonSyncTag();
 
 	ExpectLexem( Lexem::Type::Colon );
 
-	generator_type.return_type= ParseTypeName();
+	coroutine_type.return_type= ParseTypeName();
 
 	if( it_.front().lexem_type == Lexem::Type::At )
 	{
 		NextLexem();
-		generator_type.return_value_inner_references_expression.reset( ParseExpressionInBrackets() );
+		coroutine_type.return_value_inner_references_expression.reset( ParseExpressionInBrackets() );
 	}
 
 	if( it_.front().lexem_type == Lexem::Type::And )
 	{
 		NextLexem();
-		generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
+		coroutine_type.return_value_reference_modifier= ReferenceModifier::Reference;
 
 		if( IsKeyword( it_.front(), Keyword::mut_ ) )
 		{
-			generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+			coroutine_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
 			NextLexem();
 		}
 		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
 		{
-			generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+			coroutine_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
 			NextLexem();
 		}
 
 		if( it_.front().lexem_type == Lexem::Type::At )
 		{
 			NextLexem();
-			generator_type.return_value_reference_expression.reset( ParseExpressionInBrackets() );
+			coroutine_type.return_value_reference_expression.reset( ParseExpressionInBrackets() );
 		}
 	}
 
-	return move(generator_type);
+	return move(coroutine_type);
 }
 
 fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
@@ -1310,12 +1323,20 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			NextLexem();
 		}
 	}
+
 	if( IsKeyword( it_.front(), Keyword::generator_ ) )
 	{
 		NextLexem();
 		res.kind= Function::Kind::Generator;
 		res.coroutine_non_sync_tag= TryParseNonSyncTag();
 	}
+	else if( IsKeyword( it_.front(), Keyword::async_ ) )
+	{
+		NextLexem();
+		res.kind= Function::Kind::Async;
+		res.coroutine_non_sync_tag= TryParseNonSyncTag();
+	}
+
 	if( IsKeyword( it_.front(), Keyword::constexpr_ ) )
 	{
 		res.constexpr_= true;

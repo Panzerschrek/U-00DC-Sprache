@@ -479,13 +479,12 @@ fn CodeBuilder::PrepareFunction(
 
 	var FunctionType mut function_type= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
 
-	var bool is_generator= function_declaration.kind == Synt::Function::Kind::Generator;
-	if( is_generator )
+	if( function_declaration.kind != FunctionVariable::Kind::Regular )
 	{
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
 
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
-		TransformGeneratorFunctionType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
+		TransformCoroutineFunctionType( GetRootNamespace( names_scope_ptr ), function_type, function_declaration.kind, non_sync_ );
 
 		if_var( &type_name : function_declaration.function_type.return_type )
 		{
@@ -495,23 +494,23 @@ fn CodeBuilder::PrepareFunction(
 				{
 					if( name_lookup.name == KeywordToString( Keyword::auto_ ) )
 					{
-						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr, function_declaration.src_loc )
+						REPORT_ERROR( AutoReturnCoroutine, names_scope_ptr, function_declaration.src_loc )
 					}
 				}
 			}
 		}
 		if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
 		{
-			REPORT_ERROR( VirtualGenerator, names_scope_ptr, function_declaration.src_loc )
+			REPORT_ERROR( VirtualCoroutine, names_scope_ptr, function_declaration.src_loc )
 		}
 		if( function_type.calling_convention != LLVMCallConv::C )
 		{
-			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
+			REPORT_ERROR( NonDefaultCallingConventionForCoroutine, names_scope_ptr, function_declaration.src_loc )
 		}
-		// Disable references pollution for generator. It is too complicated for now.
+		// Disable references pollution for coroutines. It is too complicated for now.
 		if( !function_declaration.function_type.references_pollution_expression.empty() )
 		{
-			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "References pollution for generators." )
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "References pollution for coroutines." )
 		}
 	}
 
@@ -533,7 +532,7 @@ fn CodeBuilder::PrepareFunction(
 	{
 		.t= move(function_type),
 		.llvm_function( LazyLLVMFunction( move(llvm_function_name) ) ),
-		.is_generator= is_generator,
+		.kind= function_declaration.kind,
 	};
 	if( function_declaration.block.empty() )
 	{
@@ -551,9 +550,9 @@ fn CodeBuilder::PrepareFunction(
 	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
 	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 
-	if( function_variable.is_generator && ( is_constructor || is_destructor ) )
+	if( function_variable.IsCoroutine() && ( is_constructor || is_destructor ) )
 	{
-		REPORT_ERROR( GeneratorSpecialMethod, names_scope_ptr, function_declaration.src_loc )
+		REPORT_ERROR( CoroutineSpecialMethod, names_scope_ptr, function_declaration.src_loc )
 	}
 
 	function_variable.is_constructor= is_constructor;
@@ -826,9 +825,9 @@ fn CodeBuilder::PrepareFunction(
 			return false;
 		}
 
-		if( prev_function.is_generator != function_variable.is_generator )
+		if( prev_function.kind != function_variable.kind )
 		{
-			REPORT_ERROR( GeneratorMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
+			REPORT_ERROR( CoroutineMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 			return false;
 		}
 
@@ -1090,7 +1089,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	CheckFunctionReferencesNotationInnerReferences( func_variable.t, names_scope, body_syntax_element.src_loc );
 
-	if( func_variable.is_generator )
+	if( func_variable.IsCoroutine() )
 	{
 		// TODO - avoid taking copy
 		var CoroutineTypeDescription coroutine_type_description=
@@ -1103,26 +1102,26 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 		foreach( &param : func_variable.t.params )
 		{
-			// Generator is an object, that holds references to reference-args of generator function.
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
 			// It's forbidden to create types with references inside to types with other references inside.
-			// So, check if this rule is not violated for generators.
-			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
+			// So, check if this rule is not violated for coroutines.
+			// Do this now, because it's impossible to check this in coroutines declaration, because this check requires complete types of parameters.
 			if( param.value_type != ValueType::Value && param.t.ReferencesTagsCount() > 0u )
 			{
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, body_syntax_element.src_loc, "some arg" ) // TODO - use separate error code.
 			}
 
-			// Generator is not declared as non-sync, but param is non-sync. This is an error.
+			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
 			if( !coroutine_type_description.non_sync_ && GetTypeNonSync( param.t, names_scope, body_syntax_element.src_loc ) )
 			{
-				REPORT_ERROR( GeneratorNonSyncRequired, names_scope, body_syntax_element.src_loc )
+				REPORT_ERROR( CoroutineNonSyncRequired, names_scope, body_syntax_element.src_loc )
 			}
 		}
 
 		if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, body_syntax_element.src_loc  ) )
 		{
-			REPORT_ERROR( GeneratorNonSyncRequired, names_scope, body_syntax_element.src_loc )
+			REPORT_ERROR( CoroutineNonSyncRequired, names_scope, body_syntax_element.src_loc )
 		}
 	}
 
@@ -1179,10 +1178,10 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					else
 					{
 						// Large aggregate types are passed by reference.
-						if( func_variable.is_generator )
+						if( func_variable.IsCoroutine() )
 						{
-							// In generators we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
-							// This is needed, because address, allocated by generator function initial call, does not live long enough.
+							// In coroutines we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
+							// This is needed, because address, allocated by coroutine function initial call, does not live long enough.
 							variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
 							CreateLifetimeStart( function_context, variable.llvm_value );
 							CopyBytes( variable.llvm_value, arg_value, type_param.t, function_context );
@@ -1280,12 +1279,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	if( func_variable.is_generator )
+	if( func_variable.IsCoroutine() )
 	{
-		// Create generator entry block after saving args to stack.
-		PrepareGeneratorBlocks( function_context );
+		// Create coroutine entry block after saving args to stack.
+		PrepareCoroutineBlocks( function_context );
 		// Generate also initial suspend.
-		GeneratorSuspend( args_names_scope_ptr, function_context, body_syntax_element.src_loc );
+		CoroutineSuspend( args_names_scope_ptr, function_context, body_syntax_element.src_loc );
 	}
 
 	{
@@ -1338,13 +1337,26 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto block_build_info= BuildBlockElements( args_names_scope_ptr, function_context, block.elements.range() );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
-			if( func_variable.is_generator )
+			if( func_variable.kind == FunctionVariable::Kind::Generator )
 			{
-				GeneratorFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
+				// Finish generator function with final suspend.
+				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
+			}
+			else if( func_variable.kind == FunctionVariable::Kind::Async )
+			{
+				// Automatically generate final suspend for void-return async functions.
+				auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+				if( !( coroutine_type_description.return_type == void_type_ && coroutine_type_description.return_value_type == ValueType::Value ) )
+				{
+					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
+					return;
+				}
+
+				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
 			}
 			else
 			{
-				// Manually generate "return" for void-return functions.
+				// Automatically generate "return" for void-return functions.
 				if( !( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value ) )
 				{
 					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
@@ -2001,7 +2013,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
 	}
 
-	if( function_variable.is_generator )
+	if( function_variable.IsCoroutine() )
 	{
 		unsafe( AddFunctionAttribute( llvm_function, LLVMAttributeFunctionIndex, "presplitcoroutine" ) );
 	}

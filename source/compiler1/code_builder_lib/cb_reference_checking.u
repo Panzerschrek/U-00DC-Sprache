@@ -119,7 +119,7 @@ fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& functio
 	return false;
 }
 
-fn CodeBuilder::CheckYieldReferenceIsAllowed(
+fn CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 	NamesScopePtr& names,
 	FunctionContext& function_context,
 	CoroutineTypeDescription& coroutine_type_description,
@@ -147,7 +147,7 @@ fn CodeBuilder::CheckYieldReferenceIsAllowed(
 	}
 }
 
-fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
+fn CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 	NamesScopePtr& names,
 	FunctionContext& function_context,
 	CoroutineTypeDescription& coroutine_type_description,
@@ -187,7 +187,7 @@ fn CodeBuilder::CheckYieldInnerReferencesAreAllowed(
 fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>
 {
 	// Map coroutine function input references to returned coroutine inner references.
-	// If this changed, "TransformGeneratorFunctionType" function must be changed too!
+	// If this changed, "TransformCoroutineFunctionType" function must be changed too!
 
 	auto mut coroutine_inner_reference_index= 0s;
 	for( var size_type mut i= 0s; i < function_context.function_type.params.size(); ++i )

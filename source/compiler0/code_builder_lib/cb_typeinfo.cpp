@@ -237,6 +237,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 			add_bool_field( "is_coroutine", true );
 
 			add_bool_field( "is_generator", coroutine_type_description->kind == CoroutineKind::Generator );
+			add_bool_field( "is_async_func", coroutine_type_description->kind == CoroutineKind::AsyncFunc );
 
 			add_typeinfo_field( "coroutine_return_type", coroutine_type_description->return_type );
 			add_bool_field( "coroutine_return_value_is_reference", coroutine_type_description->return_value_type != ValueType::Value );

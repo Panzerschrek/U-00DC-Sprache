@@ -116,6 +116,11 @@ void FindImpl( const Synt::MemberAccessOperatorCompletion& member_access_operato
 	}
 }
 
+void FindImpl( const Synt::AwaitOperator& await_operator )
+{
+	FindImpl( await_operator.expression );
+}
+
 void FindImpl( const Synt::UnaryPlus& unary_plus )
 {
 	FindImpl( unary_plus.expression );
@@ -275,10 +280,10 @@ void FindImpl( const Synt::RawPointerType& raw_pointer_type )
 	FindImpl( raw_pointer_type.element_type );
 }
 
-void FindImpl( const Synt::GeneratorType& generator_type )
+void FindImpl( const Synt::CoroutineType& coroutine_type )
 {
-	FindImpl( generator_type.return_type );
-	FindImpl( generator_type.non_sync_tag );
+	FindImpl( coroutine_type.return_type );
+	FindImpl( coroutine_type.non_sync_tag );
 }
 
 void FindImpl( const Synt::TypeofTypeName& typeof_type_name )
