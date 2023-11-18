@@ -55,7 +55,7 @@ If no control flow was transferred to a block of ``if_coro_advance``, means that
 *Generator type*
 ****************
 
-Generator type is a type of a generator-objects.
+Generator type is a type of generator-objects.
 Generator functions return generator-type objects.
 
 Ü has a special syntax for specifying of generator types.

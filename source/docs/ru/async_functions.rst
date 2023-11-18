@@ -86,7 +86,7 @@
    fn async Foo(i32 x, i32 y) : i32;
    fn async Bar() : i32;
    // Функция, возвращающая значения типа асинхронной функции, но сама не являющаяся асинхронной.
-   fn CreateGen(bool cond) : (async : i32)
+   fn CreateFunc(bool cond) : (async : i32)
    {
        return select(cond ? Foo( 14, 56 ) : Bar() );
    }
