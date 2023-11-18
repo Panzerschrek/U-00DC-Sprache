@@ -532,20 +532,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 				{
-					if( coroutine_type_description->kind == CoroutineKind::Generator )
+					switch( coroutine_type_description->kind )
 					{
+					case CoroutineKind::Generator:
 						// For generators enter into final suspend state in case of manual "return".
 						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
-					}
-					else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
-					{
+						break;
+
+					case CoroutineKind::AsyncFunc:
 						// For void-return async functions do not evaluate result - just return.
 						if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 							REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, void_type_, *function_context.return_type );
 
 						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+						break;
 					}
-					else U_ASSERT(false);
 				}
 			}
 			return block_info;
@@ -576,19 +577,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 			{
-				if( coroutine_type_description->kind == CoroutineKind::Generator )
+				switch( coroutine_type_description->kind )
 				{
+				case CoroutineKind::Generator:
 					// For generators process "return" with value as combination "yield" and empty "return".
 					CoroutineYield( names, function_context, return_operator.expression, return_operator.src_loc );
 					CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
 					return block_info;
-				}
-				else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
-				{
-					AsyncFuncReturn( names, function_context, return_operator.expression, return_operator.src_loc );
+
+				case CoroutineKind::AsyncFunc:
+					AsyncReturn( names, function_context, return_operator.expression, return_operator.src_loc );
 					return block_info;
 				}
-				else U_ASSERT(false);
+				U_ASSERT(false);
 			}
 		}
 	}
@@ -1649,11 +1650,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const auto not_done_after_resume_block= llvm::BasicBlock::Create( llvm_context_, "not_done_after_resume" );
 
-	if( coroutine_type_description->kind == CoroutineKind::Generator )
+	switch( coroutine_type_description->kind )
+	{
+	case CoroutineKind::Generator:
 		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, alternative_block, not_done_after_resume_block );
-	else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+		break;
+	case CoroutineKind::AsyncFunc:
 		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, not_done_after_resume_block, alternative_block );
-	else U_ASSERT(false);
+		break;
+	}
 
 	// Not done after resume block.
 	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );

@@ -503,11 +503,15 @@ std::string Type::ToString() const
 			}
 			else if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_->generated_class_data ) )
 			{
-				if( coroutine_type_description->kind == CoroutineKind::Generator )
+				switch( coroutine_type_description->kind )
+				{
+				case CoroutineKind::Generator:
 					result+= Keyword( Keywords::generator_ );
-				else if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+					break;
+				case CoroutineKind::AsyncFunc:
 					result+= Keyword( Keywords::async_ );
-				else U_ASSERT(false);
+					break;
+				}
 
 				// TODO - print inner references here.
 

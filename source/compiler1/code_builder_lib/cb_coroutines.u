@@ -544,7 +544,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 	CoroutineSuspend( names_scope, function_context, src_loc );
 }
 
-fn CodeBuilder::AsyncFuncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
+fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
 	{

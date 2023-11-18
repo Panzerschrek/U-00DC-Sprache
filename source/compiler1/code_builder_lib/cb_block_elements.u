@@ -576,7 +576,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			},
 			CoroutineKind::AsyncFunc ->
 			{
-				AsyncFuncReturn( names_scope, function_context, return_operator.expr, return_operator.src_loc );
+				AsyncReturn( names_scope, function_context, return_operator.expr, return_operator.src_loc );
 			},
 		}
 		return block_element_build_info;

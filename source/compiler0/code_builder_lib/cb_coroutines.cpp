@@ -39,11 +39,18 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;
 	coroutine_type_description.non_sync= non_sync;
 
-	if( kind == FunctionVariable::Kind::Generator )
+	switch( kind )
+	{
+	case FunctionVariable::Kind::Regular:
+		U_ASSERT(false);
+		break;
+	case FunctionVariable::Kind::Generator:
 		coroutine_type_description.kind= CoroutineKind::Generator;
-	else if( kind == FunctionVariable::Kind::Async )
+		break;
+	case FunctionVariable::Kind::Async:
 		coroutine_type_description.kind= CoroutineKind::AsyncFunc;
-	else U_ASSERT(false);
+		break;
+	}
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
@@ -497,7 +504,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 	CoroutineSuspend( names, function_context, src_loc );
 }
 
-void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
@@ -578,12 +585,14 @@ void CodeBuilder::AsyncFuncReturn( NamesScope& names, FunctionContext& function_
 		if( !ReferenceIsConvertible( expression_result->type, return_type, names.GetErrors(), src_loc ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			function_context.variables_state.RemoveNode( return_value_node );
 			return;
 		}
 
 		if( expression_result->value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			function_context.variables_state.RemoveNode( return_value_node );
 			return;
 		}
 		if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )

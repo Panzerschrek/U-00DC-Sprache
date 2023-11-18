@@ -1227,7 +1227,7 @@ private:
 	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	// Make return type - coroutine type and prepare it properly. Modifies given function type.
-	void TransformCoroutineFunctionType( NamesScope& root_namespace, FunctionType& generator_function_type, FunctionVariable::Kind kind, bool non_sync );
+	void TransformCoroutineFunctionType( NamesScope& root_namespace, FunctionType& coroutine_function_type, FunctionVariable::Kind kind, bool non_sync );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
@@ -1235,7 +1235,7 @@ private:
 	void PrepareCoroutineBlocks( FunctionContext& function_context );
 
 	void CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
-	void AsyncFuncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	void AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	Value BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
