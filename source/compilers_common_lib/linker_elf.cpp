@@ -16,7 +16,7 @@ namespace
 {
 
 // This code was borrowed from clang and made slightly ugly.
-std::string GetDynamicLinker( const llvm::Triple& triple )
+std::string GetLinuxDynamicLinker( const llvm::Triple& triple )
 {
 	std::string lib_dir;
 	std::string loader;
@@ -82,6 +82,68 @@ std::string GetDynamicLinker( const llvm::Triple& triple )
 	return "/" + lib_dir + "/" + loader;
 }
 
+// This code was borrowed from clang and made slightly ugly.
+std::string GetLinuxMultiarchTriple( const llvm::Triple& triple )
+{
+	// For most architectures, just use whatever we have rather than trying to be clever.
+	switch( triple.getArch() )
+	{
+	default:
+		break;
+
+	case llvm::Triple::arm:
+	case llvm::Triple::thumb:
+		if(triple.isAndroid() )
+			return "arm-linux-androideabi";
+		if( triple.getEnvironment() == llvm::Triple::GNUEABIHF )
+			return "arm-linux-gnueabihf";
+		return "arm-linux-gnueabi";
+
+	case llvm::Triple::armeb:
+	case llvm::Triple::thumbeb:
+		if( triple.getEnvironment() == llvm::Triple::GNUEABIHF )
+			return "armeb-linux-gnueabihf";
+		return "armeb-linux-gnueabi";
+
+	case llvm::Triple::x86:
+	if( triple.isAndroid() )
+		return "i686-linux-android";
+	return "i386-linux-gnu";
+
+	case llvm::Triple::x86_64:
+		if( triple.isAndroid() )
+			return "x86_64-linux-android";
+		if( triple.getEnvironment() == llvm::Triple::GNUX32 )
+			return "x86_64-linux-gnux32";
+		return "x86_64-linux-gnu";
+
+	case llvm::Triple::aarch64:
+		if( triple.isAndroid() )
+			return "aarch64-linux-android";
+		return "aarch64-linux-gnu";
+
+	case llvm::Triple::aarch64_be:
+		return "aarch64_be-linux-gnu";
+
+	case llvm::Triple::m68k:
+		return "m68k-linux-gnu";
+
+	case llvm::Triple::riscv64:
+		return "riscv64-linux-gnu";
+
+	case llvm::Triple::sparc:
+		return "sparc-linux-gnu";
+
+	case llvm::Triple::sparcv9:
+		return "sparc64-linux-gnu";
+
+	case llvm::Triple::systemz:
+		return "s390x-linux-gnu";
+	}
+
+	return triple.str();
+}
+
 } // namespace
 
 void RunLinkerELF( const char* const argv0, const llvm::Triple& triple, const std::string& input_temp_file_path, const std::string& output_file_path )
@@ -91,6 +153,8 @@ void RunLinkerELF( const char* const argv0, const llvm::Triple& triple, const st
 
 	// TODO - check if this is correct.
 	const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
+
+	const std::string toolchain_file_path= "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
 
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
@@ -105,9 +169,9 @@ void RunLinkerELF( const char* const argv0, const llvm::Triple& triple, const st
 	args.push_back( "--eh-frame-hdr" );
 
 	args.push_back( "-L" );
-	args.push_back( "/usr/lib/x86_64-linux-gnu/" );
+	args.push_back( toolchain_file_path.data() );
 
-	const std::string dynamic_linker= GetDynamicLinker( triple );
+	const std::string dynamic_linker= GetLinuxDynamicLinker( triple );
 	args.push_back( "--dynamic-linker" );
 	args.push_back( dynamic_linker.data() );
 
@@ -116,7 +180,6 @@ void RunLinkerELF( const char* const argv0, const llvm::Triple& triple, const st
 	args.push_back( "-lm" );
 
 	// Link against CRT files in order to obtain _start, _init, etc.
-	const std::string toolchain_file_path= "/usr/lib/x86_64-linux-gnu/"; // TODO - specify it
 	const std::string crt1= toolchain_file_path + (pic ? "Scrt1.o" : "crt1.o");
 	const std::string crti= toolchain_file_path + "crti.o";
 	const std::string crtn= toolchain_file_path + "crtn.o";
