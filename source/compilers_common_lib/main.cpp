@@ -711,23 +711,15 @@ int Main( int argc, const char* argv[] )
 		result_module->print( stream, nullptr );
 	}
 
+	std::string compiler_output_file_name;
 	if( Options::link )
-	{
-		llvm::raw_os_ostream cout(std::cout);
-		llvm::raw_os_ostream cerr(std::cerr);
-
-		const std::string output_file_name= Options::output_file_name;
-
-		llvm::SmallVector<const char*, 16> argv_fixed;
-		argv_fixed.push_back( argv[0] );
-		argv_fixed.push_back( "-o" );
-		argv_fixed.push_back( output_file_name.data() );
-		lld::elf::link( argv_fixed, cout, cerr, true, false );
-	}
+		compiler_output_file_name= Options::output_file_name + ".temp";
 	else
+		compiler_output_file_name= Options::output_file_name;
+
 	{
 		std::error_code file_error_code;
-		llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
+		llvm::raw_fd_ostream out_file_stream( compiler_output_file_name, file_error_code );
 
 		// Create pass manager for output passes.
 		llvm::legacy::PassManager pass_manager;
@@ -773,6 +765,23 @@ int Main( int argc, const char* argv[] )
 			std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
 			return 1;
 		}
+	}
+
+	if( Options::link )
+	{
+		llvm::raw_os_ostream cout(std::cout);
+		llvm::raw_os_ostream cerr(std::cerr);
+
+		const std::string output_file_name= Options::output_file_name;
+
+		llvm::SmallVector<const char*, 16> args;
+		args.push_back( argv[0] );
+		args.push_back( compiler_output_file_name.data() );
+		args.push_back( "-o" );
+		args.push_back( output_file_name.data() );
+		lld::elf::link( args, cout, cerr, true, false );
+
+		// TODO - remove temp file.
 	}
 
 	// Left only unique paths in dependencies list.
