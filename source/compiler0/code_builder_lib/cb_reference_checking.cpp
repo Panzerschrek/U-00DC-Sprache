@@ -121,34 +121,38 @@ void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, 
 
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
-	// Try to move unused nodes (variables and references) until we can't move anything.
+	std::vector<VariablePtr>& varaibles= function_context.stack_variables_stack.back()->variables_;
+	// Try to remove unused nodes (variables and references) until we can't remove anything.
 	// Multiple iterations needed to process complex references chains.
 	while(true)
 	{
-		bool any_node_moved= false;
-		for( const VariablePtr& variable : temporary_variables_storage.variables_ )
-		{
-			// Destroy variables without links.
-			// Destroy all references, because all actual references that holds values should not yet be registered.
-			if( !function_context.variables_state.NodeMoved( variable ) &&
-				( variable->value_type != ValueType::Value ||
-					!function_context.variables_state.HaveOutgoingLinks( variable ) ) )
+		// Perform removal with total order preservation.
+		const auto new_end= std::remove_if(
+			varaibles.begin(),
+			varaibles.end(),
+			[&]( const VariablePtr& variable )
 			{
-				if( variable->value_type == ValueType::Value && !function_context.is_functionless_context )
+				// Destroy variables without links.
+				// Destroy all references, because all actual references that holds values should not yet be registered.
+				if( ( variable->value_type != ValueType::Value || !function_context.variables_state.HaveOutgoingLinks( variable ) ) )
 				{
-					if( variable->type.HaveDestructor() )
-						CallDestructor( variable->llvm_value, variable->type, function_context, errors_container, src_loc );
-					if( variable->location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, variable->llvm_value );
+					// Emit destructions call code only if it is a non-moved variable.
+					if( variable->value_type == ValueType::Value && !function_context.is_functionless_context && !function_context.variables_state.NodeMoved( variable ) )
+					{
+						if( variable->type.HaveDestructor() )
+							CallDestructor( variable->llvm_value, variable->type, function_context, errors_container, src_loc );
+						if( variable->location == Variable::Location::Pointer )
+							CreateLifetimeEnd( function_context, variable->llvm_value );
+					}
+					function_context.variables_state.RemoveNode( variable );
+					return true;
 				}
-				function_context.variables_state.MoveNode( variable );
-				any_node_moved= true;
-			}
-		}
+				return false;
+			} );
 
-		if(!any_node_moved)
+		if( new_end == varaibles.end() )
 			return;
+		varaibles.erase( new_end, varaibles.end() );
 	}
 }
 
