@@ -774,12 +774,15 @@ int Main( int argc, const char* argv[] )
 
 		const std::string output_file_name= Options::output_file_name;
 
-		llvm::SmallVector<const char*, 16> args;
+		// TODO - check if this is correct.
+		const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
+
+		llvm::SmallVector<const char*, 32> args;
 		args.push_back( argv[0] );
 		args.push_back( compiler_output_file_name.data() );
 
-		// TODO - set it.
-		// args.push_back( "-pie" );
+		if( pic )
+			args.push_back( "-pie" );
 
 		args.push_back( "-z" );
 		args.push_back( "relro" );
@@ -797,11 +800,14 @@ int Main( int argc, const char* argv[] )
 		args.push_back( "-lm" );
 
 		// Link against CRT files in order to obtain _start, _init, etc.
-		args.push_back( "/usr/lib/x86_64-linux-gnu/crt1.o" );
+		if( pic )
+			args.push_back( "/usr/lib/x86_64-linux-gnu/Scrt1.o" );
+		else
+			args.push_back( "/usr/lib/x86_64-linux-gnu/crt1.o" );
 		args.push_back( "/usr/lib/x86_64-linux-gnu/crti.o" );
 		args.push_back( "/usr/lib/x86_64-linux-gnu/crtn.o" );
 
-		// TODO - try also to link agains crtbegin.o and crtend.o that are shipped together with GCC.
+		// TODO - link also against crtbegin.o and crtend.o that are shipped together with GCC.
 
 		args.push_back( "-o" );
 		args.push_back( output_file_name.data() );
