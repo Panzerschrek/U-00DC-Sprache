@@ -7,6 +7,7 @@
 #include <llvm/Bitcode/BitcodeReader.h>
 #include <llvm/Bitcode/BitcodeWriterPass.h>
 #include <llvm/CodeGen/TargetPassConfig.h>
+#include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/InitializePasses.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -59,28 +60,6 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
-std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_list )
-{
-	llvm::SubtargetFeatures features;
-	for( auto& f : features_list )
-		features.AddFeature( f, true );
-	return features.getString();
-}
-
-std::string GetNativeTargetFeaturesStr()
-{
-	llvm::SubtargetFeatures features;
-
-	llvm::StringMap<bool> host_features;
-	if( llvm::sys::getHostCPUFeatures(host_features) )
-	{
-		for( auto& f : host_features )
-			features.AddFeature( f.first(), f.second );
-	}
-
-	return features.getString();
-}
-
 void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const std::string& name )
 {
 	const auto prev_variable= module.getGlobalVariable( name );
@@ -106,6 +85,8 @@ void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initia
 
 namespace Options
 {
+
+const llvm::codegen::RegisterCodeGenFlags use_common_llvm_code_gen_flags;
 
 namespace cl= llvm::cl;
 
@@ -144,19 +125,6 @@ cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
-enum class FileType{ BC, LL, Obj, Asm, Null };
-cl::opt< FileType > file_type(
-	"filetype",
-	cl::init(FileType::Obj),
-	cl::desc("Choose a file type (not all types are supported by all targets):"),
-	cl::values(
-		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
-		clEnumValN( FileType::LL, "ll", "Emit an llvm asm ('.ll') file" ),
-		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
-		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
-		clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
-	cl::cat(options_category) );
-
 cl::opt<bool> override_data_layout(
 	"override-data-layout",
 	cl::desc("Override data layout of input LL or BC module."),
@@ -189,11 +157,6 @@ cl::opt<bool> allow_unused_names(
 	cl::init(false),
 	cl::cat(options_category) );
 
-cl::opt<std::string> architecture(
-	"march",
-	cl::desc("Architecture to generate code for (see --version)"),
-	cl::cat(options_category) );
-
 cl::opt<std::string> target_vendor(
 	"target-vendor",
 	cl::desc("Target vendor"),
@@ -209,44 +172,6 @@ cl::opt<std::string> target_environment(
 	cl::desc("Target environment"),
 	cl::cat(options_category) );
 
-cl::opt<std::string> target_cpu(
-	"mcpu",
-	cl::desc("Target a specific cpu type (-mcpu=help for details)"),
-	cl::value_desc("cpu-name"),
-	cl::init(""),
-	cl::cat(options_category) );
-
-cl::list<std::string> target_attributes(
-	"mattr",
-	cl::CommaSeparated,
-	cl::desc("Target specific attributes (-mattr=help for details)"),
-	cl::value_desc("a1,+a2,-a3,..."),
-	cl::cat(options_category) );
-
-cl::opt<llvm::Reloc::Model> relocation_model(
-	"relocation-model",
-	cl::desc("Choose relocation model"),
-	cl::init(llvm::Reloc::PIC_),
-	cl::values(
-		clEnumValN( llvm::Reloc::Static, "static", "Non-relocatable code" ),
-		clEnumValN( llvm::Reloc::PIC_, "pic", "Fully relocatable, position independent code" ),
-		clEnumValN( llvm::Reloc::DynamicNoPIC, "dynamic-no-pic", "Relocatable external references, non-relocatable code" ),
-		clEnumValN( llvm::Reloc::ROPI, "ropi", "Code and read-only data relocatable, accessed PC-relative" ),
-		clEnumValN( llvm::Reloc::RWPI, "rwpi", "Read-write data relocatable, accessed relative to static base" ),
-		clEnumValN( llvm::Reloc::ROPI_RWPI, "ropi-rwpi", "Combination of ropi and rwpi") ),
-	cl::cat(options_category) );
-
-cl::opt<llvm::CodeModel::Model> code_model(
-	"code-model",
-	cl::desc("Choose code model"),
-	cl::values(
-		clEnumValN( llvm::CodeModel::Tiny, "tiny", "Tiny code model" ),
-		clEnumValN( llvm::CodeModel::Small, "small", "Small code model" ),
-		clEnumValN( llvm::CodeModel::Kernel, "kernel", "Kernel code model" ),
-		clEnumValN( llvm::CodeModel::Medium, "medium", "Medium code model" ),
-		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
-	cl::cat(options_category));
-
 const auto mangling_scheme_auto= ManglingScheme(100);
 
 cl::opt<ManglingScheme> mangling_scheme(
@@ -256,21 +181,9 @@ cl::opt<ManglingScheme> mangling_scheme(
 	cl::values(
 		clEnumValN( mangling_scheme_auto, "auto", "Choose mangling scheme based on target triple." ),
 		clEnumValN( ManglingScheme::ItaniumABI, "itanium-abi", "Itanium ABI mangling scheme." ),
-		clEnumValN( ManglingScheme::MSVC, "msvc", "MSVC mangling scheme (exact scheme is determined by target pointer size).." ),
+		clEnumValN( ManglingScheme::MSVC, "msvc", "MSVC mangling scheme (exact scheme is determined by target pointer size)." ),
 		clEnumValN( ManglingScheme::MSVC32, "msvc32", "MSVC 32-bit mangling scheme." ),
 		clEnumValN( ManglingScheme::MSVC64, "msvc64", "MSVC 64-bit mangling scheme." ) ),
-	cl::cat(options_category) );
-
-cl::opt<bool> data_sections(
-	"data-sections",
-	cl::desc("Emit data into separate sections"),
-	cl::init(false),
-	cl::cat(options_category) );
-
-cl::opt<bool> function_sections(
-	"function-sections",
-	cl::desc("Emit functions into separate sections"),
-	cl::init(false),
 	cl::cat(options_category) );
 
 cl::opt<std::string> dep_file_name(
@@ -388,10 +301,25 @@ int Main( int argc, const char* argv[] )
 			PrintAvailableTargets();
 		} );
 
-	llvm::cl::HideUnrelatedOptions( Options::options_category );
+	// Replace codegen::filetype option with our own.
+	llvm::cl::TopLevelSubCommand->OptionsMap.erase( "filetype" );
+
+	enum class FileType{ BC, LL, Obj, Asm, Null };
+	llvm::cl::opt< FileType > file_type(
+		"filetype",
+		llvm::cl::init(FileType::Obj),
+		llvm::cl::desc("Choose a file type:"),
+		llvm::cl::values(
+			clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
+			clEnumValN( FileType::LL, "ll", "Emit an llvm asm ('.ll') file" ),
+			clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
+			clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
+			clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
+		llvm::cl::cat(Options::options_category) );
+
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
-	if( Options::output_file_name.empty() && Options::file_type != Options::FileType::Null )
+	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
 		std::cerr << "No output file specified" << std::endl;
 		return 1;
@@ -449,10 +377,6 @@ int Main( int argc, const char* argv[] )
 	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
-		const llvm::Target* target= nullptr;
-
-		if( !Options::architecture.empty() && Options::architecture != "native" )
-			target_triple.setArchName( Options::architecture );
 		if( !Options::target_vendor.empty() )
 			target_triple.setVendorName( Options::target_vendor );
 		if( !Options::target_os.empty() )
@@ -460,10 +384,8 @@ int Main( int argc, const char* argv[] )
 		if( !Options::target_environment.empty() )
 			target_triple.setEnvironmentName( Options::target_environment );
 
-		target_triple_str= target_triple.normalize();
-
 		std::string error_str;
-		target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
+		const llvm::Target* target= llvm::TargetRegistry::lookupTarget( llvm::codegen::getMArch(), target_triple, error_str );
 		if( target == nullptr )
 		{
 			std::cerr << "Error, selecting target: " << error_str << std::endl;
@@ -471,9 +393,7 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		llvm::TargetOptions target_options;
-		target_options.DataSections = Options::data_sections;
-		target_options.FunctionSections = Options::function_sections;
+		target_triple_str= target_triple.normalize();
 
 		auto code_gen_optimization_level= llvm::CodeGenOpt::None;
 		if ( optimization_level.getSizeLevel() > 0 )
@@ -487,23 +407,14 @@ int Main( int argc, const char* argv[] )
 		else if( optimization_level.getSpeedupLevel() == 3 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 
-		const std::string features=
-			( Options::architecture == "native" && Options::target_attributes.empty() )
-				? GetNativeTargetFeaturesStr()
-				: GetFeaturesStr( Options::target_attributes );
-
-		const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
-			? llvm::sys::getHostCPUName()
-			: Options::target_cpu).str();
-
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
-				cpu_name,
-				features,
-				target_options,
-				Options::relocation_model.getValue(),
-				Options::code_model.getNumOccurrences() > 0 ? Options::code_model.getValue() : llvm::Optional<llvm::CodeModel::Model>(),
+				llvm::codegen::getMCPU(),
+				llvm::codegen::getFeaturesStr(),
+				llvm::codegen::InitTargetOptionsFromCodeGenFlags( target_triple ),
+				llvm::codegen::getExplicitRelocModel(),
+				llvm::codegen::getExplicitCodeModel(),
 				code_gen_optimization_level ) );
 
 		if( target_machine == nullptr )
@@ -799,9 +710,9 @@ int Main( int argc, const char* argv[] )
 	// Create pass manager for output passes.
 	llvm::legacy::PassManager pass_manager;
 
-	switch( Options::file_type )
+	switch( file_type )
 	{
-	case Options::FileType::Obj:
+	case FileType::Obj:
 		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_ObjectFile ) )
 		{
 			std::cerr << "Error, creating file emit pass." << std::endl;
@@ -809,7 +720,7 @@ int Main( int argc, const char* argv[] )
 		}
 		break;
 
-	case Options::FileType::Asm:
+	case FileType::Asm:
 		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_AssemblyFile ) )
 		{
 			std::cerr << "Error, creating file emit pass." << std::endl;
@@ -817,15 +728,15 @@ int Main( int argc, const char* argv[] )
 		}
 		break;
 
-	case Options::FileType::BC:
+	case FileType::BC:
 		pass_manager.add( llvm::createBitcodeWriterPass( out_file_stream ) );
 		break;
 
-	case Options::FileType::LL:
+	case FileType::LL:
 		result_module->print( out_file_stream, nullptr );
 		break;
 
-	case Options::FileType::Null:
+	case FileType::Null:
 		// Do nothing.
 		break;
 	}
