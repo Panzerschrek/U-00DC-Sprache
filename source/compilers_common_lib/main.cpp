@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <lld/Common/Driver.h>
 #include <llvm/Analysis/CGSCCPassManager.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
@@ -41,6 +40,7 @@
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
 #include "dep_file.hpp"
+#include "linker.hpp"
 #include "make_dep_file.hpp"
 
 namespace U
@@ -769,50 +769,7 @@ int Main( int argc, const char* argv[] )
 
 	if( Options::link )
 	{
-		llvm::raw_os_ostream cout(std::cout);
-		llvm::raw_os_ostream cerr(std::cerr);
-
-		const std::string output_file_name= Options::output_file_name;
-
-		// TODO - check if this is correct.
-		const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
-
-		llvm::SmallVector<const char*, 32> args;
-		args.push_back( argv[0] );
-		args.push_back( compiler_output_file_name.data() );
-
-		if( pic )
-			args.push_back( "-pie" );
-
-		args.push_back( "-z" );
-		args.push_back( "relro" );
-
-		args.push_back( "--eh-frame-hdr" );
-
-		args.push_back( "-L" );
-		args.push_back( "/usr/lib/x86_64-linux-gnu/" );
-
-		args.push_back( "--dynamic-linker" );
-		args.push_back( "/lib64/ld-linux-x86-64.so.2" );
-
-		// ustlib uses some libc and math library functions.
-		args.push_back( "-lc" );
-		args.push_back( "-lm" );
-
-		// Link against CRT files in order to obtain _start, _init, etc.
-		if( pic )
-			args.push_back( "/usr/lib/x86_64-linux-gnu/Scrt1.o" );
-		else
-			args.push_back( "/usr/lib/x86_64-linux-gnu/crt1.o" );
-		args.push_back( "/usr/lib/x86_64-linux-gnu/crti.o" );
-		args.push_back( "/usr/lib/x86_64-linux-gnu/crtn.o" );
-
-		// TODO - link also against crtbegin.o and crtend.o that are shipped together with GCC.
-
-		args.push_back( "-o" );
-		args.push_back( output_file_name.data() );
-
-		lld::elf::link( args, cout, cerr, true, false );
+		RunLinker( argv[0], compiler_output_file_name, std::string( Options::output_file_name ) );
 
 		// TODO - remove temp file.
 	}
