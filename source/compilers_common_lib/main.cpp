@@ -769,7 +769,7 @@ int Main( int argc, const char* argv[] )
 
 	if( Options::link )
 	{
-		RunLinker( argv[0], compiler_output_file_name, std::string( Options::output_file_name ) );
+		RunLinker( argv[0], target_triple, compiler_output_file_name, std::string( Options::output_file_name ) );
 
 		// TODO - remove temp file.
 	}
