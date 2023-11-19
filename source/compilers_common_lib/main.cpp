@@ -777,8 +777,35 @@ int Main( int argc, const char* argv[] )
 		llvm::SmallVector<const char*, 16> args;
 		args.push_back( argv[0] );
 		args.push_back( compiler_output_file_name.data() );
+
+		// TODO - set it.
+		// args.push_back( "-pie" );
+
+		args.push_back( "-z" );
+		args.push_back( "relro" );
+
+		args.push_back( "--eh-frame-hdr" );
+
+		args.push_back( "-L" );
+		args.push_back( "/usr/lib/x86_64-linux-gnu/" );
+
+		args.push_back( "--dynamic-linker" );
+		args.push_back( "/lib64/ld-linux-x86-64.so.2" );
+
+		// ustlib uses some libc and math library functions.
+		args.push_back( "-lc" );
+		args.push_back( "-lm" );
+
+		// Link against CRT files in order to obtain _start, _init, etc.
+		args.push_back( "/usr/lib/x86_64-linux-gnu/crt1.o" );
+		args.push_back( "/usr/lib/x86_64-linux-gnu/crti.o" );
+		args.push_back( "/usr/lib/x86_64-linux-gnu/crtn.o" );
+
+		// TODO - try also to link agains crtbegin.o and crtend.o that are shipped together with GCC.
+
 		args.push_back( "-o" );
 		args.push_back( output_file_name.data() );
+
 		lld::elf::link( args, cout, cerr, true, false );
 
 		// TODO - remove temp file.
