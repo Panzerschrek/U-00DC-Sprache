@@ -715,7 +715,14 @@ int Main( int argc, const char* argv[] )
 	{
 		llvm::raw_os_ostream cout(std::cout);
 		llvm::raw_os_ostream cerr(std::cerr);
-		lld::elf::link( llvm::ArrayRef<const char*>(argv, size_t(argc)), cout, cerr, true, false );
+
+		const std::string output_file_name= Options::output_file_name;
+
+		llvm::SmallVector<const char*, 16> argv_fixed;
+		argv_fixed.push_back( argv[0] );
+		argv_fixed.push_back( "-o" );
+		argv_fixed.push_back( output_file_name.data() );
+		lld::elf::link( argv_fixed, cout, cerr, true, false );
 	}
 	else
 	{
