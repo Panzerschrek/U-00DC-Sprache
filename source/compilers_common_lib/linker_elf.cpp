@@ -42,12 +42,14 @@ void RunLinkerELF( const char* const argv0, const std::string& input_temp_file_p
 	args.push_back( "-lm" );
 
 	// Link against CRT files in order to obtain _start, _init, etc.
-	if( pic )
-		args.push_back( "/usr/lib/x86_64-linux-gnu/Scrt1.o" );
-	else
-		args.push_back( "/usr/lib/x86_64-linux-gnu/crt1.o" );
-	args.push_back( "/usr/lib/x86_64-linux-gnu/crti.o" );
-	args.push_back( "/usr/lib/x86_64-linux-gnu/crtn.o" );
+	const std::string toolchain_file_path= "/usr/lib/x86_64-linux-gnu/"; // TODO - specify it
+	const std::string crt1= toolchain_file_path + (pic ? "Scrt1.o" : "crt1.o");
+	const std::string crti= toolchain_file_path + "crti.o";
+	const std::string crtn= toolchain_file_path + "crtn.o";
+
+	args.push_back( crt1.data() );
+	args.push_back( crti.data() );
+	args.push_back( crtn.data() );
 
 	// TODO - link also against crtbegin.o and crtend.o that are shipped together with GCC.
 
