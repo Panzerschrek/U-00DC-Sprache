@@ -3,7 +3,7 @@
 namespace U
 {
 
-void RunLinker(
+bool RunLinker(
 	const char* const argv0,
 	const llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,

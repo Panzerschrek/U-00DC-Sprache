@@ -9,7 +9,8 @@
 namespace U
 {
 
-void RunLinker(
+// Returns true if all ok.
+bool RunLinker(
 	const char* argv0,
 	llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,
@@ -17,7 +18,7 @@ void RunLinker(
 	const std::string& output_file_path,
 	bool produce_shared_library );
 
-void RunLinkerCOFF(
+bool RunLinkerCOFF(
 	const char* argv0,
 	llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,
@@ -25,7 +26,7 @@ void RunLinkerCOFF(
 	const std::string& output_file_path,
 	bool produce_shared_library );
 
-void RunLinkerELF(
+bool RunLinkerELF(
 	const char* argv0,
 	llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,

@@ -146,7 +146,7 @@ std::string GetLinuxMultiarchTriple( const llvm::Triple& triple )
 
 } // namespace
 
-void RunLinkerELF(
+bool RunLinkerELF(
 	const char* const argv0,
 	const llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,
@@ -205,7 +205,7 @@ void RunLinkerELF(
 	for( const std::string& arg : additional_args )
 		args.push_back( arg.data() );
 
-	lld::elf::link( args, cout, cerr, true, false );
+	return lld::elf::link( args, cout, cerr, true, false );
 }
 
 } // namespace U

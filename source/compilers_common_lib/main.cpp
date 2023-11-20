@@ -813,8 +813,13 @@ int Main( int argc, const char* argv[] )
 					return 1;
 				}
 			}
-			RunLinker( argv[0], Options::linker_args, target_triple, temp_object_file_name, Options::output_file_name, file_type == FileType::Dll );
+			const bool linker_ok= RunLinker( argv[0], Options::linker_args, target_triple, temp_object_file_name, Options::output_file_name, file_type == FileType::Dll );
 			llvm::sys::fs::remove( temp_object_file_name, true );
+			if( !linker_ok )
+			{
+				std::cerr << "Linker execution failed" << std::endl;
+				return 1;
+			}
 		}
 		break;
 

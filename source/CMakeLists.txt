@@ -240,6 +240,13 @@ if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
 
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
+	if( TARGET lldCommon )
+		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "compilers_common_lib/linker_stub.cpp" )
+	else()
+		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "compilers_common_lib/linker.cpp" "compilers_common_lib/linker_elf.cpp" "compilers_common_lib/linker_coff.cpp" )
+	endif()
+	list( REMOVE_ITEM COMPILERS_COMMON_LIB_SOURCES ${COMPILERS_COMMON_LIB_EXCLUDE_SOURCES} )
+
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
 	target_link_libraries( CompilersCommonLib CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
 
