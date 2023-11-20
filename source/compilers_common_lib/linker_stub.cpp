@@ -10,7 +10,8 @@ bool RunLinker(
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
-	const bool produce_shared_library )
+	const bool produce_shared_library,
+	const bool remove_unreferenced_symbols )
 {
 	(void)argv0;
 	(void)additional_args;
@@ -18,6 +19,7 @@ bool RunLinker(
 	(void)input_temp_file_path;
 	(void)output_file_path;
 	(void)produce_shared_library;
+	(void)remove_unreferenced_symbols;
 
 	std::cerr << "LLD is not included!" << std::endl;
 	return false;
