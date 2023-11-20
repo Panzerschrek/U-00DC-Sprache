@@ -19,6 +19,7 @@
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/CodeGen.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
@@ -802,7 +803,7 @@ int Main( int argc, const char* argv[] )
 				}
 			}
 			RunLinker( argv[0], target_triple, temp_object_file_name, Options::output_file_name );
-			// TODO - remove temp file.
+			llvm::sys::fs::remove( temp_object_file_name, true );
 		}
 		break;
 
