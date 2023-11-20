@@ -93,13 +93,6 @@ namespace cl= llvm::cl;
 
 cl::OptionCategory options_category( "Ü compier options" );
 
-cl::list<std::string> input_files(
-	cl::Positional,
-	cl::desc("<source0> [... <sourceN>]"),
-	cl::value_desc("input files"),
-	cl::OneOrMore,
-	cl::cat(options_category) );
-
 enum class InputFileType{ Source, BC, LL };
 cl::opt< InputFileType > input_files_type(
 	"input-filetype",
@@ -109,13 +102,6 @@ cl::opt< InputFileType > input_files_type(
 		clEnumValN( InputFileType::Source, "source", "Reead Ü source files" ),
 		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" ),
 		clEnumValN( InputFileType::LL, "ll", "Read an llvm asm ('.ll') files" )),
-	cl::cat(options_category) );
-
-cl::opt<std::string> output_file_name(
-	"o",
-	cl::desc("Output filename"),
-	cl::value_desc("filename"),
-	cl::Optional,
 	cl::cat(options_category) );
 
 cl::list<std::string> include_dir(
@@ -324,15 +310,37 @@ int Main( int argc, const char* argv[] )
 			clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
 		llvm::cl::cat(Options::options_category) );
 
-	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+	std::string output_file_name;
+	std::vector<std::string> input_files;
+	{
+		llvm::cl::opt<std::string> output_file_name_opt(
+			"o",
+			llvm::cl::desc("Output filename"),
+			llvm::cl::value_desc("filename"),
+			llvm::cl::Optional,
+			llvm::cl::cat(Options::options_category) );
 
-	if( Options::output_file_name.empty() && file_type != FileType::Null )
+		llvm::cl::list<std::string> input_files_option(
+			llvm::cl::Positional,
+			llvm::cl::desc("<source0> [... <sourceN>]"),
+			llvm::cl::value_desc("input files"),
+			llvm::cl::OneOrMore,
+			llvm::cl::cat(Options::options_category) );
+
+		llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+		output_file_name= output_file_name_opt;
+		input_files= input_files_option;
+
+		input_files_option.removeArgument();
+	}
+
+	if( output_file_name.empty() && file_type != FileType::Null )
 	{
 		std::cerr << "No output file specified" << std::endl;
 		return 1;
 	}
 
-	if( Options::deps_tracking && DepFile::NothingChanged( Options::output_file_name, argc, argv ) )
+	if( Options::deps_tracking && DepFile::NothingChanged( output_file_name, argc, argv ) )
 		return 0;
 
 	// Select optimization level.
@@ -466,7 +474,7 @@ int Main( int argc, const char* argv[] )
 			std::cout << prelude_code << std::endl;
 
 		bool have_some_errors= false;
-		for( const std::string& input_file : Options::input_files )
+		for( const std::string& input_file : input_files )
 		{
 			CodeBuilderLaunchResult code_builder_launch_result=
 				LaunchCodeBuilder(
@@ -546,7 +554,7 @@ int Main( int argc, const char* argv[] )
 		// Load and link together multiple BC or LL files.
 
 		bool have_some_errors= false;
-		for( const std::string& input_file : Options::input_files )
+		for( const std::string& input_file : input_files )
 		{
 			std::unique_ptr<llvm::Module> module;
 			if ( Options::input_files_type == Options::InputFileType::BC )
@@ -713,9 +721,9 @@ int Main( int argc, const char* argv[] )
 
 	std::string compiler_output_file_name;
 	if( Options::link )
-		compiler_output_file_name= Options::output_file_name + ".temp";
+		compiler_output_file_name= output_file_name + ".temp";
 	else
-		compiler_output_file_name= Options::output_file_name;
+		compiler_output_file_name= output_file_name;
 
 	{
 		std::error_code file_error_code;
@@ -760,16 +768,16 @@ int Main( int argc, const char* argv[] )
 
 		// Check if output file is ok.
 		out_file_stream.flush();
-		if( !Options::output_file_name.empty() && out_file_stream.has_error() )
+		if( !compiler_output_file_name.empty() && out_file_stream.has_error() )
 		{
-			std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+			std::cerr << "Error while writing output file \"" << compiler_output_file_name << "\": " << file_error_code.message() << std::endl;
 			return 1;
 		}
 	}
 
 	if( Options::link )
 	{
-		RunLinker( argv[0], target_triple, compiler_output_file_name, std::string( Options::output_file_name ) );
+		RunLinker( argv[0], target_triple, compiler_output_file_name, output_file_name );
 
 		// TODO - remove temp file.
 	}
@@ -778,10 +786,10 @@ int Main( int argc, const char* argv[] )
 	DeduplicateAndFilterDepsList(deps_list);
 
 	if( Options::deps_tracking )
-		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
+		DepFile::Write( output_file_name, argc, argv, deps_list );
 
 	if( !Options::dep_file_name.empty() &&
-		!WriteDepFile( Options::output_file_name, deps_list, Options::dep_file_name ) )
+		!WriteDepFile( output_file_name, deps_list, Options::dep_file_name ) )
 		return 1;
 
 	return 0;
