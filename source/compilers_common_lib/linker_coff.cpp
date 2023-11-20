@@ -25,7 +25,13 @@ void RunLinkerCOFF( const char* const argv0, const llvm::Triple& triple, const s
 	const std::string out_str= "-out:" + output_file_path;
 	args.push_back( out_str.data() );
 
-	args.push_back( "-defaultlib:libcmt" );
+	const bool static_linc_crt= false; // TODO - allow to specify it.
+
+	if( static_linc_crt )
+		args.push_back( "-defaultlib:libcmt" );
+	else
+		args.push_back( "-defaultlib:msvcrt" );
+
 	args.push_back( "-defaultlib:oldnames" );
 
 	lld::coff::link( args, cout, cerr, true, false );
