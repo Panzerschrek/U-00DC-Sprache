@@ -8,9 +8,25 @@
 namespace U
 {
 
-void RunLinker( const char* argv0, const llvm::Triple& triple, const std::string& input_temp_file_path, const std::string& output_file_path );
+void RunLinker(
+	const char* argv0,
+	const llvm::Triple& triple,
+	const std::string& input_temp_file_path,
+	const std::string& output_file_path,
+	bool produce_shared_library );
 
-void RunLinkerCOFF( const char* argv0, const llvm::Triple& triple,  const std::string& input_temp_file_path, const std::string& output_file_path );
-void RunLinkerELF( const char* argv0, const llvm::Triple& triple,  const std::string& input_temp_file_path, const std::string& output_file_path );
+void RunLinkerCOFF(
+	const char* argv0,
+	const llvm::Triple& triple,
+	const std::string& input_temp_file_path,
+	const std::string& output_file_path,
+	bool produce_shared_library );
+
+void RunLinkerELF(
+	const char* argv0,
+	const llvm::Triple& triple,
+	const std::string& input_temp_file_path,
+	const std::string& output_file_path,
+	bool produce_shared_library );
 
 } // namespace U

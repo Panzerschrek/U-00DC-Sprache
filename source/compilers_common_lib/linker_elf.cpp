@@ -146,7 +146,12 @@ std::string GetLinuxMultiarchTriple( const llvm::Triple& triple )
 
 } // namespace
 
-void RunLinkerELF( const char* const argv0, const llvm::Triple& triple, const std::string& input_temp_file_path, const std::string& output_file_path )
+void RunLinkerELF(
+	const char* const argv0,
+	const llvm::Triple& triple,
+	const std::string& input_temp_file_path,
+	const std::string& output_file_path,
+	const bool produce_shared_library )
 {
 	llvm::raw_os_ostream cout(std::cout);
 	llvm::raw_os_ostream cerr(std::cerr);
@@ -159,6 +164,9 @@ void RunLinkerELF( const char* const argv0, const llvm::Triple& triple, const st
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
 	args.push_back( input_temp_file_path.data() );
+
+	if( produce_shared_library )
+		args.push_back( "--shared" );
 
 	if( pic )
 		args.push_back( "-pie" );

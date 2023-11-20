@@ -306,7 +306,7 @@ int Main( int argc, const char* argv[] )
 	// Replace codegen::filetype option with our own.
 	llvm::cl::TopLevelSubCommand->OptionsMap.erase( "filetype" );
 
-	enum class FileType{ BC, LL, Obj, Asm, Exe, Null };
+	enum class FileType{ BC, LL, Obj, Asm, Exe, Dll, Null };
 	llvm::cl::opt< FileType > file_type(
 		"filetype",
 		llvm::cl::init(FileType::Obj),
@@ -317,6 +317,7 @@ int Main( int argc, const char* argv[] )
 			clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
 			clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
 			clEnumValN( FileType::Exe, "exe", "Emit a native executable file" ),
+			clEnumValN( FileType::Dll, "dll", "Emit a native shared library ('.so', '.dll') file" ),
 			clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
 		llvm::cl::cat(Options::options_category) );
 
@@ -777,6 +778,7 @@ int Main( int argc, const char* argv[] )
 		break;
 
 	case FileType::Exe:
+	case FileType::Dll:
 		{
 			const std::string temp_object_file_name= Options::output_file_name + "_temp.o";
 			{
@@ -802,7 +804,7 @@ int Main( int argc, const char* argv[] )
 					return 1;
 				}
 			}
-			RunLinker( argv[0], target_triple, temp_object_file_name, Options::output_file_name );
+			RunLinker( argv[0], target_triple, temp_object_file_name, Options::output_file_name, file_type == FileType::Dll );
 			llvm::sys::fs::remove( temp_object_file_name, true );
 		}
 		break;

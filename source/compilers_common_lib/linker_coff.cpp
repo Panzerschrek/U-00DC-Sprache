@@ -12,11 +12,17 @@
 namespace U
 {
 
-void RunLinkerCOFF( const char* const argv0, const llvm::Triple& triple, const std::string& input_temp_file_path, const std::string& output_file_path )
+void RunLinkerCOFF(
+	const char* const argv0,
+	const llvm::Triple& triple,
+	const std::string& input_temp_file_path,
+	const std::string& output_file_path,
+	const bool produce_shared_library )
 {
+	(void)triple;
+
 	llvm::raw_os_ostream cout(std::cout);
 	llvm::raw_os_ostream cerr(std::cerr);
-
 
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
@@ -24,6 +30,9 @@ void RunLinkerCOFF( const char* const argv0, const llvm::Triple& triple, const s
 
 	const std::string out_str= "-out:" + output_file_path;
 	args.push_back( out_str.data() );
+
+	if( produce_shared_library )
+		args.push_back( "/dll" );
 
 	const bool static_linc_crt= false; // TODO - allow to specify it.
 
