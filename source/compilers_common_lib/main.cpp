@@ -5,7 +5,7 @@
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/BitcodeReader.h>
-#include <llvm/Bitcode/BitcodeWriterPass.h>
+#include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/CodeGen/TargetPassConfig.h>
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/InitializePasses.h>
@@ -93,6 +93,13 @@ namespace cl= llvm::cl;
 
 cl::OptionCategory options_category( "Ü compier options" );
 
+cl::list<std::string> input_files(
+	cl::Positional,
+	cl::desc("<source0> [... <sourceN>]"),
+	cl::value_desc("input files"),
+	cl::OneOrMore,
+	cl::cat(options_category) );
+
 enum class InputFileType{ Source, BC, LL };
 cl::opt< InputFileType > input_files_type(
 	"input-filetype",
@@ -102,6 +109,13 @@ cl::opt< InputFileType > input_files_type(
 		clEnumValN( InputFileType::Source, "source", "Reead Ü source files" ),
 		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" ),
 		clEnumValN( InputFileType::LL, "ll", "Read an llvm asm ('.ll') files" )),
+	cl::cat(options_category) );
+
+cl::opt<std::string> output_file_name(
+	"o",
+	cl::desc("Output filename"),
+	cl::value_desc("filename"),
+	cl::Optional,
 	cl::cat(options_category) );
 
 cl::list<std::string> include_dir(
@@ -258,12 +272,6 @@ cl::opt< LTOMode > lto_mode(
 		clEnumValN( LTOMode::Link, "link", "Run link LTO pipeline. Input llvm modules should be optimized with link stage before this." ) ),
 	cl::cat(options_category) );
 
-cl::opt<bool> link(
-	"link",
-	cl::desc("Run LLD."),
-	cl::init(false),
-	cl::cat(options_category) );
-
 } // namespace Options
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
@@ -297,7 +305,7 @@ int Main( int argc, const char* argv[] )
 	// Replace codegen::filetype option with our own.
 	llvm::cl::TopLevelSubCommand->OptionsMap.erase( "filetype" );
 
-	enum class FileType{ BC, LL, Obj, Asm, Null };
+	enum class FileType{ BC, LL, Obj, Asm, Exe, Null };
 	llvm::cl::opt< FileType > file_type(
 		"filetype",
 		llvm::cl::init(FileType::Obj),
@@ -307,40 +315,27 @@ int Main( int argc, const char* argv[] )
 			clEnumValN( FileType::LL, "ll", "Emit an llvm asm ('.ll') file" ),
 			clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
 			clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
+			clEnumValN( FileType::Exe, "exe", "Emit a native executable file" ),
 			clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
 		llvm::cl::cat(Options::options_category) );
 
-	std::string output_file_name;
-	std::vector<std::string> input_files;
-	{
-		llvm::cl::opt<std::string> output_file_name_opt(
-			"o",
-			llvm::cl::desc("Output filename"),
-			llvm::cl::value_desc("filename"),
-			llvm::cl::Optional,
-			llvm::cl::cat(Options::options_category) );
 
-		llvm::cl::list<std::string> input_files_option(
-			llvm::cl::Positional,
-			llvm::cl::desc("<source0> [... <sourceN>]"),
-			llvm::cl::value_desc("input files"),
-			llvm::cl::OneOrMore,
-			llvm::cl::cat(Options::options_category) );
+	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
-		llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
-		output_file_name= output_file_name_opt;
-		input_files= input_files_option;
+	// Remove options just after parsing in order to avoid parsing them second time in the linker.
+	// TODO - remove all Ü options.
+	Options::input_files.removeArgument();
+	Options::input_files_type.removeArgument();
+	Options::output_file_name.removeArgument();
+	Options::include_dir.removeArgument();
 
-		input_files_option.removeArgument();
-	}
-
-	if( output_file_name.empty() && file_type != FileType::Null )
+	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
 		std::cerr << "No output file specified" << std::endl;
 		return 1;
 	}
 
-	if( Options::deps_tracking && DepFile::NothingChanged( output_file_name, argc, argv ) )
+	if( Options::deps_tracking && DepFile::NothingChanged( Options::output_file_name, argc, argv ) )
 		return 0;
 
 	// Select optimization level.
@@ -474,7 +469,7 @@ int Main( int argc, const char* argv[] )
 			std::cout << prelude_code << std::endl;
 
 		bool have_some_errors= false;
-		for( const std::string& input_file : input_files )
+		for( const std::string& input_file : Options::input_files )
 		{
 			CodeBuilderLaunchResult code_builder_launch_result=
 				LaunchCodeBuilder(
@@ -554,7 +549,7 @@ int Main( int argc, const char* argv[] )
 		// Load and link together multiple BC or LL files.
 
 		bool have_some_errors= false;
-		for( const std::string& input_file : input_files )
+		for( const std::string& input_file : Options::input_files )
 		{
 			std::unique_ptr<llvm::Module> module;
 			if ( Options::input_files_type == Options::InputFileType::BC )
@@ -719,77 +714,111 @@ int Main( int argc, const char* argv[] )
 		result_module->print( stream, nullptr );
 	}
 
-	std::string compiler_output_file_name;
-	if( Options::link )
-		compiler_output_file_name= output_file_name + ".temp";
-	else
-		compiler_output_file_name= output_file_name;
-
+	switch( file_type )
 	{
-		std::error_code file_error_code;
-		llvm::raw_fd_ostream out_file_stream( compiler_output_file_name, file_error_code );
-
-		// Create pass manager for output passes.
-		llvm::legacy::PassManager pass_manager;
-
-		switch( file_type )
+	case FileType::Obj:
+	case FileType::Asm:
 		{
-		case FileType::Obj:
-			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_ObjectFile ) )
+			llvm::legacy::PassManager pass_manager;
+
+			std::error_code file_error_code;
+			llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
+			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, file_type == FileType::Obj ? llvm::CGFT_ObjectFile : llvm::CGFT_AssemblyFile ) )
 			{
 				std::cerr << "Error, creating file emit pass." << std::endl;
 				return 1;
 			}
-			break;
 
-		case FileType::Asm:
-			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_AssemblyFile ) )
+			// Run codegen/output passes.
+			pass_manager.run(*result_module);
+
+			// Check if output file is ok.
+			out_file_stream.flush();
+			if( !Options::output_file_name.empty() && out_file_stream.has_error() )
 			{
-				std::cerr << "Error, creating file emit pass." << std::endl;
+				std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
 				return 1;
 			}
-			break;
+		}
+		break;
 
-		case FileType::BC:
-			pass_manager.add( llvm::createBitcodeWriterPass( out_file_stream ) );
-			break;
+	case FileType::BC:
+		{
+			std::error_code file_error_code;
+			llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
 
-		case FileType::LL:
+			llvm::WriteBitcodeToFile( *result_module, out_file_stream );
+
+			// Check if output file is ok.
+			out_file_stream.flush();
+			if( !Options::output_file_name.empty() && out_file_stream.has_error() )
+			{
+				std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+				return 1;
+			}
+		}
+		break;
+
+	case FileType::LL:
+		{
+			std::error_code file_error_code;
+			llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
+
 			result_module->print( out_file_stream, nullptr );
-			break;
 
-		case FileType::Null:
-			// Do nothing.
-			break;
+			out_file_stream.flush();
+			if( !Options::output_file_name.empty() && out_file_stream.has_error() )
+			{
+				std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+				return 1;
+			}
 		}
+		break;
 
-		// Run codegen/output passes.
-		pass_manager.run(*result_module);
-
-		// Check if output file is ok.
-		out_file_stream.flush();
-		if( !compiler_output_file_name.empty() && out_file_stream.has_error() )
+	case FileType::Exe:
 		{
-			std::cerr << "Error while writing output file \"" << compiler_output_file_name << "\": " << file_error_code.message() << std::endl;
-			return 1;
+			const std::string temp_object_file_name= Options::output_file_name + "_temp.o";
+			{
+				llvm::legacy::PassManager pass_manager;
+
+				std::error_code file_error_code;
+				llvm::raw_fd_ostream temp_object_file_stream( temp_object_file_name, file_error_code );
+
+				if( target_machine->addPassesToEmitFile( pass_manager, temp_object_file_stream, nullptr, llvm::CGFT_ObjectFile ) )
+				{
+					std::cerr << "Error, creating file emit pass." << std::endl;
+					return 1;
+				}
+
+				// Run codegen/output passes.
+				pass_manager.run(*result_module);
+
+				// Check if output file is ok.
+				temp_object_file_stream.flush();
+				if( !temp_object_file_name.empty() && temp_object_file_stream.has_error() )
+				{
+					std::cerr << "Error while writing output file \"" << temp_object_file_name<< "\": " << file_error_code.message() << std::endl;
+					return 1;
+				}
+			}
+			RunLinker( argv[0], target_triple, temp_object_file_name, Options::output_file_name );
+			// TODO - remove temp file.
 		}
-	}
+		break;
 
-	if( Options::link )
-	{
-		RunLinker( argv[0], target_triple, compiler_output_file_name, output_file_name );
-
-		// TODO - remove temp file.
+	case FileType::Null:
+		// Do nothing.
+		break;
 	}
 
 	// Left only unique paths in dependencies list.
 	DeduplicateAndFilterDepsList(deps_list);
 
 	if( Options::deps_tracking )
-		DepFile::Write( output_file_name, argc, argv, deps_list );
+		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
 
 	if( !Options::dep_file_name.empty() &&
-		!WriteDepFile( output_file_name, deps_list, Options::dep_file_name ) )
+		!WriteDepFile( Options::output_file_name, deps_list, Options::dep_file_name ) )
 		return 1;
 
 	return 0;
