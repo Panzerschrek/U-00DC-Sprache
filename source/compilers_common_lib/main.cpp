@@ -273,6 +273,15 @@ cl::opt< LTOMode > lto_mode(
 		clEnumValN( LTOMode::Link, "link", "Run link LTO pipeline. Input llvm modules should be optimized with link stage before this." ) ),
 	cl::cat(options_category) );
 
+cl::list<std::string> linker_args(
+	"Wl",
+	cl::value_desc("linker args"),
+	cl::desc("Pass a comma-separated list of arguments to the internal linker (LLD). used only if the internal linker is used (for executable of shared library output)."),
+	cl::ZeroOrMore,
+	cl::Prefix,
+	cl::CommaSeparated,
+	cl::cat(options_category) );
+
 } // namespace Options
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
@@ -804,7 +813,7 @@ int Main( int argc, const char* argv[] )
 					return 1;
 				}
 			}
-			RunLinker( argv[0], target_triple, temp_object_file_name, Options::output_file_name, file_type == FileType::Dll );
+			RunLinker( argv[0], Options::linker_args, target_triple, temp_object_file_name, Options::output_file_name, file_type == FileType::Dll );
 			llvm::sys::fs::remove( temp_object_file_name, true );
 		}
 		break;

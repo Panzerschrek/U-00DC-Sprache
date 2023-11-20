@@ -148,6 +148,7 @@ std::string GetLinuxMultiarchTriple( const llvm::Triple& triple )
 
 void RunLinkerELF(
 	const char* const argv0,
+	const llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
@@ -200,6 +201,9 @@ void RunLinkerELF(
 
 	args.push_back( "-o" );
 	args.push_back( output_file_path.data() );
+
+	for( const std::string& arg : additional_args )
+		args.push_back( arg.data() );
 
 	lld::elf::link( args, cout, cerr, true, false );
 }

@@ -14,6 +14,7 @@ namespace U
 
 void RunLinkerCOFF(
 	const char* const argv0,
+	const llvm::ArrayRef<std::string> additional_args,
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
@@ -42,6 +43,9 @@ void RunLinkerCOFF(
 		args.push_back( "-defaultlib:msvcrt" );
 
 	args.push_back( "-defaultlib:oldnames" );
+
+	for( const std::string& arg : additional_args )
+		args.push_back( arg.data() );
 
 	lld::coff::link( args, cout, cerr, true, false );
 }
