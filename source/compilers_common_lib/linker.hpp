@@ -16,7 +16,8 @@ bool RunLinker(
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
-	bool produce_shared_library );
+	bool produce_shared_library,
+	bool remove_unreferenced_symbols );
 
 bool RunLinkerCOFF(
 	const char* argv0,
@@ -24,7 +25,8 @@ bool RunLinkerCOFF(
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
-	bool produce_shared_library );
+	bool produce_shared_library,
+	bool remove_unreferenced_symbols );
 
 bool RunLinkerELF(
 	const char* argv0,
@@ -32,6 +34,7 @@ bool RunLinkerELF(
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
-	bool produce_shared_library );
+	bool produce_shared_library,
+	bool remove_unreferenced_symbols );
 
 } // namespace U

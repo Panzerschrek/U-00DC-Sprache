@@ -813,7 +813,20 @@ int Main( int argc, const char* argv[] )
 					return 1;
 				}
 			}
-			const bool linker_ok= RunLinker( argv[0], Options::linker_args, target_triple, temp_object_file_name, Options::output_file_name, file_type == FileType::Dll );
+
+			const bool produce_shared_library= file_type == FileType::Dll;
+			// Remove unreferenced symbols in builds with optimization buth also without debug information.
+			const bool remove_unreferenced_symbols= optimization_level != llvm::OptimizationLevel::O0 && ! Options::generate_debug_info;
+
+			const bool linker_ok= RunLinker(
+				argv[0],
+				Options::linker_args,
+				target_triple,
+				temp_object_file_name,
+				Options::output_file_name,
+				produce_shared_library,
+				remove_unreferenced_symbols );
+
 			llvm::sys::fs::remove( temp_object_file_name, true );
 			if( !linker_ok )
 			{

@@ -18,7 +18,8 @@ bool RunLinkerCOFF(
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
-	const bool produce_shared_library )
+	const bool produce_shared_library,
+	const bool remove_unreferenced_symbols )
 {
 	(void)triple;
 
@@ -34,6 +35,9 @@ bool RunLinkerCOFF(
 
 	if( produce_shared_library )
 		args.push_back( "/dll" );
+
+	if( remove_unreferenced_symbols )
+		args.push_back( "/opt:ref" );
 
 	const bool static_linc_crt= false; // TODO - allow to specify it.
 

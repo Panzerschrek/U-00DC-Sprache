@@ -152,7 +152,8 @@ bool RunLinkerELF(
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
-	const bool produce_shared_library )
+	const bool produce_shared_library,
+	const bool remove_unreferenced_symbols )
 {
 	llvm::raw_os_ostream cout(std::cout);
 	llvm::raw_os_ostream cerr(std::cerr);
@@ -171,6 +172,9 @@ bool RunLinkerELF(
 
 	if( pic && !produce_shared_library )
 		args.push_back( "-pie" );
+
+	if( remove_unreferenced_symbols )
+		args.push_back( "-s" );
 
 	args.push_back( "-z" );
 	args.push_back( "relro" );
