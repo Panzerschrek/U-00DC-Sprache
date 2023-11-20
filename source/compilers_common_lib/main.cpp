@@ -330,15 +330,36 @@ int Main( int argc, const char* argv[] )
 			clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
 		llvm::cl::cat(Options::options_category) );
 
-
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
-	// Remove options just after parsing in order to avoid parsing them second time in the linker.
-	// TODO - remove all Ü options.
+	// Remove Ü options just after parsing in order to avoid parsing them second time in the linker.
+	// This is needed because COFF linker calls "ParseCommandLineOptions".
 	Options::input_files.removeArgument();
 	Options::input_files_type.removeArgument();
 	Options::output_file_name.removeArgument();
 	Options::include_dir.removeArgument();
+	Options::override_data_layout.removeArgument();
+	Options::override_target_triple.removeArgument();
+	Options::optimization_level.removeArgument();
+	Options::generate_debug_info.removeArgument();
+	Options::allow_unused_names.removeArgument();
+	Options::target_vendor.removeArgument();
+	Options::target_os.removeArgument();
+	Options::target_environment.removeArgument();
+	Options::mangling_scheme.removeArgument();
+	Options::dep_file_name.removeArgument();
+	Options::deps_tracking.removeArgument();
+	Options::tests_output.removeArgument();
+	Options::print_llvm_asm.removeArgument();
+	Options::print_llvm_asm_initial.removeArgument();
+	Options::print_prelude_code.removeArgument();
+	Options::halt_mode.removeArgument();
+	Options::no_libc_alloc.removeArgument();
+	Options::verify_module.removeArgument();
+	Options::internalize.removeArgument();
+	Options::internalize_preserve.removeArgument();
+	Options::lto_mode.removeArgument();
+	Options::linker_args.removeArgument();
 
 	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
