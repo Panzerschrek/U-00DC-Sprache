@@ -168,7 +168,7 @@ void RunLinkerELF(
 	if( produce_shared_library )
 		args.push_back( "--shared" );
 
-	if( pic )
+	if( pic && !produce_shared_library )
 		args.push_back( "-pie" );
 
 	args.push_back( "-z" );
