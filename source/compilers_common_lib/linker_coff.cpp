@@ -39,12 +39,8 @@ bool RunLinkerCOFF(
 	if( remove_unreferenced_symbols )
 		args.push_back( "/opt:ref" );
 
-	const bool static_linc_crt= false; // TODO - allow to specify it.
-
-	if( static_linc_crt )
-		args.push_back( "-defaultlib:libcmt" );
-	else
-		args.push_back( "-defaultlib:msvcrt" );
+	const bool static_link_crt= false; // TODO - allow to specify it.
+	args.push_back( static_link_crt ? "-defaultlib:libcmt" : "-defaultlib:msvcrt" );
 
 	args.push_back( "-defaultlib:oldnames" );
 
