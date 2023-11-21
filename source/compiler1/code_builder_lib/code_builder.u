@@ -1744,50 +1744,55 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& n
 
 fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc )
 {
-	// Try to move unused nodes (variables and references) until we can't move anything.
+	/// Try to remove unused nodes (variables and references) until we can't remove anything.
 	// Multiple iterations needed to process complex references chains.
 	loop
 	{
-		auto mut any_node_moved= false;
-		// TODO - maybe iterate in reverse order?
-		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
+		// Perform removal with total order preservation.
+		var size_type s= function_context.variables_frames.back().size(), mut i_src(0), mut i_dst(0);
+		for( ; i_src < s; ++i_src )
 		{
-			auto variable_ptr= function_context.variables_frames.back()[i];
+			var VariablePtr variable_ptr= function_context.variables_frames.back()[i_src];
 			auto variable_lock= variable_ptr.lock_imut();
 			var Variable& variable= variable_lock.deref();
 
-			// Move variable nodes without links or all reference nodes.
-			// We can freely drop reference nodes here because there should be unregistered reference nodes for current used references.
-			if( !function_context.references_graph.NodeIsMoved( variable_ptr ) &&
-				( variable.value_type != ValueType::Value ||
-					!function_context.references_graph.HaveOutgoingLinks( variable_ptr ) ) )
+			// Destroy variables without links.
+			// Destroy all references, because all actual references that holds values should not yet be registered.
+			if( variable.value_type != ValueType::Value || !function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
 			{
-				any_node_moved= true;
-				function_context.references_graph.MoveNode( variable_ptr );
-
-				if( variable.value_type == ValueType::Value )
+				// Emit destructions call code only if it is a non-moved variable.
+				if( variable.value_type == ValueType::Value && !function_context.is_functionless_context && !function_context.references_graph.NodeIsMoved( variable_ptr ) )
 				{
-					if( !function_context.is_functionless_context )
+					if( variable.llvm_value != LLVMValueRef::Null && variable.t.HaveDestructor() )
 					{
-						if( variable.llvm_value != LLVMValueRef::Null && variable.t.HaveDestructor() )
-						{
-							BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
-						}
+						BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+					}
 
-						// Do not create lifetime for variables existing only in llvm register (without any address).
-						if( variable.location == Variable::Location::Pointer )
-						{
-							CreateLifetimeEnd( function_context, variable.llvm_value );
-						}
+					// Do not create lifetime for variables existing only in llvm register (without any address).
+					if( variable.location == Variable::Location::Pointer )
+					{
+						CreateLifetimeEnd( function_context, variable.llvm_value );
 					}
 				}
+
+				function_context.references_graph.RemoveNode( variable_ptr );
+				// Remove this variable from the container.
+			}
+			else
+			{
+				// Preserve this variable in the container.
+				function_context.variables_frames.back()[i_dst]= variable_ptr;
+				++i_dst;
 			}
 		}
 
-		if(!any_node_moved)
+		if( i_dst == s )
 		{
-			break;
+			// Nothing was removed.
+			return;
 		}
+
+		function_context.variables_frames.back().drop_back( s - i_dst );
 	}
 }
 
