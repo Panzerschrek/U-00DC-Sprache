@@ -35,6 +35,8 @@ For more information/examples see build scripts in *ci* directory.
 
 ### Components
 
+[compiler](source/compilers_common_lib/README.md)
+
 [language server](source/language_server/README.md)
 
 [syntax highlighting](source/syntax_highlighting/README.md)
