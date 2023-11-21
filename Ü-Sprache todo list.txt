@@ -58,6 +58,9 @@ Compiler:
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
 	or it would be better to pass it in memory.
+*) Add possibility to execute internal LLD directly, bypassing compiler logic itself
+*) More options for internal linker
+*) More internal linkers spupport - MinGW, MachO, wasm
 *) Faster calling convention for non-cross-language functions.
 *) Fix possible UB in float->int conversion.
 *) Virtual call for final function optimization
