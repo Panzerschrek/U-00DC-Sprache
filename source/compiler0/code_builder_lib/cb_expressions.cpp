@@ -3534,7 +3534,7 @@ Value CodeBuilder::DoCallFunction(
 	else
 	{
 		// Fill dummy for error cases.
-		if( return_value_is_sret )
+		if( return_value_is_composite )
 		{}
 		else if( function_type.return_value_type == ValueType::Value )
 			result->llvm_value= llvm::UndefValue::get( function_type.return_type.GetLLVMType() );
