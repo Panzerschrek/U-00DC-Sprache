@@ -871,3 +871,87 @@ def ReferenceInnerReferenceNode_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def OperatorsWithNodeLock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			with( &x_ref : x ) // Operator locks the value, preventing its moving.
+			{
+				move(x);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+
+
+def OperatorsWithNodeLock_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[i32] mut t= zero_init;
+			for( el : t ) // "for" for tuple prevents changing source tuple.
+			{
+				move(t);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+
+
+def OperatorsWithNodeLock_Test2():
+	c_program_text= """
+		fn Foo( size_type i )
+		{
+			var [ i32, 4 ] mut arr= zero_init;
+			arr[ move(arr)[i] ]; // indexation operator locks indexed variable and makes moving/chanhing of it impossible during index calculation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 5 ) )
+
+
+def OperatorsWithNodeLock_Test3():
+	c_program_text= """
+		fn Foo( size_type i )
+		{
+			var [ i32, 4 ] mut arr= zero_init;
+			arr == move(arr); // == operator for arrays locks variable and makes moving/chanhing of it impossible during index calculation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 5 ) )
+
+
+def OperatorsWithNodeLock_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 4 ] mut arr= zero_init;
+			move(arr) == arr; // variable used in the right part was previously moved in the left part.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 5 ) )
+
+
+def OperatorsWithNodeLock_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 4 ] mut arr= zero_init;
+			arr= arr; // Right part is locked in the assignment operator calculation for an array is locked before calculating left part. This prevents self-assignment.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )
