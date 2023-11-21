@@ -57,15 +57,18 @@ elseif( DEFINED LLVM_LIB_DIR )
 
 	set( CMAKE_PREFIX_PATH
 		${CMAKE_PREFIX_PATH}
+		${LLVM_LIB_DIR}/cmake/lld
 		${LLVM_LIB_DIR}/cmake/llvm
 		${LLVM_LIB_DIR}/cmake/clang )
 
 	set( CMAKE_MODULE_PATH
 		${CMAKE_MODULE_PATH}
+		${LLVM_LIB_DIR}/cmake/lld
 		${LLVM_LIB_DIR}/cmake/llvm
 		${LLVM_LIB_DIR}/cmake/clang )
 
 	find_package( LLVM REQUIRED )
+	find_package( LLD ) # Optional
 	find_package( Clang ) # Optional
 	find_package( Sphinx ) # Optional
 
@@ -237,8 +240,24 @@ if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
 
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
+	if( TARGET lldCommon )
+		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "compilers_common_lib/linker_stub.cpp" )
+	else()
+		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "compilers_common_lib/linker.cpp" "compilers_common_lib/linker_elf.cpp" "compilers_common_lib/linker_coff.cpp" )
+	endif()
+	list( REMOVE_ITEM COMPILERS_COMMON_LIB_SOURCES ${COMPILERS_COMMON_LIB_EXCLUDE_SOURCES} )
+
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
 	target_link_libraries( CompilersCommonLib CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
+
+	if( TARGET lldCommon )
+		# Hack! LLD libraries do not export their include directories, set it manually.
+		target_include_directories( CompilersCommonLib PRIVATE ${LLVM_EXTERNAL_LLD_SOURCE_DIR}/include )
+		target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/lld/include )
+
+		# TODO - use other linkers.
+		target_link_libraries( CompilersCommonLib lldCOFF lldELF lldMinGW )
+	endif()
 
 else()
 	message( STATUS "Skip compiler" )

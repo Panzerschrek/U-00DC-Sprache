@@ -19,7 +19,6 @@ class ParseResult:
 
 
 g_compiler_executable= "Compiler"
-g_cpp_compiler_executable= "g++"
 g_use_position_independent_code= False
 
 
@@ -132,7 +131,7 @@ def ParseCompilerErrorsOutput( output_str ):
 def DoFailTest( file_path, expected_errors_list ):
 	output_str= ""
 	try:
-		output_str= str( subprocess.check_output( [ g_compiler_executable, file_path, "--tests-output", "-o", "temp.bc", "--allow-unused-names" ], universal_newlines= True ) )
+		output_str= str( subprocess.check_output( [ g_compiler_executable, file_path, "--tests-output", "-filetype", "null", "--allow-unused-names" ], universal_newlines= True ) )
 	except subprocess.CalledProcessError as called_process_error:
 		output_str= str(called_process_error.output)
 
@@ -165,10 +164,9 @@ def DoFailTest( file_path, expected_errors_list ):
 
 def DoSuccessTest( file_path ):
 	file_name= os.path.basename( file_path )
-	object_file= file_name + "_temp.o"
 	executable_file= file_name + "_temp.exe"
 
-	compiler_args= [ g_compiler_executable, file_path, "-o", object_file, "--allow-unused-names" ]
+	compiler_args= [ g_compiler_executable, file_path, "-o", executable_file, "--filetype", "exe", "--allow-unused-names", "-Wl=-lpthread" ]
 	if g_use_position_independent_code :
 		compiler_args= compiler_args + [ "--relocation-model", "pic" ]
 
@@ -176,18 +174,11 @@ def DoSuccessTest( file_path ):
 		print( "Compilation failed" )
 		return 1
 
-	if subprocess.call( [ g_cpp_compiler_executable, object_file, "-o", executable_file, "-lpthread" ] ) != 0:
-		print( "linking failed" )
-		os.remove( object_file )
-		return 1
-
 	if subprocess.call( [ os.path.abspath( executable_file ) ] ) != 0:
 		print( "running failed" )
-		os.remove( object_file )
 		os.remove( executable_file )
 		return 1
 
-	os.remove( object_file )
 	os.remove( executable_file )
 	return 0
 
@@ -243,10 +234,6 @@ def main():
 	if args.compiler_executable is not None:
 		global g_compiler_executable
 		g_compiler_executable= args.compiler_executable
-
-	if args.cpp_compiler_executable is not None:
-		global g_cpp_compiler_executable
-		g_cpp_compiler_executable= args.cpp_compiler_executable
 
 	if args.use_position_independent_code is not None:
 		global g_use_position_independent_code
