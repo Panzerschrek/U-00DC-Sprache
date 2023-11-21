@@ -955,3 +955,16 @@ def OperatorsWithNodeLock_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def OperatorsWithNodeLock_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			t= move(t); // Accessing in the left part of assignment operaotr a variable moved in right part.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 5 ) )

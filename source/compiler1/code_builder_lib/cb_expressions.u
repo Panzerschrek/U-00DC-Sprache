@@ -3111,6 +3111,11 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 		var VariableLite r_var= r_var_ptr.lock_imut().deref();
 
+		if( r_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+
 		// Prevent modification of r_var during l_val calculation.
 		var Variable mut r_var_lock_node_variable
 		{
@@ -3126,9 +3131,16 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
-		halt if( r_var.t != l_var.t ); // Checked before
+
+		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
 
 		function_context.references_graph.RemoveNode( r_var_lock_node );
+
+		if( l_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+		debug_assert( r_var.t == l_var.t ); // Checked before
 
 		if( !l_var.t.IsCopyAssignable() )
 		{
@@ -3140,7 +3152,6 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
 			return ErrorValue();
 		}
-		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
 
@@ -3156,6 +3167,11 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
 
+		if( l_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+
 		var Variable mut l_var_lock_node_variable
 		{
 			.t= l_var.t,
@@ -3170,11 +3186,16 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 		var VariableLite r_var= r_var_ptr.lock_imut().deref();
-		halt if( l_var.t != r_var.t ); // Checked before
+
+		function_context.references_graph.EnsureHaveNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
 
 		function_context.references_graph.RemoveNode( l_var_lock_node );
 
-		function_context.references_graph.EnsureHaveNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
+		if( r_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+		debug_assert( l_var.t == r_var.t ); // Checked before
 
 		if( !l_var.t.IsEqualityComparable() )
 		{

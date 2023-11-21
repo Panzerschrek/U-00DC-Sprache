@@ -1995,6 +1995,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	if( op == OverloadedOperator::Assign )
 	{
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
+		if( r_var->type == invalid_type_ )
+			return ErrorValue();
 
 		const VariablePtr r_var_lock=
 			Variable::Create(
@@ -2008,39 +2010,43 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
+
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var->name );
 
+		function_context.variables_state.RemoveNode( r_var_lock );
+
+		if( l_var->type == invalid_type_ )
+			return ErrorValue();
 		U_ASSERT( l_var->type == r_var->type ); // Checked before.
+
 		if( !l_var->type.IsCopyAssignable() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var->type );
-			function_context.variables_state.RemoveNode( r_var_lock );
-			return ErrorValue();
-		}
-		if( l_var->value_type != ValueType::ReferenceMut )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
-			function_context.variables_state.RemoveNode( r_var_lock );
 			return ErrorValue();
 		}
 
-		SetupReferencesInCopyOrMove( function_context, l_var, r_var_lock, names.GetErrors(), src_loc );
+		if( l_var->value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			return ErrorValue();
+		}
+
+		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names.GetErrors(), src_loc );
 
 		BuildCopyAssignmentOperatorPart(
 			l_var->llvm_value, r_var->llvm_value,
 			l_var->type,
 			function_context );
 
-		function_context.variables_state.RemoveNode( r_var_lock );
-
-		const VariablePtr result=
-			Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
-		return result;
+		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
 	else if( op == OverloadedOperator::CompareEqual )
 	{
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
+		if( l_var->type == invalid_type_ )
+			return ErrorValue();
+
 		const VariablePtr l_var_lock=
 			Variable::Create(
 				l_var->type,
@@ -2058,6 +2064,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.variables_state.RemoveNode( l_var_lock );
 
+		if( r_var->type == invalid_type_ )
+			return ErrorValue();
 		U_ASSERT( r_var->type == l_var->type ); // Checked before.
 
 		if( !l_var->type.IsEqualityComparable() )
