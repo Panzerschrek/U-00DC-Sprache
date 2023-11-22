@@ -741,10 +741,10 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 				},
 				"promise" );
 
-
 		if( result->value_type == ValueType::Value )
 		{
 			result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType(), nullptr, result->name );
+			CreateLifetimeStart( function_context, result->llvm_value );
 			CopyBytes( result->llvm_value, promise, return_type, function_context );
 		}
 		else
