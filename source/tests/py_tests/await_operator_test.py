@@ -359,3 +359,29 @@ def AwaitForNonAsyncFunctionValue_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
+
+
+def AwaitOutsideAsyncFunction_Test0():
+	c_program_text= """
+		fn async SomeFunc();
+		fn Foo()
+		{
+			SomeFunc().await; // await in a regular function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+
+
+def AwaitOutsideAsyncFunction_Test1():
+	c_program_text= """
+		fn async SomeFunc();
+		fn generator Foo()
+		{
+			SomeFunc().await;  // await in a generator function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )

@@ -643,6 +643,27 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		return ErrorValue();
 	}
 
+	if( function_context.coro_suspend_bb == nullptr )
+	{
+		REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+		return ErrorValue();
+	}
+	if( function_context.return_type != std::nullopt )
+	{
+		if( const auto function_class_type= function_context.return_type->GetClassType() )
+		{
+			if( const auto function_coroutine_type_description= std::get_if<CoroutineTypeDescription>( &function_class_type->generated_class_data ) )
+			{
+				if( function_coroutine_type_description->kind != CoroutineKind::AsyncFunc )
+				{
+					// Prevent usage of "await" in generators.
+					REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+					return ErrorValue();
+				}
+			}
+		}
+	}
+
 	const Type& return_type= coroutine_type_description->return_type;
 
 	const VariableMutPtr result=
