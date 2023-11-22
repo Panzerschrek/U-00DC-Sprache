@@ -278,3 +278,31 @@ def AwaitOperator_Test8():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ImmediateValueExpectedInAwaitOperator_Test0():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn async Bar()
+		{
+			auto f= SomeFunc();
+			f.await; // Expected immediate value, got immutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
+
+
+def ImmediateValueExpectedInAwaitOperator_Test1():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn async Bar()
+		{
+			auto mut f= SomeFunc();
+			f.await; // Expected immediate value, got mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )

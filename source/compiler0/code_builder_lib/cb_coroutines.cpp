@@ -623,6 +623,12 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 	if( async_func_variable->type == invalid_type_ )
 		return ErrorValue();
 
+	if( async_func_variable->value_type != ValueType::Value )
+	{
+		REPORT_ERROR( ImmediateValueExpectedInAwaitOperator, names.GetErrors(), src_loc );
+		return ErrorValue();
+	}
+
 	// TODO - generate errors if expression is not an async function.
 
 	const Class* const class_type= async_func_variable->type.GetClassType();

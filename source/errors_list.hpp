@@ -236,3 +236,6 @@ PROCESS_ERROR( VirtualCoroutine, "coroutine method can't be virtual." )
 PROCESS_ERROR( AutoReturnCoroutine, "auto return is not supported for coroutine functions." )
 PROCESS_ERROR( CoroutineSpecialMethod, "Special method can't be coroutine." )
 PROCESS_ERROR( CoroutineNonSyncRequired, "Coroutine has non-sync arguments and/or return value - \"non_sync\" tag required for it." )
+
+// Await operator
+PROCESS_ERROR( ImmediateValueExpectedInAwaitOperator, "Expected immediate value in \"await\" operator." )
