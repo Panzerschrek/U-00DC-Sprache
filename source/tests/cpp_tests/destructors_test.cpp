@@ -3082,6 +3082,102 @@ U_TEST(IfCoroAdvance_Destruction_Test3)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 998, 222343, 787, 222343 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async WaitAndRet42() : i32
+		{
+			yield;
+			return 42;
+		}
+		fn async Bar( S s )
+		{
+			var S s1( 887 );
+			WaitAndRet42().await;
+			var S s2( 888778 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar( S( 676 ) );
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			var S s( 786 );
+			// Destroy local "s" here.
+			// Destroy "f" here, including its local "s1" and argument "s", because it is not finished yet. Local variable "s2" of "f" should not be constructed at destruction point.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 786, 887, 676 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async WaitAndRet32() : i32
+		{
+			yield;
+			return 32;
+		}
+		fn async Bar( S s )
+		{
+			var S s1( 222 );
+			WaitAndRet32().await;
+			var S s2( 333 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar( S( 111 ) );
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			if_coro_advance( x : f )
+			{
+				// Internals of "f" should be destroyed because it is finished.
+				var S s( 444 );
+				// Destroy local "s" here.
+			}
+			else { halt; } // Second advance should finish.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 333, 222, 111, 444 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=
