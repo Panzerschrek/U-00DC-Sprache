@@ -385,3 +385,65 @@ def AwaitOutsideAsyncFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+
+
+def AwaitOperatorResultReferences_Test0():
+	c_program_text= """
+		fn async Pass( i32& x ) : i32&;
+		fn async Foo()
+		{
+			var i32 mut x= 0;
+			auto& ref= Pass(x).await;
+			++x; // Error - there is a reference to "x" - "ref".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AwaitOperatorResultReferences_Test1():
+	c_program_text= """
+		fn async Pass( i32& x ) : i32&;
+		var [ [ char8, 2 ], 0 ] foo_return_references[];
+		fn async Foo( i32& x ) : i32 & @(foo_return_references)
+		{
+			return Pass(x).await; // Result of "await" is linked with param "x", but it's not allowed to return a reference to this param.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def AwaitOperatorResultReferences_Test2():
+	c_program_text= """
+		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] wrap_return_inner_references[ [ "0_" ] ];
+		fn async Wrap( i32& x ) : S @(wrap_return_inner_references);
+		fn async Foo()
+		{
+			var i32 mut x= 0;
+			var S s= Wrap(x).await;
+			++x; // Error - there is a reference to "x" inside "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def AwaitOperatorResultReferences_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] wrap_return_inner_references[ [ "0_" ] ];
+		fn async Wrap( i32& x ) : S @(wrap_return_inner_references);
+		var tup[ [ [ char8, 2 ], 0 ] ] foo_return_inner_references[ [] ];
+		fn async Foo( i32& x ) : S @(foo_return_inner_references)
+		{
+			return Wrap(x).await; // Result of "await" contains a reference to param "x" inside, but it's not allowed to return an inner reference to this param.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )

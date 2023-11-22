@@ -753,11 +753,30 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 
 	if( result->value_type == ValueType::Value )
 	{
-		// TODO - setup inner references.
+		for( size_t i= 0; i < std::min( result->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
+		{
+			for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
+			{
+				U_ASSERT( param_reference.first == 0u );
+				U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+				if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
+					function_context.variables_state.TryAddLink(
+						async_func_variable->inner_reference_nodes[param_reference.second],
+						result->inner_reference_nodes[i],
+						names.GetErrors(),
+						src_loc );
+			}
+		}
 	}
 	else
 	{
-		// TODO - setup references.
+		for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_references )
+		{
+			U_ASSERT( param_reference.first == 0u );
+			U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+			if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
+				function_context.variables_state.TryAddLink( async_func_variable->inner_reference_nodes[param_reference.second], result, names.GetErrors(), src_loc );
+		}
 	}
 
 	// Move async function value, call destructor and create lifetime end.
