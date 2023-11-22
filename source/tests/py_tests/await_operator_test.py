@@ -280,6 +280,45 @@ def AwaitOperator_Test8():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def AwaitOperator_Test9():
+	c_program_text= """
+		fn async SimpleFunc() : i32
+		{
+			yield;
+			yield;
+			yield;
+			yield;
+			return 100000;
+		}
+		fn async SimpleFuncWrapper() : i32
+		{
+			// This function will execute "yield" (hidden inside "await") so many times as "SimpleFunc" does + 2.
+			yield;
+			yield;
+			return SimpleFunc().await + 15;
+		}
+		fn Foo()
+		{
+			auto mut f= SimpleFuncWrapper();
+			auto mut result= 0;
+			auto mut num_iterations= 0s;
+			loop
+			{
+				++num_iterations;
+				if_coro_advance( x : f )
+				{
+					result= x;
+					break;
+				}
+			}
+			halt if( result != 100000 + 15 );
+			halt if( num_iterations != 7s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ImmediateValueExpectedInAwaitOperator_Test0():
 	c_program_text= """
 		fn async SomeFunc() : i32;
