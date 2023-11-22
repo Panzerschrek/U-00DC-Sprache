@@ -347,6 +347,18 @@ def ImmediateValueExpectedInAwaitOperator_Test1():
 	assert( HaveError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
 
 
+def ImmediateValueExpectedInAwaitOperator_Test3():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		fn async Bar()
+		{
+			auto mut f= SomeFunc();
+			move(f).await; // Ok - use an immediate value obtained as result of "move" operator.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AwaitForNonAsyncFunctionValue_Test0():
 	c_program_text= """
 		fn SomeFunc() : i32; // Regular (non-async) function.
@@ -400,6 +412,18 @@ def AwaitForNonAsyncFunctionValue_Test3():
 	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
 
 
+def AwaitForNonAsyncFunctionValue_Test4():
+	c_program_text= """
+		fn async Bar()
+		{
+			false.await; // await for boolean constant.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 4 ) )
+
+
 def AwaitOutsideAsyncFunction_Test0():
 	c_program_text= """
 		fn async SomeFunc();
@@ -424,6 +448,66 @@ def AwaitOutsideAsyncFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+
+
+def AwaitOutsideAsyncFunction_Test2():
+	c_program_text= """
+		fn async SomeFunc();
+		struct S
+		{
+			fn constructor()
+			{
+				SomeFunc().await; // await in a regular function - constructor.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 7 ) )
+
+
+def AwaitOutsideAsyncFunction_Test3():
+	c_program_text= """
+		fn async SomeFunc() : i32;
+		struct S
+		{
+			var i32 x= SomeFunc().await; // await in class field own initializer - this is impossible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+
+
+def AwaitOutsideAsyncFunction_Test4():
+	c_program_text= """
+		fn async SomeFunc() : bool;
+		struct S non_sync( SomeFunc().await ) // await in non-sync expression isn't possible.
+		{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
+
+
+def AwaitOutsideAsyncFunction_Test5():
+	c_program_text= """
+		fn async SomeFunc( f32 x ) : f32;
+		var f32 x= SomeFunc( 1.555f ).await; // await isn't possible in global variable initializer.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
+
+
+def AwaitOutsideAsyncFunction_Test6():
+	c_program_text= """
+		fn async SomeFunc( f32 x ) : f32;
+		auto x= SomeFunc( 1.555f ).await; // await isn't possible in global auto variable initializer.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
 
 
 def AwaitOperatorResultReferences_Test0():
