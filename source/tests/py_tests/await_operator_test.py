@@ -306,3 +306,56 @@ def ImmediateValueExpectedInAwaitOperator_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
+
+
+def AwaitForNonAsyncFunctionValue_Test0():
+	c_program_text= """
+		fn SomeFunc() : i32; // Regular (non-async) function.
+		fn async Bar()
+		{
+			SomeFunc().await;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
+
+
+def AwaitForNonAsyncFunctionValue_Test1():
+	c_program_text= """
+		fn async Bar()
+		{
+			var i32 mut x= 121212;
+			move(x).await; // await for fundamental type value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
+
+
+def AwaitForNonAsyncFunctionValue_Test2():
+	c_program_text= """
+		struct S{}
+		fn MakeS() : S;
+		fn async Bar()
+		{
+			MakeS().await; // await for struct type value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 6 ) )
+
+
+def AwaitForNonAsyncFunctionValue_Test3():
+	c_program_text= """
+		fn generator SomeGen();
+		fn async Bar()
+		{
+			SomeGen().await; // await for generator (not an async function).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )

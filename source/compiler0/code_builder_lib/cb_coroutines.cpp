@@ -629,15 +629,19 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		return ErrorValue();
 	}
 
-	// TODO - generate errors if expression is not an async function.
-
 	const Class* const class_type= async_func_variable->type.GetClassType();
 	if( class_type == nullptr )
+	{
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names.GetErrors(), src_loc );
 		return ErrorValue();
+	}
 
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data );
 	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
+	{
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names.GetErrors(), src_loc );
 		return ErrorValue();
+	}
 
 	const Type& return_type= coroutine_type_description->return_type;
 

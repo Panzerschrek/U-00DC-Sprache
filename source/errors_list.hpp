@@ -239,3 +239,4 @@ PROCESS_ERROR( CoroutineNonSyncRequired, "Coroutine has non-sync arguments and/o
 
 // Await operator
 PROCESS_ERROR( ImmediateValueExpectedInAwaitOperator, "Expected immediate value in \"await\" operator." )
+PROCESS_ERROR( AwaitForNonAsyncFunctionValue, "\await\" operator is used for a value that is not an async function." )
