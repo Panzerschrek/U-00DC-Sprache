@@ -143,6 +143,9 @@ public:
 	// Do this in order to stop references graph search on these nodes while performing reference pollution.
 	bool is_variable_inner_reference_node= false;
 
+	// If true - this is a temporary variable that should not be deleted even if it has no outgoing links.
+	bool preserve_temporary= false;
+
 private:
 	Variable(
 		Type in_type,

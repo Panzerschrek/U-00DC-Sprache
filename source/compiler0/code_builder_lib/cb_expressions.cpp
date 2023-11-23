@@ -131,7 +131,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		// Lock variable. We must prevent modification of this variable in index calcualtion.
 		// Do not forget to unregister it in case of error-return!
-		const VariablePtr variable_lock=
+		const VariableMutPtr variable_lock=
 			Variable::Create(
 				variable->type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -141,6 +141,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 		function_context.variables_state.TryAddInnerLinks( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 
+		variable_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, variable_lock );
+
 		const VariablePtr index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names, function_context );
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
@@ -149,7 +152,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc, "any integer", index->type );
-			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
 
@@ -218,7 +220,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.TryAddLink( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
 		function_context.variables_state.TryAddInnerLinks( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
 
-		function_context.variables_state.RemoveNode( variable_lock );
+		function_context.variables_state.MoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
 		return result;

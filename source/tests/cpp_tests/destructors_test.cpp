@@ -3178,6 +3178,100 @@ U_TEST(AwaitOperator_Destruction_Test1)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 333, 222, 111, 444 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async WaitAndRet32() : u32
+		{
+			yield;
+			return 0u;
+		}
+		fn async Bar()
+		{
+			var [ S, 3 ] s_arr[ ( 98765 ), (55), (33321) ];
+			auto x= s_arr[ WaitAndRet32().await ].x;
+			var S s( 333 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+			// Local array variable "s_arr" should be destroyed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 98765, 55, 33321 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async WaitAndRet32() : u32
+		{
+			yield;
+			return 1u;
+		}
+		fn MakeArr() : [ S, 3 ]
+		{
+			var [ S, 3 ] mut s_arr[ ( 777 ), (666), (555) ];
+			return move(s_arr);
+		}
+		fn async Bar()
+		{
+			auto x= MakeArr()[ WaitAndRet32().await ].x; // Should destoy temporary value of an array type if the function destroys in this "await".
+			var S s( 333 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+			// Local array variable "s_arr" should be destroyed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 777, 666, 555 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=

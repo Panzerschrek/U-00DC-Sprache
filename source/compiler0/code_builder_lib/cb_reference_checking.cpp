@@ -134,7 +134,17 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 			{
 				// Destroy variables without links.
 				// Destroy all references, because all actual references that holds values should not yet be registered.
-				if( ( variable->value_type != ValueType::Value || !function_context.variables_state.HaveOutgoingLinks( variable ) ) )
+				// Preserve variables with "preserve_temporary" flag set, unless they are already moved.
+				if( variable->preserve_temporary )
+				{
+					if( function_context.variables_state.NodeMoved( variable ) )
+					{
+						function_context.variables_state.RemoveNode( variable );
+						return true;
+					}
+					return false;
+				}
+				else if( ( variable->value_type != ValueType::Value || !function_context.variables_state.HaveOutgoingLinks( variable ) ) )
 				{
 					// Emit destructions call code only if it is a non-moved variable.
 					if( variable->value_type == ValueType::Value && !function_context.is_functionless_context && !function_context.variables_state.NodeMoved( variable ) )
