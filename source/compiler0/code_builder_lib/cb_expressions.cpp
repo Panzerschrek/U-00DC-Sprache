@@ -3303,26 +3303,30 @@ Value CodeBuilder::DoCallFunction(
 			}
 
 			// Lock references.
-			const VariablePtr arg_node=
+			const VariableMutPtr arg_node=
 				Variable::Create(
 				param.type,
 				param.value_type,
 				Variable::Location::Pointer,
-				"reference_arg " + std::to_string(i) );
-			args_nodes[arg_number]= arg_node;
+				"reference_arg " + std::to_string(i),
+				llvm_args[arg_number] );
 			function_context.variables_state.AddNode( arg_node );
 			function_context.variables_state.TryAddLink( expr, arg_node, names.GetErrors(), src_loc );
 			function_context.variables_state.TryAddInnerLinks( expr, arg_node, names.GetErrors(), src_loc );
+
+			// Register node for destruction in case of return in further args evaluation.
+			arg_node->preserve_temporary= true;
+			RegisterTemporaryVariable( function_context, arg_node );
+			args_nodes[arg_number]= arg_node;
 		}
 		else
 		{
-			const VariablePtr arg_node=
+			const VariableMutPtr arg_node=
 				Variable::Create(
 					param.type,
 					ValueType::Value,
 					Variable::Location::Pointer, // TODO - is this correct?
 					"value_arg_" + std::to_string(i) );
-			args_nodes[arg_number]= arg_node;
 
 			function_context.variables_state.AddNode( arg_node );
 
@@ -3350,6 +3354,7 @@ Value CodeBuilder::DoCallFunction(
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				llvm_args[arg_number]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+				arg_node->llvm_value= llvm_args[arg_number];
 
 				if( expr->constexpr_value != nullptr )
 					constant_llvm_args.push_back( expr->constexpr_value );
@@ -3380,6 +3385,7 @@ Value CodeBuilder::DoCallFunction(
 					if( single_scalar_type == nullptr )
 					{
 						llvm_args[arg_number]= expr->llvm_value;
+						arg_node->llvm_value= expr->llvm_value;
 						if( !function_context.is_functionless_context )
 							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
 					}
@@ -3387,6 +3393,7 @@ Value CodeBuilder::DoCallFunction(
 					{
 						if( !function_context.is_functionless_context )
 						{
+							arg_node->llvm_value= expr->llvm_value; // TODO - is it safe to call a destructor for a value which lifetime was ended?
 							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
 							CreateLifetimeEnd( function_context, expr->llvm_value );
 							llvm_args[arg_number]= value;
@@ -3428,10 +3435,12 @@ Value CodeBuilder::DoCallFunction(
 							llvm_args[arg_number]= arg_copy;
 							// Save address into temporary container to call lifetime.end after call.
 							value_args_for_lifetime_end_call.push_back( arg_copy );
+							arg_node->llvm_value= arg_copy;
 						}
 						else
 						{
 							// If this is a single scalar type - just load value and end lifetime of address of copy.
+							arg_node->llvm_value= arg_copy; // TODO - is it safe to call a destructor for a value which lifetime was ended?
 							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
 							CreateLifetimeEnd( function_context, arg_copy );
 							llvm_args[arg_number]= value;
@@ -3440,6 +3449,11 @@ Value CodeBuilder::DoCallFunction(
 				}
 			}
 			else U_ASSERT( false );
+
+			// Register node for destruction in case of return in further args evaluation.
+			arg_node->preserve_temporary= true;
+			RegisterTemporaryVariable( function_context, arg_node );
+			args_nodes[arg_number]= arg_node;
 		}
 
 		// Destroy unused temporary variables after each argument evaluation.
@@ -3619,8 +3633,13 @@ Value CodeBuilder::DoCallFunction(
 			function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_node, dst_node, names.GetErrors(), call_src_loc );
 	}
 
+	// Move arg nodes.
+	// It is safe for variable-args, since the callee is responsible for its destruction.
 	for( const VariablePtr& node : args_nodes )
-		function_context.variables_state.RemoveNode( node );
+	{
+		if( node != nullptr )
+			function_context.variables_state.MoveNode( node );
+	}
 	args_nodes.clear();
 
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );

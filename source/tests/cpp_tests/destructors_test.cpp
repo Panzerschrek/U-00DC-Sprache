@@ -3272,6 +3272,194 @@ U_TEST(AwaitOperator_Destruction_Test3)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 777, 666, 555 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+			fn GetXScaled( this, i32 y ) : i32 { return x * y; }
+		}
+		fn async WaitAndRet() : i32
+		{
+			yield;
+			return 3;
+		}
+		fn async Bar()
+		{
+			var S s( 675 );
+			s.GetXScaled( WaitAndRet().await );
+			var S s2( 88888 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+			// Local array variable "s" should be destroyed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 675 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+			fn GetXScaled( this, i32 y ) : i32 { return x * y; }
+		}
+		fn async WaitAndRet() : i32
+		{
+			yield;
+			return 3;
+		}
+		fn async Bar()
+		{
+			var S s( 5654 );
+			s.GetXScaled( WaitAndRet().await );
+			var S s2( 765499 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			if_coro_advance( x : f )
+			{
+				// Destroy here all inernals of "f".
+				var S s(998);
+			} // Destroy here local "s"
+			else { halt; } // Second advance should finish.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 765499, 5654, 998 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async WaitAndRet() : i32
+		{
+			yield;
+			return 3;
+		}
+		fn GetXScaled( S& s, i32 y ) : i32 { return s.x * y; }
+		fn async Bar()
+		{
+			var S s1( 771122 );
+			GetXScaled( S(44455), WaitAndRet().await ); // Should destroy temporary of type "S" (first argument) if "await" isn't resumed.
+			var S s2( 787878 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+			// Local temporary of type "S" should be destroyed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 44455, 771122 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async WaitAndRet() : i32
+		{
+			yield;
+			return 6;
+		}
+		fn GetXScaled( S s, i32 y ) : i32 { return s.x * y; }
+		fn async Bar()
+		{
+			var S s1( 876 );
+			GetXScaled( S(543), WaitAndRet().await ); // Should destroy value arg of type "S" (first argument) if "await" isn't resumed.
+			var S s2( 210 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+			// Local temporary of type "S" should be destroyed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 543, 876 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=
