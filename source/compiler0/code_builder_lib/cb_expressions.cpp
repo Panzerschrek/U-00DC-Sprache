@@ -2001,7 +2001,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( r_var->type == invalid_type_ )
 			return ErrorValue();
 
-		const VariablePtr r_var_lock=
+		const VariableMutPtr r_var_lock=
 			Variable::Create(
 				r_var->type,
 				ValueType::ReferenceImut,
@@ -2012,12 +2012,15 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddLink( r_var, r_var_lock, names.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names.GetErrors(), src_loc );
 
+		r_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, r_var_lock );
+
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
 
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var->name );
 
-		function_context.variables_state.RemoveNode( r_var_lock );
+		function_context.variables_state.MoveNode( r_var_lock );
 
 		if( l_var->type == invalid_type_ )
 			return ErrorValue();
@@ -2050,7 +2053,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( l_var->type == invalid_type_ )
 			return ErrorValue();
 
-		const VariablePtr l_var_lock=
+		const VariableMutPtr l_var_lock=
 			Variable::Create(
 				l_var->type,
 				ValueType::ReferenceImut,
@@ -2061,11 +2064,14 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddLink( l_var, l_var_lock, names.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names.GetErrors(), src_loc );
 
+		l_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, l_var_lock );
+
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var->name );
 
-		function_context.variables_state.RemoveNode( l_var_lock );
+		function_context.variables_state.MoveNode( l_var_lock );
 
 		if( r_var->type == invalid_type_ )
 			return ErrorValue();

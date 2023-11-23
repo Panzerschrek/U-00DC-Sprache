@@ -3749,6 +3749,98 @@ U_TEST(AwaitOperator_Destruction_Test13)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 126, 125, 124, 123 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test14)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			op=( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async PassArr( [ S, 1 ] &mut arr ) : [ S, 1 ] &mut
+		{
+			yield;
+			return arr;
+		}
+		fn async Bar()
+		{
+			var [ S, 1 ] mut s0[ ( 199 ) ];
+			var [ S, 1 ] mut s1[ ( 299 ) ];
+			PassArr(s0).await= s1; // Should destroy here local variables (including "s1") if "await" doesn't resume.
+			var [ S, 1 ] mut s2[ ( 399 ) ];
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 299, 199 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test15)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			op==( this, S& other ) : bool = default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async PassTup( tup[ S ]& arr ) : tup[ S ] &
+		{
+			yield;
+			return arr;
+		}
+		fn async Bar()
+		{
+			var tup[ S ] mut s0[ ( 515 ) ];
+			var tup[ S ] mut s1[ ( 525 ) ];
+			var bool eq= s1 == PassTup(s0).await; // Should destroy here local variables (including "s1") if "await" doesn't resume.
+			var tup[ S ] mut s2[ ( 535 ) ];
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 525, 515 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=
