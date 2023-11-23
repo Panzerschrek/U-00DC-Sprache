@@ -1920,7 +1920,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
-		const VariablePtr r_var_lock=
+		const VariableMutPtr r_var_lock=
 			Variable::Create(
 				r_var_real->type,
 				ValueType::ReferenceMut,
@@ -1931,11 +1931,14 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		function_context.variables_state.TryAddLink( r_var_real, r_var_lock, names.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( r_var_real, r_var_lock, names.GetErrors(), src_loc );
 
+		r_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, r_var_lock );
+
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariable();
 
 		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_lock, names.GetErrors(), src_loc );
 
-		function_context.variables_state.RemoveNode( r_var_lock );
+		function_context.variables_state.MoveNode( r_var_lock );
 		function_context.variables_state.MoveNode( r_var_real );
 
 		if( !function_context.is_functionless_context )
@@ -1948,9 +1951,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CreateLifetimeEnd( function_context, r_var_real->llvm_value );
 		}
 
-		const VariablePtr move_result=
-			Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
-		return move_result;
+		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
