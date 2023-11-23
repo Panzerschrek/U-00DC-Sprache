@@ -501,7 +501,7 @@ U_TEST( ArgVariableLifetime_Test3 )
 		}
 		fn Foo()
 		{
-			Bar(S()); // Create lifetime start here, load value into register and than create lifetime end.
+			Bar(S()); // Create lifetime start here, load value into register, perform the call and only than create lifetime end.
 		}
 	)";
 
@@ -514,17 +514,17 @@ U_TEST( ArgVariableLifetime_Test3 )
 	engine->runFunction( function, {} );
 
 	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 5 );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[3].address );
 
 	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeEnd );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd );
 	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd );
 
 	const int32_t expected_x= 99596;
-	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[2].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
 U_TEST( ReturnValueLifetime_Test0 )

@@ -3332,7 +3332,7 @@ Value CodeBuilder::DoCallFunction(
 				Variable::Create(
 					param.type,
 					ValueType::Value,
-					Variable::Location::Pointer, // TODO - is this correct?
+					Variable::Location::Pointer, // Set later
 					"value_arg_" + std::to_string(i) );
 
 			function_context.variables_state.AddNode( arg_node );
@@ -3361,10 +3361,12 @@ Value CodeBuilder::DoCallFunction(
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				llvm_args[arg_number]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
-				arg_node->llvm_value= llvm_args[arg_number];
 
 				if( expr->constexpr_value != nullptr )
 					constant_llvm_args.push_back( expr->constexpr_value );
+
+				arg_node->llvm_value= llvm_args[arg_number];
+				arg_node->location= Variable::Location::LLVMRegister;
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
@@ -3389,22 +3391,16 @@ Value CodeBuilder::DoCallFunction(
 					// Do not call copy constructors - just move.
 					function_context.variables_state.MoveNode( expr );
 
-					if( single_scalar_type == nullptr )
+					if( !function_context.is_functionless_context )
 					{
-						llvm_args[arg_number]= expr->llvm_value;
+						if( single_scalar_type == nullptr )
+							llvm_args[arg_number]= expr->llvm_value;
+						else
+							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
+
+						// Save address into temporary container to call lifetime.end after call.
+						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
 						arg_node->llvm_value= expr->llvm_value;
-						if( !function_context.is_functionless_context )
-							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
-					}
-					else
-					{
-						if( !function_context.is_functionless_context )
-						{
-							arg_node->llvm_value= expr->llvm_value; // TODO - is it safe to call a destructor for a value which lifetime was ended?
-							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
-							CreateLifetimeEnd( function_context, expr->llvm_value );
-							llvm_args[arg_number]= value;
-						}
 					}
 				}
 				else
@@ -3440,20 +3436,20 @@ Value CodeBuilder::DoCallFunction(
 						{
 							// Pass by hidden reference.
 							llvm_args[arg_number]= arg_copy;
-							// Save address into temporary container to call lifetime.end after call.
-							value_args_for_lifetime_end_call.push_back( arg_copy );
-							arg_node->llvm_value= arg_copy;
 						}
 						else
 						{
-							// If this is a single scalar type - just load value and end lifetime of address of copy.
-							arg_node->llvm_value= arg_copy; // TODO - is it safe to call a destructor for a value which lifetime was ended?
-							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
-							CreateLifetimeEnd( function_context, arg_copy );
-							llvm_args[arg_number]= value;
+							// If this is a single scalar type - just load value.
+							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
 						}
+
+						// Save address into temporary container to call lifetime.end after call.
+						value_args_for_lifetime_end_call.push_back( arg_copy );
+						arg_node->llvm_value= arg_copy;
 					}
 				}
+
+				arg_node->location= Variable::Location::Pointer;
 			}
 			else U_ASSERT( false );
 
@@ -3573,8 +3569,10 @@ Value CodeBuilder::DoCallFunction(
 			result->llvm_value= llvm::UndefValue::get( function_type.return_type.GetLLVMType()->getPointerTo() );
 	}
 
-	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
+	// Call "lifetime.end" just right after call for value args.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
+	// Do this only after call even for passed by single scalar values,
+	// because we still need to have an alive address during furter args evaluation in order to call properly destructor in case of return or await.
 	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
 		CreateLifetimeEnd( function_context, value_arg_var );
 
