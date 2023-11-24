@@ -1758,7 +1758,22 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 
 			// Destroy variables without links.
 			// Destroy all references, because all actual references that holds values should not yet be registered.
-			if( variable.value_type != ValueType::Value || !function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
+			// Preserve variables with "preserve_temporary" flag set, unless they are already moved.
+			if( variable.preserve_temporary )
+			{
+				if( function_context.references_graph.NodeIsMoved( variable_ptr ) )
+				{
+					function_context.references_graph.RemoveNode( variable_ptr );
+					// Remove this variable from the container.
+				}
+				else
+				{
+					// Preserve this variable in the container.
+					function_context.variables_frames.back()[i_dst]= variable_ptr;
+					++i_dst;
+				}
+			}
+			else if( variable.value_type != ValueType::Value || !function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
 			{
 				// Emit destructions call code only if it is a non-moved variable.
 				if( variable.value_type == ValueType::Value && !function_context.is_functionless_context && !function_context.references_graph.NodeIsMoved( variable_ptr ) )
