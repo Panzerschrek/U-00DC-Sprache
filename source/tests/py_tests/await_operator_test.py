@@ -631,3 +631,34 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test4():
+	c_program_text= """
+		struct S
+		{
+			i32& x;
+			i32 y;
+		}
+		fn async Bar() : i32;
+		fn async Foo()
+		{
+			// For now this code produces "DestroyedVariableStillHaveReferences" error for "x".
+			// This is due to a limitation of internal compiler structures.
+			// "await" triggers destructors call as "return", since an async function may not be resumed after "await"
+			// and thus all alive variables must be destroyed.
+			// A variable before its initializer is not finished (including struct member initializer) is not registered for destruction,
+			// since it's invalid to call destructor for a variable that is not initialized yet.
+			// But a reference pollution may happen during initialization,
+			// which leads to an existence of a variable that has reference(s) to another variable(s),
+			// before this not-fully-initialuized varaible is regestered for destruction.
+			// Now if a destruction is triggered between pollution and initialization finish (like with "await"),
+			// the compiler can't remove links from this variable to destination variable and produces "DestroyedVariableStillHaveReferences" error.
+
+			var i32 x= 0;
+			var S s{ .x= x, .y= Bar().await };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 23 ) )
