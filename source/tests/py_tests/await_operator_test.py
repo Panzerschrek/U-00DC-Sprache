@@ -570,3 +570,64 @@ def AwaitOperatorResultReferences_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
+
+
+
+def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test0():
+	c_program_text= """
+		fn async Pass( i32& x ) : i32&;
+		fn async Foo()
+		{
+			auto& x= Pass( 66 ).await; // Create a reference to a temporary passed through async function call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test1():
+	c_program_text= """
+		fn async Pass( f32& x ) : f32&;
+		fn Bar() : f32;
+		fn async Foo()
+		{
+			var f32& f= Pass( Bar() ).await; // Create a reference to a temporary-call result passed through async function call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test2():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] pass_return_inner_references[ [ "0a" ] ];
+		fn async Pass( S s ) : S @(pass_return_inner_references);
+		var tup[ [ [ char8, 2 ], 1 ] ] make_s_return_inner_references[ [ "0_" ] ];
+		fn MakeS( i32& x ) : S @(make_s_return_inner_references);
+		fn async Foo()
+		{
+			var S s= Pass( MakeS( 789 ) ).await; // Create a reference to a temporary passed through async function call inside a variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 9 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] pass_return_inner_references[ [ "0a" ] ];
+		fn async Pass( S s ) : S @(pass_return_inner_references);
+		var tup[ [ [ char8, 2 ], 1 ] ] make_s_return_inner_references[ [ "0_" ] ];
+		fn MakeS( i32& x ) : S @(make_s_return_inner_references);
+		fn async Foo()
+		{
+			var i32 some_local= 0;
+			var S s= Pass( MakeS( some_local ) ).await; // Ok - "s" will contain a reference to the "some_local" variable.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
