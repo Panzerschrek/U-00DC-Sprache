@@ -699,6 +699,12 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 	var ust::optional</ CoroutineTypeDescription /> mut coroutine_type_description_opt;
 	if_var( &coroutine_type_description_inner : class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
 	{
+		if( coroutine_type_description_inner.kind != CoroutineKind::AsyncFunc )
+		{
+			REPORT_ERROR( AwaitForNonAsyncFunctionValue, names_scope, src_loc )
+			return ErrorValue();
+		}
+
 		coroutine_type_description_opt= coroutine_type_description_inner;
 	}
 	else

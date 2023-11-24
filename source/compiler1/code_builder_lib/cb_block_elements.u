@@ -212,7 +212,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			var VariablePtr variable_ptr= move(variable).CreatePtr();
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_reference );
-			RegisterFrameVariable( function_context, variable_ptr, 1s );
 
 			{
 				var Variable mut variable_for_initialization
@@ -247,6 +246,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			}
 
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+			RegisterFrameVariable( function_context, variable_ptr, 1s );
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
