@@ -72,6 +72,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		llvm::SmallVector<llvm::Constant*, 16> members_constants;
 
+		const bool requires_destruction= array_type->element_type.HaveDestructor();
+		llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
+
 		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
 		{
 			array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, i );
@@ -83,9 +86,29 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				members_constants.push_back( member_constant );
 			else
 				is_constant= false;
+
+			if( requires_destruction )
+			{
+				// Create temp variable for initialized member in order to call destructor in case of return or await during further array elements initialization.
+				const VariableMutPtr temp_initialized_variable=
+					Variable::Create(
+						array_type->element_type,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						variable->name + "[]",
+						array_member->llvm_value );
+				function_context.variables_state.AddNode( temp_initialized_variable );
+
+				temp_initialized_variable->preserve_temporary= true;
+				RegisterTemporaryVariable( function_context, temp_initialized_variable );
+				temp_initialized_variables.push_back( temp_initialized_variable );
+			}
 		}
 
 		function_context.variables_state.RemoveNode( array_member );
+
+		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
+			function_context.variables_state.MoveNode( temp_initialized_variable );
 
 		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
 
@@ -107,11 +130,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		bool is_constant= variable->type.CanBeConstexpr();
 		llvm::SmallVector<llvm::Constant*, 16> members_constants;
 
+		llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
+
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
+			const Type& element_type= tuple_type->element_types[i];
+
 			const VariablePtr tuple_element=
 				Variable::Create(
-					tuple_type->element_types[i],
+					element_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					variable->name + "[" + std::to_string(i) + "]",
@@ -130,7 +157,27 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				is_constant= false;
 
 			function_context.variables_state.RemoveNode( tuple_element );
+
+			if( element_type.HaveDestructor() )
+			{
+				// Create temp variable for initialized member in order to call destructor in case of return or await during further tuple elements initialization.
+				const VariableMutPtr temp_initialized_variable=
+					Variable::Create(
+						element_type,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						variable->name + "[]",
+						tuple_element->llvm_value );
+				function_context.variables_state.AddNode( temp_initialized_variable );
+
+				temp_initialized_variable->preserve_temporary= true;
+				RegisterTemporaryVariable( function_context, temp_initialized_variable );
+				temp_initialized_variables.push_back( temp_initialized_variable );
+			}
 		}
+
+		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
+			function_context.variables_state.MoveNode( temp_initialized_variable );
 
 		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
 
@@ -172,6 +219,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		constant_initializers.resize( class_type->llvm_type->getNumElements(), nullptr );
 		all_fields_are_constant= true;
 	}
+
+	llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
@@ -233,6 +282,23 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
 
 			function_context.variables_state.RemoveNode( struct_member );
+
+			if( field->type.HaveDestructor() )
+			{
+				// Create temp variable for initialized member in order to call destructor in case of return or await during further struct elements initialization.
+				const VariableMutPtr temp_initialized_variable=
+					Variable::Create(
+						 field->type,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						variable->name + "[]",
+						struct_member->llvm_value );
+				function_context.variables_state.AddNode( temp_initialized_variable );
+
+				temp_initialized_variable->preserve_temporary= true;
+				RegisterTemporaryVariable( function_context, temp_initialized_variable );
+				temp_initialized_variables.push_back( temp_initialized_variable );
+			}
 		}
 
 		if( constant_initializer == nullptr )
@@ -240,6 +306,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( all_fields_are_constant )
 			constant_initializers[field->index]= constant_initializer;
 	}
+
+	for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
+		function_context.variables_state.MoveNode( temp_initialized_variable );
 
 	for( const ClassFieldPtr& field : class_type->fields_order )
 	{
@@ -279,6 +348,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					ApplyEmptyInitializer( field->GetName(), initializer.src_loc, struct_member, names, function_context );
 
 			function_context.variables_state.RemoveNode( struct_member );
+
+			// No need to register temporary variable for initialized struct member here, since it's not possible to reurn or await from default initializer.
 		}
 
 		if( constant_initializer == nullptr )

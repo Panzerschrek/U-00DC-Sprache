@@ -3841,6 +3841,150 @@ U_TEST(AwaitOperator_Destruction_Test15)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 525, 515 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test16)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async MakeS( i32 x ) : S
+		{
+			yield;
+			return S(x);
+		}
+		fn async Bar()
+		{
+			// Should destroy already initialized array members if "await" doesn't resume.
+			var [ S, 4 ] arr[ (1001), (1002), MakeS(1003).await, (1004) ];
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 1002, 1001 } ) );
+}
+
+U_TEST(AwaitOperator_Destruction_Test17)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async MakeS( i32 x ) : S
+		{
+			yield;
+			return S(x);
+		}
+		fn async Bar()
+		{
+			// Should destroy already initialized tuple elements if "await" doesn't resume.
+			var tup[ S, S, S, S ] arr[ (1000), (2000), MakeS(3000).await, (4000) ];
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 2000, 1000 } ) );
+}
+
+
+U_TEST(AwaitOperator_Destruction_Test18)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		struct T
+		{
+			S a;
+			S b;
+			fn destructor() { DestructorCalled(-12345); }
+		}
+		struct W
+		{
+			S x;
+			T t;
+			S y;
+			fn destructor() { DestructorCalled(-67890); }
+		}
+		fn async MakeS( i32 x ) : S
+		{
+			yield;
+			return S(x);
+		}
+		fn async Bar()
+		{
+			// Should destroy already initialized struct members if "await" doesn't resume.
+			// Destructor for non-fully initialized struct should not be called.
+			var W w{ .x(1111), .t{ .a(2222), .b= MakeS(3333).await }, .y(4444) };
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 2222, 1111 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=
