@@ -917,7 +917,7 @@ private:
 	fn PrepareCoroutineBlocks( this, FunctionContext &mut function_context );
 	fn CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
 	fn AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
-	fn BuildAwait( NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc ) : Value;
+	fn BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc ) : Value;
 	fn CoroutineSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 	fn CoroutineFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
