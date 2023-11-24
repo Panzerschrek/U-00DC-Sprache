@@ -95,7 +95,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 						array_type->element_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
-						variable->name + "[]",
+						array_member->name,
 						array_member->llvm_value );
 				function_context.variables_state.AddNode( temp_initialized_variable );
 
@@ -166,7 +166,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 						element_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
-						variable->name + "[]",
+						tuple_element->name,
 						tuple_element->llvm_value );
 				function_context.variables_state.AddNode( temp_initialized_variable );
 
@@ -291,7 +291,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 						 field->type,
 						ValueType::Value,
 						Variable::Location::Pointer,
-						variable->name + "[]",
+						struct_member->name,
 						struct_member->llvm_value );
 				function_context.variables_state.AddNode( temp_initialized_variable );
 
