@@ -671,6 +671,16 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_final_suspend_bb ) );
 }
 
+fn CodeBuilder::BuildAwait( NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc ) : Value
+{
+	// TODO
+	ust::ignore_unused(names_scope);
+	ust::ignore_unused(function_context);
+	ust::ignore_unused(expression);
+	ust::ignore_unused(src_loc);
+	return ErrorValue();
+}
+
 fn CodeBuilder::CoroutineSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	unsafe

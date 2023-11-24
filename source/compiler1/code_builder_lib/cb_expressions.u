@@ -1708,6 +1708,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return ErrorValue();
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AwaitOperator& await_operator ) : Value
+{
+	return BuildAwait( names_scope, function_context, await_operator.value.deref(), await_operator.src_loc );
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
 {
 	// Do nothing with unary plus.
