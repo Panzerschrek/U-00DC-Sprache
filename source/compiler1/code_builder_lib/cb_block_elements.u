@@ -2130,12 +2130,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
 			{
-				if( sequence_expression.value_type == ValueType::Value )
-				{
-					REPORT_ERROR( ExpectedReferenceValue, names_scope, range_for_operator.src_loc )
-					function_context.references_graph.RemoveNode( variable_reference );
-					return BlockElementBuildInfo();
-				}
 				if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
