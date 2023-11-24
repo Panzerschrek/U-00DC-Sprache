@@ -265,6 +265,44 @@ U_TEST( ArrayOutOfBoundsShouldHalt2 )
 	U_TEST_ASSERT(true);
 }
 
+U_TEST( FinishedAsyncFunctionInAwaitHalt_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn async Bar() : i32
+		{
+			return 55;
+		}
+		fn async Baz()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f ) {}
+
+			move(f).await; // Should trigger halt here because passed async function is already finished.
+		}
+		fn Foo()
+		{
+			auto mut f= Baz();
+			if_coro_advance( x : f ){}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	try
+	{
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	}
+	catch( const HaltException& )
+	{
+		U_TEST_ASSERT(true);
+		return;
+	}
+	U_TEST_ASSERT(false);
+}
+
 } // namespace
 
 } // namespace U
