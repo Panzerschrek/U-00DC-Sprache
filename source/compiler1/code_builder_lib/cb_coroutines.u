@@ -745,9 +745,9 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 	if( !function_context.is_functionless_context )
 	{
 		var LLVMBasicBlockRef already_done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "already_done\0"[0] ) );
-		var LLVMBasicBlockRef loop_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_loop_enter\0"[0] ) );
-		var LLVMBasicBlockRef done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_done\0"[0] ) );
+		var LLVMBasicBlockRef loop_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_loop\0"[0] ) );
 		var LLVMBasicBlockRef not_done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_not_done\0"[0] ) );
+		var LLVMBasicBlockRef done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_done\0"[0] ) );
 
 		var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 
@@ -760,7 +760,8 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 		// Already done block.
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, already_done_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, already_done_block ) );
-
+		// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
+		// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
 		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string ) );
 		unsafe( LLVMBuildUnreachable( function_context.llvm_ir_builder ) );
 
@@ -778,7 +779,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 
 		// TODO - perform context save independent on suspend?
 		CoroutineSuspend( names_scope, function_context, src_loc );
-		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block) ); // Continue to check if the coroutine is done.
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) ); // Continue to check if the coroutine is done.
 
 		// Done block.
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, done_block ) );
@@ -792,11 +793,11 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 			unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool::False ) ),
 			unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ),
 		];
-		var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "promise\0"[0] ) );
+		var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "await_promise\0"[0] ) );
 
 		if( return_value_type == ValueType::Value )
 		{
-			result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, return_type.GetLLVMType(), g_null_string ) );
+			result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, return_type.GetLLVMType(), "await result\0"[0] ) );
 			CreateLifetimeStart( function_context, result.llvm_value );
 			CopyBytes( result.llvm_value, promise, return_type, function_context );
 		}
@@ -856,7 +857,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 	}
 
 	// Move async function value, call destructor and create lifetime end.
-	// TODO - does it make sence to call a destructor for finished coroutine?
+	// TODO - does it make sense to call a destructor for finished coroutine?
 
 	function_context.references_graph.MoveNode( async_func_variable_ptr );
 

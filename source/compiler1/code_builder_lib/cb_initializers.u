@@ -534,7 +534,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			constant_initializers[ size_type(field.index) ]= constexpr_initializer;
 		}
 
-		// No need to register temporary variable for initialized struct member here, since it's not possible to reurn or await from default initializer.
+		// No need to register temporary variable for initialized struct member here, since it's not possible to return or await from default initializer.
 	}
 
 	if( is_constexpr )

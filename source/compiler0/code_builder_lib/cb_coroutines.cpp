@@ -676,10 +676,10 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 
 	if( !function_context.is_functionless_context )
 	{
-		auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
-		auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop_enter" );
-		auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
-		auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
+		const auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
+		const auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop" );
+		const auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
+		const auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
 
 		llvm::Value* const coro_handle=
 			function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
@@ -739,7 +739,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 					llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
 					llvm::ConstantInt::getFalse( llvm_context_ ),
 				},
-				"promise" );
+				"await_promise" );
 
 		if( result->value_type == ValueType::Value )
 		{
@@ -780,7 +780,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 	}
 
 	// Move async function value, call destructor and create lifetime end.
-	// TODO - does it make sence to call a destructor for finished coroutine?
+	// TODO - does it make sense to call a destructor for finished coroutine?
 
 	function_context.variables_state.MoveNode( async_func_variable );
 

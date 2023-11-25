@@ -3943,6 +3943,8 @@ fn CodeBuilder::DoCallFunction(
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
+	// Do this only after call even for passed by single scalar values,
+	// because we still need to have an alive address during furter args evaluation in order to call properly destructor in case of return or await.
 	if( !function_context.is_functionless_context )
 	{
 		foreach( value_arg : value_args_for_lifetime_end_call )
@@ -4066,7 +4068,8 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	// Move temp nodes.
+	// Move arg nodes.
+	// It is safe for variable-args, since the callee is responsible for its destruction.
 	foreach( &node : args_nodes )
 	{
 		if( !node.empty() )

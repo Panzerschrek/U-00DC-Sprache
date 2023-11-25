@@ -288,7 +288,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				// Create temp variable for initialized member in order to call destructor in case of return or await during further struct elements initialization.
 				const VariableMutPtr temp_initialized_variable=
 					Variable::Create(
-						 field->type,
+						field->type,
 						ValueType::Value,
 						Variable::Location::Pointer,
 						struct_member->name,
@@ -349,7 +349,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.RemoveNode( struct_member );
 
-			// No need to register temporary variable for initialized struct member here, since it's not possible to reurn or await from default initializer.
+			// No need to register temporary variable for initialized struct member here, since it's not possible to return or await from default initializer.
 		}
 
 		if( constant_initializer == nullptr )
