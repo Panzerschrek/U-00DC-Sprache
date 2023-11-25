@@ -99,18 +99,3 @@ if( U_BUILD_PY_TESTS )
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		SOURCES ${PY_TESTS_SOURCES} )
 endif()
-
-# Run lcov in order to produce coverage report.
-# See https://ps-group.github.io/cxx/coverage_gcc as example.
-
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/coverage.info
-	DEPENDS Tests
-	COMMAND lcov -o coverage.info -c -d ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND genhtml -o coverage_report coverage.info
-	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
-
-add_custom_target(
-	CoverageRun
-	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/coverage.info
-	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp_tests_launcher.cpp )
