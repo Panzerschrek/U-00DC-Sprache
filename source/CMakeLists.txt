@@ -138,6 +138,9 @@ else()
 	add_compile_options( -fvisibility=hidden -fvisibility-inlines-hidden )
 	add_compile_options( -fdata-sections -ffunction-sections ) # simplify later gc-sections.
 
+	add_compile_options( --coverage )
+	add_link_options( --coverage )
+
 	# Disable warnings, related to "std::move" in new versions of GCC.
 	# We can't just fix these warnings since such fixes may break build with old versions of GCC.
 	if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
