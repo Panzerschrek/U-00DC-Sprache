@@ -13,19 +13,6 @@ NamesScope::NamesScope( std::string name, NamesScope* const parent )
 	, parent_(parent)
 {}
 
-bool NamesScope::IsAncestorFor( const NamesScope& other ) const
-{
-	const NamesScope* n= other.parent_;
-	while( n != nullptr )
-	{
-		if( this == n )
-			return true;
-		n= n->parent_;
-	}
-
-	return false;
-}
-
 const std::string& NamesScope::GetThisNamespaceName() const
 {
 	return name_;

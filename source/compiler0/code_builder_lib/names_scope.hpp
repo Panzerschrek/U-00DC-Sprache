@@ -18,7 +18,6 @@ public:
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
 
-	bool IsAncestorFor( const NamesScope& other ) const;
 	const std::string& GetThisNamespaceName() const;
 
 	// Get full name (with enclosing namespaces) un human-readable format.
