@@ -19,6 +19,7 @@ option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
 option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 option( U_BUILD_COMPILER2 "Build compiler2 (using compiler1)" NO)
 option( U_BUILD_COMPILER3 "Build compiler3 (using compiler3)" NO)
+option( U_COVERAGE_ENABLED "Enable gcov options for the build" NO)
 
 # Support versions of CMake prior to 3.20 and use old-style of Ninja dep-files handling.
 if( CMAKE_VERSION VERSION_GREATER_EQUAL "3.20" )
@@ -137,6 +138,11 @@ else()
 	add_compile_options( -Werror -Wall -Wextra -Wconversion )
 	add_compile_options( -fvisibility=hidden -fvisibility-inlines-hidden )
 	add_compile_options( -fdata-sections -ffunction-sections ) # simplify later gc-sections.
+
+	if( U_COVERAGE_ENABLED )
+		add_compile_options( --coverage )
+		add_link_options( --coverage )
+	endif()
 
 	# Disable warnings, related to "std::move" in new versions of GCC.
 	# We can't just fix these warnings since such fixes may break build with old versions of GCC.

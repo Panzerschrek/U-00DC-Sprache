@@ -1,0 +1,17 @@
+name: Code coverage
+
+on: [workflow_dispatch]
+
+jobs:
+  calculate_code_coverage:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project with code coverage enabled
+      run: |
+        sudo apt-get update && sudo apt-get install ninja-build lcov
+        ./ci/calculate_code_coverage.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: code_coverage_report
+        path: code_coverage_report/
