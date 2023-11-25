@@ -71,28 +71,6 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 	links_.push_back( std::move(link) );
 }
 
-void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to )
-{
-	U_ASSERT( from != nullptr );
-	U_ASSERT( to != nullptr );
-	U_ASSERT( nodes_.count(from) != 0 );
-	U_ASSERT( nodes_.count(to  ) != 0 );
-
-	const Link link{from, to};
-	for( size_t i= 0; i < links_.size(); ++i )
-	{
-		if( link == links_[i] )
-		{
-			if( i + 1 < links_.size() )
-				links_[i]= std::move(links_.back());
-			links_.pop_back();
-			return;
-		}
-	}
-
-	U_ASSERT(false); // Removing unexistent link.
-}
-
 void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	U_ASSERT( from != nullptr );
