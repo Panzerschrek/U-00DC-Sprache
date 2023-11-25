@@ -212,7 +212,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			var VariablePtr variable_ptr= move(variable).CreatePtr();
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_reference );
-			RegisterFrameVariable( function_context, variable_ptr, 1s );
 
 			{
 				var Variable mut variable_for_initialization
@@ -247,6 +246,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			}
 
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+			RegisterFrameVariable( function_context, variable_ptr, 1s );
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
@@ -2130,12 +2130,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
 			{
-				if( sequence_expression.value_type == ValueType::Value )
-				{
-					REPORT_ERROR( ExpectedReferenceValue, names_scope, range_for_operator.src_loc )
-					function_context.references_graph.RemoveNode( variable_reference );
-					return BlockElementBuildInfo();
-				}
 				if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
@@ -3025,6 +3019,8 @@ fn SingleExpressionIsUselessImpl( Synt::CallOperator& e ) : bool { ust::ignore_u
 // It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
 fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::ignore_unused(e); return true; }
+// Await operator is basically an operator for an async call.
+fn SingleExpressionIsUselessImpl( Synt::AwaitOperator& e ) : bool { ust::ignore_unused(e); return false; }
 fn SingleExpressionIsUselessImpl( Synt::UnaryPlus& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::LogicalNot& e ) : bool { ust::ignore_unused(e); return true; }

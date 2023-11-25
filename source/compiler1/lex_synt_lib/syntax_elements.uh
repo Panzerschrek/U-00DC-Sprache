@@ -215,6 +215,12 @@ struct MemberAccessOperator
 	ust::box_nullable</TemplateArgs/> template_args;
 }
 
+struct AwaitOperator
+{
+	SrcLoc src_loc;
+	ust::box</Expression/> value;
+}
+
 struct UnaryPlus
 {
 	SrcLoc src_loc;
@@ -263,6 +269,7 @@ type Expression= ust::variant</ tup[
 	IndexationOperator,
 	CallOperator,
 	MemberAccessOperator,
+	AwaitOperator,
 	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,

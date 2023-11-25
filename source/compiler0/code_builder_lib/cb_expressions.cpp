@@ -131,7 +131,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		// Lock variable. We must prevent modification of this variable in index calcualtion.
 		// Do not forget to unregister it in case of error-return!
-		const VariablePtr variable_lock=
+		const VariableMutPtr variable_lock=
 			Variable::Create(
 				variable->type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
@@ -141,6 +141,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 		function_context.variables_state.TryAddInnerLinks( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 
+		variable_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, variable_lock );
+
 		const VariablePtr index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names, function_context );
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
@@ -149,7 +152,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc, "any integer", index->type );
-			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
 
@@ -218,7 +220,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.TryAddLink( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
 		function_context.variables_state.TryAddInnerLinks( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
 
-		function_context.variables_state.RemoveNode( variable_lock );
+		function_context.variables_state.MoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
 		return result;
@@ -1918,7 +1920,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
-		const VariablePtr r_var_lock=
+		const VariableMutPtr r_var_lock=
 			Variable::Create(
 				r_var_real->type,
 				ValueType::ReferenceMut,
@@ -1929,11 +1931,14 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		function_context.variables_state.TryAddLink( r_var_real, r_var_lock, names.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( r_var_real, r_var_lock, names.GetErrors(), src_loc );
 
+		r_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, r_var_lock );
+
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariable();
 
 		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_lock, names.GetErrors(), src_loc );
 
-		function_context.variables_state.RemoveNode( r_var_lock );
+		function_context.variables_state.MoveNode( r_var_lock );
 		function_context.variables_state.MoveNode( r_var_real );
 
 		if( !function_context.is_functionless_context )
@@ -1946,9 +1951,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CreateLifetimeEnd( function_context, r_var_real->llvm_value );
 		}
 
-		const VariablePtr move_result=
-			Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
-		return move_result;
+		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
@@ -1998,7 +2001,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( r_var->type == invalid_type_ )
 			return ErrorValue();
 
-		const VariablePtr r_var_lock=
+		const VariableMutPtr r_var_lock=
 			Variable::Create(
 				r_var->type,
 				ValueType::ReferenceImut,
@@ -2009,12 +2012,15 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddLink( r_var, r_var_lock, names.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names.GetErrors(), src_loc );
 
+		r_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, r_var_lock );
+
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
 
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var->name );
 
-		function_context.variables_state.RemoveNode( r_var_lock );
+		function_context.variables_state.MoveNode( r_var_lock );
 
 		if( l_var->type == invalid_type_ )
 			return ErrorValue();
@@ -2047,7 +2053,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( l_var->type == invalid_type_ )
 			return ErrorValue();
 
-		const VariablePtr l_var_lock=
+		const VariableMutPtr l_var_lock=
 			Variable::Create(
 				l_var->type,
 				ValueType::ReferenceImut,
@@ -2058,11 +2064,14 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddLink( l_var, l_var_lock, names.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names.GetErrors(), src_loc );
 
+		l_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, l_var_lock );
+
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var->name );
 
-		function_context.variables_state.RemoveNode( l_var_lock );
+		function_context.variables_state.MoveNode( l_var_lock );
 
 		if( r_var->type == invalid_type_ )
 			return ErrorValue();
@@ -3301,26 +3310,30 @@ Value CodeBuilder::DoCallFunction(
 			}
 
 			// Lock references.
-			const VariablePtr arg_node=
+			const VariableMutPtr arg_node=
 				Variable::Create(
 				param.type,
 				param.value_type,
 				Variable::Location::Pointer,
-				"reference_arg " + std::to_string(i) );
-			args_nodes[arg_number]= arg_node;
+				"reference_arg " + std::to_string(i),
+				llvm_args[arg_number] );
 			function_context.variables_state.AddNode( arg_node );
 			function_context.variables_state.TryAddLink( expr, arg_node, names.GetErrors(), src_loc );
 			function_context.variables_state.TryAddInnerLinks( expr, arg_node, names.GetErrors(), src_loc );
+
+			// Register node for destruction in case of return in further args evaluation.
+			arg_node->preserve_temporary= true;
+			RegisterTemporaryVariable( function_context, arg_node );
+			args_nodes[arg_number]= arg_node;
 		}
 		else
 		{
-			const VariablePtr arg_node=
+			const VariableMutPtr arg_node=
 				Variable::Create(
 					param.type,
 					ValueType::Value,
-					Variable::Location::Pointer, // TODO - is this correct?
+					Variable::Location::Pointer, // Set later
 					"value_arg_" + std::to_string(i) );
-			args_nodes[arg_number]= arg_node;
 
 			function_context.variables_state.AddNode( arg_node );
 
@@ -3351,6 +3364,9 @@ Value CodeBuilder::DoCallFunction(
 
 				if( expr->constexpr_value != nullptr )
 					constant_llvm_args.push_back( expr->constexpr_value );
+
+				arg_node->llvm_value= llvm_args[arg_number];
+				arg_node->location= Variable::Location::LLVMRegister;
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
@@ -3375,20 +3391,16 @@ Value CodeBuilder::DoCallFunction(
 					// Do not call copy constructors - just move.
 					function_context.variables_state.MoveNode( expr );
 
-					if( single_scalar_type == nullptr )
+					if( !function_context.is_functionless_context )
 					{
-						llvm_args[arg_number]= expr->llvm_value;
-						if( !function_context.is_functionless_context )
-							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
-					}
-					else
-					{
-						if( !function_context.is_functionless_context )
-						{
-							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
-							CreateLifetimeEnd( function_context, expr->llvm_value );
-							llvm_args[arg_number]= value;
-						}
+						if( single_scalar_type == nullptr )
+							llvm_args[arg_number]= expr->llvm_value;
+						else
+							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
+
+						// Save address into temporary container to call lifetime.end after call.
+						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
+						arg_node->llvm_value= expr->llvm_value;
 					}
 				}
 				else
@@ -3424,20 +3436,27 @@ Value CodeBuilder::DoCallFunction(
 						{
 							// Pass by hidden reference.
 							llvm_args[arg_number]= arg_copy;
-							// Save address into temporary container to call lifetime.end after call.
-							value_args_for_lifetime_end_call.push_back( arg_copy );
 						}
 						else
 						{
-							// If this is a single scalar type - just load value and end lifetime of address of copy.
-							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
-							CreateLifetimeEnd( function_context, arg_copy );
-							llvm_args[arg_number]= value;
+							// If this is a single scalar type - just load value.
+							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
 						}
+
+						// Save address into temporary container to call lifetime.end after call.
+						value_args_for_lifetime_end_call.push_back( arg_copy );
+						arg_node->llvm_value= arg_copy;
 					}
 				}
+
+				arg_node->location= Variable::Location::Pointer;
 			}
 			else U_ASSERT( false );
+
+			// Register node for destruction in case of return in further args evaluation.
+			arg_node->preserve_temporary= true;
+			RegisterTemporaryVariable( function_context, arg_node );
+			args_nodes[arg_number]= arg_node;
 		}
 
 		// Destroy unused temporary variables after each argument evaluation.
@@ -3550,8 +3569,10 @@ Value CodeBuilder::DoCallFunction(
 			result->llvm_value= llvm::UndefValue::get( function_type.return_type.GetLLVMType()->getPointerTo() );
 	}
 
-	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
+	// Call "lifetime.end" just right after call for value args.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
+	// Do this only after call even for passed by single scalar values,
+	// because we still need to have an alive address during furter args evaluation in order to call properly destructor in case of return or await.
 	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
 		CreateLifetimeEnd( function_context, value_arg_var );
 
@@ -3617,8 +3638,13 @@ Value CodeBuilder::DoCallFunction(
 			function_context.variables_state.TryAddLinkToAllAccessibleVariableNodesInnerReferences( src_node, dst_node, names.GetErrors(), call_src_loc );
 	}
 
+	// Move arg nodes.
+	// It is safe for variable-args, since the callee is responsible for its destruction.
 	for( const VariablePtr& node : args_nodes )
-		function_context.variables_state.RemoveNode( node );
+	{
+		if( node != nullptr )
+			function_context.variables_state.MoveNode( node );
+	}
 	args_nodes.clear();
 
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );

@@ -48,6 +48,7 @@
 			<item>pure</item>
 			<item>generator</item>
 			<item>async</item>
+			<item>await</item>
 			<item>namespace</item>
 			<item>public</item>
 			<item>private</item>

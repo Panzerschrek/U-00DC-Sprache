@@ -168,16 +168,22 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto mut is_constant= variable.t.CanBeConstexpr();
 		var ust::vector</ LLVMValueRef /> mut elements_constants;
 
+		var bool requires_destruction= array_type.element_type.HaveDestructor();
+		var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
 		auto mut i= 0s;
 		foreach( &element_initializer : sequence_initializer.elements_initializers )
 		{
+			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
+			var ust::string8 element_name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]";
+
 			var Variable mut element_variable
 			{
 				.t= array_type.element_type,
 				.value_type= ValueType::ReferenceMut,
 				.location= Variable::Location::Pointer,
-				.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) ),
-				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+				.llvm_value= element_llvm_value,
+				.name= element_name,
 			};
 			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
@@ -200,7 +206,29 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				}
 			}
 
+			if( requires_destruction )
+			{
+				var Variable mut temp_initialized_variable
+				{
+					.t= array_type.element_type,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element_llvm_value,
+					.name= element_name,
+					.preserve_temporary= true
+				};
+				var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+			}
+
 			++i;
+		}
+
+		foreach( & temp_initialized_variable : temp_initialized_variables )
+		{
+			function_context.references_graph.MoveNode( temp_initialized_variable );
 		}
 
 		if( is_constant )
@@ -225,15 +253,22 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto mut is_constant= variable.t.CanBeConstexpr();
 		var ust::vector</ LLVMValueRef /> mut elements_constants;
 
+		var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
+			var Type& element_type= tuple_type.element_types[i];
+
+			var LLVMValueRef element_llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) );
+			var ust::string8 element_name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]";
+
 			var Variable mut element_variable
 			{
-				.t= tuple_type.element_types[i],
+				.t= element_type,
 				.value_type= ValueType::ReferenceMut,
 				.location= Variable::Location::Pointer,
-				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+				.llvm_value= element_llvm_value,
+				.name= element_name,
 			};
 			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
 			function_context.references_graph.AddNode( element_variable_ptr );
@@ -255,6 +290,28 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 					elements_constants.push_back( element_constant );
 				}
 			}
+
+			if( element_type.HaveDestructor() )
+			{
+				var Variable mut temp_initialized_variable
+				{
+					.t= element_type,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element_llvm_value,
+					.name= element_name,
+					.preserve_temporary= true
+				};
+				var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+			}
+		}
+
+		foreach( & temp_initialized_variable : temp_initialized_variables )
+		{
+			function_context.references_graph.MoveNode( temp_initialized_variable );
 		}
 
 		if( is_constant )
@@ -307,6 +364,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	var ust::vector</bool/> mut initialized_fields;
 	initialized_fields.resize( num_llvm_fields, false );
 
+	var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
 		auto member_ref= class_members.GetThisScopeValue( member_initializer.name );
@@ -356,13 +415,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		else
 		{
+			var LLVMValueRef member_llvm_value= CreateClassFieldGEP( function_context, variable, class_field );
+			var ust::string8 member_name= variable_ptr.lock_imut().deref().name + "." + member_initializer.name;
+
 			var Variable mut member_variable
 			{
 				.t= class_field.t,
 				.value_type= ValueType::ReferenceMut,
 				.location= Variable::Location::Pointer,
-				.llvm_value= CreateClassFieldGEP( function_context, variable, class_field ),
-				.name= variable_ptr.lock_imut().deref().name + "." + member_initializer.name,
+				.llvm_value= member_llvm_value,
+				.name= member_name,
 			};
 			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
 			function_context.references_graph.AddNode( member_variable_ptr );
@@ -381,7 +443,29 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			{
 				constant_initializers[ size_type(class_field.index) ]= initializer;
 			}
+
+			if( class_field.t.HaveDestructor() )
+			{
+				var Variable mut temp_initialized_variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.llvm_value= member_llvm_value,
+					.name= member_name,
+					.preserve_temporary= true
+				};
+				var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+			}
 		}
+	}
+
+	foreach( & temp_initialized_variable : temp_initialized_variables )
+	{
+		function_context.references_graph.MoveNode( temp_initialized_variable );
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
@@ -449,6 +533,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		{
 			constant_initializers[ size_type(field.index) ]= constexpr_initializer;
 		}
+
+		// No need to register temporary variable for initialized struct member here, since it's not possible to return or await from default initializer.
 	}
 
 	if( is_constexpr )

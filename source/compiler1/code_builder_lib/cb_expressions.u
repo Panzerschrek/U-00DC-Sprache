@@ -1286,11 +1286,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= "lock []",
+			.preserve_temporary= true,
 		};
 		var VariablePtr variable_lock_node= move(variable_lock_node_variable).CreatePtr();
 		function_context.references_graph.AddNode( variable_lock_node );
 		function_context.references_graph.TryAddLink( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
 		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
+		RegisterTemporaryVariable( function_context, variable_lock_node );
 
 		var VariableLite index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() ).lock_imut().deref();
 
@@ -1301,13 +1303,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
-				function_context.references_graph.RemoveNode( variable_lock_node );
 				return ErrorValue();
 			}
 			if( variable.location != Variable::Location::Pointer )
 			{
 				// TODO - Strange variable location.
-				function_context.references_graph.RemoveNode( variable_lock_node );
 				return ErrorValue();
 			}
 
@@ -1320,7 +1320,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( index_value_num >= variable_array_type.element_count )
 				{
 					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.src_loc, index_value_num, variable_array_type.element_count )
-					function_context.references_graph.RemoveNode( variable_lock_node );
 					return ErrorValue();
 				}
 			}
@@ -1378,7 +1377,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			function_context.references_graph.AddLink( variable_lock_node, result_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_lock_node, result_ptr, names_scope, indexation_operator.src_loc );
 
-			function_context.references_graph.RemoveNode( variable_lock_node );
+			function_context.references_graph.MoveNode( variable_lock_node );
 			// Register variable for references checking.
 			RegisterTemporaryVariable( function_context, result_ptr );
 			return move(result_ptr);
@@ -1706,6 +1705,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, ust::string8("class members, except fields or methods") )
 	return ErrorValue();
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AwaitOperator& await_operator ) : Value
+{
+	return BuildAwait( names_scope, function_context, await_operator.value.deref(), await_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
@@ -3031,16 +3035,18 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			.value_type= ValueType::ReferenceImut,
 			.location= Variable::Location::Pointer,
 			.name= r_var_ptr.lock_imut().deref().name + " lock",
+			.preserve_temporary= true,
 		};
 		var VariablePtr r_var_lock_node= move(r_var_lock_node_variable ).CreatePtr();
 		function_context.references_graph.AddNode( r_var_lock_node );
 		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock_node );
 
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
 
-		function_context.references_graph.RemoveNode( r_var_lock_node );
+		function_context.references_graph.MoveNode( r_var_lock_node );
 
 		if( l_var.t.HaveDestructor() )
 		{
@@ -3123,18 +3129,20 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			.value_type= ValueType::ReferenceImut,
 			.location= Variable::Location::Pointer,
 			.name= r_var_ptr.lock_imut().deref().name + " lock",
+			.preserve_temporary= true,
 		};
 		var VariablePtr r_var_lock_node= move(r_var_lock_node_variable ).CreatePtr();
 		function_context.references_graph.AddNode( r_var_lock_node );
 		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock_node );
 
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
 
 		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
 
-		function_context.references_graph.RemoveNode( r_var_lock_node );
+		function_context.references_graph.MoveNode( r_var_lock_node );
 
 		if( l_var.t == invalid_type_ )
 		{
@@ -3178,18 +3186,20 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			.value_type= ValueType::ReferenceImut,
 			.location= Variable::Location::Pointer,
 			.name= l_var_ptr.lock_imut().deref().name + " lock",
+			.preserve_temporary= true,
 		};
 		var VariablePtr l_var_lock_node= move(l_var_lock_node_variable ).CreatePtr();
 		function_context.references_graph.AddNode( l_var_lock_node );
 		function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
 		function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, l_var_lock_node );
 
 		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 		var VariableLite r_var= r_var_ptr.lock_imut().deref();
 
 		function_context.references_graph.EnsureHaveNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
 
-		function_context.references_graph.RemoveNode( l_var_lock_node );
+		function_context.references_graph.MoveNode( l_var_lock_node );
 
 		if( r_var.t == invalid_type_ )
 		{
@@ -3644,8 +3654,10 @@ fn CodeBuilder::DoCallFunction(
 			{
 				.t= expected_arg_type,
 				.value_type= ValueType::Value,
-				.location= Variable::Location::Pointer,
+				.location= Variable::Location::Pointer, // Set later
 				.name= "value arg " + arg_number_str,
+				.llvm_value= LLVMValueRef::Null, // Set later
+				.preserve_temporary= true,
 			};
 			var VariablePtr arg_node= move(arg_node_variable).CreatePtr();
 			args_nodes[arg_n]= arg_node;
@@ -3673,23 +3685,24 @@ fn CodeBuilder::DoCallFunction(
 					// Move value to argument.
 					function_context.references_graph.MoveNode( arg_ptr );
 
-					if( single_scalar_type == LLVMTypeRef::Null )
+					if( !function_context.is_functionless_context )
 					{
-						llvm_arg= arg.llvm_value;
-						if( !function_context.is_functionless_context )
+						if( single_scalar_type == LLVMTypeRef::Null )
 						{
-							value_args_for_lifetime_end_call.push_back( llvm_arg );
+							llvm_arg= arg.llvm_value;
 						}
-					}
-					else
-					{
-						if( !function_context.is_functionless_context )
+						else
 						{
 							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
-							CreateLifetimeEnd( function_context, arg.llvm_value );
 						}
+						value_args_for_lifetime_end_call.push_back( arg.llvm_value );
 					}
 
+					with( &mut lock : arg_node.lock_mut() )
+					{
+						lock.deref().location= Variable::Location::Pointer;
+						lock.deref().llvm_value= arg.llvm_value;
+					}
 				}
 				else
 				{
@@ -3712,13 +3725,23 @@ fn CodeBuilder::DoCallFunction(
 						if( single_scalar_type == LLVMTypeRef::Null )
 						{
 							llvm_arg= var_copy;
-							value_args_for_lifetime_end_call.push_back( var_copy );
+
 						}
 						else
 						{
 							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
-							CreateLifetimeEnd( function_context, var_copy );
 						}
+						value_args_for_lifetime_end_call.push_back( var_copy );
+
+						with( &mut lock : arg_node.lock_mut() )
+						{
+							lock.deref().llvm_value= var_copy;
+						}
+					}
+
+					with( &mut lock : arg_node.lock_mut() )
+					{
+						lock.deref().location= Variable::Location::Pointer;
 					}
 				}
 			}
@@ -3730,7 +3753,15 @@ fn CodeBuilder::DoCallFunction(
 				}
 
 				llvm_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
+
+				with( &mut lock : arg_node.lock_mut() )
+				{
+					lock.deref().location= Variable::Location::LLVMRegister;
+					lock.deref().llvm_value= llvm_arg;
+				}
 			}
+
+			RegisterTemporaryVariable( function_context, arg_node );
 		}
 		else
 		{
@@ -3781,13 +3812,15 @@ fn CodeBuilder::DoCallFunction(
 				.value_type= param.value_type,
 				.location= Variable::Location::Pointer,
 				.llvm_value= llvm_arg,
-				.name= "reference arg " + arg_number_str ,
+				.name= "reference arg " + arg_number_str,
+				.preserve_temporary= true,
 			};
 			var VariablePtr arg_node= move(arg_node_variable).CreatePtr();
 			args_nodes[arg_n]= arg_node;
 			function_context.references_graph.AddNode( arg_node );
 			function_context.references_graph.TryAddLink( arg_ptr, arg_node, names_scope, src_loc );
 			function_context.references_graph.TryAddInnerLinks( arg_ptr, arg_node, names_scope, src_loc );
+			RegisterTemporaryVariable( function_context, arg_node );
 		}
 
 		// Destroy unused temporary variables after each arg evaluation.
@@ -3910,6 +3943,8 @@ fn CodeBuilder::DoCallFunction(
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
+	// Do this only after call even for passed by single scalar values,
+	// because we still need to have an alive address during furter args evaluation in order to call properly destructor in case of return or await.
 	if( !function_context.is_functionless_context )
 	{
 		foreach( value_arg : value_args_for_lifetime_end_call )
@@ -4033,12 +4068,13 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	// Remove temp nodes.
+	// Move arg nodes.
+	// It is safe for variable-args, since the callee is responsible for its destruction.
 	foreach( &node : args_nodes )
 	{
 		if( !node.empty() )
 		{
-			function_context.references_graph.RemoveNode( node.try_to_non_nullable() );
+			function_context.references_graph.MoveNode( node.try_to_non_nullable() );
 		}
 	}
 

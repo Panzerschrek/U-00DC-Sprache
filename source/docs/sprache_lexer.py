@@ -58,6 +58,7 @@ class SpracheLexer(RegexLexer):
 			(r'pure(?![a-zA-Z_0-9])', token.Keyword),
 			(r'generator(?![a-zA-Z_0-9])', token.Keyword),
 			(r'async(?![a-zA-Z_0-9])', token.Keyword),
+			(r'await(?![a-zA-Z_0-9])', token.Keyword),
 			(r'namespace(?![a-zA-Z_0-9])', token.Keyword),
 			(r'public(?![a-zA-Z_0-9])', token.Keyword),
 			(r'private(?![a-zA-Z_0-9])', token.Keyword),

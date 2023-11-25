@@ -501,7 +501,7 @@ U_TEST( ArgVariableLifetime_Test3 )
 		}
 		fn Foo()
 		{
-			Bar(S()); // Create lifetime start here, load value into register and than create lifetime end.
+			Bar(S()); // Create lifetime start here, load value into register, perform the call and only than create lifetime end.
 		}
 	)";
 
@@ -514,17 +514,17 @@ U_TEST( ArgVariableLifetime_Test3 )
 	engine->runFunction( function, {} );
 
 	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 5 );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[3].address );
 
 	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeEnd );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd );
 	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd );
 
 	const int32_t expected_x= 99596;
-	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[2].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
 U_TEST( ReturnValueLifetime_Test0 )
@@ -904,6 +904,56 @@ U_TEST( LifetimesForRawPointers_Test1 )
 	const int32_t expected_x1= 74123;
 	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x0) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x0, sizeof(expected_x0)) == 0 );
 	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x1) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x1, sizeof(expected_x1)) == 0 );
+}
+
+U_TEST( LifetimesForAwaitOperator_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(i32& data, u64 size);
+		fn async SomeFunc() : i32
+		{
+			return 654;
+		}
+		fn async Bar()
+		{
+			auto x= SomeFunc().await;
+			CaptureValue(x, 4u64);
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			loop
+			{
+				if_coro_advance( x : f ) { break; }
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 7 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // func
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart ); // SomeFunc temp
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // SomeFunc temp
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::CaptureValue ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[6].call_result == CallResult::LifetimeEnd ); // func
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[6].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[5].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+
+	const int32_t expected_x= 654;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
 } // namespace

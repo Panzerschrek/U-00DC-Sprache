@@ -28,6 +28,7 @@ def main():
 		"auto_constexpr_function_templates_test",
 		"auto_for_return_type_test",
 		"auto_for_return_type_errors_test",
+		"await_operator_test",
 		"break_from_block_test",
 		"byte_types_test",
 		"byval_this",

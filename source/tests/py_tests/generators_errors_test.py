@@ -1418,3 +1418,61 @@ def IfCoroAdvance_VariablesStateMerge_Test4():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DestroyedVariableStillHaveReferences_ForGenerator_Test0():
+	c_program_text= """
+		fn generator SomeGen( i32& x );
+		fn Foo()
+		{
+			auto gen= SomeGen( 66 ); // Generator object holds a reference to temporary value of type "i32".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForGenerator_Test1():
+	c_program_text= """
+		fn generator SomeGen( f32& x );
+		fn Bar() : f32;
+		fn Foo()
+		{
+			auto gen= SomeGen( Bar() ); // Generator object holds a reference to temporary-result of "Bar" call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForGenerator_Test2():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator SomeGen( S s );
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn MakeS( i32& x ) : S @(return_inner_references);
+		fn Foo()
+		{
+			auto gen= SomeGen( MakeS( 789 ) ); // Generator object holds a value of type "S" with a reference to a temporary inside.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForGenerator_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator SomeGen( S s );
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn MakeS( i32& x ) : S @(return_inner_references);
+		fn Foo()
+		{
+			var i32 some_local= 0;
+			auto gen= SomeGen( MakeS( some_local ) ); // Generator object holds a value of type "S" with a reference to a local variable. This is ok.
+		}
+	"""
+	tests_lib.build_program( c_program_text )

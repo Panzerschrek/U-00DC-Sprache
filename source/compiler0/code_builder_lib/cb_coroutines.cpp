@@ -619,107 +619,52 @@ void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_cont
 
 Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
-	// TODO - finish this code. Now just produce an error.
-	if( true )
-	{
-		REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "await operator" );
-		return ErrorValue();
-	}
-
 	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 	if( async_func_variable->type == invalid_type_ )
 		return ErrorValue();
 
-	// TODO - generate errors if expression is not an async function.
+	if( async_func_variable->value_type != ValueType::Value )
+	{
+		REPORT_ERROR( ImmediateValueExpectedInAwaitOperator, names.GetErrors(), src_loc );
+		return ErrorValue();
+	}
 
 	const Class* const class_type= async_func_variable->type.GetClassType();
 	if( class_type == nullptr )
+	{
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names.GetErrors(), src_loc );
 		return ErrorValue();
+	}
 
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data );
 	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
-		return ErrorValue();
-
-	const Type& return_type= coroutine_type_description->return_type;
-
-	if( function_context.is_functionless_context )
 	{
-		const VariableMutPtr result=
-			Variable::Create(
-				return_type,
-				coroutine_type_description->return_value_type,
-				Variable::Location::Pointer,
-				async_func_variable->name + " await result" );
-		function_context.variables_state.AddNode( result );
-
-		RegisterTemporaryVariable( function_context, result );
-		return result;
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names.GetErrors(), src_loc );
+		return ErrorValue();
 	}
 
-	auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
-	auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop_enter" );
-	auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
-	auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
-
-	llvm::Value* const coro_handle=
-		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
-
-	llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
-		{ coro_handle },
-		"coro_done" );
-
-	function_context.llvm_ir_builder.CreateCondBr( done, already_done_block, loop_block );
-
-	// Already done block.
-	function_context.function->getBasicBlockList().push_back( already_done_block );
-	function_context.llvm_ir_builder.SetInsertPoint( already_done_block );
-	// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
-	// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
-	function_context.llvm_ir_builder.CreateCall( halt_func_ );
-	function_context.llvm_ir_builder.CreateUnreachable();
-
-	// Loop block.
-	function_context.function->getBasicBlockList().push_back( loop_block );
-	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
-
-	function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_resume ),
-		{ coro_handle } );
-
-	llvm::Value* const done_after_resume= function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
-		{ coro_handle },
-		"coro_done_after_resume" );
-
-	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, done_block, not_done_block );
-
-	// Not done block.
-	function_context.function->getBasicBlockList().push_back( not_done_block );
-	function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
-
-	// TODO - perform context save independent on suspend?
-	CoroutineSuspend( names, function_context, src_loc );
-	function_context.llvm_ir_builder.CreateBr( loop_block ); // Continue to check if the coroutine is done.
-
-	// Done block.
-	function_context.function->getBasicBlockList().push_back( done_block );
-	function_context.llvm_ir_builder.SetInsertPoint( done_block );
-
-	llvm::Type* const promise_llvm_type=
-		coroutine_type_description->return_value_type == ValueType::Value
-			? return_type.GetLLVMType()
-			: llvm::PointerType::get( llvm_context_, 0 );
-
-	llvm::Value* const promise=
-		function_context.llvm_ir_builder.CreateCall(
-			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
+	if( function_context.coro_suspend_bb == nullptr )
+	{
+		REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+		return ErrorValue();
+	}
+	if( function_context.return_type != std::nullopt )
+	{
+		if( const auto function_class_type= function_context.return_type->GetClassType() )
+		{
+			if( const auto function_coroutine_type_description= std::get_if<CoroutineTypeDescription>( &function_class_type->generated_class_data ) )
 			{
-				coro_handle,
-				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
-				llvm::ConstantInt::getFalse( llvm_context_ ),
-			},
-			"promise" );
+				if( function_coroutine_type_description->kind != CoroutineKind::AsyncFunc )
+				{
+					// Prevent usage of "await" in generators.
+					REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+					return ErrorValue();
+				}
+			}
+		}
+	}
+
+	const Type& return_type= coroutine_type_description->return_type;
 
 	const VariableMutPtr result=
 		Variable::Create(
@@ -729,21 +674,124 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 			async_func_variable->name + " await result" );
 	function_context.variables_state.AddNode( result );
 
+	if( !function_context.is_functionless_context )
+	{
+		const auto already_done_block= llvm::BasicBlock::Create( llvm_context_, "already_done" );
+		const auto loop_block= llvm::BasicBlock::Create( llvm_context_, "await_loop" );
+		const auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
+		const auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
+
+		llvm::Value* const coro_handle=
+			function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
+
+		llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+			{ coro_handle },
+			"coro_done" );
+
+		function_context.llvm_ir_builder.CreateCondBr( done, already_done_block, loop_block );
+
+		// Already done block.
+		function_context.function->getBasicBlockList().push_back( already_done_block );
+		function_context.llvm_ir_builder.SetInsertPoint( already_done_block );
+		// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
+		// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
+		function_context.llvm_ir_builder.CreateCall( halt_func_ );
+		function_context.llvm_ir_builder.CreateUnreachable();
+
+		// Loop block.
+		function_context.function->getBasicBlockList().push_back( loop_block );
+		function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_resume ),
+			{ coro_handle } );
+
+		llvm::Value* const done_after_resume= function_context.llvm_ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+			{ coro_handle },
+			"coro_done_after_resume" );
+
+		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, done_block, not_done_block );
+
+		// Not done block.
+		function_context.function->getBasicBlockList().push_back( not_done_block );
+		function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
+
+		// TODO - perform context save independent on suspend?
+		CoroutineSuspend( names, function_context, src_loc );
+		function_context.llvm_ir_builder.CreateBr( loop_block ); // Continue to check if the coroutine is done.
+
+		// Done block.
+		function_context.function->getBasicBlockList().push_back( done_block );
+		function_context.llvm_ir_builder.SetInsertPoint( done_block );
+
+		llvm::Type* const promise_llvm_type=
+			coroutine_type_description->return_value_type == ValueType::Value
+				? return_type.GetLLVMType()
+				: llvm::PointerType::get( llvm_context_, 0 );
+
+		llvm::Value* const promise=
+			function_context.llvm_ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
+				{
+					coro_handle,
+					llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+					llvm::ConstantInt::getFalse( llvm_context_ ),
+				},
+				"await_promise" );
+
+		if( result->value_type == ValueType::Value )
+		{
+			result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType(), nullptr, result->name );
+			CreateLifetimeStart( function_context, result->llvm_value );
+			CopyBytes( result->llvm_value, promise, return_type, function_context );
+		}
+		else
+			result->llvm_value= CreateTypedReferenceLoad( function_context, return_type, promise );
+	}
+
 	if( result->value_type == ValueType::Value )
 	{
-		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType(), nullptr, result->name );
-		CopyBytes( result->llvm_value, promise, return_type, function_context );
-
-		// TODO - setup inner references.
+		for( size_t i= 0; i < std::min( result->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
+		{
+			for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
+			{
+				U_ASSERT( param_reference.first == 0u );
+				U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+				if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
+					function_context.variables_state.TryAddLink(
+						async_func_variable->inner_reference_nodes[param_reference.second],
+						result->inner_reference_nodes[i],
+						names.GetErrors(),
+						src_loc );
+			}
+		}
 	}
 	else
 	{
-		result->llvm_value= CreateTypedReferenceLoad( function_context, return_type, promise );
-
-		// TODO - setup references.
+		for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_references )
+		{
+			U_ASSERT( param_reference.first == 0u );
+			U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+			if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
+				function_context.variables_state.TryAddLink( async_func_variable->inner_reference_nodes[param_reference.second], result, names.GetErrors(), src_loc );
+		}
 	}
 
-	// TODO - require value of the coroutine type, move it in the operator.
+	// Move async function value, call destructor and create lifetime end.
+	// TODO - does it make sense to call a destructor for finished coroutine?
+
+	function_context.variables_state.MoveNode( async_func_variable );
+
+	if( !function_context.is_functionless_context )
+	{
+		if( async_func_variable->type.HaveDestructor() )
+			CallDestructor( async_func_variable->llvm_value, async_func_variable->type, function_context, names.GetErrors(), src_loc );
+
+		U_ASSERT( async_func_variable->location == Variable::Location::Pointer );
+		CreateLifetimeEnd( function_context, async_func_variable->llvm_value );
+	}
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;

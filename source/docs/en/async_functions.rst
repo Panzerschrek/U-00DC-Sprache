@@ -60,6 +60,51 @@ It's important to be careful with usage of ``if_coro_advance`` in a loop until a
 If an async function object is already finished, ``if_coro_advance`` will never return a result and thus the loop will be infinite.
 In order to avoid this it's needed to check an async function object if it is already finished before entering the loop with ``if_coro_advance``.
 
+****************
+*await operator*
+****************
+
+There is ``await`` operator that simplifies async function calls.
+This operator is a postfix operator that consists of dot (``.``) and ``await`` keyword and may be used for an async function object inside another async function.
+
+``await`` operator works like this: it resumes passed async function execution, if it is finished - extracts its result, else the caller async function pauses its execution and after it will be resumed, control flow will be passed to a code, that again resumes passed async function execution etc., until passed async function execution isn't finished.
+
+This operator is somewhat equivalent to the following code:
+
+.. code-block:: u_spr
+
+   loop
+   {
+       if_coro_advance( x : f )
+       {
+           // x - await operator result.
+           break;
+       }
+       else
+       {
+           yield;
+       }
+   }
+
+``await`` operator requires passed value to be an immediate value of an async function type.
+It's also necessary that a passed function is not finished yet, otherwise ``halt`` will be executed.
+After obtaining of the execution result passed async function object is destroyed properly.
+
+``await`` operator usage example:
+
+.. code-block:: u_spr
+
+   fn async Foo( i32 x ) : i32;
+
+   fn async Bar( i32 x, i32 y ) : i32
+   {
+       auto foo_res= Foo( x * y ).await;
+       return foo_res / 3;
+   }
+
+In fact ``await`` operator is just a way to simplify an async function call from another async function.
+Where for regular functions just regular call operator is used, for async function call operator with following ``await`` operator is used instead.
+
 *********************
 *Async function type*
 *********************
