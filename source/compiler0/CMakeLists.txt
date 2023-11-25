@@ -104,14 +104,13 @@ endif()
 # See https://ps-group.github.io/cxx/coverage_gcc as example.
 
 add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/coverage_test.info
+	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/coverage.info
 	DEPENDS Tests
-	COMMAND lcov -t coverage_test -o coverage_test.info -c  -d ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND genhtml -o coverage_report coverage_test.info
+	COMMAND lcov -o coverage.info -c -d ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND genhtml -o coverage_report coverage.info
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
 
 add_custom_target(
 	CoverageRun
-	ALL
-	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/coverage_test.info
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/coverage.info
 	SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp_tests_launcher.cpp )
