@@ -171,6 +171,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			!r.GetTupleTypeParam().empty() ||
 			!r.GetRawPointerTypeParam().empty() ||
 			!r.GetFunctionTypeParam().empty() ||
+			!r.GetCoroutineTypeParam().empty() ||
 			!r.GetSpecializedTemplateParam().empty() )
 		{
 			return ConversionsCompareResult::RightIsBetter;
@@ -190,6 +191,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			!r.GetTupleTypeParam().empty() ||
 			!r.GetRawPointerTypeParam().empty() ||
 			!r.GetFunctionTypeParam().empty() ||
+			!r.GetCoroutineTypeParam().empty() ||
 			!r.GetSpecializedTemplateParam().empty() )
 		{
 			return ConversionsCompareResult::LeftIsBetter;
@@ -329,6 +331,30 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 				}
 			}
 			return result;
+		}
+	}
+	if_var( &l_coroutine_type : l.GetCoroutineTypeParam() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Coroutine type is more specialized, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then coroutine type.
+		}
+		if_var( &r_coroutine_type : r.GetCoroutineTypeParam() )
+		{
+			if( l_coroutine_type.kind != r_coroutine_type.kind ||
+				l_coroutine_type.return_value_type != r_coroutine_type.return_value_type ||
+				l_coroutine_type.return_references != r_coroutine_type.return_references ||
+				l_coroutine_type.return_inner_references != r_coroutine_type.return_inner_references ||
+				l_coroutine_type.inner_references != r_coroutine_type.inner_references )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+
+			return CompareTemplateSpecialization( l_coroutine_type.return_type, r_coroutine_type.return_type );
 		}
 	}
 	if_var( &l_specialized_template : l.GetSpecializedTemplateParam() )

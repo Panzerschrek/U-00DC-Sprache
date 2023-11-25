@@ -108,6 +108,8 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then raw pointer.
 		if( right_template_parameter.GetFunction() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then function.
+		if( right_template_parameter.GetCoroutine() != nullptr )
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then coroutine.
 		if( right_template_parameter.GetTemplate() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then template.
 		else U_ASSERT(false);
@@ -208,6 +210,25 @@ ConversionsCompareResult TemplateSpecializationCompare(
 					return ConversionsCompareResult::Incomparable;
 			}
 			return result;
+		}
+		else U_ASSERT(false);
+	}
+	else if( const auto l_coroutine= left_template_parameter.GetCoroutine() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then coroutine.
+		else if( right_template_parameter.IsTemplateParam() )
+			return ConversionsCompareResult::LeftIsBetter; // Coroutine is more specialized, then template.
+		else if( const auto r_coroutine= right_template_parameter.GetCoroutine() )
+		{
+			if( l_coroutine->kind != r_coroutine->kind ||
+				l_coroutine->return_value_type != r_coroutine->return_value_type ||
+				l_coroutine->return_references != r_coroutine->return_references ||
+				l_coroutine->return_inner_references != r_coroutine->return_inner_references ||
+				l_coroutine->inner_references != r_coroutine->inner_references )
+				return ConversionsCompareResult::Incomparable;;
+
+			return TemplateSpecializationCompare( *l_coroutine->return_type, *r_coroutine->return_type );
 		}
 		else U_ASSERT(false);
 	}
