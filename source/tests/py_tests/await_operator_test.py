@@ -319,6 +319,210 @@ def AwaitOperator_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def AwaitOperator_Test10():
+	c_program_text= """
+		fn async Div3( u32 x ) : u32
+		{
+			yield;
+			yield;
+			return x / 3u;
+		}
+		fn async Bar() : u32
+		{
+			// Use "await" in both parts of binary operator.
+			return Div3( 65u ).await * Div3( 18u ).await;
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			loop
+			{
+				if_coro_advance( r : f )
+				{
+					halt if( r != ( 65u / 3u ) * ( 18u / 3u ) );
+					break;
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AwaitOperator_Test11():
+	c_program_text= """
+		fn async Mul5( i32 x ) : i32
+		{
+			return x * 5;
+		}
+		fn async Bar( bool cond ) : i32
+		{
+			yield;
+			// Use "await" in both parts of select operator.
+			return select( cond ? Mul5( 67 ).await : Mul5( -14 ).await );
+		}
+		fn Foo()
+		{
+			{
+				auto mut f= Bar( true );
+				loop
+				{
+					if_coro_advance( r : f )
+					{
+						halt if( r != 67 * 5 );
+						break;
+					}
+				}
+			}
+			{
+				auto mut f= Bar( false );
+				loop
+				{
+					if_coro_advance( r : f )
+					{
+						halt if( r != (-14) * 5 );
+						break;
+					}
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AwaitOperator_Test12():
+	c_program_text= """
+		fn async InvertBool( bool b ) : bool
+		{
+			return !b;
+		}
+		fn async Bar( bool cond1, bool cond2 ) : bool
+		{
+			// Use await in the right part of lazy logical operator.
+			return cond1 && InvertBool( cond2 ).await;
+		}
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 4; ++i )
+			{
+				var bool cond1= (i&1) != 0;
+				var bool cond2= (i&2) != 0;
+				auto mut f= Bar( cond1, cond2 );
+				loop
+				{
+					if_coro_advance( b : f )
+					{
+						halt if( b != (cond1 && (!cond2)) );
+						break;
+					}
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AwaitOperator_Test13():
+	c_program_text= """
+		fn async InvertBool( bool b ) : bool
+		{
+			return !b;
+		}
+		fn async Bar( bool cond1, bool cond2 ) : bool
+		{
+			// Use await in the left part of lazy logical operator.
+			return InvertBool( cond1 ).await && cond2;
+		}
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 4; ++i )
+			{
+				var bool cond1= (i&1) != 0;
+				var bool cond2= (i&2) != 0;
+				auto mut f= Bar( cond1, cond2 );
+				loop
+				{
+					if_coro_advance( b : f )
+					{
+						halt if( b != ((!cond1) && cond2) );
+						break;
+					}
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AwaitOperator_Test14():
+	c_program_text= """
+		fn async InvertBool( bool b ) : bool
+		{
+			return !b;
+		}
+		fn async Bar( bool cond1, bool cond2 ) : bool
+		{
+			// Use await in the right part of lazy logical operator.
+			return cond1 || InvertBool( cond2 ).await;
+		}
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 4; ++i )
+			{
+				var bool cond1= (i&1) != 0;
+				var bool cond2= (i&2) != 0;
+				auto mut f= Bar( cond1, cond2 );
+				loop
+				{
+					if_coro_advance( b : f )
+					{
+						halt if( b != (cond1 || (!cond2)) );
+						break;
+					}
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AwaitOperator_Test15():
+	c_program_text= """
+		fn async InvertBool( bool b ) : bool
+		{
+			return !b;
+		}
+		fn async Bar( bool cond1, bool cond2 ) : bool
+		{
+			// Use await in the left part of lazy logical operator.
+			return InvertBool( cond1 ).await || cond2;
+		}
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 4; ++i )
+			{
+				var bool cond1= (i&1) != 0;
+				var bool cond2= (i&2) != 0;
+				auto mut f= Bar( cond1, cond2 );
+				loop
+				{
+					if_coro_advance( b : f )
+					{
+						halt if( b != ((!cond1) || cond2) );
+						break;
+					}
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ImmediateValueExpectedInAwaitOperator_Test0():
 	c_program_text= """
 		fn async SomeFunc() : i32;

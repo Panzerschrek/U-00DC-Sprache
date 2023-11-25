@@ -3985,6 +3985,51 @@ U_TEST(AwaitOperator_Destruction_Test18)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 2222, 1111 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test19)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async Get123() : i32
+		{
+			yield;
+			return 123;
+		}
+		fn async Bar()
+		{
+			var S s0( 777 );
+			// Should not destroy temporary variable of type "S" if "await" inside its constructor arguments doesn't resume.
+			auto s1= S( Get123().await );
+			var S s2( 999 );
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 777 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=
