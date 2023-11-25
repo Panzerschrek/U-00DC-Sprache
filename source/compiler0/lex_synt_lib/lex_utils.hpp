@@ -8,6 +8,4 @@ namespace U
 // Complexity is linear.
 const Lexem* GetLexemForPosition( const uint32_t line, const uint32_t column, const Lexems& lexems );
 
-SrcLoc GetLexemEnd( const uint32_t line, const uint32_t column, const Lexems& lexems );
-
 } // namespace U

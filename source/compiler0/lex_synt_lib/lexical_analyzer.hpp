@@ -123,9 +123,6 @@ struct Lexem
 	Type type= Type::None;
 };
 
-bool operator==(const Lexem& l, const Lexem& r );
-bool operator!=(const Lexem& l, const Lexem& r );
-
 using Lexems= std::vector<Lexem>;
 
 struct LexicalAnalysisResult

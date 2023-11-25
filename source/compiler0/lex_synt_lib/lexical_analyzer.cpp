@@ -498,16 +498,6 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 
 } // namespace
 
-bool operator==(const Lexem& l, const Lexem& r )
-{
-	return l.text == r.text && l.src_loc == r.src_loc && l.type == r.type;
-}
-
-bool operator!=(const Lexem& l, const Lexem& r )
-{
-	return !(l == r );
-}
-
 LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, const bool collect_comments )
 {
 	LexicalAnalysisResult result;
