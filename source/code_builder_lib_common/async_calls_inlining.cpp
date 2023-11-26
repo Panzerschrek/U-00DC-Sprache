@@ -210,6 +210,113 @@ llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
 	return result;
 }
 
+struct AwaitLoopBlock
+{
+	llvm::CallInst* resume_call= nullptr;
+	llvm::CallInst* done_call= nullptr;
+	llvm::BranchInst* done_br= nullptr;
+	llvm::BasicBlock* done_block= nullptr;
+	llvm::BasicBlock* not_done_block= nullptr;
+};
+
+std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
+{
+	AwaitLoopBlock result;
+
+	auto it= bb.begin();
+	const auto it_end= bb.end();
+
+	if( it == it_end )
+	{
+		std::cout << "Invalid await loop block" << std::endl;
+		return std::nullopt;
+	}
+	if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &*it ) )
+	{
+		if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+		{
+			if( callee_function->getIntrinsicID() == llvm::Intrinsic::coro_resume )
+				result.resume_call= call_instruction;
+			else
+			{
+				std::cout << "expected resume call, find another function call" << std::endl;
+				return std::nullopt;
+			}
+		}
+		else
+		{
+			std::cout << "expected resume call, find non-function call" << std::endl;
+			return std::nullopt;
+		}
+	}
+	else
+	{
+		std::cout << "expected resume call, foud non-call" << std::endl;
+		return std::nullopt;
+	}
+
+	++it;
+	if( it == it_end )
+	{
+		std::cout << "Invalid await loop block" << std::endl;
+		return std::nullopt;
+	}
+	if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &*it ) )
+	{
+		if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+		{
+			if( callee_function->getIntrinsicID() == llvm::Intrinsic::coro_done )
+				result.done_call= call_instruction;
+			else
+			{
+				std::cout << "expected done call, find another function call" << std::endl;
+				return std::nullopt;
+			}
+		}
+		else
+		{
+			std::cout << "expected done call, find non-function call" << std::endl;
+			return std::nullopt;
+		}
+	}
+	else
+	{
+		std::cout << "expected done call, foud non-call" << std::endl;
+		return std::nullopt;
+	}
+
+	++it;
+	if( it == it_end )
+	{
+		std::cout << "Invalid await loop block" << std::endl;
+		return std::nullopt;
+	}
+	if( const auto branch_instruction= llvm::dyn_cast<llvm::BranchInst>( &*it ) )
+	{
+		result.done_br= branch_instruction;
+		if( !branch_instruction->isConditional() )
+		{
+			std::cout << "Invalid branching at the end of the await loop block" << std::endl;
+			return std::nullopt;
+		}
+		result.done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 1u ) );
+		result.not_done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 2u ) );
+		if( result.done_block == nullptr || result.not_done_block == nullptr )
+		{
+			std::cout << "Wrong await loop branching destination" << std::endl;
+			return std::nullopt;
+		}
+	}
+	else
+	{
+		std::cout << "expected branching" << std::endl;
+		return std::nullopt;
+	}
+
+	std::cout << "Successfully parsed await loop block" << std::endl;
+	return result;
+}
+
 llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction )
 {
 	llvm::Value* const callee= GetCallee( call_instruction );
@@ -239,6 +346,10 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	const auto await_loop_block= GetAwaitLoopBlock( *await_instructions->coro_handle_load );
 	if( await_loop_block == nullptr )
+		return;
+
+	const auto await_loop_block_parsed= ParseAwaitLoopBlock( *await_loop_block );
+	if( await_loop_block_parsed == std::nullopt )
 		return;
 
 	// Clone callee and replace call to original with call to its clone.
