@@ -394,7 +394,7 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 	return result;
 }
 
-void RemoveInlinedFunctionCoroutineBlocks( llvm::Function& function, const CoroutineBlocks& blocks )
+void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks )
 {
 	// Create break from the start block to the first block after coroutine blocks.
 
@@ -416,6 +416,8 @@ void RemoveInlinedFunctionCoroutineBlocks( llvm::Function& function, const Corou
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
+	U_UNUSED(function);
+
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
 	if( coroutine_object == nullptr )
 		return;
@@ -435,18 +437,22 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( await_loop_block_parsed == std::nullopt )
 		return;
 
+	const auto destination_coroutine_blocks= CollectCoroutineBlocks( function );
+	if( destination_coroutine_blocks == std::nullopt )
+		return;
+
 	// Clone callee and replace call to original with call to its clone.
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
 	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
 	//call_instruction.setCalledFunction( callee_clone );
 
-	const auto coroutine_blocks= CollectCoroutineBlocks( *callee_clone );
-	if( coroutine_blocks == std::nullopt )
+	const auto source_coroutine_blocks= CollectCoroutineBlocks( *callee_clone );
+	if( source_coroutine_blocks == std::nullopt )
 		return;
 
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
-	RemoveInlinedFunctionCoroutineBlocks( *callee_clone, *coroutine_blocks );
+	RemoveInlinedFunctionCoroutineBlocks( *source_coroutine_blocks );
 }
 
 void ProcessFunction( llvm::Function& function )
