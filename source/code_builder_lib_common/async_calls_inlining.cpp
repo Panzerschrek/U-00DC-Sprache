@@ -352,11 +352,13 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 			llvm::Instruction& instruction= *instructions_it;
 			if( instruction.getMetadata( "u_coro_block_prepare" ) != nullptr )
 			{
+				result.other_coroutine_blocks.push_back( &basic_block );
 				result.block_before_prepare= basic_block.getSinglePredecessor();
 				std::cout << "Found block before prepare: " << result.block_before_prepare->getName().str() << std::endl;
 			}
 			else if( instruction.getMetadata( "u_coro_block_begin" ) != nullptr )
 			{
+				result.other_coroutine_blocks.push_back( &basic_block );
 				result.first_block_after_coroutine_blocks= basic_block.getSingleSuccessor();
 				std::cout << "Found block after coroutine blocks: " << result.first_block_after_coroutine_blocks->getName().str() << std::endl;
 			}
@@ -392,6 +394,26 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 	return result;
 }
 
+void RemoveInlinedFunctionCoroutineBlocks( llvm::Function& function, const CoroutineBlocks& blocks )
+{
+	// Create break from the start block to the first block after coroutine blocks.
+
+	const auto terminator= blocks.block_before_prepare->getTerminator();
+	U_ASSERT( terminator != nullptr );
+
+	const auto br= llvm::BranchInst::Create( blocks.first_block_after_coroutine_blocks, blocks.block_before_prepare );
+	br->setName( "shortcut coro blocks" );
+
+	terminator->replaceAllUsesWith( br );
+	terminator->eraseFromParent();
+
+	for( llvm::BasicBlock* const block : blocks.other_coroutine_blocks )
+	{
+		block->dropAllReferences();
+		block->eraseFromParent();
+	}
+}
+
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
@@ -416,9 +438,15 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	// Clone callee and replace call to original with call to its clone.
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
 	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
-	call_instruction.setCalledFunction( callee_clone );
+	//call_instruction.setCalledFunction( callee_clone );
 
-	CollectCoroutineBlocks( *callee_clone );
+	const auto coroutine_blocks= CollectCoroutineBlocks( *callee_clone );
+	if( coroutine_blocks == std::nullopt )
+		return;
+
+	std::cout << "Tranform cloned inlined function" << std::endl;
+
+	RemoveInlinedFunctionCoroutineBlocks( *callee_clone, *coroutine_blocks );
 }
 
 void ProcessFunction( llvm::Function& function )
