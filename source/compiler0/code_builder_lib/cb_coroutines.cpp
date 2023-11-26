@@ -261,10 +261,14 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 		? coroutine_type_description->return_type.GetLLVMType()
 		: pointer_type;
 
-	function_context.llvm_ir_builder.GetInsertBlock()->setName( "coro_prepare" );
+	llvm::Value* const promise= function_context.alloca_ir_builder.CreateAlloca( promise_type, nullptr, "coro_promise" );
 
-	// Yes, create "alloca" not in "alloca" block. It is safe to do such here.
-	llvm::Value* const promise= function_context.llvm_ir_builder.CreateAlloca( promise_type, nullptr, "coro_promise" );
+	const auto coro_prepare_block= llvm::BasicBlock::Create( llvm_context_, "coro_prepare" );
+	function_context.llvm_ir_builder.CreateBr( coro_prepare_block );
+
+	// Prepare block.
+	function_context.function->getBasicBlockList().push_back( coro_prepare_block );
+	function_context.llvm_ir_builder.SetInsertPoint( coro_prepare_block );
 
 	U_ASSERT( function_context.s_ret == nullptr );
 	function_context.s_ret= promise;
@@ -314,7 +318,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	function_context.coro_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend" );
 
-	const auto func_code_block= llvm::BasicBlock::Create( llvm_context_, "func_code" );
+	const auto func_code_block= llvm::BasicBlock::Create( llvm_context_, "func_code_after_coro_blocks" );
 	function_context.llvm_ir_builder.CreateBr( func_code_block );
 
 	// Cleanup block.
