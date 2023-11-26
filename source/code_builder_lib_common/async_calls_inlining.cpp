@@ -4,7 +4,11 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 #include "pop_llvm_warnings.hpp"
+
+#include "../lex_synt_lib_common/assert.hpp"
+
 #include "async_calls_inlining.hpp"
 
 namespace U
@@ -13,7 +17,7 @@ namespace U
 namespace
 {
 
-const llvm::Value* GetCallee( const llvm::CallInst& call_instruction )
+llvm::Value* GetCallee( llvm::CallInst& call_instruction )
 {
 	return call_instruction.getOperand( call_instruction.getNumOperands() - 1u ); // Function is last operand
 }
@@ -158,6 +162,21 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 	return res;
 }
 
+//
+llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction )
+{
+	llvm::Value* const callee= GetCallee( call_instruction );
+	U_ASSERT( callee != nullptr );
+	llvm::Function* const callee_function= llvm::dyn_cast<llvm::Function>( callee );
+	U_ASSERT( callee_function != nullptr );
+	U_ASSERT( callee_function->hasFnAttribute( llvm::Attribute::PresplitCoroutine ) );
+
+	llvm::ValueToValueMapTy map;
+	llvm::Function* const new_function= llvm::CloneFunction( callee_function, map );
+
+	return new_function;
+}
+
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
@@ -170,6 +189,11 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( await_instructions == std::nullopt )
 		return;
 	std::cout << "Find single await for given coroutine object" << std::endl;
+
+	// Clone callee and replace call to original with call to its clone.
+	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
+	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
+	call_instruction.setCalledFunction( callee_clone );
 }
 
 void ProcessFunction( llvm::Function& function )
