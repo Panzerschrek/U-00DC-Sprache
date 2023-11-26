@@ -395,7 +395,7 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 	return result;
 }
 
-void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks )
+void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks, const CoroutineBlocks& blocks_for_replacement )
 {
 	// Create break from the start block to the first block after coroutine blocks.
 
@@ -403,20 +403,24 @@ void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks )
 	U_ASSERT( terminator != nullptr );
 
 	const auto br= llvm::BranchInst::Create( blocks.first_block_after_coroutine_blocks, blocks.block_before_prepare );
-	br->setName( "shortcut coro blocks" );
 
 	terminator->replaceAllUsesWith( br );
 	terminator->eraseFromParent();
 
+	blocks.suspend->replaceAllUsesWith( blocks_for_replacement.suspend );
+	blocks.suspend->eraseFromParent();
+
+	blocks.suspend_final->replaceAllUsesWith( blocks_for_replacement.suspend_final );
+	blocks.suspend_final->eraseFromParent();
+
 	for( llvm::BasicBlock* const block : blocks.other_coroutine_blocks )
 	{
-		(void)block;
-		// block->dropAllReferences();
-		// block->eraseFromParent();
+		block->dropAllReferences();
+		block->removeFromParent();
 	}
 }
 
-void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Function& inlined_function, const llvm::BasicBlock& inline_up_to_this_block )
+void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Function& inlined_function, llvm::BasicBlock& first_block_after_coroutine_blocks )
 {
 	// Assume that blocks in ther suource function are located in control flow order.
 	// So, we just extract all blocks up to given.
@@ -425,23 +429,30 @@ void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Func
 	llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
 	for( llvm::BasicBlock& basic_block : inlined_function )
 	{
-		if( &basic_block == &inline_up_to_this_block )
+		if( &basic_block == &first_block_after_coroutine_blocks )
 			break;
 		blocks_to_inline.push_back( &basic_block );
 
 		basic_block.setName( basic_block.getName() + "_inlined" );
 	}
 
-	llvm::BasicBlock* const insert_after_this_bb= call_instruction.getParent();
+	llvm::BasicBlock* const call_instruction_original_bb= call_instruction.getParent();
+	llvm::BasicBlock* const block_rest_after_call= call_instruction_original_bb->splitBasicBlock( &call_instruction, "after_async_call_inlined" );
+
+	block_rest_after_call->replaceAllUsesWith( blocks_to_inline.front() );
 
 	// Remove them from the source function and insert into destination.
-	for( llvm::BasicBlock* const basic_block : blocks_to_inline )
-		basic_block->moveAfter( insert_after_this_bb );
+	for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
+		(*it)->moveAfter( call_instruction_original_bb );
 
 	// For now replace call result with undef value.
 	const auto undef= llvm::UndefValue::get( call_instruction.getType() );
 	call_instruction.replaceAllUsesWith( undef );
 	call_instruction.eraseFromParent();
+
+	// This blocks should contain only initial suspend. Remove it.
+	first_block_after_coroutine_blocks.replaceAllUsesWith( block_rest_after_call );
+	first_block_after_coroutine_blocks.eraseFromParent();
 }
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
@@ -482,7 +493,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
-	RemoveInlinedFunctionCoroutineBlocks( *source_coroutine_blocks );
+	RemoveInlinedFunctionCoroutineBlocks( *source_coroutine_blocks, *destination_coroutine_blocks );
 	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
 }
 
