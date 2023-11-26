@@ -705,9 +705,11 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		function_context.function->getBasicBlockList().push_back( loop_block );
 		function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-		function_context.llvm_ir_builder.CreateCall(
+		llvm::CallInst* const resume_call= function_context.llvm_ir_builder.CreateCall(
 			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_resume ),
 			{ coro_handle } );
+
+		resume_call->setMetadata( llvm::StringRef("u_await_resume"), llvm::MDNode::get( llvm_context_, {} ) );
 
 		llvm::Value* const done_after_resume= function_context.llvm_ir_builder.CreateCall(
 			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),

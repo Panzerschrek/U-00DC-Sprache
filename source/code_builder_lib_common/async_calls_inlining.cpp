@@ -162,7 +162,54 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 	return res;
 }
 
-//
+llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
+{
+	llvm::BasicBlock* result= nullptr;
+	for( llvm::User* const user : coro_handle_load.users() )
+	{
+		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>(user) )
+		{
+			llvm::BasicBlock* bb= instruction->getParent();
+			if( bb == nullptr )
+			{
+				std::cout << "Instruction with no parent!" << std::endl;
+				return nullptr;
+			}
+
+			bool has_coro_resume= false;
+			for( const llvm::Instruction& instruction : bb->getInstList() )
+			{
+				if( instruction.getMetadata("u_await_resume") != nullptr )
+				{
+					has_coro_resume= true;
+					break;
+				}
+			}
+			if( !has_coro_resume )
+				continue;
+
+			if( result != nullptr && result != bb )
+			{
+				std::cout << "Duplicated await loop block!" << std::endl;
+				return nullptr;
+			}
+			result= bb;
+		}
+		else
+		{
+			std::cout << "Unexpected coro handle load user kind - non-instruction" << std::endl;
+			return nullptr;
+		}
+	}
+
+	if( result == nullptr )
+		std::cout << "Can't find await loop block" << std::endl;
+	else
+		std::cout << "Find await loop block " << result->getName().str() << std::endl;
+
+	return result;
+}
+
 llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction )
 {
 	llvm::Value* const callee= GetCallee( call_instruction );
@@ -189,6 +236,10 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( await_instructions == std::nullopt )
 		return;
 	std::cout << "Find single await for given coroutine object" << std::endl;
+
+	const auto await_loop_block= GetAwaitLoopBlock( *await_instructions->coro_handle_load );
+	if( await_loop_block == nullptr )
+		return;
 
 	// Clone callee and replace call to original with call to its clone.
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
