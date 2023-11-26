@@ -2,6 +2,7 @@
 #include <optional>
 
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/Transforms/Utils/Cloning.h>
@@ -409,9 +410,38 @@ void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks )
 
 	for( llvm::BasicBlock* const block : blocks.other_coroutine_blocks )
 	{
-		block->dropAllReferences();
-		block->eraseFromParent();
+		(void)block;
+		// block->dropAllReferences();
+		// block->eraseFromParent();
 	}
+}
+
+void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Function& inlined_function, const llvm::BasicBlock& inline_up_to_this_block )
+{
+	// Assume that blocks in ther suource function are located in control flow order.
+	// So, we just extract all blocks up to given.
+
+	// Collect blocks.
+	llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
+	for( llvm::BasicBlock& basic_block : inlined_function )
+	{
+		if( &basic_block == &inline_up_to_this_block )
+			break;
+		blocks_to_inline.push_back( &basic_block );
+
+		basic_block.setName( basic_block.getName() + "_inlined" );
+	}
+
+	llvm::BasicBlock* const insert_after_this_bb= call_instruction.getParent();
+
+	// Remove them from the source function and insert into destination.
+	for( llvm::BasicBlock* const basic_block : blocks_to_inline )
+		basic_block->moveAfter( insert_after_this_bb );
+
+	// For now replace call result with undef value.
+	const auto undef= llvm::UndefValue::get( call_instruction.getType() );
+	call_instruction.replaceAllUsesWith( undef );
+	call_instruction.eraseFromParent();
 }
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
@@ -444,7 +474,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	// Clone callee and replace call to original with call to its clone.
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
 	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
-	//call_instruction.setCalledFunction( callee_clone );
+	call_instruction.setCalledFunction( callee_clone );
 
 	const auto source_coroutine_blocks= CollectCoroutineBlocks( *callee_clone );
 	if( source_coroutine_blocks == std::nullopt )
@@ -453,6 +483,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
 	RemoveInlinedFunctionCoroutineBlocks( *source_coroutine_blocks );
+	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
 }
 
 void ProcessFunction( llvm::Function& function )
