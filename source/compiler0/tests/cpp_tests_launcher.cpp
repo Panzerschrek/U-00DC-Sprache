@@ -6,6 +6,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
@@ -229,6 +230,17 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	U_TEST_ASSERT( build_result.errors.empty() );
 
 	return std::move( build_result.module );
+}
+
+std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const char* const text )
+{
+	auto module= BuildProgram( text );
+	if( module == nullptr )
+		return nullptr;
+
+	InlineAsyncCalls( *module );
+
+	return module;
 }
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )
