@@ -331,6 +331,67 @@ llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction
 	return new_function;
 }
 
+struct CoroutineBlocks
+{
+	llvm::BasicBlock* block_before_prepare= nullptr;
+	llvm::BasicBlock* first_block_after_coroutine_blocks= nullptr;
+	llvm::BasicBlock* suspend= nullptr;
+	llvm::BasicBlock* suspend_final= nullptr;
+	llvm::SmallVector<llvm::BasicBlock*, 8> other_coroutine_blocks;
+};
+
+std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function )
+{
+	CoroutineBlocks result;
+	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
+	{
+		const auto instructions_it= basic_block.begin();
+		const auto instructions_end= basic_block.end();
+		if( instructions_it != instructions_end )
+		{
+			llvm::Instruction& instruction= *instructions_it;
+			if( instruction.getMetadata( "u_coro_block_prepare" ) != nullptr )
+			{
+				result.block_before_prepare= basic_block.getSinglePredecessor();
+				std::cout << "Found block before prepare: " << result.block_before_prepare->getName().str() << std::endl;
+			}
+			else if( instruction.getMetadata( "u_coro_block_begin" ) != nullptr )
+			{
+				result.first_block_after_coroutine_blocks= basic_block.getSingleSuccessor();
+				std::cout << "Found block after coroutine blocks: " << result.first_block_after_coroutine_blocks->getName().str() << std::endl;
+			}
+			else if( instruction.getMetadata( "u_coro_block_suspend" ) != nullptr )
+			{
+				result.suspend= &basic_block;
+				std::cout << "Found suspend block: " << result.suspend->getName().str() << std::endl;
+			}
+			else if( instruction.getMetadata( "u_coro_block_suspend_final" ) != nullptr )
+			{
+				result.suspend_final= &basic_block;
+				std::cout << "Found suspend final block: " << result.suspend_final->getName().str() << std::endl;
+			}
+			else if( instruction.getMetadata( "u_coro_block" ) != nullptr )
+			{
+				result.other_coroutine_blocks.push_back( &basic_block );
+				std::cout << "Found other coroutine block: " << basic_block.getName().str() << std::endl;
+			}
+		}
+	}
+
+	if( result.block_before_prepare == nullptr ||
+		result.first_block_after_coroutine_blocks == nullptr ||
+		result.suspend == nullptr ||
+		result.suspend_final == nullptr )
+	{
+		std::cout << "Can't find some of coroutine blocks!" << std::endl;
+		return std::nullopt;
+	}
+
+	std::cout << "Susscessfully found coroutine blocks" << std::endl;
+
+	return result;
+}
+
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
@@ -356,6 +417,8 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
 	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
 	call_instruction.setCalledFunction( callee_clone );
+
+	CollectCoroutineBlocks( *callee_clone );
 }
 
 void ProcessFunction( llvm::Function& function )

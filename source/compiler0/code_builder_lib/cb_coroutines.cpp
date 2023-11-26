@@ -250,6 +250,9 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 
 void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 {
+	// We need to mark somehow basic blocks for furtheroptimizations.
+	// Since it's not possible to associate metadata with blocks, associate it with first block instrucitons.
+
 	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
 
 	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
@@ -275,10 +278,11 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	llvm::Value* const null= llvm::ConstantPointerNull::get( pointer_type );
 
-	llvm::Value* const coro_id= function_context.llvm_ir_builder.CreateCall(
+	llvm::CallInst* const coro_id= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_id ),
 		{ llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, uint64_t(0) ) ), promise, null, null, },
 		"coro_id" );
+	coro_id->setMetadata( llvm::StringRef( "u_coro_block_prepare" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	llvm::Value* const coro_need_to_alloc= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_alloc ),
@@ -292,24 +296,30 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	function_context.llvm_ir_builder.CreateCondBr( coro_need_to_alloc, block_need_to_alloc, block_coro_begin );
 
+	// Need to alloc block.
 	function_context.function->getBasicBlockList().push_back( block_need_to_alloc );
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_alloc );
 
-	llvm::Value* const coro_frame_size= function_context.llvm_ir_builder.CreateCall(
+	llvm::CallInst* const coro_frame_size= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_size, { fundamental_llvm_types_.int_ptr } ),
 		{},
 		"coro_frame_size" );
+	coro_frame_size->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	llvm::Value* const coro_frame_memory_allocated=
 		function_context.llvm_ir_builder.CreateCall( malloc_func_, { coro_frame_size }, "coro_frame_memory_allocated" );
 
 	function_context.llvm_ir_builder.CreateBr( block_coro_begin );
 
+	// Coro begin block.
 	function_context.function->getBasicBlockList().push_back( block_coro_begin );
 	function_context.llvm_ir_builder.SetInsertPoint( block_coro_begin );
+
 	llvm::PHINode* const coro_frame_memory= function_context.llvm_ir_builder.CreatePHI( pointer_type, 2, "coro_frame_memory" );
 	coro_frame_memory->addIncoming( null, coro_need_to_alloc_check_block );
 	coro_frame_memory->addIncoming( coro_frame_memory_allocated, block_need_to_alloc );
+
+	coro_frame_memory->setMetadata( llvm::StringRef( "u_coro_block_begin" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	llvm::Value* const coro_handle= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_begin ),
@@ -326,10 +336,12 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.function->getBasicBlockList().push_back( function_context.coro_cleanup_bb );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_cleanup_bb );
 
-	llvm::Value* const mem_for_free= function_context.llvm_ir_builder.CreateCall(
+
+	llvm::CallInst* const mem_for_free= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_free ),
 		{ coro_id, coro_handle },
 		"coro_frame_memory_for_free" );
+	mem_for_free->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	llvm::Value* const need_to_free=
 		function_context.llvm_ir_builder.CreateICmpNE(
@@ -340,18 +352,21 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	const auto block_need_to_free= llvm::BasicBlock::Create( llvm_context_, "need_to_free" );
 	function_context.llvm_ir_builder.CreateCondBr( need_to_free, block_need_to_free, function_context.coro_suspend_bb );
 
+	// Need to free block.
 	function_context.function->getBasicBlockList().push_back( block_need_to_free );
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_free );
-	function_context.llvm_ir_builder.CreateCall( free_func_, { mem_for_free } );
+	llvm::CallInst* free_call= function_context.llvm_ir_builder.CreateCall( free_func_, { mem_for_free } );
+	free_call->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_suspend_bb );
 
 	// Suspend block.
 	function_context.function->getBasicBlockList().push_back( function_context.coro_suspend_bb );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_suspend_bb );
 
-	function_context.llvm_ir_builder.CreateCall(
+	llvm::CallInst* const end_call= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_end ),
 		{ coro_handle, llvm::ConstantInt::getFalse( llvm_context_ ) } );
+	end_call->setMetadata( llvm::StringRef( "u_coro_block_suspend" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	function_context.llvm_ir_builder.CreateRet( coro_handle );
 
@@ -360,10 +375,11 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.function->getBasicBlockList().push_back( function_context.coro_final_suspend_bb );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_final_suspend_bb );
 
-	llvm::Value* const final_suspend_value= function_context.llvm_ir_builder.CreateCall(
+	llvm::CallInst* const final_suspend_value= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
 		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getTrue( llvm_context_ ) },
 		"final_suspend_value" );
+	final_suspend_value->setMetadata( llvm::StringRef( "u_coro_block_suspend_final" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	const auto unreachable_block= llvm::BasicBlock::Create( llvm_context_, "coro_final_suspend_unreachable" );
 
@@ -375,7 +391,8 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
 	function_context.function->getBasicBlockList().push_back( unreachable_block );
 	function_context.llvm_ir_builder.SetInsertPoint( unreachable_block );
-	function_context.llvm_ir_builder.CreateUnreachable();
+	llvm::UnreachableInst* unreachable_instruction= function_context.llvm_ir_builder.CreateUnreachable();
+	unreachable_instruction->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	// Block for further function code.
 	function_context.function->getBasicBlockList().push_back( func_code_block );
