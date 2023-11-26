@@ -681,8 +681,10 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		const auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "await_not_done" );
 		const auto done_block= llvm::BasicBlock::Create( llvm_context_, "await_done" );
 
-		llvm::Value* const coro_handle=
+		llvm::LoadInst* const coro_handle=
 			function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), async_func_variable->llvm_value, false, "coro_handle" );
+
+		coro_handle->setMetadata( llvm::StringRef("u_await_coro_handle"), llvm::MDNode::get( llvm_context_, {} ) );
 
 		llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
 			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
@@ -786,8 +788,17 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 
 	if( !function_context.is_functionless_context )
 	{
-		if( async_func_variable->type.HaveDestructor() )
-			CallDestructor( async_func_variable->llvm_value, async_func_variable->type, function_context, names.GetErrors(), src_loc );
+		U_ASSERT( async_func_variable->type.HaveDestructor() );
+
+		const NamesScopeValue* const destructor_value= class_type->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
+		U_ASSERT( destructor_value != nullptr );
+		const OverloadedFunctionsSetConstPtr destructors= destructor_value->value.GetFunctionsSet();
+		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
+
+		const FunctionVariable& destructor= destructors->functions.front();
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { async_func_variable->llvm_value } );
+
+		call_instruction->setMetadata( llvm::StringRef("u_await_destructor_call"), llvm::MDNode::get( llvm_context_, {} ) );
 
 		U_ASSERT( async_func_variable->location == Variable::Location::Pointer );
 		CreateLifetimeEnd( function_context, async_func_variable->llvm_value );

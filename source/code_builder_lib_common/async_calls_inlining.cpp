@@ -1,7 +1,9 @@
 #include <iostream>
+#include <optional>
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
 #include "pop_llvm_warnings.hpp"
 #include "async_calls_inlining.hpp"
 
@@ -75,12 +77,99 @@ llvm::AllocaInst* GetCoroutineObject( llvm::CallInst& call_instruction )
 	return result;
 }
 
+struct AwaitOperatorCoroutineInstructions
+{
+	llvm::LoadInst* coro_handle_load= nullptr;
+	llvm::CallInst* destructor_call= nullptr;
+};
+
+std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstructions( llvm::AllocaInst& coroutine_object )
+{
+	AwaitOperatorCoroutineInstructions res;
+	llvm::StoreInst* initial_store_instruction= nullptr;
+
+	for( llvm::User* const user : coroutine_object.users() )
+	{
+		if( const auto load_instruction= llvm::dyn_cast<llvm::LoadInst>( user ) )
+		{
+			if( load_instruction->getMetadata("u_await_coro_handle") == nullptr )
+			{
+				std::cout << "load for coroutine object outside await operator" << std::endl;
+				return std::nullopt;
+			}
+			if( res.coro_handle_load != nullptr )
+			{
+				std::cout << "duplicated await" << std::endl;
+				return std::nullopt;
+			}
+			res.coro_handle_load= load_instruction;
+		}
+		else if( const auto store_instruction= llvm::dyn_cast<llvm::StoreInst>( user ) )
+		{
+			// This is an initial store for this coroutine object.
+			if( initial_store_instruction != nullptr )
+			{
+				std::cout << "Too much store instructions for the coroutine object" << std::endl;
+				return std::nullopt;
+			}
+			initial_store_instruction= store_instruction;
+		}
+		else if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( user ) )
+		{
+			if( call_instruction->getMetadata( "u_await_destructor_call" ) != nullptr )
+			{
+				if( res.destructor_call != nullptr )
+				{
+					std::cout << "duplicated await" << std::endl;
+					return std::nullopt;
+				}
+				res.destructor_call= call_instruction;
+			}
+			else
+			{
+				const llvm::Value* const callee= GetCallee( *call_instruction );
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
+				{
+					if( callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_start ||
+						callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_end ||
+						callee_function->getName() == "__U_debug_lifetime_start" ||
+						callee_function->getName() == "__U_debug_lifetime_end" )
+						continue; // Allow lifetime instructions for the coroutine object.
+
+					//std::cout << "Unsupported call for coroutine object to function: " << callee_function->getName().str() << std::endl;
+					//return std::nullopt;
+					continue; // TODO - count this destructor call in the destructors branch.
+				}
+
+				std::cout << "Unsupported call for coroutine object" << std::endl;
+				return std::nullopt;
+			}
+		}
+		else
+		{
+			std::cout << "Unexpected instruction for coroutine object - await call optimization isn't possible" << std::endl;
+			return std::nullopt;
+		}
+	}
+
+	if( res.coro_handle_load == nullptr || res.destructor_call == nullptr )
+		return std::nullopt;
+
+	return res;
+}
+
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
 	if( coroutine_object == nullptr )
 		return;
 	std::cout << "Work with coroutine object " << coroutine_object->getName().str() << std::endl;
+
+	// Now we need to ensure that this coroutine object is used only in single "await" operator.
+	const auto await_instructions= GetAwaitOperatorCoroutineInstructions( *coroutine_object );
+	if( await_instructions == std::nullopt )
+		return;
+	std::cout << "Find single await for given coroutine object" << std::endl;
 }
 
 void ProcessFunction( llvm::Function& function )
