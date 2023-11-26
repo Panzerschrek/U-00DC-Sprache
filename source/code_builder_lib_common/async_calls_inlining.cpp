@@ -420,6 +420,78 @@ void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks, const 
 	}
 }
 
+struct InitialSuspedPoint
+{
+	llvm::BasicBlock* suspend_block= nullptr;
+	llvm::BasicBlock* normal_block= nullptr;
+	llvm::BasicBlock* destroy_block= nullptr;
+};
+
+InitialSuspedPoint ParseInitialSuspendBlock( llvm::BasicBlock& block )
+{
+	InitialSuspedPoint result;
+
+	auto it= block.begin();
+	const auto it_end= block.end();
+
+	if( it == it_end )
+	{
+		std::cout << "Invalid initial suspend block" << std::endl;
+		return result;
+	}
+
+	if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &*it ) )
+	{
+		if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+		{
+			if( callee_function->getIntrinsicID() == llvm::Intrinsic::coro_suspend )
+			{}
+			else
+			{
+				std::cout << "expected suspend call, find another function call" << std::endl;
+				return result;
+			}
+		}
+		else
+		{
+			std::cout << "expected suspend call, find non-function call" << std::endl;
+			return result;
+		}
+	}
+	else
+	{
+		std::cout << "expected suspend call, foud non-call" << std::endl;
+		return result;
+	}
+
+	++it;
+	if( it == it_end )
+	{
+		std::cout << "Invalid initial suspend block" << std::endl;
+		return result;
+	}
+	if( const auto switch_instruction= llvm::dyn_cast<llvm::SwitchInst>( &*it ) )
+	{
+		if( switch_instruction->getNumCases() != 2 )
+		{
+			std::cout << "Invalid suspend switch" << std::endl;
+			return result;
+		}
+
+		result.suspend_block= switch_instruction->getDefaultDest();
+		result.normal_block= switch_instruction->getSuccessor(0);
+		result.destroy_block= switch_instruction->getSuccessor(1);
+	}
+	else
+	{
+
+		std::cout << "expected switch instruction" << std::endl;
+		return result;
+	}
+
+	return result;
+}
+
 void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Function& inlined_function, llvm::BasicBlock& first_block_after_coroutine_blocks )
 {
 	// Assume that blocks in ther suource function are located in control flow order.
@@ -453,6 +525,34 @@ void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Func
 	// This blocks should contain only initial suspend. Remove it.
 	first_block_after_coroutine_blocks.replaceAllUsesWith( block_rest_after_call );
 	first_block_after_coroutine_blocks.eraseFromParent();
+}
+
+void ReplaceAwaitLoopBlock(
+	llvm::BasicBlock& await_loop_block,
+	const AwaitLoopBlock& await_loop_block_parsed,
+	const InitialSuspedPoint& initial_suspend_point,
+	const CoroutineBlocks& inlined_function_blocks,
+	llvm::Function& inlined_function )
+{
+	// Collect source blocks.
+	llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
+	for( llvm::BasicBlock& basic_block : inlined_function )
+	{
+		blocks_to_inline.push_back( &basic_block );
+		basic_block.setName( basic_block.getName() + "_inlined" );
+	}
+
+	// Remove them from the source function and insert into destination.
+	for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
+		(*it)->moveAfter( &await_loop_block );
+
+
+	(void)await_loop_block_parsed;
+	(void)initial_suspend_point;
+	(void)inlined_function_blocks;
+
+	//await_loop_block.replaceAllUsesWith( blocks_to_inline.front() );
+	//await_loop_block.eraseFromParent();
 }
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
@@ -491,10 +591,16 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( source_coroutine_blocks == std::nullopt )
 		return;
 
+	const InitialSuspedPoint initial_suspend_point= ParseInitialSuspendBlock( *source_coroutine_blocks->first_block_after_coroutine_blocks );
+
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
 	RemoveInlinedFunctionCoroutineBlocks( *source_coroutine_blocks, *destination_coroutine_blocks );
 	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
+	ReplaceAwaitLoopBlock( *await_loop_block, *await_loop_block_parsed, initial_suspend_point, *source_coroutine_blocks, *callee_clone );
+
+	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
+	callee_clone->eraseFromParent();
 }
 
 void ProcessFunction( llvm::Function& function )
