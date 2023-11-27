@@ -606,6 +606,17 @@ void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Func
 	for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
 		(*it)->moveAfter( call_instruction_original_bb );
 
+	// Replace args in inlined function with given values from the call instruction.
+	{
+		uint32_t i= 0;
+		for( llvm::Argument& arg : inlined_function.args() )
+		{
+			llvm::Value* const op= call_instruction.getArgOperand( i );
+			arg.replaceAllUsesWith( op );
+			++i;
+		}
+	}
+
 	// For now replace call result with undef value.
 	const auto undef= llvm::UndefValue::get( call_instruction.getType() );
 	call_instruction.replaceAllUsesWith( undef );
