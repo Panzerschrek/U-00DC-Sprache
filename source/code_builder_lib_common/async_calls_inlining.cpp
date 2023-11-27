@@ -652,6 +652,8 @@ void ReplaceAwaitLoopBlock(
 	await_loop_block.replaceAllUsesWith( initial_suspend_point.normal_block );
 	await_loop_block.eraseFromParent();
 
+	initial_suspend_point.destroy_block->eraseFromParent(); // It is unreachable.
+
 	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
 	await_loop_block_parsed.not_done_block->eraseFromParent();
 }
