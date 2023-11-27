@@ -336,12 +336,11 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.function->getBasicBlockList().push_back( function_context.coro_cleanup_bb );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_cleanup_bb );
 
-
 	llvm::CallInst* const mem_for_free= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_free ),
 		{ coro_id, coro_handle },
 		"coro_frame_memory_for_free" );
-	mem_for_free->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
+	mem_for_free->setMetadata( llvm::StringRef( "u_coro_block_cleanup" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	llvm::Value* const need_to_free=
 		function_context.llvm_ir_builder.CreateICmpNE(

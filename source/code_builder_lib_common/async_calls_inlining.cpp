@@ -339,11 +339,13 @@ struct CoroutineBlocks
 	llvm::BasicBlock* suspend= nullptr;
 	llvm::BasicBlock* suspend_final= nullptr;
 	llvm::SmallVector<llvm::BasicBlock*, 8> other_coroutine_blocks;
+	llvm::SmallVector<llvm::BasicBlock*, 8> cleanup_predecessors; // Excluding suspend_final.
 };
 
 std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function )
 {
 	CoroutineBlocks result;
+	llvm::BasicBlock* cleanup_block= nullptr;
 	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
 	{
 		const auto instructions_it= basic_block.begin();
@@ -378,13 +380,30 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 				result.other_coroutine_blocks.push_back( &basic_block );
 				std::cout << "Found other coroutine block: " << basic_block.getName().str() << std::endl;
 			}
+			else if( instruction.getMetadata( "u_coro_block_cleanup" ) != nullptr )
+			{
+				result.other_coroutine_blocks.push_back( &basic_block );
+				cleanup_block= &basic_block;
+				std::cout << "Found cleanup block: " << cleanup_block->getName().str() << std::endl;
+			}
+		}
+	}
+
+	for( llvm::pred_iterator it= llvm::pred_begin(cleanup_block), it_end= llvm::pred_end(cleanup_block); it != it_end; ++it )
+	{
+		llvm::BasicBlock* bb= *it;
+		if( bb != result.suspend_final )
+		{
+			std::cout << "Found cleanup redecessor: " << bb->getName().str() << std::endl;
+			result.cleanup_predecessors.push_back(bb);
 		}
 	}
 
 	if( result.block_before_prepare == nullptr ||
 		result.first_block_after_coroutine_blocks == nullptr ||
 		result.suspend == nullptr ||
-		result.suspend_final == nullptr )
+		result.suspend_final == nullptr ||
+		cleanup_block == nullptr )
 	{
 		std::cout << "Can't find some of coroutine blocks!" << std::endl;
 		return std::nullopt;
