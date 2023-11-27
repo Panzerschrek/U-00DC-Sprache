@@ -163,6 +163,22 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 	return res;
 }
 
+void CollectPromiseCalls( llvm::Value& coro_handle, llvm::SmallVectorImpl<llvm::Instruction*>& values )
+{
+	for( llvm::User* const user : coro_handle.users() )
+	{
+		if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( user ) )
+		{
+			if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+			{
+				if( callee_function->getIntrinsicID() == llvm::Intrinsic::coro_promise &&
+					call_instruction->getOperand(0u) == &coro_handle )
+					values.push_back( call_instruction );
+			}
+		}
+	}
+}
+
 llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
 {
 	llvm::BasicBlock* result= nullptr;
@@ -343,11 +359,13 @@ struct CoroutineBlocks
 	llvm::SmallVector<llvm::BasicBlock*, 8> other_coroutine_blocks;
 	llvm::BasicBlock* cleanup= nullptr;
 	llvm::SmallVector<llvm::BasicBlock*, 8> cleanup_predecessors; // Excluding suspend_final.
+	llvm::Value* promise= nullptr;
 };
 
 std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function )
 {
 	CoroutineBlocks result;
+	llvm::BasicBlock* prepare_block= nullptr;
 	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
 	{
 		const auto instructions_it= basic_block.begin();
@@ -357,6 +375,7 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 			llvm::Instruction& instruction= *instructions_it;
 			if( instruction.getMetadata( "u_coro_block_prepare" ) != nullptr )
 			{
+				prepare_block= &basic_block;
 				result.other_coroutine_blocks.push_back( &basic_block );
 				result.block_before_prepare= basic_block.getSinglePredecessor();
 				std::cout << "Found block before prepare: " << result.block_before_prepare->getName().str() << std::endl;
@@ -399,11 +418,30 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 		}
 	}
 
+	if( prepare_block != nullptr )
+	{
+		for( llvm::Instruction& instruction : *prepare_block )
+		{
+			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
+			{
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+				{
+					if( callee_function->getIntrinsicID() == llvm::Intrinsic::coro_id )
+					{
+						result.promise= call_instruction->getOperand(1u);
+						std::cout << "Find promise : " << result.promise->getName().str() << std::endl;
+					}
+				}
+			}
+		}
+	}
+
 	if( result.block_before_prepare == nullptr ||
 		result.first_block_after_coroutine_blocks == nullptr ||
 		result.suspend == nullptr ||
 		result.suspend_final == nullptr ||
-		result.cleanup == nullptr )
+		result.cleanup == nullptr ||
+		result.promise == nullptr )
 	{
 		std::cout << "Can't find some of coroutine blocks!" << std::endl;
 		return std::nullopt;
@@ -575,6 +613,15 @@ void ReplaceAwaitLoopBlock(
 	await_loop_block_parsed.not_done_block->eraseFromParent();
 }
 
+void ReplacePromiseCalls( const llvm::ArrayRef<llvm::Instruction*> promise_calls, llvm::Value& value_for_replacement )
+{
+	for( llvm::Instruction* const call : promise_calls )
+	{
+		call->replaceAllUsesWith( &value_for_replacement );
+		call->eraseFromParent();
+	}
+}
+
 void RemoveLeftoverInlinedCoroutineBlocks( const CoroutineBlocks& coroutine_blocks )
 {
 	const auto module= coroutine_blocks.cleanup->getParent()->getParent();
@@ -626,6 +673,15 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( await_loop_block == nullptr )
 		return;
 
+	llvm::SmallVector<llvm::Instruction*, 4> promise_calls;
+	CollectPromiseCalls( *await_instructions->coro_handle_load, promise_calls );
+	if( promise_calls.empty() )
+	{
+		std::cout << "Can't find any promise call" << std::endl;
+		return;
+	}
+	std::cout << "Find " << promise_calls.size() << " promise calls" << std::endl;
+
 	const auto await_loop_block_parsed= ParseAwaitLoopBlock( *await_loop_block );
 	if( await_loop_block_parsed == std::nullopt )
 		return;
@@ -651,6 +707,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
 	ReplaceAwaitLoopBlock( *destination_coroutine_blocks, *await_loop_block, *await_loop_block_parsed, initial_suspend_point, *source_coroutine_blocks, *callee_clone );
 	RemoveLeftoverInlinedCoroutineBlocks( *source_coroutine_blocks );
+	ReplacePromiseCalls( promise_calls, *source_coroutine_blocks->promise );
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
