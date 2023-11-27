@@ -683,6 +683,22 @@ void RemoveCoroHandleLoad( llvm::LoadInst& coro_handle_load )
 	coro_handle_load.eraseFromParent();
 }
 
+void RemoveAllOperationsWithCoroutineObject( llvm::AllocaInst& coroutine_object )
+{
+	// Assume that at this moment nobody uses results of operations over this coroutine obect.
+	llvm::SmallVector<llvm::Instruction*, 8> users;
+	for( llvm::User* const user : coroutine_object.users() )
+	{
+		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>(user) )
+			users.push_back( instruction );
+	}
+
+	for( llvm::Instruction* const instruction : users )
+		instruction->eraseFromParent();
+
+	coroutine_object.eraseFromParent();
+}
+
 void RemoveLeftoverInlinedCoroutineBlocks( const CoroutineBlocks& coroutine_blocks )
 {
 	const auto module= coroutine_blocks.cleanup->getParent()->getParent();
@@ -779,6 +795,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	RemoveLeftoverInlinedCoroutineBlocks( *source_coroutine_blocks );
 	ReplacePromiseCalls( promise_calls, *source_coroutine_blocks->promise );
 	RemoveCoroHandleLoad( *await_instructions->coro_handle_load );
+	RemoveAllOperationsWithCoroutineObject( *coroutine_object );
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
