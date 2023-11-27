@@ -566,6 +566,13 @@ void ReplaceAwaitLoopBlock(
 
 	std::cout << "Use await loop destroy block: " << await_loop_suspend_point.destroy_block->getName().str() << std::endl;
 	inlined_function_blocks.cleanup->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
+
+	// Jump to normal block of initial suspend point of the inlined function, instead of intering await loop.
+	await_loop_block.replaceAllUsesWith( initial_suspend_point.normal_block );
+	await_loop_block.eraseFromParent();
+
+	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
+	await_loop_block_parsed.not_done_block->eraseFromParent();
 }
 
 void RemoveLeftoverInlinedCoroutineBlocks( const CoroutineBlocks& coroutine_blocks )
