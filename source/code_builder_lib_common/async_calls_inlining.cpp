@@ -368,6 +368,7 @@ llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction
 
 struct CoroutineBlocks
 {
+	llvm::BasicBlock* allocations_block= nullptr;
 	llvm::BasicBlock* block_before_prepare= nullptr;
 	llvm::BasicBlock* first_block_after_coroutine_blocks= nullptr;
 	llvm::BasicBlock* suspend= nullptr;
@@ -452,7 +453,10 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 		}
 	}
 
-	if( result.block_before_prepare == nullptr ||
+	result.allocations_block= &*function.begin();
+
+	if( result.allocations_block == nullptr ||
+		result.block_before_prepare == nullptr ||
 		result.first_block_after_coroutine_blocks == nullptr ||
 		result.suspend == nullptr ||
 		result.suspend_final == nullptr ||
@@ -552,6 +556,29 @@ SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 	}
 
 	return result;
+}
+
+// Destination should have at least two blocks.
+void InlineAllocationsBlock( llvm::Function& destination, llvm::BasicBlock& alloca_block )
+{
+	// Try to insert allocations block before allocations block of the current function.
+	alloca_block.removeFromParent();
+	alloca_block.setName( alloca_block.getName() + "_inlined" );
+
+	auto it= destination.begin();
+	const auto it_end= destination.end();
+	if( it == it_end )
+		alloca_block.insertInto( &destination );
+	else
+	{
+		llvm::BasicBlock* current_start_block= &*it;
+		alloca_block.insertInto( &destination, current_start_block );
+
+		const auto terminator= alloca_block.getTerminator();
+		U_ASSERT( terminator != nullptr );
+		llvm::BranchInst::Create( current_start_block, &alloca_block );
+		terminator->eraseFromParent();
+	}
 }
 
 void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Function& inlined_function, llvm::BasicBlock& first_block_after_coroutine_blocks )
@@ -684,8 +711,6 @@ void RemoveLeftoverInlinedCoroutineBlocks( const CoroutineBlocks& coroutine_bloc
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
-	U_UNUSED(function);
-
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
 	if( coroutine_object == nullptr )
 		return;
@@ -741,6 +766,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
 	ReplaceDoneCalls( done_calls );
+	InlineAllocationsBlock( function, *source_coroutine_blocks->allocations_block );
 	BypassInlinedFunctionCoroutineBlocks( *source_coroutine_blocks );
 	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
 	ReplaceAwaitLoopBlock( *destination_coroutine_blocks, *await_loop_block, *await_loop_block_parsed, initial_suspend_point, *source_coroutine_blocks, *callee_clone );
