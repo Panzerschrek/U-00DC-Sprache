@@ -348,7 +348,6 @@ struct CoroutineBlocks
 std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function )
 {
 	CoroutineBlocks result;
-	llvm::BasicBlock* cleanup_block= nullptr;
 	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
 	{
 		const auto instructions_it= basic_block.begin();
@@ -385,7 +384,6 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 			}
 			else if( instruction.getMetadata( "u_coro_block_cleanup" ) != nullptr )
 			{
-				result.other_coroutine_blocks.push_back( &basic_block );
 				result.cleanup= &basic_block;
 			}
 		}
@@ -416,7 +414,7 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 	return result;
 }
 
-void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks, const CoroutineBlocks& blocks_for_replacement )
+void BypassInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks)
 {
 	// Create break from the start block to the first block after coroutine blocks.
 
@@ -427,12 +425,6 @@ void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks, const 
 
 	terminator->replaceAllUsesWith( br );
 	terminator->eraseFromParent();
-
-	for( llvm::BasicBlock* const block : blocks.other_coroutine_blocks )
-	{
-		block->dropAllReferences();
-		block->removeFromParent();
-	}
 }
 
 struct SuspedPoint
@@ -544,6 +536,7 @@ void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Func
 }
 
 void ReplaceAwaitLoopBlock(
+	const CoroutineBlocks& destination_function_blocks,
 	llvm::BasicBlock& await_loop_block,
 	const AwaitLoopBlock& await_loop_block_parsed,
 	const SuspedPoint& initial_suspend_point,
@@ -566,12 +559,45 @@ void ReplaceAwaitLoopBlock(
 	(void)initial_suspend_point;
 	(void)inlined_function_blocks;
 
+	inlined_function_blocks.suspend->replaceAllUsesWith( destination_function_blocks.suspend );
 	inlined_function_blocks.suspend_final->replaceAllUsesWith( await_loop_block_parsed.done_block );
 
 	const SuspedPoint await_loop_suspend_point= ParseSuspendBlock( *await_loop_block_parsed.not_done_block );
 
 	std::cout << "Use await loop destroy block: " << await_loop_suspend_point.destroy_block->getName().str() << std::endl;
-	//inlined_function_blocks.cleanup->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
+	inlined_function_blocks.cleanup->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
+}
+
+void RemoveLeftoverInlinedCoroutineBlocks( const CoroutineBlocks& coroutine_blocks )
+{
+	const auto module= coroutine_blocks.cleanup->getParent()->getParent();
+
+	const auto sink_function= llvm::Function::Create(
+		llvm::FunctionType::get( llvm::Type::getVoidTy( module->getContext() ), false ),
+		llvm::Function::ExternalLinkage,
+		"sink",
+		module );
+
+	coroutine_blocks.cleanup->setName( "cleanup_garbage" );
+	coroutine_blocks.cleanup->removeFromParent();
+	coroutine_blocks.cleanup->insertInto( sink_function );
+
+	coroutine_blocks.suspend->setName( "suspend_garbage" );
+	coroutine_blocks.suspend->removeFromParent();
+	coroutine_blocks.suspend->insertInto( sink_function );
+
+	coroutine_blocks.suspend_final->setName( "suspend_final_garbage" );
+	coroutine_blocks.suspend_final->removeFromParent();
+	coroutine_blocks.suspend_final->insertInto( sink_function );
+
+	for( llvm::BasicBlock* const other_block : coroutine_blocks.other_coroutine_blocks )
+	{
+		other_block->setName( other_block->getName() + "_garbage" );
+		other_block->removeFromParent();
+		other_block->insertInto( sink_function );
+	}
+
+	sink_function->eraseFromParent();
 }
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
@@ -614,9 +640,10 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
-	RemoveInlinedFunctionCoroutineBlocks( *source_coroutine_blocks, *destination_coroutine_blocks );
+	BypassInlinedFunctionCoroutineBlocks( *source_coroutine_blocks );
 	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
-	ReplaceAwaitLoopBlock( *await_loop_block, *await_loop_block_parsed, initial_suspend_point, *source_coroutine_blocks, *callee_clone );
+	ReplaceAwaitLoopBlock( *destination_coroutine_blocks, *await_loop_block, *await_loop_block_parsed, initial_suspend_point, *source_coroutine_blocks, *callee_clone );
+	RemoveLeftoverInlinedCoroutineBlocks( *source_coroutine_blocks );
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
