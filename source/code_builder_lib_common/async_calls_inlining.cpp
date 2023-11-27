@@ -300,13 +300,15 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 			std::cout << "Invalid branching at the end of the await loop block" << std::endl;
 			return std::nullopt;
 		}
-		result.done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 1u ) );
-		result.not_done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 2u ) );
+		result.done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 2u ) );
+		result.not_done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 1u ) );
 		if( result.done_block == nullptr || result.not_done_block == nullptr )
 		{
 			std::cout << "Wrong await loop branching destination" << std::endl;
 			return std::nullopt;
 		}
+		std::cout << "Found done block: " << result.done_block->getName().str() << std::endl;
+		std::cout << "Found not done block: " << result.not_done_block->getName().str() << std::endl;
 	}
 	else
 	{
@@ -339,6 +341,7 @@ struct CoroutineBlocks
 	llvm::BasicBlock* suspend= nullptr;
 	llvm::BasicBlock* suspend_final= nullptr;
 	llvm::SmallVector<llvm::BasicBlock*, 8> other_coroutine_blocks;
+	llvm::BasicBlock* cleanup= nullptr;
 	llvm::SmallVector<llvm::BasicBlock*, 8> cleanup_predecessors; // Excluding suspend_final.
 };
 
@@ -383,13 +386,12 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 			else if( instruction.getMetadata( "u_coro_block_cleanup" ) != nullptr )
 			{
 				result.other_coroutine_blocks.push_back( &basic_block );
-				cleanup_block= &basic_block;
-				std::cout << "Found cleanup block: " << cleanup_block->getName().str() << std::endl;
+				result.cleanup= &basic_block;
 			}
 		}
 	}
 
-	for( llvm::pred_iterator it= llvm::pred_begin(cleanup_block), it_end= llvm::pred_end(cleanup_block); it != it_end; ++it )
+	for( llvm::pred_iterator it= llvm::pred_begin(result.cleanup), it_end= llvm::pred_end(result.cleanup); it != it_end; ++it )
 	{
 		llvm::BasicBlock* bb= *it;
 		if( bb != result.suspend_final )
@@ -403,7 +405,7 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 		result.first_block_after_coroutine_blocks == nullptr ||
 		result.suspend == nullptr ||
 		result.suspend_final == nullptr ||
-		cleanup_block == nullptr )
+		result.cleanup == nullptr )
 	{
 		std::cout << "Can't find some of coroutine blocks!" << std::endl;
 		return std::nullopt;
@@ -426,12 +428,6 @@ void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks, const 
 	terminator->replaceAllUsesWith( br );
 	terminator->eraseFromParent();
 
-	blocks.suspend->replaceAllUsesWith( blocks_for_replacement.suspend );
-	blocks.suspend->eraseFromParent();
-
-	blocks.suspend_final->replaceAllUsesWith( blocks_for_replacement.suspend_final );
-	blocks.suspend_final->eraseFromParent();
-
 	for( llvm::BasicBlock* const block : blocks.other_coroutine_blocks )
 	{
 		block->dropAllReferences();
@@ -439,16 +435,16 @@ void RemoveInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks, const 
 	}
 }
 
-struct InitialSuspedPoint
+struct SuspedPoint
 {
 	llvm::BasicBlock* suspend_block= nullptr;
 	llvm::BasicBlock* normal_block= nullptr;
 	llvm::BasicBlock* destroy_block= nullptr;
 };
 
-InitialSuspedPoint ParseInitialSuspendBlock( llvm::BasicBlock& block )
+SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 {
-	InitialSuspedPoint result;
+	SuspedPoint result;
 
 	auto it= block.begin();
 	const auto it_end= block.end();
@@ -467,7 +463,8 @@ InitialSuspedPoint ParseInitialSuspendBlock( llvm::BasicBlock& block )
 			{}
 			else
 			{
-				std::cout << "expected suspend call, find another function call" << std::endl;
+				std::cout << "expected suspend call, find another function call: " << callee_function->getName().str() << std::endl;
+				std::cout << "Note, bb is: " << block.getName().str() << std::endl;
 				return result;
 			}
 		}
@@ -498,8 +495,8 @@ InitialSuspedPoint ParseInitialSuspendBlock( llvm::BasicBlock& block )
 		}
 
 		result.suspend_block= switch_instruction->getDefaultDest();
-		result.normal_block= switch_instruction->getSuccessor(0);
-		result.destroy_block= switch_instruction->getSuccessor(1);
+		result.normal_block= switch_instruction->getSuccessor(1);
+		result.destroy_block= switch_instruction->getSuccessor(2);
 	}
 	else
 	{
@@ -549,7 +546,7 @@ void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Func
 void ReplaceAwaitLoopBlock(
 	llvm::BasicBlock& await_loop_block,
 	const AwaitLoopBlock& await_loop_block_parsed,
-	const InitialSuspedPoint& initial_suspend_point,
+	const SuspedPoint& initial_suspend_point,
 	const CoroutineBlocks& inlined_function_blocks,
 	llvm::Function& inlined_function )
 {
@@ -565,13 +562,16 @@ void ReplaceAwaitLoopBlock(
 	for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
 		(*it)->moveAfter( &await_loop_block );
 
-
 	(void)await_loop_block_parsed;
 	(void)initial_suspend_point;
 	(void)inlined_function_blocks;
 
-	//await_loop_block.replaceAllUsesWith( blocks_to_inline.front() );
-	//await_loop_block.eraseFromParent();
+	inlined_function_blocks.suspend_final->replaceAllUsesWith( await_loop_block_parsed.done_block );
+
+	const SuspedPoint await_loop_suspend_point= ParseSuspendBlock( *await_loop_block_parsed.not_done_block );
+
+	std::cout << "Use await loop destroy block: " << await_loop_suspend_point.destroy_block->getName().str() << std::endl;
+	//inlined_function_blocks.cleanup->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
 }
 
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
@@ -610,7 +610,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( source_coroutine_blocks == std::nullopt )
 		return;
 
-	const InitialSuspedPoint initial_suspend_point= ParseInitialSuspendBlock( *source_coroutine_blocks->first_block_after_coroutine_blocks );
+	const SuspedPoint initial_suspend_point= ParseSuspendBlock( *source_coroutine_blocks->first_block_after_coroutine_blocks );
 
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
