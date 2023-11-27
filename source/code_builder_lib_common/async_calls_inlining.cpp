@@ -656,6 +656,8 @@ void ReplaceAwaitLoopBlock(
 
 	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
 	await_loop_block_parsed.not_done_block->eraseFromParent();
+
+	await_loop_suspend_point.normal_block->eraseFromParent(); // It's also not reachable anymore.
 }
 
 void ReplacePromiseCalls( const llvm::ArrayRef<llvm::Instruction*> promise_calls, llvm::Value& value_for_replacement )
