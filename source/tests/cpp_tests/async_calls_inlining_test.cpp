@@ -146,6 +146,161 @@ U_TEST(AsyncCallInlining_Test3)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInlining_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async DoubleIt( u32 x ) : u32
+		{
+			yield;
+			return x * 2u;
+		}
+		// Should inline both calls.
+		fn async QuadrupleIt( u32 x ) : u32
+		{
+			return DoubleIt( DoubleIt( x ).await ).await;
+		}
+		fn Foo()
+		{
+			auto mut f= QuadrupleIt( 7865u );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 7865u * 4u );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInlining_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async Mul2( u32 x ) : u32
+		{
+			yield;
+			return x * 2u;
+		}
+		fn async Div3( u32 x ) : u32
+		{
+			return x / 3u;
+		}
+		// Should inline both calls.
+		fn async Bar( u32 x ) : u32
+		{
+			return Div3( Mul2( x ).await ).await;
+		}
+		fn Foo()
+		{
+			auto mut f= Bar( 5455u );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 5455u * 2u / 3u );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInlining_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async Mul2( u32 x ) : u32
+		{
+			yield;
+			return x * 2u;
+		}
+		fn async Div3( u32 x ) : u32
+		{
+			return x / 3u;
+		}
+		// Should inline both calls.
+		fn async Bar( u32 x ) : u32
+		{
+			return Mul2( x ).await + Div3( x ).await;
+		}
+		fn Foo()
+		{
+			auto mut f= Bar( 4433u );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 4433u * 2u + 4433u / 3u );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInlining_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async SquaresSum( u32 num ) : u32
+		{
+			var u32 mut res= 0u;
+			for( auto mut i= 0u; i < num; ++i )
+			{
+				yield;
+				res += i * i;
+			}
+			return res;
+		}
+		fn async Bar() : u32
+		{
+			return SquaresSum( 4u ).await;
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			auto mut num_iterations= 0s;
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 0u * 0u + 1u * 1u + 2u * 2u + 3u * 3u );
+					halt if( num_iterations != 4s );
+					break;
+				}
+				++num_iterations;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace
 
 } // namespace U
