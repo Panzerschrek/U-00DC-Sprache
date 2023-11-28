@@ -80,6 +80,7 @@ struct AwaitOperatorCoroutineInstructions
 	llvm::CallInst* destructor_call= nullptr;
 };
 
+// Returns a result only if coroutine object used for single await operator and nothing else.
 std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstructions( llvm::AllocaInst& coroutine_object )
 {
 	AwaitOperatorCoroutineInstructions res;
@@ -526,6 +527,15 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 	return result;
 }
 
+bool IsAsyncFunctionCallWithSingleFurtherAwait( llvm::CallInst& call_instruction )
+{
+	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
+	if( coroutine_object == nullptr )
+		return false;
+
+	return GetAwaitOperatorCoroutineInstructions( *coroutine_object ) != std::nullopt;
+}
+
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction, llvm::SmallVectorImpl<llvm::Function*>& functions_to_remove )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
@@ -762,17 +772,40 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 		functions_to_remove.push_back( callee_function );
 }
 
-void ProcessFunction( llvm::Function& function, llvm::SmallVectorImpl<llvm::Function*>& functions_to_remove )
+struct AsyncFunctionCall
 {
-	// Apply the optimization only for async fnctions, that must have this attribute.
-	if( !function.hasFnAttribute( llvm::Attribute::PresplitCoroutine ) )
-		return;
+	llvm::CallInst* instruction= nullptr;
+	llvm::Function* function= nullptr;
+};
 
-	llvm::SmallVector<llvm::CallInst*, 8> async_calls;
-	ExtractAllACoroutineFunctionCalls( function, async_calls );
+struct AsyncCallGraphNode
+{
+	llvm::SmallVector<AsyncFunctionCall, 4> calls;
+};
 
-	for( llvm::CallInst* const call_instruction : async_calls )
-		TryToInlineAsyncCall( function, *call_instruction, functions_to_remove );
+using AsyncCallsGraph= llvm::DenseMap<llvm::Function*, AsyncCallGraphNode>;
+
+AsyncCallsGraph BuildAsyncCallsGraph( llvm::Module& module )
+{
+	AsyncCallsGraph result;
+	for( llvm::Function& function : module.functions() )
+	{
+		// Apply the optimization only for async fnctions, that must have this attribute.
+		if( !function.hasFnAttribute( llvm::Attribute::PresplitCoroutine ) )
+			continue;
+
+		llvm::SmallVector<llvm::CallInst*, 16> async_calls;
+		ExtractAllACoroutineFunctionCalls( function, async_calls );
+
+		for( llvm::CallInst* const call_instruction : async_calls )
+			if( IsAsyncFunctionCallWithSingleFurtherAwait( *call_instruction ) )
+			{
+				if( const auto calle_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+					result[ &function ].calls.push_back( { call_instruction, calle_function } );
+			}
+	}
+
+	return result;
 }
 
 } // namespace
@@ -781,8 +814,14 @@ void InlineAsyncCalls( llvm::Module& module )
 {
 	llvm::SmallVector<llvm::Function*, 16> functions_to_remove;
 
-	for( llvm::Function& function : module.functions() )
-		ProcessFunction( function, functions_to_remove );
+	const AsyncCallsGraph async_call_graph= BuildAsyncCallsGraph( module );
+
+	// TODO - follow order reverse to the topological.
+	for( const auto& function_pair : async_call_graph )
+	{
+		for( const auto& call : function_pair.second.calls )
+			TryToInlineAsyncCall( *function_pair.first, *call.instruction, functions_to_remove );
+	}
 
 	for( llvm::Function* const function : functions_to_remove )
 		function->eraseFromParent();
