@@ -85,6 +85,9 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 	AwaitOperatorCoroutineInstructions res;
 	llvm::StoreInst* initial_store_instruction= nullptr;
 
+	llvm::Function* destructor_function= nullptr;
+	llvm::SmallVector<llvm::Function*, 16> additional_calls;
+
 	for( llvm::User* const user : coroutine_object.users() )
 	{
 		if( const auto load_instruction= llvm::dyn_cast<llvm::LoadInst>( user ) )
@@ -121,11 +124,13 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 					return std::nullopt;
 				}
 				res.destructor_call= call_instruction;
+
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+					destructor_function= callee_function;
 			}
 			else
 			{
-				const llvm::Value* const callee= GetCallee( *call_instruction );
-				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
 				{
 					if( callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_start ||
 						callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_end ||
@@ -134,9 +139,8 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 						callee_function->getName() == "__U_debug_lifetime_end" )
 						continue; // Allow lifetime and debug instructions for the coroutine object.
 
-					//std::cout << "Unsupported call for coroutine object to function: " << callee_function->getName().str() << std::endl;
-					//return std::nullopt;
-					continue; // TODO - count this destructor call in the destructors branch.
+					additional_calls.push_back( callee_function );
+					continue;
 				}
 
 				std::cout << "Unsupported call for coroutine object" << std::endl;
@@ -148,6 +152,24 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 			std::cout << "Unexpected instruction for coroutine object - await call optimization isn't possible" << std::endl;
 			return std::nullopt;
 		}
+	}
+
+	// Assume that we have single destructor call except call in at the await end - destructor call in the destruction branch inside "suspend" of "await".
+	// For technical reasnos it is not marked with "u_await_destructor_call" metadata.
+	if( additional_calls.size() > 1u )
+	{
+		std::cout << "Find calls except destructors for coroutine object" << std::endl;
+		return std::nullopt;
+	}
+	if( destructor_function == nullptr )
+	{
+		std::cout << "Can't find destructor for coroutine object" << std::endl;
+		return std::nullopt;
+	}
+	if( additional_calls.front() != destructor_function )
+	{
+		std::cout << "Unexpected call to non-destructor function " << additional_calls.front()->getName().str() << std::endl;
+		return std::nullopt;
 	}
 
 	if( res.coro_handle_load == nullptr || res.destructor_call == nullptr )
