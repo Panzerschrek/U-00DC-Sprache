@@ -697,36 +697,20 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
 	await_loop_block_parsed->not_done_block->eraseFromParent();
-
 	await_loop_suspend_point.normal_block->eraseFromParent(); // It's also not reachable anymore.
 
 	// Remove leftover inlined function blocks.
-	{
-		const auto module= callee_clone->getParent();
+	source_coroutine_info->cleanup_block->dropAllReferences();
+	source_coroutine_info->suspend_block->dropAllReferences();
+	source_coroutine_info->suspend_final_block->dropAllReferences();
+	for( llvm::BasicBlock* const other_block : source_coroutine_info->other_coroutine_blocks )
+		other_block->dropAllReferences();
 
-		const auto sink_function= llvm::Function::Create(
-			llvm::FunctionType::get( llvm::Type::getVoidTy( module->getContext() ), false ),
-			llvm::Function::ExternalLinkage,
-			"sink",
-			module );
-
-		source_coroutine_info->cleanup_block->removeFromParent();
-		source_coroutine_info->cleanup_block->insertInto( sink_function );
-
-		source_coroutine_info->suspend_block->removeFromParent();
-		source_coroutine_info->suspend_block->insertInto( sink_function );
-
-		source_coroutine_info->suspend_final_block->removeFromParent();
-		source_coroutine_info->suspend_final_block->insertInto( sink_function );
-
-		for( llvm::BasicBlock* const other_block : source_coroutine_info->other_coroutine_blocks )
-		{
-			other_block->removeFromParent();
-			other_block->insertInto( sink_function );
-		}
-
-		sink_function->eraseFromParent();
-	}
+	source_coroutine_info->cleanup_block->eraseFromParent();
+	source_coroutine_info->suspend_block->eraseFromParent();
+	source_coroutine_info->suspend_final_block->eraseFromParent();
+	for( llvm::BasicBlock* const other_block : source_coroutine_info->other_coroutine_blocks )
+		other_block->eraseFromParent();
 
 	// At this moment there should be no users of this instruciton.
 	await_instructions->coro_handle_load->eraseFromParent();
