@@ -30,17 +30,9 @@ void ExtractAllACoroutineFunctionCalls( llvm::Function& function, llvm::SmallVec
 		for( llvm::Instruction& instruction : basic_block.getInstList() )
 		{
 			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
-			{
-				const llvm::Value* const callee= GetCallee( *call_instruction );
-				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
-				{
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
 					if( callee_function->hasFnAttribute( llvm::Attribute::PresplitCoroutine ) )
-					{
-						std::cout << "Find call to coroutine " << callee_function->getName().str() << std::endl;
 						out.push_back( call_instruction );
-					}
-				}
-			}
 		}
 	}
 }
@@ -202,12 +194,7 @@ llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
 	{
 		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>(user) )
 		{
-			llvm::BasicBlock* bb= instruction->getParent();
-			if( bb == nullptr )
-			{
-				std::cout << "Instruction with no parent!" << std::endl;
-				return nullptr;
-			}
+			llvm::BasicBlock* const bb= instruction->getParent();
 
 			bool has_coro_resume= false;
 			for( const llvm::Instruction& instruction : bb->getInstList() )
@@ -237,8 +224,6 @@ llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
 
 	if( result == nullptr )
 		std::cout << "Can't find await loop block" << std::endl;
-	else
-		std::cout << "Find await loop block " << result->getName().str() << std::endl;
 
 	return result;
 }
@@ -339,8 +324,6 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 			std::cout << "Wrong await loop branching destination" << std::endl;
 			return std::nullopt;
 		}
-		std::cout << "Found done block: " << result.done_block->getName().str() << std::endl;
-		std::cout << "Found not done block: " << result.not_done_block->getName().str() << std::endl;
 	}
 	else
 	{
@@ -348,7 +331,6 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 		return std::nullopt;
 	}
 
-	std::cout << "Successfully parsed await loop block" << std::endl;
 	return result;
 }
 
@@ -366,22 +348,21 @@ llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction
 	return new_function;
 }
 
-struct CoroutineBlocks
+struct CoroutineFunctionInfo
 {
 	llvm::BasicBlock* allocations_block= nullptr;
 	llvm::BasicBlock* block_before_prepare= nullptr;
-	llvm::BasicBlock* first_block_after_coroutine_blocks= nullptr;
-	llvm::BasicBlock* suspend= nullptr;
-	llvm::BasicBlock* suspend_final= nullptr;
+	llvm::BasicBlock* initial_suspend_block= nullptr;
+	llvm::BasicBlock* suspend_block= nullptr;
+	llvm::BasicBlock* suspend_final_block= nullptr;
+	llvm::BasicBlock* cleanup_block= nullptr;
 	llvm::SmallVector<llvm::BasicBlock*, 8> other_coroutine_blocks;
-	llvm::BasicBlock* cleanup= nullptr;
-	llvm::SmallVector<llvm::BasicBlock*, 8> cleanup_predecessors; // Excluding suspend_final.
 	llvm::Value* promise= nullptr;
 };
 
-std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function )
+std::optional<CoroutineFunctionInfo> CollectCoroutineFunctionInfo( llvm::Function& function )
 {
-	CoroutineBlocks result;
+	CoroutineFunctionInfo result;
 	llvm::BasicBlock* prepare_block= nullptr;
 	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
 	{
@@ -395,43 +376,21 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 				prepare_block= &basic_block;
 				result.other_coroutine_blocks.push_back( &basic_block );
 				result.block_before_prepare= basic_block.getSinglePredecessor();
-				std::cout << "Found block before prepare: " << result.block_before_prepare->getName().str() << std::endl;
 			}
 			else if( instruction.getMetadata( "u_coro_block_begin" ) != nullptr )
 			{
 				result.other_coroutine_blocks.push_back( &basic_block );
-				result.first_block_after_coroutine_blocks= basic_block.getSingleSuccessor();
-				std::cout << "Found block after coroutine blocks: " << result.first_block_after_coroutine_blocks->getName().str() << std::endl;
+				result.initial_suspend_block= basic_block.getSingleSuccessor();
 			}
 			else if( instruction.getMetadata( "u_coro_block_suspend" ) != nullptr )
-			{
-				result.suspend= &basic_block;
-				std::cout << "Found suspend block: " << result.suspend->getName().str() << std::endl;
-			}
+				result.suspend_block= &basic_block;
 			else if( instruction.getMetadata( "u_coro_block_suspend_final" ) != nullptr )
-			{
-				result.suspend_final= &basic_block;
-				std::cout << "Found suspend final block: " << result.suspend_final->getName().str() << std::endl;
-			}
-			else if( instruction.getMetadata( "u_coro_block" ) != nullptr )
-			{
-				result.other_coroutine_blocks.push_back( &basic_block );
-				std::cout << "Found other coroutine block: " << basic_block.getName().str() << std::endl;
-			}
+				result.suspend_final_block= &basic_block;
 			else if( instruction.getMetadata( "u_coro_block_cleanup" ) != nullptr )
-			{
-				result.cleanup= &basic_block;
-			}
-		}
-	}
+				result.cleanup_block= &basic_block;
+			else if( instruction.getMetadata( "u_coro_block" ) != nullptr )
+				result.other_coroutine_blocks.push_back( &basic_block );
 
-	for( llvm::pred_iterator it= llvm::pred_begin(result.cleanup), it_end= llvm::pred_end(result.cleanup); it != it_end; ++it )
-	{
-		llvm::BasicBlock* bb= *it;
-		if( bb != result.suspend_final )
-		{
-			std::cout << "Found cleanup redecessor: " << bb->getName().str() << std::endl;
-			result.cleanup_predecessors.push_back(bb);
 		}
 	}
 
@@ -440,16 +399,9 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 		for( llvm::Instruction& instruction : *prepare_block )
 		{
 			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
-			{
 				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
-				{
 					if( callee_function->getIntrinsicID() == llvm::Intrinsic::coro_id )
-					{
 						result.promise= call_instruction->getOperand(1u);
-						std::cout << "Find promise : " << result.promise->getName().str() << std::endl;
-					}
-				}
-			}
 		}
 	}
 
@@ -457,32 +409,17 @@ std::optional<CoroutineBlocks> CollectCoroutineBlocks( llvm::Function& function 
 
 	if( result.allocations_block == nullptr ||
 		result.block_before_prepare == nullptr ||
-		result.first_block_after_coroutine_blocks == nullptr ||
-		result.suspend == nullptr ||
-		result.suspend_final == nullptr ||
-		result.cleanup == nullptr ||
+		result.initial_suspend_block == nullptr ||
+		result.suspend_block == nullptr ||
+		result.suspend_final_block == nullptr ||
+		result.cleanup_block == nullptr ||
 		result.promise == nullptr )
 	{
 		std::cout << "Can't find some of coroutine blocks!" << std::endl;
 		return std::nullopt;
 	}
 
-	std::cout << "Susscessfully found coroutine blocks" << std::endl;
-
 	return result;
-}
-
-void BypassInlinedFunctionCoroutineBlocks( const CoroutineBlocks& blocks)
-{
-	// Create break from the start block to the first block after coroutine blocks.
-
-	const auto terminator= blocks.block_before_prepare->getTerminator();
-	U_ASSERT( terminator != nullptr );
-
-	const auto br= llvm::BranchInst::Create( blocks.first_block_after_coroutine_blocks, blocks.block_before_prepare );
-
-	terminator->replaceAllUsesWith( br );
-	terminator->eraseFromParent();
 }
 
 struct SuspedPoint
@@ -558,194 +495,6 @@ SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 	return result;
 }
 
-// Destination should have at least two blocks.
-void InlineAllocationsBlock( llvm::Function& destination, llvm::BasicBlock& alloca_block )
-{
-	// Try to insert allocations block before allocations block of the current function.
-	alloca_block.removeFromParent();
-	alloca_block.setName( alloca_block.getName() + "_inlined" );
-
-	auto it= destination.begin();
-	const auto it_end= destination.end();
-	if( it == it_end )
-		alloca_block.insertInto( &destination );
-	else
-	{
-		llvm::BasicBlock* current_start_block= &*it;
-		alloca_block.insertInto( &destination, current_start_block );
-
-		const auto terminator= alloca_block.getTerminator();
-		U_ASSERT( terminator != nullptr );
-		llvm::BranchInst::Create( current_start_block, &alloca_block );
-		terminator->eraseFromParent();
-	}
-}
-
-void InlineAsyncFunctionCallItself( llvm::CallInst& call_instruction, llvm::Function& inlined_function, llvm::BasicBlock& first_block_after_coroutine_blocks )
-{
-	// Assume that blocks in ther suource function are located in control flow order.
-	// So, we just extract all blocks up to given.
-
-	// Collect blocks.
-	llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
-	for( llvm::BasicBlock& basic_block : inlined_function )
-	{
-		if( &basic_block == &first_block_after_coroutine_blocks )
-			break;
-		blocks_to_inline.push_back( &basic_block );
-
-		basic_block.setName( basic_block.getName() + "_inlined" );
-	}
-
-	llvm::BasicBlock* const call_instruction_original_bb= call_instruction.getParent();
-	llvm::BasicBlock* const block_rest_after_call= call_instruction_original_bb->splitBasicBlock( &call_instruction, "after_async_call_inlined" );
-
-	block_rest_after_call->replaceAllUsesWith( blocks_to_inline.front() );
-
-	// Remove them from the source function and insert into destination.
-	for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
-		(*it)->moveAfter( call_instruction_original_bb );
-
-	// Replace args in inlined function with given values from the call instruction.
-	{
-		uint32_t i= 0;
-		for( llvm::Argument& arg : inlined_function.args() )
-		{
-			llvm::Value* const op= call_instruction.getArgOperand( i );
-			arg.replaceAllUsesWith( op );
-			++i;
-		}
-	}
-
-	// For now replace call result with undef value.
-	const auto undef= llvm::UndefValue::get( call_instruction.getType() );
-	call_instruction.replaceAllUsesWith( undef );
-	call_instruction.eraseFromParent();
-
-	// This blocks should contain only initial suspend. Remove it.
-	first_block_after_coroutine_blocks.replaceAllUsesWith( block_rest_after_call );
-	first_block_after_coroutine_blocks.eraseFromParent();
-}
-
-void ReplaceAwaitLoopBlock(
-	const CoroutineBlocks& destination_function_blocks,
-	llvm::BasicBlock& await_loop_block,
-	const AwaitLoopBlock& await_loop_block_parsed,
-	const SuspedPoint& initial_suspend_point,
-	const CoroutineBlocks& inlined_function_blocks,
-	llvm::Function& inlined_function )
-{
-	// Collect source blocks.
-	llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
-	for( llvm::BasicBlock& basic_block : inlined_function )
-	{
-		blocks_to_inline.push_back( &basic_block );
-		basic_block.setName( basic_block.getName() + "_inlined" );
-	}
-
-	// Remove them from the source function and insert into destination.
-	for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
-		(*it)->moveAfter( &await_loop_block );
-
-	(void)await_loop_block_parsed;
-	(void)initial_suspend_point;
-	(void)inlined_function_blocks;
-
-	inlined_function_blocks.suspend->replaceAllUsesWith( destination_function_blocks.suspend );
-	inlined_function_blocks.suspend_final->replaceAllUsesWith( await_loop_block_parsed.done_block );
-
-	const SuspedPoint await_loop_suspend_point= ParseSuspendBlock( *await_loop_block_parsed.not_done_block );
-
-	std::cout << "Use await loop destroy block: " << await_loop_suspend_point.destroy_block->getName().str() << std::endl;
-	inlined_function_blocks.cleanup->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
-
-	// Jump to normal block of initial suspend point of the inlined function, instead of intering await loop.
-	await_loop_block.replaceAllUsesWith( initial_suspend_point.normal_block );
-	await_loop_block.eraseFromParent();
-
-	initial_suspend_point.destroy_block->eraseFromParent(); // It is unreachable.
-
-	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
-	await_loop_block_parsed.not_done_block->eraseFromParent();
-
-	await_loop_suspend_point.normal_block->eraseFromParent(); // It's also not reachable anymore.
-}
-
-void ReplacePromiseCalls( const llvm::ArrayRef<llvm::Instruction*> promise_calls, llvm::Value& value_for_replacement )
-{
-	for( llvm::Instruction* const call : promise_calls )
-	{
-		call->replaceAllUsesWith( &value_for_replacement );
-		call->eraseFromParent();
-	}
-}
-
-void ReplaceDoneCalls( const llvm::ArrayRef<llvm::Instruction*> done_calls )
-{
-	for( llvm::Instruction* const call : done_calls )
-	{
-		// Assume we have only one "done" call - at the start of the "await" operator.
-		// We can replace it with "false".
-		llvm::LLVMContext& context= call->getContext();
-		call->replaceAllUsesWith( llvm::ConstantInt::getFalse( context ) );
-		call->eraseFromParent();
-	}
-}
-
-void RemoveCoroHandleLoad( llvm::LoadInst& coro_handle_load )
-{
-	// At this moment there should be no users of this instruciton.
-	coro_handle_load.eraseFromParent();
-}
-
-void RemoveAllOperationsWithCoroutineObject( llvm::AllocaInst& coroutine_object )
-{
-	// Assume that at this moment nobody uses results of operations over this coroutine obect.
-	llvm::SmallVector<llvm::Instruction*, 8> users;
-	for( llvm::User* const user : coroutine_object.users() )
-	{
-		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>(user) )
-			users.push_back( instruction );
-	}
-
-	for( llvm::Instruction* const instruction : users )
-		instruction->eraseFromParent();
-
-	coroutine_object.eraseFromParent();
-}
-
-void RemoveLeftoverInlinedCoroutineBlocks( const CoroutineBlocks& coroutine_blocks )
-{
-	const auto module= coroutine_blocks.cleanup->getParent()->getParent();
-
-	const auto sink_function= llvm::Function::Create(
-		llvm::FunctionType::get( llvm::Type::getVoidTy( module->getContext() ), false ),
-		llvm::Function::ExternalLinkage,
-		"sink",
-		module );
-
-	coroutine_blocks.cleanup->setName( "cleanup_garbage" );
-	coroutine_blocks.cleanup->removeFromParent();
-	coroutine_blocks.cleanup->insertInto( sink_function );
-
-	coroutine_blocks.suspend->setName( "suspend_garbage" );
-	coroutine_blocks.suspend->removeFromParent();
-	coroutine_blocks.suspend->insertInto( sink_function );
-
-	coroutine_blocks.suspend_final->setName( "suspend_final_garbage" );
-	coroutine_blocks.suspend_final->removeFromParent();
-	coroutine_blocks.suspend_final->insertInto( sink_function );
-
-	for( llvm::BasicBlock* const other_block : coroutine_blocks.other_coroutine_blocks )
-	{
-		other_block->setName( other_block->getName() + "_garbage" );
-		other_block->removeFromParent();
-		other_block->insertInto( sink_function );
-	}
-
-	sink_function->eraseFromParent();
-}
-
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
@@ -757,7 +506,6 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	const auto await_instructions= GetAwaitOperatorCoroutineInstructions( *coroutine_object );
 	if( await_instructions == std::nullopt )
 		return;
-	std::cout << "Find single await for given coroutine object" << std::endl;
 
 	const auto await_loop_block= GetAwaitLoopBlock( *await_instructions->coro_handle_load );
 	if( await_loop_block == nullptr )
@@ -770,7 +518,6 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 		std::cout << "Can't find any promise call" << std::endl;
 		return;
 	}
-	std::cout << "Find " << promise_calls.size() << " promise calls" << std::endl;
 
 	llvm::SmallVector<llvm::Instruction*, 4> done_calls;
 	CollectDoneCalls( *await_instructions->coro_handle_load, done_calls );
@@ -779,14 +526,15 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 		std::cout << "Can't find any done call" << std::endl;
 		return;
 	}
-	std::cout << "Find " << done_calls.size() << " done calls" << std::endl;
 
 	const auto await_loop_block_parsed= ParseAwaitLoopBlock( *await_loop_block );
 	if( await_loop_block_parsed == std::nullopt )
 		return;
 
-	const auto destination_coroutine_blocks= CollectCoroutineBlocks( function );
-	if( destination_coroutine_blocks == std::nullopt )
+	const SuspedPoint await_loop_suspend_point= ParseSuspendBlock( *await_loop_block_parsed->not_done_block );
+
+	const auto destination_coroutine_info= CollectCoroutineFunctionInfo( function );
+	if( destination_coroutine_info == std::nullopt )
 		return;
 
 	// Clone callee and replace call to original with call to its clone.
@@ -794,23 +542,185 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
 	call_instruction.setCalledFunction( callee_clone );
 
-	const auto source_coroutine_blocks= CollectCoroutineBlocks( *callee_clone );
-	if( source_coroutine_blocks == std::nullopt )
+	const auto source_coroutine_info= CollectCoroutineFunctionInfo( *callee_clone );
+	if( source_coroutine_info == std::nullopt )
 		return;
 
-	const SuspedPoint initial_suspend_point= ParseSuspendBlock( *source_coroutine_blocks->first_block_after_coroutine_blocks );
+	const SuspedPoint source_initial_suspend_point= ParseSuspendBlock( *source_coroutine_info->initial_suspend_block );
 
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
-	ReplaceDoneCalls( done_calls );
-	InlineAllocationsBlock( function, *source_coroutine_blocks->allocations_block );
-	BypassInlinedFunctionCoroutineBlocks( *source_coroutine_blocks );
-	InlineAsyncFunctionCallItself( call_instruction, *callee_clone, *source_coroutine_blocks->first_block_after_coroutine_blocks );
-	ReplaceAwaitLoopBlock( *destination_coroutine_blocks, *await_loop_block, *await_loop_block_parsed, initial_suspend_point, *source_coroutine_blocks, *callee_clone );
-	RemoveLeftoverInlinedCoroutineBlocks( *source_coroutine_blocks );
-	ReplacePromiseCalls( promise_calls, *source_coroutine_blocks->promise );
-	RemoveCoroHandleLoad( *await_instructions->coro_handle_load );
-	RemoveAllOperationsWithCoroutineObject( *coroutine_object );
+	// Replace "llvm.coro.promise" calls with promise value itself.
+	for( llvm::Instruction* const call : promise_calls )
+	{
+		call->replaceAllUsesWith( source_coroutine_info->promise );
+		call->eraseFromParent();
+	}
+
+	// Replace "llvm.core.done" calls.
+	// Assume we have only one "done" call - at the start of the "await" operator.
+	// We can replace it with "false".
+	for( llvm::Instruction* const call : done_calls )
+	{
+		llvm::LLVMContext& context= call->getContext();
+		call->replaceAllUsesWith( llvm::ConstantInt::getFalse( context ) );
+		call->eraseFromParent();
+	}
+
+	// Replace args in inlined function with given values from the call instruction.
+	{
+		uint32_t i= 0;
+		for( llvm::Argument& arg : callee_clone->args() )
+		{
+			llvm::Value* const op= call_instruction.getArgOperand(i);
+			arg.replaceAllUsesWith( op );
+			++i;
+		}
+	}
+
+	// Try to insert allocations block before allocations block of the current function.
+	{
+		llvm::BasicBlock& alloca_block= *source_coroutine_info->allocations_block;
+
+		alloca_block.removeFromParent();
+		alloca_block.setName( alloca_block.getName() + "_inlined" );
+
+		const auto it= function.begin();
+		const auto it_end= function.end();
+		if( it == it_end )
+			alloca_block.insertInto( &function );
+		else
+		{
+			llvm::BasicBlock* const current_start_block= &*it;
+			alloca_block.insertInto( &function, current_start_block );
+
+			llvm::Instruction* const terminator= alloca_block.getTerminator();
+			U_ASSERT( terminator != nullptr );
+			llvm::BranchInst::Create( current_start_block, &alloca_block );
+			terminator->eraseFromParent();
+		}
+	}
+
+	// Create break from the start block to the first block after coroutine blocks.
+	{
+		llvm::Instruction* const terminator= source_coroutine_info->block_before_prepare->getTerminator();
+		U_ASSERT( terminator != nullptr );
+
+		const auto br= llvm::BranchInst::Create( source_coroutine_info->initial_suspend_block, source_coroutine_info->block_before_prepare );
+
+		terminator->replaceAllUsesWith(br);
+		terminator->eraseFromParent();
+	}
+
+	// Inline async function call itself.
+	// Assume that blocks in ther suource function are located in control flow order.
+	// So, we just extract all blocks up to given.
+	{
+		// Collect blocks.
+		llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
+		for( llvm::BasicBlock& basic_block : *callee_clone )
+		{
+			if( &basic_block == source_coroutine_info->initial_suspend_block )
+				break;
+			blocks_to_inline.push_back( &basic_block );
+
+			basic_block.setName( basic_block.getName() + "_inlined" );
+		}
+
+		llvm::BasicBlock* const call_instruction_original_bb= call_instruction.getParent();
+		llvm::BasicBlock* const block_rest_after_call= call_instruction_original_bb->splitBasicBlock( &call_instruction, "after_async_call_inlined" );
+
+		block_rest_after_call->replaceAllUsesWith( blocks_to_inline.front() );
+
+		// Remove them from the source function and insert into destination.
+		for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
+			(*it)->moveAfter( call_instruction_original_bb );
+
+		// Remove initial suspend block.
+		source_coroutine_info->initial_suspend_block->replaceAllUsesWith( block_rest_after_call );
+		source_coroutine_info->initial_suspend_block->eraseFromParent();
+	}
+
+	// Temporary replace call result with undef value.
+	call_instruction.replaceAllUsesWith( llvm::UndefValue::get( call_instruction.getType() ) );
+	call_instruction.eraseFromParent();
+
+	// Inline remaining blocks.
+	{
+		// Collect source blocks.
+		llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
+		for( llvm::BasicBlock& basic_block : *callee_clone )
+		{
+			blocks_to_inline.push_back( &basic_block );
+			basic_block.setName( basic_block.getName() + "_inlined" );
+		}
+
+		// Remove them from the source function and insert into destination.
+		for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
+			(*it)->moveAfter( await_loop_block );
+	}
+
+	source_coroutine_info->suspend_block->replaceAllUsesWith( destination_coroutine_info->suspend_block );
+	source_coroutine_info->suspend_final_block->replaceAllUsesWith( await_loop_block_parsed->done_block );
+	source_coroutine_info->cleanup_block->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
+
+	// Jump to normal block of initial suspend point of the inlined function, instead of intering await loop.
+	await_loop_block->replaceAllUsesWith( source_initial_suspend_point.normal_block );
+	await_loop_block->eraseFromParent();
+
+	source_initial_suspend_point.destroy_block->eraseFromParent(); // It is unreachable.
+
+	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
+	await_loop_block_parsed->not_done_block->eraseFromParent();
+
+	await_loop_suspend_point.normal_block->eraseFromParent(); // It's also not reachable anymore.
+
+	// Remove leftover inlined function blocks.
+	{
+		const auto module= callee_clone->getParent();
+
+		const auto sink_function= llvm::Function::Create(
+			llvm::FunctionType::get( llvm::Type::getVoidTy( module->getContext() ), false ),
+			llvm::Function::ExternalLinkage,
+			"sink",
+			module );
+
+		source_coroutine_info->cleanup_block->removeFromParent();
+		source_coroutine_info->cleanup_block->insertInto( sink_function );
+
+		source_coroutine_info->suspend_block->removeFromParent();
+		source_coroutine_info->suspend_block->insertInto( sink_function );
+
+		source_coroutine_info->suspend_final_block->removeFromParent();
+		source_coroutine_info->suspend_final_block->insertInto( sink_function );
+
+		for( llvm::BasicBlock* const other_block : source_coroutine_info->other_coroutine_blocks )
+		{
+			other_block->removeFromParent();
+			other_block->insertInto( sink_function );
+		}
+
+		sink_function->eraseFromParent();
+	}
+
+	// At this moment there should be no users of this instruciton.
+	await_instructions->coro_handle_load->eraseFromParent();
+
+	// Remove all usages of the coroutine object.
+	// Assume that at this moment nobody uses results of operations over this coroutine obect.
+	{
+		llvm::SmallVector<llvm::Instruction*, 8> users;
+		for( llvm::User* const user : coroutine_object->users() )
+		{
+			if( const auto instruction= llvm::dyn_cast<llvm::Instruction>(user) )
+				users.push_back( instruction );
+		}
+
+		for( llvm::Instruction* const instruction : users )
+			instruction->eraseFromParent();
+
+		coroutine_object->eraseFromParent();
+	}
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
