@@ -129,9 +129,10 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 				{
 					if( callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_start ||
 						callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_end ||
+						callee_function->getIntrinsicID() == llvm::Intrinsic::dbg_declare ||
 						callee_function->getName() == "__U_debug_lifetime_start" ||
 						callee_function->getName() == "__U_debug_lifetime_end" )
-						continue; // Allow lifetime instructions for the coroutine object.
+						continue; // Allow lifetime and debug instructions for the coroutine object.
 
 					//std::cout << "Unsupported call for coroutine object to function: " << callee_function->getName().str() << std::endl;
 					//return std::nullopt;
