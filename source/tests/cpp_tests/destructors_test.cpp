@@ -4030,6 +4030,55 @@ U_TEST(AwaitOperator_Destruction_Test19)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 777 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_WithInlining_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async Baz() : i32
+		{
+			var S s0(120);
+			yield;
+			var S s1(121);
+			return 123;
+		}
+		fn async Bar()
+		{
+			var S s2(122);
+			// Async call inlining should process destruction blocks properly.
+			// This function should suspend on this "await", since "Baz" contains "yield" inside.
+			// If resume for this "await" doesn't happen, destructors for the inlined function and for this function should be properly called.
+			var S s3( Baz().await );
+			var S s4(124);
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 120, 122 } ) );
+}
+
 U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
 {
 	static const char c_program_text[]=
