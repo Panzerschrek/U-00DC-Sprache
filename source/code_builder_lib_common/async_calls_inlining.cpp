@@ -452,7 +452,7 @@ struct SuspedPoint
 	llvm::BasicBlock* destroy_block= nullptr;
 };
 
-SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
+std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 {
 	SuspedPoint result;
 
@@ -462,7 +462,7 @@ SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 	if( it == it_end )
 	{
 		std::cout << "Invalid initial suspend block" << std::endl;
-		return result;
+		return std::nullopt;
 	}
 
 	if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &*it ) )
@@ -475,33 +475,33 @@ SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 			{
 				std::cout << "expected suspend call, find another function call: " << callee_function->getName().str() << std::endl;
 				std::cout << "Note, bb is: " << block.getName().str() << std::endl;
-				return result;
+				return std::nullopt;
 			}
 		}
 		else
 		{
 			std::cout << "expected suspend call, find non-function call" << std::endl;
-			return result;
+			return std::nullopt;
 		}
 	}
 	else
 	{
 		std::cout << "expected suspend call, foud non-call" << std::endl;
-		return result;
+		return std::nullopt;
 	}
 
 	++it;
 	if( it == it_end )
 	{
 		std::cout << "Invalid initial suspend block" << std::endl;
-		return result;
+		return std::nullopt;
 	}
 	if( const auto switch_instruction= llvm::dyn_cast<llvm::SwitchInst>( &*it ) )
 	{
 		if( switch_instruction->getNumCases() != 2 )
 		{
 			std::cout << "Invalid suspend switch" << std::endl;
-			return result;
+			return std::nullopt;
 		}
 
 		result.suspend_block= switch_instruction->getDefaultDest();
@@ -512,7 +512,15 @@ SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 	{
 
 		std::cout << "expected switch instruction" << std::endl;
-		return result;
+		return std::nullopt;
+	}
+
+	if( result.suspend_block == nullptr ||
+		result.normal_block == nullptr ||
+		result.destroy_block == nullptr )
+	{
+		std::cout << "Invalid suspend block" << std::endl;
+		return std::nullopt;
 	}
 
 	return result;
@@ -554,7 +562,9 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( await_loop_block_parsed == std::nullopt )
 		return;
 
-	const SuspedPoint await_loop_suspend_point= ParseSuspendBlock( *await_loop_block_parsed->not_done_block );
+	const auto await_loop_suspend_point= ParseSuspendBlock( *await_loop_block_parsed->not_done_block );
+	if( await_loop_suspend_point == std::nullopt )
+		return;
 
 	const auto destination_coroutine_info= CollectCoroutineFunctionInfo( function );
 	if( destination_coroutine_info == std::nullopt )
@@ -569,9 +579,17 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	const auto source_coroutine_info= CollectCoroutineFunctionInfo( *callee_clone );
 	if( source_coroutine_info == std::nullopt )
+	{
+		callee_clone->eraseFromParent();
 		return;
+	}
 
-	const SuspedPoint source_initial_suspend_point= ParseSuspendBlock( *source_coroutine_info->initial_suspend_block );
+	const auto source_initial_suspend_point= ParseSuspendBlock( *source_coroutine_info->initial_suspend_block );
+	if( source_initial_suspend_point == std::nullopt )
+	{
+		callee_clone->eraseFromParent();
+		return;
+	}
 
 	std::cout << "Tranform cloned inlined function" << std::endl;
 
@@ -693,16 +711,16 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	source_coroutine_info->suspend_block->replaceAllUsesWith( destination_coroutine_info->suspend_block );
 	source_coroutine_info->suspend_final_block->replaceAllUsesWith( await_loop_block_parsed->done_block );
-	source_coroutine_info->cleanup_block->replaceAllUsesWith( await_loop_suspend_point.destroy_block );
+	source_coroutine_info->cleanup_block->replaceAllUsesWith( await_loop_suspend_point->destroy_block );
 
 	// Jump to normal block of initial suspend point of the inlined function, instead of intering await loop.
-	await_loop_block->replaceAllUsesWith( source_initial_suspend_point.normal_block );
+	await_loop_block->replaceAllUsesWith( source_initial_suspend_point->normal_block );
 	await_loop_block->eraseFromParent();
 
-	source_initial_suspend_point.destroy_block->eraseFromParent(); // It is unreachable.
+	source_initial_suspend_point->destroy_block->eraseFromParent(); // It is unreachable.
 
 	await_loop_block_parsed->not_done_block->eraseFromParent(); // Not done block (which triggers suspend and goes to await block) is not needed anymore.
-	await_loop_suspend_point.normal_block->eraseFromParent(); // It's also not reachable anymore.
+	await_loop_suspend_point->normal_block->eraseFromParent(); // It's also not reachable anymore.
 
 	// Remove leftover inlined function blocks.
 	source_coroutine_info->cleanup_block->dropAllReferences();
