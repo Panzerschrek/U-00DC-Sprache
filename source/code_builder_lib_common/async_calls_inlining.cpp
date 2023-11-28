@@ -641,15 +641,14 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	// Assume that blocks in ther suource function are located in control flow order.
 	// So, we just extract all blocks up to given.
 	{
-		// Collect blocks.
-		llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
+		// Collect source blocks.
+		llvm::SmallVector<llvm::BasicBlock*, 32> blocks_to_inline;
 		for( llvm::BasicBlock& basic_block : *callee_clone )
 		{
 			if( &basic_block == source_coroutine_info->initial_suspend_block )
 				break;
-			blocks_to_inline.push_back( &basic_block );
 
-			basic_block.setName( basic_block.getName() + "_inlined" );
+			blocks_to_inline.push_back( &basic_block );
 		}
 
 		llvm::BasicBlock* const call_instruction_original_bb= call_instruction.getParent();
@@ -657,9 +656,14 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 		block_rest_after_call->replaceAllUsesWith( blocks_to_inline.front() );
 
-		// Remove them from the source function and insert into destination.
-		for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
-			(*it)->moveAfter( call_instruction_original_bb );
+		// Remove blocks from the source function and insert into destination.
+		llvm::BasicBlock* append_block= call_instruction_original_bb;
+		for( llvm::BasicBlock* const block : blocks_to_inline )
+		{
+			block->moveAfter( append_block );
+			block->setName( block->getName() + "_inlined" );
+			append_block= block;
+		}
 
 		// Remove initial suspend block.
 		source_coroutine_info->initial_suspend_block->replaceAllUsesWith( block_rest_after_call );
@@ -673,16 +677,18 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	// Inline remaining blocks.
 	{
 		// Collect source blocks.
-		llvm::SmallVector<llvm::BasicBlock*, 16> blocks_to_inline;
+		llvm::SmallVector<llvm::BasicBlock*, 32> blocks_to_inline;
 		for( llvm::BasicBlock& basic_block : *callee_clone )
-		{
 			blocks_to_inline.push_back( &basic_block );
-			basic_block.setName( basic_block.getName() + "_inlined" );
-		}
 
-		// Remove them from the source function and insert into destination.
-		for( auto it= blocks_to_inline.rbegin(); it != blocks_to_inline.rend(); ++it )
-			(*it)->moveAfter( await_loop_block );
+		// Remove blocks from the source function and insert into destination.
+		llvm::BasicBlock* append_block= await_loop_block;
+		for( llvm::BasicBlock* const block : blocks_to_inline )
+		{
+			block->moveAfter( append_block );
+			block->setName( block->getName() + "_inlined" );
+			append_block= block;
+		}
 	}
 
 	source_coroutine_info->suspend_block->replaceAllUsesWith( destination_coroutine_info->suspend_block );
@@ -695,8 +701,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	source_initial_suspend_point.destroy_block->eraseFromParent(); // It is unreachable.
 
-	// Not done block (which triggers suspend and goes to await block) is not needed anymore.
-	await_loop_block_parsed->not_done_block->eraseFromParent();
+	await_loop_block_parsed->not_done_block->eraseFromParent(); // Not done block (which triggers suspend and goes to await block) is not needed anymore.
 	await_loop_suspend_point.normal_block->eraseFromParent(); // It's also not reachable anymore.
 
 	// Remove leftover inlined function blocks.
@@ -720,10 +725,8 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	{
 		llvm::SmallVector<llvm::Instruction*, 8> users;
 		for( llvm::User* const user : coroutine_object->users() )
-		{
 			if( const auto instruction= llvm::dyn_cast<llvm::Instruction>(user) )
 				users.push_back( instruction );
-		}
 
 		for( llvm::Instruction* const instruction : users )
 			instruction->eraseFromParent();
