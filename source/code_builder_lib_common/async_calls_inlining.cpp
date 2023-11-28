@@ -518,7 +518,7 @@ SuspedPoint ParseSuspendBlock( llvm::BasicBlock& block )
 	return result;
 }
 
-void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
+void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction, llvm::SmallVectorImpl<llvm::Function*>& functions_to_remove )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
 	if( coroutine_object == nullptr )
@@ -559,6 +559,8 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	const auto destination_coroutine_info= CollectCoroutineFunctionInfo( function );
 	if( destination_coroutine_info == std::nullopt )
 		return;
+
+	llvm::Function* const callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( call_instruction ) );
 
 	// Clone callee and replace call to original with call to its clone.
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
@@ -747,9 +749,15 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
+
+	// Remove inlined function, if can do so.
+	// Right now do not remove, only populate container for removal, in order to avoid removing functions while iterating over module functions.
+	if( callee_function->getLinkage() == llvm::GlobalValue::PrivateLinkage &&
+		!callee_function->hasNUsesOrMore(1) )
+		functions_to_remove.push_back( callee_function );
 }
 
-void ProcessFunction( llvm::Function& function )
+void ProcessFunction( llvm::Function& function, llvm::SmallVectorImpl<llvm::Function*>& functions_to_remove )
 {
 	// Apply the optimization only for async fnctions, that must have this attribute.
 	if( !function.hasFnAttribute( llvm::Attribute::PresplitCoroutine ) )
@@ -759,15 +767,20 @@ void ProcessFunction( llvm::Function& function )
 	ExtractAllACoroutineFunctionCalls( function, async_calls );
 
 	for( llvm::CallInst* const call_instruction : async_calls )
-		TryToInlineAsyncCall( function, *call_instruction );
+		TryToInlineAsyncCall( function, *call_instruction, functions_to_remove );
 }
 
 } // namespace
 
 void InlineAsyncCalls( llvm::Module& module )
 {
+	llvm::SmallVector<llvm::Function*, 16> functions_to_remove;
+
 	for( llvm::Function& function : module.functions() )
-		ProcessFunction( function );
+		ProcessFunction( function, functions_to_remove );
+
+	for( llvm::Function* const function : functions_to_remove )
+		function->eraseFromParent();
 }
 
 } // namespace U

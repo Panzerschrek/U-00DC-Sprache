@@ -38,6 +38,8 @@ U_TEST(AsyncCallInlining_Test0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) == nullptr ); // Should inline it.
+
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
@@ -72,6 +74,8 @@ U_TEST(AsyncCallInlining_Test1)
 	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) == nullptr ); // Should inline it.
 
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
@@ -108,6 +112,8 @@ U_TEST(AsyncCallInlining_Test2)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
@@ -143,6 +149,8 @@ U_TEST(AsyncCallInlining_Test3)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Divff" ) == nullptr ); // Should inline it.
+
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
@@ -177,6 +185,8 @@ U_TEST(AsyncCallInlining_Test4)
 	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
 
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
@@ -217,6 +227,9 @@ U_TEST(AsyncCallInlining_Test5)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Mul2j" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Div3j" ) == nullptr ); // Should inline it.
+
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
@@ -255,6 +268,9 @@ U_TEST(AsyncCallInlining_Test6)
 	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Mul2j" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Div3j" ) == nullptr ); // Should inline it.
 
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
@@ -297,6 +313,8 @@ U_TEST(AsyncCallInlining_Test7)
 	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z10SquaresSumj" ) == nullptr ); // Should inline it.
 
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }

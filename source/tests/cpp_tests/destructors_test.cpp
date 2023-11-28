@@ -4074,6 +4074,8 @@ U_TEST(AwaitOperator_Destruction_WithInlining_Test0)
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Bazv" ) == nullptr ); // Should inline it.
+
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 120, 122 } ) );
