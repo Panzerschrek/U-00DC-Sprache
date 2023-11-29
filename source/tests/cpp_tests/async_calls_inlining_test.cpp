@@ -319,6 +319,105 @@ U_TEST(AsyncCallInlining_Test7)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInlining_Test8)
+{
+	static const char c_program_text[]=
+	R"(
+		// Should use inlining order inverse to topological.
+		fn async Fun0( u32 x ) : u32
+		{
+			yield;
+			return x * 4u;
+		}
+		fn async Fun1( u32 x ) : u32
+		{
+			yield;
+			return Fun0(x).await + 17u;
+		}
+		fn async Fun2( u32 x ) : u32
+		{
+			yield;
+			return Fun1(x).await / 3u;
+		}
+		fn async Fun3( u32 x ) : u32
+		{
+			yield;
+			return Fun2(x).await - 5u;
+		}
+		fn Foo()
+		{
+			auto mut f= Fun3( 625412u );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != (((625412u * 4u) + 17u) / 3u) - 5u );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Fun0j" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Fun1j" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Fun2j" ) == nullptr ); // Should inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInlining_Test9)
+{
+	static const char c_program_text[]=
+	R"(
+		// Should use inlining order inverse to topological.
+		fn async Mul2( u32 x ) : u32
+		{
+			yield;
+			return x * 2u;
+		}
+		fn async Mul6( u32 x ) : u32
+		{
+			yield;
+			return Mul2(x).await * 3u;
+		}
+		fn async Mul10( u32 x ) : u32
+		{
+			yield;
+			return Mul2(x).await * 5u;
+		}
+		fn async Mul16( u32 x ) : u32
+		{
+			return Mul6(x).await + Mul10(x).await;
+		}
+		fn Foo()
+		{
+			auto mut f= Mul16( 541u );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 541u * 16u );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Mul2j" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Mul10j" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Mul6j" ) == nullptr ); // Should inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace
 
 } // namespace U
