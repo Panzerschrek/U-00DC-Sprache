@@ -837,6 +837,43 @@ U_TEST(AsyncCallInliningFail_Test5)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInliningFail_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async GetX() : i32;
+		// Can't inline - callable is external.
+		fn async GetXWrapper() : i32
+		{
+			if( false )
+			{
+				return GetX().await;
+			}
+			return 898;
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 898 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace
 
 } // namespace U

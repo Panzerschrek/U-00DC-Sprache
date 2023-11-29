@@ -60,7 +60,8 @@ void ExtractAllACoroutineFunctionCalls( llvm::Function& function, llvm::SmallVec
 		{
 			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
 				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
-					if( callee_function->hasFnAttribute( llvm::Attribute::PresplitCoroutine ) )
+					if( callee_function->hasFnAttribute( llvm::Attribute::PresplitCoroutine ) &&
+						!callee_function->getBasicBlockList().empty() )
 						out.push_back( call_instruction );
 		}
 	}
