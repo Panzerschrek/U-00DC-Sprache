@@ -751,10 +751,11 @@ int Main( int argc, const char* argv[] )
 	case FileType::Obj:
 	case FileType::Asm:
 		{
-			llvm::legacy::PassManager pass_manager;
-
 			std::error_code file_error_code;
 			llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
+
+			llvm::legacy::PassManager pass_manager;
+
 			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, file_type == FileType::Obj ? llvm::CGFT_ObjectFile : llvm::CGFT_AssemblyFile ) )
 			{
 				std::cerr << "Error, creating file emit pass." << std::endl;
