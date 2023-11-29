@@ -517,6 +517,76 @@ U_TEST(AsyncCallInlining_Test11)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInlining_Test12)
+{
+	static const char c_program_text[]=
+	R"(
+		// Collatz conjecture.
+
+		// Should inline non-recursive function.
+		fn async Get1() : u32
+		{
+			yield;
+			return 1u;
+		}
+		// At least some functions in the loop should not be inlined.
+		fn async Div2( u32 x, u32 step ) : u32
+		{
+			return ProcessNextElement( x / 2u, step  ).await;
+		}
+		fn async Mul3Plus1( u32 x, u32 step ) : u32
+		{
+			return ProcessNextElement( x * 3u + 1u, step ).await;
+		}
+		fn async ProcessNextElement( u32 x, u32 step ) : u32
+		{
+			if( x == Get1().await )
+			{
+				return step;
+			}
+
+			if( (x & 1u) == 0u )
+			{
+				return Div2(x, step + 1u ).await;
+			}
+			else
+			{
+				return Mul3Plus1( x, step + 1u ).await;
+			}
+		}
+		// This function sould be inlined because it itself isn't recursive.
+		fn async GetNumSteps( u32 x ) : u32
+		{
+			return ProcessNextElement( x, 0u ).await;
+		}
+		fn async GetNumStepsWrapper( u32 x ) : u32
+		{
+			return GetNumSteps( x ).await;
+		}
+		fn Foo()
+		{
+			auto mut f= GetNumStepsWrapper( 12u );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 9u );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Get1v" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z11GetNumStepsj" ) == nullptr ); // Should inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace
 
 } // namespace U
