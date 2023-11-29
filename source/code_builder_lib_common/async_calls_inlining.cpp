@@ -19,6 +19,21 @@ namespace U
 namespace
 {
 
+void AsyncInliningLogPrint(){}
+
+template<typename Arg0, typename... Args>
+void AsyncInliningLogPrint( const Arg0& head, const Args&... tail )
+{
+	std::cout << head;
+	AsyncInliningLogPrint( tail... );
+}
+
+#ifdef U_DEBUG
+#define ASYNC_INLINING_LOG_PRINT( ... ) { AsyncInliningLogPrint( __VA_ARGS__ ); std::cout << std::endl; }
+#else
+#define ASYNC_INLINING_LOG_PRINT( ... ) { if(false) { AsyncInliningLogPrint( __VA_ARGS__ ); } }
+#endif
+
 llvm::Value* GetCallee( llvm::CallInst& call_instruction )
 {
 	return call_instruction.getOperand( call_instruction.getNumOperands() - 1u ); // Function is last operand
@@ -70,20 +85,20 @@ llvm::AllocaInst* GetCoroutineObject( llvm::CallInst& call_instruction )
 			}
 			else
 			{
-				std::cout << "Store a coroutine not in \"alloca\"" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "Store a coroutine not in \"alloca\"" );
 				return nullptr;
 			}
 		}
 		else
 		{
 			// Something is wrong.
-			std::cout << "Not a store instruction" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Not a store instruction" );
 			return nullptr;
 		}
 	}
 
 	if( result == nullptr )
-		std::cout << "Can't fund \"alloca\" for coroutine object" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Can't fund \"alloca\" for coroutine object" );
 
 	return result;
 }
@@ -109,12 +124,12 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 		{
 			if( load_instruction->getMetadata("u_await_coro_handle") == nullptr )
 			{
-				std::cout << "load for coroutine object outside await operator" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "load for coroutine object outside await operator" );
 				return std::nullopt;
 			}
 			if( res.coro_handle_load != nullptr )
 			{
-				std::cout << "duplicated await" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "more than one await" );
 				return std::nullopt;
 			}
 			res.coro_handle_load= load_instruction;
@@ -124,7 +139,7 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 			// This is an initial store for this coroutine object.
 			if( initial_store_instruction != nullptr )
 			{
-				std::cout << "Too much store instructions for the coroutine object" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "Too many store instructions for the coroutine object" );
 				return std::nullopt;
 			}
 			initial_store_instruction= store_instruction;
@@ -135,7 +150,7 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 			{
 				if( res.destructor_call != nullptr )
 				{
-					std::cout << "duplicated await" << std::endl;
+					ASYNC_INLINING_LOG_PRINT( "more than one await" );
 					return std::nullopt;
 				}
 				res.destructor_call= call_instruction;
@@ -158,13 +173,13 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 					continue;
 				}
 
-				std::cout << "Unsupported call for coroutine object" << std::endl;
+				ASYNC_INLINING_LOG_PRINT(  "Unsupported call for coroutine object" );
 				return std::nullopt;
 			}
 		}
 		else
 		{
-			std::cout << "Unexpected instruction for coroutine object - await call optimization isn't possible" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Unexpected instruction for coroutine object - await call optimization isn't possible" );
 			return std::nullopt;
 		}
 	}
@@ -173,17 +188,17 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 	// For technical reasnos it is not marked with "u_await_destructor_call" metadata.
 	if( additional_calls.size() > 1u )
 	{
-		std::cout << "Find calls except destructors for coroutine object" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Find calls except destructors for coroutine object" );
 		return std::nullopt;
 	}
 	if( destructor_function == nullptr )
 	{
-		std::cout << "Can't find destructor for coroutine object" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Can't find destructor for coroutine object" );
 		return std::nullopt;
 	}
 	if( additional_calls.front() != destructor_function )
 	{
-		std::cout << "Unexpected call to non-destructor function " << additional_calls.front()->getName().str() << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Unexpected call to non-destructor function ", additional_calls.front()->getName().str() );
 		return std::nullopt;
 	}
 
@@ -248,20 +263,20 @@ llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
 
 			if( result != nullptr && result != bb )
 			{
-				std::cout << "Duplicated await loop block!" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "Duplicated await loop block!");
 				return nullptr;
 			}
 			result= bb;
 		}
 		else
 		{
-			std::cout << "Unexpected coro handle load user kind - non-instruction" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Unexpected coro handle load user kind - non-instruction" );
 			return nullptr;
 		}
 	}
 
 	if( result == nullptr )
-		std::cout << "Can't find await loop block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Can't find await loop block" );
 
 	return result;
 }
@@ -284,7 +299,7 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 
 	if( it == it_end )
 	{
-		std::cout << "Invalid await loop block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Invalid await loop block" );
 		return std::nullopt;
 	}
 	if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &*it ) )
@@ -295,26 +310,26 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 				result.resume_call= call_instruction;
 			else
 			{
-				std::cout << "expected resume call, find another function call" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "expected resume call, find another function call" );
 				return std::nullopt;
 			}
 		}
 		else
 		{
-			std::cout << "expected resume call, find non-function call" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "expected resume call, find non-function call" );
 			return std::nullopt;
 		}
 	}
 	else
 	{
-		std::cout << "expected resume call, foud non-call" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "expected resume call, foud non-call" );
 		return std::nullopt;
 	}
 
 	++it;
 	if( it == it_end )
 	{
-		std::cout << "Invalid await loop block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Invalid await loop block" );
 		return std::nullopt;
 	}
 	if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &*it ) )
@@ -325,26 +340,26 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 				result.done_call= call_instruction;
 			else
 			{
-				std::cout << "expected done call, find another function call" << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "expected done call, find another function call" );
 				return std::nullopt;
 			}
 		}
 		else
 		{
-			std::cout << "expected done call, find non-function call" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "expected done call, find non-function call" );
 			return std::nullopt;
 		}
 	}
 	else
 	{
-		std::cout << "expected done call, foud non-call" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "expected done call, foud non-call" );
 		return std::nullopt;
 	}
 
 	++it;
 	if( it == it_end )
 	{
-		std::cout << "Invalid await loop block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Invalid await loop block" );
 		return std::nullopt;
 	}
 	if( const auto branch_instruction= llvm::dyn_cast<llvm::BranchInst>( &*it ) )
@@ -352,20 +367,20 @@ std::optional<AwaitLoopBlock> ParseAwaitLoopBlock( llvm::BasicBlock& bb )
 		result.done_br= branch_instruction;
 		if( !branch_instruction->isConditional() )
 		{
-			std::cout << "Invalid branching at the end of the await loop block" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Invalid branching at the end of the await loop block" );
 			return std::nullopt;
 		}
 		result.done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 2u ) );
 		result.not_done_block= llvm::dyn_cast<llvm::BasicBlock>( branch_instruction->getOperand( 1u ) );
 		if( result.done_block == nullptr || result.not_done_block == nullptr )
 		{
-			std::cout << "Wrong await loop branching destination" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Wrong await loop branching destination" );
 			return std::nullopt;
 		}
 	}
 	else
 	{
-		std::cout << "expected branching" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "expected branching"  );
 		return std::nullopt;
 	}
 
@@ -467,7 +482,7 @@ std::optional<CoroutineFunctionInfo> CollectCoroutineFunctionInfo( llvm::Functio
 		result.cleanup_block == nullptr ||
 		result.promise == nullptr )
 	{
-		std::cout << "Can't find some of coroutine blocks!" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Can't find some of coroutine blocks!" );
 		return std::nullopt;
 	}
 
@@ -490,7 +505,7 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 
 	if( it == it_end )
 	{
-		std::cout << "Invalid initial suspend block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Invalid initial suspend block" );
 		return std::nullopt;
 	}
 
@@ -502,34 +517,33 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 			{}
 			else
 			{
-				std::cout << "expected suspend call, find another function call: " << callee_function->getName().str() << std::endl;
-				std::cout << "Note, bb is: " << block.getName().str() << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "expected suspend call, find another function call: ", callee_function->getName().str() );
 				return std::nullopt;
 			}
 		}
 		else
 		{
-			std::cout << "expected suspend call, find non-function call" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "expected suspend call, find non-function call" );
 			return std::nullopt;
 		}
 	}
 	else
 	{
-		std::cout << "expected suspend call, foud non-call" << std::endl;
+		ASYNC_INLINING_LOG_PRINT(  "expected suspend call, foud non-call" );
 		return std::nullopt;
 	}
 
 	++it;
 	if( it == it_end )
 	{
-		std::cout << "Invalid initial suspend block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Invalid initial suspend block" );
 		return std::nullopt;
 	}
 	if( const auto switch_instruction= llvm::dyn_cast<llvm::SwitchInst>( &*it ) )
 	{
 		if( switch_instruction->getNumCases() != 2 )
 		{
-			std::cout << "Invalid suspend switch" << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Invalid suspend switch" );
 			return std::nullopt;
 		}
 
@@ -540,7 +554,7 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 	else
 	{
 
-		std::cout << "expected switch instruction" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "expected switch instruction" );
 		return std::nullopt;
 	}
 
@@ -548,7 +562,7 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 		result.normal_block == nullptr ||
 		result.destroy_block == nullptr )
 	{
-		std::cout << "Invalid suspend block" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Invalid suspend block" );
 		return std::nullopt;
 	}
 
@@ -583,7 +597,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	CollectPromiseCalls( *await_instructions->coro_handle_load, promise_calls );
 	if( promise_calls.empty() )
 	{
-		std::cout << "Can't find any promise call" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Can't find any promise call" );
 		return;
 	}
 
@@ -591,7 +605,7 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	CollectDoneCalls( *await_instructions->coro_handle_load, done_calls );
 	if( done_calls.empty() )
 	{
-		std::cout << "Can't find any done call" << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Can't find any done call" );
 		return;
 	}
 
@@ -853,7 +867,7 @@ void InlineOrderedFunction( const InliningOrderElement& pair )
 {
 	for( const auto& call : pair.second )
 	{
-		std::cout << "Inline call to " << call.function->getName().str() << " from " << pair.first->getName().str() << std::endl;
+		ASYNC_INLINING_LOG_PRINT( "Inline call to ",call.function->getName().str(), " from ", pair.first->getName().str() );
 		InlineCall( *pair.first, call );
 	}
 }
@@ -977,7 +991,7 @@ void InlineAsyncCalls( llvm::Module& module )
 	}
 	// Now only strongly-connected sungraphs should left.
 
-	std::cout << "Perform inlining in specified order" << std::endl;
+	ASYNC_INLINING_LOG_PRINT( "Perform inlining in specified order" );
 
 	// Inline graph tails first.
 	for( const auto& function_pair : inlining_order_head )
@@ -992,7 +1006,7 @@ void InlineAsyncCalls( llvm::Module& module )
 		{
 			if( async_call_graph.find( calls[i].function ) == async_call_graph.end() )
 			{
-				std::cout << "Strong component special inline call to " << calls[i].function->getName().str() << " from " << graph_node.first->getName().str() << std::endl;
+				ASYNC_INLINING_LOG_PRINT( "Strong component special inline call to ", calls[i].function->getName().str(), " from ", graph_node.first->getName().str() );
 				InlineCall( *graph_node.first, calls[i] );
 
 				if( i + 1 < calls.size() )
@@ -1007,7 +1021,7 @@ void InlineAsyncCalls( llvm::Module& module )
 	for( const auto& graph_node : async_call_graph )
 		for( const auto& call : graph_node.second.calls )
 		{
-			std::cout << "Strong component inline call to " << call.function->getName().str() << " from " << graph_node.first->getName().str() << std::endl;
+			ASYNC_INLINING_LOG_PRINT( "Strong component inline call to ", call.function->getName().str(), " from ", graph_node.first->getName().str() );
 			InlineCall( *graph_node.first, call );
 		}
 
