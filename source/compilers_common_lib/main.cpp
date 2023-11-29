@@ -32,6 +32,7 @@
 #include <llvm/Transforms/IPO/Internalize.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../code_builder_lib_common/string_ref.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
@@ -239,6 +240,12 @@ cl::opt< HaltMode > halt_mode(
 cl::opt<bool> no_libc_alloc(
 	"no-libc-alloc",
 	cl::desc("Disable usage of libc allocation functions."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> disable_async_calls_inlining(
+	"disable-async-calls-inlining",
+	cl::desc("Disable force-inlining for async function calls (via await)."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -686,6 +693,11 @@ int Main( int argc, const char* argv[] )
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
 	}
+
+	// Run async calls inlining.
+	// Enable it for O1, O2, O3, Os, but not O0 and Oz.
+	if( optimization_level.isOptimizingForSpeed() && optimization_level.getSizeLevel() <= 1 && ! Options::disable_async_calls_inlining )
+		InlineAsyncCalls( *result_module );
 
 	// Create and run optimization passes.
 	{
