@@ -19,6 +19,7 @@ function( CompileUSources u_source_files out_objects )
 	set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
 endfunction()
 
+add_subdirectory( async_calls_inlining_test )
 add_subdirectory( bitcode_linking_test )
 add_subdirectory( compiler_info_test )
 add_subdirectory( compiler_exe_result_test )
