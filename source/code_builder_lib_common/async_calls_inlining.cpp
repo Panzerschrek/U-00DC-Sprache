@@ -537,7 +537,7 @@ bool IsAsyncFunctionCallWithSingleFurtherAwait( llvm::CallInst& call_instruction
 	return GetAwaitOperatorCoroutineInstructions( *coroutine_object ) != std::nullopt;
 }
 
-void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction, llvm::SmallVectorImpl<llvm::Function*>& functions_to_remove )
+void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
 	if( coroutine_object == nullptr )
@@ -765,12 +765,6 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
-
-	// Remove inlined function, if can do so.
-	// Right now do not remove, only populate container for removal, in order to avoid removing functions while iterating over module functions.
-	if( callee_function->getLinkage() == llvm::GlobalValue::PrivateLinkage &&
-		!callee_function->hasNUsesOrMore(1) )
-		functions_to_remove.push_back( callee_function );
 }
 
 struct AsyncFunctionCall
@@ -822,20 +816,17 @@ AsyncCallsGraph BuildAsyncCallsGraph( llvm::Module& module )
 
 void InlineAsyncCalls( llvm::Module& module )
 {
-	llvm::SmallVector<llvm::Function*, 16> functions_to_remove;
-
 	AsyncCallsGraph async_call_graph= BuildAsyncCallsGraph( module );
 
 	llvm::SmallVector< std::pair<llvm::Function*, AsyncFunctionCalls> , 8> inlining_order;
 
 	// Try to build order of iteration.
-	// Extract graph nodes with no input nodes until there are such nodes.
+	// Extract graph nodes with no output nodes until there are such nodes.
 	// If the async call graph is acycled, remaining graph will be empty.
-	// TODO - reduce complexity.
 	while(true)
 	{
 		size_t nodes_removed= 0;
-		for( auto it= async_call_graph.begin(), it_end= async_call_graph.end(); it != it_end;  )
+		for( auto it= async_call_graph.begin(), it_end= async_call_graph.end(); it != it_end; )
 		{
 			llvm::Function* const function= it->first;
 			if( it->second.out_nodes.empty() )
@@ -877,6 +868,69 @@ void InlineAsyncCalls( llvm::Module& module )
 			break;
 	}
 
+	if( !async_call_graph.empty() )
+	{
+		// This graph contains cycles.
+		// Perform reverse algorithm for previous one - extract nodes with no input nodes until it is possible.
+		// Put extracted nodes into another container, since the order is reverse.
+
+		llvm::SmallVector< std::pair<llvm::Function*, AsyncFunctionCalls> , 8> inlining_order_inverse;
+		while(true)
+		{
+			size_t nodes_removed= 0;
+			for( auto it= async_call_graph.begin(), it_end= async_call_graph.end(); it != it_end; )
+			{
+				llvm::Function* const function= it->first;
+				if( it->second.in_nodes.empty() )
+				{
+					// Remove this node.
+
+					// Drop links to this function first.
+					for( llvm::Function* const in_function : it->second.out_nodes )
+					{
+						const auto other_function_it= async_call_graph.find( in_function );
+						U_ASSERT( other_function_it != async_call_graph.end() );
+
+						auto& other_function_in_nodes= other_function_it->second.in_nodes;
+						for( size_t i= 0; i < other_function_in_nodes.size(); )
+						{
+							if( other_function_in_nodes[i] == function )
+							{
+								if( i + 1 < other_function_in_nodes.size() )
+									other_function_in_nodes[i]= std::move( other_function_in_nodes.back() );
+								other_function_in_nodes.pop_back();
+							}
+							else
+								++i;
+						}
+					}
+
+					// Populate inverse inlining order container.
+					inlining_order_inverse.push_back( std::make_pair( function, std::move( it->second.calls ) ) );
+
+					// Erase node from the graph.
+					it= async_call_graph.erase(it);
+					++nodes_removed;
+				}
+				else
+					++it;
+			}
+
+			if( nodes_removed == 0 )
+				break;
+		}
+
+		// Append remaining graph elements into the order container.
+		// Now only strongly linked components are left, order for inlining for them is unsignificant.
+		for( auto& function_pair : async_call_graph )
+			inlining_order.push_back( std::make_pair( function_pair.first, std::move( function_pair.second.calls ) ) );
+		async_call_graph.clear();
+
+		// Since elements in this container are reversed, append them with inversion.
+		for( auto it= inlining_order_inverse.rbegin(); it != inlining_order_inverse.rend(); ++it )
+			inlining_order.push_back( std::move( *it ) );
+	}
+
 	std::cout << "Inlining order is: ";
 	for( const auto& function_pair : inlining_order )
 		std::cout << function_pair.first->getName().str() << ", ";
@@ -885,12 +939,18 @@ void InlineAsyncCalls( llvm::Module& module )
 	for( const auto& function_pair : inlining_order )
 	{
 		for( const auto& call : function_pair.second )
-			TryToInlineAsyncCall( *function_pair.first, *call.instruction, functions_to_remove );
+			TryToInlineAsyncCall( *function_pair.first, *call.instruction );
 	}
 
-
-	for( llvm::Function* const function : functions_to_remove )
-		function->eraseFromParent();
+	for( const auto& function_pair : inlining_order )
+	{
+		llvm::Function* const function= function_pair.first;
+		// Remove inlined function, if can do so.
+		// Right now do not remove, only populate container for removal, in order to avoid removing functions while iterating over module functions.
+		if( function->getLinkage() == llvm::GlobalValue::PrivateLinkage &&
+			!function->hasNUsesOrMore(1) )
+			function->eraseFromParent();
+	}
 }
 
 } // namespace U
