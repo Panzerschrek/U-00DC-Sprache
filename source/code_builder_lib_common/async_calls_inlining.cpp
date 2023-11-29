@@ -388,7 +388,7 @@ llvm::Function* CreateCalleeAsyncFunctionClone( llvm::CallInst& call_instruction
 
 struct CoroutineFunctionInfo
 {
-	llvm::BasicBlock* allocations_block= nullptr;
+	llvm::SmallVector<llvm::BasicBlock*, 4> allocations_blocks;
 	llvm::BasicBlock* block_before_prepare= nullptr;
 	llvm::BasicBlock* initial_suspend_block= nullptr;
 	llvm::BasicBlock* suspend_block= nullptr;
@@ -430,6 +430,22 @@ std::optional<CoroutineFunctionInfo> CollectCoroutineFunctionInfo( llvm::Functio
 				result.other_coroutine_blocks.push_back( &basic_block );
 
 		}
+
+		// Normally a function should contain single allocations block.
+		// "alloca" instruction may be used only inside it.
+		// But if another function already was inlined into the function, multiple allocation blocks are possible.
+		bool is_alloca_block= false;
+		for( const llvm::Instruction& instruction : basic_block )
+		{
+			if( llvm::dyn_cast<llvm::AllocaInst>(&instruction) != nullptr )
+			{
+				is_alloca_block= true;
+				break;
+			}
+		}
+
+		if( is_alloca_block )
+			result.allocations_blocks.push_back( &basic_block );
 	}
 
 	if( prepare_block != nullptr )
@@ -443,9 +459,7 @@ std::optional<CoroutineFunctionInfo> CollectCoroutineFunctionInfo( llvm::Functio
 		}
 	}
 
-	result.allocations_block= &*function.begin();
-
-	if( result.allocations_block == nullptr ||
+	if( result.allocations_blocks.empty() ||
 		result.block_before_prepare == nullptr ||
 		result.initial_suspend_block == nullptr ||
 		result.suspend_block == nullptr ||
@@ -594,8 +608,6 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	if( destination_coroutine_info == std::nullopt )
 		return;
 
-	llvm::Function* const callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( call_instruction ) );
-
 	// Clone callee and replace call to original with call to its clone.
 	// This is needed later for taking instructions and basic blocks from the clone and placing them into this function.
 	llvm::Function* const callee_clone= CreateCalleeAsyncFunctionClone( call_instruction );
@@ -645,27 +657,34 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 		}
 	}
 
-	// Try to insert allocations block before allocations block of the current function.
+	// Insert allocation blocks before allocation blocks of the current function.
 	{
-		llvm::BasicBlock& alloca_block= *source_coroutine_info->allocations_block;
-
-		alloca_block.removeFromParent();
-		alloca_block.setName( alloca_block.getName() + "_inlined" );
-
 		const auto it= function.begin();
 		const auto it_end= function.end();
-		if( it == it_end )
-			alloca_block.insertInto( &function );
-		else
-		{
-			llvm::BasicBlock* const current_start_block= &*it;
-			alloca_block.insertInto( &function, current_start_block );
+		U_ASSERT( it != it_end );
+		llvm::BasicBlock* const current_start_block= &*it;
 
-			llvm::Instruction* const terminator= alloca_block.getTerminator();
-			U_ASSERT( terminator != nullptr );
-			llvm::BranchInst::Create( current_start_block, &alloca_block );
-			terminator->eraseFromParent();
+		for( llvm::BasicBlock* const alloca_block : source_coroutine_info->allocations_blocks )
+		{
+			alloca_block->removeFromParent();
+			alloca_block->setName( alloca_block->getName() + "_inlined" );
+
+			alloca_block->insertInto( &function, current_start_block );
 		}
+
+		// Assume that last allocation block contains "br func_code".
+		// Replace it with "br" to the allocations block of this function.
+		U_ASSERT( !source_coroutine_info->allocations_blocks.empty() );
+		U_ASSERT( !destination_coroutine_info->allocations_blocks.empty() );
+
+		llvm::BasicBlock* const last_alloca_block= source_coroutine_info->allocations_blocks.back();
+		llvm::BasicBlock* const first_dst_alloca_block= destination_coroutine_info->allocations_blocks.front();
+		U_ASSERT( first_dst_alloca_block == current_start_block );
+
+		llvm::Instruction* const terminator= last_alloca_block->getTerminator();
+		U_ASSERT( terminator != nullptr );
+		llvm::BranchInst::Create( first_dst_alloca_block, last_alloca_block );
+		terminator->eraseFromParent();
 	}
 
 	// Create break from the start block to the first block after coroutine blocks.
