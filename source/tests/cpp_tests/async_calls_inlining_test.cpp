@@ -587,6 +587,256 @@ U_TEST(AsyncCallInlining_Test12)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInliningFail_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async GetX() : i32
+		{
+			return 6564;
+		}
+		// Should not inline - only inlining for await call is posible.
+		fn async GetXWrapper() : i32
+		{
+			auto mut f= GetX();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					return x;
+				}
+				yield;
+			}
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 6564 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInliningFail_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async GetX() : i32
+		{
+			return 998;
+		}
+		// Should not inline - call to an async function via a pointer.
+		fn async GetXWrapper() : i32
+		{
+			var ( fn() : (async : i32) ) ptr( GetX );
+			return ptr().await;
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 998 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInliningFail_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async GetX() : i32
+		{
+			return 12311;
+		}
+		fn GetXCoroutine() : (async : i32)
+		{
+			return GetX();
+		}
+		// Should not inline - call to an async function via an intermediate function.
+		fn async GetXWrapper() : i32
+		{
+			return GetXCoroutine().await;
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 12311 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z13GetXCoroutinev" ) != nullptr ); // Should NOT inline it too.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInliningFail_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async GetX() : i32
+		{
+			return 998;
+		}
+		// Can't inline - coroutine object used for more than one "await" operator.
+		fn async GetXWrapper() : i32
+		{
+			auto mut f= GetX();
+			if( true )
+			{
+				return move(f).await;
+			}
+			else
+			{
+				return move(f).await;
+			}
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 998 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInliningFail_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn async GetX() : i32
+		{
+			return 575;
+		}
+		// Can't inline - coroutine object used not only for "await" operator.
+		fn async GetXWrapper() : i32
+		{
+			auto mut f= GetX();
+			if( true )
+			{
+				return move(f).await;
+			}
+			else
+			{
+				return 1; // Call here destructor for "f" which prevents "await" inlining.
+			}
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 575 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInliningFail_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn generator GetX() : i32
+		{
+			return 56443;
+		}
+		// Can't inline - generators instead of async functions.
+		fn generator GetXWrapper() : i32
+		{
+			auto mut f= GetX();
+			if_coro_advance( x : f )
+			{
+				return x;
+			}
+		}
+		fn Foo()
+		{
+			auto mut f= GetXWrapper();
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 56443 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4GetXv" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace
 
 } // namespace U
