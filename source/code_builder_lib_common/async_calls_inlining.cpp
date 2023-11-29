@@ -1,5 +1,6 @@
 #include <iostream>
 #include <optional>
+#include <unordered_map>
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constants.h>
@@ -778,12 +779,16 @@ struct AsyncFunctionCall
 	llvm::Function* function= nullptr;
 };
 
+using AsyncFunctionCalls= llvm::SmallVector<AsyncFunctionCall, 4>;
+
 struct AsyncCallGraphNode
 {
-	llvm::SmallVector<AsyncFunctionCall, 4> calls;
+	AsyncFunctionCalls calls;
+	llvm::SmallVector<llvm::Function*, 4> out_nodes;
+	llvm::SmallVector<llvm::Function*, 4> in_nodes;
 };
 
-using AsyncCallsGraph= llvm::DenseMap<llvm::Function*, AsyncCallGraphNode>;
+using AsyncCallsGraph= std::unordered_map<llvm::Function*, AsyncCallGraphNode>;
 
 AsyncCallsGraph BuildAsyncCallsGraph( llvm::Module& module )
 {
@@ -801,7 +806,12 @@ AsyncCallsGraph BuildAsyncCallsGraph( llvm::Module& module )
 			if( IsAsyncFunctionCallWithSingleFurtherAwait( *call_instruction ) )
 			{
 				if( const auto calle_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+				{
 					result[ &function ].calls.push_back( { call_instruction, calle_function } );
+
+					result[ &function ].out_nodes.push_back( calle_function );
+					result[ calle_function ].in_nodes.push_back( &function );
+				}
 			}
 	}
 
@@ -814,14 +824,70 @@ void InlineAsyncCalls( llvm::Module& module )
 {
 	llvm::SmallVector<llvm::Function*, 16> functions_to_remove;
 
-	const AsyncCallsGraph async_call_graph= BuildAsyncCallsGraph( module );
+	AsyncCallsGraph async_call_graph= BuildAsyncCallsGraph( module );
 
-	// TODO - follow order reverse to the topological.
-	for( const auto& function_pair : async_call_graph )
+	llvm::SmallVector< std::pair<llvm::Function*, AsyncFunctionCalls> , 8> inlining_order;
+
+	// Try to build order of iteration.
+	// Extract graph nodes with no input nodes until there are such nodes.
+	// If the async call graph is acycled, remaining graph will be empty.
+	// TODO - reduce complexity.
+	while(true)
 	{
-		for( const auto& call : function_pair.second.calls )
+		size_t nodes_removed= 0;
+		for( auto it= async_call_graph.begin(), it_end= async_call_graph.end(); it != it_end;  )
+		{
+			llvm::Function* const function= it->first;
+			if( it->second.out_nodes.empty() )
+			{
+				// Remove this node.
+
+				// Drop links to this function first.
+				for( llvm::Function* const in_function : it->second.in_nodes )
+				{
+					const auto other_function_it= async_call_graph.find( in_function );
+					U_ASSERT( other_function_it != async_call_graph.end() );
+
+					auto& other_function_out_nodes= other_function_it->second.out_nodes;
+					for( size_t i= 0; i < other_function_out_nodes.size(); )
+					{
+						if( other_function_out_nodes[i] == function )
+						{
+							if( i + 1 < other_function_out_nodes.size() )
+								other_function_out_nodes[i]= std::move( other_function_out_nodes.back() );
+							other_function_out_nodes.pop_back();
+						}
+						else
+							++i;
+					}
+				}
+
+				// Populate inlining order container.
+				inlining_order.push_back( std::make_pair( function, std::move( it->second.calls ) ) );
+
+				// Erase node from the graph.
+				it= async_call_graph.erase(it);
+				++nodes_removed;
+			}
+			else
+				++it;
+		}
+
+		if( nodes_removed == 0 )
+			break;
+	}
+
+	std::cout << "Inlining order is: ";
+	for( const auto& function_pair : inlining_order )
+		std::cout << function_pair.first->getName().str() << ", ";
+	std::cout << std::endl;
+
+	for( const auto& function_pair : inlining_order )
+	{
+		for( const auto& call : function_pair.second )
 			TryToInlineAsyncCall( *function_pair.first, *call.instruction, functions_to_remove );
 	}
+
 
 	for( llvm::Function* const function : functions_to_remove )
 		function->eraseFromParent();
