@@ -24,6 +24,19 @@ llvm::Value* GetCallee( llvm::CallInst& call_instruction )
 	return call_instruction.getOperand( call_instruction.getNumOperands() - 1u ); // Function is last operand
 }
 
+// This function may still return "false" is some indirect recursive call and recursive call via other function exist.
+bool FunctionIsDirectlyRecursive( llvm::Function& function )
+{
+	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
+		for( llvm::Instruction& instruction : basic_block.getInstList() )
+			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+					if( callee_function == &function )
+						return true;
+
+	return false;
+}
+
 void ExtractAllACoroutineFunctionCalls( llvm::Function& function, llvm::SmallVectorImpl<llvm::CallInst*>& out )
 {
 	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
@@ -939,7 +952,12 @@ void InlineAsyncCalls( llvm::Module& module )
 	for( const auto& function_pair : inlining_order )
 	{
 		for( const auto& call : function_pair.second )
+		{
+			if( FunctionIsDirectlyRecursive( *call.function ) )
+				continue;
+
 			TryToInlineAsyncCall( *function_pair.first, *call.instruction );
+		}
 	}
 
 	for( const auto& function_pair : inlining_order )

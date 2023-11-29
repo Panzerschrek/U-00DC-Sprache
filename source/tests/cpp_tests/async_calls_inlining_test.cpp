@@ -418,6 +418,105 @@ U_TEST(AsyncCallInlining_Test9)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInlining_Test10)
+{
+	static const char c_program_text[]=
+	R"(
+		// Should not inline recursive function.
+		fn async Factorial( u64 x ) : u64
+		{
+			if( x <= 1u64 )
+			{
+				return 1u64;
+			}
+			return x * Factorial( x - 1u64 ).await;
+		}
+		fn async FactorialWrapper( u64 x ) : u64
+		{
+			return Factorial(x).await;
+		}
+		fn Foo()
+		{
+			auto mut f= FactorialWrapper( 10u64 );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 3628800u64 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z9Factorialy" ) != nullptr ); // Should NOT inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST(AsyncCallInlining_Test11)
+{
+	static const char c_program_text[]=
+	R"(
+		// Should inline non-recursive function.
+		fn async Get1() : u64
+		{
+			yield;
+			return 1u64;
+		}
+		// Should not inline recursive function.
+		fn async Factorial( u64 x ) : u64
+		{
+			if( x <= 1u64 )
+			{
+				return Get1().await;
+			}
+			return x * Factorial( x - 1u64 ).await;
+		}
+		fn async FactorialWrapper( u64 x ) : u64
+		{
+			return Factorial(x).await;
+		}
+		// Should inline "FactorialWrapper".
+		fn async FactorialWrapper2( u64 x ) : u64
+		{
+			return FactorialWrapper(x).await;
+		}
+		// Should inline "FactorialWrapper2".
+		fn async FactorialWrapper3( u64 x ) : u64
+		{
+			return FactorialWrapper2(x).await;
+		}
+		fn Foo()
+		{
+			auto mut f= FactorialWrapper3( 11u64 );
+			loop
+			{
+				if_coro_advance( x : f )
+				{
+					halt if( x != 39916800u64 );
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4Get1v" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z9Factorialy" ) != nullptr ); // Should NOT inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z16FactorialWrappery" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z17FactorialWrapper2y" ) == nullptr ); // Should inline it.
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace
 
 } // namespace U
