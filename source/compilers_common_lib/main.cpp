@@ -696,7 +696,11 @@ int Main( int argc, const char* argv[] )
 
 	// Run async calls inlining.
 	// Enable it for O1, O2, O3, Os, but not O0 and Oz.
-	if( optimization_level.isOptimizingForSpeed() && optimization_level.getSizeLevel() <= 1 && ! Options::disable_async_calls_inlining )
+	// It's also important to perform inlining only for compilation from Ü sources directly.
+	// Trying to perform such optimization for already compiled ll/bc files is useless or may lead to errors.
+	if( optimization_level.isOptimizingForSpeed() && optimization_level.getSizeLevel() <= 1 &&
+		! Options::disable_async_calls_inlining &&
+		Options::input_files_type == Options::InputFileType::Source )
 		InlineAsyncCalls( *result_module );
 
 	// Create and run optimization passes.
