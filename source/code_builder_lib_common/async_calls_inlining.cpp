@@ -28,7 +28,7 @@ void AsyncInliningLogPrint( const Arg0& head, const Args&... tail )
 	AsyncInliningLogPrint( tail... );
 }
 
-#ifdef U_DEBUG
+#if 0 // Set to 1 to enable debug logging.
 #define ASYNC_INLINING_LOG_PRINT( ... ) { AsyncInliningLogPrint( __VA_ARGS__ ); std::cout << std::endl; }
 #else
 #define ASYNC_INLINING_LOG_PRINT( ... ) { if(false) { AsyncInliningLogPrint( __VA_ARGS__ ); } }
@@ -68,7 +68,7 @@ void ExtractAllACoroutineFunctionCalls( llvm::Function& function, llvm::SmallVec
 }
 
 // Assume that the compiler uses coroutine call result only once - to store it in a local variable.
-// Return the address of this variable.
+// Return the address of this variable or nulptr if something is wrong.
 llvm::AllocaInst* GetCoroutineObject( llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* result= nullptr;
@@ -81,6 +81,8 @@ llvm::AllocaInst* GetCoroutineObject( llvm::CallInst& call_instruction )
 			{
 				if( result != nullptr )
 				{
+					ASYNC_INLINING_LOG_PRINT( "Duplicated \"alloca\" for a coroutine object" );
+					return nullptr;
 				}
 				result= alloca_instruction;
 			}
@@ -174,7 +176,7 @@ std::optional<AwaitOperatorCoroutineInstructions> GetAwaitOperatorCoroutineInstr
 					continue;
 				}
 
-				ASYNC_INLINING_LOG_PRINT(  "Unsupported call for coroutine object" );
+				ASYNC_INLINING_LOG_PRINT( "Unsupported call for coroutine object" );
 				return std::nullopt;
 			}
 		}
@@ -506,7 +508,7 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 
 	if( it == it_end )
 	{
-		ASYNC_INLINING_LOG_PRINT( "Invalid initial suspend block" );
+		ASYNC_INLINING_LOG_PRINT( "Invalid suspend block" );
 		return std::nullopt;
 	}
 
@@ -537,7 +539,7 @@ std::optional<SuspedPoint> ParseSuspendBlock( llvm::BasicBlock& block )
 	++it;
 	if( it == it_end )
 	{
-		ASYNC_INLINING_LOG_PRINT( "Invalid initial suspend block" );
+		ASYNC_INLINING_LOG_PRINT( "Invalid suspend block" );
 		return std::nullopt;
 	}
 	if( const auto switch_instruction= llvm::dyn_cast<llvm::SwitchInst>( &*it ) )
@@ -841,16 +843,18 @@ AsyncCallsGraph BuildAsyncCallsGraph( llvm::Module& module )
 		ExtractAllACoroutineFunctionCalls( function, async_calls );
 
 		for( llvm::CallInst* const call_instruction : async_calls )
-			if( IsAsyncFunctionCallWithSingleFurtherAwait( *call_instruction ) )
-			{
-				if( const auto calle_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
-				{
-					result[ &function ].calls.push_back( { call_instruction, calle_function } );
+		{
+			if( !IsAsyncFunctionCallWithSingleFurtherAwait( *call_instruction ) )
+				continue;
 
-					result[ &function ].out_nodes.push_back( calle_function );
-					result[ calle_function ].in_nodes.push_back( &function );
-				}
+			if( const auto calle_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
+			{
+				result[ &function ].calls.push_back( { call_instruction, calle_function } );
+
+				result[ &function ].out_nodes.push_back( calle_function );
+				result[ calle_function ].in_nodes.push_back( &function );
 			}
+		}
 	}
 
 	return result;
@@ -858,7 +862,7 @@ AsyncCallsGraph BuildAsyncCallsGraph( llvm::Module& module )
 
 using InliningOrderElement= std::pair<llvm::Function*, AsyncFunctionCalls>;
 
-void InlineCall( llvm::Function& function, const AsyncFunctionCall& call )
+void InlineCallIfNotDirectlyRecursive( llvm::Function& function, const AsyncFunctionCall& call )
 {
 	if( !FunctionIsDirectlyRecursive( *call.function ) )
 		TryToInlineAsyncCall( function, *call.instruction );
@@ -868,8 +872,8 @@ void InlineOrderedFunction( const InliningOrderElement& pair )
 {
 	for( const auto& call : pair.second )
 	{
-		ASYNC_INLINING_LOG_PRINT( "Inline call to ",call.function->getName().str(), " from ", pair.first->getName().str() );
-		InlineCall( *pair.first, call );
+		ASYNC_INLINING_LOG_PRINT( "Inline call to ", call.function->getName().str(), " from ", pair.first->getName().str() );
+		InlineCallIfNotDirectlyRecursive( *pair.first, call );
 	}
 }
 
@@ -1008,7 +1012,7 @@ void InlineAsyncCalls( llvm::Module& module )
 			if( async_call_graph.find( calls[i].function ) == async_call_graph.end() )
 			{
 				ASYNC_INLINING_LOG_PRINT( "Strong component special inline call to ", calls[i].function->getName().str(), " from ", graph_node.first->getName().str() );
-				InlineCall( *graph_node.first, calls[i] );
+				InlineCallIfNotDirectlyRecursive( *graph_node.first, calls[i] );
 
 				if( i + 1 < calls.size() )
 					calls[i]= std::move( calls.back() );
@@ -1023,7 +1027,7 @@ void InlineAsyncCalls( llvm::Module& module )
 		for( const auto& call : graph_node.second.calls )
 		{
 			ASYNC_INLINING_LOG_PRINT( "Strong component inline call to ", call.function->getName().str(), " from ", graph_node.first->getName().str() );
-			InlineCall( *graph_node.first, call );
+			InlineCallIfNotDirectlyRecursive( *graph_node.first, call );
 		}
 
 	// Inline call graph heads in reverse order.
