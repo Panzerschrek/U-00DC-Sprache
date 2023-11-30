@@ -295,6 +295,9 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 
 fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_context )
 {
+	// We need to mark somehow basic blocks for further optimizations.
+	// Since it's not possible to associate metadata with blocks, associate it with first block instrucitons.
+
 	unsafe // Because a lot of llvm-calls.
 	{
 		var LLVMTypeRef mut pointer_type= LLVMPointerTypeInContext( llvm_context_, 0u );
@@ -306,15 +309,21 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 				? coroutine_type_description.return_type.GetLLVMType()
 				: pointer_type );
 
-		// Yes, create "alloca" not in "alloca" block. It is safe to do such here.
-		var LLVMValueRef promise= LLVMBuildAlloca( function_context.llvm_ir_builder, promise_type, "coro_promise\0"[0] );
-
+		var LLVMValueRef promise= LLVMBuildAlloca( function_context.alloca_ir_builder, promise_type, "coro_promise\0"[0] );
 		function_context.s_ret= promise;
+
+		var LLVMBasicBlockRef block_core_prepare= LLVMCreateBasicBlockInContext( llvm_context_, "coro_prepare\0"[0] );
+		LLVMBuildBr( function_context.llvm_ir_builder, block_core_prepare );
+
+		// Coro prepare block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_core_prepare );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_core_prepare );
 
 		var LLVMValueRef null= LLVMConstNull( pointer_type );
 
 		var [ LLVMValueRef, 4 ] mut coro_id_args[ LLVMConstInt( fundamental_llvm_types_.u32_, 0u64, LLVMBool::False ), promise, null, null ];
 		var LLVMValueRef mut coro_id= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.id), coro_.id, $<(coro_id_args[0]), 4u, "coro_id\0"[0] );
+		MarkInstructionWithEmptyMetadata( coro_id, "u_coro_block_prepare" );
 
 		var LLVMValueRef coro_need_to_alloc= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.alloc), coro_.alloc, $<(coro_id), 1u, "coro_need_to_alloc\0"[0] );
 
@@ -325,11 +334,12 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 		LLVMBuildCondBr( function_context.llvm_ir_builder, coro_need_to_alloc, block_need_to_alloc, block_coro_begin );
 
-		// block_need_to_alloc
+		// Need to alloc block.
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_need_to_alloc );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_need_to_alloc );
 
 		var LLVMValueRef mut coro_frame_size= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.size), coro_.size, ust::nullptr</LLVMValueRef/>(), 0u, "coro_frame_size\0"[0] );
+		MarkInstructionWithEmptyMetadata( coro_frame_size, "u_coro_block" );
 
 		var LLVMValueRef coro_frame_memory_allocated= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( malloc_function_ ), malloc_function_, $<(coro_frame_size), 1u, "coro_frame_memory_allocated\0"[0] );
 
@@ -343,6 +353,8 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		var [ LLVMValueRef, 2 ] mut phi_values[ null, coro_frame_memory_allocated ];
 		var [ LLVMBasicBlockRef, 2 ] mut phi_blocks[ coro_need_to_alloc_check_block, block_need_to_alloc ];
 		LLVMAddIncoming( coro_frame_memory, $<(phi_values[0]), $<(phi_blocks[0]), 2u );
+
+		MarkInstructionWithEmptyMetadata( coro_frame_memory, "u_coro_block_begin" );
 
 		var [ LLVMValueRef, 2 ] mut coro_begin_args[ coro_id, coro_frame_memory ];
 		var LLVMValueRef coro_handle= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.begin ), coro_.begin, $<(coro_begin_args[0]), 2u, "coro_handle\0"[0] );
@@ -359,6 +371,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 		var [ LLVMValueRef, 2 ] mut coro_free_args[ coro_id, coro_handle ];
 		var LLVMValueRef mut mem_for_free= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.free ), coro_.free, $<(coro_free_args[0]), 2u, "coro_frame_memory_for_free\0"[0] );
+		MarkInstructionWithEmptyMetadata( mem_for_free, "u_coro_block_cleanup" );
 
 		var LLVMValueRef need_to_free= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, mem_for_free, null, "coro_need_to_free\0"[0] );
 
@@ -368,7 +381,8 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_need_to_free );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_need_to_free );
 
-		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( free_function_ ), free_function_, $<(mem_for_free), 1u, g_null_string );
+		var LLVMValueRef free_call= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( free_function_ ), free_function_, $<(mem_for_free), 1u, g_null_string );
+		MarkInstructionWithEmptyMetadata( free_call, "u_coro_block" );
 		LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_suspend_bb );
 
 		// Suspend block.
@@ -376,7 +390,8 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.coro_suspend_bb );
 
 		var [ LLVMValueRef, 2 ] mut coro_end_args[ coro_handle, LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ];
-		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.end ), coro_.end, $<(coro_end_args[0]), 2u, g_null_string );
+		var LLVMValueRef end_call= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.end ), coro_.end, $<(coro_end_args[0]), 2u, g_null_string );
+		MarkInstructionWithEmptyMetadata( end_call, "u_coro_block_suspend" );
 
 		LLVMBuildRet( function_context.llvm_ir_builder, coro_handle );
 
@@ -387,6 +402,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 		var [ LLVMValueRef, 2 ] mut final_suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ) ];
 		var LLVMValueRef final_suspend_value= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.suspend ), coro_.suspend, $<(final_suspend_args[0]), 2u, "final_suspend_value\0"[0] );
+		MarkInstructionWithEmptyMetadata( final_suspend_value, "u_coro_block_suspend_final" );
 
 		var LLVMBasicBlockRef unreachable_block= LLVMCreateBasicBlockInContext( llvm_context_, "coro_final_suspend_unreachable\0"[0] );
 
@@ -398,7 +414,8 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, unreachable_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, unreachable_block );
-		LLVMBuildUnreachable( function_context.llvm_ir_builder );
+		var LLVMValueRef unreachable_instruction= LLVMBuildUnreachable( function_context.llvm_ir_builder );
+		MarkInstructionWithEmptyMetadata( unreachable_instruction, "u_coro_block" );
 
 		// Block for further function code.
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, func_code_block );
@@ -752,6 +769,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 		var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 
 		var LLVMValueRef mut coro_handle= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, pointer_type, async_func_variable.llvm_value, "coro_handle\0"[0] ) );
+		MarkInstructionWithEmptyMetadata( coro_handle, "u_await_coro_handle" );
 
 		var LLVMValueRef done= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.done), coro_.done, $<(coro_handle), 1u, "coro_done\0"[0] ) );
 
@@ -769,7 +787,9 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block ) );
 
-		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.resume), coro_.resume, $<(coro_handle), 1u, g_null_string ) );
+		var LLVMValueRef resume_call= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.resume), coro_.resume, $<(coro_handle), 1u, g_null_string ) );
+		MarkInstructionWithEmptyMetadata( resume_call, "u_await_resume" );
+
 		var LLVMValueRef done_after_resume= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.done), coro_.done, $<(coro_handle), 1u, "coro_done_after_resume\0"[0] ) );
 		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, done_after_resume, done_block, not_done_block ) );
 
@@ -863,9 +883,19 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 
 	if( !function_context.is_functionless_context )
 	{
-		if( async_func_variable.t.HaveDestructor() )
+		debug_assert( async_func_variable.t.HaveDestructor() );
+
+		with( &destructor_ :
+			class_type.lock_imut().deref().
+			members.lock_imut().deref().
+			GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>()
+			.try_lock_imut().deref().functions.front() )
 		{
-			BuildDestructorPart( names_scope, function_context, async_func_variable.llvm_value, async_func_variable.t, src_loc );
+			auto mut v= async_func_variable.llvm_value;
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( destructor_ );
+			var LLVMValueRef call_instruction= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ), llvm_function, $<(v), 1u, g_null_string ) );
+
+			MarkInstructionWithEmptyMetadata( call_instruction, "u_await_destructor_call" );
 		}
 
 		debug_assert( async_func_variable.location == Variable::Location::Pointer );

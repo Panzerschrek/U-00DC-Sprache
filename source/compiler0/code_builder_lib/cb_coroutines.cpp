@@ -250,7 +250,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 
 void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 {
-	// We need to mark somehow basic blocks for furtheroptimizations.
+	// We need to mark somehow basic blocks for further optimizations.
 	// Since it's not possible to associate metadata with blocks, associate it with first block instrucitons.
 
 	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
