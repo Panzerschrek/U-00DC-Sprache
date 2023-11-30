@@ -28,6 +28,7 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text );
 std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text );
+std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const char* text );
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, CodeBuilderErrorCode code, uint32_t line );
 

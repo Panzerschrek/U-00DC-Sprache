@@ -1032,6 +1032,7 @@ private:
 
 	fn MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata );
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
+	fn MarkInstructionWithEmptyMetadata( this, LLVMValueRef instruction, ust::string_view8 name );
 
 	fn CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
 	fn CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;

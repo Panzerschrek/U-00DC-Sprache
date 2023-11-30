@@ -6,6 +6,7 @@
 #include <llvm/Support/ManagedStatic.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../../tests/cpp_tests/cpp_tests.hpp"
 #include "../../tests/tests_common.hpp"
 #include  "../launchers_common/funcs_c.hpp"
@@ -217,6 +218,17 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
+}
+
+std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const char* const text )
+{
+	auto module= BuildProgram( text );
+	if( module == nullptr )
+		return nullptr;
+
+	InlineAsyncCalls( *module );
+
+	return module;
 }
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )

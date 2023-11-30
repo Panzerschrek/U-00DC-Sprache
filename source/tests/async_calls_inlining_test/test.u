@@ -1,0 +1,36 @@
+fn async Fun0( u32 x ) : u32
+{
+	yield;
+	return x * 4u;
+}
+
+fn async Fun1( u32 x ) : u32
+{
+	return Fun0(x).await + 17u;
+}
+
+fn async Fun2( u32 x ) : u32
+{
+	return Fun1(x).await / 3u;
+}
+
+// All functions should be inlined here.
+fn async nomangle Fun3( u32 x ) : u32
+{
+	return Fun2(x).await - 5u;
+}
+
+fn nomangle main() : i32
+{
+	auto mut f= Fun3( 625412u );
+	loop
+	{
+		if_coro_advance( x : f )
+		{
+			halt if( x != (((625412u * 4u) + 17u) / 3u) - 5u );
+			break;
+		}
+	}
+
+	return 0;
+}
