@@ -37,11 +37,11 @@ Coroutine object creation in an inlined function is eliminated entirely.
 This force inlining not only removes unnecessary switches, but also removes leftover resume/destroy load/stores for each async call frame
 and leads to significant overall coroutine memory size reduction.
 
-There are of corse some disadvantages.
+There are of course some disadvantages.
 Inlining may increase code size if async functions contain a lot of code that does something non-trivial rather than calling other async and non-async functons.
 Inlining also can't properly work for async call graphs with cycles, inlining still works, but it is suboptimal.
 
-But it seems like benefints are greater than disadvantages.
+But it seems like benefits are greater than disadvantages.
 Especially it works great for cases,
 where an async function contains just single "await" call to another async function with some args preparation and result processing.
 Another common case - with several sequential "await" calls, also works good.

@@ -4,7 +4,7 @@ This directory contains language documentation sources.
 
 All language versions are manually-written.
 When something in the language is changed, documentation for all languages should be extended/updated.
-If you doesn't know some of the languages, ask some of the developers of the Ü project with corresponding language knowledge for help in translation.
+If you don't know some of the languages, ask some of the developers of the Ü project with corresponding language knowledge for help in translation.
 
 ### How to build
 
