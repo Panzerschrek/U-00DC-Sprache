@@ -143,7 +143,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			return LLVMValueRef::Null;
 		}
 
-		REPORT_ERROR( TypesMismatch, names_scope, SrcLoc(), variable.t, expr_result.t )
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
 		return LLVMValueRef::Null;
 	}
 
