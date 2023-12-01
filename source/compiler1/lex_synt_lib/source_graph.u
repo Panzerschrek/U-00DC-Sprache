@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/built_in_macros.uh"
 import "source_graph.uh"
 
@@ -31,43 +32,38 @@ fn LoadSourceGraph(
 		auto prelude_node_index= source_graph.nodes.size();
 
 		auto mut lex_result= LexicalAnalysis( prelude_code );
-		foreach( &error : lex_result.errors )
+
+		debug_assert( lex_result.errors.empty(), "Prelude code is invalid!" );
+
+		foreach( &mut lexem : lex_result.lexems )
 		{
-			source_graph.errors.push_back( error );
+			lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
 		}
 
-		if( lex_result.errors.empty() )
+		var Synt::SyntaxAnalysisResult mut synt_result=
+			Synt::SyntaxAnalysis(
+				lex_result.lexems,
+				Synt::MacrosByContextMap(),
+				source_graph.macro_expansion_contexts,
+				source_file_contents_hashing_function( prelude_code ) );
+
+		// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
+		// There is no reason to import prelude in all modules.
+		foreach( &mut other_node : source_graph.nodes )
 		{
-			foreach( &mut lexem : lex_result.lexems )
+			if( other_node.children.empty() )
 			{
-				lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
+				other_node.children.push_back( prelude_node_index );
 			}
-
-			var Synt::SyntaxAnalysisResult mut synt_result=
-				Synt::SyntaxAnalysis(
-					lex_result.lexems,
-					Synt::MacrosByContextMap(),
-					source_graph.macro_expansion_contexts,
-					source_file_contents_hashing_function( prelude_code ) );
-
-			// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
-			// There is no reason to import prelude in all modules.
-			foreach( &mut other_node : source_graph.nodes )
-			{
-				if( other_node.children.empty() )
-				{
-					other_node.children.push_back( prelude_node_index );
-				}
-			}
-
-			var SourceGraph::Node mut node
-			{
-				.synt_result= move(synt_result),
-				.file_path_normalized= "compiler_generated_prelude"
-			};
-
-			source_graph.nodes.push_back( move(node) );
 		}
+
+		var SourceGraph::Node mut node
+		{
+			.synt_result= move(synt_result),
+			.file_path_normalized= "compiler_generated_prelude"
+		};
+
+		source_graph.nodes.push_back( move(node) );
 	}
 
 	return move(source_graph);
