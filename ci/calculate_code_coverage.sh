@@ -18,7 +18,7 @@ python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/
 python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --use-position-independent-code --input-dir source/ustlib_test &&\
 python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --use-position-independent-code --input-dir source/ustlib_test &&\
 # Run the coverage preparation code
-lcov -o code_coverage.info -c -d build_dir &&\
+lcov -o code_coverage.info -c -d build_dir -d source --no-external &&\
 genhtml -o code_coverage_report code_coverage.info
 
 
