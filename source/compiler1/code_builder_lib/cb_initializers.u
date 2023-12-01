@@ -506,10 +506,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			if( field.is_reference )
 			{
 				REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.src_loc, field_name )
-				continue;
 			}
-
-			constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
+			else
+			{
+				constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
+			}
 		}
 		else
 		{
