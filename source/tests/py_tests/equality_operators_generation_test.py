@@ -484,6 +484,19 @@ def EqualityOperatorIsNotGenerated_Test6():
 	tests_lib.build_program( c_program_text )
 
 
+def EqualityOperatorIsNotGenerated_Test7():
+	c_program_text= """
+		class C {}
+		struct S
+		{
+			op==( S& l, S& r ) : bool = default; // Can't generate generator - one of fileds is not equality-comparable.
+			C c;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MethodBodyGenerationFailed", 5 ) )
+
+
 def EqualityOperatorForCompositeValue_Test0():
 	c_program_text= """
 		fn Foo()

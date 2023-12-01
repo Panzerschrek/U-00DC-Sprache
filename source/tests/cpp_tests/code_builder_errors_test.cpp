@@ -27,7 +27,7 @@ U_TEST(NameNotFoundTest_Minus1)
 
 U_TEST(NameNotFoundTest0)
 {
-	// Unknown named oberand.
+	// Unknown named operand.
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
@@ -78,6 +78,19 @@ U_TEST(NameNotFoundTest2)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 6u ) );
+}
+
+U_TEST(NameNotFoundTest3)
+{
+	// Unknown name fetched from the root namespace.
+	static const char c_program_text[]=
+	R"(
+		type T= ::some_unknown_global;
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
 }
 
 U_TEST(UsingKeywordAsName0)
@@ -216,6 +229,40 @@ U_TEST(UsingKeywordAsName6)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+}
+
+U_TEST(UsingKeywordAsName7)
+{
+	// auto global variable
+	static const char c_program_text[]=
+	R"(
+		auto await= 0;
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+}
+
+U_TEST(UsingKeywordAsName8)
+{
+	// global variable
+	static const char c_program_text[]=
+	R"(
+		var i32 override= 0;
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(Redefinition0)
@@ -692,6 +739,122 @@ U_TEST(OperationNotSupportedForThisTypeTest3)
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
 }
 
+U_TEST(OperationNotSupportedForThisTypeTest4)
+{
+	// Increment and decrement.
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		struct S{}
+		fn Foo( [ i32, 4 ] &mut arr, tup[ f32, bool ] &mut t, (fn()) &mut fn_ptr, E &mut e, S &mut s )
+		{
+			--arr;
+			++t;
+			--fn_ptr;
+			++e;
+			--s;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+}
+
+U_TEST(OperationNotSupportedForThisTypeTest5)
+{
+	// Bitwise not.
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		struct S{}
+		fn Foo( [ i32, 4 ] &mut arr, tup[ f32, bool ] &mut t, (fn()) &mut fn_ptr, E &mut e, S &mut s )
+		{
+			~arr;
+			~t;
+			~fn_ptr;
+			~e;
+			~s;
+			~0.35f;
+			~"7"c8;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 12u ) );
+}
+
+U_TEST(OperationNotSupportedForThisTypeTest6)
+{
+	// Logical not.
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		struct S{}
+		fn Foo( [ i32, 4 ] &mut arr, tup[ f32, bool ] &mut t, (fn()) &mut fn_ptr, E &mut e, S &mut s )
+		{
+			!arr;
+			!t;
+			!fn_ptr;
+			!e;
+			!s;
+			!0.35f;
+			!"7"c8;
+			! 678;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 13u ) );
+}
+
+U_TEST(OperationNotSupportedForThisTypeTest7)
+{
+	// Shifts for unsupported types.
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		struct S{}
+		fn Foo( [ i32, 4 ] &mut arr, tup[ f32, bool ] &mut t, (fn()) &mut fn_ptr, E &mut e, S &mut s )
+		{
+			arr << 1;
+			t >> 2;
+			3 << fn_ptr;
+			787 >> e;
+			0.25f << 5;
+			135u << 3.5;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+}
+
 U_TEST(TypesMismatchTest0)
 {
 	// Expected 'bool' in 'if'.
@@ -971,6 +1134,32 @@ U_TEST(TypesMismatchTest12)
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 11u ) );
 }
 
+U_TEST(TypesMismatchTest13)
+{
+	// Invalid types in lazy logical operator.
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn Foo( S s, tup[] t, [ f32, 16 ] a )
+		{
+			false && s;
+			s || true;
+			t && false;
+			true || t;
+			a || false;
+			false && a;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  5u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 10u ) );
+}
+
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 {
 	// Add for array and int.
@@ -1003,6 +1192,28 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
 			var i32 x= 0;
 			var [ i32, 4 ] y= zero_init;
 			x + y;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
+}
+
+U_TEST(NoMatchBinaryOperatorForGivenTypesTest2)
+{
+	// Bitwise operator for different types.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var [ i32, 4 ] y= zero_init;
+			x ^ y;
 		}
 	)";
 

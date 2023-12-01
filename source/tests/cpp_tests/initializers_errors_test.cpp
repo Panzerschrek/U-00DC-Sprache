@@ -91,6 +91,47 @@ U_TEST(ExpectedInitializerTest3)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
+U_TEST(ExpectedInitializerTest4)
+{
+	// Initializer for reference field is required.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			var S s{};
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+}
+
+U_TEST(ExpectedInitializerTest5)
+{
+	// Initializer for local reference is required.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32& x;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+}
+
 U_TEST(ArrayInitializerForNonArrayTest0)
 {
 	// Array initializer for fundamental type.
@@ -234,13 +275,52 @@ U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest0)
 
 U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest1)
 {
-	// Too much parameters in constructor.
+	// Too many parameters in constructor.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
 		{
 			var i32 z= 0;
 			var i32 & x( z, z );
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+}
+
+U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest2)
+{
+	// Too many parameters in constructor for global variable.
+	static const char c_program_text[]=
+	R"(
+		var i32 z= 0;
+		var i32 & x( z, z );
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
+}
+
+U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest3)
+{
+	// Too few parameters in constructor for reference field.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			var S s{ .r() };
 		}
 	)";
 
@@ -272,6 +352,23 @@ U_TEST(UnsupportedInitializerForReferenceTest0)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+}
+
+U_TEST(UnsupportedInitializerForReferenceTest1)
+{
+	// zero_init initializer for global reference.
+	static const char c_program_text[]=
+	R"(
+		var i32& x= zero_init;
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(ConstructorInitializerForUnsupportedTypeTest0)
@@ -475,6 +572,45 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest2)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
+U_TEST( TypesMismatch_InInitializer_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn Foo()
+		{
+			var S s= 0; // Expected "S", got "i32".
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+}
+
+U_TEST( TypesMismatch_InInitializer_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[ f32, i32 ] t( 66.3f ); // Expected tuple, found f32.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+}
+
 U_TEST( InitializerForInvalidType_Test0 )
 {
 	// Type is invalid, because name of type not found.
@@ -623,6 +759,26 @@ U_TEST(ZeroInitializerForReferenceField_Test1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+}
+
+U_TEST(NameNotFound_ForStructNamedInitializer_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn Foo()
+		{
+			var S s{ .x= 0 };
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 

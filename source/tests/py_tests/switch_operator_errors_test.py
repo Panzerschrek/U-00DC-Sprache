@@ -50,6 +50,20 @@ def TypesMismatch_ForSwitchOperator_Test2():
 	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
 
 
+def TypesMismatch_ForSwitchOperator_Test3():
+	c_program_text= """
+		fn Foo( f32 x )
+		{
+			switch(x) // switch for "f32" isn't possible
+			{
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
 def ExpectedConstantExpression_ForSwitchOperator_Test0():
 	c_program_text= """
 		fn Foo( i32 x )

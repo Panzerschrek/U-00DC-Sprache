@@ -393,3 +393,30 @@ def DifferentReferenceNotationMeansDifferentFunctionType_Test2():
 		static_assert( !same_type</ fn_0, fn_1 /> );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ExpectedConstantExpression_ForReferenceNotation_Test0():
+	c_program_text= """
+		fn GetReturnReferences() : [ [ char8, 2 ], 0 ];
+		fn Foo(i32& x ) : i32 & @( GetReturnReferences() );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+
+
+def ExpectedConstantExpression_ForReferenceNotation_Test1():
+	c_program_text= """
+		fn GetReturnInnerReferences() : tup[];
+		fn Foo(i32& x ) : i32 @( GetReturnInnerReferences() );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+
+
+def ExpectedConstantExpression_ForReferenceNotation_Test2():
+	c_program_text= """
+		fn GetReferencePollution() : [ [ [ char8, 2 ], 2 ], 0 ];
+		fn Foo() @( GetReferencePollution() );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
