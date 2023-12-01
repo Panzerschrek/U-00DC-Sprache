@@ -195,6 +195,12 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+		return move(result);
+	}
+
 	if_var( &tuple_type : variable.t.GetTupleType() )
 	{
 		result.resize( tuple_type.element_types.size() );
