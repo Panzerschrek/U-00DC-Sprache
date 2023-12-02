@@ -94,7 +94,7 @@ if( U_BUILD_PY_TESTS )
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
-		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} env LD_PRELOAD="/usr/lib/clang/6.0.0/lib/linux/libclang_rt.asan-x86_64.so" ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tests/py_tests/py_tests.py
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} env LD_PRELOAD="/usr/lib/clang/6.0.0/lib/linux/libclang_rt.asan-x86_64.so" env ASAN_SYMBOLIZER_PATH="/home/panzerschrek/Projects/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/llvm-symbolizer" ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tests/py_tests/py_tests.py
 		DEPENDS PyTestsLib
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		SOURCES ${PY_TESTS_SOURCES} )
