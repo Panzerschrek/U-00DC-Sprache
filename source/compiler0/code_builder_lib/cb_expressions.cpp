@@ -2904,10 +2904,13 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		if( r_var->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), binary_operator.src_loc, bool_type_, r_var->type );
-			return ErrorValue();
+			r_var_in_register= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
 		}
-		r_var_constepxr_value= r_var->constexpr_value;
-		r_var_in_register= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+		else
+		{
+			r_var_constepxr_value= r_var->constexpr_value;
+			r_var_in_register= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+		}
 
 		// Destroy r_var temporaries in this branch.
 		CallDestructors( r_var_temp_variables_storage, names, function_context, src_loc );
