@@ -11,6 +11,19 @@ def FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0():
 	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 4 ) )
 
 
+def ValueIsNotTemplate_ForFunctionTemplates_Test0():
+	c_program_text= """
+		fn Bar();
+		fn Foo()
+		{
+			Bar</ i32 />();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ValueIsNotTemplate", 5 ) )
+
+
 def ValueIsNotTemplate_ForFunctionTemplates_Test1():
 	c_program_text= """
 		struct S
@@ -45,6 +58,22 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ValueIsNotTemplate", 10 ) )
+
+
+def ValueIsNotTemplate_ForFunctionTemplates_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn Bar(this);
+			fn Foo( this )
+			{
+				Bar</ i32 />();
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ValueIsNotTemplate", 7 ) )
 
 
 def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
@@ -412,3 +441,11 @@ def TemplateFunctionGenerationFailed_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
+
+
+def UsingKeywordAsName_ForTemplateFunction_Test0():
+	c_program_text= """
+		template</type T/> fn public() {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "UsingKeywordAsName", 2 ) )

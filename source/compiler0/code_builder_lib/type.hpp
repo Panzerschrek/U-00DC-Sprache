@@ -54,7 +54,7 @@ struct FundamentalType final
 };
 
 bool operator==( const FundamentalType& l, const FundamentalType& r );
-bool operator!=( const FundamentalType& l, const FundamentalType& r );
+inline bool operator!=( const FundamentalType& l, const FundamentalType& r ) { return !( l == r ); }
 
 struct TupleType final
 {
@@ -63,7 +63,7 @@ struct TupleType final
 };
 
 bool operator==( const TupleType& l, const TupleType& r );
-bool operator!=( const TupleType& l, const TupleType& r );
+inline bool operator!=( const TupleType& l, const TupleType& r ) { return !( l == r ); }
 
 class Type final
 {
@@ -135,7 +135,7 @@ private:
 };
 
 bool operator==( const Type& l, const Type& r );
-bool operator!=( const Type& l, const Type& r );
+inline bool operator!=( const Type& l, const Type& r ) { return !( l == r ); }
 
 struct ArrayType final
 {
@@ -146,7 +146,7 @@ struct ArrayType final
 };
 
 bool operator==( const ArrayType& r, const ArrayType& l );
-bool operator!=( const ArrayType& r, const ArrayType& l );
+inline bool operator!=( const ArrayType& l, const ArrayType& r ) { return !( l == r ); }
 
 struct RawPointerType final
 {
@@ -155,7 +155,7 @@ struct RawPointerType final
 };
 
 bool operator==( const RawPointerType& r, const RawPointerType& l );
-bool operator!=( const RawPointerType& r, const RawPointerType& l );
+inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { return !( l == r ); }
 
 struct FunctionType final
 {
@@ -203,9 +203,10 @@ public:
 };
 
 bool operator==( const FunctionType::Param& l, const FunctionType::Param& r );
-bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r );
+inline bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r ) { return !( l == r ); }
+
 bool operator==( const FunctionType& l, const FunctionType& r );
-bool operator!=( const FunctionType& l, const FunctionType& r );
+inline bool operator!=( const FunctionType& l, const FunctionType& r ) { return !( l == r ); }
 
 std::string FunctionParamsToString( llvm::ArrayRef<FunctionType::Param> params );
 
@@ -216,7 +217,7 @@ struct FunctionPointerType
 };
 
 bool operator==( const FunctionPointerType& l, const FunctionPointerType& r );
-bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r );
+inline bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r ) { return !( l == r ); }
 
 struct TypeHasher
 {

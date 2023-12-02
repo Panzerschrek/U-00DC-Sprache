@@ -99,11 +99,6 @@ bool operator==( const FundamentalType& l, const FundamentalType& r )
 	return l.fundamental_type == r.fundamental_type;
 }
 
-bool operator!=( const FundamentalType& l, const FundamentalType& r )
-{
-	return !( l == r );
-}
-
 //
 // Tuple
 //
@@ -111,11 +106,6 @@ bool operator!=( const FundamentalType& l, const FundamentalType& r )
 bool operator==( const TupleType& l, const TupleType& r )
 {
 	return l.element_types == r.element_types;
-}
-
-bool operator!=( const TupleType& l, const TupleType& r )
-{
-	return !( l == r );
 }
 
 //
@@ -697,11 +687,6 @@ bool operator==( const Type& l, const Type& r )
 	return false;
 }
 
-bool operator!=( const Type& l, const Type& r )
-{
-	return !( l == r );
-}
-
 //
 // Array
 //
@@ -711,19 +696,13 @@ bool operator==( const ArrayType& l, const ArrayType& r )
 	return l.element_type == r.element_type && l.element_count == r.element_count;
 }
 
-bool operator!=( const ArrayType& l, const ArrayType& r )
-{
-	return !( l == r );
-}
+//
+// RawPointerType
+//
 
 bool operator==( const RawPointerType& l, const RawPointerType& r )
 {
 	return l.element_type == r.element_type;
-}
-
-bool operator!=( const RawPointerType& l, const RawPointerType& r )
-{
-	return !( l == r );
 }
 
 //
@@ -811,11 +790,6 @@ bool operator==( const FunctionType::Param& l, const FunctionType::Param& r )
 	return l.type == r.type && l.value_type == r.value_type;
 }
 
-bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r )
-{
-	return !( l == r );
-}
-
 bool FunctionType::ReferencePollution::operator==( const ReferencePollution& other ) const
 {
 	return this->dst == other.dst && this->src == other.src;
@@ -840,11 +814,6 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 		l.references_pollution == r.references_pollution &&
 		l.unsafe == r.unsafe &&
 		l.calling_convention == r.calling_convention;
-}
-
-bool operator!=( const FunctionType& l, const FunctionType& r )
-{
-	return !( l == r );
 }
 
 std::string FunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> params )
@@ -876,10 +845,6 @@ std::string FunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> pa
 bool operator==( const FunctionPointerType& l, const FunctionPointerType& r )
 {
 	return l.function_type == r.function_type;
-}
-bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r )
-{
-	return !( r == l );
 }
 
 } // namespace U

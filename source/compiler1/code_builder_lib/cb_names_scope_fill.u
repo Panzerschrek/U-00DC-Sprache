@@ -300,10 +300,16 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
+	auto& template_name= type_template.deref().name;
+
+	if( IsKeyword( template_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, type_template.deref().src_loc )
+	}
+
 	auto mut names_scope_lock= names_scope_ptr.lock_mut();
 	auto &mut names_scope= names_scope_lock.deref();
 
-	auto& template_name= type_template.deref().name;
 	if_var( &prev_name : names_scope.GetThisScopeValue(template_name) )
 	{
 		auto prev_type_templates_set_ptr= prev_name.Get</ TypeTemplatesSet />();

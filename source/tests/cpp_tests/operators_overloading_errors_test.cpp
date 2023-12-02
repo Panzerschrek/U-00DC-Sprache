@@ -108,17 +108,23 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 			op++( i32 x, S &imut s ){} // 2 arguments, expected 1
 			op--( i32 x, S &imut s, f32 f ) {}
 			op!( S &imut s, f32 x ) : bool { return false; } //  2 arguments, expected 1
+			op+( S &imut a, i32 b, f32 c ) {} // expected 2, got 3 arguments.
+			op[]( S &imut a, f32 b, bool c ) {} // expected 2, got 3 arguments.
+			op<=>( S &imut a, S &imut b, bool c ) : i32; // expected 2, got 3 arguments.
 		}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 4u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 5u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  5u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 12u ) );
 }
 
 U_TEST( InvalidFirstParamValueTypeForAssignmentLikeOperator_Test )

@@ -26,7 +26,7 @@ struct TemplateVariableArg
 };
 
 bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r );
-bool operator!=( const TemplateVariableArg& l, const TemplateVariableArg& r );
+inline bool operator!=( const TemplateVariableArg& l, const TemplateVariableArg& r ) { return !(l == r); }
 
 using TemplateArg= std::variant< TemplateVariableArg, Type >;
 using TemplateArgs= llvm::SmallVector<TemplateArg, 2>;
@@ -88,7 +88,7 @@ struct TemplateKey
 };
 
 bool operator==( const TemplateKey& l, const TemplateKey& r );
-bool operator!=( const TemplateKey& l, const TemplateKey& r );
+inline bool operator!=( const TemplateKey& l, const TemplateKey& r ) { return !( l == r ); }
 
 struct TemplateKeyHasher
 {
@@ -104,7 +104,7 @@ struct ParametrizedFunctionTemplateKey
 };
 
 bool operator==( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r );
-bool operator!=( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r );
+inline bool operator!=( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r ) { return !( l == r ); }
 
 struct ParametrizedFunctionTemplateKeyHasher
 {

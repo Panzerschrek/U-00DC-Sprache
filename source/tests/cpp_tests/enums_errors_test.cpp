@@ -6,6 +6,40 @@ namespace U
 namespace
 {
 
+U_TEST( UsingKeywordAsName_ForEnum_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		enum i128 { A }
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2u ) );
+}
+
+U_TEST( UsingKeywordAsName_ForEnum_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E
+		{
+			async,
+			fn,
+			nomangle,
+			call_conv,
+			struct,
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 5u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 8u ) );
+}
+
 U_TEST( Redefinition_ForEnums )
 {
 	static const char c_program_text[]=

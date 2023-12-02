@@ -166,37 +166,30 @@ SourceGraph LoadSourceGraph(
 
 		LexicalAnalysisResult lex_result= LexicalAnalysis( prelude_code );
 
-		for( LexSyntError error: lex_result.errors )
-		{
-			error.src_loc.SetFileIndex(uint32_t(prelude_node_index));
-			result.errors.push_back( std::move(error) );
-		}
+		U_ASSERT( lex_result.errors.empty() ); // Prelude code should be valid.
 
-		if( lex_result.errors.empty() )
-		{
-			for( Lexem& lexem :lex_result.lexems )
-				lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
+		for( Lexem& lexem :lex_result.lexems )
+			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
-			Synt::SyntaxAnalysisResult synt_result=
-				Synt::SyntaxAnalysis(
-				lex_result.lexems,
-				*built_in_macros,
-				result.macro_expansion_contexts,
-				source_file_contents_hashing_function( prelude_code ) );
+		Synt::SyntaxAnalysisResult synt_result=
+			Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			*built_in_macros,
+			result.macro_expansion_contexts,
+			source_file_contents_hashing_function( prelude_code ) );
 
-			result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
+		result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
-			// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
-			// There is no reason to import prelude in all modules.
-			for( SourceGraph::Node& other_node : result.nodes_storage )
-				if( other_node.child_nodes_indeces.empty() )
-					other_node.child_nodes_indeces.push_back( prelude_node_index );
+		// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
+		// There is no reason to import prelude in all modules.
+		for( SourceGraph::Node& other_node : result.nodes_storage )
+			if( other_node.child_nodes_indeces.empty() )
+				other_node.child_nodes_indeces.push_back( prelude_node_index );
 
-			SourceGraph::Node prelude_node;
-			prelude_node.ast= std::move(synt_result);
-			prelude_node.file_path= "compiler_generated_prelude";
-			result.nodes_storage.push_back( std::move(prelude_node) );
-		}
+		SourceGraph::Node prelude_node;
+		prelude_node.ast= std::move(synt_result);
+		prelude_node.file_path= "compiler_generated_prelude";
+		result.nodes_storage.push_back( std::move(prelude_node) );
 	}
 
 	return result;

@@ -505,3 +505,25 @@ def RawPointerTypeIsNotConstexpr_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) or HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 5 ) )
+
+
+def PointerDifferenceForUnrelatedTypes_Test0():
+	c_program_text= """
+		fn Foo( $(i32) x, $(f32) y )
+		{
+			x - y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )
+
+
+def PointerDifferenceForUnrelatedTypes_Test1():
+	c_program_text= """
+		fn Foo( $(byte8) x, $(u8) y )
+		{
+			x - y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )

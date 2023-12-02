@@ -64,6 +64,17 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest1 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
 }
 
+U_TEST( InvalidTypeOfTemplateVariableArgumentTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> struct S</ 0.25 />{}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
+}
+
 U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 {
 	static const char c_program_text[]=
@@ -583,6 +594,31 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) );
+}
+
+U_TEST( UsingKeywordAsName_ForTypeTemplate_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct while {}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2u ) );
+}
+
+U_TEST( UsingKeywordAsName_ForTypeTemplate_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			template</ type T /> type constexpr= [ T, 4 ];
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4u ) );
 }
 
 } // namespace
