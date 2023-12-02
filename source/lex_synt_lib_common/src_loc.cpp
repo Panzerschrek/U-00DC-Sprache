@@ -63,11 +63,6 @@ bool SrcLoc::operator==( const SrcLoc& other ) const
 		this->column_ == other.column_;
 }
 
-bool SrcLoc::operator!=( const SrcLoc& other ) const
-{
-	return !( *this == other );
-}
-
 bool SrcLoc::operator< (const SrcLoc& other ) const
 {
 	if( this->file_index_ != other.file_index_ )

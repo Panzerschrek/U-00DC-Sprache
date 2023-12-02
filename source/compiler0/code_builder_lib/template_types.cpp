@@ -43,11 +43,6 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 		return l.type == r.type;
 }
 
-bool operator!=( const TemplateVariableArg& l, const TemplateVariableArg& r )
-{
-	return !(l == r);
-}
-
 size_t TemplateKey::Hash() const
 {
 	size_t hash= size_t( reinterpret_cast<uintptr_t>( template_.get() ) );
@@ -63,11 +58,6 @@ bool operator==( const TemplateKey& l, const TemplateKey& r )
 	return l.template_ == r.template_ && l.args == r.args;
 }
 
-bool operator!=( const TemplateKey& l, const TemplateKey& r )
-{
-	return !( l == r );
-}
-
 size_t ParametrizedFunctionTemplateKey::Hash() const
 {
 	size_t hash= size_t( reinterpret_cast<uintptr_t>( functions_set.get() ) );
@@ -81,11 +71,6 @@ size_t ParametrizedFunctionTemplateKey::Hash() const
 bool operator==( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r )
 {
 	return l.functions_set == r.functions_set && l.args == r.args;
-}
-
-bool operator!=( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r )
-{
-	return !( l == r );
 }
 
 } // namespace U

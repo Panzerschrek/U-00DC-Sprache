@@ -40,7 +40,7 @@ struct CodeBuilderError
 };
 
 bool operator==( const CodeBuilderError& l, const CodeBuilderError& r );
-bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
+inline bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r ) { return !(l == r); }
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using src_loc
 
 std::string_view CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );

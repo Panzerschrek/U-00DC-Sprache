@@ -31,7 +31,7 @@ public:
 	void SetMacroExpansionIndex( uint32_t macro_expansion_index );
 
 	bool operator==( const SrcLoc& other ) const;
-	bool operator!=( const SrcLoc& other ) const;
+	bool operator!=( const SrcLoc& other ) const { return ! ( *this == other ); }
 	bool operator< ( const SrcLoc& other ) const;
 	bool operator<=( const SrcLoc& other ) const;
 
