@@ -53,7 +53,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	}
 
 	// Check if all fields is default-constructible.
-	auto mut all_fields_is_default_constructible= true;
+	auto mut all_fields_are_default_constructible= true;
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_lock= field_pair[1].lock_imut();
@@ -62,7 +62,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		if( !field.syntax_element.deref().initializer.get</Synt::EmptyVariant/>().empty() &&
 			( field.is_reference || !field.t.IsDefaultConstructible() ) )
 		{
-			all_fields_is_default_constructible= false;
+			all_fields_are_default_constructible= false;
 			break;
 		}
 	}
@@ -70,10 +70,10 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto base_class= class_type.lock_imut().deref().base_class;
 	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_default_constructible )
 	{
-		all_fields_is_default_constructible= false;
+		all_fields_are_default_constructible= false;
 	}
 
-	if( !all_fields_is_default_constructible )
+	if( !all_fields_are_default_constructible )
 	{
 		if( constructor_index != ~0s )
 		{
@@ -251,15 +251,15 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 	}
 
-	// Check if all fields is copy-constructible.
-	auto mut all_fields_is_copy_constructible= true;
+	// Check if all fields are copy-constructible.
+	auto mut all_fields_are_copy_constructible= true;
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_lock= field_pair[1].lock_imut();
 		auto& field= field_lock.deref();
 		if( !field.is_reference && !field.t.IsCopyConstructible() )
 		{
-			all_fields_is_copy_constructible= false;
+			all_fields_are_copy_constructible= false;
 			break;
 		}
 	}
@@ -267,10 +267,10 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	auto base_class= class_type.lock_imut().deref().base_class;
 	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_copy_constructible )
 	{
-		all_fields_is_copy_constructible= false;
+		all_fields_are_copy_constructible= false;
 	}
 
-	if( !all_fields_is_copy_constructible )
+	if( !all_fields_are_copy_constructible )
 	{
 		if( constructor_index != ~0s )
 		{
@@ -435,15 +435,15 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		}
 	}
 
-	// Check if all fields is copy-assignable.
-	auto mut all_fields_is_copy_assignable= true;
+	// Check if all fields are copy-assignable.
+	auto mut all_fields_are_copy_assignable= true;
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_lock= field_pair[1].lock_imut();
 		auto& field= field_lock.deref();
 		if( field.is_reference || !field.is_mutable || !field.t.IsCopyAssignable() )
 		{
-			all_fields_is_copy_assignable= false;
+			all_fields_are_copy_assignable= false;
 			break;
 		}
 	}
@@ -451,10 +451,10 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	auto base_class= class_type.lock_imut().deref().base_class;
 	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_copy_assignable )
 	{
-		all_fields_is_copy_assignable= false;
+		all_fields_are_copy_assignable= false;
 	}
 
-	if( !all_fields_is_copy_assignable )
+	if( !all_fields_are_copy_assignable )
 	{
 		if( operator_index != ~0s )
 		{

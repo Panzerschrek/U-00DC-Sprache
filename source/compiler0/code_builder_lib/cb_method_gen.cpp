@@ -47,7 +47,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		return;
 
 	// Generate default constructor, if all fields is default constructible.
-	bool all_fields_is_default_constructible= true;
+	bool all_fields_are_default_constructible= true;
 
 	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
@@ -56,13 +56,13 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 
 		if( field->syntax_element->initializer == nullptr &&
 			( field->is_reference || !field->type.IsDefaultConstructible() ) )
-			all_fields_is_default_constructible= false;
+			all_fields_are_default_constructible= false;
 	}
 
 	if( the_class.base_class != nullptr && !the_class.base_class->is_default_constructible )
-		all_fields_is_default_constructible= false;
+		all_fields_are_default_constructible= false;
 
-	if( !all_fields_is_default_constructible )
+	if( !all_fields_are_default_constructible )
 	{
 		if( constructor_variable != nullptr )
 			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), constructor_variable->prototype_src_loc );
@@ -224,7 +224,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 	if( constructor_variable == nullptr && the_class.kind != Class::Kind::Struct )
 		return; // Do not generate copy-constructor for classes. Generate it only if "=default" explicitly specified for this method.
 
-	bool all_fields_is_copy_constructible= true;
+	bool all_fields_are_copy_constructible= true;
 
 	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
@@ -232,13 +232,13 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 			continue;
 
 		if( !field->is_reference && !field->type.IsCopyConstructible() )
-			all_fields_is_copy_constructible= false;
+			all_fields_are_copy_constructible= false;
 	}
 
 	if( the_class.base_class != nullptr && !the_class.base_class->is_copy_constructible )
-		all_fields_is_copy_constructible= false;
+		all_fields_are_copy_constructible= false;
 
-	if( !all_fields_is_copy_constructible )
+	if( !all_fields_are_copy_constructible )
 	{
 		if( constructor_variable != nullptr )
 			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), constructor_variable->prototype_src_loc );
@@ -485,7 +485,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 	if( operator_variable == nullptr && the_class.kind != Class::Kind::Struct )
 		return; // Do not generate copy-assignement operator for classes. Generate it only if "=default" explicitly specified for this method.
 
-	bool all_fields_is_copy_assignable= true;
+	bool all_fields_are_copy_assignable= true;
 
 	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
@@ -494,13 +494,13 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 		// We can not generate assignment operator for classes with references, for classes with immutable fields, for classes with noncopyable fields.
 		if( field->is_reference || !field->type.IsCopyAssignable() || !field->is_mutable )
-			all_fields_is_copy_assignable= false;
+			all_fields_are_copy_assignable= false;
 	}
 
 	if( the_class.base_class != nullptr && !the_class.base_class->is_copy_assignable )
-		all_fields_is_copy_assignable= false;
+		all_fields_are_copy_assignable= false;
 
-	if( !all_fields_is_copy_assignable )
+	if( !all_fields_are_copy_assignable )
 	{
 		if( operator_variable != nullptr )
 			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), operator_variable->prototype_src_loc );
