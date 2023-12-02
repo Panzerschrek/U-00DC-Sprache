@@ -771,10 +771,10 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::enum_ ) << " " << enum_.name;
 
-	if( enum_.underlaying_type_name != std::nullopt )
+	if( enum_.underlying_type_name != std::nullopt )
 	{
 		stream << " : ";
-		ElementWrite( *enum_.underlaying_type_name, stream );
+		ElementWrite( *enum_.underlying_type_name, stream );
 	}
 
 	stream << "\n{\n";

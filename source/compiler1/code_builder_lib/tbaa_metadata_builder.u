@@ -171,7 +171,7 @@ fn TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( mut this, U_Fundame
 
 fn TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( mut this, EnumTypePtr& enum_type ) : LLVMMetadataRef
 {
-	switch( enum_type.lock_imut().deref().underlaying_type.fundamental_type )
+	switch( enum_type.lock_imut().deref().underlying_type.fundamental_type )
 	{
 		U_FundamentalType::i8_   -> { return type_descriptors_.byte8_  ; },
 		U_FundamentalType::u8_   -> { return type_descriptors_.byte8_  ; },
@@ -195,7 +195,7 @@ fn TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( mut this, EnumTypePtr& en
 		U_FundamentalType::byte16_ ,
 		U_FundamentalType::byte32_ ,
 		U_FundamentalType::byte64_ ,
-		U_FundamentalType::byte128_ -> { halt; /* Wrong underlaying type. */ }
+		U_FundamentalType::byte128_ -> { halt; /* Wrong underlying type. */ }
 	}
 }
 

@@ -2544,7 +2544,7 @@ Enum SyntaxAnalyzer::ParseEnum()
 	if( it_->type == Lexem::Type::Colon )
 	{
 		NextLexem();
-		result.underlaying_type_name= ParseComplexName();
+		result.underlying_type_name= ParseComplexName();
 	}
 
 	ExpectLexem( Lexem::Type::BraceLeft );

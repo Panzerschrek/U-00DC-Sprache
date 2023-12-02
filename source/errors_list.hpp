@@ -164,7 +164,7 @@ PROCESS_ERROR( InvalidReturnTypeForOperator, "Invalid return type for operator, 
 PROCESS_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, "Invalid value type for first parameter of operator. Expected mutable reference." )
 
 // Enums
-PROCESS_ERROR( UnderlayingTypeForEnumIsTooSmall, "Underlaying type for enum is too small - enum max value is {0}, but type max value is {1}." )
+PROCESS_ERROR( UnderlyingTypeForEnumIsTooSmall, "Underlying type for enum is too small - enum max value is {0}, but type max value is {1}." )
 
 // Inheritance errors
 PROCESS_ERROR( CanNotDeriveFromThisType, "Can not derive from \"{0}\"." )

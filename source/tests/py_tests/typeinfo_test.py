@@ -184,7 +184,7 @@ def EnumTypesInfo_Test0():
 		fn Foo()
 		{
 			static_assert( typeinfo</E/>.is_enum );
-			static_assert( typeinfo</E/>.underlaying_type.is_unsigned_integer );
+			static_assert( typeinfo</E/>.underlying_type.is_unsigned_integer );
 			static_assert( typeinfo</E/>.element_count == size_type(3));
 		}
 	"""
@@ -422,7 +422,7 @@ def TypeinfoCalssIsSameForSameTypes_Test0():
 		fn Foo()
 		{
 			MustBeSame( typeinfo</i32/>, typeinfo</i32/> );
-			MustBeSame( typeinfo</i32/>, typeinfo</E/>.underlaying_type );
+			MustBeSame( typeinfo</i32/>, typeinfo</E/>.underlying_type );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -459,7 +459,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test2():
 	c_program_text= """
 		fn Foo()
 		{
-			typeinfo</ f32 />.underlaying_type;  // "underlaying_type" exists only in typeinfo for enum types.
+			typeinfo</ f32 />.underlying_type;  // "underlying_type" exists only in typeinfo for enum types.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

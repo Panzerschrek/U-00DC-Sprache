@@ -2209,7 +2209,7 @@ fn CodeBuilder::BuildBinaryOperator(
 	}
 	else if( !l_enum_type.empty() )
 	{
-		is_signed= IsSignedInteger( l_enum_type.try_deref().lock_imut().deref().underlaying_type.fundamental_type );
+		is_signed= IsSignedInteger( l_enum_type.try_deref().lock_imut().deref().underlying_type.fundamental_type );
 	}
 
 	var Variable mut result

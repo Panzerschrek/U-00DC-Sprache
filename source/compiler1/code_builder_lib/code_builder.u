@@ -1835,7 +1835,7 @@ fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
 	}
 	if_var( &enum_type_ptr : t.GetEnumType() )
 	{
-		return enum_type_ptr.lock_imut().deref().underlaying_type.llvm_type != LLVMTypeRef::Null;
+		return enum_type_ptr.lock_imut().deref().underlying_type.llvm_type != LLVMTypeRef::Null;
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{
@@ -1869,7 +1869,7 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 		auto enum_parent_scope= enum_type_ptr.lock_imut().deref().names_scope.lock_imut().deref().GetParent().try_to_non_nullable();
 		BuildEnum( enum_parent_scope, enum_type_ptr );
 
-		return enum_type_ptr.lock_imut().deref().underlaying_type.llvm_type != LLVMTypeRef::Null;
+		return enum_type_ptr.lock_imut().deref().underlying_type.llvm_type != LLVMTypeRef::Null;
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{

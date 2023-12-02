@@ -176,7 +176,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
 		add_size_field( "element_count", enum_type->element_count );
-		add_typeinfo_field( "underlaying_type", enum_type->underlaying_type );
+		add_typeinfo_field( "underlying_type", enum_type->underlying_type );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
@@ -462,8 +462,8 @@ VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type,
 
 			node_type_class.members->AddName(
 				"value",
-				NamesScopeValue( std::make_shared<ClassField>( node_type, enum_type->underlaying_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-			fields_llvm_types.push_back( enum_type->underlaying_type.llvm_type );
+				NamesScopeValue( std::make_shared<ClassField>( node_type, enum_type->underlying_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			fields_llvm_types.push_back( enum_type->underlying_type.llvm_type );
 			fields_initializers.push_back( enum_member_value );
 
 			{

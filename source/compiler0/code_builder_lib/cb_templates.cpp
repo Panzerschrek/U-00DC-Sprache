@@ -1219,7 +1219,7 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 	}
 	if( const auto enum_type= type.GetEnumType() )
 	{
-		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlaying_type ) );
+		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlying_type ) );
 		return true;
 	}
 

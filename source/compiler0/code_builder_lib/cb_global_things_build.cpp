@@ -1135,21 +1135,21 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
 	NamesScope& names_scope= *enum_->members.GetParent();
 
-	// Default underlaying type is mostyl u8, but can be large for enums with a lot of values.
+	// Default underlying type is mostyl u8, but can be large for enums with a lot of values.
 	if( enum_decl.members.size() <= (1 << 8) )
-		enum_->underlaying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
+		enum_->underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
 	else if( enum_decl.members.size() <= (1 << 16) )
-		enum_->underlaying_type= FundamentalType( U_FundamentalType::u16_, fundamental_llvm_types_.u16_ );
+		enum_->underlying_type= FundamentalType( U_FundamentalType::u16_, fundamental_llvm_types_.u16_ );
 	else
-		enum_->underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
+		enum_->underlying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
 
-	// Process custom underlaying type.
-	if( enum_decl.underlaying_type_name != std::nullopt )
+	// Process custom underlying type.
+	if( enum_decl.underlying_type_name != std::nullopt )
 	{
-		const Value type_value= ResolveValue( names_scope, *global_function_context_, *enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValue( names_scope, *global_function_context_, *enum_decl.underlying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc, *enum_decl.underlaying_type_name );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc, *enum_decl.underlying_type_name );
 		else
 		{
 			const FundamentalType* const fundamental_type= type->GetFundamentalType();
@@ -1159,7 +1159,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.src_loc, "any integer type", type );
 			}
 			else
-				enum_->underlaying_type= *fundamental_type;
+				enum_->underlying_type= *fundamental_type;
 		}
 	}
 
@@ -1176,8 +1176,8 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 		var->constexpr_value=
 			llvm::Constant::getIntegerValue(
-				enum_->underlaying_type.llvm_type,
-				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), enum_->element_count ) );
+				enum_->underlying_type.llvm_type,
+				llvm::APInt( enum_->underlying_type.llvm_type->getIntegerBitWidth(), enum_->element_count ) );
 		var->llvm_value=
 			CreateGlobalConstantVariable(
 				var->type,
@@ -1191,15 +1191,15 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	}
 
 	{
-		const auto bit_width= enum_->underlaying_type.llvm_type->getIntegerBitWidth();
+		const auto bit_width= enum_->underlying_type.llvm_type->getIntegerBitWidth();
 		if( bit_width < 32 ) // Assume that 64 bits are enough for all enums.
 		{
 			const uint64_t max_value_plus_one=
-				uint64_t(1) << ( uint64_t(bit_width) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
+				uint64_t(1) << ( uint64_t(bit_width) - ( IsSignedInteger( enum_->underlying_type.fundamental_type ) ? 1u : 0u ) );
 			const uint64_t max_value= max_value_plus_one - 1u;
 
 			if( enum_->element_count > max_value )
-				REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.src_loc, enum_->element_count - 1u, max_value );
+				REPORT_ERROR( UnderlyingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.src_loc, enum_->element_count - 1u, max_value );
 		}
 	}
 

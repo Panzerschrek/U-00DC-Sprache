@@ -1226,7 +1226,7 @@ struct Enum
 
 	SrcLoc src_loc;
 	std::string name;
-	std::optional<ComplexName> underlaying_type_name;
+	std::optional<ComplexName> underlying_type_name;
 	std::vector<Member> members;
 };
 

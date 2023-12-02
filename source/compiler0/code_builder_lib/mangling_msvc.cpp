@@ -417,7 +417,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	else if( const auto enum_type= type.GetEnumType() )
 	{
 		mangler_state.PushElement( "W" );
-		mangler_state.PushElement( "4" ); // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
+		mangler_state.PushElement( "4" ); // Underlying type. Modern MSVC uses "4" for all enums independent on underlying type.
 		EncodeFullName( mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
 	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
@@ -572,7 +572,7 @@ void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const llvm::A
 			if( const auto fundamental_type= variable->type.GetFundamentalType() )
 				is_signed= IsSignedInteger( fundamental_type->fundamental_type );
 			else if( const auto enum_type= variable->type.GetEnumType() )
-				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
+				is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
 			else U_ASSERT(false);
 
 			U_ASSERT( variable->constexpr_value != nullptr );

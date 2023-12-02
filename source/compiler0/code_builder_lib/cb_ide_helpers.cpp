@@ -781,11 +781,11 @@ Type CodeBuilder::GetStubTemplateArgType()
 	const EnumPtr enum_type= stub_enum.get();
 	enums_table_.push_back( std::move(stub_enum) );
 
-	enum_type->underlaying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
+	enum_type->underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
 	enum_type->element_count= 1;
 
 	const std::string_view member_name= "Member0";
-	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlaying_type.llvm_type );
+	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlying_type.llvm_type );
 
 	const VariablePtr member_variable=
 		Variable::Create(

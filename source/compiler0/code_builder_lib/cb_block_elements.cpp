@@ -1949,7 +1949,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	bool is_signed= false;
 	if( const auto enum_= switch_type.GetEnumType() )
 	{
-		const uint32_t size_in_bits= 8 * uint32_t(enum_->underlaying_type.GetSize());
+		const uint32_t size_in_bits= 8 * uint32_t(enum_->underlying_type.GetSize());
 		type_low= llvm::APInt( size_in_bits, uint64_t(0) );
 		type_high= llvm::APInt( size_in_bits, uint64_t(enum_->element_count - 1) );
 	}

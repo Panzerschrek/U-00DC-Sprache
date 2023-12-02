@@ -401,7 +401,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		var Enum& enum_= lock.deref();
 
 		ADD_SIZE_FIELD( "element_count", enum_.elements.size() )
-		ADD_TYPEINFO_FIELD( "underlaying_type", enum_.underlaying_type )
+		ADD_TYPEINFO_FIELD( "underlying_type", enum_.underlying_type )
 	}
 	else { halt; }
 
@@ -923,7 +923,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 		{
 			var ClassField mut class_field
 			{
-				.t= enum_.underlaying_type,
+				.t= enum_.underlying_type,
 				.is_mutable= true,
 				.is_reference= false,
 				.index= u32(fields_llvm_types.size()),

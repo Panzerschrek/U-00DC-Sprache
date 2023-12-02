@@ -45,4 +45,4 @@ The size of enum values will be equal to the size of underlying type values.
 If no underlying type is specified it will be chosen automatically - ``u8``, ``u16`` or ``u32`` depending on the number of possible enum values.
 
 Enums can't be empty - they should have at least one value.
-An enum may have no more values than maximum value of its underlaying type.
+An enum may have no more values than maximum value of its underlying type.

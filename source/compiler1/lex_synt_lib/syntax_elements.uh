@@ -803,7 +803,7 @@ struct Enum
 {
 	SrcLoc src_loc;
 	ust::string8 name;
-	ust::optional</ComplexName/> underlaying_type;
+	ust::optional</ComplexName/> underlying_type;
 
 	struct Element
 	{

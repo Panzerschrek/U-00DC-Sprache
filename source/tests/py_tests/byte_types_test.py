@@ -522,7 +522,7 @@ def ByteTypesAreDistinctFromOtherFundamentalTypes_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def ByteTypeCanNotBeEnumUnderlayingType_Test0():
+def ByteTypeCanNotBeEnumUnderlyingType_Test0():
 	c_program_text= """
 		enum E : byte32 { A, B, C }
 	"""

@@ -111,7 +111,7 @@ U_TEST( EnumsCompareTest )
 
 U_TEST( EnumsOrderCompareTest0 )
 {
-	// Compare with unsinged underlaying type.
+	// Compare with unsinged underlying type.
 	static const char c_program_text[]=
 	R"(
 		enum ColorComponent : u8 { r, g, b }
@@ -138,7 +138,7 @@ U_TEST( EnumsOrderCompareTest0 )
 
 U_TEST( EnumsOrderCompareTest1 )
 {
-	// Compare with singed underlaying type.
+	// Compare with singed underlying type.
 	static const char c_program_text[]=
 	R"(
 		enum ColorComponent : i8 { r, g, b }
@@ -165,7 +165,7 @@ U_TEST( EnumsOrderCompareTest1 )
 
 U_TEST( EnumsOrderCompareTest2 )
 {
-	// Compare with unsinged underlaying type.
+	// Compare with unsinged underlying type.
 	static const char c_program_text[]=
 	R"(
 		enum ColorComponent : u8 { r, g, b }
@@ -180,7 +180,7 @@ U_TEST( EnumsOrderCompareTest2 )
 
 U_TEST( EnumsOrderCompareTest3 )
 {
-	// Compare with singed underlaying type.
+	// Compare with singed underlying type.
 	static const char c_program_text[]=
 	R"(
 		enum ColorComponent : i8 { r, g, b }
@@ -316,7 +316,7 @@ U_TEST( EnumAsClassField )
 	U_TEST_ASSERT( static_cast<uint64_t>( 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( UnderlayingTypeForEnumTest0 )
+U_TEST( UnderlyingTypeForEnumTest0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -346,7 +346,7 @@ U_TEST( UnderlayingTypeForEnumTest0 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( UnderlayingTypeForEnumTest1 )
+U_TEST( UnderlyingTypeForEnumTest1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -355,7 +355,7 @@ U_TEST( UnderlayingTypeForEnumTest1 )
 		{ A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P}
 
 		static_assert( typeinfo</CompactEnum/>.size_of == typeinfo</u8/>.size_of );
-		static_assert( typeinfo</CompactEnum/>.underlaying_type.is_unsigned_integer );
+		static_assert( typeinfo</CompactEnum/>.underlying_type.is_unsigned_integer );
 
 		// More, than 256 values.
 		enum LargeEnum
@@ -380,7 +380,7 @@ U_TEST( UnderlayingTypeForEnumTest1 )
 		}
 
 		static_assert( typeinfo</LargeEnum/>.size_of == typeinfo</u16/>.size_of );
-		static_assert( typeinfo</LargeEnum/>.underlaying_type.is_unsigned_integer );
+		static_assert( typeinfo</LargeEnum/>.underlying_type.is_unsigned_integer );
 	)";
 
 	CreateEngine( BuildProgram( c_program_text ) );

@@ -288,7 +288,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	else if_var( &enum_type : t.GetEnumType() )
 	{
 		mangler_state.PushElement( "W" );
-		mangler_state.PushElement( "4" ); // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
+		mangler_state.PushElement( "4" ); // Underlying type. Modern MSVC uses "4" for all enums independent on underlying type.
 
 		auto enum_members= enum_type.lock_imut().deref().names_scope;
 		auto enum_members_lock= enum_members.lock_imut();
@@ -462,7 +462,7 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, Templ
 			}
 			else if_var( enum_type : v.t.GetEnumType() )
 			{
-				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlaying_type.fundamental_type );
+				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
 			}
 
 			if( is_signed )

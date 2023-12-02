@@ -77,21 +77,21 @@ There are also additional fields depending on the type kind.
 ****************************
 
 * ``size_type element_count`` - number of members in an enum
-* ``typeinfo & underlaying_type`` - type information for enum underlying type
+* ``typeinfo & underlying_type`` - type information for enum underlying type
 * ``tup[] elements_list`` - a tuple, each element of which contains information about an enum member
 
 Each enum member description contains:
 
 * ``[char8, size]& name`` - member name
-* ``underlaying_type value`` - member value
+* ``underlying_type value`` - member value
 
 .. code-block:: u_spr
 
    enum E : u8 { A, B, C }
    auto &info = typeinfo</E/>;
    static_assert( info.element_count == 3s );
-   static_assert( info.underlaying_type.is_unsigned_integer );
-   static_assert( info.underlaying_type.size_of == 1s );
+   static_assert( info.underlying_type.is_unsigned_integer );
+   static_assert( info.underlying_type.size_of == 1s );
    static_assert( info.elements_list[0].value == 0u8 );
    static_assert( info.elements_list[1].value == 1u8 );
    static_assert( info.elements_list[2].value == 2u8 );

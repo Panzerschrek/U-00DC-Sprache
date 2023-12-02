@@ -388,10 +388,10 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 			type->members.GetThisNamespaceName(),
 			di_file,
 			0u, // TODO - src_loc
-			8u * type->underlaying_type.GetSize(),
-			uint32_t(data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type )),
+			8u * type->underlying_type.GetSize(),
+			uint32_t(data_layout_.getABITypeAlignment( type->underlying_type.llvm_type )),
 			builder_->getOrCreateArray(elements),
-			CreateDIType( type->underlaying_type ) );
+			CreateDIType( type->underlying_type ) );
 
 	enums_di_cache_.insert( std::make_pair( type, result ) );
 	return result;

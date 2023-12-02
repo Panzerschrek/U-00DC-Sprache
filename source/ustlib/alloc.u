@@ -45,7 +45,7 @@ fn allocation_size_check( size_type size )
 	else
 	{
 		// Do not allow allocations greater than half of address space to avoid pointer difference overflow.
-		// TODO - do this only if underlaying "malloc" function have no such functionality.
+		// TODO - do this only if underlying "malloc" function have no such functionality.
 		halt if( size >= 2147483647s );
 	}
 }

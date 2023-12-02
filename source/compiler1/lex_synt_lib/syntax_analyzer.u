@@ -3076,7 +3076,7 @@ fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 	if( it_.front().lexem_type == Lexem::Type::Colon )
 	{
 		NextLexem();
-		enum_.underlaying_type= ParseComplexName();
+		enum_.underlying_type= ParseComplexName();
 	}
 
 	ExpectLexem( Lexem::Type::BraceLeft );

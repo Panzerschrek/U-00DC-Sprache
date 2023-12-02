@@ -111,7 +111,7 @@ U_TEST( EnumsRestrictionsTest )
 	U_TEST_ASSERT( build_result.errors[5].src_loc.GetLine() == 11u );
 }
 
-U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
+U_TEST( NameNotFound_ForUnderlyingEnumType_Test )
 {
 	static const char c_program_text[]=
 	R"(
@@ -139,7 +139,7 @@ U_TEST( NameNotFound_ForEnumElement )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
 
-U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
+U_TEST( NameIsNotTypeName_ForUnderlyingEnumType_Test )
 {
 	static const char c_program_text[]=
 	R"(
@@ -155,9 +155,9 @@ U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 3u ) );
 }
 
-U_TEST( TypesMismatch_ForUnderlayingEnumType_Test0 )
+U_TEST( TypesMismatch_ForUnderlyingEnumType_Test0 )
 {
-	// Float as underlaying type
+	// Float as underlying type
 	static const char c_program_text[]=
 	R"(
 		enum E : f32
@@ -175,9 +175,9 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test0 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
-U_TEST( TypesMismatch_ForUnderlayingEnumType_Test1 )
+U_TEST( TypesMismatch_ForUnderlyingEnumType_Test1 )
 {
-	// Bool as underlaying type
+	// Bool as underlying type
 	static const char c_program_text[]=
 	R"(
 		enum E : bool
@@ -195,9 +195,9 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
-U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
+U_TEST( TypesMismatch_ForUnderlyingEnumType_Test2 )
 {
-	// struct as underlaying type
+	// struct as underlying type
 	static const char c_program_text[]=
 	R"(
 		struct S{}
@@ -216,7 +216,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
-U_TEST( UnderlayingTypeIsTooSmall_Test )
+U_TEST( UnderlyingTypeIsTooSmall_Test )
 {
 	static const char c_program_text[]=
 	R"(
@@ -239,7 +239,7 @@ U_TEST( UnderlayingTypeIsTooSmall_Test )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnderlyingTypeForEnumIsTooSmall );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 

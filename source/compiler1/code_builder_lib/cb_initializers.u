@@ -834,7 +834,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		}
 		else if_var( &enum_type : src_var.t.GetEnumType() )
 		{
-			src_type= enum_type.lock_imut().deref().underlaying_type;
+			src_type= enum_type.lock_imut().deref().underlying_type;
 		}
 
 		if( src_type.llvm_type == LLVMTypeRef::Null )

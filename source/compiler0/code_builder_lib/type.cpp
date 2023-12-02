@@ -73,7 +73,7 @@ llvm::Type* GetLLVMTypeImpl( const ClassPtr class_ )
 llvm::Type* GetLLVMTypeImpl( const EnumPtr enum_ )
 {
 	U_ASSERT( enum_ != nullptr );
-	return enum_->underlaying_type.llvm_type;
+	return enum_->underlying_type.llvm_type;
 }
 
 } // namespace

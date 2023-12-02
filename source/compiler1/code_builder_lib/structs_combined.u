@@ -440,7 +440,7 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 	}
 	if_var( &enum_type_ptr : GetEnumType() )
 	{
-		return enum_type_ptr.lock_imut().deref().underlaying_type.llvm_type;
+		return enum_type_ptr.lock_imut().deref().underlying_type.llvm_type;
 	}
 
 	halt;

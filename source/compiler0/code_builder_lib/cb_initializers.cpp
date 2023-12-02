@@ -784,7 +784,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			// Allow explicit conversions of enums to ints.
 			if( const Enum* const enum_type= src_var->type.GetEnumType () )
-				src_type= &enum_type->underlaying_type;
+				src_type= &enum_type->underlying_type;
 		}
 
 		if( src_type == nullptr )

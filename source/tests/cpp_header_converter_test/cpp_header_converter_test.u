@@ -120,12 +120,12 @@ fn nomangle main() : i32
 
 	unsafe( SequentialEnumFunc( SequentialEnum::Blue ) );
 
-	static_assert( NonSequentialEnum::Zero.ü_underlaying_value == 0 );
-	static_assert( NonSequentialEnum::One.ü_underlaying_value == 1 );
-	static_assert( NonSequentialEnum::Ten.ü_underlaying_value == 10 );
-	static_assert( NonSequentialEnum::MinusTwo.ü_underlaying_value == -2 );
-	static_assert( NonSequentialEnum::Large32bit.ü_underlaying_value == 5000000 );
-	static_assert( NonSequentialEnum::LargeNegative.ü_underlaying_value == -142586 );
+	static_assert( NonSequentialEnum::Zero.ü_underlying_value == 0 );
+	static_assert( NonSequentialEnum::One.ü_underlying_value == 1 );
+	static_assert( NonSequentialEnum::Ten.ü_underlying_value == 10 );
+	static_assert( NonSequentialEnum::MinusTwo.ü_underlying_value == -2 );
+	static_assert( NonSequentialEnum::Large32bit.ü_underlying_value == 5000000 );
+	static_assert( NonSequentialEnum::LargeNegative.ü_underlying_value == -142586 );
 
 	unsafe( NonSequentialEnumFunc( NonSequentialEnum::MinusTwo ) );
 

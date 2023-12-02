@@ -524,7 +524,7 @@ struct Enum
 {
 	NamesScopePtr names_scope; // Contains nothing, needed only for mangling.
 
-	FundamentalType underlaying_type;
+	FundamentalType underlying_type;
 
 	struct Element
 	{

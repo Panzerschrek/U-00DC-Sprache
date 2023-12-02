@@ -199,7 +199,7 @@ void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<Templ
 			if( const auto fundamental_type= variable->type.GetFundamentalType() )
 				is_signed= IsSignedInteger( fundamental_type->fundamental_type );
 			else if( const auto enum_type= variable->type.GetEnumType() )
-				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
+				is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
 			else U_ASSERT(false);
 
 			U_ASSERT( variable->constexpr_value != nullptr );

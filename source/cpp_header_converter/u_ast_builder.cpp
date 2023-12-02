@@ -611,7 +611,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 		Synt::TypeName type_name= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
 		if( const auto named_type_name= std::get_if<Synt::NameLookup>( &type_name ) )
-			enum_.underlaying_type_name= std::move(*named_type_name);
+			enum_.underlying_type_name= std::move(*named_type_name);
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
@@ -632,7 +632,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 		Synt::ClassElementsList::Builder class_elements;
 
-		const std::string field_name= "ü_underlaying_value";
+		const std::string field_name= "ü_underlying_value";
 		{
 			Synt::ClassField field( g_dummy_src_loc );
 			field.name= field_name;

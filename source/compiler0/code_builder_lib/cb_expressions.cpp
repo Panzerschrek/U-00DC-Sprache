@@ -85,7 +85,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// Choose src_loc for definitions collection.
 		// In most cases proper src_loc is just src_loc of NameLookup/NamesScopeNameFetch, which is proper function name lexem.
 		// But this also may be call to template function with provided template args.
-		// In such case extract underlaying name.
+		// In such case extract underlying name.
 		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &call_operator.expression ) )
 			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
 		else
@@ -2446,7 +2446,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				}
 			}
 			else if( const auto enum_type= l_type.GetEnumType() )
-				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
+				is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
 
 			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
@@ -2523,7 +2523,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				}
 			}
 			else if( const auto enum_type= l_type.GetEnumType() )
-				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
+				is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
 
 			const auto result_fundamental_type= U_FundamentalType::i32_;
 			const auto result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );

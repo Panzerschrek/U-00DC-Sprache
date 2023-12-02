@@ -157,7 +157,7 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 
 llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr enum_type )
 {
-	switch( enum_type->underlaying_type.fundamental_type )
+	switch( enum_type->underlying_type.fundamental_type )
 	{
 	case U_FundamentalType::i8_  :
 	case U_FundamentalType::u8_  :

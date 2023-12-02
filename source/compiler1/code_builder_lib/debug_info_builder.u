@@ -467,7 +467,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 	auto enum_lock= t.lock_imut();
 	var Enum& enum_= enum_lock.deref();
 
-	var bool is_unsigned= IsUnsignedInteger( enum_.underlaying_type.fundamental_type );
+	var bool is_unsigned= IsUnsignedInteger( enum_.underlying_type.fundamental_type );
 
 	var ust::vector</LLVMMetadataRef/> mut elements;
 	foreach( &element_pair : enum_.elements )
@@ -494,10 +494,10 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 		cast_mut(name).data(), name.size(),
 		di_file,
 		src_loc.GetLine(),
-		LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,
-		LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
+		LLVMABISizeOfType( data_layout_, enum_.underlying_type.llvm_type ) * 8u64,
+		LLVMABIAlignmentOfType( data_layout_, enum_.underlying_type.llvm_type ) * 8u32,
 		elements.data(), u32(elements.size()),
-		CreateDITypeImpl(enum_.underlaying_type) ) );
+		CreateDITypeImpl(enum_.underlying_type) ) );
 
 	enums_di_types_.insert( t, di_type );
 	return di_type;
