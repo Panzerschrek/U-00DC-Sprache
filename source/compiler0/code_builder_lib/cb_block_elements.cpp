@@ -799,7 +799,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const bool is_mutable= range_for_operator.mutability_modifier == MutabilityModifier::Mutable;
 	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
 	{
-		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+		std::unique_ptr<llvm::BasicBlock> finish_basic_block( tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ ) );
 
 		llvm::SmallVector<ReferencesGraph, 4> break_variables_states;
 
@@ -902,14 +902,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			loop_names.AddName( range_for_operator.loop_variable_name, NamesScopeValue( variable_reference, range_for_operator.src_loc, force_referenced ) );
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
-			llvm::BasicBlock* const next_basic_block=
-				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );
+			std::unique_ptr<llvm::BasicBlock> next_basic_block=
+				is_last_iteration ? std::move(finish_basic_block) : std::unique_ptr<llvm::BasicBlock>( llvm::BasicBlock::Create( llvm_context_ ) );
 
 			AddLoopFrame(
 				loop_names,
 				function_context,
-				finish_basic_block,
-				next_basic_block,
+				finish_basic_block == nullptr ? next_basic_block.get() : finish_basic_block.get(),
+				next_basic_block.get(),
 				range_for_operator.label );
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
@@ -919,7 +919,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc );
-				function_context.llvm_ir_builder.CreateBr( next_basic_block );
+				function_context.llvm_ir_builder.CreateBr( next_basic_block.get() );
 				function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 			}
 
@@ -940,8 +940,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( !continue_branches_is_empty )
 			{
-				function_context.function->getBasicBlockList().push_back( next_basic_block );
-				function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
+				const auto bb= next_basic_block.release();
+				function_context.function->getBasicBlockList().push_back( bb );
+				function_context.llvm_ir_builder.SetInsertPoint( bb );
 
 				if( is_last_iteration )
 					break_variables_states.push_back( function_context.variables_state );
@@ -949,16 +950,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				// Finish building tuple-for if current iteration have no "continue" branches.
-				if( !is_last_iteration )
-					delete next_basic_block;
-
 				if( !break_variables_states.empty() )
 				{
-					function_context.function->getBasicBlockList().push_back( finish_basic_block );
-					function_context.llvm_ir_builder.SetInsertPoint( finish_basic_block );
+					const auto bb= finish_basic_block.release();
+					function_context.function->getBasicBlockList().push_back( bb );
+					function_context.llvm_ir_builder.SetInsertPoint( bb );
 				}
-				else
-					delete finish_basic_block;
 
 				break;
 			}
