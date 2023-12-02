@@ -143,6 +143,9 @@ else()
 		add_compile_options( --coverage )
 		add_link_options( --coverage )
 	endif()
+	add_compile_options( -fsanitize=address -shared-libasan )
+	add_link_options( -fsanitize=address -shared-libasan )
+	add_link_options( -Wl,-rpath=/usr/lib/clang/6.0.0/lib/linux )
 
 	# Disable warnings, related to "std::move" in new versions of GCC.
 	# We can't just fix these warnings since such fixes may break build with old versions of GCC.
