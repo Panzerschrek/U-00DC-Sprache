@@ -694,9 +694,9 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 		}
 	}
 
-	foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
+	foreach( &parameterized_function_template : functions_set.parameterized_function_templates )
 	{
-		if_var( mut preparation_result : PrepareTemplateFunction( parametrized_function_template.base_template, parametrized_function_template.known_args.range(), actual_args, first_actual_arg_is_this, src_loc ) )
+		if_var( mut preparation_result : PrepareTemplateFunction( parameterized_function_template.base_template, parameterized_function_template.known_args.range(), actual_args, first_actual_arg_is_this, src_loc ) )
 		{
 			out_matched_functions.push_back( move(preparation_result) );
 		}

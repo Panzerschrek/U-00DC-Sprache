@@ -1090,7 +1090,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	return &function_variable;
 }
 
-OverloadedFunctionsSetPtr CodeBuilder::ParametrizeFunctionTemplate(
+OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 	const SrcLoc& src_loc,
 	const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -1106,9 +1106,9 @@ OverloadedFunctionsSetPtr CodeBuilder::ParametrizeFunctionTemplate(
 	if( arguments_calculated.size() != template_arguments.size() )
 		return nullptr;
 
-	ParametrizedFunctionTemplateKey template_key{ functions_set_ptr, arguments_calculated };
+	ParameterizedFunctionTemplateKey template_key{ functions_set_ptr, arguments_calculated };
 
-	if( const auto it= parametrized_template_functions_cache_.find( template_key ); it != parametrized_template_functions_cache_.end() )
+	if( const auto it= parameterized_template_functions_cache_.find( template_key ); it != parameterized_template_functions_cache_.end() )
 		return it->second; // Already generated.
 
 	auto result= std::make_shared<OverloadedFunctionsSet>();
@@ -1153,7 +1153,7 @@ OverloadedFunctionsSetPtr CodeBuilder::ParametrizeFunctionTemplate(
 	}
 
 	return
-		parametrized_template_functions_cache_.insert(
+		parameterized_template_functions_cache_.insert(
 			std::make_pair( std::move(template_key), std::move(result) ) ).first->second;
 }
 

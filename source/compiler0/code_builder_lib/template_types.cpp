@@ -58,7 +58,7 @@ bool operator==( const TemplateKey& l, const TemplateKey& r )
 	return l.template_ == r.template_ && l.args == r.args;
 }
 
-size_t ParametrizedFunctionTemplateKey::Hash() const
+size_t ParameterizedFunctionTemplateKey::Hash() const
 {
 	size_t hash= size_t( reinterpret_cast<uintptr_t>( functions_set.get() ) );
 
@@ -68,7 +68,7 @@ size_t ParametrizedFunctionTemplateKey::Hash() const
 	return hash;
 }
 
-bool operator==( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r )
+bool operator==( const ParameterizedFunctionTemplateKey& l, const ParameterizedFunctionTemplateKey& r )
 {
 	return l.functions_set == r.functions_set && l.args == r.args;
 }

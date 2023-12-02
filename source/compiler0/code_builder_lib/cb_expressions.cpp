@@ -413,16 +413,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc );
 			else
 			{
-				const OverloadedFunctionsSetPtr parametrized_functions=
-					ParametrizeFunctionTemplate(
+				const OverloadedFunctionsSetPtr parameterized_functions=
+					ParameterizeFunctionTemplate(
 						member_access_operator.src_loc,
 						functions_set,
 						*member_access_operator.template_parameters,
 						names,
 						function_context );
 
-				if( parametrized_functions != nullptr )
-					this_overloaded_methods_set.overloaded_methods_set= parametrized_functions;
+				if( parameterized_functions != nullptr )
+					this_overloaded_methods_set.overloaded_methods_set= parameterized_functions;
 			}
 		}
 

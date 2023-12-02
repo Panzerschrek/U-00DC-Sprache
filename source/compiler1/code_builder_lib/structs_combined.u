@@ -1338,12 +1338,12 @@ fn TemplateKeyHasher::hash( TemplateKey& k ) : size_type
 	return TypeHasher::hash_combine( ust::default_hasher::hash( k.template_ ), HashTemplateArgs( k.template_args ) );
 }
 
-op ParametrizedFunctionTemplateKey::==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool
+op ParameterizedFunctionTemplateKey::==( ParameterizedFunctionTemplateKey& l, ParameterizedFunctionTemplateKey& r ) : bool
 {
 	return l.functions_set == r.functions_set && TemplateArgsEquals( l.template_args, r.template_args );
 }
 
-fn ParametrizedFunctionTemplateKeyHasher::hash( ParametrizedFunctionTemplateKey& k ) : size_type
+fn ParameterizedFunctionTemplateKeyHasher::hash( ParameterizedFunctionTemplateKey& k ) : size_type
 {
 	return TypeHasher::hash_combine( ust::default_hasher::hash( k.functions_set ), HashTemplateArgs( k.template_args ) );
 }

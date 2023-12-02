@@ -466,7 +466,7 @@ struct FunctionsSet
 {
 	ust::vector</FunctionVariable/> functions;
 	ust::vector</FunctionTemplatePtr/> function_templates;
-	ust::vector</ParametrizedFunctionTemplate/> parametrized_function_templates;
+	ust::vector</ParameterizedFunctionTemplate/> parameterized_function_templates;
 
 	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
 
@@ -653,7 +653,7 @@ class FunctionTemplate final : TemplateBase
 
 type FunctionTemplatePtr= ust::shared_ptr_imut</FunctionTemplate/>;
 
-struct ParametrizedFunctionTemplate
+struct ParameterizedFunctionTemplate
 {
 	TemplateArgsFinished known_args;
 	FunctionTemplatePtr base_template;
@@ -802,19 +802,19 @@ struct TemplateKeyHasher
 	fn hash( TemplateKey& k ) : size_type;
 }
 
-struct ParametrizedFunctionTemplateKey
+struct ParameterizedFunctionTemplateKey
 {
 	FunctionsSetPtr functions_set;
 	TemplateArgsFinished template_args;
 
-	type hasher= ParametrizedFunctionTemplateKeyHasher;
+	type hasher= ParameterizedFunctionTemplateKeyHasher;
 
-	op==( ParametrizedFunctionTemplateKey& l, ParametrizedFunctionTemplateKey& r ) : bool;
+	op==( ParameterizedFunctionTemplateKey& l, ParameterizedFunctionTemplateKey& r ) : bool;
 }
 
-struct ParametrizedFunctionTemplateKeyHasher
+struct ParameterizedFunctionTemplateKeyHasher
 {
-	fn hash( ParametrizedFunctionTemplateKey& k ) : size_type;
+	fn hash( ParameterizedFunctionTemplateKey& k ) : size_type;
 }
 
 //

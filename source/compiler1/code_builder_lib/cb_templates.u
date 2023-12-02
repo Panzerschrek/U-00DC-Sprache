@@ -982,12 +982,12 @@ fn CodeBuilder::PrepareTemplateFunction(
 
 fn CodeBuilder::FinishFunctionTemplateParametrization(
 	mut this,
-	ParametrizedFunctionTemplate& parametrized_function_template,
+	ParameterizedFunctionTemplate& parameterized_function_template,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	auto function_template_lock= parametrized_function_template.base_template.lock_imut();
+	auto function_template_lock= parameterized_function_template.base_template.lock_imut();
 	var FunctionTemplate& function_template= function_template_lock.deref();
-	auto& known_template_args= parametrized_function_template.known_args;
+	auto& known_template_args= parameterized_function_template.known_args;
 
 	halt if( function_template.params.size() != known_template_args.size() );
 
@@ -999,9 +999,9 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 	FillKnownFunctionTemplateArgsIntoNamespace( function_template, known_template_args.range(), result_names_scope );
 
 	return FinishTemplateFunctionGeneration(
-		parametrized_function_template.base_template,
+		parameterized_function_template.base_template,
 		result_names_scope,
-		parametrized_function_template.instantiation_point_names_scope,
+		parameterized_function_template.instantiation_point_names_scope,
 		src_loc );
 }
 
@@ -1115,7 +1115,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	return move(function_variable);
 }
 
-fn CodeBuilder::ParametrizeTemplateFunctions(
+fn CodeBuilder::ParameterizeTemplateFunctions(
 	mut this,
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
@@ -1129,9 +1129,9 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
-	var ParametrizedFunctionTemplateKey mut cache_key{ .functions_set= functions_set_ptr, .template_args= template_args_finished };
+	var ParameterizedFunctionTemplateKey mut cache_key{ .functions_set= functions_set_ptr, .template_args= template_args_finished };
 
-	if_var( &prev_value : parametrized_template_functions_cache_.find( cache_key ) )
+	if_var( &prev_value : parameterized_template_functions_cache_.find( cache_key ) )
 	{
 		return prev_value;
 	}
@@ -1183,24 +1183,24 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			continue;
 		}
 
-		var ParametrizedFunctionTemplate mut parametrized_function_template
+		var ParameterizedFunctionTemplate mut parameterized_function_template
 		{
 			.known_args= template_args_finished,
 			.base_template= function_template_ptr,
 			.instantiation_point_names_scope= args_names_scope,
 		};
 
-		result_functions_set.parametrized_function_templates.push_back( move(parametrized_function_template) );
+		result_functions_set.parameterized_function_templates.push_back( move(parameterized_function_template) );
 	}
 
-	if( result_functions_set.parametrized_function_templates.empty() )
+	if( result_functions_set.parameterized_function_templates.empty() )
 	{
 		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, ust::string8("TODO - name") )
 		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
 	var ust::shared_ptr_mut</FunctionsSet/> mut result( move(result_functions_set) );
-	parametrized_template_functions_cache_.insert( move(cache_key), result );
+	parameterized_template_functions_cache_.insert( move(cache_key), result );
 	return move(result);
 }
 

@@ -559,7 +559,7 @@ private:
 		const TemplateFunctionPreparationResult& template_function_preparation_result );
 
 	// Returns nullptr on fail.
-	OverloadedFunctionsSetPtr ParametrizeFunctionTemplate(
+	OverloadedFunctionsSetPtr ParameterizeFunctionTemplate(
 		const SrcLoc& src_loc,
 		const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -1428,7 +1428,7 @@ private:
 	std::vector<TemplateKey> generated_template_things_sequence_;
 
 	// Cache results of template functions parametrization.
-	std::unordered_map<ParametrizedFunctionTemplateKey, OverloadedFunctionsSetPtr, ParametrizedFunctionTemplateKeyHasher> parametrized_template_functions_cache_;
+	std::unordered_map<ParameterizedFunctionTemplateKey, OverloadedFunctionsSetPtr, ParameterizedFunctionTemplateKeyHasher> parameterized_template_functions_cache_;
 
 	std::vector<GlobalThing> global_things_stack_;
 

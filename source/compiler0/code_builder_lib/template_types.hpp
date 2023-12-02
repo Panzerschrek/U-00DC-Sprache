@@ -95,7 +95,7 @@ struct TemplateKeyHasher
 	size_t operator()( const TemplateKey& k ) const { return k.Hash(); }
 };
 
-struct ParametrizedFunctionTemplateKey
+struct ParameterizedFunctionTemplateKey
 {
 	OverloadedFunctionsSetConstPtr functions_set;
 	TemplateArgs args;
@@ -103,12 +103,12 @@ struct ParametrizedFunctionTemplateKey
 	size_t Hash() const;
 };
 
-bool operator==( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r );
-inline bool operator!=( const ParametrizedFunctionTemplateKey& l, const ParametrizedFunctionTemplateKey& r ) { return !( l == r ); }
+bool operator==( const ParameterizedFunctionTemplateKey& l, const ParameterizedFunctionTemplateKey& r );
+inline bool operator!=( const ParameterizedFunctionTemplateKey& l, const ParameterizedFunctionTemplateKey& r ) { return !( l == r ); }
 
-struct ParametrizedFunctionTemplateKeyHasher
+struct ParameterizedFunctionTemplateKeyHasher
 {
-	size_t operator()( const ParametrizedFunctionTemplateKey& k ) const { return k.Hash(); }
+	size_t operator()( const ParameterizedFunctionTemplateKey& k ) const { return k.Hash(); }
 };
 
 } // namespace U

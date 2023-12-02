@@ -454,7 +454,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 		}
 
 		auto parametrization_result=
-			ParametrizeTemplateFunctions(
+			ParameterizeTemplateFunctions(
 				names_scope,
 				function_context,
 				functions_set_non_null,
