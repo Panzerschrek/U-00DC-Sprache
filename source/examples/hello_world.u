@@ -1,3 +1,5 @@
+// This example demonstraits entry function, basic stdout usage.
+
 import "/stdout.u"
 
 fn nomangle main() : i32
