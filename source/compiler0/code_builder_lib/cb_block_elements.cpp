@@ -828,11 +828,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( range_for_operator.reference_modifier == ReferenceModifier::Reference )
 			{
 				if( range_for_operator.mutability_modifier == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
-				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), range_for_operator.src_loc );
-					function_context.variables_state.RemoveNode( variable_reference );
-					continue;
-				}
 
 				variable_reference->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
@@ -853,45 +849,29 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						nullptr );
 				function_context.variables_state.AddNode( variable );
 
-				if( !EnsureTypeComplete( element_type ) )
-				{
-					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), range_for_operator.src_loc, element_type );
-					function_context.variables_state.RemoveNode( variable_reference );
-					function_context.variables_state.RemoveNode( variable );
-					continue;
-				}
-				if( !element_type.IsCopyConstructible() )
-				{
-					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), range_for_operator.src_loc, element_type );
-					function_context.variables_state.RemoveNode( variable_reference );
-					function_context.variables_state.RemoveNode( variable );
-					continue;
-				}
-				if( element_type.IsAbstract() )
-				{
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), range_for_operator.src_loc, element_type );
-					function_context.variables_state.RemoveNode( variable_reference );
-					function_context.variables_state.RemoveNode( variable );
-					continue;
-				}
+				variable_reference->llvm_value= variable->llvm_value=
+					function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
 
-				variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
 				CreateLifetimeStart( function_context, variable->llvm_value );
 				debug_info_builder_->CreateVariableInfo( *variable, variable_name, range_for_operator.src_loc, function_context );
 
 				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), range_for_operator.src_loc );
 				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable, element_index, names.GetErrors(), range_for_operator.src_loc );
 
-				BuildCopyConstructorPart(
-					variable->llvm_value,
-					CreateTupleElementGEP( function_context, *sequence_expression, element_index ),
-					element_type,
-					function_context );
-
-				variable_reference->llvm_value= variable->llvm_value;
+				if( !EnsureTypeComplete( element_type ) )
+					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), range_for_operator.src_loc, element_type );
+				else if( !element_type.IsCopyConstructible() )
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), range_for_operator.src_loc, element_type );
+				else if( element_type.IsAbstract() )
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), range_for_operator.src_loc, element_type );
+				else
+					BuildCopyConstructorPart(
+						variable->llvm_value,
+						CreateTupleElementGEP( function_context, *sequence_expression, element_index ),
+						element_type,
+						function_context );
 
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
-
 				function_context.variables_state.AddLink( variable, variable_reference );
 			}
 
