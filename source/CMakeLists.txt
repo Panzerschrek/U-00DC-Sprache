@@ -16,6 +16,7 @@ option( U_BUILD_INTERPRETER "Build Interpreter" YES )
 option( U_BUILD_LANGUAGE_SERVER "Build language server" YES )
 option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
+option( U_BUILD_EXAMPLES "Build examples" YES )
 option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 option( U_BUILD_COMPILER2 "Build compiler2 (using compiler1)" NO)
 option( U_BUILD_COMPILER3 "Build compiler3 (using compiler3)" NO)
@@ -387,6 +388,40 @@ if( U_BUILD_COMPILER AND U_BUILD_LINKAGE_TESTS )
 
 else()
 	message( STATUS "Skip linkage tests" )
+endif()
+
+#
+# Examples
+#
+if( U_BUILD_COMPILER AND U_BUILD_EXAMPLES )
+	message( STATUS "Build exampes" )
+
+	set( CURRENT_COMPILER_GENERATION "" )
+	add_subdirectory( examples )
+
+	if( U_BUILD_COMPILER1 )
+
+		set( CURRENT_COMPILER_GENERATION "1" )
+		add_subdirectory( examples examples1 )
+
+		if( U_BUILD_COMPILER2 )
+
+			set( CURRENT_COMPILER_GENERATION "2" )
+			add_subdirectory( examples examples2 )
+
+			if( U_BUILD_COMPILER3 )
+
+				set( CURRENT_COMPILER_GENERATION "3" )
+				add_subdirectory( examples examples3 )
+
+			endif()
+
+		endif()
+
+	endif()
+
+else()
+	message( STATUS "Skip exampes" )
 endif()
 
 #
