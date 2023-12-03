@@ -1,0 +1,61 @@
+// This example demonstraits basic functions overloading.
+
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	var f32 float_var(0.25f);
+	var i32 int_var= 0;
+	var u32 uint_imut_var(5), mut uint_mut_var(6);
+
+	Foo();
+	Foo( float_var );
+	Foo( int_var );
+	Foo( uint_imut_var );
+	Foo( uint_mut_var );
+	Foo( "some string literal", false );
+
+	halt if( uint_mut_var != 6u * 13u ); // This variable should be modified in function call.
+
+	return 0;
+}
+
+//
+// It's allowed to define many functions with the same name, until number of params and/or param types (adn mutability modifiers for reference-params) are different.
+//
+
+fn Foo()
+{
+	ust::stdout_print( "Foo 0 args\n" );
+}
+
+fn Foo( f32 x )
+{
+	ust::ignore_unused(x);
+	ust::stdout_print( "Foo 1 f32 arg \n" );
+}
+
+fn Foo( i32 x )
+{
+	ust::ignore_unused(x);
+	ust::stdout_print( "Foo 1 i32 arg \n" );
+}
+
+fn Foo( u32& x )
+{
+	ust::ignore_unused(x);
+	ust::stdout_print( "Foo 1 u32& arg \n" );
+}
+
+fn Foo( u32 &mut x )
+{
+	x *= 13u; // It's allowed to modify args, passed by mutable reference.
+	ust::stdout_print( "Foo 1 u32 &mut arg \n" );
+}
+
+fn Foo( ust::array_view_imut</char8/> s, bool b )
+{
+	ust::ignore_unused(s);
+	ust::ignore_unused(b);
+	ust::stdout_print( "Foo 2 args \n" );
+}
