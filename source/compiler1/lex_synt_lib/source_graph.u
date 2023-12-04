@@ -113,7 +113,7 @@ fn LoadSourceGraph_r(
 	{
 		var ust::string8 mut str;
 		str+= "Error, can not read file: \"";
-		str+= file_path_normalized;
+		str+= file_path;
 		str+= "\"";
 
 		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
@@ -124,7 +124,8 @@ fn LoadSourceGraph_r(
 
 	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();
-	source_graph.nodes.push_back( SourceGraph::Node() );
+	var SourceGraph::Node mut stub_node{ .file_path_normalized= file_path_normalized };
+	source_graph.nodes.push_back( move(stub_node) );
 
 	auto mut lex_result= LexicalAnalysis( file_content_view );
 	foreach( &error : lex_result.errors )
