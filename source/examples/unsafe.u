@@ -1,0 +1,59 @@
+// This example demonstraits  usage of unsafe code, raw pointers, unsafe cast operators.
+
+import "/assert.u"
+
+fn nomangle main() : i32
+{
+	var [ i32, 4 ] mut arr[ 11, 22, 33, 44 ];
+	var $(i32) mut ptr= $<( arr[0] ); // Convert a reference to first array element into a pointer.
+	// Basic pointer arithmetic is allowed.
+	ptr+= 2;
+	--ptr;
+	ptr= ptr + 2;
+
+	unsafe
+	{
+		// Call a function in "unsafe" block, because some preconditions, which the compiler itself can't properly check, must be satisfied.
+		// "unsafe" here serves as a workaround for compiler type/mutability/reference rules checking.
+		auto x= ReadInt(ptr);
+		assert( x == 44 );
+	}
+
+	unsafe
+	{
+		var f32 mut x= uninitialized; // "uninitialized" is allowed only in unsafe code.
+		x= 6.57f;
+		safe // Use "safe" block to temporary disable "unsafe" block around it.
+		{
+			assert( x == 6.57f );
+		}
+	}
+
+	unsafe
+	{
+		var i32 mut x= 765;
+		// Unsafe reference casts are allowed only in unsafe code.
+		// Note that reading a value via such casted reference may lead to undefined behavior.
+		var f32& x_ref_casted= cast_ref_unsafe</f32/>(x);
+		var i32& x_ref_casted_back= cast_ref_unsafe</i32/>(x_ref_casted);
+		assert( x_ref_casted_back == 765 );
+
+		// Mutable cast is also allowed only in unsafe code.
+		{
+			var i32 &mut x_mut_ref= cast_mut(x_ref_casted_back);
+			x_mut_ref /= 4;
+		}
+
+		assert( x_ref_casted_back == 765 / 4 );
+	}
+
+	return 0;
+}
+
+// A function marked with "unsafe" may be called only within "unsafe" block or expression.
+// Precondition - ptr is a valid raw pointer.
+fn ReadInt( $(i32) ptr ) unsafe : i32
+{
+	// Raw pointer dereference is an unsafe operation - use an "unsafe" expression wrapper for it.
+	return unsafe( $>(ptr) );
+}
