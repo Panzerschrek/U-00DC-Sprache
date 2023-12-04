@@ -1,0 +1,112 @@
+// This example demonstraits basic structs and methods usage, basic initialization.
+
+import "/assert.u"
+import "/stdout.u"
+import "/string.u"
+
+fn nomangle main() : i32
+{
+	// {} initializer may be used for structs.
+	var Vec2 mut v{ .x= 4.5f, .y= -0.25f };
+
+	// Fields are accessed via ".".
+	assert( v.x == 4.5f );
+	assert( v.y == -0.25f );
+
+	// Thiscall methods are called via ".".
+	assert( v.GetX() == 4.5f );
+	assert( v.GetY() == -0.25f );
+
+	v.SetX( 678.3f );
+	assert( v.x == 678.3f );
+
+	// By default structs are copy-constructible (if all fields are copy-constructible).
+	auto v_copy= v;
+	// By default == operator is generated for structs.
+	assert( v_copy == v );
+
+	// "zero_init" may be used for structs initialization (with some limitations).
+	var Vec2 v_zero= zero_init;
+
+	v.Zero();
+	assert( v == v_zero );
+
+	// Initialize a struct variable with default constructor.
+	var Person default_person;
+	assert( default_person.name == "" );
+	assert( default_person.age == 0u8 );
+	assert( default_person.sex == Sex::Male );
+
+	// Initialize a struct variable via explicit constructor call.
+	var Person custom_person( "Olaf", 65u8, Sex::Male );
+	assert( custom_person != default_person );
+	assert( custom_person.name == "Olaf" );
+	assert( custom_person.age == 65u8 );
+	assert( custom_person.sex == Sex::Male );
+
+	return 0;
+}
+
+struct Vec2
+{
+	// Fields are declared by specifying type and name.
+	ElementType x;
+	ElementType y;
+
+	// It's possible to declare a type alias inside a struct.
+	type ElementType= f32;
+
+	// A method is a function declared within a struct or class and with "this" as first parameter.
+	fn GetX( this ) : ElementType
+	{
+		// Class fields may be accessed within thiscall method directly by name.
+		return x;
+	}
+
+	// It's allowed only to declare method and define its body later.
+	fn GetY( this ) : ElementType;
+
+	// "this" parameter may be declared as mutable.
+	fn SetX( mut this, ElementType new_x )
+	{
+		x= new_x;
+	}
+
+	fn Zero( mut this )
+	{
+		x= 0.0f;
+		y= 0.0f;
+	}
+}
+
+// Define now body for a method.
+fn Vec2::GetY( this ) : ElementType
+{
+	// "this" may be used as regular value of the struct type, in order to access fields for example.
+	return this.y;
+}
+
+struct Person
+{
+	ust::string8 name;
+
+	// Own initializers for fields may be specified.
+	u8 age(0);
+	Sex sex= Sex::Male;
+
+	// Define default constructor manually.
+	// =default means, tells the compiler to generate it.
+	// It is possible, since all fields have default constructor or own initializer/
+	fn constructor()= default;
+
+	// Custom constructor with 3 params.
+	fn constructor( ust::string8 mut in_name, u8 in_age, Sex in_sex )
+	// A constructor may have fields initializer list in () before the body.
+		( name( move(in_name) ), age(in_age), sex= in_sex )
+	{
+		// Some additional initialization steps may be performed here.
+		assert( age <= 150u8, "Age seems to be wrong, no human can live so long" );
+	}
+}
+
+enum Sex{ Male, Female }

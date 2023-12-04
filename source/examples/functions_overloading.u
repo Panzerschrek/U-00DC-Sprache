@@ -1,5 +1,6 @@
 // This example demonstraits basic functions overloading.
 
+import "/assert.u"
 import "/stdout.u"
 
 fn nomangle main() : i32
@@ -15,7 +16,7 @@ fn nomangle main() : i32
 	Foo( uint_mut_var );
 	Foo( "some string literal", false );
 
-	halt if( uint_mut_var != 6u * 13u ); // This variable should be modified in function call.
+	assert( uint_mut_var == 6u * 13u ); // This variable should be modified in function call.
 
 	return 0;
 }
