@@ -1,0 +1,73 @@
+// This example demonstraits usage of enums and "switch" operator for them/.
+
+import "/assert.u"
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	// "zero_init" for an enum variable initializes it with the firts value.
+	var TrafficLight mut light= zero_init;
+	// "==" works fine for enum values.
+	assert( light == TrafficLight::Red );
+	light= TrafficLight::Yellow;
+	// Order comparison works also for enums.
+	assert( light < TrafficLight::Green );
+
+	assert(  IsBaseHumanColor( RainbowColor::Red ) );
+	assert( !IsBaseHumanColor( RainbowColor::Orange ) );
+	assert( !IsBaseHumanColor( RainbowColor::Yellow ) );
+	assert(  IsBaseHumanColor( RainbowColor::Green ) );
+	assert(  IsBaseHumanColor( RainbowColor::Blue ) );
+	assert( !IsBaseHumanColor( RainbowColor::Violet ) );
+
+	return 0;
+}
+
+// An enum with 3 values.
+// Default underlying type is "u8".
+enum TrafficLight
+{
+	Red,
+	Yellow,
+	Green,
+}
+
+static_assert( typeinfo</TrafficLight/>.size_of == 1s );
+
+// Another enum.
+// Note that this enum has some members named like members in the previous enum.
+// But this is ok, each enum has its own names scope and thus there is no name collision.
+enum RainbowColor
+{
+	Red,
+	Orange,
+	Yellow,
+	Green,
+	Blue,
+	Violet,
+}
+
+static_assert( typeinfo</RainbowColor/>.size_of == 1s );
+
+// All enums are distinct types from each other and from their underlying types.
+static_assert( !same_type</ TrafficLight, RainbowColor /> );
+static_assert( !same_type</ TrafficLight, u8 /> );
+
+fn IsBaseHumanColor( RainbowColor c ) : bool
+{
+	switch(c)
+	{
+		// Specify several values for a branch.
+		RainbowColor::Red, RainbowColor::Green, RainbowColor::Blue -> { return true; },
+		// Default branch - for values unspecified in another braches.
+		default -> { return false; },
+	}
+}
+
+// Underlying type may be explicitely specified.
+enum TooBigEnum : u32
+{
+	A, B,
+}
+
+static_assert( typeinfo</TooBigEnum/>.size_of == 4s );
