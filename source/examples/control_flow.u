@@ -1,0 +1,89 @@
+// This example demonstraits basic control flow constructions - loops and conditions.
+
+import "/stdout.u"
+import "/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	SimpleLoop();
+	WhileLoop( 17u );
+	ForLoop( 11.0f );
+
+	for( auto mut i= 0u; i <= 75u; ++i )
+	{
+		auto mask= GetDiv15Mask(i);
+		ust::stdout_print( ( "Mask for " + ust::to_string8(i) + " is " + ust::to_string8(mask) + "\n" ).range() );
+	}
+
+	return 0;
+}
+
+fn SimpleLoop()
+{
+	auto mut i= 1;
+	// Simple loop without condition. May be terminated with "break" or "return".
+	loop
+	{
+		i+= i;
+		ust::stdout_print( ( "Loop iteration counter: " + ust::to_string8(i) + "\n" ).range() );
+		if( i > 100 )
+		{
+			break;
+		}
+	}
+}
+
+fn WhileLoop( u32 x )
+{
+	auto mut i= 0u;
+	// Loop until condition is true.
+	while( i < x * x * x )
+	{
+		i+= 1u;
+		i+= i / 5u;
+		if( i % 7u < 2u )
+		{
+			ust::stdout_print( ( "While loop skip iteration " + ust::to_string8(i) + "\n" ).range() );
+			continue; // Go direct to the next loop iteration.
+		}
+		ust::stdout_print( ( "While loop iteration counter: " + ust::to_string8(i) + "\n" ).range() );
+	}
+}
+
+fn ForLoop( f32 x )
+{
+	// This is the most complex loop kind.
+	// First its part is variables declaration (with "var" or "auto").
+	// Than follows loop condition.
+	// Lastly follows loop iteration part.
+	// All parts are optional.
+	for( var f32 mut i= -x; i <= x; i+= 1.0f )
+	{
+		if( (i32(i) & 3) == 0 )
+		{
+			ust::stdout_print( ( "For loop skip iteration " + ust::to_string8( i32(i) ) + "\n" ).range() );
+			continue; // Go to the loop iteration part.
+		}
+		ust::stdout_print( ( "For loop iteration counter: " + ust::to_string8( i32(i) ) + "\n" ).range() );
+	}
+}
+
+fn GetDiv15Mask( u32 x ) : u32
+{
+	// Basic "if" operator.
+	// After "if" operator "else" branch is possible with a block or with another "if" operator.
+	if( x % 15u == 0u )
+	{
+		return 3u;
+	}
+	else if( x % 5u == 0u )
+	{
+		return 2u;
+	}
+	else if( x % 3u == 0u )
+	{
+		return 1u;
+	}
+
+	return 0u;
+}
