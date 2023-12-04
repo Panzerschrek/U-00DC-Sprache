@@ -1,0 +1,78 @@
+// This example demonstraits basic classes usage.
+
+import "/assert.u"
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	var C c0(654);
+	assert( c0.GetX() == 654 );
+	assert( c0.GetXYProduct() == 654 * 3 );
+
+	var C mut c1(11);
+	assert( c1.GetX() == 11 );
+	assert( c1.GetXYProduct() == 11 * 3 );
+	assert( c1 != c0 );
+
+	c1.SetX( c0.GetX() );
+	assert( c1 == c0 );
+
+	// This is not allowed for classes.
+	// var C c2{ .x= 0 };
+	// var C c3= zero_init;
+
+	// This class is non-copyable, but moving for it is still possible.
+	var C c4= move(c1);
+	assert( c0 == c4 );
+
+	// This will not compile since "c1" is moved.
+	// assert( c1 == c4 );
+
+	return 0;
+}
+
+// A class is like struct, but with some differencies.
+// {} initializer is not allowed for classes, constructors should be used for intitialization instead.
+// A class may have visibility labels (public, private, protected).
+// A class is not copy-constructible and copy-assignable bu default, but this may be changed.
+// Equality comparison is also not enabled by default.
+// A class may be polymorph (contain virtual methods).
+
+class C
+{
+public: // All members declared after this label are accessible outside the class.
+
+	fn constructor( i32 x )
+		( x_(x) )
+	{
+	}
+
+	// Tell the compiler that we still want this class to be equality-comparable.
+	op==( C& l, C& r ) : bool = default;
+
+	fn GetX( this ) : i32
+	{
+		// It's fine to access a private field within this class method.
+		return x_;
+	}
+
+	fn SetX( mut this, i32 x )
+	{
+		x_= x;
+	}
+
+	fn GetXYProduct( this ) : i32
+	{
+		return x_ * i32(y_);
+	}
+
+private: // All members declared after this label may be accessible only within this class.
+	i32 x_;
+	u8 y_(3);
+}
+
+// Defaults for classes.
+static_assert( !typeinfo</C/>.is_copy_constructible );
+static_assert( !typeinfo</C/>.is_copy_assignable );
+// The class is equality-comparable, because this was exlicitely requested.
+static_assert( typeinfo</C/>.is_equality_comparable );
