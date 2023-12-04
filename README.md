@@ -51,5 +51,7 @@ For more information/examples see build scripts in *ci* directory.
 
 [documentation](source/docs/README.md)
 
+[examples](source/examples/README.md)
+
 ### Authors
 Copyright © 2016-2023 "Panzerscrek".
