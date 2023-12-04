@@ -1,0 +1,131 @@
+// This example demonstraits operators overloading.
+
+import "/assert.u"
+
+fn nomangle main() : i32
+{
+	var Complex c0( 3.0f, 5.0f ), c1( -2.0f, 3.5f );
+	auto mut c2= c0 + c1;
+	assert( c2 == Complex( 1.0f, 8.5f ) );
+
+	c2+= c0;
+	assert( c2 == Complex( 4.0f, 13.5f ) );
+
+	c2-= Complex( 0.0f, 10.0f );
+	assert( c2 == Complex( 4.0f, 3.5f ) );
+
+	auto c3= c2 * c0;
+	assert( c3 == Complex( -5.5f, 30.5f ) );
+
+	var Complex c4= c3 * 0.25f;
+	assert( c4 == Complex( -1.375f, 7.625f ) );
+
+	auto c5= 8.0f * c4;
+	assert( c5 == Complex( -11.0f, 61.0f ) );
+
+	auto c6= -c5;
+	assert( c6 == Complex( 11.0f, -61.0f ) );
+
+	auto c7= c0 - c6;
+	assert( c7 == Complex( -8.0f, 66.0f ) );
+
+	var SomeStruct s{ .r= 56 };
+	assert( s( 11, 5 ) == 56 * 11 * 5 );
+	assert( s[4] == 56 + 4 );
+
+	return 0;
+}
+
+struct Complex
+{
+	f32 real;
+	f32 imaginary;
+
+	fn constructor( f32 in_real, f32 in_imaginary )
+		( real(in_real), imaginary(in_imaginary) )
+	{
+	}
+
+	// It's possible to overload operators for structs and classes.
+	// Operators are just functions with special name.
+	// At least one parameter of an overloaded operator should be of this struct type.
+
+	// Binary plus.
+	op+( Complex& l, Complex& r ) : Complex
+	{
+		return Complex( l.real + r.real, l.imaginary + r.imaginary );
+	}
+
+	// Addition.
+	op+=( mut this, Complex& r )
+	{
+		real += r.real;
+		imaginary += r.imaginary;
+	}
+
+	// Binary minus.
+	op-( Complex& l, Complex& r ) : Complex
+	{
+		return Complex( l.real - r.real, l.imaginary - r.imaginary );
+	}
+
+	// Subtraction.
+	op-=( mut this, Complex& r )
+	{
+		real -= r.real;
+		imaginary -= r.imaginary;
+	}
+
+	// Product.
+	op*( Complex& l, Complex& r ) : Complex
+	{
+		return Complex( l.real * r.real - l.imaginary * r.imaginary, l.real * r.imaginary + l.imaginary * r.real );
+	}
+
+	// Multiply by a scalar.
+	// It's fine to overload even same operators for different parameter types.
+	op*( Complex& l, f32 r ) : Complex
+	{
+		return Complex( l.real * r, l.imaginary * r );
+	}
+
+	// Multiply scalar by a complex number.
+	// It's fine to overload even same operators for different parameter types.
+	op*( f32 l, Complex& r ) : Complex
+	{
+		return Complex( l * r.real, l * r.imaginary );
+	}
+
+	// Unary minus.
+	op-( this ) : Complex
+	{
+		return Complex( -real, -imaginary );
+	}
+
+	// Overload ==.
+	// But there is a little reason for do this for this struct, since generated operator == will do the same.
+	op==( Complex& l, Complex& r ) : bool
+	{
+		return l.real == r.real && l.imaginary == r.imaginary;
+	}
+}
+
+struct SomeStruct
+{
+	i32 r;
+
+	// Operator() may be overloaded. First parameter should be "this", other parameters may be any.
+	op()( this, i32 x, i32 y ) : i32
+	{
+		return r * x * y;
+	}
+
+	// Operator[] requires first parameter to be "this", second parameter may be any.
+	op[]( this, i32 x ) : i32;
+}
+
+// It's fine to define overloaded operator later.
+op SomeStruct::[]( this, i32 x ) : i32
+{
+	return r + x;
+}
