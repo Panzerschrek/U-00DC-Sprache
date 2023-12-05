@@ -1,0 +1,81 @@
+// This example demonstraits ust string library class.
+
+import "/assert.u"
+import "/stdout.u"
+import "/string.u"
+
+fn nomangle main() : i32
+{
+	// String literals in the language are references to "constexpr" arrays of "char8" (or other char type) elements.
+	// There is NO terminating null in Ü string literals, unless it is manually specified.
+	auto& char_arr= "some";
+	static_assert( same_type</ typeof(char_arr), [ char8, 4 ] /> );
+
+	auto& char_arr_nt= "some\0";
+	static_assert( same_type</ typeof(char_arr_nt), [ char8, 5 ] /> );
+
+	// There is a library class for string storing.
+	var ust::string8 mut s= char_arr;
+	assert( s == "some" );
+	ust::stdout_print( s.range() );
+	ust::stdout_print( "\n" );
+
+	// This class supports concatenations.
+	s+= " foo";
+	assert( s == "some foo" );
+	ust::stdout_print( s.range() );
+	ust::stdout_print( "\n" );
+
+	// Adding strings is also possible.
+	auto s2= s + s;
+	assert( s2 == "some foosome foo" );
+	ust::stdout_print( s2.range() );
+	ust::stdout_print( "\n" );
+
+	// "string8 + string literal" and "string literal + string8" additions are supported too.
+	var ust::string8 s3= s + "!\n";
+	assert( s3 == "some foo!\n" );
+	ust::stdout_print( s3.range() );
+	ust::stdout_print( "\n" );
+
+	// ust::string8 supports order comparison.
+	assert( s < s3 );
+
+	// It's possible to access sting elements via [] operator.
+	assert( s[2s] == "m"c8 );
+
+	// Modifiecation via [] is also possible.
+	s[1s]= "0"c8;
+	assert( s == "s0me foo" );
+	ust::stdout_print( s.range() );
+	ust::stdout_print( "\n" );
+
+	// There are also front/back methods.
+	assert( s3.front() == "s"c8 );
+
+	s.back() = "!"c8;
+	assert( s[7s] == "!"c8 );
+	ust::stdout_print( s.range() );
+	ust::stdout_print( "\n" );
+
+	// "range" method returns a view object.
+	auto mut s2_range= s2.range();
+	s2_range.drop_front();
+	assert( s2_range == "ome foosome foo" );
+	ust::stdout_print( s2_range );
+	ust::stdout_print( "\n" );
+
+	// It's possible to obtain a subrange.
+	auto s2_subrange= s2_range.subrange( 2s, 6s );
+	assert( s2_subrange == "e fo" );
+	ust::stdout_print( s2_subrange );
+	ust::stdout_print( "\n" );
+
+	// Range object allows also to mutate source string.
+	s.range()[3s] = "_"c8;
+	assert( s == "s0m_ fo!" );
+	ust::stdout_print( s.range() );
+	ust::stdout_print( "\n" );
+
+	return 0;
+}

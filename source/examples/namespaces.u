@@ -1,0 +1,81 @@
+// This example demonstraits namespaces usage.
+
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	Foo();
+	Abc::Foo(); // Access a function inside a namespace.
+	::Qwerty::Foo(); // It's also possible to specify the root namespace with complex name starting with "::".
+	Qwerty::Nested::Foo();
+	Qwerty::Bar();
+	Abc::Bar();
+
+	return 0;
+}
+
+// It's allowed to define functions and other program elements with the same name but in different namespaces.
+
+fn Foo()
+{
+	ust::stdout_print( "Foo\n" );
+}
+
+namespace Abc
+{
+
+fn Foo()
+{
+	ust::stdout_print( "Abc::Foo\n" );
+}
+
+} // namespace Abc
+
+namespace Qwerty
+{
+
+fn Foo()
+{
+	ust::stdout_print( "Qwerty::Foo\n" );
+}
+
+// Namespaces may be declared within other namespaces.
+namespace Nested
+{
+
+fn Foo()
+{
+	ust::stdout_print( "Qwerty::Nested::Foo\n" );
+}
+
+} // namespace Nested
+
+fn Bar()
+{
+	ust::stdout_print( "Qwerty::Bar calling Qwerty::Nested::Foo...\n" );
+	Nested::Foo(); // Access "Qwerty::Nested::Foo". "Qwerty" prefix may be omitted for name fetch in the same namespace.
+	ust::stdout_print( "Qwerty::Bar calling Qwerty::Nested::Foo done.\n" );
+}
+
+} // namespace Qwerty
+
+// Extern already existing namespace.
+namespace Abc
+{
+
+fn Bar()
+{
+	ust::stdout_print( "Abc::Bar calling Foo...\n" );
+	::Foo(); // Specify "::" to access "Foo" from the root namespace.
+	ust::stdout_print( "Abc::Bar calling Foo done.\n" );
+
+	ust::stdout_print( "Abc::Bar calling Abc::Foo...\n" );
+	Foo(); // Since name fetch happens within "Abc", "Abc::Foo" will be reached.
+	ust::stdout_print( "Abc::Bar calling Abc::Foo done.\n" );
+
+	ust::stdout_print( "Abc::Bar calling Qwerty::Foo...\n" );
+	Qwerty::Foo(); // Fetch namespace by name "Qwerty" and than access function"Foo" inside it.
+	ust::stdout_print( "Abc::Bar calling Qwerty::Foo done.\n" );
+}
+
+} // namespace Abc

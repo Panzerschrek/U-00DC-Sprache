@@ -1,0 +1,56 @@
+// This example demonstraits usage of type templates.
+
+import "/assert.u"
+
+fn nomangle main() : i32
+{
+	// Use <//> in order to instantiate a type template with the given arguments.
+
+	var Wrapper</i32/> w0{ .t= 66 };
+	assert( w0.t == 66 );
+
+	var Wrapper</ [ f32, 2 ] /> w1{ .t[ 0.5f, 4.95f ] };
+	assert( w1.t[0] == 0.5f );
+	assert( w1.t[1] == 4.95f );
+
+	var Pair</ f32, bool /> float_bool_pair( 2.71828f, true );
+	assert( float_bool_pair.elements[0] < 3.0f );
+	assert( float_bool_pair.elements[1] );
+
+	var VecN</ char8, 4s /> char8_array4[ "S"c8, "P"c8, "Q"c8, "R"c8 ];
+	assert( char8_array4 == "SPQR" );
+
+	var Vec3</ f64 /> f64_3dvec= zero_init;
+	assert( f64_3dvec[0] == 0.0 );
+	assert( f64_3dvec[1] == 0.0 );
+	assert( f64_3dvec[2] == 0.0 );
+
+	return 0;
+}
+
+// Simple struct template with single type parameter.
+template</ type T />
+struct Wrapper
+{
+	T t;
+}
+
+// A struct template with two template parameters.
+template</ type A, type B />
+struct Pair
+{
+	tup[ A, B ] elements;
+
+	fn constructor( A mut a, B mut b )
+		( elements[ move(a), move(b) ] )
+	{
+	}
+}
+
+// Type alias template with two parameters, one of them is value parameter.
+template</ type T, size_type S />
+type VecN= [ T, S ];
+
+// Use one type alias template within another.
+template</ type T />
+type Vec3= VecN</ T, 3s />;

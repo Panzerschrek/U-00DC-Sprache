@@ -1,0 +1,60 @@
+// This example demonstrates basic usage of generators.
+
+import "/stdout.u"
+import "/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	// Create generator object via call to generator function.
+	auto mut gen= FibonacciGen();
+	// Retrieve values from a generator until it isn't finished.
+	// Note that this is possible for some generators to return never and always produce new results..
+	auto mut index= 0u;
+	loop
+	{
+		if_coro_advance( num : gen ) // Resume generator execution and retrieve result.
+		{
+			PrintFibNumber( index, num );
+			++index;
+		}
+		else
+		{
+			// Generator have finished.
+			break;
+		}
+	}
+
+	return 0;
+}
+
+// Generate Fibonacci numbers until last representable in u64 number is reached.
+fn generator FibonacciGen() : u64
+{
+	var u64 mut num_minus_2(1), mut num_minus_1(1);
+	yield num_minus_2;
+	yield num_minus_1;
+	loop
+	{
+		auto num= num_minus_2 + num_minus_1;
+		if( num < num_minus_1 )
+		{
+			// Overflow detected - maximum 64bit fibonacci number is reached, further generation isn't possible.
+			// Note that in Ü both signed and usnigned integer overflow is (for now) valid behavior.
+			return;
+		}
+		yield num;
+		num_minus_2= num_minus_1;
+		num_minus_1= num;
+	}
+}
+
+fn PrintFibNumber( u32 index, u64 num )
+{
+	var ust::string8 mut s= "Fibonacci number # ";
+	s += ust::to_string8(index);
+	s += " is ";
+	s += ust::to_string8(num);
+	s += "\n";
+
+	ust::stdout_print( s.range() );
+}

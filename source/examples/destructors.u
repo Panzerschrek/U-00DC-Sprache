@@ -1,0 +1,67 @@
+// This example demonstraits usage of destructors.
+
+import "/stdout.u"
+import "/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	{
+		ust::stdout_print( "Create s\n" );
+		var S s( 66 );
+	} // S::destructor is called here.
+
+	{
+		ust::stdout_print( "Create s0, s1, s2\n" );
+		var S s0 ( 100 ), s1( 101 );
+		var S s2( 102 );
+	} // Destructors here are called in reverse order.
+
+	{
+		ust::stdout_print( "Create u\n" );
+		var U u;
+		ust::ignore_unused( u.t_field.s_field );
+		ust::ignore_unused( u.s_field );
+	} // U::destructor is called here (including destructors for its fields).
+
+	ust::stdout_print( "Create last_s\n" );
+	var S last_s( 1234 );
+	return 0; // Call at return destructor for "last_s".
+}
+
+struct S
+{
+	i32 x;
+
+	fn constructor( i32 in_x )
+		( x(in_x ) )
+	{
+	}
+
+	// A destructor is a special method which is automatically called at the end of the variable lifetime.
+	// Each class has a destructor, when no explicit destructor is specified the compiler will generate one.
+	fn destructor()
+	{
+		var ust::string8 mut s= "S::destructor ";
+		s+= ust::to_string8(x);
+		s+= "\n";
+		ust::stdout_print( s.range() );
+	}
+}
+
+// This class has a generated destructor which calls destructors for fields.
+struct T
+{
+	S s_field( 500 );
+}
+
+struct U
+{
+	T t_field;
+	S s_field( 501 );
+
+	fn destructor()
+	{
+		ust::stdout_print( "U::destructor\n" );
+		// Destructors for all fields will be called at the end of this destructor.
+	}
+}

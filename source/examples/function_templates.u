@@ -1,0 +1,45 @@
+// This example demonstraits usage of template functions.
+
+import "/assert.u"
+
+fn nomangle main() : i32
+{
+	// A template function may be called as regular function, as soon as it's possible to deduce template arguments from the given function arguments.
+	assert( DoubleIt( 3.5f ) == 7.0f );
+
+	var u32 uint_var= 765u;
+	assert( DoubleIt( uint_var ) == 1530u );
+
+	var i64 signed_64bit_var( -567 );
+	// It's also possible to specify template arguments explicitely.
+	assert( DoubleIt</ i64 />( signed_64bit_var ) == -1134i64 );
+
+	// It's necessary here to specify template argumentss, since it's not possible to deduce them from the given function arguments.
+	auto four_zero_floats= CreateZerosArray</ f32, 4s />();
+	assert( four_zero_floats[0] == 0.0f );
+	assert( four_zero_floats[1] == 0.0f );
+	assert( four_zero_floats[2] == 0.0f );
+	assert( four_zero_floats[3] == 0.0f );
+
+	auto seven_char8_array= CreateZerosArray</ char8, 7s />();
+	assert( seven_char8_array == "\0\0\0\0\0\0\0" );
+
+	return 0;
+}
+
+// A template function with single template parameter.
+template</ type T />
+fn DoubleIt( T x ) : T
+{
+	// This code will work for any types, that have a constructor form "i32" (for 2 number) and have operator "*" which returns a value of type "T".
+	// This includes basic language arethmetic types and some user-defined types.
+	return x * T(2);
+}
+
+// A template function with two template parameters - type parameter and value parameter of "size_type".
+template</ type T, size_type S />
+fn CreateZerosArray() : [ T, S ]
+{
+	var [ T, S ] mut arr= zero_init;
+	return move(arr);
+}

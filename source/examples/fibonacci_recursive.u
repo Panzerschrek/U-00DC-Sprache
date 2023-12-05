@@ -1,0 +1,37 @@
+// This example demonstrates usage of variables, "while" loop, basic function usage (including recurisve).
+
+import "/stdout.u"
+import "/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	auto mut i= 0u;
+	while( i < 32u )
+	{
+		PrintFibNumber( i, GetFibNumber(i) );
+		++i;
+	}
+
+	return 0;
+}
+
+fn GetFibNumber( u32 index ) : u32
+{
+	if( index <= 1u )
+	{
+		return 1u;
+	}
+	// Note - recursive Fibonacci bumbers calculation is ineffective. Use iterative approach instead.
+	return GetFibNumber( index - 1u ) + GetFibNumber( index - 2u );
+}
+
+fn PrintFibNumber( u32 index, u32 num )
+{
+	var ust::string8 mut s= "Fibonacci number # ";
+	s += ust::to_string8(index);
+	s += " is ";
+	s += ust::to_string8(num);
+	s += "\n";
+
+	ust::stdout_print( s.range() );
+}

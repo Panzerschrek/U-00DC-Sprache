@@ -1,0 +1,31 @@
+// This example demonstrates usage of variables, "for" loop, basic function usage.
+
+import "/stdout.u"
+import "/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	var u32 mut num_minus_2= 1u, mut num_minus_1= 1u;
+	PrintFibNumber( 0u, num_minus_2 );
+	PrintFibNumber( 1u, num_minus_1 );
+	for( auto mut i= 2u; i < 32u; ++i )
+	{
+		auto num= num_minus_2 + num_minus_1;
+		PrintFibNumber( i, num );
+		num_minus_2= num_minus_1;
+		num_minus_1= num;
+	}
+
+	return 0;
+}
+
+fn PrintFibNumber( u32 index, u32 num )
+{
+	var ust::string8 mut s= "Fibonacci number # ";
+	s += ust::to_string8(index);
+	s += " is ";
+	s += ust::to_string8(num);
+	s += "\n";
+
+	ust::stdout_print( s.range() );
+}

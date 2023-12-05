@@ -1,0 +1,139 @@
+// This example demonstraits basic runtime polymorphism via virtual methods.
+
+import "/assert.u"
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	var Implementation0 impl0;
+	var Implementation1 mut impl1;
+
+	assert( CallFoo( impl0 ) == 10.0f );
+	assert( CallFoo( impl1 ) == 3.1415926535f );
+	CallBar( impl1 );
+
+	var SomeBaseChild mut some_child;
+	CallSetX( some_child, 767 );
+	assert( CallFoo( some_child ) == 767.0f );
+
+	// It's possible to call a virtual method directly with an instance of the class.
+	// But this is not a polymorph call (the called function will always be the same).
+	assert( some_child.Get42() == 42 );
+
+	return 0;
+}
+
+// An interface class.
+// Such class may contain no fields, no constructors, no virtual methods with implementations.
+// Almost only pure virtual methods are allowed.
+class A interface
+{
+	// A virtual method. "pure" means that this method may not have a body.
+	fn virtual pure Foo(this) : f32;
+}
+
+class B interface
+{
+	// Different signatures for virtual methods are possible.
+	fn virtual pure Bar( mut this, i32 x );
+	fn virtual pure Baz( this, f32 y );
+}
+
+// A class that implements an interface.
+class Implementation0 : A
+{
+	// Fields are allowed in non-interface polymorph classes.
+	f32 x= 10.0f;
+
+	// "override" is used to mark virtual methods which override virtual methods of parents.
+	fn virtual override Foo(this) : f32
+	{
+		ust::stdout_print( "Implementation0::Foo\n" );
+		return x;
+	}
+}
+
+// A class that implements two interfaces.
+class Implementation1 : A, B
+{
+	fn virtual override Foo(this) : f32
+	{
+		ust::stdout_print( "Implementation1::Foo\n" );
+		return 3.1415926535f;
+	}
+
+	fn virtual override Bar( mut this, i32 x )
+	{
+		ust::ignore_unused(x);
+		ust::stdout_print( "Implementation1::Bar\n" );
+	}
+
+	fn virtual override Baz( this, f32 y )
+	{
+		ust::ignore_unused(y);
+		ust::stdout_print( "Implementation1::Baz\n" );
+	}
+}
+
+fn CallFoo( A& a ) : f32
+{
+	// Perform virtual call via a reference to an interface.
+	return a.Foo();
+}
+
+fn CallBar( B &mut b )
+{
+	// Perform virtual call via a reference to an interface.
+	b.Bar( 55 );
+}
+
+// An astract class may have pure methods, but is no so restricted as interfaces.
+class SomeBase abstract
+{
+	i32 x;
+
+	// Constructors are allowed for abstract classes.
+	fn constructor()
+		( x= 0 )
+	{
+	}
+
+	fn virtual pure Get42(this) : i32;
+
+	// A virtual method of an abstract class may or may not be overriden.
+	fn virtual SetX( mut this, i32 in_x )
+	{
+		ust::stdout_print( "SomeBase::SetX\n" );
+		x= in_x;
+	}
+}
+
+// It's allowed to inherit from some abstract or non-abstract polymorph class and from zero or more interfaces.
+class SomeBaseChild : SomeBase, A
+{
+	fn virtual override Get42(this) : i32
+	{
+		ust::stdout_print( "SomeBaseChild::Get42\n" );
+		return 42;
+	}
+
+	fn virtual override SetX( mut this, i32 in_x )
+	{
+		ust::stdout_print( "SomeBaseChild::SetX\n" );
+		// A special reference "base" is accesible in classes with base class.
+		base.x= in_x;
+	}
+
+	fn virtual override Foo(this) : f32
+	{
+		ust::stdout_print( "SomeBaseChild::Foo\n" );
+		// Base fields are also accessible by name if they are not private.
+		return f32(x);
+	}
+}
+
+fn CallSetX( SomeBase &mut b, i32 x )
+{
+	// Perform virtual call via a reference to base class.
+	b.SetX(x);
+}

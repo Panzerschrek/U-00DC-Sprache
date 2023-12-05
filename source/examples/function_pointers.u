@@ -1,0 +1,54 @@
+// This example demonstraits usage of function pinters.
+
+import "/assert.u"
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	// Create a couple of function pointer variables.
+	var FnIntTransform foo_ptr( Foo ), bar_ptr( Bar );
+
+	// Pass function pointers to another function, which calls them.
+	assert( CallFunc( foo_ptr, 34 ) == 68 );
+	assert( CallFunc( bar_ptr, 72 ) == 24 );
+
+	// Function poiter variables may be mutable.
+	var FnIntTransform mut other_ptr( Bar );
+	assert( CallFunc( other_ptr, 17 ) == 5 );
+
+	// Re-assign function pointer.
+	other_ptr= FnIntTransform( Foo );
+	assert( CallFunc( other_ptr, 65 ) == 130 );
+
+	// Zero function pointer points to nothing.
+	// A program will likely crash if it tries to call such function pointer.
+	var FnIntTransform zero_ptr= zero_init;
+	// zero_ptr( 42 );
+	ust::ignore_unused(zero_ptr);
+
+	return 0;
+}
+
+// Create a type alias for function pointer type.
+// It's recommended to do this for better readability.
+// Function pointer type starts with "fn" keyword, than follows function type description, as in function definitions.
+type FnIntTransform= fn( i32 x ) : i32;
+
+// This function has function pointer argument.
+fn CallFunc( FnIntTransform fn_ptr, i32 x ) : i32
+{
+	// Call a function via function pointer.
+	return fn_ptr( x );
+}
+
+fn Foo( i32 x ) : i32
+{
+	ust::stdout_print( "Foo\n" );
+	return x * 2;
+}
+
+fn Bar( i32 x ) : i32
+{
+	ust::stdout_print( "Bar\n" );
+	return x / 3;
+}

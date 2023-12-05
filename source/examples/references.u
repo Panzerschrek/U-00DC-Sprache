@@ -1,0 +1,87 @@
+// This example demonstraits usage of references.
+
+import "/assert.u"
+
+fn nomangle main() : i32
+{
+	var i32 x= 6543;
+	// A reference is defined with "&" modifier.
+	var i32 &x_ref= x;
+
+	// References are automatically dereferenced.
+	assert( x_ref == 6543 );
+	assert( x_ref / 3 == 6543 / 3 );
+
+	var f64 mut y= -6.25;
+	{
+		// Mutable references (to mutable data) are also possible.
+		// Declare this mutable reference in a separate block, because source variable is inaccessible while a mutable reference to it exists.
+		auto &mut y_ref= y;
+		y_ref *= -2.0;
+	}
+	assert( y == 12.5 );
+
+	var i64 large_x(-65645), large_y(55);
+	// Obtain a reference as call result.
+	auto& max_abs_large= AbsMax( large_x, large_y );
+	assert( max_abs_large == large_x );
+
+	var Vec2 v{ .x= 564.3f, .y= -11.2f };
+	// It's possible to create references to struct fields.
+	auto& v_x_ref= v.x;
+	auto& v_y_ref= v.y;
+	assert( v_x_ref * v_y_ref == -11.2f * 564.3f );
+
+	var char8 mut c= "Q"c8;
+	{
+		// Variable itself is immutable, but it contains mutable reference inside.
+		var R r{ .char_ref= c };
+		r.char_ref= "^"c8;
+	}
+	assert( c == "^"c8 );
+
+	var [ i32, 8 ] mut arr[ 7, 34, 16, 867, 43, 1, 6, 32 ];
+	GetMaxArrayElementRef( arr )= 0; // Obtain a mutable reference to max element and zero it.
+	assert( arr[3] == 0 ); // Passed array should be chanhed.
+
+	return 0;
+}
+
+// Function with reference params and reference return result.
+fn AbsMax( i64& x, i64& y ) : i64 &
+{
+	auto abs_x= select( x > 0i64 ? x : -x );
+	auto abs_y= select( y > 0i64 ? y : -y );
+	return select( abs_x > abs_y ? x : y );
+}
+
+struct Vec2
+{
+	f32 x;
+	f32 y;
+}
+
+struct R
+{
+	// Reference fields are also possible.
+	char8 &mut char_ref;
+}
+
+// Template function returns mutable reference.
+// It may work with non-empty arrays of any order-comparable type.
+template</type T, size_type S />
+fn GetMaxArrayElementRef( [ T, S ] &mut arr ) : T &mut
+{
+	static_assert( S > 0s );
+
+	var size_type mut max_element_index= 0s;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		if( cast_imut(arr[i]) > cast_imut(arr[max_element_index]) )
+		{
+			max_element_index= i;
+		}
+	}
+
+	return arr[max_element_index];
+}

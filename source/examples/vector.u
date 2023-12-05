@@ -1,0 +1,68 @@
+// This example demonstraits usage of vector class.
+
+import "/assert.u"
+import "/stdout.u"
+import "/string_conversions.u"
+import "/vector.u"
+
+fn nomangle main() : i32
+{
+	// vector - is a growable container for sequences.
+	// It may store almost all types.
+
+	// Default constructor produces empty vector.
+	var ust::vector</f32/> mut float_vec;
+	assert( float_vec.empty() );
+
+	// Elements may be pushed to the vector.
+	float_vec.push_back( 55.3f );
+	assert( float_vec.size() == 1s );
+	assert( float_vec.front() == 55.3f );
+
+	// Several identical elements may be pushed to the vector.
+	float_vec.push_back( 3s, 13.5f );
+	assert( float_vec.size() == 4s );
+	assert( float_vec[1s] == 13.5f );
+	assert( float_vec[2s] == 13.5f );
+	assert( float_vec[3s] == 13.5f );
+
+	// Taking elements from the vector is also posible.
+	auto b= float_vec.pop_back();
+	assert( b == 13.5f );
+	assert( float_vec.size() == 3s );
+
+	// Dropping is possible (without returning removed elements).
+	float_vec.drop_back( 3s );
+	assert( float_vec.size() == 0s );
+
+	float_vec.push_back( 11.0f );
+	float_vec.push_back( 12.0f );
+	float_vec.push_back( 13.0f );
+	// access via [] is possible (including mutable).
+	auto tmp= float_vec[1s];
+	float_vec[2s]= tmp * 3.0f;
+	assert( float_vec.back() == 36.0f );
+
+	// "swap" method allows to swap two values inside a vector.
+	float_vec.swap( 0s, 1s );
+	assert( float_vec[0s] == 12.0f );
+	assert( float_vec[1s] == 11.0f );
+
+	// It's possible to iterate over a vector.
+	foreach( &el : float_vec )
+	{
+		ust::stdout_print( ust::to_string8( i32(el) ).range() );
+		ust::stdout_print( "\n" );
+	}
+
+	// Mutable iteration is also supported.
+	foreach( &mut el : float_vec )
+	{
+		el *= -2.0f;
+	}
+	assert( float_vec[0s] == -24.0f );
+	assert( float_vec[1s] == -22.0f );
+	assert( float_vec[2s] == -72.0f );
+
+	return 0;
+}

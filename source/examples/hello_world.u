@@ -1,0 +1,9 @@
+// This example demonstraits entry function, basic stdout usage.
+
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Hello, world!\n" );
+	return 0;
+}

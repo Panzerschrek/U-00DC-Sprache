@@ -1,0 +1,60 @@
+// This example demonstraits basic usage of async functions.
+
+import "/assert.u"
+import "/stdout.u"
+import "/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	// Create an async function object.
+	auto mut f= Fun0(11);
+
+	var i32 res= ExecuteAsyncFunc( move(f) );
+	assert( res == 3308 );
+
+	var ust::string8 mut s= "Async execution result is ";
+	s+= ust::to_string8(res);
+	s+= ".\n";
+	ust::stdout_print( s.range() );
+
+	return 0;
+}
+
+// An async function is a function that creates async function object.
+fn async Fun0( i32 x ) : i32
+{
+	// "await" operator may be used within an async function to call other async function.
+	// It resumes execution of passed async function object until it isn't ready.
+	// If readiness is not reached yet - it triggers "yield" for the caller function.
+	return Fun1( x * 2 ).await - 3;
+}
+
+fn async Fun1( i32 x ) : i32
+{
+	auto mut r= 0;
+	for( auto mut i= 0; i < x; ++i )
+	{
+		// "yield" operator pauses async function execution, it may be resumed layer.
+		// It may be used for different purposes. For example, to pause execution when waiting for a network responce.
+		yield;
+		r+= i * i;
+	}
+
+	// An async function returns its result as any other function - with "return" operator.
+	return r;
+}
+
+// Some simple executor function. Single parameter - async function object.
+fn ExecuteAsyncFunc( (async : i32) mut f ) : i32
+{
+	// Use simpliest execution stategy - resume passed function until it isn't finished.
+	// Generally more complex resuming strategy may be used, with some kind of sleep, for example.
+	loop
+	{
+		// "if_coro_advance" operator resumes async function execution and if it is ready extracts the result and passes constrol flow to a specified block.
+		if_coro_advance( x : f )
+		{
+			return x;
+		}
+	}
+}

@@ -1,0 +1,126 @@
+// This example demonstraits compile-time calculations via "constexpr" and usage of global constants.
+
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "If this file compiles, all constexpr code below is ok.\n" );
+	return 0;
+}
+
+// Use "constexpr" to make sure that a variable value is compile-time constant.
+auto constexpr x= 42;
+
+// This operator statically checks whether a given expression is "true".
+static_assert( x == 42 );
+
+// Arithmetic exressions for costexpr arguments produce constexpr result.
+// Also it's not strictly necessary to use "constexpr" keyword to declare a "constexpr" variable.
+// An immutable variable with "constexpr" initializer is considered to be "constexpr".
+var f32 approx_two_pi= 3.14f * 2.0f;
+static_assert( approx_two_pi >= 6.27f && approx_two_pi <= 6.29f );
+
+// Call a "constexpr" function for initialization of a "constexpr" variable.
+auto foo_result= Foo( 17u, 3u );
+static_assert( foo_result == 331u );
+
+// A function declared with "constexpr" keyword may produce "constexpr" result for "constexpr" arguments.
+// Such functions are somewhat limited.
+// They support basic control flow instructions but can't contain unsafe code, raw pointer manupulations, non-constexpr calls, etc.
+fn constexpr Foo( u32 x, u32 y ) : u32
+{
+	auto mut res= x * x;
+	res+= x * 2u;
+	res+= 11u;
+	res-= y;
+	return res;
+}
+
+// Structs may be used for "constexpr" code if they contain only "constexpr" fields and have no non-trivial special methods.
+struct S
+{
+	i32 x;
+	bool b;
+}
+
+// Some "constexpr" values of a "constexpr" struct type.
+var S constexpr s0{ .x= 675, .b= false };
+var S s1= MakeS( 674, false );
+var S s2{ .x= 675, .b= false };
+var S s3= MakeS( 675, true );
+
+static_assert( s0 == s0 );
+static_assert( s0 != s1 );
+static_assert( s0 == s2 );
+static_assert( s0 != s3 );
+
+static_assert( s1 != s0 );
+static_assert( s1 == s1 );
+static_assert( s1 != s2 );
+static_assert( s1 != s3 );
+
+static_assert( s2 == s0 );
+static_assert( s2 != s1 );
+static_assert( s2 == s2 );
+static_assert( s2 != s3 );
+
+static_assert( s3 != s0 );
+static_assert( s3 != s1 );
+static_assert( s3 != s2 );
+static_assert( s3 == s3 );
+
+// A "constexpr" struct may return struct values.
+fn constexpr MakeS( i32 x, bool b ) : S
+{
+	var S mut r= zero_init;
+	r.x= x;
+	r.b= b;
+	return r;
+}
+
+// A varaible with "zero_init" initializer may be "constexpr".
+var [ i32, 2 ] zero_arr= zero_init;
+static_assert( zero_arr[0] == 0 );
+static_assert( zero_arr[1] == 0 );
+
+// Arbitray compile-time constant of an integer type may be used for array size, even constant expression.
+type FloatVec8= [ f32, x - 34 ];
+static_assert( typeinfo</FloatVec8/>.element_count == 8s );
+
+// It's also possible to specify arbitray constant expressions as template value-arguments.
+static_assert( RetSingleTempateArg</ 67u />() == 67u );
+static_assert( RetSingleTempateArg</ u32(x) />() == 42u );
+static_assert( RetSingleTempateArg</ 15u / 4u />() == 3u );
+
+// A template function with single template value-parameter.
+// Note that template functions are auto-constexpr, which means, that each instantiation became "constexpr" if "constexpr" requirements are met by the function body.
+template</u32 x/> fn RetSingleTempateArg() : u32
+{
+	return x;
+}
+
+// Calculate whole lists of numbers in compile-time.
+var[ f32, 4 ] constexpr squares_f32_4= MakeSquaresList</ f32, 4s />();
+static_assert( squares_f32_4[0] == 0.0f );
+static_assert( squares_f32_4[1] == 1.0f );
+static_assert( squares_f32_4[2] == 4.0f );
+static_assert( squares_f32_4[3] == 9.0f );
+
+var[ u64, 6 ] constexpr squares_u64_6= MakeSquaresList</ u64, 6s />();
+static_assert( squares_u64_6[0] ==  0u64 );
+static_assert( squares_u64_6[1] ==  1u64 );
+static_assert( squares_u64_6[2] ==  4u64 );
+static_assert( squares_u64_6[3] ==  9u64 );
+static_assert( squares_u64_6[4] == 16u64 );
+static_assert( squares_u64_6[5] == 25u64 );
+
+template</type T, size_type S/>
+fn constexpr MakeSquaresList() : [ T, S ]
+{
+	var [ T, S ] mut res= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		res[i]= T( i * i );
+	}
+	return res;
+}
