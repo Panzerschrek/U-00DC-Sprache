@@ -6,6 +6,9 @@ Lämbda, zahvativšaja ssylku, logiceski hranit jejo v sebe, podobno strukture s
 Objekt, sozdavajemyj vyraženijem-lämbdoj - eto objekt tipa klassa, soderžascij metod ().
 Klass etot unikaljnyj dlä každoj lämbdy.
 Vnutri objekta hranätsä zahvacennyje peremennyje, vozmožno kak ssylki.
+Klass možet bytj kopirujem, jesli zahvacennyje peremennyje kopirujemy.
+Zahvacennyje ssylki pri etom scitajutsä kopirujemymi.
+Ne ponätno, nužno li sravnenije na ravenstvo.
 
 Sposob zahvata peremennyh nužno umetj kontrolirovatj - ukazyvatj javno kakije peremennyje i kakim obrazom nado zahvatitj.
 Dlä prostoty možno dobavitj sposob ukazatj "zahvatitj vsö po kopii" i "zahvatitj vsö po izmenäjemoj/neizmenäjemoj ssylke".
@@ -26,5 +29,24 @@ Takže stoit predusmotretj sposob peredaci "lambda_this" - po izmenäjemoj ili n
 Objavlenije lämbdy dolžno po vozmožnosti bytj kak možno boleje lakonicnym.
 Stoit predusmotretj podhodäscije umolcateljnyje znacenija jejo svojstv.
 Vozmožno daže ukazanije tipov argumentov i vozvrascajemogo znacenija stoit sdelatj neobäzateljnym - s ih avtovyvodom.
+Takže avtovyvod možet bytj poleznym dlä ssylocnoj notaçii - sväzyvanija ssylok, vozvrascajemyh ssylok, vozvrascajemyh vnutrennih ssylok.
 
 Svojstvo "non_sync" lämbdy opredeläjetsä takovym svojstvom zahvacennyh peremennyh.
+
+Postrojenije koda lämb viditsä vozmožnym sledujuscim obrazom:
+Snacala telo lämbdy stroitsä obycnym obrazom - kak otdeljnaja funkçija, pri etom roditeljskoje prostranstvo imön eto prostranstvo okružajuscej funkçii.
+V etom prohode zapominajetsä, k kakim peremennym iz okružajuscego konteksta byl dostup.
+Takže proishodit avtovyvod vozvrascajemogo znacenija (i ssylocnoj notaçii).
+Dalee stroitsä klass, kotoryj hranit zahvacennyje peremennyje i ssylki i lämbda stroitsä jescö raz kak jego metod ().
+Vnešnije peremennyje stanovätsä polämi etogo klassa.
+
+Dlä vyšeopisannogo sposoba nado umetj pri obrascenii k peremennym kak-to eto zapominatj.
+Kak minimum, imetj scötcik obrascenij.
+
+Takže etot podhod imejet suscestvennyj nedostatok - šablonnyje lämbdy tak ne sdelatj, ibo dlä nih pervonacaljnyj prohod ne budet rabotatj.
+Kak minimum, eto pomešajet šablonnym lämbdam osuscestvlätj avtozahvat peremennyh iz okruženija.
+
+Stoit takže rassmotretj, kakim obrazom mogut rabotatj lämbdy vnutri lämbd.
+
+Ne ponätno, vozmožno li kak-to avtomaticeski opredelitj, po ssylke, izmenäjemoj ssylke ili po znaceniju nado zahvatyvatj peremennuju.
+Jesli net, to stoit umolcateljno zahvatyvatj po ssylke (izmenäjemoj ili net, v zavisimosti ot izmenäjemosti ishodnoj peremennoj).
