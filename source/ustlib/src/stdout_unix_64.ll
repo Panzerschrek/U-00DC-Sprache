@@ -17,3 +17,11 @@ define linkonce_odr void @ust_stdout_print_impl( i8* %start, i64 %size ) unnamed
 	; TODO - halt if write fails
 	ret void
 }
+
+$ust_stderr_print_impl = comdat any
+define linkonce_odr void @ust_stderr_print_impl( i8* %start, i64 %size ) unnamed_addr comdat
+{
+	%write_res= call i32 @write( i32 2, i8* %start, i64 %size )
+	; TODO - halt if write fails
+	ret void
+}

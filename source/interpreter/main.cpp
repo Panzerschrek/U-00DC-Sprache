@@ -65,6 +65,38 @@ llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 	return llvm::GenericValue();
 }
 
+llvm::GenericValue StdErrPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
+{
+	if( args.size() < 2 )
+	{
+		std::cerr << "stdout_print called with invalid number of args." << std::endl;
+		return llvm::GenericValue();
+	}
+
+	const uint64_t address= args[0].IntVal.getLimitedValue();
+	const size_t size= size_t(args[1].IntVal.getLimitedValue());
+	constexpr auto buffer_size= 1024;
+	if( size < buffer_size )
+	{
+		char buffer[buffer_size];
+		g_interpreter->ReadExecutinEngineData( buffer, address, size );
+		buffer[size]= '\0';
+		std::cerr << buffer;
+	}
+	else
+	{
+		std::string buffer;
+		buffer.resize(size + 1);
+		g_interpreter->ReadExecutinEngineData( buffer.data(), address, size );
+		buffer[size]= '\0';
+		std::cerr << buffer;
+	}
+
+	std::cerr.flush();
+	return llvm::GenericValue();
+}
+
+
 llvm::GenericValue MemCmp( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	if( args.size() < 3 )
@@ -122,6 +154,28 @@ void StdOutPrint( const char* const ptr, const size_t size )
 	}
 
 	std::cout.flush();
+}
+
+void StdErrPrint( const char* const ptr, const size_t size )
+{
+	constexpr auto buffer_size= 1024;
+	if( size < buffer_size )
+	{
+		char buffer[buffer_size];
+		std::memcpy( buffer, ptr, size );
+		buffer[size]= '\0';
+		std::cerr << buffer;
+	}
+	else
+	{
+		std::string buffer;
+		buffer.resize(size + 1);
+		std::memcpy( buffer.data(), ptr, size );
+		buffer[size]= '\0';
+		std::cerr << buffer;
+	}
+
+	std::cerr.flush();
 }
 
 } // namespace JitFuncs
@@ -354,6 +408,7 @@ int Main( int argc, const char* argv[] )
 		}
 
 		engine->addGlobalMapping( "ust_stdout_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		engine->addGlobalMapping( "ust_stderr_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
 		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
 		using MainFunctionType= int(*)();
@@ -373,6 +428,7 @@ int Main( int argc, const char* argv[] )
 
 		// Memory functions are supported internally (inside interpreter), for other needed functions register our own handlers.
 		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
+		g_interpreter->RegisterCustomFunction( "ust_stderr_print_impl", InterpreterFuncs::StdErrPrint );
 		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
 		g_interpreter->RegisterCustomFunction( "abort", InterpreterFuncs::Abort );
 

@@ -7,5 +7,9 @@ fn nomangle main() : i32
 	ust::stdout_print( " ok\n" );
 	ust::stdout_print( "End stdout print test.\n" );
 
+	ust::stderr_print( "Test stderr - " );
+	ust::stderr_print( " ok\n" );
+	ust::stderr_print( "End stderr print test.\n" );
+
 	return 0;
 }

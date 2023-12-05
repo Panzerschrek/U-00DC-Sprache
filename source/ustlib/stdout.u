@@ -9,8 +9,15 @@ fn stdout_print( array_view_imut</char8/> str )
 	unsafe( ust_stdout_print_impl( str.data(), str.size() ) );
 }
 
+// Print string into stderr.
+fn stderr_print( array_view_imut</char8/> str )
+{
+	unsafe( ust_stderr_print_impl( str.data(), str.size() ) );
+}
+
 } // namespace ust
 
 // External implementation functions.
 
 fn nomangle ust_stdout_print_impl( $(char8) start, size_type size ) unsafe;
+fn nomangle ust_stderr_print_impl( $(char8) start, size_type size ) unsafe;
