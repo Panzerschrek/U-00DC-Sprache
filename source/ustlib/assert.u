@@ -1,4 +1,5 @@
 import "helpers.u"
+import "stdout.u"
 
 ?macro <? assert:block ( ?e:expr ?m:opt<? , ?message:expr ?> ) ?term:opt<? ; ?> ?> ->
 <?
@@ -31,8 +32,9 @@ namespace assert_impl
 
 template</type T/> fn process_assert_message( T& message )
 {
-	// TODO - print message into cerr.
-	ignore_unused(message);
+	stderr_print( "assertion failed: " );
+	stderr_print( message );
+	stderr_print( "\n" );
 }
 
 } // namespace assert_impl
