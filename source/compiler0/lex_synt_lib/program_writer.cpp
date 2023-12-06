@@ -475,13 +475,13 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( member_access_operator->expression, stream );
 			stream << "." << member_access_operator->member_name;
-			if( member_access_operator->template_parameters != std::nullopt )
+			if( member_access_operator->template_args != std::nullopt )
 			{
 				stream << "</";
-				for( const Expression& template_param : *member_access_operator->template_parameters )
+				for( const Expression& template_arg : *member_access_operator->template_args )
 				{
-					ElementWrite( template_param, stream );
-					if( &template_param != &member_access_operator->template_parameters->back() )
+					ElementWrite( template_arg, stream );
+					if( &template_arg != &member_access_operator->template_args->back() )
 						stream<< ", ";
 				}
 				stream << "/>";

@@ -617,7 +617,7 @@ struct MemberAccessOperator
 	SrcLoc src_loc;
 	Expression expression;
 	std::string member_name;
-	std::optional<std::vector<Expression>> template_parameters;
+	std::optional<std::vector<Expression>> template_args;
 };
 
 struct AwaitOperator

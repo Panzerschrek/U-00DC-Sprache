@@ -100,9 +100,9 @@ void FindImpl( const Synt::IndexationOperator& indexation_operator )
 void FindImpl( const Synt::MemberAccessOperator& member_access_operator )
 {
 	FindImpl( member_access_operator.expression );
-	if( member_access_operator.template_parameters != std::nullopt )
+	if( member_access_operator.template_args != std::nullopt )
 	{
-		for( const Synt::Expression& template_arg : *member_access_operator.template_parameters )
+		for( const Synt::Expression& template_arg : *member_access_operator.template_args )
 			FindImpl( template_arg );
 	}
 }

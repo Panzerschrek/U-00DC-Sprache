@@ -190,7 +190,7 @@ private:
 	FunctionType ParseFunctionType();
 
 	TypeName ParseTypeName();
-	std::vector<Expression> ParseTemplateParameters();
+	std::vector<Expression> ParseTemplateArgs();
 	ComplexName ParseComplexName();
 	ComplexName ParseComplexNameTail( ComplexName base );
 	ComplexName TryParseComplexNameTailWithTemplateArgs( ComplexName base );
@@ -920,7 +920,7 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 				member_access_operator->expression= std::move(expr);
 
 				if( it_->type == Lexem::Type::TemplateBracketLeft )
-					member_access_operator->template_parameters= ParseTemplateParameters();
+					member_access_operator->template_args= ParseTemplateArgs();
 
 				return TryParseBinaryOperatorComponentPostfixOperator( std::move(member_access_operator) );
 			}
@@ -1528,7 +1528,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		return ComplexNameToTypeName( ParseComplexName() );
 }
 
-std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
+std::vector<Expression> SyntaxAnalyzer::ParseTemplateArgs()
 {
 	U_ASSERT( it_->type == Lexem::Type::TemplateBracketLeft );
 	NextLexem();
@@ -1681,7 +1681,7 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 	if( it_->type == Lexem::Type::TemplateBracketLeft )
 	{
 		const SrcLoc src_loc= it_->src_loc;
-		return ParseComplexNameTail( std::make_unique<TemplateParameterization>( TemplateParameterization{ src_loc, ParseTemplateParameters(), std::move(base) } ) );
+		return ParseComplexNameTail( std::make_unique<TemplateParameterization>( TemplateParameterization{ src_loc, ParseTemplateArgs(), std::move(base) } ) );
 	}
 	else
 		return ParseComplexNameTail( std::move(base) );
