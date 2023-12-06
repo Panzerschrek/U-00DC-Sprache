@@ -335,11 +335,11 @@ void FindImpl( const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch
 	}
 }
 
-void FindImpl( const Synt::TemplateParametrization& template_parametrization )
+void FindImpl( const Synt::TemplateParameterization& template_parameterization )
 {
-	FindImpl( template_parametrization.base );
+	FindImpl( template_parameterization.base );
 
-	for( const Synt::Expression& arg : template_parametrization.template_args )
+	for( const Synt::Expression& arg : template_parameterization.template_args )
 		FindImpl( arg );
 }
 

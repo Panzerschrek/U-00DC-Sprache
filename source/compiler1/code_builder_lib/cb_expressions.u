@@ -1679,7 +1679,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			function_context.references_graph.AddNode( variable_lock_node );
 			function_context.references_graph.AddLink( variable_ptr, variable_lock_node );
 
-			auto parametrization_result= ParameterizeTemplateFunctions(
+			auto parameterization_result= ParameterizeTemplateFunctions(
 				names_scope,
 				function_context,
 				functions_set_non_null,
@@ -1688,12 +1688,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			function_context.references_graph.RemoveNode( variable_lock_node );
 
-			if( parametrization_result.empty() )
+			if( parameterization_result.empty() )
 			{
 				return ErrorValue();
 			}
 
-			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= parametrization_result.try_to_non_nullable() };
+			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= parameterization_result.try_to_non_nullable() };
 			return move(this_methods_set);
 		}
 		else

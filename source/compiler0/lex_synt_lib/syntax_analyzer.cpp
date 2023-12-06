@@ -1681,7 +1681,7 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 	if( it_->type == Lexem::Type::TemplateBracketLeft )
 	{
 		const SrcLoc src_loc= it_->src_loc;
-		return ParseComplexNameTail( std::make_unique<TemplateParametrization>( TemplateParametrization{ src_loc, ParseTemplateParameters(), std::move(base) } ) );
+		return ParseComplexNameTail( std::make_unique<TemplateParameterization>( TemplateParameterization{ src_loc, ParseTemplateParameters(), std::move(base) } ) );
 	}
 	else
 		return ParseComplexNameTail( std::move(base) );

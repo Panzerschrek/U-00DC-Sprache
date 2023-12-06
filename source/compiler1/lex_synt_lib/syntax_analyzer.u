@@ -585,14 +585,14 @@ fn SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( mut this, ComplexNam
 {
 	if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 	{
-		var TemplateParametrization mut template_parametrization
+		var TemplateParameterization mut template_parameterization
 		{
 			.src_loc= it_.front().src_loc,
 			.base_(move(base_)),
 			.template_args(ParseTemplateArgs())
 		};
 
-		return ParseComplexNameTail( move(template_parametrization) );
+		return ParseComplexNameTail( move(template_parameterization) );
 	}
 	else
 	{

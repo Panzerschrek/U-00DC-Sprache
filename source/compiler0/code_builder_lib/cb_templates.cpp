@@ -402,29 +402,29 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	FunctionContext& function_context,
 	llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::TemplateParametrization& template_parametrization )
+	const Synt::TemplateParameterization& template_parameterization )
 {
-	const Value base_value= ResolveValue( names_scope, *global_function_context_, template_parametrization.base );
+	const Value base_value= ResolveValue( names_scope, *global_function_context_, template_parameterization.base );
 	if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
 	{
 		TemplateSignatureParam::SpecializedTemplateParam specialized_template;
 
 		bool all_args_are_known= true;
-		for( const Synt::Expression& template_arg : template_parametrization.template_args )
+		for( const Synt::Expression& template_arg : template_parameterization.template_args )
 		{
 			specialized_template.params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
 			all_args_are_known&= specialized_template.params.back().IsType() || specialized_template.params.back().IsVariable();
 		}
 
 		if( all_args_are_known )
-			return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parametrization ), names_scope, template_parametrization.src_loc );
+			return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parameterization ), names_scope, template_parameterization.src_loc );
 
 		specialized_template.type_templates= type_templates_set->type_templates;
 
 		return specialized_template;
 	}
 
-	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parametrization ), names_scope, template_parametrization.src_loc );
+	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parameterization ), names_scope, template_parameterization.src_loc );
 }
 
 TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc )
@@ -956,7 +956,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	return result;
 }
 
-const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
+const FunctionVariable* CodeBuilder::FinishTemplateFunctionParameterization(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr )

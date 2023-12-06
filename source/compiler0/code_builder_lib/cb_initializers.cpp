@@ -1394,7 +1394,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	// Try also select template functions with zero template parameters and template functions with all template parameters known.
 	for( const FunctionTemplatePtr& function_template : candidate_functions->template_functions )
 	{
-		if( const auto func= FinishTemplateFunctionParametrization( block_names.GetErrors(), initializer_expression_src_loc, function_template ) )
+		if( const auto func= FinishTemplateFunctionParameterization( block_names.GetErrors(), initializer_expression_src_loc, function_template ) )
 		{
 			if( func->type == function_pointer_type.function_type )
 			{
@@ -1435,8 +1435,8 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	{
 		SrcLoc value_src_loc;
-		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &initializer_expression ) )
-			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
+		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &initializer_expression ) )
+			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parameterization)->base );
 		else
 			value_src_loc= initializer_expression_src_loc;
 		CollectFunctionDefinition( *function_variable, value_src_loc );

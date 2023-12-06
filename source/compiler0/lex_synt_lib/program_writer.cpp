@@ -22,7 +22,7 @@ void ElementWrite( const NameLookup& name_lookup, std::ostream& stream );
 void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostream& stream );
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream );
 void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream );
-void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream );
+void ElementWrite( const TemplateParameterization& template_parameterization, std::ostream& stream );
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
@@ -108,15 +108,15 @@ void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_comple
 	stream << "::" << names_scope_fetch_completion.name;
 }
 
-void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream )
+void ElementWrite( const TemplateParameterization& template_parameterization, std::ostream& stream )
 {
-	ElementWrite( template_parametrization.base, stream );
+	ElementWrite( template_parameterization.base, stream );
 
 	stream << "</ ";
-	for( const Expression& expr : template_parametrization.template_args )
+	for( const Expression& expr : template_parameterization.template_args )
 	{
 		ElementWrite( expr, stream );
-		if( &expr != &template_parametrization.template_args.back() )
+		if( &expr != &template_parameterization.template_args.back() )
 			stream << ", ";
 	}
 	stream << " />";
@@ -528,9 +528,9 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( *names_scope_fetch_completion, stream );
 		}
-		void operator()( const std::unique_ptr<const TemplateParametrization>& template_parametrization ) const
+		void operator()( const std::unique_ptr<const TemplateParameterization>& template_parameterization ) const
 		{
-			ElementWrite( *template_parametrization, stream );
+			ElementWrite( *template_parameterization, stream );
 		}
 		void operator()( const std::unique_ptr<const ArrayTypeName>& array_type_name ) const
 		{

@@ -44,7 +44,7 @@ type ComplexName= ust::variant</ tup[
 	NameLookup,
 	RootNamespaceNameLookup,
 	NamesScopeNameFetch,
-	TemplateParametrization,
+	TemplateParameterization,
 	Typeof
 	] />;
 
@@ -70,7 +70,7 @@ struct NamesScopeNameFetch
 	ust::box</ComplexName/> base_;
 }
 
-struct TemplateParametrization
+struct TemplateParameterization
 {
 	SrcLoc src_loc;
 

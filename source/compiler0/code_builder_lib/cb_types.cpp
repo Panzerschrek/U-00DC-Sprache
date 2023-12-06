@@ -65,9 +65,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch_completion ), names_scope_name_fetch_completion->src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParameterization>& template_parameterization )
 {
-	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parametrization ), template_parametrization->src_loc );
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parameterization ), template_parameterization->src_loc );
 }
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )

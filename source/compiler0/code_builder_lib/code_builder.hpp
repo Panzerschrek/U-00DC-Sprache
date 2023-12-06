@@ -280,7 +280,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParameterization>& template_parameterization );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name );
@@ -458,7 +458,7 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::TemplateParametrization& template_parametrization );
+		const Synt::TemplateParameterization& template_parameterization );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 
@@ -548,7 +548,7 @@ private:
 		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this );
 
-	const FunctionVariable* FinishTemplateFunctionParametrization(
+	const FunctionVariable* FinishTemplateFunctionParameterization(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr );
@@ -763,7 +763,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
@@ -998,7 +998,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
-	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
 	Value ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
@@ -1427,7 +1427,7 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<TemplateKey> generated_template_things_sequence_;
 
-	// Cache results of template functions parametrization.
+	// Cache results of template functions parameterization.
 	std::unordered_map<ParameterizedFunctionTemplateKey, OverloadedFunctionsSetPtr, ParameterizedFunctionTemplateKeyHasher> parameterized_template_functions_cache_;
 
 	std::vector<GlobalThing> global_things_stack_;

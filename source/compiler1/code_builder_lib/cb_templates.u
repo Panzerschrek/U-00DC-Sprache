@@ -333,9 +333,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		}
 	}
 
-	if_var( &template_parametrization : param.get</Synt::TemplateParametrization/>() )
+	if_var( &template_parameterization : param.get</Synt::TemplateParameterization/>() )
 	{
-		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parametrization.base_.deref() ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
+		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parameterization.base_.deref() ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 		{
 			var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
 			{
@@ -343,7 +343,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			};
 
 			auto mut all_params_are_known= true;
-			foreach( &arg : template_parametrization.template_args.deref() )
+			foreach( &arg : template_parameterization.template_args.deref() )
 			{
 				auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
 
@@ -980,7 +980,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 	return move(result);
 }
 
-fn CodeBuilder::FinishFunctionTemplateParametrization(
+fn CodeBuilder::FinishFunctionTemplateParameterization(
 	mut this,
 	ParameterizedFunctionTemplate& parameterized_function_template,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>

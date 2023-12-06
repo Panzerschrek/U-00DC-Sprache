@@ -86,10 +86,10 @@ fn ComplexNameToStringImpl( Synt::NamesScopeNameFetch& names_scope_name_fetch ) 
 	return ComplexNameToString( names_scope_name_fetch.base_.deref() ) + "::" + names_scope_name_fetch.name;
 }
 
-fn ComplexNameToStringImpl( Synt::TemplateParametrization& template_parametrization ) : ust::string8
+fn ComplexNameToStringImpl( Synt::TemplateParameterization& template_parameterization ) : ust::string8
 {
 	// TODO - print real args.
-	return ComplexNameToString( template_parametrization.base_.deref() ) + "</ .. />";
+	return ComplexNameToString( template_parameterization.base_.deref() ) + "</ .. />";
 }
 
 fn ComplexNameToStringImpl( Synt::Typeof& typeof_ ) : ust::string8

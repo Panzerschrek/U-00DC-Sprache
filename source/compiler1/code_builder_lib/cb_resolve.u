@@ -417,9 +417,9 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	return ust::null_optional;
 }
 
-fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TemplateParametrization& template_parametrization ) : ust::optional</NamesScopeValue/>
+fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TemplateParameterization& template_parameterization ) : ust::optional</NamesScopeValue/>
 {
-	var ust::optional</NamesScopeValue/> base_opt= ResolveValueInternal( names_scope, function_context, template_parametrization.base_.deref() );
+	var ust::optional</NamesScopeValue/> base_opt= ResolveValueInternal( names_scope, function_context, template_parameterization.base_.deref() );
 	if( base_opt.empty() )
 	{
 		return ust::null_optional;
@@ -434,8 +434,8 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			names_scope,
 			function_context,
 			type_templates_set.try_to_non_nullable(),
-			template_parametrization.template_args.deref(),
-			template_parametrization.src_loc );
+			template_parameterization.template_args.deref(),
+			template_parameterization.src_loc );
 
 		if( generated_type.empty() )
 		{
@@ -449,26 +449,26 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 		if( functions_set_non_null.lock_imut().deref().function_templates.empty() )
 		{
-			REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parametrization.src_loc )
+			REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parameterization.src_loc )
 			return ust::null_optional;
 		}
 
-		auto parametrization_result=
+		auto parameterization_result=
 			ParameterizeTemplateFunctions(
 				names_scope,
 				function_context,
 				functions_set_non_null,
-				template_parametrization.template_args.deref(),
-				template_parametrization.src_loc );
+				template_parameterization.template_args.deref(),
+				template_parameterization.src_loc );
 
-		if( parametrization_result.empty() )
+		if( parameterization_result.empty() )
 		{
 			return ust::null_optional;
 		}
-		return NamesScopeValue( parametrization_result.try_to_non_nullable() );
+		return NamesScopeValue( parameterization_result.try_to_non_nullable() );
 	}
 
-	REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parametrization.src_loc )
+	REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parameterization.src_loc )
 	return ust::null_optional;
 }
 

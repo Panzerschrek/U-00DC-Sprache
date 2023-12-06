@@ -52,7 +52,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::TypeofTypeName>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetch>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::TemplateParametrization>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TemplateParameterization>& ) { return true; }
 		// Simple constant expressions have no side effects.
 		bool operator()( const Synt::NumericConstant& ) { return true; }
 		bool operator()( const Synt::BooleanConstant& ) { return true; }

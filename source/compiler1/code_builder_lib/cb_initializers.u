@@ -1202,7 +1202,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 					continue;
 				}
 
-				if_var( &function_variable : FinishFunctionTemplateParametrization( parameterized_function_template, initializer_src_loc ) )
+				if_var( &function_variable : FinishFunctionTemplateParameterization( parameterized_function_template, initializer_src_loc ) )
 				{
 					if( function_variable.t == function_type )
 					{
@@ -1227,7 +1227,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 					.base_template= function_template,
 					.instantiation_point_names_scope= names_scope,
 				};
-				if_var( &function_variable : FinishFunctionTemplateParametrization( parameterized_function_template, initializer_src_loc ) )
+				if_var( &function_variable : FinishFunctionTemplateParameterization( parameterized_function_template, initializer_src_loc ) )
 				{
 					if( function_variable.t == function_type )
 					{

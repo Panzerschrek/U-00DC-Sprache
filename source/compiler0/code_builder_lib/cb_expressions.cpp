@@ -86,8 +86,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// In most cases proper src_loc is just src_loc of NameLookup/NamesScopeNameFetch, which is proper function name lexem.
 		// But this also may be call to template function with provided template args.
 		// In such case extract underlying name.
-		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &call_operator.expression ) )
-			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
+		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &call_operator.expression ) )
+			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parameterization)->base );
 		else
 			value_src_loc= Synt::GetExpressionSrcLoc(call_operator.expression);
 	}
@@ -1655,9 +1655,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::TemplateParametrization& template_parametrization )
+	const Synt::TemplateParameterization& template_parameterization )
 {
-	return ResolveValueImpl( names, function_context, template_parametrization );
+	return ResolveValueImpl( names, function_context, template_parameterization );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(

@@ -40,7 +40,7 @@ struct NameLookupCompletion;
 struct TypeofTypeName;
 struct NamesScopeNameFetch;
 struct NamesScopeNameFetchCompletion;
-struct TemplateParametrization;
+struct TemplateParameterization;
 
 // TypeName
 struct TupleType;
@@ -141,7 +141,7 @@ using ComplexName= std::variant<
 	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
-	std::unique_ptr<const TemplateParametrization>
+	std::unique_ptr<const TemplateParameterization>
 	>;
 
 using TypeName= std::variant<
@@ -155,7 +155,7 @@ using TypeName= std::variant<
 	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
-	std::unique_ptr<const TemplateParametrization>,
+	std::unique_ptr<const TemplateParameterization>,
 	// Non-terminals.
 	TupleType, // Just vector of contained types.
 	std::unique_ptr<const RawPointerType>,
@@ -205,7 +205,7 @@ using Expression= std::variant<
 	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
-	std::unique_ptr<const TemplateParametrization>,
+	std::unique_ptr<const TemplateParameterization>,
 	TupleType, // Just vector of contained types.
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
@@ -447,7 +447,7 @@ struct NamesScopeNameFetchCompletion
 	ComplexName base;
 };
 
-struct TemplateParametrization
+struct TemplateParameterization
 {
 	SrcLoc src_loc;
 	std::vector<Expression> template_args;

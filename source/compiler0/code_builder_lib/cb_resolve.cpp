@@ -184,17 +184,17 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return ErrorValue();
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization )
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization )
 {
-	const Value base= ResolveValue( names_scope, function_context, template_parametrization.base );
+	const Value base= ResolveValue( names_scope, function_context, template_parameterization.base );
 
 	if( const TypeTemplatesSet* const type_templates_set= base.GetTypeTemplatesSet() )
 	{
 		if( auto type=
 			GenTemplateType(
-				template_parametrization.src_loc,
+				template_parameterization.src_loc,
 				*type_templates_set,
-				template_parametrization.template_args,
+				template_parameterization.template_args,
 				names_scope,
 				function_context ) )
 			return Value( std::move(*type) );
@@ -205,15 +205,15 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	{
 		if( functions_set->template_functions.empty() )
 		{
-			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
+			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parameterization.src_loc );
 			return ErrorValue();
 		}
 
 		const OverloadedFunctionsSetPtr parameterized_functions=
 			ParameterizeFunctionTemplate(
-				template_parametrization.src_loc,
+				template_parameterization.src_loc,
 				functions_set,
-				template_parametrization.template_args,
+				template_parameterization.template_args,
 				names_scope,
 				function_context );
 
@@ -226,15 +226,15 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	{
 		if( this_overloaded_methods_set->overloaded_methods_set->template_functions.empty() )
 		{
-			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
+			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parameterization.src_loc );
 			return ErrorValue();
 		}
 
 		const OverloadedFunctionsSetPtr parameterized_functions=
 			ParameterizeFunctionTemplate(
-				template_parametrization.src_loc,
+				template_parameterization.src_loc,
 				this_overloaded_methods_set->overloaded_methods_set,
-				template_parametrization.template_args,
+				template_parameterization.template_args,
 				names_scope,
 				function_context );
 
@@ -245,7 +245,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	}
 	else
 	{
-		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
+		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parameterization.src_loc );
 		return ErrorValue();
 	}
 }
