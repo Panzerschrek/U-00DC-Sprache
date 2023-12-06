@@ -179,17 +179,17 @@ def TypeinfoFunctionParamsList_Order_Test0():
 		type FnPtr= fn( i32 x, f32 y, bool z, S& s );
 		auto& ti= typeinfo</FnPtr/>;
 
-		static_assert( ti.arguments_list[0].type.is_signed_integer );
-		static_assert( !ti.arguments_list[0].is_reference );
+		static_assert( ti.params_list[0].type.is_signed_integer );
+		static_assert( !ti.params_list[0].is_reference );
 
-		static_assert( ti.arguments_list[1].type.is_float );
-		static_assert( !ti.arguments_list[1].is_reference );
+		static_assert( ti.params_list[1].type.is_float );
+		static_assert( !ti.params_list[1].is_reference );
 
-		static_assert( ti.arguments_list[2].type.is_bool );
-		static_assert( !ti.arguments_list[2].is_reference );
+		static_assert( ti.params_list[2].type.is_bool );
+		static_assert( !ti.params_list[2].is_reference );
 
-		static_assert( ti.arguments_list[3].type.is_class );
-		static_assert( ti.arguments_list[3].is_reference );
+		static_assert( ti.params_list[3].type.is_class );
+		static_assert( ti.params_list[3].is_reference );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -369,11 +369,11 @@ def TypeinfoClassFunctionsList_Order_Test0():
 
 		// _ZN1S3GetERKS_f
 		static_assert( StringEquals( ti.functions_list[6].name, "Get" ) );
-		static_assert( ti.functions_list[6].type.arguments_list[1].type.is_float );
+		static_assert( ti.functions_list[6].type.params_list[1].type.is_float );
 
 		// _ZN1S3GetERKS_f
 		static_assert( StringEquals( ti.functions_list[7].name, "Get" ) );
-		static_assert( ti.functions_list[7].type.arguments_list[1].type.is_signed_integer );
+		static_assert( ti.functions_list[7].type.params_list[1].type.is_signed_integer );
 
 		static_assert( StringEquals( ti.functions_list[8].name, "Lolwat" ) ); // _ZN1S6LolwatERKS_i
 		static_assert( StringEquals( ti.functions_list[9].name, "=" ) ); // _ZN1SaSERS_RKS_

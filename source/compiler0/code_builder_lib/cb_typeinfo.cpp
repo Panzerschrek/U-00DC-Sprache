@@ -20,7 +20,7 @@ const std::string g_typeinfo_class_fields_list_node_class_name= "_TICFiL_";
 const std::string g_typeinfo_class_types_list_node_class_name= "_TICTL_";
 const std::string g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
 const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
-const std::string g_typeinfo_function_arguments_list_node_class_name= "_TIAL_";
+const std::string g_typeinfo_function_params_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
 } // namespace
@@ -380,14 +380,14 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 	}
 	else if( const FunctionPointerType* const function_pointer_type= source_type.GetFunctionPointerType() )
 	{
-		if( name == "arguments_list" )
+		if( name == "params_list" )
 		{
-			if( cache_element.arguments_list == nullptr )
+			if( cache_element.params_list == nullptr )
 			{
-				cache_element.arguments_list= BuildTypeinfoFunctionArguments( function_pointer_type->function_type, root_namespace );
+				cache_element.params_list= BuildTypeinfoFunctionParams( function_pointer_type->function_type, root_namespace );
 				typeinfo_cache_[source_type]= cache_element;
 			}
-			return cache_element.arguments_list;
+			return cache_element.params_list;
 		}
 	}
 	else U_ASSERT(false);
@@ -774,7 +774,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_typ
 	return CreateTypeinfoListVariable( list_elements );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoFunctionParams( const FunctionType& function_type, NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -783,7 +783,7 @@ VariablePtr CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& fun
 	for( const FunctionType::Param& param : function_type.params )
 	{
 		const size_t param_index= size_t(&param - function_type.params.data());
-		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, function_pointer_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(param_index) );
+		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, function_pointer_type, g_typeinfo_function_params_list_node_class_name + std::to_string(param_index) );
 		Class& node_type_class= *node_type;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;

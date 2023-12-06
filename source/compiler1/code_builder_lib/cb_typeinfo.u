@@ -579,14 +579,14 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 	}
 	else if_var( function_pointer_type : source_type.GetFunctionPointerType() )
 	{
-		if( name == "arguments_list" )
+		if( name == "params_list" )
 		{
-			if( cache_element.arguments_list.empty() )
+			if( cache_element.params_list.empty() )
 			{
-				cache_element.arguments_list= BuildTypeinfoFunctionParamsList( root_namespace, function_pointer_type.function_type );
+				cache_element.params_list= BuildTypeinfoFunctionParamsList( root_namespace, function_pointer_type.function_type );
 				typeinfo_cache_[ source_type ]= cache_element;
 			}
-			return cache_element.arguments_list;
+			return cache_element.params_list;
 		}
 	}
 	else { halt; }

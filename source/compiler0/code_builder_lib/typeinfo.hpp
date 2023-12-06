@@ -21,7 +21,7 @@ struct TypeinfoCacheElement
 	VariablePtr types_list= nullptr;
 	VariablePtr functions_list= nullptr;
 	VariablePtr parents_list= nullptr;
-	VariablePtr arguments_list= nullptr;
+	VariablePtr params_list= nullptr;
 };
 
 struct TypeinfoClassDescription

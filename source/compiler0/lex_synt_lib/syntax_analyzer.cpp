@@ -50,7 +50,7 @@ const std::vector<ExpectedLexem> g_block_body_elements_control_lexems
 	ExpectedLexem(Keywords::static_assert_),
 };
 
-const std::vector<ExpectedLexem> g_function_arguments_list_control_lexems
+const std::vector<ExpectedLexem> g_function_params_list_control_lexems
 {
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::BracketRight),
 };
@@ -1232,7 +1232,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		TryRecoverAfterError( g_function_arguments_list_control_lexems );
+		TryRecoverAfterError( g_function_params_list_control_lexems );
 		return result;
 	}
 
@@ -1250,7 +1250,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		TryRecoverAfterError( g_function_arguments_list_control_lexems );
+		TryRecoverAfterError( g_function_params_list_control_lexems );
 		return result;
 	}
 
@@ -1357,7 +1357,7 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 		else
 		{
 			PushErrorMessage();
-			TryRecoverAfterError( g_function_arguments_list_control_lexems );
+			TryRecoverAfterError( g_function_params_list_control_lexems );
 		}
 	} // for arguments
 
@@ -3256,7 +3256,7 @@ Function SyntaxAnalyzer::ParseFunction()
 		else
 		{
 			PushErrorMessage();
-			TryRecoverAfterError( g_function_arguments_list_control_lexems );
+			TryRecoverAfterError( g_function_params_list_control_lexems );
 		}
 	}
 

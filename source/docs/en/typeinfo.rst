@@ -224,7 +224,7 @@ Type information for  coroutines also contains following fields:
 * ``bool return_value_is_reference`` -  does function return reference
 * ``bool return_value_is_mutable`` - does function return mutable value
 * ``bool unsafe`` - is function marked as ``unsafe``
-* ``tup[] arguments_list`` - a tuple, each element of which contains information about a function parameter
+* ``tup[] params_list`` - a tuple, each element of which contains information about a function parameter
 
 Each parameter description contains:
 

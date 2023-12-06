@@ -556,17 +556,17 @@ def TypeinfoList_FunctionTypeParams_Test0():
 			auto& ti= typeinfo</ ( fn( i32 x, f32 & y, bool &mut z ) : size_type ) />;
 			static_assert( ti.is_function_pointer );
 
-			static_assert( ti.arguments_list[0].type.is_signed_integer );
-			static_assert( !ti.arguments_list[0].is_mutable );
-			static_assert( !ti.arguments_list[0].is_reference );
+			static_assert( ti.params_list[0].type.is_signed_integer );
+			static_assert( !ti.params_list[0].is_mutable );
+			static_assert( !ti.params_list[0].is_reference );
 
-			static_assert( ti.arguments_list[1].type.is_float );
-			static_assert( !ti.arguments_list[1].is_mutable );
-			static_assert( ti.arguments_list[1].is_reference );
+			static_assert( ti.params_list[1].type.is_float );
+			static_assert( !ti.params_list[1].is_mutable );
+			static_assert( ti.params_list[1].is_reference );
 
-			static_assert( ti.arguments_list[2].type.is_bool );
-			static_assert( ti.arguments_list[2].is_mutable );
-			static_assert( ti.arguments_list[2].is_reference );
+			static_assert( ti.params_list[2].type.is_bool );
+			static_assert( ti.params_list[2].is_mutable );
+			static_assert( ti.params_list[2].is_reference );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
