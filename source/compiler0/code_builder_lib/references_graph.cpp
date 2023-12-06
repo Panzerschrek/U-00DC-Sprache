@@ -86,7 +86,7 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 
 void ReferencesGraph::TryAddInnerLinks( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	const size_t reference_tag_count= to->type.ReferencesTagsCount();
+	const size_t reference_tag_count= to->type.ReferenceTagCount();
 	U_ASSERT( from->inner_reference_nodes.size() >= reference_tag_count );
 	U_ASSERT( to->inner_reference_nodes.size() >= reference_tag_count );
 	for( size_t i= 0; i < reference_tag_count; ++i )
@@ -99,13 +99,13 @@ void ReferencesGraph::TryAddInnerLinksForTupleElement( const VariablePtr& from, 
 	U_ASSERT( tuple_type != nullptr );
 	U_ASSERT( element_index < tuple_type->element_types.size() );
 	U_ASSERT( tuple_type->element_types[element_index] == to->type );
-	const size_t element_type_reference_tag_count= to->type.ReferencesTagsCount();
+	const size_t element_type_reference_tag_count= to->type.ReferenceTagCount();
 	if( element_type_reference_tag_count == 0 )
 		return;
 
 	size_t offset= 0;
 	for( size_t i= 0; i < element_index; ++i )
-		offset+= tuple_type->element_types[i].ReferencesTagsCount();
+		offset+= tuple_type->element_types[i].ReferenceTagCount();
 
 	U_ASSERT( offset <= from->inner_reference_nodes.size() );
 	U_ASSERT( offset + element_type_reference_tag_count <= from->inner_reference_nodes.size() );
@@ -118,8 +118,8 @@ void ReferencesGraph::TryAddInnerLinksForClassField( const VariablePtr& from, co
 {
 	U_ASSERT( from->type.GetClassType() != nullptr );
 
-	const auto field_reference_tag_count= to->type.ReferencesTagsCount();
-	U_ASSERT( to->inner_reference_nodes.size() == to->type.ReferencesTagsCount() );
+	const auto field_reference_tag_count= to->type.ReferenceTagCount();
+	U_ASSERT( to->inner_reference_nodes.size() == to->type.ReferenceTagCount() );
 	U_ASSERT( to->type == field.type );
 	U_ASSERT( !field.is_reference );
 	U_ASSERT( field.inner_reference_tags.size() == field_reference_tag_count );

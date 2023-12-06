@@ -417,7 +417,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.deref().src_loc, field.t )
 				continue;
 			}
-			if( field.is_reference && field.t.ReferencesTagsCount() > 0u )
+			if( field.is_reference && field.t.ReferenceTagCount() > 0u )
 			{
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
 				field.t= invalid_type_;
@@ -650,7 +650,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					reference_fields.push_back( field_ptr );
 				}
 
-				if( field.t.ReferencesTagsCount() > 0u )
+				if( field.t.ReferenceTagCount() > 0u )
 				{
 					fields_with_references_inside.push_back( field_ptr );
 				}
@@ -708,7 +708,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto mut class_lock= class_type.lock_mut();
 			var ClassType& mut class_= class_lock.deref();
 
-			auto reference_tag_count= field.t.ReferencesTagsCount();
+			auto reference_tag_count= field.t.ReferenceTagCount();
 			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
 			class_.inner_references.resize( size_type(reference_tag_count), InnerReferenceKind::Imut );
 			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
@@ -780,7 +780,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto mut class_lock= class_type.lock_mut();
 				var ClassType& mut class_= class_lock.deref();
 
-				auto reference_tag_count= field.t.ReferencesTagsCount();
+				auto reference_tag_count= field.t.ReferenceTagCount();
 
 				if( !reference_tags.empty() )
 				{

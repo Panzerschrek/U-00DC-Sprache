@@ -24,7 +24,7 @@ struct R // Have destructor with side-effects.
 	}
 }
 
-static_assert( typeinfo</ ust::optional</R/> />.references_tags_count == 1s );
+static_assert( typeinfo</ ust::optional</R/> />.reference_tag_count == 1s );
 
 fn nomangle main() : i32
 {

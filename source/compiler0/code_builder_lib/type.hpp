@@ -103,7 +103,7 @@ public:
 	bool CanBeConstexpr() const;
 	bool IsAbstract() const;
 
-	size_t ReferencesTagsCount() const;
+	size_t ReferenceTagCount() const;
 	InnerReferenceType GetInnerReferenceType(size_t index) const;
 
 	llvm::Type* GetLLVMType() const;

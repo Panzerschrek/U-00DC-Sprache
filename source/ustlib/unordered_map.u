@@ -20,8 +20,8 @@ public:
 	static_assert( typeinfo</K/>.is_copy_constructible, "key type should be copyable" );
 	static_assert( typeinfo</K/>.is_copy_assignable, "key type should be copyable" );
 	// Can't use type with references inside since we use "optional_ref" for search.
-	static_assert( typeinfo</K/>.references_tags_count == 0s, "this container doesn't support types with references inside" );
-	static_assert( typeinfo</V/>.references_tags_count == 0s, "this container doesn't support types with references inside" );
+	static_assert( typeinfo</K/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
+	static_assert( typeinfo</V/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
 
 public:
 	// Default constructor.

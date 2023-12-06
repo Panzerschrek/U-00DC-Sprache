@@ -278,7 +278,7 @@ def AutoReferenceNotationCalculation_Test0():
 	# Struct without references inside has zero reference tags.
 	c_program_text= """
 		struct S{ i32 x; f32 y; }
-		static_assert( typeinfo</S/>.references_tags_count == 0s );
+		static_assert( typeinfo</S/>.reference_tag_count == 0s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -287,7 +287,7 @@ def AutoReferenceNotationCalculation_Test1():
 	# Struct with single immutable reference field - number of tags is 1.
 	c_program_text= """
 		struct S{ i32 &imut x; }
-		static_assert( typeinfo</S/>.references_tags_count == 1s );
+		static_assert( typeinfo</S/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -296,7 +296,7 @@ def AutoReferenceNotationCalculation_Test2():
 	# Struct with single mutable reference field - number of tags is 1.
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		static_assert( typeinfo</S/>.references_tags_count == 1s );
+		static_assert( typeinfo</S/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -306,7 +306,7 @@ def AutoReferenceNotationCalculation_Test3():
 	c_program_text= """
 		struct S{ i32 &imut x; }
 		struct T{ i32 x; S s; f32 y; tup[ bool, char8 ] t; }
-		static_assert( typeinfo</T/>.references_tags_count == 1s );
+		static_assert( typeinfo</T/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -316,7 +316,7 @@ def AutoReferenceNotationCalculation_Test4():
 	c_program_text= """
 		struct S{ i32 &imut @("a"c8) x; i32 &imut @("b"c8) y; i32 &imut @("c"c8) z; }
 		struct T{ i32 x; S s; f32 y; tup[ bool, char8 ] t; }
-		static_assert( typeinfo</T/>.references_tags_count == 3s );
+		static_assert( typeinfo</T/>.reference_tag_count == 3s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -326,7 +326,7 @@ def AutoReferenceNotationCalculation_Test5():
 	c_program_text= """
 		struct S{ i32 & x; }
 		struct T{ i32 x; f32 y; tup[ S, S, S, S ] t; }
-		static_assert( typeinfo</T/>.references_tags_count == 4s );
+		static_assert( typeinfo</T/>.reference_tag_count == 4s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -336,8 +336,8 @@ def AutoReferenceNotationCalculation_Test6():
 	c_program_text= """
 		class A polymorph { i32 & @("a"c8) x; i32 & @("b"c8) y; }
 		class B : A { f32 z; [ tup[ f32, bool ], 7 ] a; }
-		static_assert( typeinfo</A/>.references_tags_count == 2s );
-		static_assert( typeinfo</B/>.references_tags_count == 2s );
+		static_assert( typeinfo</A/>.reference_tag_count == 2s );
+		static_assert( typeinfo</B/>.reference_tag_count == 2s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -466,25 +466,25 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
 def StructMultipleInnerReferenceTags_Test0():
 	c_program_text= """
 		struct S{}
-		static_assert( typeinfo</S/>.references_tags_count == 0s );
+		static_assert( typeinfo</S/>.reference_tag_count == 0s );
 
 		struct T{ S s; i32 x; f32 y; }
-		static_assert( typeinfo</T/>.references_tags_count == 0s );
+		static_assert( typeinfo</T/>.reference_tag_count == 0s );
 
 		struct R{ i32& r; }
-		static_assert( typeinfo</R/>.references_tags_count == 1s );
+		static_assert( typeinfo</R/>.reference_tag_count == 1s );
 
 		struct W{ i32 & @("a"c8) x; i32 & @("b"c8) y; } // Map two references to two tags.
-		static_assert( typeinfo</W/>.references_tags_count == 2s );
+		static_assert( typeinfo</W/>.reference_tag_count == 2s );
 
 		struct V{ i32 & @("a"c8) x; i32 & @("a"c8) y; } // Map two references to single tag.
-		static_assert( typeinfo</V/>.references_tags_count == 1s );
+		static_assert( typeinfo</V/>.reference_tag_count == 1s );
 
 		struct Q{ W @("ab") w; R @("c") r; }
-		static_assert( typeinfo</Q/>.references_tags_count == 3s );
+		static_assert( typeinfo</Q/>.reference_tag_count == 3s );
 
 		struct H{ Q @("aaa") q; } // Map 3 references to single tag.
-		static_assert( typeinfo</H/>.references_tags_count == 1s );
+		static_assert( typeinfo</H/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 

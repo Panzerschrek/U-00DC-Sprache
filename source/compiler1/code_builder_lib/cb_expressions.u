@@ -1462,13 +1462,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
-			auto element_type_reference_tag_count= element_type.ReferencesTagsCount();
+			auto element_type_reference_tag_count= element_type.ReferenceTagCount();
 			if( element_type_reference_tag_count > 0u )
 			{
 				var size_type mut offset= 0s;
 				for( auto mut i= 0s; i < size_type(type_index); ++i )
 				{
-					offset+= size_type( tuple_type.element_types[i].ReferencesTagsCount() );
+					offset+= size_type( tuple_type.element_types[i].ReferenceTagCount() );
 				}
 
 				for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
@@ -2004,7 +2004,7 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 	};
 
 	// Child class reference tags are mapped 1 to 1 to parent class tags.
-	for( var size_type mut i= 0s, reference_tag_count= size_type(base_type.ReferencesTagsCount()); i < reference_tag_count; ++i )
+	for( var size_type mut i= 0s, reference_tag_count= size_type(base_type.ReferenceTagCount()); i < reference_tag_count; ++i )
 	{
 		base_.inner_reference_nodes.push_back( variable.inner_reference_nodes[i] );
 	}
@@ -2164,7 +2164,7 @@ fn CodeBuilder::AccessDirectClassField(
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
 
-		for( var size_type mut i= 0s, reference_tag_count= size_type(field.t.ReferencesTagsCount()); i < reference_tag_count; ++i )
+		for( var size_type mut i= 0s, reference_tag_count= size_type(field.t.ReferenceTagCount()); i < reference_tag_count; ++i )
 		{
 			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( field.inner_reference_tags[i] ) ] );
 		}

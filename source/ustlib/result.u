@@ -54,8 +54,8 @@ class result
 public:
 	static_assert( !same_type</OkT, ErrorT/>, "Result and error types must be distinct!" );
 
-	static_assert( typeinfo</OkT/>.references_tags_count == 0s, "TODO - support references inside result." );
-	static_assert( typeinfo</ErrorT/>.references_tags_count == 0s, "TODO - support references inside result." );
+	static_assert( typeinfo</OkT/>.reference_tag_count == 0s, "TODO - support references inside result." );
+	static_assert( typeinfo</ErrorT/>.reference_tag_count == 0s, "TODO - support references inside result." );
 
 public:
 	// Construt from ok value.
@@ -155,7 +155,7 @@ public:
 	// Get optional reference.
 
 	fn
-	enable_if( typeinfo</OkT/>.references_tags_count == 0s )
+	enable_if( typeinfo</OkT/>.reference_tag_count == 0s )
 	as_ref(  mut this ) : optional_ref_mut </OkT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( is_ok_ )
@@ -169,7 +169,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</OkT/>.references_tags_count == 0s )
+	enable_if( typeinfo</OkT/>.reference_tag_count == 0s )
 	as_ref( imut this ) : optional_ref_imut</OkT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( is_ok_ )
@@ -183,7 +183,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
+	enable_if( typeinfo</ErrorT/>.reference_tag_count == 0s )
 	as_error_ref(  mut this ) : optional_ref_mut </ErrorT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( !is_ok_ )
@@ -197,7 +197,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
+	enable_if( typeinfo</ErrorT/>.reference_tag_count == 0s )
 	as_error_ref( imut this ) : optional_ref_imut</ErrorT/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( !is_ok_ )

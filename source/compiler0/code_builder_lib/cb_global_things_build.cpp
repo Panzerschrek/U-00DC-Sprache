@@ -499,7 +499,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
 					return;
 				}
-				if( class_field->type.ReferencesTagsCount() > 0u )
+				if( class_field->type.ReferenceTagCount() > 0u )
 					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
 			}
 			else if( class_field->type.IsAbstract() )
@@ -546,7 +546,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				if( field->is_reference )
 					reference_fields.push_back(field);
 
-				if( field->type.ReferencesTagsCount() > 0 )
+				if( field->type.ReferenceTagCount() > 0 )
 					fields_with_references_inside.push_back(field);
 				else
 				{
@@ -581,7 +581,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		{
 			// Special case - class contains single field with references inside. Map reference tags of this field to reference tags of the whole class.
 			ClassField& field= *fields_with_references_inside.front();
-			const auto reference_tag_count= field.type.ReferencesTagsCount();
+			const auto reference_tag_count= field.type.ReferenceTagCount();
 
 			field.inner_reference_tags.resize( reference_tag_count );
 			for( size_t i= 0; i < reference_tag_count; ++i )
@@ -630,7 +630,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				else
 					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
 
-				const auto reference_tag_count= field->type.ReferencesTagsCount();
+				const auto reference_tag_count= field->type.ReferenceTagCount();
 
 				if( reference_tags != std::nullopt )
 				{
@@ -696,7 +696,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					}
 				}
 
-				U_ASSERT( field->inner_reference_tags.size() == field->type.ReferencesTagsCount() );
+				U_ASSERT( field->inner_reference_tags.size() == field->type.ReferenceTagCount() );
 				for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 				{
 					const size_t tag= field->inner_reference_tags[i];

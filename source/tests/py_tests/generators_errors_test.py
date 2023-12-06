@@ -631,7 +631,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test0():
 		{
 			var i32 mut x= 42;
 			auto gen= SomeGen(x);
-			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // Generator type must contain references inside.
+			static_assert( typeinfo</ typeof(gen) />.reference_tag_count == 1s ); // Generator type must contain references inside.
 		}
 	"""
 	tests_lib.build_program ( c_program_text )
@@ -740,7 +740,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test6():
 			var i32 mut x= 0, imut y= 0;
 			// Since generator type contains inner references for all input references immutable args linked only immutable.
 			auto gen= Gen( x, y );
-			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 2s );
+			static_assert( typeinfo</ typeof(gen) />.reference_tag_count == 2s );
 			auto& y_ref= y; // Ok - create second immutable reference when an immutable reference inside "gen" exists.
 		}
 	"""

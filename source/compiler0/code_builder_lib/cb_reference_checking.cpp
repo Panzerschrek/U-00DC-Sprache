@@ -28,8 +28,8 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	{
 		// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
 		// So, we can request it.
-		const size_t references_tags_count= base_class->inner_references.size();
-		for( size_t i= 0u; i < references_tags_count; ++i )
+		const size_t reference_tag_count= base_class->inner_references.size();
+		for( size_t i= 0u; i < reference_tag_count; ++i )
 		{
 			FunctionType::ReferencePollution ref_pollution;
 			ref_pollution.dst.first= 0u;
@@ -71,10 +71,10 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const Function
 		if( param_reference.second != FunctionType::c_arg_reference_tag_number && param_reference.first < function_type.params.size()  )
 		{
 			const Type& type= function_type.params[ param_reference.first ].type;
-			const auto tags_count= type.ReferencesTagsCount();
-			if( param_reference.second >= tags_count )
+			const auto tag_count= type.ReferenceTagCount();
+			if( param_reference.second >= tag_count )
 			{
-				REPORT_ERROR( ReferenceTagOutOfRange, errors_container, src_loc, param_reference.second, type, tags_count );
+				REPORT_ERROR( ReferenceTagOutOfRange, errors_container, src_loc, param_reference.second, type, tag_count );
 			}
 		}
 	};
@@ -92,18 +92,18 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const Function
 		for( const FunctionType::ParamReference& param_reference : param_references )
 			check_param_reference(param_reference);
 
-	const auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+	const auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
 	if( !function_type.return_inner_references.empty() &&
-		function_type.return_inner_references.size() != return_type_tags_count )
-		REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tags_count, function_type.return_inner_references.size() );
+		function_type.return_inner_references.size() != return_type_tag_count )
+		REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tag_count, function_type.return_inner_references.size() );
 }
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	if( dst_variable->type.ReferencesTagsCount() == 0u )
+	if( dst_variable->type.ReferenceTagCount() == 0u )
 		return;
 
-	const size_t reference_tag_count= dst_variable->type.ReferencesTagsCount();
+	const size_t reference_tag_count= dst_variable->type.ReferenceTagCount();
 	U_ASSERT( src_variable->inner_reference_nodes.size() >= reference_tag_count );
 	U_ASSERT( dst_variable->inner_reference_nodes.size() >= reference_tag_count );
 	for( size_t i= 0; i < reference_tag_count; ++i )
@@ -286,7 +286,7 @@ std::optional<FunctionType::ParamReference> CodeBuilder::GetCoroutineInnerRefere
 					return FunctionType::ParamReference{ uint8_t(0), uint8_t(coroutine_inner_reference_index + j) };
 			}
 
-			coroutine_inner_reference_index+= param.type.ReferencesTagsCount();
+			coroutine_inner_reference_index+= param.type.ReferenceTagCount();
 		}
 		else
 		{

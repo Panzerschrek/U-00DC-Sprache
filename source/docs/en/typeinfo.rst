@@ -29,7 +29,7 @@ Typeinfo for each type has following fields:
 * ``bool is_raw_pointer`` - is a type a raw pointer
 * ``bool is_class`` - is a type a struct or class
 * ``bool is_function_pointer`` - is a type a function pointer
-* ``size_type references_tags_count`` - number of inner reference tags
+* ``size_type reference_tag_count`` - number of inner reference tags
 * ``bool is_default_constructible`` - is a type default-constructible
 * ``bool is_copy_constructible`` - is a type copy-constructible
 * ``bool is_copy_assignable`` - is a type copy-assignable

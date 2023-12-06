@@ -105,7 +105,7 @@ fn ReferencesGraph::TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& 
 {
 	with( &to_val : to.lock_imut().deref() )
 	{
-		auto reference_tag_count= to_val.t.ReferencesTagsCount();
+		auto reference_tag_count= to_val.t.ReferenceTagCount();
 		if( reference_tag_count == 0u )
 		{
 			return;
@@ -125,7 +125,7 @@ fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from
 {
 	with( &to_val : to.lock_imut().deref() )
 	{
-		auto element_type_reference_tag_count= to_val.t.ReferencesTagsCount();
+		auto element_type_reference_tag_count= to_val.t.ReferenceTagCount();
 		if( element_type_reference_tag_count == 0u )
 		{
 			return;
@@ -138,7 +138,7 @@ fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from
 			var size_type mut offset= 0s;
 			for( auto mut i= 0s; i < element_index; ++i )
 			{
-				offset+= size_type( tuple_type.element_types[i].ReferencesTagsCount() );
+				offset+= size_type( tuple_type.element_types[i].ReferenceTagCount() );
 			}
 
 			for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
@@ -154,7 +154,7 @@ fn ReferencesGraph::TryAddInnerLinksForClassField( mut this, VariablePtr& from, 
 	with( &to_val : to.lock_imut().deref() )
 	{
 		debug_assert( to_val.t == field.t );
-		auto field_type_reference_tag_count= to_val.t.ReferencesTagsCount();
+		auto field_type_reference_tag_count= to_val.t.ReferenceTagCount();
 		if( field_type_reference_tag_count == 0u )
 		{
 			return;

@@ -77,7 +77,7 @@ VariableMutPtr Variable::Create(
 {
 	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 
-	const size_t reference_tag_count= result->type.ReferencesTagsCount();
+	const size_t reference_tag_count= result->type.ReferenceTagCount();
 	result->inner_reference_nodes.resize( reference_tag_count );
 	for( size_t i= 0; i < reference_tag_count; ++i )
 	{
@@ -110,7 +110,7 @@ VariableMutPtr Variable::CreateChildNode(
 	auto result= std::make_shared<Variable>( Variable( std::move(type), value_type, location, std::move(name), llvm_value, constexpr_value ) );
 	result->parent= parent;
 
-	result->inner_reference_nodes.resize( result->type.ReferencesTagsCount() );
+	result->inner_reference_nodes.resize( result->type.ReferenceTagCount() );
 
 	return result;
 }

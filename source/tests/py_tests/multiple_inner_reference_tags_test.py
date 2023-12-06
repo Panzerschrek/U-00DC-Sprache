@@ -5,16 +5,16 @@ def TupleMultipleInnerReferenceTags_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
 		struct T{ f32 &mut y; }
-		static_assert( typeinfo</ S />.references_tags_count == 1s );
-		static_assert( typeinfo</ T />.references_tags_count == 1s );
-		static_assert( typeinfo</ tup[] />.references_tags_count == 0s );
-		static_assert( typeinfo</ tup[ S ] />.references_tags_count == 1s );
-		static_assert( typeinfo</ tup[ T ] />.references_tags_count == 1s );
-		static_assert( typeinfo</ tup[ S, T ] />.references_tags_count == 2s );
-		static_assert( typeinfo</ tup[ T, S ] />.references_tags_count == 2s );
-		static_assert( typeinfo</ tup[ S, S ] />.references_tags_count == 2s );
-		static_assert( typeinfo</ tup[ T, T ] />.references_tags_count == 2s );
-		static_assert( typeinfo</ tup[ S, T, S, T ] />.references_tags_count == 4s );
+		static_assert( typeinfo</ S />.reference_tag_count == 1s );
+		static_assert( typeinfo</ T />.reference_tag_count == 1s );
+		static_assert( typeinfo</ tup[] />.reference_tag_count == 0s );
+		static_assert( typeinfo</ tup[ S ] />.reference_tag_count == 1s );
+		static_assert( typeinfo</ tup[ T ] />.reference_tag_count == 1s );
+		static_assert( typeinfo</ tup[ S, T ] />.reference_tag_count == 2s );
+		static_assert( typeinfo</ tup[ T, S ] />.reference_tag_count == 2s );
+		static_assert( typeinfo</ tup[ S, S ] />.reference_tag_count == 2s );
+		static_assert( typeinfo</ tup[ T, T ] />.reference_tag_count == 2s );
+		static_assert( typeinfo</ tup[ S, T, S, T ] />.reference_tag_count == 4s );
 	"""
 	tests_lib.build_program( c_program_text )
 

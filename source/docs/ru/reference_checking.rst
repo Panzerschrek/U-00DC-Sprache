@@ -237,7 +237,7 @@
        i32& @("a"c8) x; // Ссылка указывает на тег "a" (#0).
        i32& @("b"c8) y; // Ссылка указывает на тег "b" (#1).
    }
-   static_assert( typeinfo</S/>.references_tags_count == 2s );
+   static_assert( typeinfo</S/>.reference_tag_count == 2s );
 
    struct T
    {
@@ -249,7 +249,7 @@
        u64& @("e"c8) i0;
        i64& @("e"c8) i1;
    }
-   static_assert( typeinfo</T/>.references_tags_count == 5s );
+   static_assert( typeinfo</T/>.reference_tag_count == 5s );
 
    // Функция возвращает структуру, разные внутренние ссылки которой указывают на разные ссылочные аргументы.
    // Ссылка "x", помеченная тегом "a" (#0), будет указывать на ссылочный аргумент "x".

@@ -22,11 +22,11 @@ fn CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( mut this, Funct
 	if( function_type.return_value_type == ValueType::Value )
 	{
 		EnsureTypeComplete( function_type.return_type );
-		auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
+		auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
 		// For coroutines use strict criteria - require setting reference notation with exact size.
-		if( function_type.return_inner_references.size() != size_type(return_type_tags_count) )
+		if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
 		{
-			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tags_count, function_type.return_inner_references.size() )
+			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
 		}
 	}
 
@@ -76,8 +76,8 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Require type completeness for value params in order to know inner references.
 			if( EnsureTypeComplete( param.t ) )
 			{
-				auto reference_tags_count= param.t.ReferencesTagsCount();
-				for( auto mut i= 0u; i < reference_tags_count; ++i )
+				auto reference_tag_count= param.t.ReferenceTagCount();
+				for( auto mut i= 0u; i < reference_tag_count; ++i )
 				{
 					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
 

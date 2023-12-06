@@ -637,8 +637,8 @@ fn CodeBuilder::PrepareFunction(
 
 			// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
 			// So, we can request it.
-			auto references_tags_count= class_type_non_null.lock_imut().deref().inner_references.size();
-			for( auto mut i= 0s; i < references_tags_count; ++i )
+			auto reference_tag_count= class_type_non_null.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
 				var FunctionType::ReferencePollution mut pollution
 				{
@@ -1106,7 +1106,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for coroutines.
 			// Do this now, because it's impossible to check this in coroutines declaration, because this check requires complete types of parameters.
-			if( param.value_type != ValueType::Value && param.t.ReferencesTagsCount() > 0u )
+			if( param.value_type != ValueType::Value && param.t.ReferenceTagCount() > 0u )
 			{
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, body_syntax_element.src_loc, "some arg" ) // TODO - use separate error code.
 			}
@@ -1234,8 +1234,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 			function_context.args_nodes[arg_n]= variable_ptr;
 
-			auto references_tags_count= type_param.t.ReferencesTagsCount();
-			for( auto mut i= 0s; i < size_type(references_tags_count); ++i )
+			auto reference_tag_count= type_param.t.ReferenceTagCount();
+			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
 			{
 				var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
 				function_context.references_graph.AddLink(

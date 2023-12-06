@@ -29,7 +29,7 @@
 * ``bool is_raw_pointer`` - является ли тип сырым указателем
 * ``bool is_class`` - является ли тип структурой или классом
 * ``bool is_function_pointer`` - является ли тип указателем на функцию
-* ``size_type references_tags_count`` - количество внутренних ссылочных тегов
+* ``size_type reference_tag_count`` - количество внутренних ссылочных тегов
 * ``bool is_default_constructible`` - является ли тип конструируемым по умолчанию
 * ``bool is_copy_constructible`` - можно ли сконструировать значение типа как копию
 * ``bool is_copy_assignable`` - можно ли копировать значения типа присваиванием

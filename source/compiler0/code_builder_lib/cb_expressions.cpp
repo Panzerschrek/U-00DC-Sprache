@@ -294,11 +294,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->name + "[" + std::to_string(index_value) + "]",
 				ForceCreateConstantIndexGEP( function_context, tuple_type->llvm_type, variable->llvm_value, uint32_t(index_value) ) );
 
-		if( const size_t element_type_reference_tag_count= result->type.ReferencesTagsCount(); element_type_reference_tag_count != 0 )
+		if( const size_t element_type_reference_tag_count= result->type.ReferenceTagCount(); element_type_reference_tag_count != 0 )
 		{
 			size_t offset= 0;
 			for( size_t i= 0; i < size_t(index_value); ++i )
-				offset+= tuple_type->element_types[i].ReferencesTagsCount();
+				offset+= tuple_type->element_types[i].ReferenceTagCount();
 
 			U_ASSERT( offset <= variable->inner_reference_nodes.size() );
 			U_ASSERT( offset + element_type_reference_tag_count <= variable->inner_reference_nodes.size() );
@@ -3500,7 +3500,7 @@ Value CodeBuilder::DoCallFunction(
 	if( func_is_constexpr &&
 		function_as_real_function != nullptr &&
 		constant_llvm_args.size() == function_as_real_function->arg_size() &&
-		function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
+		function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
 	{
 		const Interpreter::ResultConstexpr evaluation_result=
 			constexpr_function_evaluator_.EvaluateConstexpr( function_as_real_function, constant_llvm_args );
@@ -3619,7 +3619,7 @@ Value CodeBuilder::DoCallFunction(
 		if( dst_arg >= function_type.params.size() || src_arg >= function_type.params.size() )
 			continue;
 
-		if( function_type.params[ dst_arg ].type.ReferencesTagsCount() == 0 )
+		if( function_type.params[ dst_arg ].type.ReferenceTagCount() == 0 )
 			continue;
 
 		const VariablePtr& src_arg_node= args_nodes[ src_arg ];

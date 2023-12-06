@@ -27,10 +27,10 @@ fn CodeBuilder::CheckFunctionReferencesNotationInnerReferences( FunctionType& fu
 
 	if( !function_type.return_inner_references.empty() )
 	{
-		auto return_type_tags_count= function_type.return_type.ReferencesTagsCount();
-		if( function_type.return_inner_references.size() != size_type(return_type_tags_count) )
+		auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
+		if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
 		{
-			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tags_count, function_type.return_inner_references.size() )
+			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
 		}
 	}
 }
@@ -40,10 +40,10 @@ fn CodeBuilder::CheckFunctionReferencesNotationParamReference( FunctionType& fun
 	if( param_reference.reference_index != FunctionType::c_param_reference_number && size_type(param_reference.param_index) < function_type.params.size()  )
 	{
 		var Type& t= function_type.params[ size_type( param_reference.param_index) ].t;
-		auto tags_count= t.ReferencesTagsCount();
-		if( u32(param_reference.reference_index) >= tags_count )
+		auto tag_count= t.ReferenceTagCount();
+		if( u32(param_reference.reference_index) >= tag_count )
 		{
-			REPORT_ERROR( ReferenceTagOutOfRange, names_scope, src_loc, u32(param_reference.reference_index), t, tags_count )
+			REPORT_ERROR( ReferenceTagOutOfRange, names_scope, src_loc, u32(param_reference.reference_index), t, tag_count )
 		}
 	}
 }
@@ -206,7 +206,7 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 				}
 			}
 
-			coroutine_inner_reference_index+= size_type( param.t.ReferencesTagsCount() );
+			coroutine_inner_reference_index+= size_type( param.t.ReferenceTagCount() );
 		}
 		else
 		{
@@ -317,7 +317,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	VariablePtr& src_node,
 	SrcLoc& src_loc )
 {
-	auto reference_tag_count= dst_node.lock_imut().deref().t.ReferencesTagsCount();
+	auto reference_tag_count= dst_node.lock_imut().deref().t.ReferenceTagCount();
 	if( reference_tag_count == 0u )
 	{
 		return;

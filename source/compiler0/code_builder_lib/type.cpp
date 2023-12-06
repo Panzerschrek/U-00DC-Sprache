@@ -357,18 +357,18 @@ bool Type::IsAbstract() const
 	return false;
 }
 
-size_t Type::ReferencesTagsCount() const
+size_t Type::ReferenceTagCount() const
 {
 	if( const auto class_type= GetClassType() )
 		return class_type->inner_references.size();
 	else if( const auto array_type= GetArrayType() )
-		return array_type->element_type.ReferencesTagsCount();
+		return array_type->element_type.ReferenceTagCount();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		// Combine all tags of tuple elements.
 		size_t result= 0;
 		for( const Type& element : tuple_type->element_types )
-			result+= element.ReferencesTagsCount();
+			result+= element.ReferenceTagCount();
 		return result;
 	}
 
@@ -377,7 +377,7 @@ size_t Type::ReferencesTagsCount() const
 
 InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 {
-	U_ASSERT( index < ReferencesTagsCount() );
+	U_ASSERT( index < ReferenceTagCount() );
 
 	if( const auto class_type= GetClassType() )
 	{
@@ -391,7 +391,7 @@ InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 		size_t offset= 0;
 		for( const Type& element : tuple_type->element_types )
 		{
-			const size_t count= element.ReferencesTagsCount();
+			const size_t count= element.ReferenceTagCount();
 			if( index >= offset && index < offset + count )
 				return element.GetInnerReferenceType( index - offset );
 			offset+= count;

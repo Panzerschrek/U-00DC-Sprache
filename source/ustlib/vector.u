@@ -380,13 +380,13 @@ public:
 		}
 	}
 
-	fn enable_if( c_references_tags_count == 0s )
+	fn enable_if( c_reference_tag_count == 0s )
 	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
-	fn enable_if( c_references_tags_count == 0s )
+	fn enable_if( c_reference_tag_count == 0s )
 	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
@@ -432,11 +432,11 @@ private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</T/>.align_of;
 	auto constexpr c_first_allocation_size_= get_vector_first_allocation_size( c_element_size_ );
-	auto constexpr c_references_tags_count= typeinfo</T/>.references_tags_count;
+	auto constexpr c_reference_tag_count= typeinfo</T/>.reference_tag_count;
 
-	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_references_tags_count />();
-	auto c_param2_pollution= reference_notation::pollution::param_n_param_m_all_inner_references</ c_references_tags_count />( 0u8, 2u8 );
-	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_references_tags_count />();
+	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
+	auto c_param2_pollution= reference_notation::pollution::param_n_param_m_all_inner_references</ c_reference_tag_count />( 0u8, 2u8 );
+	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_reference_tag_count />();
 
 private:
 	fn ensure_capacity( mut this, size_type new_size ) unsafe

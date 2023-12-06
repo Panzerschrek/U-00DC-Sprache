@@ -1462,7 +1462,7 @@ Type CodeBuilder::BuildFuncCode(
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for coroutines.
 			// Do this now, because it's impossible to check this in coroutine declaration, because this check requires complete types of parameters.
-			if( arg.value_type != ValueType::Value && arg.type.ReferencesTagsCount() > 0u )
+			if( arg.value_type != ValueType::Value && arg.type.ReferenceTagCount() > 0u )
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
 
 			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
@@ -1568,7 +1568,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		function_context.args_nodes[ arg_number ].first= variable;
 
-		const auto reference_tag_count= param.type.ReferencesTagsCount();
+		const auto reference_tag_count= param.type.ReferenceTagCount();
 		function_context.args_nodes[ arg_number ].second.resize( reference_tag_count );
 		for( size_t i= 0; i < reference_tag_count; ++i )
 		{

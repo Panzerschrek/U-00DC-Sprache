@@ -886,21 +886,21 @@ def ReferencesTagsField_Test0():
 		type RMutTup= tup[ i32, f32, RMut ];
 		fn Foo()
 		{
-			static_assert( typeinfo</i32/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</i32/>.reference_tag_count == size_type(0) );
 			static_assert( !typeinfo</i32/>.contains_mutable_references );
-			static_assert( typeinfo</  A/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</  A/>.reference_tag_count == size_type(0) );
 			static_assert( !typeinfo</  A/>.contains_mutable_references );
-			static_assert( typeinfo</  E/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</  E/>.reference_tag_count == size_type(0) );
 			static_assert( !typeinfo</  E/>.contains_mutable_references );
-			static_assert( typeinfo</ FP/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</ FP/>.reference_tag_count == size_type(0) );
 			static_assert( !typeinfo</ FP/>.contains_mutable_references );
-			static_assert( typeinfo</  R/>.references_tags_count == size_type(1) );
+			static_assert( typeinfo</  R/>.reference_tag_count == size_type(1) );
 			static_assert( !typeinfo</  R/>.contains_mutable_references );
-			static_assert( typeinfo</ RA/>.references_tags_count == size_type(1) );
+			static_assert( typeinfo</ RA/>.reference_tag_count == size_type(1) );
 			static_assert( !typeinfo</ RA/>.contains_mutable_references );
-			static_assert( typeinfo</RMut/>.references_tags_count == size_type(1) );
+			static_assert( typeinfo</RMut/>.reference_tag_count == size_type(1) );
 			static_assert( typeinfo</RMut/>.contains_mutable_references );
-			static_assert( typeinfo</RMutTup/>.references_tags_count == size_type(1) );
+			static_assert( typeinfo</RMutTup/>.reference_tag_count == size_type(1) );
 			static_assert( typeinfo</RMutTup/>.contains_mutable_references );
 		}
 	"""

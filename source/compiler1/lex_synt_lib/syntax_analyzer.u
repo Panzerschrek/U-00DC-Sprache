@@ -314,7 +314,7 @@ private:
 	auto inner_tags= "a";
 	auto constructor_pollution= ust::reference_notation::pollution::param0_param_1_reference;
 
-	static_assert( typeinfo</ SyntaxAnalyzer />.references_tags_count == 1s );
+	static_assert( typeinfo</ SyntaxAnalyzer />.reference_tag_count == 1s );
 
 private:
 	ust::array_view_imut</Lexem/> @(inner_tags) imut it_initial_;

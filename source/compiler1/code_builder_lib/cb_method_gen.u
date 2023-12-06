@@ -317,8 +317,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			function_type.params.push_back( move(src_param) );
 		}
 		{
-			auto references_tags_count= class_type.lock_imut().deref().inner_references.size();
-			for( auto mut i= 0s; i < references_tags_count; ++i )
+			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
 				var FunctionType::ReferencePollution mut pollution
 				{
@@ -501,8 +501,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			function_type.params.push_back( move(src_param) );
 		}
 		{
-			auto references_tags_count= class_type.lock_imut().deref().inner_references.size();
-			for( auto mut i= 0s; i < references_tags_count; ++i )
+			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
+			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
 				var FunctionType::ReferencePollution mut pollution
 				{

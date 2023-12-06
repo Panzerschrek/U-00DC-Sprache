@@ -137,12 +137,12 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_size_field( "align_of", data_layout_.getABITypeAlignment( llvm_type ) );
 	}
 
-	add_size_field( "references_tags_count", type.ReferencesTagsCount() );
+	add_size_field( "reference_tag_count", type.ReferenceTagCount() );
 
 	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
 	{
 		bool contains_mutable_references= false;
-		for( size_t i= 0, reference_tag_count= type.ReferencesTagsCount(); i < reference_tag_count; ++i )
+		for( size_t i= 0, reference_tag_count= type.ReferenceTagCount(); i < reference_tag_count; ++i )
 			contains_mutable_references |= type.GetInnerReferenceType(i) == InnerReferenceType::Mut;
 
 		add_bool_field( "contains_mutable_references", contains_mutable_references );

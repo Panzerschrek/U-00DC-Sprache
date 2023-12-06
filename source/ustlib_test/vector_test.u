@@ -36,12 +36,12 @@ type CVec= ust::vector</C/>;
 type RVec= ust::vector</R/>;
 type NCVec= ust::vector</NC/>;
 
-static_assert( typeinfo</I32Vec/>.references_tags_count == 0s );
-static_assert( typeinfo</AVec/>.references_tags_count == 0s );
-static_assert( typeinfo</BVec/>.references_tags_count == 0s );
-static_assert( typeinfo</CVec/>.references_tags_count == 0s );
-static_assert( typeinfo</RVec/>.references_tags_count == 1s );
-static_assert( typeinfo</NCVec/>.references_tags_count == 0s );
+static_assert( typeinfo</I32Vec/>.reference_tag_count == 0s );
+static_assert( typeinfo</AVec/>.reference_tag_count == 0s );
+static_assert( typeinfo</BVec/>.reference_tag_count == 0s );
+static_assert( typeinfo</CVec/>.reference_tag_count == 0s );
+static_assert( typeinfo</RVec/>.reference_tag_count == 1s );
+static_assert( typeinfo</NCVec/>.reference_tag_count == 0s );
 
 template</ type T /> fn IsMutableReference( T & mut r ) : bool { ust::ignore_unused(r); return true ; }
 template</ type T /> fn IsMutableReference( T &imut r ) : bool { ust::ignore_unused(r); return false; }

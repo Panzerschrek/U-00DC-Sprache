@@ -236,7 +236,7 @@ Example:
        i32& @("a"c8) x; // Reference points to tag "a" (#0).
        i32& @("b"c8) y; // Reference points to tag "b" (#1).
    }
-   static_assert( typeinfo</S/>.references_tags_count == 2s );
+   static_assert( typeinfo</S/>.reference_tag_count == 2s );
 
    struct T
    {
@@ -248,7 +248,7 @@ Example:
        u64& @("e"c8) i0;
        i64& @("e"c8) i1;
    }
-   static_assert( typeinfo</T/>.references_tags_count == 5s );
+   static_assert( typeinfo</T/>.reference_tag_count == 5s );
 
    // Function returns a struct, different inner reference tags of which are pointing to different reference arguments.
    // "x" reference marked with "a" tag (#0) will point to reference argument "x".

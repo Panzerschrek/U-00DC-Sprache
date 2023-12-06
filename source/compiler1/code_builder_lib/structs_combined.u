@@ -651,11 +651,11 @@ fn Type::IsAbstract( this ) : bool
 	return false;
 }
 
-fn Type::ReferencesTagsCount( this ) : u32
+fn Type::ReferenceTagCount( this ) : u32
 {
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_type.ReferencesTagsCount();
+		return array_type.element_type.ReferenceTagCount();
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
@@ -663,7 +663,7 @@ fn Type::ReferencesTagsCount( this ) : u32
 		auto mut result= 0u;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			result+= element_type.ReferencesTagsCount();
+			result+= element_type.ReferenceTagCount();
 		}
 		return result;
 	}
@@ -686,7 +686,7 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 		var size_type mut offset= 0s;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			var size_type count( element_type.ReferencesTagsCount() );
+			var size_type count( element_type.ReferenceTagCount() );
 			if( index >= offset && index < offset + count )
 			{
 				return element_type.GetInnerReferenceKind( index - offset );
@@ -970,7 +970,7 @@ fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
 
 fn Variable::CreatePtr( byval mut this ) : VariablePtr
 {
-	auto reference_tag_count= this.t.ReferencesTagsCount();
+	auto reference_tag_count= this.t.ReferenceTagCount();
 	for( auto mut i= 0u; i < reference_tag_count; ++i )
 	{
 		// Create inner reference node.

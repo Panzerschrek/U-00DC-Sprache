@@ -123,7 +123,7 @@ template</ type To, type From />
 fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( reference_notation::return_inner_references::param0 )
 {
 	// Disable cast where it can produce internal reference out of nowhere.
-	static_assert( typeinfo</To/>.references_tags_count <= typeinfo</From/>.references_tags_count );
+	static_assert( typeinfo</To/>.reference_tag_count <= typeinfo</From/>.reference_tag_count );
 	// Disable cast where it produces type with  mutable reference inside out of nowhere.
 	static_assert( !( typeinfo</To/>.contains_mutable_references && !typeinfo</From/>.contains_mutable_references ) );
 

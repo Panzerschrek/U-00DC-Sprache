@@ -354,7 +354,7 @@ def AsyncFunctionTypeName_Test4():
 def AsyncFunctionTypeName_Test5():
 	c_program_text= """
 		type Func= async'mut, imut, mut' : i32;
-		static_assert( typeinfo</Func/>.references_tags_count == 3s );
+		static_assert( typeinfo</Func/>.reference_tag_count == 3s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -362,7 +362,7 @@ def AsyncFunctionTypeName_Test5():
 def AsyncFunctionTypeName_Test6():
 	c_program_text= """
 		type MutFunc= async'imut' : i32 &;
-		static_assert( typeinfo</MutFunc/>.references_tags_count == 1s );
+		static_assert( typeinfo</MutFunc/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -371,7 +371,7 @@ def AsyncFunctionTypeName_Test7():
 	c_program_text= """
 		struct S{ i32 &imut x; }
 		type ImutFunc= async'mut' : S;
-		static_assert( typeinfo</ImutFunc/>.references_tags_count == 1s );
+		static_assert( typeinfo</ImutFunc/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -519,7 +519,7 @@ def Typeinfo_ForAsyncFunctions_Test0():
 		static_assert( int_async_func_typeinfo.coroutine_return_type.size_of == 4s );
 		static_assert( !int_async_func_typeinfo.coroutine_return_value_is_mutable );
 		static_assert( !int_async_func_typeinfo.coroutine_return_value_is_reference );
-		static_assert( int_async_func_typeinfo.references_tags_count == 0s ); // This coroutine type has no references inside.
+		static_assert( int_async_func_typeinfo.reference_tag_count == 0s ); // This coroutine type has no references inside.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -538,7 +538,7 @@ def Typeinfo_ForAsyncFunctions_Test1():
 		static_assert( f64_async_func_gen_typeinfo.coroutine_return_type.size_of == 8s );
 		static_assert( !f64_async_func_gen_typeinfo.coroutine_return_value_is_mutable );
 		static_assert( f64_async_func_gen_typeinfo.coroutine_return_value_is_reference );
-		static_assert( f64_async_func_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+		static_assert( f64_async_func_gen_typeinfo.reference_tag_count == 1s ); // This coroutine type has references inside.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -557,6 +557,6 @@ def Typeinfo_ForAsyncFunctions_Test2():
 		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_type.size_of == 1s );
 		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_value_is_mutable );
 		static_assert( mut_ref_char_async_func_typeinfo.coroutine_return_value_is_reference );
-		static_assert( mut_ref_char_async_func_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+		static_assert( mut_ref_char_async_func_typeinfo.reference_tag_count == 1s ); // This coroutine type has references inside.
 	"""
 	tests_lib.build_program( c_program_text )

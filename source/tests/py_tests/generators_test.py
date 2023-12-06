@@ -461,7 +461,7 @@ def GeneratorTypeName_Test4():
 def GeneratorTypeName_Test5():
 	c_program_text= """
 		type Gen= generator'mut, imut, mut' : i32;
-		static_assert( typeinfo</Gen/>.references_tags_count == 3s );
+		static_assert( typeinfo</Gen/>.reference_tag_count == 3s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -469,7 +469,7 @@ def GeneratorTypeName_Test5():
 def GeneratorTypeName_Test6():
 	c_program_text= """
 		type MutGen= generator'imut' : i32 &;
-		static_assert( typeinfo</MutGen/>.references_tags_count == 1s );
+		static_assert( typeinfo</MutGen/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -478,7 +478,7 @@ def GeneratorTypeName_Test7():
 	c_program_text= """
 		struct S{ i32 &imut x; }
 		type ImutGen= generator'mut' : S;
-		static_assert( typeinfo</ImutGen/>.references_tags_count == 1s );
+		static_assert( typeinfo</ImutGen/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -681,7 +681,7 @@ def GeneratorMethod_Test1():
 		{
 			var S s{ .x= 42 };
 			auto mut gen= s.SimpleGen();
-			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
+			static_assert( typeinfo</ typeof(gen) />.reference_tag_count == 1s ); // generator holds reference to "this".
 			auto mut advanced= 0;
 			loop
 			{
@@ -717,7 +717,7 @@ def GeneratorMethod_Test2():
 		{
 			var S mut s{ .x= 17 };
 			auto mut gen= s.SimpleGen(3);
-			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
+			static_assert( typeinfo</ typeof(gen) />.reference_tag_count == 1s ); // generator holds reference to "this".
 			auto mut advanced= 0;
 			loop
 			{
@@ -753,7 +753,7 @@ def GeneratorMethod_Test3():
 		{
 			var S s{ .x= 777 };
 			auto mut gen= s.SimpleGen();
-			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
+			static_assert( typeinfo</ typeof(gen) />.reference_tag_count == 1s ); // generator holds reference to "this".
 			auto mut advanced= 0;
 			loop
 			{
@@ -1241,7 +1241,7 @@ def Typeinfo_ForGenerators_Test0():
 		static_assert( int_gen_typeinfo.coroutine_return_type.size_of == 4s );
 		static_assert( !int_gen_typeinfo.coroutine_return_value_is_mutable );
 		static_assert( !int_gen_typeinfo.coroutine_return_value_is_reference );
-		static_assert( int_gen_typeinfo.references_tags_count == 0s ); // This coroutine type has no references inside.
+		static_assert( int_gen_typeinfo.reference_tag_count == 0s ); // This coroutine type has no references inside.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1260,7 +1260,7 @@ def Typeinfo_ForGenerators_Test1():
 		static_assert( f64_ref_gen_typeinfo.coroutine_return_type.size_of == 8s );
 		static_assert( !f64_ref_gen_typeinfo.coroutine_return_value_is_mutable );
 		static_assert( f64_ref_gen_typeinfo.coroutine_return_value_is_reference );
-		static_assert( f64_ref_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+		static_assert( f64_ref_gen_typeinfo.reference_tag_count == 1s ); // This coroutine type has references inside.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1279,7 +1279,7 @@ def Typeinfo_ForGenerators_Test2():
 		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_type.size_of == 1s );
 		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_value_is_mutable );
 		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_value_is_reference );
-		static_assert( mut_ref_char_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+		static_assert( mut_ref_char_gen_typeinfo.reference_tag_count == 1s ); // This coroutine type has references inside.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1313,7 +1313,7 @@ def GeneratorsEqualityCompare_Test0():
 def Generator_InnerReferenceTagDeduction_Test0():
 	c_program_text= """
 		fn generator Gen() : i32 {}
-		static_assert( typeinfo</typeof(Gen())/>.references_tags_count == 0s ); // No references for generator with no params.
+		static_assert( typeinfo</typeof(Gen())/>.reference_tag_count == 0s ); // No references for generator with no params.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1328,7 +1328,7 @@ def Generator_InnerReferenceTagDeduction_Test1():
 			var [i32, 4] a=zero_init;
 			var tup[f32, char8] t= zero_init;
 			auto gen= Gen(false, s, a, t);
-			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 0s ); // No references for generator with value params.
+			static_assert( typeinfo</typeof(gen)/>.reference_tag_count == 0s ); // No references for generator with value params.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -1337,7 +1337,7 @@ def Generator_InnerReferenceTagDeduction_Test1():
 def Generator_InnerReferenceTagDeduction_Test1():
 	c_program_text= """
 		fn generator Gen(i32& x) : i32 {}
-		static_assert( typeinfo</typeof(Gen(0))/>.references_tags_count == 1s ); // Has references for generator with reference-params.
+		static_assert( typeinfo</typeof(Gen(0))/>.reference_tag_count == 1s ); // Has references for generator with reference-params.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1349,7 +1349,7 @@ def Generator_InnerReferenceTagDeduction_Test2():
 		{
 			var f32 mut x= 0.0f;
 			auto mut gen= Gen(x);
-			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 1s ); // Has references for generator with mutable reference-params.
+			static_assert( typeinfo</typeof(gen)/>.reference_tag_count == 1s ); // Has references for generator with mutable reference-params.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -1364,7 +1364,7 @@ def Generator_InnerReferenceTagDeduction_Test3():
 			var i32 x= 0;
 			var S s{ .x= x };
 			auto gen= Gen(s);
-			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 1s ); // Has references for generator with value-params, containing refrerences inside.
+			static_assert( typeinfo</typeof(gen)/>.reference_tag_count == 1s ); // Has references for generator with value-params, containing refrerences inside.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
