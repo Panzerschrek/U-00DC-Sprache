@@ -167,7 +167,7 @@ public:
 	};
 
 	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
-	static constexpr uint8_t c_arg_reference_tag_number= 255u;
+	static constexpr uint8_t c_param_reference_number= 255u;
 	using ParamReference= std::pair< uint8_t, uint8_t >;
 
 	struct ReferencePollution

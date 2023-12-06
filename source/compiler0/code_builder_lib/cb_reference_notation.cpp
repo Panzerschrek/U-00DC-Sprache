@@ -31,7 +31,7 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 
 	FunctionType::ParamReference param_reference;
 	param_reference.first= uint8_t(param - '0');
-	param_reference.second= ref == '_' ? FunctionType::c_arg_reference_tag_number : uint8_t( ref - 'a' );
+	param_reference.second= ref == '_' ? FunctionType::c_param_reference_number : uint8_t( ref - 'a' );
 
 	if( param_reference.first >= num_params )
 	{
@@ -149,7 +149,7 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 		pollution.dst= *dst_reference;
 		pollution.src= *src_reference;
 
-		if( pollution.dst.second == FunctionType::c_arg_reference_tag_number )
+		if( pollution.dst.second == FunctionType::c_param_reference_number )
 		{
 			REPORT_ERROR( ArgReferencePollution, names_scope.GetErrors(), src_loc );
 			continue;

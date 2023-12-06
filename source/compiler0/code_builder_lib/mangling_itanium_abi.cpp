@@ -379,7 +379,7 @@ void EncodeParamReference( ManglerState& mangler_state, const FunctionType::Para
 
 	mangler_state.Push( "L" );
 	mangler_state.Push( EncodeFundamentalType( U_FundamentalType::char8_ ) );
-	if( param_reference.second == FunctionType::c_arg_reference_tag_number )
+	if( param_reference.second == FunctionType::c_param_reference_number )
 		mangler_state.Push( std::to_string( int('_') ) );
 	else
 		mangler_state.Push( std::to_string( int(param_reference.second) + 'a' ) );

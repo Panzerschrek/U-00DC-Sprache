@@ -18,7 +18,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	{
 		for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
 		{
-			if( pollution.src.first == 0 && pollution.src.second == FunctionType::c_arg_reference_tag_number )
+			if( pollution.src.first == 0 && pollution.src.second == FunctionType::c_param_reference_number )
 				REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc );
 		}
 	}
@@ -68,7 +68,7 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const Function
 	const auto check_param_reference=
 	[&]( const FunctionType::ParamReference& param_reference )
 	{
-		if( param_reference.second != FunctionType::c_arg_reference_tag_number && param_reference.first < function_type.params.size()  )
+		if( param_reference.second != FunctionType::c_param_reference_number && param_reference.first < function_type.params.size()  )
 		{
 			const Type& type= function_type.params[ param_reference.first ].type;
 			const auto tag_count= type.ReferenceTagCount();
@@ -192,7 +192,7 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 	{
 		const size_t arg_n= param_and_tag.first;
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
-		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
+		if( param_and_tag.second == FunctionType::c_param_reference_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
 		else if( param_and_tag.second < function_context.args_nodes[arg_n].second.size() && variable_node == function_context.args_nodes[arg_n].second[ param_and_tag.second ] )
 			return true;
@@ -221,7 +221,7 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 	{
 		const size_t arg_n= param_and_tag.first;
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
-		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
+		if( param_and_tag.second == FunctionType::c_param_reference_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
 		if( param_and_tag.second < function_context.args_nodes[arg_n].second.size() && variable_node == function_context.args_nodes[arg_n].second[param_and_tag.second] )
 			return true;
@@ -324,7 +324,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 				for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
 				{
 					if( accesible_variable == function_context.args_nodes[j].first )
-						reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_arg_reference_tag_number );
+						reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_param_reference_number );
 
 					for( size_t k= 0; k < function_context.args_nodes[j].second.size(); ++k )
 					if( accesible_variable == function_context.args_nodes[j].second[k] )

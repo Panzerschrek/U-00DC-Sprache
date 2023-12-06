@@ -869,7 +869,7 @@ void ManglerMSVC::EncodeParamReference( ManglerState& mangler_state, const Funct
 
 	mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
 	mangler_state.PushElement( '0' );
-	const uint32_t param_reference_char= param_reference.second == FunctionType::c_arg_reference_tag_number ? '_' : ('a' + param_reference.second);
+	const uint32_t param_reference_char= param_reference.second == FunctionType::c_param_reference_number ? '_' : ('a' + param_reference.second);
 	EncodeNumber( mangler_state, llvm::APInt( 64, param_reference_char ), false );
 
 	mangler_state.PushElement( g_terminator );

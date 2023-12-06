@@ -293,7 +293,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		{
 			// TODO - what if param is immutable reference and return reference is mutable?
 			if( function_type.params[i].value_type != ValueType::Value )
-				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
+				function_type.return_references.emplace( i, FunctionType::c_param_reference_number );
 		}
 	}
 

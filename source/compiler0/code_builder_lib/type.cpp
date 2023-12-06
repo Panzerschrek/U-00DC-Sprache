@@ -709,7 +709,7 @@ bool operator==( const RawPointerType& l, const RawPointerType& r )
 // FunctionType
 //
 
-constexpr uint8_t FunctionType::c_arg_reference_tag_number;
+constexpr uint8_t FunctionType::c_param_reference_number;
 
 bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 {

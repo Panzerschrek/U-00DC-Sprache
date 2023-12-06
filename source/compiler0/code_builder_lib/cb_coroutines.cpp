@@ -86,7 +86,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 			coroutine_return_inner_ferences.push_back(
 				std::set<FunctionType::ParamReference>{
-					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_arg_reference_tag_number } } );
+					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
 		}
 	}
 
@@ -98,7 +98,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 
 		FunctionType::ParamReference out_reference;
 		out_reference.first= 0; // Always use param0 - coroutine itself.
-		if( param_reference.second == FunctionType::c_arg_reference_tag_number )
+		if( param_reference.second == FunctionType::c_param_reference_number )
 			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
 		else
 			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
@@ -116,7 +116,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 
 			FunctionType::ParamReference out_reference;
 			out_reference.first= 0; // Always use param0 - coroutine itself.
-			if( param_reference.second == FunctionType::c_arg_reference_tag_number )
+			if( param_reference.second == FunctionType::c_param_reference_number )
 				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
 			else
 				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
@@ -782,7 +782,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 			for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
 			{
 				U_ASSERT( param_reference.first == 0u );
-				U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+				U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
 				if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
 					function_context.variables_state.TryAddLink(
 						async_func_variable->inner_reference_nodes[param_reference.second],
@@ -797,7 +797,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_references )
 		{
 			U_ASSERT( param_reference.first == 0u );
-			U_ASSERT( param_reference.second != FunctionType::c_arg_reference_tag_number );
+			U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
 			if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
 				function_context.variables_state.TryAddLink( async_func_variable->inner_reference_nodes[param_reference.second], result, names.GetErrors(), src_loc );
 		}

@@ -3587,7 +3587,7 @@ Value CodeBuilder::DoCallFunction(
 			if( arg_reference.first < args_nodes.size() )
 			{
 				const auto& arg_node= args_nodes[arg_reference.first];
-				if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
+				if( arg_reference.second == FunctionType::c_param_reference_number )
 					function_context.variables_state.TryAddLink( arg_node, result, names.GetErrors(), call_src_loc );
 				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
 					function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], result, names.GetErrors(), call_src_loc );
@@ -3603,7 +3603,7 @@ Value CodeBuilder::DoCallFunction(
 			if( arg_reference.first < args_nodes.size() )
 			{
 				const auto& arg_node= args_nodes[arg_reference.first];
-				if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
+				if( arg_reference.second == FunctionType::c_param_reference_number )
 					function_context.variables_state.TryAddLink( arg_node, dst_node, names.GetErrors(), call_src_loc );
 				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
 					function_context.variables_state.TryAddLink( arg_node->inner_reference_nodes[ arg_reference.second ], dst_node, names.GetErrors(), call_src_loc );
@@ -3626,13 +3626,13 @@ Value CodeBuilder::DoCallFunction(
 		const VariablePtr& dst_arg_node= args_nodes[ dst_arg ];
 
 		VariablePtr src_node;
-		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
+		if( referene_pollution.src.second == FunctionType::c_param_reference_number )
 			src_node= src_arg_node;
 		else if( referene_pollution.src.second < src_arg_node->inner_reference_nodes.size() )
 			src_node= src_arg_node->inner_reference_nodes[ referene_pollution.src.second ];
 
 		VariablePtr dst_node;
-		if( referene_pollution.dst.second == FunctionType::c_arg_reference_tag_number )
+		if( referene_pollution.dst.second == FunctionType::c_param_reference_number )
 			dst_node= dst_arg_node;
 		else if( referene_pollution.dst.second < dst_arg_node->inner_reference_nodes.size() )
 			dst_node= dst_arg_node->inner_reference_nodes[ referene_pollution.dst.second ];
