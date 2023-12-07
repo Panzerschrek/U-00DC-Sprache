@@ -163,9 +163,9 @@ public:
 	}
 
 	// Take value, leave box empty.
-	// This is a zero-params template function, because "is_abstract" check requires T completeness, which may create globals loop.
+	// This is a zero-params template function, because type checks requires T completeness, which may create globals loop.
 	template<//>
-	fn enable_if( !is_abstract</T/>() ) try_take_value( mut this ) : T
+	fn enable_if( !is_polymorph_non_final_class</T/>() && !is_abstract</T/>() ) try_take_value( mut this ) : T
 	{
 		halt if(empty());
 		unsafe
