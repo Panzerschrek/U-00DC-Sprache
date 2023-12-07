@@ -2,7 +2,8 @@
 Experimental programming language.  
 It is a compilable, statically-typed C++/Rust-like language.
 
-Here is a compiler for this language. 
+The sources of the compiler for this language and some related tools are located here.
+Also standard library sources and documentation sources are located in this repository.
 
 
 ### Documentation
@@ -53,5 +54,11 @@ For more information/examples see build scripts in *ci* directory.
 
 [examples](source/examples/README.md)
 
+
+### Downloads
+
+The compiler downloads are available on the actions page - as action artifacts.
+It's recommended to use latest build of the *master* branch.
+
 ### Authors
-Copyright © 2016-2023 "Panzerscrek".
+Copyright © 2016-2023 "Panzerschrek".
