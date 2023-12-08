@@ -622,12 +622,14 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
-				return TemplateSignatureParam::TypeParam();
+				var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+				return move(type_param);
 			}
 			if( v.constexpr_value == LLVMValueRef::Null )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
-				return TemplateSignatureParam::TypeParam();
+				var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+				return move(type_param);
 			}
 
 			var TemplateSignatureParam::VariableParam mut variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
@@ -637,12 +639,14 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
-		return TemplateSignatureParam::TypeParam();
+		var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+		return move(type_param);
 	}
 	else
 	{
 		REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, src_loc, GetValueKindName( value ) )
-		return TemplateSignatureParam::TypeParam();
+		var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+		return move(type_param);
 	}
 }
 

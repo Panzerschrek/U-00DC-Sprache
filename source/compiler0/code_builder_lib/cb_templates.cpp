@@ -215,7 +215,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	U_UNUSED(function_context);
 	U_UNUSED(template_parameters);
 	U_UNUSED(template_parameters_usage_flags);
-	return TemplateSignatureParam::TypeParam();
+	return TemplateSignatureParam::TypeParam{ invalid_type_ };
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
@@ -437,12 +437,12 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, variable->type );
-			return TemplateSignatureParam::TypeParam();
+			return TemplateSignatureParam::TypeParam{ invalid_type_ };
 		}
 		if( variable->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), src_loc );
-			return TemplateSignatureParam::TypeParam();
+			return TemplateSignatureParam::TypeParam{ invalid_type_ };
 		}
 		return TemplateSignatureParam::VariableParam{ variable->type, variable->constexpr_value };
 	}
@@ -451,7 +451,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, "" );
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), src_loc, value.GetKindName() );
-	return TemplateSignatureParam::TypeParam();
+	return TemplateSignatureParam::TypeParam{ invalid_type_ };
 }
 
 bool CodeBuilder::MatchTemplateArg(
