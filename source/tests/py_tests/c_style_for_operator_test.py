@@ -71,7 +71,7 @@ def CStyleForOperator_Test2():
 
 
 def CStyleForOperator_Test3():
-	# No condition - should iterate forevere
+	# No condition - should iterate forever
 	c_program_text= """
 		fn Foo() : u32
 		{
@@ -153,6 +153,29 @@ def CStyleForOperator_Test7():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 4 + 3 + 2 + 1 + 0 - 1 )
+
+
+def CStyleForOperator_Test8():
+	# Iteration block is not reachable.
+	c_program_text= """
+		struct S
+		{
+			i32 x= 37;
+			fn Increment( mut this ){ ++x; }
+			fn IsLessThan100( this ) : bool { return x < 100; }
+		}
+		fn Foo() : i32
+		{
+			for( var S mut s; s.IsLessThan100(); s.Increment() )
+			{
+				return s.x;
+			}
+			return 0;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 37 )
 
 
 def CStyleForOperator_BreakTest0():

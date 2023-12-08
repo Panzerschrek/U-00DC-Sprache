@@ -1036,11 +1036,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 	}
 
-	bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_variables_states.empty();
+	const bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_variables_states.empty();
 
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
 	if( loop_iteration_block_is_reachable )
 		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+	else
+	{
+		// Loop iteration block is unreachable.
+		// Use some valid but not relevant variables state for it.
+		function_context.variables_state= variables_state_after_test_block;
+	}
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 	variables_state_for_merge.push_back( std::move(variables_state_after_test_block) );
