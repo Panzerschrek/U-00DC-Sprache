@@ -115,8 +115,8 @@ void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
 		CheckReferenceNotationMutabilityViolationForReturnReferences( function_type, function_type.return_references, errors_container, src_loc );
 
 	for(
-		size_t i= 0, reference_tag_count= function_type.return_type.ReferenceTagCount();
-		i < std::min( reference_tag_count, function_type.return_inner_references.size() );
+		size_t i= 0, i_end= std::min( function_type.return_type.ReferenceTagCount(), function_type.return_inner_references.size() );
+		i < i_end;
 		++i )
 	{
 		if( function_type.return_type.GetInnerReferenceType(i) == InnerReferenceType::Mut )
@@ -155,7 +155,7 @@ void CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference(
 	if( param_reference.first >= function_type.params.size() )
 		return; // May be in case of error.
 
-	const FunctionType::Param& param= function_type.params[  param_reference.first ];
+	const FunctionType::Param& param= function_type.params[ param_reference.first ];
 
 	if( param_reference.second == FunctionType::c_param_reference_number )
 	{

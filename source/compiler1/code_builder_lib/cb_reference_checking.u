@@ -63,8 +63,8 @@ fn CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness( FunctionTy
 	}
 
 	for(
-		var size_type mut i= 0s, reference_tag_count= size_type( function_type.return_type.ReferenceTagCount() );
-		i < ust::min( reference_tag_count, function_type.return_inner_references.size() );
+		var size_type mut i= 0s, i_end= ust::min( size_type( function_type.return_type.ReferenceTagCount() ), function_type.return_inner_references.size() );
+		i < i_end;
 		++i )
 	{
 		if( function_type.return_type.GetInnerReferenceKind(i) == InnerReferenceKind::Mut )
@@ -75,11 +75,12 @@ fn CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness( FunctionTy
 
 	foreach( & pollution : function_type.references_pollution )
 	{
-		if( size_type(pollution.dst.param_index) >= function_type.params.size() )
+		auto dst_param_index= size_type(pollution.dst.param_index);
+		if( dst_param_index >= function_type.params.size() )
 		{
 			continue;
 		}
-		var FunctionType::Param& dst_param= function_type.params[ size_type(pollution.dst.param_index) ];
+		var FunctionType::Param& dst_param= function_type.params[ dst_param_index ];
 
 		if( pollution.dst.reference_index != FunctionType::c_param_reference_number &&
 			u32(pollution.dst.reference_index) < dst_param.t.ReferenceTagCount() &&
@@ -100,12 +101,13 @@ fn CodeBuilder::CheckReferenceNotationMutabilityViolationForReturnReferences( Fu
 
 fn CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	if( size_type(param_reference.param_index) >= function_type.params.size() )
+	auto param_index= size_type(param_reference.param_index);
+	if( param_index >= function_type.params.size() )
 	{
 		return; // May be in case of error.
 	}
 
-	var FunctionType::Param& param= function_type.params[ size_type(param_reference.param_index) ];
+	var FunctionType::Param& param= function_type.params[ param_index ];
 
 	if( param_reference.reference_index == FunctionType::c_param_reference_number )
 	{
