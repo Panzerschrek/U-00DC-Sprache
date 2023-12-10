@@ -112,6 +112,18 @@ void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
 		if( function_type.return_type.GetInnerReferenceType(i) == InnerReferenceType::Mut )
 			CheckHasNoImmutableReferencesInReturnReferences( function_type, function_type.return_inner_references[i], errors_container, src_loc );
 	}
+
+	for( const auto& pollution : function_type.references_pollution )
+	{
+		if( pollution.dst.first >= function_type.params.size() )
+			continue;
+		const FunctionType::Param& dst_param= function_type.params[ pollution.dst.first ];
+
+		if( pollution.dst.second != FunctionType::c_param_reference_number &&
+			pollution.dst.second < dst_param.type.ReferenceTagCount() &&
+			dst_param.type.GetInnerReferenceType( pollution.dst.second ) == InnerReferenceType::Mut )
+			CheckHasNoImmutableReferences( function_type, pollution.src, errors_container, src_loc );
+	}
 }
 
 void CodeBuilder::CheckHasNoImmutableReferencesInReturnReferences(
@@ -121,22 +133,30 @@ void CodeBuilder::CheckHasNoImmutableReferencesInReturnReferences(
 	const SrcLoc& src_loc )
 {
 	for( const auto& return_reference : return_references )
-	{
-		if( return_reference.first >= function_type.params.size() )
-			continue; // May be in case of error.
-		const FunctionType::Param& param= function_type.params[  return_reference.first ];
+		CheckHasNoImmutableReferences( function_type, return_reference, errors_container, src_loc );
+}
 
-		if( return_reference.second == FunctionType::c_param_reference_number )
-		{
-			if( param.value_type == ValueType::ReferenceImut )
-				REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
-		}
-		else
-		{
-			if( return_reference.second < param.type.ReferenceTagCount() &&
-				param.type.GetInnerReferenceType( return_reference.second ) != InnerReferenceType::Mut )
-				REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
-		}
+void CodeBuilder::CheckHasNoImmutableReferences(
+	const FunctionType& function_type,
+	const FunctionType::ParamReference& param_reference,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	if( param_reference.first >= function_type.params.size() )
+		return; // May be in case of error.
+
+	const FunctionType::Param& param= function_type.params[  param_reference.first ];
+
+	if( param_reference.second == FunctionType::c_param_reference_number )
+	{
+		if( param.value_type == ValueType::ReferenceImut )
+			REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
+	}
+	else
+	{
+		if( param_reference.second < param.type.ReferenceTagCount() &&
+			param.type.GetInnerReferenceType( param_reference.second ) != InnerReferenceType::Mut )
+			REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
 	}
 }
 

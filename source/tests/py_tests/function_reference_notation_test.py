@@ -490,13 +490,41 @@ def ReferenceNotationViolatesMutability_Test4():
 	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 4 ) )
 
 
-
 def ReferenceNotationViolatesMutability_Test5():
 	c_program_text= """
 		struct S{ i32 &imut r; }
 		struct T{ i32 &mut r; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
 		fn Foo( S& s ) : T @(return_inner_references) // Error - result mutable inner reference points to an immutable arg inner reference.
+		{
+			halt;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 5 ) )
+
+
+def ReferenceNotationViolatesMutability_Test6():
+	c_program_text= """
+		struct S{ i32 &mut r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s, i32& x ) @(reference_pollution) // Error - create a mutable reference inside arg "s" to immutable arg "x".
+		{
+			halt;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 4 ) )
+
+
+def ReferenceNotationViolatesMutability_Test7():
+	c_program_text= """
+		struct S{ i32 &mut r; }
+		struct T{ i32 &imut r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1a" ] ];
+		fn Foo( S &mut s, T t ) @(reference_pollution) // Error - create a mutable reference inside arg "s" to immutable arg "x".an immutable reference of arg "t".
 		{
 			halt;
 		}
