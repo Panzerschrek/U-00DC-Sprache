@@ -4,6 +4,11 @@ import "code_builder.uh"
 namespace U1
 {
 
+fn CodeBuilder::CheckCompleteFunctionReferenceNotation( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	CheckFunctionReferencesNotationInnerReferences( function_type, names_scope, src_loc );
+	CheckFunctionReferencesNotationMutabilityCorrectness( function_type, names_scope, src_loc );
+}
 
 fn CodeBuilder::CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
@@ -44,6 +49,77 @@ fn CodeBuilder::CheckFunctionReferencesNotationParamReference( FunctionType& fun
 		if( u32(param_reference.reference_index) >= tag_count )
 		{
 			REPORT_ERROR( ReferenceTagOutOfRange, names_scope, src_loc, u32(param_reference.reference_index), t, tag_count )
+		}
+	}
+}
+
+fn CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	// Do not allow to specify reference notation where immutable references are linked with mutable references.
+
+	if( function_type.return_value_type == ValueType::ReferenceMut )
+	{
+		CheckReferenceNotationMutabilityViolationForReturnReferences( function_type, function_type.return_references, names_scope, src_loc );
+	}
+
+	for(
+		var size_type mut i= 0s, reference_tag_count= size_type( function_type.return_type.ReferenceTagCount() );
+		i < ust::min( reference_tag_count, function_type.return_inner_references.size() );
+		++i )
+	{
+		if( function_type.return_type.GetInnerReferenceKind(i) == InnerReferenceKind::Mut )
+		{
+			CheckReferenceNotationMutabilityViolationForReturnReferences( function_type, function_type.return_inner_references[i], names_scope, src_loc );
+		}
+	}
+
+	foreach( & pollution : function_type.references_pollution )
+	{
+		if( size_type(pollution.dst.param_index) >= function_type.params.size() )
+		{
+			continue;
+		}
+		var FunctionType::Param& dst_param= function_type.params[ size_type(pollution.dst.param_index) ];
+
+		if( pollution.dst.reference_index != FunctionType::c_param_reference_number &&
+			u32(pollution.dst.reference_index) < dst_param.t.ReferenceTagCount() &&
+			dst_param.t.GetInnerReferenceKind( size_type( pollution.dst.reference_index ) ) == InnerReferenceKind::Mut )
+		{
+			CheckReferenceNotationMutabilityViolationForMutableReference( function_type, pollution.src, names_scope, src_loc );
+		}
+	}
+}
+
+fn CodeBuilder::CheckReferenceNotationMutabilityViolationForReturnReferences( FunctionType& function_type, FunctionType::ParamReferences& return_references, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	foreach( &return_reference : return_references )
+	{
+		CheckReferenceNotationMutabilityViolationForMutableReference( function_type, return_reference, names_scope, src_loc );
+	}
+}
+
+fn CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( size_type(param_reference.param_index) >= function_type.params.size() )
+	{
+		return; // May be in case of error.
+	}
+
+	var FunctionType::Param& param= function_type.params[ size_type(param_reference.param_index) ];
+
+	if( param_reference.reference_index == FunctionType::c_param_reference_number )
+	{
+		if( param.value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( ReferenceNotationViolatesMutability, names_scope, src_loc )
+		}
+	}
+	else
+	{
+		if( u32(param_reference.reference_index) < param.t.ReferenceTagCount() &&
+			param.t.GetInnerReferenceKind( size_type(param_reference.reference_index) ) != InnerReferenceKind::Mut )
+		{
+			REPORT_ERROR( ReferenceNotationViolatesMutability, names_scope, src_loc )
 		}
 	}
 }
