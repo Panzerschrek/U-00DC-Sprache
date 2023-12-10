@@ -1254,6 +1254,23 @@ U_TEST( ReferenceCheckTest_TryChangeArgs2 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
+U_TEST( ReferenceCheckTest_MutableReferenceResultPointsOnlyToMutableArgs_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Auto reference mapping is generated - result mutable reference points only to mutable args.
+		fn Bar( i32 &mut x, i32 &imut y ) : i32 &mut;
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			auto &mut r= Bar( x, y );
+			++y; // Can modifiy it, because "r" points only to "x".
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace
 
 } // namespace U
