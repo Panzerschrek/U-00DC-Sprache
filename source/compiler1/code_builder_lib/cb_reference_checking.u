@@ -113,7 +113,7 @@ fn CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference( Fu
 	{
 		if( param.value_type == ValueType::ReferenceImut )
 		{
-			REPORT_ERROR( ReferenceNotationViolatesMutability, names_scope, src_loc )
+			REPORT_ERROR( ReferenceNotationViolatesImMutability, names_scope, src_loc )
 		}
 	}
 	else
@@ -121,7 +121,7 @@ fn CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference( Fu
 		if( u32(param_reference.reference_index) < param.t.ReferenceTagCount() &&
 			param.t.GetInnerReferenceKind( size_type(param_reference.reference_index) ) != InnerReferenceKind::Mut )
 		{
-			REPORT_ERROR( ReferenceNotationViolatesMutability, names_scope, src_loc )
+			REPORT_ERROR( ReferenceNotationViolatesImMutability, names_scope, src_loc )
 		}
 	}
 }

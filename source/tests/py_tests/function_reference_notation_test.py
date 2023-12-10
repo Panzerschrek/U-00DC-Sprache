@@ -422,7 +422,7 @@ def ExpectedConstantExpression_ForReferenceNotation_Test2():
 	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
 
 
-def ReferenceNotationViolatesMutability_Test0():
+def ReferenceNotationViolatesImMutability_Test0():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
 		fn Foo( i32& x ) : i32 &mut @(return_references) // Error - result mutable reference points to an immutable arg.
@@ -432,10 +432,10 @@ def ReferenceNotationViolatesMutability_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 3 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 3 ) )
 
 
-def ReferenceNotationViolatesMutability_Test1():
+def ReferenceNotationViolatesImMutability_Test1():
 	c_program_text= """
 		var [ [ char8, 2 ], 2 ] return_references[ "0_", "1_" ];
 		fn Foo( i32 &mut x, i32 &imut y ) : i32 &mut @(return_references) // Error - result mutable reference points to an immutable arg.
@@ -445,10 +445,10 @@ def ReferenceNotationViolatesMutability_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 3 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 3 ) )
 
 
-def ReferenceNotationViolatesMutability_Test2():
+def ReferenceNotationViolatesImMutability_Test2():
 	c_program_text= """
 		struct S{ i32& r; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
@@ -459,10 +459,10 @@ def ReferenceNotationViolatesMutability_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 4 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 4 ) )
 
 
-def ReferenceNotationViolatesMutability_Test3():
+def ReferenceNotationViolatesImMutability_Test3():
 	c_program_text= """
 		struct S{ i32& r; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
@@ -473,10 +473,10 @@ def ReferenceNotationViolatesMutability_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 4 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 4 ) )
 
 
-def ReferenceNotationViolatesMutability_Test4():
+def ReferenceNotationViolatesImMutability_Test4():
 	c_program_text= """
 		struct S{ i32 &mut r; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
@@ -487,10 +487,10 @@ def ReferenceNotationViolatesMutability_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 4 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 4 ) )
 
 
-def ReferenceNotationViolatesMutability_Test5():
+def ReferenceNotationViolatesImMutability_Test5():
 	c_program_text= """
 		struct S{ i32 &imut r; }
 		struct T{ i32 &mut r; }
@@ -502,10 +502,10 @@ def ReferenceNotationViolatesMutability_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 5 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 5 ) )
 
 
-def ReferenceNotationViolatesMutability_Test6():
+def ReferenceNotationViolatesImMutability_Test6():
 	c_program_text= """
 		struct S{ i32 &mut r; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
@@ -516,10 +516,10 @@ def ReferenceNotationViolatesMutability_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 4 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 4 ) )
 
 
-def ReferenceNotationViolatesMutability_Test7():
+def ReferenceNotationViolatesImMutability_Test7():
 	c_program_text= """
 		struct S{ i32 &mut r; }
 		struct T{ i32 &imut r; }
@@ -531,4 +531,4 @@ def ReferenceNotationViolatesMutability_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesMutability", 5 ) )
+	assert( HaveError( errors_list, "ReferenceNotationViolatesImMutability", 5 ) )

@@ -160,13 +160,13 @@ void CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference(
 	if( param_reference.second == FunctionType::c_param_reference_number )
 	{
 		if( param.value_type == ValueType::ReferenceImut )
-			REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
+			REPORT_ERROR( ReferenceNotationViolatesImMutability, errors_container, src_loc );
 	}
 	else
 	{
 		if( param_reference.second < param.type.ReferenceTagCount() &&
 			param.type.GetInnerReferenceType( param_reference.second ) != InnerReferenceType::Mut )
-			REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
+			REPORT_ERROR( ReferenceNotationViolatesImMutability, errors_container, src_loc );
 	}
 }
 
