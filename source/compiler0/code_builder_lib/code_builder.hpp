@@ -1173,12 +1173,13 @@ private:
 		ClassPtr base_class );
 
 	// Call this only when types of params and return value are complete.
+	void CheckCompleteFunctionReferenceNotation( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
 	void CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	// Call this only when types of params and return value are complete.
 	void CheckFunctionReferencesNotationMutabilityCorrectness( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
-	void CheckHasNoImmutableReferencesInReturnReferences( const FunctionType& function_type, const std::set<FunctionType::ParamReference>& return_references, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
-	void CheckHasNoImmutableReferences( const FunctionType& function_type, const FunctionType::ParamReference& param_reference, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	void CheckReferenceNotationMutabilityViolationForReturnReferences( const FunctionType& function_type, const std::set<FunctionType::ParamReference>& return_references, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	void CheckReferenceNotationMutabilityViolationForMutableReference( const FunctionType& function_type, const FunctionType::ParamReference& param_reference, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
