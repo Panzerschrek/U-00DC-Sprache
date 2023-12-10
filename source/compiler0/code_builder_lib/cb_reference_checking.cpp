@@ -98,6 +98,48 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const Function
 		REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tag_count, function_type.return_inner_references.size() );
 }
 
+void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
+	const FunctionType& function_type,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	if( function_type.return_value_type == ValueType::ReferenceMut )
+		CheckHasNoImmutableReferencesInReturnReferences( function_type, function_type.return_references, errors_container, src_loc );
+
+	const auto reference_tag_count= function_type.return_type.ReferenceTagCount();
+	for( size_t i= 0; i < reference_tag_count && i < function_type.return_inner_references.size(); ++i )
+	{
+		if( function_type.return_type.GetInnerReferenceType(i) == InnerReferenceType::Mut )
+			CheckHasNoImmutableReferencesInReturnReferences( function_type, function_type.return_inner_references[i], errors_container, src_loc );
+	}
+}
+
+void CodeBuilder::CheckHasNoImmutableReferencesInReturnReferences(
+	const FunctionType& function_type,
+	const std::set<FunctionType::ParamReference>& return_references,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	for( const auto& return_reference : return_references )
+	{
+		if( return_reference.first >= function_type.params.size() )
+			continue; // May be in case of error.
+		const FunctionType::Param& param= function_type.params[  return_reference.first ];
+
+		if( return_reference.second == FunctionType::c_param_reference_number )
+		{
+			if( param.value_type == ValueType::ReferenceImut )
+				REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
+		}
+		else
+		{
+			if( return_reference.second < param.type.ReferenceTagCount() &&
+				param.type.GetInnerReferenceType( return_reference.second ) != InnerReferenceType::Mut )
+				REPORT_ERROR( ReferenceNotationViolatesMutability, errors_container, src_loc );
+		}
+	}
+}
+
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	if( dst_variable->type.ReferenceTagCount() == 0u )
