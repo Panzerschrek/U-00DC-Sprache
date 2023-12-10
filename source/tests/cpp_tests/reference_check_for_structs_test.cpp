@@ -591,34 +591,6 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
-U_TEST( ReferencePollutionTest4_LinkAsImmutableIfAllLinkedVariablesAreMutable )
-{
-	// Now args mutability doesn't matter for pollution.
-	// It's possible to specify pollution, even if destination is mutable and source is not.
-	// So, it's possible to create mutable link to immutable node and this will cause false reference pollution errors.
-	// TODO - add some fix for this.
-	DISABLE_TEST;
-
-	static const char c_program_text[]=
-	R"(
-		struct MutRefTag{ i32& mut x; }
-		struct S{ [ MutRefTag, 0 ] ref_tag; }
-		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn Baz( S &mut s_dst, i32 & imut i ) @(pollution)
-		{}
-
-		fn Foo()
-		{
-			var i32 mut y= 0;
-			var S mut s;
-			Baz( s, y ); // Now "s" contains immutable reference to "y", even if function reference pollution is mutable - because "y" passed into function as immutable.
-			auto& y_ref= y; // Ok, creating another immutable reference.
-		}
-	)";
-
-	BuildProgram( c_program_text );
-}
-
 U_TEST( ConstructorLinksPassedReference_Test0 )
 {
 	static const char c_program_text[]=
