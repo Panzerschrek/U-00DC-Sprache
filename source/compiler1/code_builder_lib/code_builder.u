@@ -1087,7 +1087,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
-	CheckFunctionReferencesNotationInnerReferences( func_variable.t, names_scope, body_syntax_element.src_loc );
+	// Perform notation checks only after requesting type completeness.
+	CheckCompleteFunctionReferenceNotation( func_variable.t, names_scope, body_syntax_element.src_loc );
 
 	if( func_variable.IsCoroutine() )
 	{

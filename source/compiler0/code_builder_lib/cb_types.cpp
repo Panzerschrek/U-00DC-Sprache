@@ -284,15 +284,15 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *function_type_name.return_value_inner_references_expression, num_params );
 
 	// Generate mapping of input references to output references if return reference notation is not specified.
-	// Assume that returned reference points to any reference param.
+	// Assume that immutable return reference may point to any reference param and mutable return reference only to mutable reference params.
 	if( function_type.return_value_type != ValueType::Value &&
 		function_type_name.return_value_reference_expression == nullptr &&
-		function_type_name.return_value_inner_references_expression == nullptr  )
+		function_type_name.return_value_inner_references_expression == nullptr )
 	{
 		for( size_t i= 0u; i < function_type.params.size(); ++i )
 		{
-			// TODO - what if param is immutable reference and return reference is mutable?
-			if( function_type.params[i].value_type != ValueType::Value )
+			if( ( function_type.return_value_type == ValueType::ReferenceImut && function_type.params[i].value_type != ValueType::Value ) ||
+				( function_type.return_value_type == ValueType::ReferenceMut  && function_type.params[i].value_type == ValueType::ReferenceMut ) )
 				function_type.return_references.emplace( i, FunctionType::c_param_reference_number );
 		}
 	}

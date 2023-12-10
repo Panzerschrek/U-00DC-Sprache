@@ -966,8 +966,15 @@ private:
 
 	// Reference checking.
 
+	// Call this only when types of params and return value are complete.
+	fn CheckCompleteFunctionReferenceNotation( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
 	fn CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
 	fn CheckFunctionReferencesNotationParamReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	fn CheckFunctionReferencesNotationMutabilityCorrectness( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn CheckReferenceNotationMutabilityViolationForReturnReferences( FunctionType& function_type, FunctionType::ParamReferences& return_references, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn CheckReferenceNotationMutabilityViolationForMutableReference( FunctionType& function_type, FunctionType::ParamReference& param_reference, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	fn CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, FunctionContext& function_context, VariablePtr& return_reference_node, SrcLoc& src_loc );
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;

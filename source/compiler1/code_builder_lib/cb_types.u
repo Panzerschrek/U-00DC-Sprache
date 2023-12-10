@@ -280,16 +280,16 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Generate mapping of input references to output references if return reference notation is not specified.
-	// Assume that returned reference points to any reference param.
+	// Assume that immutable return reference may point to any reference param and mutable return reference only to mutable reference params.
 	if( res.return_value_type != ValueType::Value &&
 		function_type.return_value_reference_expression.empty() &&
 		function_type.return_value_inner_references_expression.empty() )
 	{
 		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
-			if( res.params[i].value_type != ValueType::Value )
+			if( ( res.return_value_type == ValueType::ReferenceImut && res.params[i].value_type != ValueType::Value ) ||
+				( res.return_value_type == ValueType::ReferenceMut  && res.params[i].value_type == ValueType::ReferenceMut ) )
 			{
-				// TODO - what if param is immutable reference and return reference is mutable?
 				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
 				res.return_references.push_back( move(param_reference) );
 			}

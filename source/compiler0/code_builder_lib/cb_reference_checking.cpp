@@ -63,6 +63,12 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 }
 
+void CodeBuilder::CheckCompleteFunctionReferenceNotation( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	CheckFunctionReferencesNotationInnerReferences( function_type, errors_container, src_loc );
+	CheckFunctionReferencesNotationMutabilityCorrectness( function_type, errors_container, src_loc );
+}
+
 void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	const auto check_param_reference=
@@ -96,6 +102,72 @@ void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const Function
 	if( !function_type.return_inner_references.empty() &&
 		function_type.return_inner_references.size() != return_type_tag_count )
 		REPORT_ERROR( InnerReferenceTagCountMismatch, errors_container, src_loc, return_type_tag_count, function_type.return_inner_references.size() );
+}
+
+void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
+	const FunctionType& function_type,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	// Do not allow to specify reference notation where immutable references are linked with mutable references.
+
+	if( function_type.return_value_type == ValueType::ReferenceMut )
+		CheckReferenceNotationMutabilityViolationForReturnReferences( function_type, function_type.return_references, errors_container, src_loc );
+
+	for(
+		size_t i= 0, i_end= std::min( function_type.return_type.ReferenceTagCount(), function_type.return_inner_references.size() );
+		i < i_end;
+		++i )
+	{
+		if( function_type.return_type.GetInnerReferenceType(i) == InnerReferenceType::Mut )
+			CheckReferenceNotationMutabilityViolationForReturnReferences( function_type, function_type.return_inner_references[i], errors_container, src_loc );
+	}
+
+	for( const auto& pollution : function_type.references_pollution )
+	{
+		if( pollution.dst.first >= function_type.params.size() )
+			continue;
+		const FunctionType::Param& dst_param= function_type.params[ pollution.dst.first ];
+
+		if( pollution.dst.second != FunctionType::c_param_reference_number &&
+			pollution.dst.second < dst_param.type.ReferenceTagCount() &&
+			dst_param.type.GetInnerReferenceType( pollution.dst.second ) == InnerReferenceType::Mut )
+			CheckReferenceNotationMutabilityViolationForMutableReference( function_type, pollution.src, errors_container, src_loc );
+	}
+}
+
+void CodeBuilder::CheckReferenceNotationMutabilityViolationForReturnReferences(
+	const FunctionType& function_type,
+	const std::set<FunctionType::ParamReference>& return_references,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	for( const auto& return_reference : return_references )
+		CheckReferenceNotationMutabilityViolationForMutableReference( function_type, return_reference, errors_container, src_loc );
+}
+
+void CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference(
+	const FunctionType& function_type,
+	const FunctionType::ParamReference& param_reference,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	if( param_reference.first >= function_type.params.size() )
+		return; // May be in case of error.
+
+	const FunctionType::Param& param= function_type.params[ param_reference.first ];
+
+	if( param_reference.second == FunctionType::c_param_reference_number )
+	{
+		if( param.value_type == ValueType::ReferenceImut )
+			REPORT_ERROR( ReferenceNotationViolatesImmutability, errors_container, src_loc );
+	}
+	else
+	{
+		if( param_reference.second < param.type.ReferenceTagCount() &&
+			param.type.GetInnerReferenceType( param_reference.second ) != InnerReferenceType::Mut )
+			REPORT_ERROR( ReferenceNotationViolatesImmutability, errors_container, src_loc );
+	}
 }
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
