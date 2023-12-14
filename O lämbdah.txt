@@ -50,3 +50,11 @@ Stoit takže rassmotretj, kakim obrazom mogut rabotatj lämbdy vnutri lämbd.
 
 Ne ponätno, vozmožno li kak-to avtomaticeski opredelitj, po ssylke, izmenäjemoj ssylke ili po znaceniju nado zahvatyvatj peremennuju.
 Jesli net, to stoit umolcateljno zahvatyvatj po ssylke (izmenäjemoj ili net, v zavisimosti ot izmenäjemosti ishodnoj peremennoj).
+
+Stoit proektirovatj lämbdy tak, ctoby ne bylo nekonsistentnosti pri preproçessinge lämbd.
+A imenno, daby ne bylo vozmožnosti kak-to sostavitj (naprimer) "static_if" na osnovanii informaçii o tipe tekuscej lämbdy.
+Takaja vozmožnostj vedj možet privesti k tomu, cto pri preproçessinge lämbd i pri ih postrojenii mogut bytj vyzvany raznyje vetvi "static_if", cto privedöt k nekonsistentnosti nabora zahvacennyh peremennyh.
+Takoje trebovanije prakticeski isklücajet nalicije klücevogo slova "this" dlä lämbd (ili drugogo slova s tem že znacenijem), ibo togda pojavitsä vozmožnostj ispoljzovatj "typeinfo</ typeof(this) />".
+
+Ne vpolne jasno, kak obhoditjsä s zahvacennymi po znaceniju peremennymi lämbd s "byval this".
+Vozmožno, stoit datj vozmožnostj peremescatj ih primerno kak argumenty-znacenija.
