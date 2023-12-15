@@ -58,3 +58,24 @@ Takoje trebovanije prakticeski isklücajet nalicije klücevogo slova "this" dlä
 
 Ne vpolne jasno, kak obhoditjsä s zahvacennymi po znaceniju peremennymi lämbd s "byval this".
 Vozmožno, stoit datj vozmožnostj peremescatj ih primerno kak argumenty-znacenija.
+
+Poka jestj takaja ideja, kak sdelatj dostuk k zahvacennym peremennym v lämbdah:
+Možno v nacale funkçii sozdatj imena dlä nih vseh, kotoryje ukazyvajut na sootvetstvujuscije polä v "this" lämbdy.
+V "byval this" lämbdah ik možno sdelatj po analogii s argumentami-znacenijami, ctoby ih možno bylo peremescatj.
+V takoj sheme možno takže realizovatj dostup k vnešnemu "this" i jego poläm.
+Tocneje, polä etogo "this" budut zahvaceny v lämbdu prosto kak peremennyje iz okruženija.
+
+Zahvacennyje peremennyje imejet smysl delatj polämi klassa lämbdy.
+Pri etom oni dolžny bytj "private", daby ih neljzä bylo menätj izvne.
+
+Ne jasno, cto delatj s "async" lämbdami i "generator" lämbdami.
+Vpolne vozmožno, cto po nacalu ih stoit zapretitj.
+
+Sintaksis obozvnacenija zahvata planirujetsä takovym:
+* "=" dlä zahvata vsego po znaceniju
+* "&" dlä zahvata vsego po ssylke
+* spisok cerez zapätuju imön peremennyh dlä zahvata, s prefiksom "&" dlä zahvata po ssylke. Pri etom izmenäjemostj ssylki opredeläjetsä avtomaticeski (po izmenäjemosti ishodnoj peremennoj).
+* Vozmožno ukazanije iniçializatora dlä zahvacennoj peremennoj cerez "=". Togda budet prosto dobavleno pole v lämbdu s takim iniçializatorom. Eto pozvolit peremescatj peremennyje v lämbdu.
+
+Spisok zahvata stoit ukazyvatj v kakih-to skobkah, naprimer v "[]".
+Ne jasno, kak nacinatj objavlenije lämbdy. Vozmožno stoit ispoljzovatj dlä etogo nekoje klücevoje slovo, vrode "lambda".
