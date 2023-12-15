@@ -1,6 +1,16 @@
 //##success_test
 import "../ustlib/vector.u"
 
+struct R
+{
+	i32& x;
+
+	op<=>( R& l, R& r ) : i32
+	{
+		return l.x <=> r.x;
+	}
+}
+
 fn nomangle main() : i32
 {
 	// "min" and "max" for immutable arguments.
@@ -19,6 +29,15 @@ fn nomangle main() : i32
 		var i64 mut a(968), mut b(654);
 		ust::min( a, b )= i64(0);
 		halt if( b != i64(0) );
+	}
+
+	{ // Should support types with references inside.
+		var i32 x= 66, y= 77;
+		var R x_ref{ .x=x }, y_ref{ .x= y };
+		var R& ref_max= ust::max( x_ref, y_ref );
+		var R& ref_min= ust::min( x_ref, y_ref );
+		halt if( ref_max.x != 77 );
+		halt if( ref_min.x != 66 );
 	}
 
 	return 0;

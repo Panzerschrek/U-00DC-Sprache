@@ -1,3 +1,5 @@
+import "reference_notation.u"
+
 namespace ust
 {
 
@@ -5,31 +7,65 @@ namespace ust
 // TODO - maybe add "enable_if" for discarding of function for types without "op<" ?
 
 template</ type T />
-fn min( T &imut a, T &imut b ) : T &imut
+fn min( T &imut a, T &imut b )
+	: T @( minmax_impl::return_inner_references</ typeinfo</T/>.reference_tag_count />() ) &imut @(minmax_impl::return_references)
 {
 	if( a < b ) { return a; }
 	return b;
 }
 
 template</ type T />
-fn min( T & mut a, T & mut b ) : T & mut
+fn min( T & mut a, T & mut b )
+	: T @( minmax_impl::return_inner_references</ typeinfo</T/>.reference_tag_count />() ) & mut @(minmax_impl::return_references)
 {
 	if( a < b ) { return a; }
 	return b;
 }
 
 template</ type T />
-fn max( T &imut a, T &imut b ) : T &imut
+fn max( T &imut a, T &imut b )
+	: T @( minmax_impl::return_inner_references</ typeinfo</T/>.reference_tag_count />() ) &imut @(minmax_impl::return_references)
 {
 	if( a < b ) { return b; }
 	return a;
 }
 
 template</ type T />
-fn max( T & mut a, T & mut b ) : T & mut
+fn max( T & mut a, T & mut b )
+	: T @( minmax_impl::return_inner_references</ typeinfo</T/>.reference_tag_count />() ) & mut @(minmax_impl::return_references)
 {
 	if( a < b ) { return b; }
 	return a;
 }
+
+namespace minmax_impl
+{
+
+// Return references for min/max is a list of references for params 0 and 1.
+var [ [ char8, 2 ], 2 ] return_references[ "0_", "1_" ];
+
+// Return inner references for min/max is a tuple of lists for params 0 and 1 inner references.
+template</size_type S/>
+fn constexpr return_inner_references() : homogeneous_tuple</ reference_notation::references_list</2s/>, S />
+{
+	var homogeneous_tuple</ reference_notation::references_list</2s/>, S /> mut result= zero_init;
+
+	static_if( S > 0s )
+	{
+		auto mut i= 0s;
+		for( &mut el : result )
+		{
+			el[0][0]= "0"c8;
+			el[0][1]= char8( size_type("a"c8) + i );
+			el[1][0]= "1"c8;
+			el[1][1]= char8( size_type("a"c8) + i );
+			++i;
+		}
+	}
+
+	return result;
+}
+
+} // namespace minmax_impl
 
 } // namespace ust
