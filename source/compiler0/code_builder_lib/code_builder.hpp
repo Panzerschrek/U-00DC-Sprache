@@ -747,6 +747,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperatorCompletion& move_operator_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TakeOperator& move_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastMut& cast_mut );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastImut& cast_imut );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRef& cast_ref );
@@ -1245,6 +1246,10 @@ private:
 	Value BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+
+	// Lambdas
+
+	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 
 	// NamesScope fill
 

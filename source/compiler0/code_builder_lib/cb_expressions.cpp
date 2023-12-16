@@ -1373,6 +1373,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::Lambda& lambda )
+{
+	return BuildLambda( names, function_context, lambda );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::CastMut& cast_mut )
 {
 	if( !function_context.is_in_unsafe_block )

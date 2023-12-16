@@ -61,6 +61,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::MoveOperator& ) { return false; }
 		bool operator()( const Synt::MoveOperatorCompletion& ) { return false; }
 		bool operator()( const std::unique_ptr<const Synt::TakeOperator>& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::Lambda>& ) { return false; }
 		// Casts have no side effects.
 		bool operator()( const std::unique_ptr<const Synt::CastMut>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::CastImut>& ) { return true; }
