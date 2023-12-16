@@ -9,10 +9,21 @@ namespace U
 Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
 	const ClassPtr lambda_class= PrepareLambdaClass( names, function_context, lambda );
-	// TODO
-	(void)lambda_class;
 
-	return ErrorValue();
+	const VariableMutPtr result=
+		Variable::Create(
+			lambda_class, ValueType::Value, Variable::Location::Pointer, "TODO - lambda name" );
+
+	if( !function_context.is_functionless_context )
+	{
+		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( lambda_class->llvm_type, nullptr, result->name );
+		CreateLifetimeStart( function_context, result->llvm_value );
+	}
+	// TODO - fill captured values here.
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
