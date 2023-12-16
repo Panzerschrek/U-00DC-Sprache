@@ -40,6 +40,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->parents_list_prepared= true;
 	class_->have_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
+	class_->generated_class_data= LambdaClassData{};
 
 	// TODO - fill fields.
 	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;

@@ -22,4 +22,8 @@ struct LambdaKeyHasher
 	size_t operator()( const LambdaKey& k ) const { return k.Hash(); }
 };
 
+struct LambdaClassData
+{
+};
+
 } // namespace U

@@ -1603,8 +1603,18 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
-			// Save "this" in function context for accessing inside class methods.
-			function_context.this_= variable_reference;
+			bool skip_lambda_this= false;
+			if( const auto this_class= variable->type.GetClassType() )
+			{
+				if( std::holds_alternative<LambdaClassData>( this_class->generated_class_data ) )
+					skip_lambda_this= true;
+			}
+
+			if( !skip_lambda_this )
+			{
+				// Save "this" in function context for accessing inside class methods.
+				function_context.this_= variable_reference;
+			}
 		}
 		else
 		{

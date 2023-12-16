@@ -1,6 +1,7 @@
 #pragma once
 #include "../lex_synt_lib/program_string.hpp"
 #include "coroutine.hpp"
+#include "lambdas.hpp"
 #include "template_types.hpp"
 #include "typeinfo.hpp"
 
@@ -40,7 +41,7 @@ public:
 	struct NonGeneratedClassTag{};
 
 	// Class is just regular class or it has base template or it is typeinfo class or it is coroutine class.
-	using GeneratedClassData= std::variant< NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription >;
+	using GeneratedClassData= std::variant< NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription, LambdaClassData >;
 
 	struct VirtualTableEntry
 	{
