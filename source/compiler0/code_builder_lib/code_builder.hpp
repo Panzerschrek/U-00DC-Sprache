@@ -17,6 +17,7 @@
 #include "debug_info_builder.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
+#include "lambdas.hpp"
 #include "mangling.hpp"
 #include "tbaa_metadata_builder.hpp"
 #include "template_signature_param.hpp"
@@ -1250,6 +1251,8 @@ private:
 	// Lambdas
 
 	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type );
 
 	// NamesScope fill
 
@@ -1446,6 +1449,8 @@ private:
 	std::optional<DebugInfoBuilder> debug_info_builder_;
 
 	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
+
+	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

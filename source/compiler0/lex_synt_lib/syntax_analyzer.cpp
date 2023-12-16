@@ -1382,6 +1382,14 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	// Parse params.
 	ExpectLexem( Lexem::Type::BracketLeft );
 
+	{ // Always add hidden "this" param.
+		FunctionParam this_param( it_->src_loc );
+		this_param.name= Keyword( Keywords::this_ );
+		this_param.reference_modifier= ReferenceModifier::Reference;
+		this_param.mutability_modifier= MutabilityModifier::Immutable;
+		result.function.type.params.push_back( std::move( this_param ) );
+	}
+
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BracketRight )
