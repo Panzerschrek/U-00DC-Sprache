@@ -188,6 +188,7 @@ private:
 	FunctionParam ParseFunctionParam();
 	void ParseFunctionTypeEnding( FunctionType& result );
 	FunctionType ParseFunctionType();
+	Lambda ParseLambda();
 
 	TypeName ParseTypeName();
 	std::vector<Expression> ParseTemplateArgs();
@@ -1087,6 +1088,8 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(take_operator);
 		}
+		if( it_->text == Keywords::lambda_ )
+			return std::make_unique<Lambda>( ParseLambda() );
 		if( it_->text == Keywords::select_ )
 		{
 			auto ternary_operator= std::make_unique<TernaryOperator>( it_->src_loc );
@@ -1362,6 +1365,53 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 	} // for arguments
 
 	ParseFunctionTypeEnding( result );
+
+	return result;
+}
+
+Lambda SyntaxAnalyzer::ParseLambda()
+{
+	U_ASSERT( it_->text == Keywords::lambda_ );
+	Lambda result( it_->src_loc );
+
+	NextLexem(); // Skip "lambda" keyword
+
+	// TODO - parse "byval" here.
+	// TODO - parse capture list here.
+
+	// Parse params.
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
+	{
+		if( it_->type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		result.function.type.params.push_back( ParseFunctionParam() );
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			// Disallov constructions, like "( i32 a, ){}"
+			if( it_->type == Lexem::Type::BracketRight )
+				PushErrorMessage();
+		}
+		else if( it_->type == Lexem::Type::BracketRight )
+		{}
+		else
+		{
+			PushErrorMessage();
+			TryRecoverAfterError( g_function_params_list_control_lexems );
+		}
+	} // for params.
+
+	ParseFunctionTypeEnding( result.function.type );
+
+	// Lambdas always have a body.
+	result.function.block= std::make_unique<Block>( ParseBlock() );
 
 	return result;
 }
