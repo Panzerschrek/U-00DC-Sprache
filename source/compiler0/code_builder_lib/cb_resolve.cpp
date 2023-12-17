@@ -120,6 +120,17 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	result.value->referenced= true;
 	CollectDefinition( *result.value, name_lookup.src_loc );
 
+	// Save accessed external variables while preprocessing lambdas.
+	if( function_context.lambda_preprocessing_context != nullptr )
+	{
+		if( const auto variable= result.value->value.GetVariable() )
+		{
+			// TODO - produce error if lambda uses non-auto capturing and this variable is not mentioned explicitely.
+			if( function_context.lambda_preprocessing_context->external_variables.count( variable ) > 0 )
+				function_context.lambda_preprocessing_context->captured_external_variables[name_lookup.name]= variable;
+		}
+	}
+
 	return ContextualizeValueInResolve( names_scope, function_context, result.value->value, name_lookup.src_loc );
 }
 

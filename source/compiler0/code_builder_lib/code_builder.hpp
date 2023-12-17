@@ -711,7 +711,8 @@ private:
 		std::string_view func_name,
 		llvm::ArrayRef<Synt::FunctionParam> params,
 		const Synt::Block& block,
-		const Synt::StructNamedInitializer* constructor_initialization_list );
+		const Synt::StructNamedInitializer* constructor_initialization_list,
+		LambdaPreprocesingContext* lambda_preprocessing_context= nullptr );
 
 	// Expressions.
 	VariablePtr BuildExpressionCodeEnsureVariable(
@@ -1253,6 +1254,7 @@ private:
 	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type );
+	std::unordered_set<VariablePtr> CallectCurrentFunctionVariables( FunctionContext& function_context );
 
 	// NamesScope fill
 

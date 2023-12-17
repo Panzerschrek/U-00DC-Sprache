@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_set>
 #include "names_scope.hpp"
 
 namespace U
@@ -24,6 +25,14 @@ struct LambdaKeyHasher
 
 struct LambdaClassData
 {
+};
+
+struct LambdaPreprocesingContext
+{
+	// Inputs.
+	std::unordered_set<VariablePtr> external_variables;
+	// Outputs.
+	std::unordered_map<std::string, VariablePtr> captured_external_variables;
 };
 
 } // namespace U

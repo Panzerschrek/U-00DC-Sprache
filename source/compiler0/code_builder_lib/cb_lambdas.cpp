@@ -51,14 +51,60 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->parents_list_prepared= true;
 	class_->have_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
-	class_->generated_class_data= LambdaClassData{};
-
-	// TODO - fill fields.
-	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;
-
 	class_->can_be_constexpr= false; // TODO - allow some lambda classes to be constexpr.
-
+	class_->generated_class_data= LambdaClassData{};
 	class_->llvm_type= llvm::StructType::create( llvm_context_ ); // TODO - mangle name?
+
+	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
+
+	// Run preprocessing.
+	if( !std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
+	{
+		LambdaPreprocesingContext lambda_preprocessing_context;
+		lambda_preprocessing_context.external_variables= CallectCurrentFunctionVariables( function_context );
+
+		FunctionVariable op_variable;
+		// It's fine to use incomplete lambda class here, since this class can't be accessed.
+		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
+		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
+		op_variable.is_this_call= true;
+
+		BuildFuncCode(
+			op_variable,
+			class_,
+			names,
+			call_op_name,
+			lambda.function.type.params,
+			*lambda.function.block,
+			nullptr,
+			&lambda_preprocessing_context );
+
+		// Remove temp function.
+		op_variable.llvm_function->function->eraseFromParent();
+
+		// TODO - order fields to minimize padding.
+		for( const auto& captured_varaible_pair : lambda_preprocessing_context.captured_external_variables )
+		{
+			const auto index= uint32_t( class_->fields_order.size() );
+
+			auto field= std::make_shared<ClassField>( class_, captured_varaible_pair.second->type, index, true, false );
+			class_->fields_order.push_back( field );
+
+			class_->members->AddName( captured_varaible_pair.first, NamesScopeValue( std::move(field), lambda.src_loc ) );
+		}
+	}
+
+	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;
+	fields_llvm_types.reserve( class_->fields_order.size() );
+	for( const auto& field : class_->fields_order )
+	{
+		llvm::Type* llvm_type= field->type.GetLLVMType();
+		if( field->is_reference )
+			llvm_type= llvm_type->getPointerTo();
+
+		fields_llvm_types.push_back( llvm_type );
+	}
+
 	class_->llvm_type->setBody( fields_llvm_types );
 	class_->is_complete= true;
 
@@ -69,8 +115,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Create () operator.
 	{
-		const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
-
 		FunctionVariable op_variable;
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
@@ -85,7 +129,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			names,
 			call_op_name,
 			lambda.function.type.params,
-			*lambda.function.block, nullptr );
+			*lambda.function.block,
+			nullptr );
 
 		class_->members->AddName(
 			call_op_name,
@@ -151,6 +196,18 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 
 	// TODO - somehow deal with reference notation.
 	return function_type;
+}
+
+std::unordered_set<VariablePtr> CodeBuilder::CallectCurrentFunctionVariables( FunctionContext& function_context )
+{
+	std::unordered_set<VariablePtr> result;
+	for( const StackVariablesStorage* const variable_frame : function_context.stack_variables_stack )
+	{
+		for( const VariablePtr& variable : variable_frame->variables_ )
+			result.insert( variable );
+	}
+
+	return result;
 }
 
 } // namespace U

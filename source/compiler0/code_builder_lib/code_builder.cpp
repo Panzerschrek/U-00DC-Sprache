@@ -1392,7 +1392,8 @@ Type CodeBuilder::BuildFuncCode(
 	const std::string_view func_name,
 	const llvm::ArrayRef<Synt::FunctionParam> params,
 	const Synt::Block& block,
-	const Synt::StructNamedInitializer* const constructor_initialization_list )
+	const Synt::StructNamedInitializer* const constructor_initialization_list,
+	LambdaPreprocesingContext* const lambda_preprocessing_context )
 {
 	U_ASSERT( !func_variable.have_body );
 	func_variable.have_body= true;
@@ -1438,7 +1439,9 @@ Type CodeBuilder::BuildFuncCode(
 	// Require full completeness even for reference arguments.
 	for( const FunctionType::Param& arg : function_type.params )
 	{
-		if( !EnsureTypeComplete( arg.type ) )
+		if( lambda_preprocessing_context != nullptr && &arg == &function_type.params.front() )
+		{} // While preprocessing lambdas do not trigger type completeness for first arg of the lambda type.
+		else if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, arg.type );
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )
@@ -1483,6 +1486,7 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 	function_context.args_nodes.resize( function_type.params.size() );
+	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
 
@@ -1603,18 +1607,8 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
-			bool skip_lambda_this= false;
-			if( const auto this_class= variable->type.GetClassType() )
-			{
-				if( std::holds_alternative<LambdaClassData>( this_class->generated_class_data ) )
-					skip_lambda_this= true;
-			}
-
-			if( !skip_lambda_this )
-			{
-				// Save "this" in function context for accessing inside class methods.
-				function_context.this_= variable_reference;
-			}
+			// Save "this" in function context for accessing inside class methods.
+			function_context.this_= variable_reference;
 		}
 		else
 		{
@@ -1628,6 +1622,32 @@ Type CodeBuilder::BuildFuncCode(
 
 		llvm_arg.setName( "_arg_" + arg_name );
 		++arg_number;
+	}
+
+	VariablePtr lambda_this;
+	if( function_context.this_ != nullptr )
+	{
+		if( const auto this_class= function_context.this_->type.GetClassType() )
+		{
+			if( std::holds_alternative<LambdaClassData>( this_class->generated_class_data ) )
+			{
+				// Create names for lambda fields.
+				this_class->members->ForEachInThisScope(
+					[&]( const std::string_view member_name, const NamesScopeValue& value )
+					{
+						if( const auto class_field= value.value.GetClassField() )
+						{
+							const auto field_value= AccessClassField( function_names, function_context, function_context.this_, *class_field, std::string(member_name), block.src_loc );
+							function_names.AddName( member_name, NamesScopeValue( field_value, block.src_loc ) );
+							// TODO - create debug info?
+						}
+					} );
+
+				// Make "this" unavailable in lambdas.
+				lambda_this= function_context.this_;
+				function_context.this_= nullptr;
+			}
+		}
 	}
 
 	if( func_variable.IsCoroutine() )
