@@ -14,14 +14,49 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 		Variable::Create(
 			lambda_class, ValueType::Value, Variable::Location::Pointer, "TODO - lambda name" );
 
+	function_context.variables_state.AddNode( result );
+
 	if( !function_context.is_functionless_context )
 	{
 		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( lambda_class->llvm_type, nullptr, result->name );
 		CreateLifetimeStart( function_context, result->llvm_value );
 	}
-	// TODO - fill captured values here.
 
-	function_context.variables_state.AddNode( result );
+	// Copy captured values.
+	if( const auto lambda_class_data= std::get_if<LambdaClassData>( &lambda_class->generated_class_data ) )
+	{
+		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
+		{
+			const NameLookupResult lookup_result= LookupName( names, capture.captured_variable_name, lambda.src_loc );
+			if( lookup_result.value != nullptr )
+			{
+				if( const auto variable= lookup_result.value->value.GetVariable() )
+				{
+					const auto field_value= CreateClassFieldGEP( function_context, *result, capture.field->index );
+
+					if( capture.field->is_reference )
+					{
+						// TODO
+					}
+					else
+					{
+						U_ASSERT( variable->type == capture.field->type );
+						if( !variable->type.IsCopyConstructible() )
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), lambda.src_loc, variable->type );
+						else
+						{
+							BuildCopyConstructorPart(
+								field_value, variable->llvm_value,
+								variable->type,
+								function_context );
+						}
+						// TODO - link references.
+					}
+				}
+			}
+		}
+	}
+
 	RegisterTemporaryVariable( function_context, result );
 	return result;
 }
@@ -85,12 +120,19 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		// TODO - order fields to minimize padding.
 		for( const auto& captured_varaible_pair : lambda_preprocessing_context.captured_external_variables )
 		{
+			const auto& name= captured_varaible_pair.first;
+
 			const auto index= uint32_t( class_->fields_order.size() );
 
 			auto field= std::make_shared<ClassField>( class_, captured_varaible_pair.second->type, index, true, false );
 			class_->fields_order.push_back( field );
 
-			class_->members->AddName( captured_varaible_pair.first, NamesScopeValue( std::move(field), lambda.src_loc ) );
+			class_->members->AddName( name, NamesScopeValue( field, lambda.src_loc ) );
+
+			LambdaClassData::Capture capture;
+			capture.captured_variable_name= name;
+			capture.field= std::move(field);
+			std::get_if<LambdaClassData>( &class_->generated_class_data )->captures.push_back( std::move(capture) );
 		}
 	}
 

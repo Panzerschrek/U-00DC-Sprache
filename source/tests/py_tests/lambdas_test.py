@@ -73,3 +73,17 @@ def LambdaCaptureAllByValue_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByValue_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 x= 3.0f, mut y= 16.0f;
+			auto f= lambda [=] ( f32 i ) : f32 { return i * x + y; };
+			halt if( f( 4.0f ) != 28.0f );
+			halt if( f( -2.5f ) != 8.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

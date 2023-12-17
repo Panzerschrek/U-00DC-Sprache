@@ -25,6 +25,13 @@ struct LambdaKeyHasher
 
 struct LambdaClassData
 {
+	struct Capture
+	{
+		std::string captured_variable_name;
+		ClassFieldPtr field;
+	};
+
+	std::vector<Capture> captures;
 };
 
 struct LambdaPreprocesingContext
