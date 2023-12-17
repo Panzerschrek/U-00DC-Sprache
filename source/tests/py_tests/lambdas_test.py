@@ -60,3 +60,16 @@ def NonCaptureLambda_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByValue_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 543;
+			auto f= lambda [=] () : i32 { return x; };
+			halt if( f() != 543 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

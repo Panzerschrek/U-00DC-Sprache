@@ -1377,7 +1377,34 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	NextLexem(); // Skip "lambda" keyword
 
 	// TODO - parse "byval" here.
-	// TODO - parse capture list here.
+
+	if( it_->type == Lexem::Type::SquareBracketLeft )
+	{
+		// Non-empty capture list.
+		NextLexem();
+
+		if( it_->type == Lexem::Type::Assignment )
+		{
+			NextLexem();
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+			result.capture= Lambda::CaptureAllByValue{};
+		}
+		else if( it_->type == Lexem::Type::And && std::next(it_)->type == Lexem::Type::SquareBracketRight )
+		{
+			NextLexem();
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+			result.capture= Lambda::CaptureAllByReference{};
+		}
+		else
+		{
+			// Full capture list.
+
+			// TODO - parse it.
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+		}
+	}
+	else
+		result.capture= Lambda::CaptureNothing{};
 
 	// Parse params.
 	ExpectLexem( Lexem::Type::BracketLeft );

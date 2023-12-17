@@ -1207,10 +1207,27 @@ struct Function
 
 struct Lambda
 {
+	struct CaptureNothing{};
+	struct CaptureAllByValue{};
+	struct CaptureAllByReference{};
+
+	struct CaptureListElement
+	{
+		std::string name;
+		bool by_reference= false;
+	};
+
+	using CaptureList= std::vector<CaptureListElement>;
+
+	using Capture= std::variant<CaptureNothing, CaptureAllByValue, CaptureAllByReference, CaptureList >;
+
+public:
 	explicit Lambda( const SrcLoc& src_loc )
 		: src_loc(src_loc), function(src_loc) {}
 
+public:
 	SrcLoc src_loc;
+	Capture capture;
 	Function function;
 };
 
