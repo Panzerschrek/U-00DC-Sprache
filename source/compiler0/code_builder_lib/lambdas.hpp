@@ -40,6 +40,7 @@ struct LambdaPreprocessingContext
 	std::unordered_set<VariablePtr> external_variables;
 	// Outputs.
 	std::unordered_map<std::string, VariablePtr> captured_external_variables;
+	std::set<FunctionType::ParamReference> return_references;
 };
 
 } // namespace U

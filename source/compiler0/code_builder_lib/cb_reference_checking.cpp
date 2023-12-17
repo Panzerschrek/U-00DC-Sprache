@@ -418,4 +418,31 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	}
 }
 
+void CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node )
+{
+	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
+
+	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_node ) )
+	{
+		U_ASSERT( var_node != nullptr );
+		U_ASSERT( var_node->value_type == ValueType::Value );
+
+		for( const auto& arg_node_pair : function_context.args_nodes )
+		{
+			const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
+			if( var_node == arg_node_pair.first )
+				function_context.lambda_preprocessing_context->return_references.emplace( uint8_t(arg_n), FunctionType::c_param_reference_number );
+
+			for( const VariablePtr& inner_node : arg_node_pair.second )
+			{
+				const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
+				if( var_node == inner_node )
+					function_context.lambda_preprocessing_context->return_references.emplace( uint8_t(arg_n), uint8_t(tag_n) );
+			}
+		}
+
+		// TODO - collect also captured variable nodes.
+	}
+}
+
 } // namespace U

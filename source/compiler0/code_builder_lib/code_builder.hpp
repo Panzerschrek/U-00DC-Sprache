@@ -1221,6 +1221,8 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	void LambdaPreprocessingCollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
+
 	// Reference notation.
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );

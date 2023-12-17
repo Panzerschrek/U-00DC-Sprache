@@ -92,8 +92,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
+	std::set<FunctionType::ParamReference> return_references;
+
 	// Run preprocessing.
-	if( !std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
 	{
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CallectCurrentFunctionVariables( function_context );
@@ -134,6 +135,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			capture.field= std::move(field);
 			std::get_if<LambdaClassData>( &class_->generated_class_data )->captures.push_back( std::move(capture) );
 		}
+
+		// Collect actual return references in lambdas.
+		return_references= std::move(lambda_preprocessing_context.return_references);
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;
@@ -159,6 +163,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		FunctionVariable op_variable;
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
+		op_variable.type.return_references= std::move(return_references);
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
 

@@ -731,8 +731,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
 		}
 
-		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
-		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		if( function_context.lambda_preprocessing_context != nullptr )
+		{
+			LambdaPreprocessingCollectReturnReferences( function_context, expression_result );
+		}
+		else
+		{
+			CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		}
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
 		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );

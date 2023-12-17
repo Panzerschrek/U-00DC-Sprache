@@ -62,6 +62,41 @@ def NonCaptureLambda_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def NonCaptureLambda_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			// Lambda returns passed reference.
+			auto f= lambda( i32& x ) : i32& { return x; };
+			var i32 arg= 765;
+			var i32& ref= f(arg);
+			halt if( ref != 765 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def NonCaptureLambda_Test3():
+	c_program_text= """
+		struct S{ i32 &mut r; }
+		fn Foo()
+		{
+			// Lambda returns mutable reference passed inside value arg.
+			auto f= lambda( S s ) : i32 &mut { return s.r; };
+			var i32 mut q= 654;
+			{
+				var S s{ .r= q };
+				var i32 &mut q_ref= f( s );
+				q_ref= -863;
+			}
+			halt if( q != -863 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def LambdaCaptureAllByValue_Test0():
 	c_program_text= """
 		fn Foo()
@@ -83,6 +118,26 @@ def LambdaCaptureAllByValue_Test1():
 			auto f= lambda [=] ( f32 i ) : f32 { return i * x + y; };
 			halt if( f( 4.0f ) != 28.0f );
 			halt if( f( -2.5f ) != 8.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByValue_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S s{ .x= 42, .y= 0.25f };
+			var u64 x(1234567);
+			// Capture struct and scalar.
+			auto f= lambda [=] () : f64 { return f64(s.x) * f64(s.y) + f64(x); };
+			halt if( f() != 1234577.5 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
