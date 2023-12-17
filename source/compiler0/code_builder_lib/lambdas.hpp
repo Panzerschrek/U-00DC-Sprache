@@ -34,7 +34,7 @@ struct LambdaClassData
 	std::vector<Capture> captures;
 };
 
-struct LambdaPreprocesingContext
+struct LambdaPreprocessingContext
 {
 	// Inputs.
 	std::unordered_set<VariablePtr> external_variables;

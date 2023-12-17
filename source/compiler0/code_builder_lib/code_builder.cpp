@@ -1393,7 +1393,7 @@ Type CodeBuilder::BuildFuncCode(
 	const llvm::ArrayRef<Synt::FunctionParam> params,
 	const Synt::Block& block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list,
-	LambdaPreprocesingContext* const lambda_preprocessing_context )
+	LambdaPreprocessingContext* const lambda_preprocessing_context )
 {
 	U_ASSERT( !func_variable.have_body );
 	func_variable.have_body= true;

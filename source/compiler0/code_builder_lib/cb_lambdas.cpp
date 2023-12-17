@@ -95,7 +95,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Run preprocessing.
 	if( !std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
 	{
-		LambdaPreprocesingContext lambda_preprocessing_context;
+		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CallectCurrentFunctionVariables( function_context );
 
 		FunctionVariable op_variable;

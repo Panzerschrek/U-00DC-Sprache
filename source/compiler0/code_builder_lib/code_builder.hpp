@@ -712,7 +712,7 @@ private:
 		llvm::ArrayRef<Synt::FunctionParam> params,
 		const Synt::Block& block,
 		const Synt::StructNamedInitializer* constructor_initialization_list,
-		LambdaPreprocesingContext* lambda_preprocessing_context= nullptr );
+		LambdaPreprocessingContext* lambda_preprocessing_context= nullptr );
 
 	// Expressions.
 	VariablePtr BuildExpressionCodeEnsureVariable(
