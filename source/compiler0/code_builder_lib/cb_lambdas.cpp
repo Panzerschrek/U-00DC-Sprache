@@ -138,6 +138,14 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		// Collect actual return references in lambdas.
 		return_references= std::move(lambda_preprocessing_context.return_references);
+
+		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
+		{
+			// Returning a reference to captured by value variable is later returning a reference to "this" (which is argument #0).
+			// TODO - support case with returned captured by reference variables.
+			(void)captured_variable_return_reference;
+			return_references.emplace( uint8_t(0), FunctionType::c_param_reference_number );
+		}
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;

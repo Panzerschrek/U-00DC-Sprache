@@ -441,7 +441,11 @@ void CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext& f
 			}
 		}
 
-		// TODO - collect also captured variable nodes.
+		for( const auto& captured_variable_pair : function_context.lambda_preprocessing_context->captured_external_variables )
+		{
+			if( var_node == captured_variable_pair.second.variable_node )
+				function_context.lambda_preprocessing_context->captured_variables_return_references.insert( captured_variable_pair.second.source_variable );
+		}
 	}
 }
 

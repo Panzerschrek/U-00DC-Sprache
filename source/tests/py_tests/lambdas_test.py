@@ -142,3 +142,32 @@ def LambdaCaptureAllByValue_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def Lambda_ReturnReferenceToCapturedVariable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 12345;
+			auto f= lambda[=]() : i32& { return x; };
+			auto& ref= f();
+			halt if( ref != 12345 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def Lambda_ReturnReferenceToCapturedVariable_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 777;
+			auto f= lambda[=]() : i32& { return x; };
+			auto& ref= f();
+			x= 0; // Since lambda captures by value, we can modify source variable without affecting captured inside lambda value.
+			halt if( ref != 777 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

@@ -52,7 +52,10 @@ public:
 	std::unordered_set<VariablePtr> external_variables;
 	// Outputs.
 	std::unordered_map<std::string, CapturedVariableData> captured_external_variables;
+
 	std::set<FunctionType::ParamReference> return_references;
+	// Contains set of source variables.
+	std::set<VariablePtr> captured_variables_return_references;
 };
 
 } // namespace U

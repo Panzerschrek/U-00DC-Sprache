@@ -77,3 +77,18 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 12345;
+			auto mut f= lambda[=]() : i32& { return x; };
+			auto& ref= f(); // Capture a reference to lambda.
+			move(f); // Error, this lambda has references to it.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
