@@ -125,7 +125,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 			const auto index= uint32_t( class_->fields_order.size() );
 
-			auto field= std::make_shared<ClassField>( class_, captured_varaible_pair.second->type, index, true, false );
+			auto field= std::make_shared<ClassField>( class_, captured_varaible_pair.second.source_variable->type, index, true, false );
 			class_->fields_order.push_back( field );
 
 			class_->members->AddName( name, NamesScopeValue( field, lambda.src_loc ) );
@@ -255,6 +255,65 @@ std::unordered_set<VariablePtr> CodeBuilder::CallectCurrentFunctionVariables( Fu
 	}
 
 	return result;
+}
+
+VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name )
+{
+	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
+	U_ASSERT( function_context.lambda_preprocessing_context->external_variables.count( variable ) > 0 );
+
+	// Create special temporary reference grap nodes for captured external variable.
+
+	LambdaPreprocessingContext::CapturedVariableData& captured_variable= function_context.lambda_preprocessing_context->captured_external_variables[name];
+
+	if( captured_variable.source_variable == nullptr )
+		captured_variable.source_variable= variable;
+
+	// TODO - what should we do with contexpr values?
+
+	const auto reference_tag_count= variable->type.ReferenceTagCount();
+
+	if( captured_variable.variable_node == nullptr && captured_variable.reference_node == nullptr )
+	{
+		captured_variable.variable_node=
+			Variable::Create(
+				variable->type,
+				ValueType::Value,
+				Variable::Location::Pointer,
+				variable->name + " lambda copy",
+				variable->llvm_value );
+
+		captured_variable.reference_node=
+			Variable::Create(
+				variable->type,
+				variable->value_type,
+				Variable::Location::Pointer,
+				variable->name + " lambda copy ref",
+				variable->llvm_value );
+
+		captured_variable.accessible_variables.resize( reference_tag_count );
+		for( size_t i= 0; i < reference_tag_count; ++i )
+		{
+			captured_variable.accessible_variables[i]=
+				Variable::Create(
+					invalid_type_,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					"referenced variable " + std::to_string(i) + " of captured lambda variable " + variable->name );
+		}
+	}
+
+	function_context.variables_state.AddNodeIfNotExists( captured_variable.variable_node );
+	function_context.variables_state.AddNodeIfNotExists( captured_variable.reference_node );
+	function_context.variables_state.AddLink( captured_variable.variable_node, captured_variable.reference_node );
+
+	for( size_t i= 0; i < reference_tag_count; ++i )
+	{
+		function_context.variables_state.AddLink( captured_variable.accessible_variables[i], variable->inner_reference_nodes[i] );
+		function_context.variables_state.AddLink( captured_variable.variable_node->inner_reference_nodes[i], captured_variable.reference_node->inner_reference_nodes[i] );
+	}
+
+	return captured_variable.reference_node;
 }
 
 } // namespace U

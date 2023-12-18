@@ -36,10 +36,22 @@ struct LambdaClassData
 
 struct LambdaPreprocessingContext
 {
+	struct CapturedVariableData
+	{
+		VariablePtr source_variable;
+
+		// Newly-created nodes inside the lambda.
+		VariablePtr variable_node;
+		VariablePtr reference_node;
+		std::vector<VariablePtr> accessible_variables;
+	};
+
+public:
+
 	// Inputs.
 	std::unordered_set<VariablePtr> external_variables;
 	// Outputs.
-	std::unordered_map<std::string, VariablePtr> captured_external_variables;
+	std::unordered_map<std::string, CapturedVariableData> captured_external_variables;
 	std::set<FunctionType::ParamReference> return_references;
 };
 

@@ -127,7 +127,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		{
 			// TODO - produce error if lambda uses non-auto capturing and this variable is not mentioned explicitely.
 			if( function_context.lambda_preprocessing_context->external_variables.count( variable ) > 0 )
-				function_context.lambda_preprocessing_context->captured_external_variables[name_lookup.name]= variable;
+				return LambdaPreprocessingAccessExternalVariable( function_context, variable, name_lookup.name );
 		}
 	}
 
