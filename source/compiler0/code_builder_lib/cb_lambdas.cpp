@@ -77,7 +77,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// TODO - preprocess lambda to build capture list.
 
 	// Create the class.
-	auto class_ptr= std::make_unique<Class>( "_lambda_TODO_name", &names );
+
+	// Use some stable namespace as parent for class members namespace.
+	// We can't use namespace of function variables here, because it will be destroyed later.
+	// TODO - use closest global namespace.
+
+	auto class_ptr= std::make_unique<Class>( "_lambda_TODO_name", names.GetRoot() );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
