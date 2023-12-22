@@ -79,6 +79,29 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test2():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
+def ReturnedFromLambdaReferenceIsLinkedToLambdaArg_Test0():
+	c_program_text= """
+		struct R{ i32& r; }
+		fn Foo()
+		{
+			// Lambda returns passed reference inside a variable.
+			auto f=
+				lambda( i32& x ) : R
+				{
+					var R r{ .r= x };
+					return r;
+				};
+
+			var i32 mut arg= 9890;
+			var R r= f(arg);
+			++arg; // Error, there is reference inside "r" to this variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
 def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test0():
 	c_program_text= """
 		fn Foo()
@@ -92,6 +115,27 @@ def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+
+
+def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test1():
+	c_program_text= """
+		struct R{ i32& r; }
+		fn Foo()
+		{
+			var i32 mut x= 776655;
+			auto mut f=
+				lambda[=]() : R
+				{
+					var R r{ .r= x };
+					return r;
+				};
+			var R r= f();
+			move(f); // Error, this lambda has references to it.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 13 ) )
 
 
 def ReturnedFromLambdaReferenceIsLinkedToCapturedVariableInnerReference_Test0():

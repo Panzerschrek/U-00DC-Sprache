@@ -97,6 +97,28 @@ def NonCaptureLambda_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def NonCaptureLambda_Test4():
+	c_program_text= """
+		struct R{ i32& r; }
+		fn Foo()
+		{
+			// Lambda returns passed reference inside a variable.
+			auto f=
+				lambda( i32& x ) : R
+				{
+					var R r{ .r= x };
+					return r;
+				};
+
+			var i32 arg= 9890;
+			var R r= f(arg);
+			halt if( r.r != 9890 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def LambdaCaptureAllByValue_Test0():
 	c_program_text= """
 		fn Foo()
@@ -192,6 +214,32 @@ def Lambda_ReturnReferenceToCapturedVariable_Test2():
 				ref= 5.25;
 			}
 			halt if( x != 5.25 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def Lambda_ReturnReferenceToCapturedVariable_Test3():
+	c_program_text= """
+		struct R
+		{
+			i32& r;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 6543;
+			auto f=
+				lambda[=]() : R
+				{
+					var R r{ .r= x };
+					return r; // Return reference to captured variable "x" inside "R".
+				};
+			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 0s );
+			var R r= f();
+			halt if( r.r != 6543 );
+			x= 77; // Change source variable, but captured in lambda by value variable should not be changed.
+			halt if( r.r != 6543 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

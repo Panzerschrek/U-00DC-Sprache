@@ -54,8 +54,11 @@ public:
 	std::unordered_map<std::string, CapturedVariableData> captured_external_variables;
 
 	std::set<FunctionType::ParamReference> return_references;
+	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
+
 	// Contains set of variables of the preprocessed lambda.
 	std::set<VariablePtr> captured_variables_return_references;
+	std::vector<std::set<VariablePtr>> captured_variables_return_inner_references;
 };
 
 } // namespace U

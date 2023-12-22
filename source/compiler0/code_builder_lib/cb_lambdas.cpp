@@ -108,6 +108,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
 	std::set<FunctionType::ParamReference> return_references;
+	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
 
 	// Run preprocessing.
 	{
@@ -135,6 +136,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		// Collect actual return references in lambdas.
 		return_references= std::move(lambda_preprocessing_context.return_references);
+		return_inner_references= std::move(lambda_preprocessing_context.return_inner_references);
 
 		// TODO - order fields to minimize padding.
 		for( const auto& captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
@@ -174,6 +176,28 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				}
 			}
 
+			if( return_inner_references.size() < lambda_preprocessing_context.captured_variables_return_inner_references.size() )
+				return_inner_references.resize( lambda_preprocessing_context.captured_variables_return_inner_references.size() );
+			for( size_t tag_n= 0; tag_n < lambda_preprocessing_context.captured_variables_return_inner_references.size(); ++tag_n )
+			{
+				for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
+				{
+					// Lambda is "this" (argument 0).
+					const uint8_t param_index= 0;
+
+					// A reference to captured variable itself - it bacame a reference to lamba "this" itself.
+					if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+						return_inner_references[tag_n].emplace( param_index, FunctionType::c_param_reference_number );
+
+					for( size_t i= 0; i < captured_variable_pair.second.accessible_variables.size(); ++i )
+					{
+						// An inner reference of a captured by value variable - it became an inner reference to "this".
+						if( captured_variable_return_reference == captured_variable_pair.second.accessible_variables[i] )
+							return_inner_references[tag_n].emplace( param_index, field->inner_reference_tags[i] );
+					}
+				}
+			}
+
 			class_->members->AddName( name, NamesScopeValue( field, lambda.src_loc ) );
 
 			LambdaClassData::Capture capture;
@@ -207,6 +231,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		FunctionVariable op_variable;
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
+		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
 

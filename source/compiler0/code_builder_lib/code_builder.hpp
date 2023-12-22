@@ -1222,6 +1222,7 @@ private:
 		const SrcLoc& src_loc );
 
 	void LambdaPreprocessingCollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void LambdaPreprocessingCollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node );
 
 	// Reference notation.
 

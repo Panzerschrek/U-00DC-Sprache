@@ -638,7 +638,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		if( function_context.lambda_preprocessing_context != nullptr )
+		{
+			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+		}
+		else
+		{
+			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		}
+
 		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
@@ -734,6 +742,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( function_context.lambda_preprocessing_context != nullptr )
 		{
 			LambdaPreprocessingCollectReturnReferences( function_context, expression_result );
+			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
 		}
 		else
 		{

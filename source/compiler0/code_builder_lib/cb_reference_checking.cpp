@@ -455,4 +455,50 @@ void CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext& f
 	}
 }
 
+void CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node )
+{
+	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
+
+	if( function_context.lambda_preprocessing_context->return_inner_references.size() < return_node->inner_reference_nodes.size() )
+		function_context.lambda_preprocessing_context->return_inner_references.resize( return_node->inner_reference_nodes.size() );
+
+	if( function_context.lambda_preprocessing_context->captured_variables_return_inner_references.size() < return_node->inner_reference_nodes.size() )
+		function_context.lambda_preprocessing_context->captured_variables_return_inner_references.resize( return_node->inner_reference_nodes.size() );
+
+	for( size_t i= 0; i < return_node->inner_reference_nodes.size(); ++i )
+	{
+		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_node->inner_reference_nodes[i] ) )
+		{
+			U_ASSERT( var_node != nullptr );
+			U_ASSERT( var_node->value_type == ValueType::Value );
+
+			for( const auto& arg_node_pair : function_context.args_nodes )
+			{
+				const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
+				if( var_node == arg_node_pair.first )
+					function_context.lambda_preprocessing_context->return_inner_references[i].emplace( uint8_t(arg_n), FunctionType::c_param_reference_number );
+
+				for( const VariablePtr& inner_node : arg_node_pair.second )
+				{
+					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
+					if( var_node == inner_node )
+						function_context.lambda_preprocessing_context->return_inner_references[i].emplace( uint8_t(arg_n), uint8_t(tag_n) );
+				}
+			}
+
+			for( const auto& captured_variable_pair : function_context.lambda_preprocessing_context->captured_external_variables )
+			{
+				if( var_node == captured_variable_pair.second.variable_node )
+					function_context.lambda_preprocessing_context->captured_variables_return_inner_references[i].insert( var_node );
+
+				for( const VariablePtr& accessible_variable : captured_variable_pair.second.accessible_variables )
+				{
+					if( var_node == accessible_variable )
+						function_context.lambda_preprocessing_context->captured_variables_return_inner_references[i].insert( var_node );
+				}
+			}
+		}
+	}
+}
+
 } // namespace U
