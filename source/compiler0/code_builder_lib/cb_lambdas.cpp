@@ -50,7 +50,17 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 								variable->type,
 								function_context );
 						}
-						// TODO - link references.
+
+						// Link references.
+						const size_t reference_tag_count= capture.field->type.ReferenceTagCount();
+						U_ASSERT( capture.field->inner_reference_tags.size() == reference_tag_count );
+						U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
+						for( size_t i= 0; i < reference_tag_count; ++i )
+						{
+							const size_t dst_node_index= capture.field->inner_reference_tags[i];
+							U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
+							function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), lambda.src_loc );
+						}
 					}
 				}
 			}
@@ -123,15 +133,46 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		// Remove temp function.
 		op_variable.llvm_function->function->eraseFromParent();
 
+		// Collect actual return references in lambdas.
+		return_references= std::move(lambda_preprocessing_context.return_references);
+
 		// TODO - order fields to minimize padding.
-		for( const auto& captured_varaible_pair : lambda_preprocessing_context.captured_external_variables )
+		for( const auto& captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 		{
-			const auto& name= captured_varaible_pair.first;
+			const auto& name= captured_variable_pair.first;
+			const Type& type= captured_variable_pair.second.source_variable->type;
 
 			const auto index= uint32_t( class_->fields_order.size() );
 
-			auto field= std::make_shared<ClassField>( class_, captured_varaible_pair.second.source_variable->type, index, true, false );
+			auto field= std::make_shared<ClassField>( class_, type, index, true, false );
 			class_->fields_order.push_back( field );
+
+			// Each reference tag of each captured variable get its own reference tag in result lambda class.
+			const auto reference_tag_cout= type.ReferenceTagCount();
+			field->inner_reference_tags.reserve( reference_tag_cout );
+			for( size_t i= 0; i < reference_tag_cout; ++i )
+			{
+				field->inner_reference_tags.push_back( uint8_t( class_->inner_references.size() ) );
+				class_->inner_references.push_back( type.GetInnerReferenceType( i ) );
+			}
+
+			// Check if references to this variable or its inner references are returned and populate return references container.
+			for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
+			{
+				// Lambda is "this" (argument 0).
+				const uint8_t param_index= 0;
+
+				// A reference to captured variable itself - it bacame a reference to lamba "this" itself.
+				if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+					return_references.emplace( param_index, FunctionType::c_param_reference_number );
+
+				for( size_t i= 0; i < captured_variable_pair.second.accessible_variables.size(); ++i )
+				{
+					// An inner reference of a captured by value variable - it became an inner reference to "this".
+					if( captured_variable_return_reference == captured_variable_pair.second.accessible_variables[i] )
+						return_references.emplace( param_index, field->inner_reference_tags[i] );
+				}
+			}
 
 			class_->members->AddName( name, NamesScopeValue( field, lambda.src_loc ) );
 
@@ -139,17 +180,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			capture.captured_variable_name= name;
 			capture.field= std::move(field);
 			std::get_if<LambdaClassData>( &class_->generated_class_data )->captures.push_back( std::move(capture) );
-		}
-
-		// Collect actual return references in lambdas.
-		return_references= std::move(lambda_preprocessing_context.return_references);
-
-		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
-		{
-			// Returning a reference to captured by value variable is later returning a reference to "this" (which is argument #0).
-			// TODO - support case with returned captured by reference variables.
-			(void)captured_variable_return_reference;
-			return_references.emplace( uint8_t(0), FunctionType::c_param_reference_number );
 		}
 	}
 
@@ -322,7 +352,8 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable( FunctionCont
 
 	for( size_t i= 0; i < reference_tag_count; ++i )
 	{
-		function_context.variables_state.AddLink( captured_variable.accessible_variables[i], variable->inner_reference_nodes[i] );
+		function_context.variables_state.AddNodeIfNotExists( captured_variable.accessible_variables[i] );
+		function_context.variables_state.AddLink( captured_variable.accessible_variables[i], captured_variable.variable_node->inner_reference_nodes[i] );
 		function_context.variables_state.AddLink( captured_variable.variable_node->inner_reference_nodes[i], captured_variable.reference_node->inner_reference_nodes[i] );
 	}
 

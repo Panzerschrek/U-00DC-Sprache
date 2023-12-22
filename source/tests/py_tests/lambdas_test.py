@@ -171,3 +171,28 @@ def Lambda_ReturnReferenceToCapturedVariable_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def Lambda_ReturnReferenceToCapturedVariable_Test2():
+	c_program_text= """
+		struct R
+		{
+			f64 &mut r;
+		}
+		fn Foo()
+		{
+			var f64 mut x= 1234.5;
+			{
+				var R r { .r= x };
+				// Return inner reference of captured variable.
+				auto f= lambda[=]() : f64 &mut { return r.r; };
+				static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+				auto &mut ref= f();
+				halt if( ref != 1234.5 );
+				ref= 5.25;
+			}
+			halt if( x != 5.25 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

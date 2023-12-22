@@ -92,3 +92,23 @@ def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+
+
+def ReturnedFromLambdaReferenceIsLinkedToCapturedVariableInnerReference_Test0():
+	c_program_text= """
+		struct R
+		{
+			f64 &mut r;
+		}
+		fn Foo()
+		{
+			var f64 mut x= 0.0;
+			var R r { .r= x };
+			// Stores inner reference of captured variable.
+			auto f= lambda[=]() : f64 { return r.r; };
+			auto& other_ref= r.r; // Error, a reference to "r.x" exists insied "f".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 12 ) )
