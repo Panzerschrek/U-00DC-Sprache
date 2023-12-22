@@ -244,3 +244,63 @@ def Lambda_ReturnReferenceToCapturedVariable_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 676;
+			auto f= lambda [&] () : i32 { return x; };
+			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+			halt if( f() != 676 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 mut k= 0.0f;
+			// Capture mutable reference.
+			auto f= lambda [&] () { k+= 133.5f; };
+			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+			halt if( k != 0.0f );
+			f();
+			halt if( k != 133.5f );
+			f();
+			halt if( k != 267.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 5, mut y= 7;
+			// Capture two mutable references.
+			auto f= lambda [&] ()
+				{
+					auto tmp= x;
+					x= y;
+					y= tmp;
+				};
+			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 2s );
+			halt if( x != 5 );
+			halt if( y != 7 );
+			f();
+			halt if( x != 7 );
+			halt if( y != 5 );
+			f();
+			halt if( x != 5 );
+			halt if( y != 7 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

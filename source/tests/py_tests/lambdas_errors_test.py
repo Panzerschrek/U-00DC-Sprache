@@ -156,3 +156,30 @@ def ReturnedFromLambdaReferenceIsLinkedToCapturedVariableInnerReference_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def LambdaCapturesReferences_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f= lambda[&]() { auto x_copy= x; };
+			auto &mut x_ref= x; // Error, lambda captures reference to variable "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def LambdaCapturesReferences_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f= lambda[&]() { };
+			auto &mut x_ref= x; // Ok, "x" is not captured.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
