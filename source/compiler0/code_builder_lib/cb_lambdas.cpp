@@ -101,7 +101,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
 	class_->src_loc= lambda.src_loc;
-	class_->kind= Class::Kind::NonPolymorph;
+	class_->kind= Class::Kind::Struct; // Set to struct in order to allow generation of some methods.
 	class_->parents_list_prepared= true;
 	class_->have_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
@@ -254,6 +254,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	TryGenerateCopyConstructor( class_ );
 	TryGenerateCopyAssignmentOperator( class_ );
 	TryGenerateDestructor( class_ );
+	class_->kind= Class::Kind::NonPolymorph; // Set to class after methods generation.
 
 	// Create () operator.
 	{

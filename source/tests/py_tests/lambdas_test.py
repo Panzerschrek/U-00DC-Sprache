@@ -304,3 +304,61 @@ def LambdaCaptureAllByReference_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMayBeCopyable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Non-capture lambda is copyable.
+			auto f= lambda( i32 x, i32 y ) : i32 { return x - y; };
+			static_assert( typeinfo</ typeof(f) />.is_copy_constructible );
+			auto f_copy0= f;
+			var typeof(f) f_copy1(f_copy0);
+			halt if( f_copy1( 67, 34 ) != 67 - 34 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMayBeCopyable_Test1():
+	c_program_text= """
+		struct S
+		{
+			f32 x;
+		}
+		fn Foo()
+		{
+			var i32 x= 67;
+			var S s{ .x= 3.5f };
+			// This lambda is copyable because it captures by value only copy-constructible types.
+			auto f= lambda[=]() : f32 { return f32(x) * s.x; };
+			static_assert( typeinfo</ typeof(f) />.is_copy_constructible );
+			auto f_copy0= f;
+			var typeof(f) f_copy1(f_copy0);
+			halt if( f_copy1( ) != 234.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMayBeCopyable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 17, y= 3;
+			{
+				// This lambda is copyable because it captures only references.
+				auto f= lambda[&]() { x *= y; };
+				static_assert( typeinfo</ typeof(f) />.is_copy_constructible );
+				auto f_copy0= f;
+				var typeof(f) f_copy1(f_copy0);
+				f_copy1();
+			}
+			halt if( x != 17 * 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

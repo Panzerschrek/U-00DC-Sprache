@@ -185,6 +185,21 @@ def LambdaCapturesReferences_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def LambdaCapturesReferences_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f= lambda[&]() { ++x; };
+			auto f_copy= f; // "f_copy" inner reference nodes are linked to "f" inner reference nodes.
+			f(); // Can't call first lambda, because there is a reference to its inner node inside "f_copy".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
 def LambdaModifyCapturedVariable_Test0():
 	c_program_text= """
 		fn Foo()
