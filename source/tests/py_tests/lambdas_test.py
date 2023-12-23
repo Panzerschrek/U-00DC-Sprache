@@ -403,3 +403,73 @@ def LambdaMayBeCopyable_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaTypeinfo_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr IsPrivate( T& list, [ char8, name_size ]& name ) : bool
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.is_private;
+				}
+			}
+			halt;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr IsReferenceField( T& fields_list, [ char8, name_size ]& name ) : bool
+		{
+			for( & list_element : fields_list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.is_reference;
+				}
+			}
+			halt;
+		}
+
+		fn Foo()
+		{
+			var i32 x= 0;
+			var f32 y= 0.0f;
+			auto f= lambda[=]() : f32 { return f32(x) * y; };
+			auto& ti= typeinfo</ typeof(f) />;
+			// Fields created for captured by value variables are private.
+			static_assert( !IsReferenceField( ti.fields_list, "x" ) );
+			static_assert( IsPrivate( ti.fields_list, "x" ) );
+			static_assert( !IsReferenceField( ti.fields_list, "y" ) );
+			static_assert( IsPrivate( ti.fields_list, "y" ) );
+		}
+
+		fn Bar()
+		{
+			var i32 x= 0;
+			var f32 y= 0.0f;
+			auto f= lambda[&]() : f32 { return f32(x) * y; };
+			auto& ti= typeinfo</ typeof(f) />;
+			// Fields created for captured by reference variables are private.
+			static_assert( IsReferenceField( ti.fields_list, "x" ) );
+			static_assert( IsPrivate( ti.fields_list, "x" ) );
+			static_assert( IsReferenceField( ti.fields_list, "y" ) );
+			static_assert( IsPrivate( ti.fields_list, "y" ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

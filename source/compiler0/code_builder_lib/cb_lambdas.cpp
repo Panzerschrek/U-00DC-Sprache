@@ -88,8 +88,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		return it->second.get();
 	}
 
-	// TODO - preprocess lambda to build capture list.
-
 	// Create the class.
 
 	// Use some stable namespace as parent for class members namespace.
@@ -278,6 +276,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			}
 
 			class_->members->AddName( captured_variable.name, NamesScopeValue( field, lambda.src_loc ) );
+
+			// Make captured variable fields private.
+			class_->members_visibility.insert_or_assign( captured_variable.name, ClassMemberVisibility::Private );
 
 			LambdaClassData::Capture capture;
 			capture.captured_variable_name= captured_variable.name;

@@ -251,3 +251,31 @@ def LambdaModifyCapturedVariable_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+
+
+def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 9899;
+			auto f= lambda[=]() : i32 { return x; };
+			auto x_copy= f.x; // Accessing value field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingNonpublicClassMember", 6 ) )
+
+
+def AccessingLambdaCapturedValueIsNotAllowed_Tes1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto y= 3.5f;
+			auto f= lambda[&]() : f32 { return y; };
+			auto x_copy= f.y; // Accessing reference field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingNonpublicClassMember", 6 ) )
