@@ -50,6 +50,9 @@ public:
 
 	// Inputs.
 	std::unordered_set<VariablePtr> external_variables;
+	ValueType lambda_this_value_type= ValueType::ReferenceImut;
+	bool capture_by_value= false;
+
 	// Outputs.
 	std::unordered_map<std::string, CapturedVariableData> captured_external_variables;
 

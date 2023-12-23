@@ -109,6 +109,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->generated_class_data= LambdaClassData{};
 	class_->llvm_type= llvm::StructType::create( llvm_context_ ); // TODO - mangle name?
 
+	const auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
+
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
 	std::set<FunctionType::ParamReference> return_references;
@@ -118,10 +120,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CallectCurrentFunctionVariables( function_context );
+		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
+		lambda_preprocessing_context.lambda_this_value_type= lambda_this_value_type;
 
 		FunctionVariable op_variable;
 		// It's fine to use incomplete lambda class here, since this class can't be accessed.
-		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
+		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
 
@@ -254,7 +258,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Create () operator.
 	{
 		FunctionVariable op_variable;
-		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
+		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
@@ -284,7 +288,8 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::FunctionType& lambda_function_type,
-	const ClassPtr lambda_class_type )
+	const ClassPtr lambda_class_type,
+	const ValueType lambda_this_value_type )
 {
 	FunctionType function_type;
 
@@ -305,7 +310,7 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	U_ASSERT( ! synt_params.empty() && synt_params.front().name == Keywords::this_ );
 	{
 		FunctionType::Param this_param;
-		this_param.value_type= ValueType::ReferenceImut; // TODO - allow to specify it.
+		this_param.value_type= lambda_this_value_type;
 		this_param.type= lambda_class_type;
 
 		function_type.params.push_back( std::move( this_param ) );
@@ -353,11 +358,12 @@ std::unordered_set<VariablePtr> CodeBuilder::CallectCurrentFunctionVariables( Fu
 VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name )
 {
 	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
-	U_ASSERT( function_context.lambda_preprocessing_context->external_variables.count( variable ) > 0 );
+	auto& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
+	U_ASSERT( lambda_preprocessing_context.external_variables.count( variable ) > 0 );
 
 	// Create special temporary reference grap nodes for captured external variable.
 
-	LambdaPreprocessingContext::CapturedVariableData& captured_variable= function_context.lambda_preprocessing_context->captured_external_variables[name];
+	LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
 
 	if( captured_variable.source_variable == nullptr )
 		captured_variable.source_variable= variable;
@@ -376,10 +382,17 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable( FunctionCont
 				variable->name + " lambda copy",
 				variable->llvm_value );
 
+		// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+		// So, make it immutable.
+		const auto value_type=
+			( lambda_preprocessing_context.capture_by_value && lambda_preprocessing_context.lambda_this_value_type == ValueType::Value )
+				? ValueType::ReferenceImut
+				: variable->value_type;
+
 		captured_variable.reference_node=
 			Variable::Create(
 				variable->type,
-				variable->value_type,
+				value_type,
 				Variable::Location::Pointer,
 				variable->name + " lambda copy ref",
 				variable->llvm_value );

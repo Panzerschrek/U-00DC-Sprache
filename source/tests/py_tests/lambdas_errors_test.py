@@ -58,7 +58,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test0():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
-def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test2():
+def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test1():
 	c_program_text= """
 		class C
 		{
@@ -183,3 +183,56 @@ def LambdaCapturesReferences_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaModifyCapturedVariable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[=]()
+				{
+					++x; // Error - can't modify immutable value.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
+def LambdaModifyCapturedVariable_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[=]()
+				{
+					// Even if source variable is mutable, captured by value variable is immutable, because by default lambda op() uses "imut this".
+					++x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+
+
+def LambdaModifyCapturedVariable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[&]()
+				{
+					// Can't modify captured by immutable reference variable.
+					++x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
