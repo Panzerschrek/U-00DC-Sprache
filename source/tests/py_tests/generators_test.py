@@ -1234,6 +1234,7 @@ def Typeinfo_ForGenerators_Test0():
 
 		static_assert( int_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
 		static_assert( int_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
+		static_assert( !int_gen_typeinfo.is_lambda );
 		static_assert( int_gen_typeinfo.is_coroutine );
 		static_assert( int_gen_typeinfo.is_generator );
 		static_assert( !int_gen_typeinfo.is_async_func );

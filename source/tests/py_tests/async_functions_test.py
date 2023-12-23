@@ -512,6 +512,7 @@ def Typeinfo_ForAsyncFunctions_Test0():
 
 		static_assert( int_async_func_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
 		static_assert( int_async_func_typeinfo.is_class ); // Async functions are classes, because they have destructor method.
+		static_assert( !int_async_func_typeinfo.is_lambda );
 		static_assert( int_async_func_typeinfo.is_coroutine );
 		static_assert( !int_async_func_typeinfo.is_generator );
 		static_assert( int_async_func_typeinfo.is_async_func );

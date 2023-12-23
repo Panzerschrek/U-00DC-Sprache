@@ -489,6 +489,7 @@ def LambdaTypeinfo_Test1():
 			static_assert( !ti.is_abstract );
 			static_assert( !ti.is_interface );
 			static_assert( !ti.is_coroutine );
+			static_assert( ti.is_lambda );
 			static_assert( !ti.is_default_constructible );
 			static_assert( !ti.is_equality_comparable );
 			static_assert( ti.field_count == 0s );
@@ -507,6 +508,7 @@ def LambdaTypeinfo_Test2():
 			auto& ti= typeinfo</ typeof(f) />;
 			static_assert( ti.is_class );
 			static_assert( !ti.is_struct );
+			static_assert( ti.is_lambda );
 			static_assert( !ti.is_default_constructible );
 			static_assert( !ti.is_equality_comparable );
 			static_assert( ti.field_count == 0s );
@@ -528,6 +530,7 @@ def LambdaTypeinfo_Test3():
 			auto& ti= typeinfo</ typeof(f) />;
 			static_assert( ti.is_class );
 			static_assert( !ti.is_struct );
+			static_assert( ti.is_lambda );
 			static_assert( !ti.is_default_constructible );
 			static_assert( !ti.is_equality_comparable );
 			static_assert( ti.field_count == 3s );
@@ -549,6 +552,7 @@ def LambdaTypeinfo_Test4():
 			auto& ti= typeinfo</ typeof(f) />;
 			static_assert( ti.is_class );
 			static_assert( !ti.is_struct );
+			static_assert( ti.is_lambda );
 			static_assert( !ti.is_default_constructible );
 			static_assert( !ti.is_equality_comparable );
 			static_assert( ti.field_count == 3s );
