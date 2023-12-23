@@ -146,13 +146,50 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		return_references= std::move(lambda_preprocessing_context.return_references);
 		return_inner_references= std::move(lambda_preprocessing_context.return_inner_references);
 
-		// TODO - order fields to minimize padding.
-		for( const auto& captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+		// Extract captured variables and sort them to ensure stable order.
+		struct CapturedVariableForSorting
 		{
-			const bool capture_by_reference= std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture );
+			std::string name;
+			LambdaPreprocessingContext::CapturedVariableData data;
+			uint64_t alignment= 0;
+			bool capture_by_reference= false;
+		};
 
-			const auto& name= captured_variable_pair.first;
-			const Type& type= captured_variable_pair.second.source_variable->type;
+		llvm::SmallVector<CapturedVariableForSorting, 4> captured_variables;
+
+		for( auto& captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+		{
+			CapturedVariableForSorting v;
+			v.name= captured_variable_pair.first;
+			v.data= std::move(captured_variable_pair.second);
+			v.capture_by_reference= std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture );
+
+			const auto llvm_type= v.data.source_variable->type.GetLLVMType();
+			v.alignment=
+				v.capture_by_reference
+					? data_layout_.getABITypeAlignment( llvm_type->getPointerTo() )
+					: data_layout_.getABITypeAlignment( llvm_type );
+
+			captured_variables.push_back( std::move(v) );
+		};
+
+		// We must sort fields in order to avoid creating fields list in hash-map iteration order (which is non-deterministic).
+		// There should be no equal elements here, because this can prevent sorting to be stable.
+		std::sort(
+			captured_variables.begin(), captured_variables.end(),
+			[]( const CapturedVariableForSorting& l, const CapturedVariableForSorting& r )
+			{
+				// Sort in alignment descending order (to minimize padding).
+				if( l.alignment != r.alignment )
+					return l.alignment > r.alignment;
+				// If alignment is the same - use name for ordering (it should be unique).
+				return l.name < r.name;
+			} );
+
+		// Iterate over sorted captured variables, create fields for them, setup reference notation.
+		for( const CapturedVariableForSorting& captured_variable : captured_variables )
+		{
+			const Type& type= captured_variable.data.source_variable->type;
 
 			const auto index= uint32_t( class_->fields_order.size() );
 
@@ -164,23 +201,23 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			// Lambda is "this" (argument 0).
 			const uint8_t this_param_index= 0;
 
-			if( capture_by_reference )
+			if( captured_variable.capture_by_reference )
 			{
 				field->is_reference= true;
 				// Captured reference mutability is determined by mutability of source variable.
-				field->is_mutable= captured_variable_pair.second.source_variable->value_type == ValueType::ReferenceMut;
+				field->is_mutable= captured_variable.data.source_variable->value_type == ValueType::ReferenceMut;
 
 				// Create a reference tag for captured reference.
 				field->reference_tag= uint8_t( class_->inner_references.size() );
 				class_->inner_references.push_back( field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 
 				if( reference_tag_cout > 0 )
-					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names.GetErrors(), lambda.src_loc, name );
+					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names.GetErrors(), lambda.src_loc, captured_variable.name );
 
 				// Check if references to this variable or its inner references are returned and populate return references container.
 				for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 				{
-					if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+					if( captured_variable_return_reference == captured_variable.data.variable_node )
 						return_references.emplace( this_param_index, field->reference_tag );
 				}
 
@@ -190,7 +227,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				{
 					for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
 					{
-						if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+						if( captured_variable_return_reference == captured_variable.data.variable_node )
 							return_inner_references[tag_n].emplace( this_param_index, field->reference_tag );
 					}
 				}
@@ -209,13 +246,13 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 				{
 					// A reference to captured variable itself - it bacame a reference to lamba "this" itself.
-					if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+					if( captured_variable_return_reference == captured_variable.data.variable_node )
 						return_references.emplace( this_param_index, FunctionType::c_param_reference_number );
 
-					for( size_t i= 0; i < captured_variable_pair.second.accessible_variables.size(); ++i )
+					for( size_t i= 0; i < captured_variable.data.accessible_variables.size(); ++i )
 					{
 						// An inner reference of a captured by value variable - it became an inner reference to "this".
-						if( captured_variable_return_reference == captured_variable_pair.second.accessible_variables[i] )
+						if( captured_variable_return_reference == captured_variable.data.accessible_variables[i] )
 							return_references.emplace( this_param_index, field->inner_reference_tags[i] );
 					}
 				}
@@ -227,43 +264,42 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 					for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
 					{
 						// A reference to captured variable itself - it bacame a reference to lamba "this" itself.
-						if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+						if( captured_variable_return_reference == captured_variable.data.variable_node )
 							return_inner_references[tag_n].emplace( this_param_index, FunctionType::c_param_reference_number );
 
-						for( size_t i= 0; i < captured_variable_pair.second.accessible_variables.size(); ++i )
+						for( size_t i= 0; i < captured_variable.data.accessible_variables.size(); ++i )
 						{
 							// An inner reference of a captured by value variable - it became an inner reference to "this".
-							if( captured_variable_return_reference == captured_variable_pair.second.accessible_variables[i] )
+							if( captured_variable_return_reference == captured_variable.data.accessible_variables[i] )
 								return_inner_references[tag_n].emplace( this_param_index, field->inner_reference_tags[i] );
 						}
 					}
 				}
 			}
 
-			class_->members->AddName( name, NamesScopeValue( field, lambda.src_loc ) );
+			class_->members->AddName( captured_variable.name, NamesScopeValue( field, lambda.src_loc ) );
 
 			LambdaClassData::Capture capture;
-			capture.captured_variable_name= name;
+			capture.captured_variable_name= captured_variable.name;
 			capture.field= std::move(field);
 			std::get_if<LambdaClassData>( &class_->generated_class_data )->captures.push_back( std::move(capture) );
 		}
 	}
 
-	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;
-	fields_llvm_types.reserve( class_->fields_order.size() );
-	for( const auto& field : class_->fields_order )
 	{
-		llvm::Type* llvm_type= field->type.GetLLVMType();
-		if( field->is_reference )
-			llvm_type= llvm_type->getPointerTo();
-
-		fields_llvm_types.push_back( llvm_type );
+		llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;
+		fields_llvm_types.reserve( class_->fields_order.size() );
+		for( const auto& field : class_->fields_order )
+		{
+			llvm::Type* const llvm_type= field->type.GetLLVMType();
+			fields_llvm_types.push_back( field->is_reference ? llvm_type->getPointerTo() : llvm_type );
+		}
+		class_->llvm_type->setBody( fields_llvm_types );
 	}
 
-	class_->llvm_type->setBody( fields_llvm_types );
 	class_->is_complete= true;
 
-	// Try generate importan methods.
+	// Try generate important methods.
 	TryGenerateCopyConstructor( class_ );
 	TryGenerateCopyAssignmentOperator( class_ );
 	TryGenerateDestructor( class_ );
