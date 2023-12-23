@@ -473,3 +473,86 @@ def LambdaTypeinfo_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def LambdaTypeinfo_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Capture nothing.
+			auto f= lambda( i32 x ) : i32 { return x * 2; };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.is_class );
+			static_assert( !ti.is_struct );
+			static_assert( !ti.is_polymorph );
+			static_assert( ti.is_final );
+			static_assert( !ti.is_abstract );
+			static_assert( !ti.is_interface );
+			static_assert( !ti.is_coroutine );
+			static_assert( !ti.is_default_constructible );
+			static_assert( !ti.is_equality_comparable );
+			static_assert( ti.field_count == 0s );
+			static_assert( ti.reference_tag_count == 0s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaTypeinfo_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			// Capture all by value is specified, but really nothing captured.
+			auto f= lambda[=]( i32 x ) : i32 { return x * 2; };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.is_class );
+			static_assert( !ti.is_struct );
+			static_assert( !ti.is_default_constructible );
+			static_assert( !ti.is_equality_comparable );
+			static_assert( ti.field_count == 0s );
+			static_assert( ti.reference_tag_count == 0s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaTypeinfo_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 1;
+			var f32 y= 3.5f;
+			var bool b= false;
+			// Capture 3 variables by value.
+			auto f= lambda[=]() : f32 { return select( b ? y : f32(x) ); };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.is_class );
+			static_assert( !ti.is_struct );
+			static_assert( !ti.is_default_constructible );
+			static_assert( !ti.is_equality_comparable );
+			static_assert( ti.field_count == 3s );
+			static_assert( ti.reference_tag_count == 0s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaTypeinfo_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 1;
+			var f32 y= 3.5f;
+			var bool b= false;
+			// Capture 3 variables by reference.
+			auto f= lambda[&]() : f32 { return select( b ? y : f32(x) ); };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.is_class );
+			static_assert( !ti.is_struct );
+			static_assert( !ti.is_default_constructible );
+			static_assert( !ti.is_equality_comparable );
+			static_assert( ti.field_count == 3s );
+			static_assert( ti.reference_tag_count == 3s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

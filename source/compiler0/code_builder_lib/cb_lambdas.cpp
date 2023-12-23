@@ -298,6 +298,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		class_->llvm_type->setBody( fields_llvm_types );
 	}
 
+	class_->field_count= uint32_t( class_->fields_order.size() );
 	class_->is_complete= true;
 
 	// Try generate important methods.
