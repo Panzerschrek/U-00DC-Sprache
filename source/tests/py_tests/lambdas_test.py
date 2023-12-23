@@ -306,6 +306,47 @@ def LambdaCaptureAllByReference_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def LambdaCaptureAllByReference_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var u64 x(123123123);
+			// Return reference to captured by reference variable.
+			auto f= lambda [&] () : u64& { return x; };
+			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+			auto& x_ref= f();
+			halt if( x_ref != 123123123u64 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test4():
+	c_program_text= """
+		struct R{ i32& mut x; }
+		fn Foo()
+		{
+			var i32 mut x= 676767;
+			{
+				// Return reference to captured by reference variable inside a variable.
+				auto f=
+					lambda [&] () : R
+					{
+						var R r{ .x= x };
+						return r;
+					};
+				static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+				auto r= f();
+				r.x /= 4;
+			}
+			halt if( x != 676767 / 4 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def LambdaMayBeCopyable_Test0():
 	c_program_text= """
 		fn Foo()

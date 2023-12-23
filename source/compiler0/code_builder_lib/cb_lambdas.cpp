@@ -161,6 +161,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 			const auto reference_tag_cout= type.ReferenceTagCount();
 
+			// Lambda is "this" (argument 0).
+			const uint8_t this_param_index= 0;
+
 			if( capture_by_reference )
 			{
 				field->is_reference= true;
@@ -174,7 +177,23 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				if( reference_tag_cout > 0 )
 					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names.GetErrors(), lambda.src_loc, name );
 
-				// TODO - process return references.
+				// Check if references to this variable or its inner references are returned and populate return references container.
+				for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
+				{
+					if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+						return_references.emplace( this_param_index, field->reference_tag );
+				}
+
+				if( return_inner_references.size() < lambda_preprocessing_context.captured_variables_return_inner_references.size() )
+					return_inner_references.resize( lambda_preprocessing_context.captured_variables_return_inner_references.size() );
+				for( size_t tag_n= 0; tag_n < lambda_preprocessing_context.captured_variables_return_inner_references.size(); ++tag_n )
+				{
+					for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
+					{
+						if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
+							return_inner_references[tag_n].emplace( this_param_index, field->reference_tag );
+					}
+				}
 			}
 			else
 			{
@@ -189,18 +208,15 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				// Check if references to this variable or its inner references are returned and populate return references container.
 				for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 				{
-					// Lambda is "this" (argument 0).
-					const uint8_t param_index= 0;
-
 					// A reference to captured variable itself - it bacame a reference to lamba "this" itself.
 					if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
-						return_references.emplace( param_index, FunctionType::c_param_reference_number );
+						return_references.emplace( this_param_index, FunctionType::c_param_reference_number );
 
 					for( size_t i= 0; i < captured_variable_pair.second.accessible_variables.size(); ++i )
 					{
 						// An inner reference of a captured by value variable - it became an inner reference to "this".
 						if( captured_variable_return_reference == captured_variable_pair.second.accessible_variables[i] )
-							return_references.emplace( param_index, field->inner_reference_tags[i] );
+							return_references.emplace( this_param_index, field->inner_reference_tags[i] );
 					}
 				}
 
@@ -210,18 +226,15 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				{
 					for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
 					{
-						// Lambda is "this" (argument 0).
-						const uint8_t param_index= 0;
-
 						// A reference to captured variable itself - it bacame a reference to lamba "this" itself.
 						if( captured_variable_return_reference == captured_variable_pair.second.variable_node )
-							return_inner_references[tag_n].emplace( param_index, FunctionType::c_param_reference_number );
+							return_inner_references[tag_n].emplace( this_param_index, FunctionType::c_param_reference_number );
 
 						for( size_t i= 0; i < captured_variable_pair.second.accessible_variables.size(); ++i )
 						{
 							// An inner reference of a captured by value variable - it became an inner reference to "this".
 							if( captured_variable_return_reference == captured_variable_pair.second.accessible_variables[i] )
-								return_inner_references[tag_n].emplace( param_index, field->inner_reference_tags[i] );
+								return_inner_references[tag_n].emplace( this_param_index, field->inner_reference_tags[i] );
 						}
 					}
 				}
