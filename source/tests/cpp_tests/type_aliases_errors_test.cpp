@@ -6,7 +6,7 @@ namespace U
 namespace
 {
 
-U_TEST( UsingKeywordAsName_ForTypedef_Test0 )
+U_TEST( UsingKeywordAsName_ForTypeAlias_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -22,7 +22,7 @@ U_TEST( UsingKeywordAsName_ForTypedef_Test0 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
-U_TEST( UsingKeywordAsName_ForTypedef_Test1 )
+U_TEST( UsingKeywordAsName_ForTypeAlias_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -41,7 +41,7 @@ U_TEST( UsingKeywordAsName_ForTypedef_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST( NameNotFound_ForTypedef_Test0 )
+U_TEST( NameNotFound_ForTypeAlias_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -57,7 +57,7 @@ U_TEST( NameNotFound_ForTypedef_Test0 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
-U_TEST( NameNotFound_ForTypedef_Test1 )
+U_TEST( NameNotFound_ForTypeAlias_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -73,7 +73,7 @@ U_TEST( NameNotFound_ForTypedef_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
-U_TEST( NameNotFound_ForTypedef_Test2 )
+U_TEST( NameNotFound_ForTypeAlias_Test2 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -92,7 +92,7 @@ U_TEST( NameNotFound_ForTypedef_Test2 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST( NameNotFound_ForTypedef_Test3 )
+U_TEST( NameNotFound_ForTypeAlias_Test3 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -112,7 +112,7 @@ U_TEST( NameNotFound_ForTypedef_Test3 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST( NameIsNotTypeName_ForTypedef_Test0 )
+U_TEST( NameIsNotTypeName_ForTypeAlias_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -129,7 +129,7 @@ U_TEST( NameIsNotTypeName_ForTypedef_Test0 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
-U_TEST( NameIsNotTypeName_ForTypedef_Test1 )
+U_TEST( NameIsNotTypeName_ForTypeAlias_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -146,7 +146,7 @@ U_TEST( NameIsNotTypeName_ForTypedef_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
-U_TEST( Redefinition_ForTypedef_Test0 )
+U_TEST( Redefinition_ForTypeAlias_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -163,7 +163,7 @@ U_TEST( Redefinition_ForTypedef_Test0 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
-U_TEST( Redefinition_ForTypedef_Test1 )
+U_TEST( Redefinition_ForTypeAlias_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -180,7 +180,7 @@ U_TEST( Redefinition_ForTypedef_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
-U_TEST( Redefinition_ForTypedef_Test2 )
+U_TEST( Redefinition_ForTypeAlias_Test2 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -200,7 +200,7 @@ U_TEST( Redefinition_ForTypedef_Test2 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
-U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
+U_TEST( NameNotFound_ForTypeAliasTemplate_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -230,7 +230,7 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
 	U_TEST_ASSERT(found);
 }
 
-U_TEST( NameNotFound_ForTypedefTemplate_Test1 )
+U_TEST( NameNotFound_ForTypeAliasTemplate_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -242,7 +242,7 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test1 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
 
-U_TEST( TemplateArgumentNotUsedInSignature_ForTypedefTemplate_Test0 )
+U_TEST( TemplateArgumentNotUsedInSignature_ForTypeAliasTemplate_Test0 )
 {
 	static const char c_program_text[]=
 	R"(

@@ -2,7 +2,7 @@
 // This prototypes is written manually. If llvm updated, all this function should be revised.
 
 // Use struct with single element inside. Such struct is passed in register and thus equivalent to raw C pointer.
-// We can't use enum for implementing such typedef, since it is UB in Ü to create enum values outside its range.
+// We can't use enum for implementing such type alias, since it is UB in Ü to create enum values outside its range.
 ?macro <? DefineLLVMRef:namespace ?name:ident ?>
 	->
 <?

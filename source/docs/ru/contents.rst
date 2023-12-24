@@ -27,7 +27,7 @@
    move
    operators_overloading
    inheritance
-   typedefs
+   type_aliases
    type_templates
    function_templates
    reference_checking

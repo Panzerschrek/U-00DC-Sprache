@@ -108,7 +108,7 @@ def OrderIndependent_Enums_Test1():
 	assert( call_result == 3 )
 
 
-def OrderIndependent_Typedef_Test0():
+def OrderIndependent_TypeAlias_Test0():
 	c_program_text= """
 		fn Foo() : i32
 		{
@@ -122,7 +122,7 @@ def OrderIndependent_Typedef_Test0():
 	assert( call_result == 51245 )
 
 
-def OrderIndependent_Typedef_Test1():
+def OrderIndependent_TypeAlias_Test1():
 	c_program_text= """
 		type A= RRR;
 		fn Foo() : A
@@ -138,7 +138,7 @@ def OrderIndependent_Typedef_Test1():
 	assert( call_result == 653524 )
 
 
-def OrderIndependent_RecursiveTypedef_Test0():
+def OrderIndependent_RecursiveTypeAlias_Test0():
 	c_program_text= """
 		struct S
 		{
@@ -250,7 +250,7 @@ def GlobalsLoopDetected_Test3():
 
 def GlobalsLoopDetected_Test4():
 	c_program_text= """
-		type T= T; // Typedef self-initialization.
+		type T= T; // Type alias self-initialization.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -260,7 +260,7 @@ def GlobalsLoopDetected_Test4():
 
 def GlobalsLoopDetected_Test5():
 	c_program_text= """
-		type A= B; // Typedef loop.
+		type A= B; // Type alias loop.
 		type B= C;
 		type C= [ A, 2 ];
 	"""

@@ -337,7 +337,7 @@ U_TEST( Redefinition4 )
 		namespace B
 		{
 			type LocalS= A::S;
-			struct LocalS{} // Error, redefine typedef
+			struct LocalS{} // Error, redefine type alias
 		}
 	)";
 

@@ -212,7 +212,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	var TypeinfoCacheElement mut cache_element{ .variable= v_ptr };
 	typeinfo_cache_.insert( t, move(cache_element) );
 
-	// Add type as typedef into class members namespace.
+	// Add type as type alias into class members namespace.
 	// This allows us to get typename itself, using typeinfo variable and use such type as normal.
 	{
 		auto class_members= typeinfo_class.lock_imut().deref().members;
