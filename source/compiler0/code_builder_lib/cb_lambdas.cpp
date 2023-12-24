@@ -12,7 +12,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 
 	const VariableMutPtr result=
 		Variable::Create(
-			lambda_class, ValueType::Value, Variable::Location::Pointer, "TODO - lambda name" );
+			lambda_class, ValueType::Value, Variable::Location::Pointer, "value of " + Type(lambda_class).ToString() );
 
 	function_context.variables_state.AddNode( result );
 
@@ -90,11 +90,10 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Create the class.
 
-	// Use some stable namespace as parent for class members namespace.
+	// Use first named namespace as lambda class parent.
 	// We can't use namespace of function variables here, because it will be destroyed later.
-	// TODO - use closest global namespace.
-
-	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), names.GetRoot() );
+	// Usually this is a closest global scope that contains this function - some namespace, struct, class.
+	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), names.GetClosestNamedSpaceOrRoot() );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 

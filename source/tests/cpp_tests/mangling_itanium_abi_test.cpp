@@ -967,6 +967,123 @@ U_TEST( LambdasMangling_Test2 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_326fb0be30230539be75b457a531cd60_6_12_10destructorERS_" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Lol
+		{
+			namespace What
+			{
+				fn Foo()
+				{
+					// Lambda class name should contain enclosed namespace prefix.
+					auto f= lambda(){};
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_clERKNS0_46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_E" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_10destructorERNS0_46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_E" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		class Some
+		{
+			fn Foo( this )
+			{
+				// Lambda class name should contain enclosed namespace prefix (here class name).
+				auto f= lambda(){};
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_clERKNS_46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_E" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_10destructorERNS_46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_E" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Prefix
+		{
+			template</ type T, size_type S />
+			struct Box
+			{
+				[ T, S ] contents;
+				fn Foo( this )
+				{
+					// Lambda class name should contain enclosed namespace prefix (here class name including template stuff).
+					auto f= lambda(){};
+				}
+			}
+		}
+		type IntVec4Box= Prefix::Box</ i32, 4s />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_clERKNS1_47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_E" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_10destructorERNS1_47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_E" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		class S
+		{
+			fn Foo( this, bool cond0, bool cond1 )
+			{
+				{
+					while( cond0 )
+					{
+						if( cond1 )
+						{
+							unsafe
+							{
+								// Scopes of function blocks should be ignored while composing lambda name.
+								auto f= lambda(){};
+							}
+						}
+					}
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_clERKNS_47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_E" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_10destructorERNS_47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_E" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct spqr
+		{
+			// Should include struct name as lambda prefix.
+			i32 x= lambda() : i32 { return 42; } ();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_clERKNS_46_lambda_c81936537015db40f92af46cf866ea7c_5_10_E" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_10destructorERNS_46_lambda_c81936537015db40f92af46cf866ea7c_5_10_E" ) != nullptr ); // Destructor.
+}
+
 } // namespace
 
 } // namespace U

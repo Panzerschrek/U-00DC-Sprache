@@ -77,6 +77,18 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
+NamesScope* NamesScope::GetClosestNamedSpaceOrRoot()
+{
+	NamesScope* current= this;
+	while( current->name_.empty() )
+	{
+		if( current->parent_ == nullptr )
+			return current; // Reached the root.
+		current= current->parent_;
+	}
+	return current;
+}
+
 void NamesScope::SetClass(const ClassPtr in_class )
 {
 	this->class_= in_class;
