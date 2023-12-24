@@ -923,7 +923,8 @@ U_TEST( LambdasMangling_Test0 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN45_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_1110destructorERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN45_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_11clERKS_iRKf" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN45_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_1110destructorERS_" ) != nullptr ); // Destructor.
 }
 
 } // namespace
