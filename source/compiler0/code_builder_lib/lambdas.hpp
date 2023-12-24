@@ -7,8 +7,8 @@ namespace U
 
 struct LambdaKey
 {
-	// Non-null if this is a lambda inside some template context.
-	NamesScopePtr template_args_namespace;
+	// Store here scope in order to distinguish lambdas in different template instantiations.
+	NamesScope* parent_scope= nullptr;
 	// SrcLoc of lambda syntax element.
 	SrcLoc src_loc;
 

@@ -77,8 +77,13 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 
 ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
+	// Use first named namespace as lambda class parent.
+	// We can't use namespace of function variables here, because it will be destroyed later.
+	// Usually this is a closest global scope that contains this function - some namespace, struct, class.
+	NamesScope* const lambda_class_parent_scope= names.GetClosestNamedSpaceOrRoot();
+
 	LambdaKey key;
-	key.template_args_namespace= nullptr; // TODO - extract closest template args namespace.
+	key.parent_scope= lambda_class_parent_scope;
 	key.src_loc= lambda.src_loc;
 
 	if( const auto it= lambda_classes_table_.find(key); it != lambda_classes_table_.end() )
@@ -90,10 +95,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Create the class.
 
-	// Use first named namespace as lambda class parent.
-	// We can't use namespace of function variables here, because it will be destroyed later.
-	// Usually this is a closest global scope that contains this function - some namespace, struct, class.
-	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), names.GetClosestNamedSpaceOrRoot() );
+
+	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), lambda_class_parent_scope );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
