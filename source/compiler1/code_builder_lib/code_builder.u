@@ -142,6 +142,8 @@ fn CodeBuilder::constructor(
 
 fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult
 {
+	macro_expansion_contexts_ = source_graph.macro_expansion_contexts;
+
 	unsafe // Create module.
 	{
 		var ust::string8 mut module_name= source_graph.nodes.front().file_path_normalized;
@@ -334,6 +336,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	generated_template_things_sequence_.clear();
 	typeinfo_cache_.clear();
 	non_sync_expression_stack_.clear();
+	macro_expansion_contexts_.reset();
 
 	var BuildResult mut res
 	{
@@ -411,6 +414,24 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	}
 
 	source_graph_nodes_build_results_[node_index] = move(out_node_build_result);
+}
+
+fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
+{
+	if( src_loc.GetFileIndex() == 0u )
+	{
+		return true; // Definition in main file.
+	}
+
+	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+	{
+		return false; // Not something from macro - definition can't be from main file.
+	}
+
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
+	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+	return IsSrcLocFromMainFile( macro_expansion_src_loc );
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -1036,7 +1057,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		// There is no need to use external linkage, since each user of the template must import file with source template.
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
 	}
-	else if( body_syntax_element.src_loc.GetFileIndex() != 0u )
+	else if( !IsSrcLocFromMainFile( body_syntax_element.src_loc ) )
 	{
 		// This function is defined inside imported file - no need to use private linkage for it.
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
@@ -1047,7 +1068,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		// For such purposes  external linkage is essential.
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
 	}
-	else if( func_variable.prototype_syntax_element.empty() || func_variable.prototype_syntax_element.try_deref().src_loc.GetFileIndex() == 0u )
+	else if( func_variable.prototype_syntax_element.empty() || IsSrcLocFromMainFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
 		// This function has no portotype in imported files.
 		// There is no reason to use external linkage for it.
@@ -1465,7 +1486,7 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 	CheckForUnusedGlobalNamesImpl( names_scope );
 }
 
-fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
+fn CodeBuilder::CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope )
 {
 	foreach( &name_pair : names_scope.lock_imut().deref() )
 	{
@@ -1499,8 +1520,8 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 					if( !function.llvm_function.lock_imut().deref().referenced &&
 						!function.no_mangle &&
 						function.virtual_table_index == ~0u &&
-						body_src_loc.GetFileIndex() == 0u &&
-						prototye_src_loc.GetFileIndex() == 0u )
+						IsSrcLocFromMainFile( body_src_loc ) &&
+						IsSrcLocFromMainFile( prototye_src_loc ) )
 					{
 						var bool mut is_special_method= false;
 						if( !functions_set.class_.empty() )
@@ -1531,7 +1552,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 			with( &global_variable : global_variable_ptr.try_lock_imut().deref() )
 			{
 				var SrcLoc& src_loc= global_variable.syntax_element.deref().variables[ size_type(global_variable.variable_index) ].src_loc;
-				if( !global_variable.referenced && src_loc.GetFileIndex() == 0u )
+				if( !global_variable.referenced && IsSrcLocFromMainFile( src_loc ) )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
@@ -1544,7 +1565,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 			with( &global_auto_variable : global_auto_variable_ptr.try_lock_imut().deref() )
 			{
 				var SrcLoc& src_loc= global_auto_variable.syntax_element.deref().src_loc;
-				if( !global_auto_variable.referenced && src_loc.GetFileIndex() == 0u )
+				if( !global_auto_variable.referenced && IsSrcLocFromMainFile( src_loc ) )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
@@ -1559,7 +1580,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 				if( !class_type.referenced && !class_type.syntax_element.empty() )
 				{
 					var SrcLoc& src_loc= class_type.syntax_element.try_deref().src_loc;
-					if( src_loc.GetFileIndex() == 0u )
+					if( IsSrcLocFromMainFile( src_loc ) )
 					{
 						REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 					}
@@ -1579,7 +1600,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 			with( &enum_ : enum_type_ptr.try_lock_imut().deref() )
 			{
 				var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
-				if( !enum_.referenced && src_loc.GetFileIndex() == 0u )
+				if( !enum_.referenced && IsSrcLocFromMainFile( src_loc ) )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
@@ -1592,7 +1613,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
 			{
 				var SrcLoc& src_loc= type_alias.syntax_element.deref().src_loc;
-				if( !type_alias.referenced && src_loc.GetFileIndex() == 0u )
+				if( !type_alias.referenced && IsSrcLocFromMainFile( src_loc ) )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
@@ -1609,7 +1630,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 					with( &type_template : type_template_ptr.lock_imut().deref() )
 					{
 						var SrcLoc& src_loc= type_template.syntax_element.deref().src_loc;
-						if( !type_template.used && src_loc.GetFileIndex() == 0u )
+						if( !type_template.used && IsSrcLocFromMainFile( src_loc ) )
 						{
 							REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 						}
@@ -1624,7 +1645,7 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 			with( &class_field : class_field_ptr.try_lock_imut().deref() )
 			{
 				var SrcLoc& src_loc= class_field.syntax_element.deref().src_loc;
-				if( !class_field.used && src_loc.GetFileIndex() == 0u )
+				if( !class_field.used && IsSrcLocFromMainFile( src_loc ) )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
@@ -1650,7 +1671,7 @@ fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
 		{
 			with( &variable : variable_ptr.try_lock_imut().deref() )
 			{
-				if( !variable.referenced && variable.src_loc.GetFileIndex() == 0u )
+				if( !variable.referenced && IsSrcLocFromMainFile( variable.src_loc ) )
 				{
 					REPORT_ERROR( UnusedName, names_scope, variable.src_loc, name )
 				}

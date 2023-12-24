@@ -1426,7 +1426,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	auto& variables_declaration= variables_declaration_ptr.deref();
 	auto& variable_declaration= variables_declaration.variables[ size_type(global_variable_ptr.lock_imut().deref().variable_index) ];
 
-	var bool externally_available= variables_declaration.src_loc.GetFileIndex() != 0u;
+	var bool externally_available= !IsSrcLocFromMainFile( variables_declaration.src_loc );
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
@@ -1591,7 +1591,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	auto auto_variable_declaration_ptr= global_auto_variable_ptr.lock_imut().deref().syntax_element;
 	auto& auto_variable_declaration= auto_variable_declaration_ptr.deref();
 
-	var bool externally_available= auto_variable_declaration.src_loc.GetFileIndex() != 0u;
+	var bool externally_available= !IsSrcLocFromMainFile( auto_variable_declaration.src_loc );
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 

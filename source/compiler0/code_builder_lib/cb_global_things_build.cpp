@@ -1241,7 +1241,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
 		src_loc= incomplete_global_variable.auto_variable_declaration->src_loc;
 
-	const bool externally_available= src_loc.GetFileIndex() != 0;
+	const bool externally_available= !IsSrcLocFromMainFile( src_loc );
 
 	std::string_view name;
 	if( incomplete_global_variable.variables_declaration != nullptr )
