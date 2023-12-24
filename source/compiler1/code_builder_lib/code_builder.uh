@@ -99,6 +99,9 @@ public:
 private:
 	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
 
+	// Returns true if this is definition in the main file and not in an imported file.
+	fn IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool;
+
 	//
 	// Resolving
 	//
@@ -949,7 +952,7 @@ private:
 
 	// Unused name error generation stuff.
 	fn CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope );
-	fn CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope );
+	fn CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope );
 	fn CheckForUnusedLocalNames( this, NamesScopePtr& names_scope );
 	fn VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool;
 
@@ -1166,6 +1169,8 @@ private:
 		ClassesMembersNamespacesTable classes_members_namespaces_table;
 	}
 	ust::vector</ SourceGraphNodeBuildResult /> source_graph_nodes_build_results_;
+
+	ust::shared_ptr_nullable_imut</ Synt::MacroExpansionContexts /> macro_expansion_contexts_; // Macro expansion context of currently compiled source graph.
 
 	// Class table of current source graph node.
 	ust::vector</ ClassTypePtr /> class_table_;
