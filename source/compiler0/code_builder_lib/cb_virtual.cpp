@@ -334,7 +334,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			llvm::ConstantArray::get( type_id_table_type, table_initializers ),
 			"_type_id_for_" + mangler_->MangleType( class_type ) );
 
-	if( class_type->syntax_element->src_loc.GetFileIndex() != 0 )
+	if( !IsSrcLocFromMainFile( class_type->syntax_element->src_loc ) )
 	{
 		// This is a class, declared in imported file.
 		// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.

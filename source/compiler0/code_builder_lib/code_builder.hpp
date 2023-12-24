@@ -265,6 +265,9 @@ private:
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 
+	// Returns true if this is definition in the main file and not in an imported file.
+	bool IsSrcLocFromMainFile( const SrcLoc& src_loc );
+
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
 
@@ -1428,6 +1431,7 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
+	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
 	std::vector<SourceBuildResult> compiled_sources_;
 
 	// Storage for class types. Do not use shared pointers for classes for loops preventing.

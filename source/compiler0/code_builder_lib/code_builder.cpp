@@ -188,6 +188,8 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	module_->setDataLayout(data_layout_);
 	module_->setTargetTriple(target_triple_.normalize());
 
+	macro_expansion_contexts_= source_graph.macro_expansion_contexts;
+
 	// Prepare halt func.
 	halt_func_=
 		llvm::Function::Create(
@@ -572,6 +574,20 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 	global_names_scope.AddName( Keyword( Keywords::size_type_ ), NamesScopeValue( size_type_, fundamental_globals_src_loc ) );
 }
 
+bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
+{
+	if( src_loc.GetFileIndex() == 0 )
+		return true; // Definition in main file.
+
+	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+		return false; // Not something from macro - definition can't be from main file.
+
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
+	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
+	return IsSrcLocFromMainFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+}
+
 void CodeBuilder::TryCallCopyConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -831,8 +847,8 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 					if( !function.referenced &&
 						!function.no_mangle &&
 						function.virtual_table_index == ~0u &&
-						function.body_src_loc.GetFileIndex() == 0 &&
-						function.prototype_src_loc.GetFileIndex() == 0 )
+						IsSrcLocFromMainFile( function.body_src_loc ) &&
+						IsSrcLocFromMainFile( function.prototype_src_loc ) )
 					{
 						bool is_special_method= false;
 						if( functions_set->base_class != nullptr )
@@ -859,7 +875,7 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 			{
 				// Process each type template individually.
 				for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
-					if( !type_template->used  && type_template->src_loc.GetFileIndex() == 0 )
+					if( !type_template->used && IsSrcLocFromMainFile( type_template->src_loc ) )
 						REPORT_ERROR( UnusedName, names_scope.GetErrors(), type_template->src_loc, name );
 
 				return;
@@ -877,7 +893,7 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 
 			if( names_scope_value.referenced )
 				return; // Value is referenced.
-			if( names_scope_value.src_loc.GetFileIndex() != 0 )
+			if( !IsSrcLocFromMainFile( names_scope_value.src_loc ) )
 				return; // Ignore imported names.
 
 			if( value.GetVariable() != nullptr )
@@ -1411,7 +1427,7 @@ Type CodeBuilder::BuildFuncCode(
 		// There is no need to use external linkage, since each user of the template must import file with source template.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
 	}
-	else if( func_variable.body_src_loc.GetFileIndex() != 0 )
+	else if( !IsSrcLocFromMainFile( func_variable.body_src_loc ) )
 	{
 		// This function is defined inside imported file - no need to use private linkage for it.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
@@ -1422,7 +1438,7 @@ Type CodeBuilder::BuildFuncCode(
 		// For such purposes  external linkage is essential.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 	}
-	else if( func_variable.prototype_src_loc.GetFileIndex() == 0 )
+	else if( IsSrcLocFromMainFile( func_variable.prototype_src_loc ) )
 	{
 		// This function has no portotype in imported files.
 		// There is no reason to use external linkage for it.

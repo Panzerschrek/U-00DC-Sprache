@@ -317,7 +317,7 @@ U_TEST( Redefineition_ForImports_Test0 )
 
 U_TEST( Redefineition_ForImports_Test1 )
 {
-	// Redefinition of typedef fo same type.
+	// Redefinition of type alias for same type.
 
 	static const char c_program_text_a[]=
 	R"(
@@ -351,7 +351,7 @@ U_TEST( Redefineition_ForImports_Test1 )
 
 U_TEST( Redefineition_ForImports_Test2 )
 {
-	// Redefinition of typedef fo different types.
+	// Redefinition of type alias fo different types.
 
 	static const char c_program_text_a[]=
 	R"(

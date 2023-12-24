@@ -297,11 +297,11 @@ struct Visitor final
 	void operator()( const Synt::StaticAssert&  )
 	{
 	}
-	void operator()( const Synt::TypeAlias& typedef_ )
+	void operator()( const Synt::TypeAlias& type_alias )
 	{
 		Symbol symbol;
-		symbol.name= typedef_.name;
-		symbol.range= MakeRange( typedef_.src_loc, src_loc_to_range_mapping_function );
+		symbol.name= type_alias.name;
+		symbol.range= MakeRange( type_alias.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Class;
 		result.push_back( std::move(symbol) );

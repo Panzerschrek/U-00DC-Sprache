@@ -34,7 +34,7 @@ def FunctionTypeDeclaration_Test2():
 
 def FunctionTypeDeclaration_Test3():
 	c_program_text= """
-		// In typedef
+		// In type alias
 		type BinaryIntFunction= fn( i32 a, i32 b ) : i32;
 		fn Foo( BinaryIntFunction a )
 		{}

@@ -62,7 +62,7 @@ def Typeof_Test1():
 
 def Typeof_Test2():
 	c_program_text= """
-		type PiType= typeof(3.14f); // Typeof for global typedef
+		type PiType= typeof(3.14f); // Typeof for global type alias
 		var PiType e= 2.718281828f;
 	"""
 	tests_lib.build_program( c_program_text )

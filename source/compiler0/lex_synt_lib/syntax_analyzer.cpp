@@ -3852,17 +3852,17 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 
 	case TemplateKind::TypeAlias:
 		{
-			TypeTemplate typedef_template( template_name_src_loc );
-			typedef_template.params= std::move(params);
-			typedef_template.signature_params= std::move(signature_params);
-			typedef_template.name= name;
-			typedef_template.is_short_form= is_short_form;
+			TypeTemplate type_alias_template( template_name_src_loc );
+			type_alias_template.params= std::move(params);
+			type_alias_template.signature_params= std::move(signature_params);
+			type_alias_template.name= name;
+			type_alias_template.is_short_form= is_short_form;
 
 			auto type_alias= std::make_unique<TypeAlias>( ParseTypeAliasBody() );
 			type_alias->name= std::move(name);
 
-			typedef_template.something= std::move(type_alias);
-			return std::move(typedef_template);
+			type_alias_template.something= std::move(type_alias);
+			return std::move(type_alias_template);
 		}
 
 	case TemplateKind::Invalid:

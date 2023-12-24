@@ -6,26 +6,26 @@ namespace U
 namespace
 {
 
-U_TEST( TypedefsTest0 )
+U_TEST( TypeAliasesTest0 )
 {
 	// Simple test.
 	static const char c_program_text[]=
 	R"(
-		type my_size_type= u64; // global typedef
+		type my_size_type= u64; // global type alias
 		struct C
 		{
-			type index_type= my_size_type; // typedef inside struct
+			type index_type= my_size_type; // type alias inside struct
 		}
 		namespace S
 		{
-			type C= ::C; // typedef inside namespace
+			type C= ::C; // type alias inside namespace
 		}
 	)";
 
 	BuildProgram( c_program_text );
 }
 
-U_TEST( TypedefsTest1_TypedefForFundamentalType )
+U_TEST( TypeAliasesTest1_TypeAliasForFundamentalType )
 {
 	static const char c_program_text[]=
 	R"(
@@ -47,7 +47,7 @@ U_TEST( TypedefsTest1_TypedefForFundamentalType )
 	U_TEST_ASSERT( static_cast<uint64_t>( 55847 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( TypedefsTest2_TypedefForFundamentalTypeInsideClass )
+U_TEST( TypeAliasesTest2_TypeAliasForFundamentalTypeInsideClass )
 {
 	static const char c_program_text[]=
 	R"(
@@ -72,7 +72,7 @@ U_TEST( TypedefsTest2_TypedefForFundamentalTypeInsideClass )
 	U_TEST_ASSERT( 3.1415 == result_value.DoubleVal );
 }
 
-U_TEST( TypedefsTest3_TypedefForStruct )
+U_TEST( TypeAliasesTest3_TypeAliasForStruct )
 {
 	static const char c_program_text[]=
 	R"(
@@ -96,7 +96,7 @@ U_TEST( TypedefsTest3_TypedefForStruct )
 	U_TEST_ASSERT( static_cast<uint64_t>( 9856474 - 558 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( TypedefsTest4_TypedefForGeneratedFromTemplateClass )
+U_TEST( TypeAliasesTest4_TypeAliasForGeneratedFromTemplateClass )
 {
 	static const char c_program_text[]=
 	R"(
@@ -121,7 +121,7 @@ U_TEST( TypedefsTest4_TypedefForGeneratedFromTemplateClass )
 	U_TEST_ASSERT( 541.2f * 0.25f == result_value.FloatVal );
 }
 
-U_TEST( TypedefsTest5_TypedefForArray )
+U_TEST( TypeAliasesTest5_TypeAliasForArray )
 {
 	static const char c_program_text[]=
 	R"(
@@ -143,7 +143,7 @@ U_TEST( TypedefsTest5_TypedefForArray )
 	U_TEST_ASSERT( 0.334f * 8457.1f +  8874.5f == result_value.FloatVal );
 }
 
-U_TEST( TypedefsTest6_TypedefForTwodimensionalArray )
+U_TEST( TypeAliasesTest6_TypeAliasForTwodimensionalArray )
 {
 	static const char c_program_text[]=
 	R"(
@@ -170,7 +170,7 @@ U_TEST( TypedefsTest6_TypedefForTwodimensionalArray )
 	U_TEST_ASSERT( 5.0f * 41.0f - 45.0f * 7.0f == result_value.FloatVal );
 }
 
-U_TEST( TypedefsTest7_TypedefForTemplateparameter )
+U_TEST( TypeAliasesTest7_TypeAliasForTemplateparameter )
 {
 	static const char c_program_text[]=
 	R"(
@@ -197,7 +197,7 @@ U_TEST( TypedefsTest7_TypedefForTemplateparameter )
 	U_TEST_ASSERT( 1.457f == result_value.FloatVal );
 }
 
-U_TEST( TypedefsTemplates_Test0 )
+U_TEST( TypeAliasTemplates_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -216,7 +216,7 @@ U_TEST( TypedefsTemplates_Test0 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( TypedefsTemplates_Test1 )
+U_TEST( TypeAliasTemplates_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -240,7 +240,7 @@ U_TEST( TypedefsTemplates_Test1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( TypedefsTemplates_Test2_TypedefTemplateForArray )
+U_TEST( TypeAliasTemplates_Test2_TypeAliasTemplateForArray )
 {
 	static const char c_program_text[]=
 	R"(
@@ -262,7 +262,7 @@ U_TEST( TypedefsTemplates_Test2_TypedefTemplateForArray )
 	U_TEST_ASSERT( 4.5 / 0.25 == result_value.DoubleVal );
 }
 
-U_TEST( TypedefsTemplates_Test4_TypedefTemplateForArray )
+U_TEST( TypeAliasTemplates_Test4_TypeAliasTemplateForArray )
 {
 	static const char c_program_text[]=
 	R"(
@@ -284,7 +284,7 @@ U_TEST( TypedefsTemplates_Test4_TypedefTemplateForArray )
 	U_TEST_ASSERT( 4.5f + 0.25f + 54.1f == result_value.FloatVal );
 }
 
-U_TEST( TypedefsTemplates_Test5_ComplexSignatureArgument )
+U_TEST( TypeAliasTemplates_Test5_ComplexSignatureArgument )
 {
 	static const char c_program_text[]=
 	R"(
@@ -308,7 +308,7 @@ U_TEST( TypedefsTemplates_Test5_ComplexSignatureArgument )
 	U_TEST_ASSERT( static_cast<uint64_t>( 5584 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( TypedefsTemplates_Test6_TypedefTemplateForTypedefTemplate )
+U_TEST( TypeAliasTemplates_Test6_TypeAliasTemplateForTypeAliasTemplate )
 {
 	static const char c_program_text[]=
 	R"(
@@ -333,9 +333,9 @@ U_TEST( TypedefsTemplates_Test6_TypedefTemplateForTypedefTemplate )
 	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( TypedefsTemplates_Test7_ShortTypedefTemplateForm_Test0 )
+U_TEST( TypeAliasTemplates_Test7_ShortTypeAliasTemplateForm_Test0 )
 {
-	// Short typedef template form for array.
+	// Short type alias template form for array.
 	static const char c_program_text[]=
 	R"(
 		template</ type T /> type Pair= [ T, 2 ];
@@ -356,9 +356,9 @@ U_TEST( TypedefsTemplates_Test7_ShortTypedefTemplateForm_Test0 )
 	U_TEST_ASSERT( 4.55 - 0.2 == result_value.DoubleVal );
 }
 
-U_TEST( TypedefsTemplates_Test8_ShortTypedefTemplateForm_Test1 )
+U_TEST( TypeAliasTemplates_Test8_ShortTypeAliasTemplateForm_Test1 )
 {
-	// Short typedef template form for class template.
+	// Short type alias template form for class template.
 	static const char c_program_text[]=
 	R"(
 		template</ type T /> struct Box</ T /> { T t; }   // base template
@@ -381,7 +381,7 @@ U_TEST( TypedefsTemplates_Test8_ShortTypedefTemplateForm_Test1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 23541 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( TypedefInsideFunction_Test0 )
+U_TEST( TypeAliasInsideFunction_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -396,7 +396,7 @@ U_TEST( TypedefInsideFunction_Test0 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( TypedefInsideFunction_Test1 )
+U_TEST( TypeAliasInsideFunction_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -416,7 +416,7 @@ U_TEST( TypedefInsideFunction_Test1 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( TypedefInsideFunction_Test2 )
+U_TEST( TypeAliasInsideFunction_Test2 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -432,7 +432,7 @@ U_TEST( TypedefInsideFunction_Test2 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( TypedefInsideFunction_Test3 )
+U_TEST( TypeAliasInsideFunction_Test3 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -448,7 +448,7 @@ U_TEST( TypedefInsideFunction_Test3 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( TypedefInsideFunction_Test4 )
+U_TEST( TypeAliasInsideFunction_Test4 )
 {
 	static const char c_program_text[]=
 	R"(
