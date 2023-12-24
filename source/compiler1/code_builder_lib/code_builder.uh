@@ -1170,7 +1170,7 @@ private:
 	}
 	ust::vector</ SourceGraphNodeBuildResult /> source_graph_nodes_build_results_;
 
-	ust::shared_ptr_nullable_imut</ Synt::MacroExpansionContexts /> macro_expansion_contexts_; // Macro expansion context of currently compiled source graph.
+	ust::shared_ptr_nullable_imut</ Synt::MacroExpansionContexts /> macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
 
 	// Class table of current source graph node.
 	ust::vector</ ClassTypePtr /> class_table_;

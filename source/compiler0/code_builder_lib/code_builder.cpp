@@ -583,7 +583,7 @@ bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
 	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
 		return false; // Not something from macro - definition can't be from main file.
 
-	// If this is a src_loc in macro expansion check recursively macro expansion point.
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
 	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
 	return IsSrcLocFromMainFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
 }

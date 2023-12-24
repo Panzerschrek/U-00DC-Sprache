@@ -429,7 +429,7 @@ fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
 		return false; // Not something from macro - definition can't be from main file.
 	}
 
-	// If this is a src_loc in macro expansion check recursively macro expansion point.
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
 	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
 	return IsSrcLocFromMainFile( macro_expansion_src_loc );
 }

@@ -1417,7 +1417,7 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
-	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion context of currently compiled source graph.
+	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
 	std::vector<SourceBuildResult> compiled_sources_;
 
 	// Storage for class types. Do not use shared pointers for classes for loops preventing.
