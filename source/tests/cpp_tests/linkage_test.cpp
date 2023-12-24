@@ -192,6 +192,34 @@ U_TEST( FunctionLinkage_Test3 )
 	U_TEST_ASSERT( !bar->hasComdat() );
 }
 
+U_TEST( FunctionLinkage_Test4 )
+{
+	static const char c_program_text_a[]= R"(
+		?macro <? DECLARE_FOO:namespace ?> -> <? fn Foo(); ?>
+		)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		// Function prototype declared via imported macro expansion is stil assumed to be in the file with macro expansion.
+		// This prevents this function to be external.
+		DECLARE_FOO
+		fn Foo(){}
+	)";
+
+	const auto module= BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+
+	const llvm::Function* const foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+	U_TEST_ASSERT( foo->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+	U_TEST_ASSERT( !foo->hasComdat() );
+}
+
 U_TEST( VariableLinkage_Test0 )
 {
 	// All constant global variables should have private linkage.
@@ -365,7 +393,7 @@ U_TEST( PolymorphClassesDataLinkage_Test4 )
 		},
 		"root" ) );
 
-	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C" );
+	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C", true );
 	U_TEST_ASSERT( type_id_table != nullptr );
 	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 	U_TEST_ASSERT( !type_id_table->hasComdat() );
