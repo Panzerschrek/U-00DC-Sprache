@@ -94,7 +94,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// We can't use namespace of function variables here, because it will be destroyed later.
 	// TODO - use closest global namespace.
 
-	auto class_ptr= std::make_unique<Class>( "_lambda_TODO_name", names.GetRoot() );
+	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), names.GetRoot() );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
@@ -334,6 +334,29 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	}
 
 	return class_;
+}
+
+std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda )
+{
+	std::string name;
+	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
+
+	// Encode file.
+	U_ASSERT( source_graph_ != nullptr );
+	U_ASSERT( lambda.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+	// Use file contenst hash instead of file index, because we need to use stable identifier independing on from which main file this file is imported.
+	name+= source_graph_->nodes_storage[ lambda.src_loc.GetFileIndex() ].contents_hash;
+	name+= "_";
+
+	// Encode line and column into name to produce different names for different lambdas in the same file.
+	name+= std::to_string( lambda.src_loc.GetLine() );
+	name+= "_";
+
+	name+= std::to_string( lambda.src_loc.GetColumn() );
+
+	// TODO - encode template expansion context if necessary.
+
+	return name;
 }
 
 FunctionType CodeBuilder::PrepareLambdaCallOperatorType(

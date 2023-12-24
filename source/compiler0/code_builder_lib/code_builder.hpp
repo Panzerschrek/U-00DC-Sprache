@@ -1259,6 +1259,7 @@ private:
 
 	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	std::string GetLambdaBaseName( const Synt::Lambda& lambda );
 	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type, ValueType lambda_this_value_type );
 	std::unordered_set<VariablePtr> CallectCurrentFunctionVariables( FunctionContext& function_context );
 	VariablePtr LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name );
@@ -1431,6 +1432,7 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
+	const SourceGraph* source_graph_= nullptr; // Current source graph.
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
 	std::vector<SourceBuildResult> compiled_sources_;
 

@@ -178,6 +178,9 @@ CodeBuilder::CodeBuilder(
 
 void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 {
+	source_graph_= &source_graph;
+	macro_expansion_contexts_= source_graph.macro_expansion_contexts;
+
 	U_ASSERT( module_ == nullptr );
 	module_=
 		std::make_unique<llvm::Module>(
@@ -187,8 +190,6 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	// Setup data layout and target triple.
 	module_->setDataLayout(data_layout_);
 	module_->setTargetTriple(target_triple_.normalize());
-
-	macro_expansion_contexts_= source_graph.macro_expansion_contexts;
 
 	// Prepare halt func.
 	halt_func_=

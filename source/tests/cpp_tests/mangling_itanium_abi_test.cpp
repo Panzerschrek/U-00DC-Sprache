@@ -911,6 +911,21 @@ U_TEST( VirtualTableMangling_Test1 )
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZTVN3Lol3WTFE", true ) != nullptr );
 }
 
+U_TEST( LambdasMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto f= lambda( i32 x, f32& y ) {};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN45_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_1110destructorERS_" ) != nullptr );
+}
+
 } // namespace
 
 } // namespace U
