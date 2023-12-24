@@ -119,17 +119,20 @@ size_t LoadNode_r(
 		}
 	}
 
+	std::string contents_hash= source_file_contents_hashing_function( *loaded_file );
+
 	// Make syntax analysis, using imported macroses.
 	Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
 		lex_result.lexems,
 		std::move(merged_macroses),
 		result.macro_expansion_contexts,
-		source_file_contents_hashing_function( *loaded_file ) );
+		contents_hash );
 
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
+	result.nodes_storage[node_index].contents_hash= std::move(contents_hash);
 	return node_index;
 }
 
