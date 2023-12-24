@@ -353,6 +353,7 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda )
 	name+= "_";
 
 	name+= std::to_string( lambda.src_loc.GetColumn() );
+	name+= "_";
 
 	// TODO - encode template expansion context if necessary.
 

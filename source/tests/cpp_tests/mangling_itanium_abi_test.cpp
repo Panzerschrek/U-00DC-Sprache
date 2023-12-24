@@ -923,8 +923,48 @@ U_TEST( LambdasMangling_Test0 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN45_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_11clERKS_iRKf" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN45_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_1110destructorERS_" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_11_clERKS_iRKf" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_11_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar()
+		{
+			var i32 x= 0;
+			// These lambdas are practically identical, but still are different classes.
+			auto f0= lambda[=]() : i32 { return x; };
+			auto f1= lambda[=]() : i32 { return x; };
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_6_12_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_6_12_10destructorERS_" ) != nullptr ); // Destructor.
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_7_12_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_7_12_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			// Lambda with by-reference capturing - nothing special.
+			auto f0= lambda[&]( i32 y ) : i32 { return y * x; };
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_326fb0be30230539be75b457a531cd60_6_12_clERKS_i" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_326fb0be30230539be75b457a531cd60_6_12_10destructorERS_" ) != nullptr ); // Destructor.
 }
 
 } // namespace
