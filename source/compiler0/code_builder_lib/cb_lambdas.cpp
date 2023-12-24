@@ -343,21 +343,33 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda )
 	std::string name;
 	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
 
-	// Encode file.
-	U_ASSERT( source_graph_ != nullptr );
-	U_ASSERT( lambda.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
-	// Use file contenst hash instead of file index, because we need to use stable identifier independing on from which main file this file is imported.
-	name+= source_graph_->nodes_storage[ lambda.src_loc.GetFileIndex() ].contents_hash;
-	name+= "_";
+	SrcLoc src_loc= lambda.src_loc;
+	while(true)
+	{
+		// Encode file.
+		U_ASSERT( source_graph_ != nullptr );
+		U_ASSERT( src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		// Use file contenst hash instead of file index, because we need to use stable identifier independing on from which main file this file is imported.
+		name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].contents_hash;
+		name+= "_";
 
-	// Encode line and column into name to produce different names for different lambdas in the same file.
-	name+= std::to_string( lambda.src_loc.GetLine() );
-	name+= "_";
+		// Encode line and column into name to produce different names for different lambdas in the same file.
+		name+= std::to_string( src_loc.GetLine() );
+		name+= "_";
 
-	name+= std::to_string( lambda.src_loc.GetColumn() );
-	name+= "_";
+		name+= std::to_string( src_loc.GetColumn() );
+		name+= "_";
 
-	// TODO - encode template expansion context if necessary.
+		const auto macro_expansion_context= src_loc.GetMacroExpansionIndex();
+		if( macro_expansion_context != SrcLoc::c_max_macro_expanison_index )
+		{
+			// If this is a lambda defined via macro - add macro expansion context to the name.
+			src_loc= (*macro_expansion_contexts_)[ macro_expansion_context ].src_loc;
+			continue;
+		}
+		else
+			break; // Not a macro expansion context.
+	}
 
 	return name;
 }

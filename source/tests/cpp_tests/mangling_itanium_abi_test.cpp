@@ -1084,6 +1084,24 @@ U_TEST( LambdasMangling_Test7 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_10destructorERNS_46_lambda_c81936537015db40f92af46cf866ea7c_5_10_E" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		?macro <? DEFINE_LAMBDA:block ?> -> <? auto f = lambda(){}; ?>
+		fn Foo()
+		{
+			// Lambda name should encode macro expansion context.
+			DEFINE_LAMBDA
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN83_lambda_ab05617aabb05c0fc242caebbebb2910_2_50_ab05617aabb05c0fc242caebbebb2910_6_3_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN83_lambda_ab05617aabb05c0fc242caebbebb2910_2_50_ab05617aabb05c0fc242caebbebb2910_6_3_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
 } // namespace
 
 } // namespace U
