@@ -648,13 +648,69 @@ def LambdaReferencePoillution_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-		fn MakePollution( R &mut r, i32& x ) @(pollution);
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
 		fn Foo()
 		{
 			var i32 x= 0, y= 0;
 			var R mut r{ .x= x };
 			// Should allow performing reference pollution for lambda params.
 			auto f= lambda( R &mut r, i32& arg ) { MakePollution( r, arg ); };
+			f( r, y );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaReferencePoillution_Test1():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			// Should allow performing reference pollution for lambda param by captured by value variable.
+			auto f= lambda[=]( R &mut r ) { MakePollution( r, y ); };
+			var R mut r{ .x= x };
+			f(r);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaReferencePoillution_Test2():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			// Should allow performing reference pollution for lambda param by captured by reference variable.
+			auto f= lambda[&]( R &mut r ) { MakePollution( r, y ); };
+			var R mut r{ .x= x };
+			f(r);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaReferencePoillution_Test3():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0, y= 0, z= 0;
+			var R r0{ .x= z };
+			// Should allow performing reference pollution for lambda param by inner reference of captured by value variable.
+			auto f= lambda[=]( R &mut r ) { MakePollution( r, r0.x ); };
+			var R mut r{ .x= x };
+			f(r);
 		}
 	"""
 	tests_lib.build_program( c_program_text )

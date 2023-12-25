@@ -520,7 +520,7 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 				if( dst_tag < node_pair.second.size() && accesible_variable == node_pair.second[dst_tag] )
 					continue;
 
-				std::optional<FunctionType::ParamReference> src_reference;
+				std::optional<LambdaPreprocessingContext::ReferenceLink> src_reference;
 				for( size_t src_param_index= 0u; src_param_index < function_context.function_type.params.size(); ++src_param_index )
 				{
 					if( accesible_variable == function_context.args_nodes[src_param_index].first )
@@ -531,13 +531,22 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
 				}
 
+				for( const auto& captured_variable_pair : function_context.lambda_preprocessing_context->captured_external_variables )
+				{
+					if( accesible_variable == captured_variable_pair.second.variable_node )
+						src_reference= accesible_variable;
+
+					for( const VariablePtr& captured_variable_accessible_variable : captured_variable_pair.second.accessible_variables )
+						if( accesible_variable == captured_variable_accessible_variable )
+							src_reference= accesible_variable;
+				}
+
 				if( src_reference != std::nullopt )
 				{
-					FunctionType::ReferencePollution pollution;
+					LambdaPreprocessingContext::ReferencePollution pollution;
 					pollution.src= *src_reference;
-					pollution.dst.first= uint8_t(dst_param_index);
-					pollution.dst.second= uint8_t(dst_tag);
-					function_context.lambda_preprocessing_context->references_pollution.insert( std::move(pollution) );
+					pollution.dst= FunctionType::ParamReference( uint8_t(dst_param_index), uint8_t(dst_tag) );
+					function_context.lambda_preprocessing_context->references_pollution.push_back( std::move(pollution) );
 				}
 			}
 		}

@@ -46,6 +46,14 @@ struct LambdaPreprocessingContext
 		std::vector<VariablePtr> accessible_variables;
 	};
 
+	using ReferenceLink= std::variant< FunctionType::ParamReference, VariablePtr >;
+
+	struct ReferencePollution
+	{
+		ReferenceLink dst;
+		ReferenceLink src;
+	};
+
 public:
 
 	// Inputs.
@@ -58,7 +66,7 @@ public:
 
 	std::set<FunctionType::ParamReference> return_references;
 	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
-	std::set<FunctionType::ReferencePollution> references_pollution;
+	std::vector<ReferencePollution> references_pollution;
 
 	// Contains set of variables of the preprocessed lambda.
 	std::set<VariablePtr> captured_variables_return_references;
