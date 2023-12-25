@@ -352,3 +352,44 @@ def LambdaIsNotEqualityComparable_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+
+
+def ReferenceNotationForLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			auto f= lambda( i32& x ) : i32 & @(return_references) { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationForLambda", 5 ) )
+
+
+def ReferenceNotationForLambda_Test1():
+	c_program_text= """
+		struct R{ i32& x; }
+		fn Foo()
+		{
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+			auto f= lambda( i32& x ) : R @(return_inner_references) { halt; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationForLambda", 6 ) )
+
+
+def ReferenceNotationForLambda_Test2():
+	c_program_text= """
+		struct R{ i32& x; }
+		fn Foo()
+		{
+			var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+			auto f= lambda( R &mut r, i32& x ) @( reference_pollution ) { halt; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationForLambda", 6 ) )

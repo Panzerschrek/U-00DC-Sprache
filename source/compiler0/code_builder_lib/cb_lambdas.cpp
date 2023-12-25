@@ -427,7 +427,14 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	function_type.unsafe= lambda_function_type.unsafe;
 	function_type.calling_convention= GetLLVMCallingConvention( lambda_function_type.calling_convention, lambda_function_type.src_loc, names.GetErrors() );
 
-	// TODO - somehow deal with reference notation.
+	// Do not allow to specify reference notation - reference affects are calculated automatically during lambda preprocessing.
+	if( lambda_function_type.references_pollution_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda_function_type.references_pollution_expression ) );
+	if( lambda_function_type.return_value_reference_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda_function_type.return_value_reference_expression ) );
+	if( lambda_function_type.return_value_inner_references_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda_function_type.return_value_inner_references_expression ) );
+
 	return function_type;
 }
 
