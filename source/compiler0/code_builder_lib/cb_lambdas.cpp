@@ -113,6 +113,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	std::set<FunctionType::ParamReference> return_references;
 	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
+	std::set<FunctionType::ReferencePollution> references_pollution;
 
 	// Run preprocessing.
 	{
@@ -143,6 +144,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		// Collect actual return references in lambdas.
 		return_references= std::move(lambda_preprocessing_context.return_references);
 		return_inner_references= std::move(lambda_preprocessing_context.return_inner_references);
+		references_pollution= std::move(lambda_preprocessing_context.references_pollution);
 
 		// Extract captured variables and sort them to ensure stable order.
 		struct CapturedVariableForSorting
@@ -313,6 +315,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
+		op_variable.type.references_pollution= std::move(references_pollution);
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
 

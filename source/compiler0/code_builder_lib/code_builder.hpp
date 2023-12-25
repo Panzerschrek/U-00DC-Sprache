@@ -1226,6 +1226,7 @@ private:
 
 	void LambdaPreprocessingCollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
 	void LambdaPreprocessingCollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context );
 
 	// Reference notation.
 

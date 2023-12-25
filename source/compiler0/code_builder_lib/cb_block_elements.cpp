@@ -758,7 +758,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc );
-	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
+
+	if( function_context.lambda_preprocessing_context != nullptr )
+		LambdaPreprocessingCollectReferencePollution( function_context );
+	else
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
+
 	function_context.variables_state.RemoveNode( return_value_node );
 
 	if( function_context.destructor_end_block != nullptr )
@@ -2767,7 +2772,11 @@ void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, src_loc );
-	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+
+	if( function_context.lambda_preprocessing_context != nullptr )
+		LambdaPreprocessingCollectReferencePollution( function_context );
+	else
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
 
 	if( function_context.destructor_end_block == nullptr )
 		function_context.llvm_ir_builder.CreateRetVoid();

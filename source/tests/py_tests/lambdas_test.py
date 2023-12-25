@@ -642,3 +642,20 @@ def LambdaTypeinfo_Test4():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def LambdaReferencePoillution_Test0():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution);
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			var R mut r{ .x= x };
+			// Should allow performing reference pollution for lambda params.
+			auto f= lambda( R &mut r, i32& arg ) { MakePollution( r, arg ); };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
