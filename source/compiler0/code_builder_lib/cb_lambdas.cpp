@@ -87,19 +87,17 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	if( const auto it= lambda_classes_table_.find(key); it != lambda_classes_table_.end() )
 	{
 		// Already generated.
-		// This may happens because of expressions preevaluation.
+		// This may happen because of expressions preevaluation.
 		return it->second.get();
 	}
 
 	// Create the class.
-
-
 	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), lambda_class_parent_scope );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
 	class_->src_loc= lambda.src_loc;
-	class_->kind= Class::Kind::Struct; // Set to struct in order to allow generation of some methods.
+	class_->kind= Class::Kind::Struct; // Set temporary to struct in order to allow generation of some methods.
 	class_->parents_list_prepared= true;
 	class_->have_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
@@ -122,24 +120,26 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
 		lambda_preprocessing_context.lambda_this_value_type= lambda_this_value_type;
 
-		FunctionVariable op_variable;
-		// It's fine to use incomplete lambda class here, since this class can't be accessed.
-		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
-		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( names, call_op_name, op_variable.type ) );
-		op_variable.is_this_call= true;
+		{
+			FunctionVariable op_variable;
+			// It's fine to use incomplete lambda class here, since this class can't be accessed.
+			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
+			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
+			op_variable.is_this_call= true;
 
-		BuildFuncCode(
-			op_variable,
-			class_,
-			names,
-			call_op_name,
-			lambda.function.type.params,
-			*lambda.function.block,
-			nullptr,
-			&lambda_preprocessing_context );
+			BuildFuncCode(
+				op_variable,
+				class_,
+				names,
+				call_op_name,
+				lambda.function.type.params,
+				*lambda.function.block,
+				nullptr,
+				&lambda_preprocessing_context );
 
-		// Remove temp function.
-		op_variable.llvm_function->function->eraseFromParent();
+			// Remove temp function.
+			op_variable.llvm_function->function->eraseFromParent();
+		}
 
 		// Extract captured variables and sort them to ensure stable order.
 		struct CapturedVariableForSorting
@@ -306,10 +306,11 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->field_count= uint32_t( class_->fields_order.size() );
 	class_->is_complete= true;
 
-	// Try generate important methods.
+	// Try to generate important methods.
 	TryGenerateCopyConstructor( class_ );
 	TryGenerateCopyAssignmentOperator( class_ );
 	TryGenerateDestructor( class_ );
+	// Equality compare operator is not needed for lambdas.
 	class_->kind= Class::Kind::NonPolymorph; // Set to class after methods generation.
 
 	// Create () operator.

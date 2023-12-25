@@ -551,6 +551,8 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 			}
 		}
 	}
+
+	// TODO - collect also pollution for labda captured variables as destination.
 }
 
 } // namespace U
