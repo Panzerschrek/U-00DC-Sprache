@@ -47,13 +47,11 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 						U_ASSERT( variable->type == capture.field->type );
 						if( !variable->type.IsCopyConstructible() )
 							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), lambda.src_loc, variable->type );
-						else
-						{
+						else if( !function_context.is_functionless_context )
 							BuildCopyConstructorPart(
 								field_value, variable->llvm_value,
 								variable->type,
 								function_context );
-						}
 
 						// Link references.
 						const size_t reference_tag_count= capture.field->type.ReferenceTagCount();
