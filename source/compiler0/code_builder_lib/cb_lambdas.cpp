@@ -107,7 +107,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->is_default_constructible= false;
 	class_->can_be_constexpr= false; // TODO - allow some lambda classes to be constexpr.
 	class_->generated_class_data= LambdaClassData{};
-	class_->llvm_type= llvm::StructType::create( llvm_context_ ); // TODO - mangle name?
+	class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_ ) );
 
 	const auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
 
