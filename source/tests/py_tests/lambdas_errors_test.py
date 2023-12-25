@@ -79,6 +79,38 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test1():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
+def CopyAssign_ForLambdaWithReferencesInside_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 13;
+			var f32 y= 22.5f;
+			auto mut f= lambda[&]() : f32 { return f32(x) * y; };
+			auto f_copy= f;
+			f= f_copy; // Copy assignment is not supported for lambdas with capturing references, because it's unclear, what to do with references.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+
+
+
+def CopyAssign_ForLambdaWithReferencesInside_Test1():
+	c_program_text= """
+		struct R{ i32& x; }
+		fn Foo( R r )
+		{
+			auto mut f= lambda[=](){ auto& ref= r; };
+			auto f_copy= f;
+			f= f_copy; // Can't copy-assign, becausecaptured by value "r" is not copy-assignable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
 def ReturnedFromLambdaReferenceIsLinkedToLambdaArg_Test0():
 	c_program_text= """
 		struct R{ i32& r; }
@@ -279,3 +311,44 @@ def AccessingLambdaCapturedValueIsNotAllowed_Tes1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "AccessingNonpublicClassMember", 6 ) )
+
+
+def LambdaIsNotEqualityComparable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda(){};
+			auto eq= f == f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def LambdaIsNotEqualityComparable_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f= lambda[=]() : i32 { return x; };
+			auto ne= f != f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+
+
+def LambdaIsNotEqualityComparable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f= lambda[&]() : i32 { return x; };
+			auto eq= f == f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )

@@ -119,6 +119,24 @@ def NonCaptureLambda_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def NonCaptureLambda_Test5():
+	c_program_text= """
+		template</type Func/>
+		fn CallFunc( Func func ) : i32
+		{
+			return func();
+		}
+		fn Foo()
+		{
+			// Use lambda as argument of template function.
+			var i32 res= CallFunc( lambda() : i32 { return 678; } );
+			halt if( res != 678 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def LambdaCaptureAllByValue_Test0():
 	c_program_text= """
 		fn Foo()
@@ -160,6 +178,25 @@ def LambdaCaptureAllByValue_Test2():
 			// Capture struct and scalar.
 			auto f= lambda [=] () : f64 { return f64(s.x) * f64(s.y) + f64(x); };
 			halt if( f() != 1234577.5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByValue_Test3():
+	c_program_text= """
+		template</type Func/>
+		fn CallFunc( Func func ) : f64
+		{
+			return func();
+		}
+		fn Foo()
+		{
+			// Use lambda as argument of template function.
+			var f64 some= 123.4;
+			var f64 res= CallFunc( lambda[=]() : f64 { return some; } );
+			halt if( res != 123.4 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -347,6 +384,35 @@ def LambdaCaptureAllByReference_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def LambdaCaptureAllByReference_Test5():
+	c_program_text= """
+		template</type T/>
+		struct Box
+		{
+			T t;
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		template</type T/>
+		fn MakeBox( T mut t ) : Box</T/> @(return_inner_references)
+		{
+			var Box</T/> mut b{ .t= move(t) };
+			return move(b);
+		}
+		fn Foo()
+		{
+			var i32 mut x= 15;
+			{
+				auto boxed_lambda= MakeBox( lambda[&](){ x -= 3; } );
+				boxed_lambda.t();
+			}
+			halt if( x != 12 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def LambdaMayBeCopyable_Test0():
 	c_program_text= """
 		fn Foo()
@@ -399,6 +465,22 @@ def LambdaMayBeCopyable_Test2():
 				f_copy1();
 			}
 			halt if( x != 17 * 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMayBeCopyable_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 13;
+			var f32 y= 22.5f;
+			auto mut f= lambda[=]() : f32 { return f32(x) * y; };
+			auto f_copy= f;
+			f= f_copy; // Copy assignment operator may be generated for lambdas with capturing by value.
+			halt if( f() != 13.0f * 22.5f );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
