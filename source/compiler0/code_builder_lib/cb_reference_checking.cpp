@@ -377,38 +377,38 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	for( size_t i= 0u; i < function_context.function_type.params.size(); ++i )
+	for( size_t dst_param_index= 0u; dst_param_index < function_context.function_type.params.size(); ++dst_param_index )
 	{
-		if( function_context.function_type.params[i].value_type == ValueType::Value )
+		if( function_context.function_type.params[dst_param_index].value_type == ValueType::Value )
 			continue;
 
-		const auto& node_pair= function_context.args_nodes[i];
+		const auto& node_pair= function_context.args_nodes[dst_param_index];
 
-		for( size_t j= 0; j < node_pair.first->inner_reference_nodes.size(); ++j )
+		for( size_t dst_rag= 0; dst_rag < node_pair.first->inner_reference_nodes.size(); ++dst_rag )
 		{
-			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[j];
+			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[dst_rag];
 			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 			{
-				if( j < node_pair.second.size() && accesible_variable == node_pair.second[j] )
+				if( dst_rag < node_pair.second.size() && accesible_variable == node_pair.second[dst_rag] )
 					continue;
 
-				std::optional<FunctionType::ParamReference> reference;
-				for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
+				std::optional<FunctionType::ParamReference> src_reference;
+				for( size_t src_param_index= 0u; src_param_index < function_context.function_type.params.size(); ++src_param_index )
 				{
-					if( accesible_variable == function_context.args_nodes[j].first )
-						reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_param_reference_number );
+					if( accesible_variable == function_context.args_nodes[src_param_index].first )
+						src_reference= FunctionType::ParamReference( uint8_t(src_param_index), FunctionType::c_param_reference_number );
 
-					for( size_t k= 0; k < function_context.args_nodes[j].second.size(); ++k )
-					if( accesible_variable == function_context.args_nodes[j].second[k] )
-						reference= FunctionType::ParamReference( uint8_t(j), uint8_t(k) );
+					for( size_t src_tag= 0; src_tag < function_context.args_nodes[src_param_index].second.size(); ++src_tag )
+						if( accesible_variable == function_context.args_nodes[src_param_index].second[src_tag] )
+							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
 				}
 
-				if( reference != std::nullopt )
+				if( src_reference != std::nullopt )
 				{
 					FunctionType::ReferencePollution pollution;
-					pollution.src= *reference;
-					pollution.dst.first= uint8_t(i);
-					pollution.dst.second= uint8_t(j);
+					pollution.src= *src_reference;
+					pollution.dst.first= uint8_t(dst_param_index);
+					pollution.dst.second= uint8_t(dst_rag);
 					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 						continue;
 				}
