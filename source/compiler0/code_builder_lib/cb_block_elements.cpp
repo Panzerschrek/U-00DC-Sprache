@@ -913,7 +913,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					"",
 					index_value,
 					index_value );
-				loop_names.AddName( " tuple for index", NamesScopeValue( std::move(tuple_for_index), range_for_operator.src_loc ) );
+				loop_names.AddName( " tuple for index", NamesScopeValue( std::move(tuple_for_index), range_for_operator.src_loc, true ) );
 			}
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
