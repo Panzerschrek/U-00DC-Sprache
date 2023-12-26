@@ -25,6 +25,11 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	// Copy captured values.
 	if( const auto lambda_class_data= std::get_if<LambdaClassData>( &lambda_class->generated_class_data ) )
 	{
+		llvm::SmallVector<llvm::Constant*, 4> constexpr_initializers;
+		if( lambda_class->can_be_constexpr )
+			constexpr_initializers.resize( lambda_class->llvm_type->getNumElements() );
+		size_t num_constexpr_initializers= 0;
+
 		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
 		{
 			const NameLookupResult lookup_result= LookupName( names, capture.captured_variable_name, lambda.src_loc );
@@ -41,6 +46,14 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 						// Link references.
 						U_ASSERT( capture.field->reference_tag < result->inner_reference_nodes.size() );
 						function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ capture.field->reference_tag ], names.GetErrors(), lambda.src_loc );
+
+						if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
+						{
+							// We needs to store constant somewhere. Create global variable for it.
+							llvm::Constant* const constant_stored= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
+							constexpr_initializers[ capture.field->index ]= constant_stored;
+							++num_constexpr_initializers;
+						}
 					}
 					else
 					{
@@ -63,10 +76,19 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 							U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
 							function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), lambda.src_loc );
 						}
+
+						if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
+						{
+							constexpr_initializers[ capture.field->index ]= variable->constexpr_value;
+							++num_constexpr_initializers;
+						}
 					}
 				}
 			}
 		}
+
+		if( lambda_class->can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
+			result->constexpr_value= llvm::ConstantStruct::get( lambda_class->llvm_type, constexpr_initializers );
 	}
 
 	RegisterTemporaryVariable( function_context, result );
@@ -117,7 +139,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->parents_list_prepared= true;
 	class_->have_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
-	class_->can_be_constexpr= false; // TODO - allow some lambda classes to be constexpr.
+	class_->can_be_constexpr= false; // Set later.
 	class_->generated_class_data= LambdaClassData{};
 	class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_ ) );
 
@@ -322,6 +344,18 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->field_count= uint32_t( class_->fields_order.size() );
 	class_->is_complete= true;
 
+	// Calculate constexpr property.
+	class_->can_be_constexpr= true;
+	for( const auto& field : class_->fields_order )
+	{
+		// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
+		if( !field->type.CanBeConstexpr() || ( field->is_reference && field->is_mutable ) )
+		{
+			class_->can_be_constexpr= false;
+			break;
+		}
+	}
+
 	// Try to generate important methods.
 	TryGenerateCopyConstructor( class_ );
 	TryGenerateCopyAssignmentOperator( class_ );
@@ -338,6 +372,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		op_variable.type.references_pollution= std::move(references_pollution);
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
+
+		// Use auto-constexpr for () operator.
+		op_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
 		auto functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( op_variable );

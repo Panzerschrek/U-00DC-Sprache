@@ -751,3 +751,191 @@ def UnsafeLambda_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
+
+
+def LambdaConstexpr_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Constexpr non-capture lambda.
+			auto constexpr f= lambda() : i32 { return 5566; };
+			var i32 constexpr i= f();
+			static_assert( i == 5566 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Constexpr non-capture lambda with argument.
+			auto constexpr f= lambda( u32 x ) : u32 { return x * 5u; };
+			var u32 constexpr i= f( 17u );
+			static_assert( i == 17u * 5u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			// Constexpr lambda with capture by value.
+			var i32 x= 4455;
+			auto constexpr f= lambda[=]() : i32 { return x - 8; };
+			var i32 constexpr i= f();
+			static_assert( i == 4455 - 8 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			// Constexpr lambda with capture by value and with argument.
+			var f32 x= 0.25f, y= 3.5f;
+			auto constexpr f= lambda[=]( f32 z ) : f32 { return z * x - y; };
+			static_assert( f( 6.0f ) == 6.0f * 0.25f - 3.5f );
+			static_assert( f( -2.5f ) == -2.5f * 0.25f - 3.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			// Constexpr lambda with capture by reference and with argument.
+			var f32 x= 0.25f, y= 3.5f;
+			auto constexpr f= lambda[&]( f32 z ) : f32 { return z * x - y; };
+			static_assert( f( 6.0f ) == 6.0f * 0.25f - 3.5f );
+			static_assert( f( -2.5f ) == -2.5f * 0.25f - 3.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			// Lambda object is still considered to be constexpr, even if lambda constains "unsafe" inside/
+			// Later it's impossible to call such lambda in constexpr context.
+			auto constexpr f= lambda() { unsafe{} };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			auto constexpr f= lambda() : i32 { unsafe{} return 0; };
+			auto constexpr res= f(); // Error, lambda () operator isn't constexpr, because constains non-constexpr operations inside.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+
+
+def LambdaConstexpr_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// The type of the lambda is constexpr, but lambda object isn't constexpr, since captured variable isn't constexpr.
+			auto constexpr f= lambda[=]() : i32 { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+
+
+def LambdaConstexpr_Test8():
+	c_program_text= """
+		struct S{ fn destructor(); } // This struc tis not constexpr, since it contains non-trivial destructor.
+		fn Foo()
+		{
+			var S s;
+			// Lambda type isn't constexpr, because it captures variable of non-constexpr type.
+			auto constexpr f= lambda[=]() : i32 { auto& s_ref= s; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 7 ) )
+
+
+def LambdaConstexpr_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Lambda isn't constexpr, since it captures mutable reference.
+			auto constexpr f= lambda[&]() : i32 { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
+
+
+def LambdaConstexpr_Test10():
+	c_program_text= """
+		template</type Func/>
+		fn Derivative( Func& f, f32 x ) : f32
+		{
+			return f( x + 0.5f ) - f( x - 0.5f );
+		}
+		fn Foo()
+		{
+			auto scale= 3.0f;
+			// Pass constexpr lambda with capture into template function and otain constexpr result.
+			var f32 constexpr d= Derivative( lambda[=]( f32 x ) : f32 { return scale * x; }, 17.5f );
+			static_assert( d == 3.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test11():
+	c_program_text= """
+		fn Foo()
+		{
+			// Define lambda and call it in array size expression.
+			var[ i32, lambda() : size_type { return 4s; } () ] arr= zero_init;
+			static_assert( typeinfo</ typeof(arr) />.element_count == 4s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaConstexpr_Test12():
+	c_program_text= """
+		fn Foo()
+		{
+			// Define lambda with capture by reference and call it in array size expression.
+			var size_type s(13);
+			var[ f64, lambda[&]() : size_type { return s; } () ] arr= zero_init;
+			static_assert( typeinfo</ typeof(arr) />.element_count == s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
