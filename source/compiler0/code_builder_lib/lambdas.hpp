@@ -12,6 +12,9 @@ struct LambdaKey
 	// SrcLoc of lambda syntax element.
 	SrcLoc src_loc;
 
+	// We need to create distinct lambdas on each iteration of tuple-for.
+	std::vector<uint32_t> tuple_for_indices;
+
 	size_t Hash() const;
 };
 

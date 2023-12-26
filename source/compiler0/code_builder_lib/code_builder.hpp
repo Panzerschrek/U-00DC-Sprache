@@ -1260,7 +1260,7 @@ private:
 
 	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
-	std::string GetLambdaBaseName( const Synt::Lambda& lambda );
+	std::string GetLambdaBaseName( const Synt::Lambda& lambda, llvm::ArrayRef<uint32_t> tuple_for_indices );
 	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type, ValueType lambda_this_value_type );
 	std::unordered_set<VariablePtr> CallectCurrentFunctionVariables( FunctionContext& function_context );
 	VariablePtr LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name );

@@ -903,6 +903,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			loop_names.AddName( range_for_operator.loop_variable_name, NamesScopeValue( variable_reference, range_for_operator.src_loc, force_referenced ) );
 
+			// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+			{
+				const auto index_value= llvm::ConstantInt::get( fundamental_llvm_types_.u32_, uint64_t(element_index) );
+				VariablePtr tuple_for_index= Variable::Create(
+					FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ ),
+					ValueType::Value,
+					Variable::Location::LLVMRegister,
+					"",
+					index_value,
+					index_value );
+				loop_names.AddName( " tuple for index", NamesScopeValue( std::move(tuple_for_index), range_for_operator.src_loc ) );
+			}
+
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
 				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );

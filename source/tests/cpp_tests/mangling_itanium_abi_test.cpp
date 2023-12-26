@@ -1102,6 +1102,60 @@ U_TEST( LambdasMangling_Test8 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN83_lambda_ab05617aabb05c0fc242caebbebb2910_2_50_ab05617aabb05c0fc242caebbebb2910_6_3_10destructorERS_" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test9 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[ f32, i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				// Should produce here 3 distinct lambdas - for each tuple-for iteration.
+				auto f= lambda[=]() : f64 { return f64(el); };
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_0_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_0_10destructorERS_" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_1_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_1_10destructorERS_" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_2_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_2_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test10 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[ f32, i32 ] t0= zero_init;
+			var tup[ i64, f64, u32 ] t1= zero_init;
+			for( el0 : t0 )
+			{
+				// Should produce here lambdas for each tuple-for combination.
+				for( el1 : t1 )
+				{
+					auto f= lambda[=]() : f64 { return f64(el0) * f64(el1); };
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_0_0_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_0_1_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_0_2_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_0_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_1_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_2_clERKS_" ) != nullptr );
+}
+
 } // namespace
 
 } // namespace U

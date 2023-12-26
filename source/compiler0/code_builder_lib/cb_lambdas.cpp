@@ -84,6 +84,22 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	key.parent_scope= lambda_class_parent_scope;
 	key.src_loc= lambda.src_loc;
 
+	// Extract tuple-for indices.
+	{
+		NamesScope* current= &names;
+		while( current != nullptr )
+		{
+			if( const auto tuple_for_index= current->GetThisScopeValue( " tuple for index" ) )
+				if( const auto tuple_for_index_variable= tuple_for_index->value.GetVariable() )
+					if( tuple_for_index_variable->constexpr_value != nullptr )
+						key.tuple_for_indices.push_back( uint32_t( tuple_for_index_variable->constexpr_value->getUniqueInteger().getLimitedValue() ) );
+			current= current->GetParent();
+		}
+
+		// Since we iterate over name scopes in reverse order reverse the result container.
+		std::reverse( key.tuple_for_indices.begin(), key.tuple_for_indices.end() );
+	}
+
 	if( const auto it= lambda_classes_table_.find(key); it != lambda_classes_table_.end() )
 	{
 		// Already generated.
@@ -92,7 +108,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	}
 
 	// Create the class.
-	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName(lambda), lambda_class_parent_scope );
+	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName( lambda, key.tuple_for_indices ), lambda_class_parent_scope );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
@@ -343,7 +359,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	return class_;
 }
 
-std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda )
+std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const llvm::ArrayRef<uint32_t> tuple_for_indices )
 {
 	std::string name;
 	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
@@ -374,6 +390,17 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda )
 		}
 		else
 			break; // Not a macro expansion context.
+	}
+
+	if( !tuple_for_indices.empty() )
+	{
+		name+= "tf_";
+
+		for( const uint32_t tuple_for_index : tuple_for_indices )
+		{
+			name+= std::to_string(tuple_for_index);
+			name+= "_";
+		}
 	}
 
 	return name;
