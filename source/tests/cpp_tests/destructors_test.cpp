@@ -4835,6 +4835,172 @@ U_TEST( ByValThisDestruction_Test2 )
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 11,  22, 55, -11,  -11 } ) );
 }
 
+U_TEST( LambdaDestructor_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			var S s( 555 );
+			auto f= lambda[&]() : i32 { return s.x; };
+			// Should destroy here lambda, but since it captures by-value, no destructor for copy of "s" is called.
+			// Destroy here "s".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 555, -555 } ) );
+}
+
+U_TEST( LambdaDestructor_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			var S s( 555 );
+			auto f= lambda[=]() : i32 { return s.x; }; // Take here copy of "s".
+			// Call here destructor for captured inside lambda "s".
+			// Destroy here "s".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 555, 555 * 2, -555, -555 } ) );
+}
+
+U_TEST( LambdaDestructor_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			auto f= lambda( i32 x )
+			{
+				var S s( x );
+			};
+			// No destructor for "s" called, because lambda is not executed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( {} ) );
+}
+
+U_TEST( LambdaDestructor_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			auto f= lambda( i32 x )
+			{
+				var S s( x );
+				// On each lambda call call here destructor for local for lambda variable "s".
+			};
+			f( 444 );
+			f( 333 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 444, -444, 333, -333 } ) );
+}
+
+U_TEST( LambdaDestructor_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			var S s( 878 );
+			auto f= lambda[=]() : i32 { return s.x; }; // Take here copy of "s".
+			auto f_copy= f; // Copy the lambda with captured "s" inside.
+			// Destroy here "f_copy".
+			// Destroy here "f".
+			// Destroy here "s".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 878, 878 * 2, 878 * 2, -878, -878, -878 } ) );
+}
+
 } // namespace
 
 } // namespace U

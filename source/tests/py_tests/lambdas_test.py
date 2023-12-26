@@ -715,3 +715,39 @@ def LambdaReferencePoillution_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def UnsafeLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda() unsafe {}; // Ok - define unsafe lambda, but do not call it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def UnsafeLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda() unsafe {};
+			unsafe( f() ); // Ok - call unsafe lambda in unsafe expression.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def UnsafeLambda_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda() unsafe {};
+			f(); // Error - calling unsafe function outside unsafe block.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )

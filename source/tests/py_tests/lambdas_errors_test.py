@@ -95,7 +95,6 @@ def CopyAssign_ForLambdaWithReferencesInside_Test0():
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
 
 
-
 def CopyAssign_ForLambdaWithReferencesInside_Test1():
 	c_program_text= """
 		struct R{ i32& x; }
@@ -109,6 +108,74 @@ def CopyAssign_ForLambdaWithReferencesInside_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def StructNamedInitializerForLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda(){};
+			var typeof(f) other_f{}; // Can't use {} initializer for lambdas.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StructInitializerForNonStruct", 5 ) )
+
+
+def StructNamedInitializerForLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f= lambda[=]() : i32 { return x; };
+			var typeof(f) other_f{ .x= 0 }; // Can't use {} initializer for lambdas.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StructInitializerForNonStruct", 6 ) )
+
+
+def ZeroInitializer_ForLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda(){};
+			var typeof(f) other_f= zero_init; // Can't use zero_init for lambdas.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ZeroInitializerForClass", 5 ) )
+
+
+def ZeroInitializer_ForLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f= lambda[=]() : i32 { return x; };
+			var typeof(f) other_f= zero_init; // Can't use zero_init for lambdas with captured value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ZeroInitializerForClass", 6 ) )
+
+
+def ZeroInitializer_ForLambda_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f= lambda[&]() : i32 { return x; };
+			var typeof(f) other_f= zero_init; // Can't use zero_init for lambdas with captured reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ZeroInitializerForClass", 6 ) )
 
 
 def ReturnedFromLambdaReferenceIsLinkedToLambdaArg_Test0():
