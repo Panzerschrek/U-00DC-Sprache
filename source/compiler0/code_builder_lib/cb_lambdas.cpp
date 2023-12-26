@@ -158,6 +158,14 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
 		lambda_preprocessing_context.lambda_this_value_type= lambda_this_value_type;
 
+		if( std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
+			lambda_preprocessing_context.allowed_for_capture_variables= LambdaPreprocessingContext::AllowedForCaptureVariables();
+		else if(
+			std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture ) ||
+			std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture ) )
+			lambda_preprocessing_context.allowed_for_capture_variables= std::nullopt; // Allow to capture anything.
+		else U_ASSERT(false);
+
 		{
 			FunctionVariable op_variable;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
@@ -521,11 +529,20 @@ std::unordered_set<VariablePtr> CodeBuilder::CallectCurrentFunctionVariables( Fu
 	return result;
 }
 
-VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name )
+VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const std::string& name,
+	const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
 	auto& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
 	U_ASSERT( lambda_preprocessing_context.external_variables.count( variable ) > 0 );
+
+	if( lambda_preprocessing_context.allowed_for_capture_variables != std::nullopt &&
+		lambda_preprocessing_context.allowed_for_capture_variables->count( variable ) == 0 )
+		REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
 
 	// Create special temporary reference grap nodes for captured external variable.
 

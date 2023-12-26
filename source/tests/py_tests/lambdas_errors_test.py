@@ -525,3 +525,30 @@ def ReferenceNotationForLambda_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceNotationForLambda", 6 ) )
+
+
+def VariableIsNotCapturedByLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			// This non-capture lambda captures an external variable. Should produce an error.
+			auto f= lambda() : i32 { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+
+
+def VariableIsNotCapturedByLambda_Test1():
+	c_program_text= """
+		fn Foo( f32 x )
+		{
+			// This non-capture lambda captures an external variable - function parameter. Should produce an error.
+			auto f= lambda() : f32 { return x * 1.7f; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 5 ) )

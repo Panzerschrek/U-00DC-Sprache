@@ -39,6 +39,8 @@ struct LambdaClassData
 
 struct LambdaPreprocessingContext
 {
+	using AllowedForCaptureVariables= std::unordered_set<VariablePtr>;
+
 	struct CapturedVariableData
 	{
 		VariablePtr source_variable;
@@ -61,6 +63,7 @@ public:
 
 	// Inputs.
 	std::unordered_set<VariablePtr> external_variables;
+	std::optional<AllowedForCaptureVariables> allowed_for_capture_variables; // If none - all variables are allowed.
 	ValueType lambda_this_value_type= ValueType::ReferenceImut;
 	bool capture_by_value= false;
 
