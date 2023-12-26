@@ -352,6 +352,71 @@ def LambdaModifyCapturedVariable_Test2():
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
+def LambdaMoveCapturedVariable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[=]()
+				{
+					move(x); // In "imut this" lambda captured variable is assumed to be a class field, not a variable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def LambdaMoveCapturedVariable_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&]()
+				{
+					move(x); // In "imut this" lambda captured reference is assumed to be a class refernce field, not a variable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
+	c_program_text= """
+		struct R{ i32& x; }
+		fn Foo( R r )
+		{
+			// Since captured by reference variable becames a reference field
+			// it's not possible to capture by reference a variable with references inside.
+			// It's still not allowed to create reference fields of types with references inside.
+			auto f= lambda[&]() { auto& r_ref= r; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 8 ) )
+
+
+def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f0= lambda[&]() : i32 { return x; };
+			// Capture another lambda by reference, which contains references inside.
+			auto f1= lambda[&]() : i32 { return f0(); };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 7 ) )
+
+
 def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
 	c_program_text= """
 		fn Foo()

@@ -939,3 +939,59 @@ def LambdaConstexpr_Test12():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaGlovalVariableCapture_Test0():
+	c_program_text= """
+		var i32 global_x= 121212;
+		fn Foo()
+		{
+			// Global variables are not captured in non-capture lambda.
+			auto f= lambda() : i32 { return global_x; };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.size_of == 0s );
+			static_assert( ti.field_count == 0s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaGlovalVariableCapture_Test1():
+	c_program_text= """
+		struct S
+		{
+			auto v= 5.125f;
+		}
+		fn Foo()
+		{
+			// Global variables are not captured in capture by value lambda.
+			auto f= lambda[=]() : f32 { return S::v; };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.size_of == 0s );
+			static_assert( ti.field_count == 0s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaGlovalVariableCapture_Test2():
+	c_program_text= """
+		template</type T, size_type S/>
+		fn Bar( [ T, S ]& arr )
+		{
+			// Variable template arguments are not captured in lambda.
+			auto f= lambda[&]() : size_type { return S; };
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.size_of == 0s );
+			static_assert( ti.field_count == 0s );
+		}
+		fn Foo()
+		{
+			var [ i32, 6 ] arr= zero_init;
+			Bar( arr );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
