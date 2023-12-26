@@ -995,3 +995,53 @@ def LambdaGlovalVariableCapture_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaInGlobalContext_Test0():
+	c_program_text= """
+		// Global lambda.
+		auto double_it= lambda( i32 x ) : i32 { return x * 2; };
+		fn Foo( i32 x ) : i32
+		{
+			return double_it( x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooi", 787 ) == 787 * 2 )
+
+
+def LambdaInGlobalContext_Test1():
+	c_program_text= """
+		namespace Math
+		{
+			auto pi= 3.1415926535f;
+			// Lambda in a namespace with usage of external variables.
+			auto circle_area= lambda( f32 radius ) : f32 { return pi * radius * radius; };
+			// Should capture nothing.
+			static_assert( typeinfo</ typeof(circle_area) />.size_of == 0s );
+		}
+		fn Foo()
+		{
+			static_assert( Math::circle_area( 2.5f ) == Math::pi * 2.5f * 2.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaInGlobalContext_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn Bar() : u32 { return 7767u; }
+			// Lambda in a struct, that is constexpr, but call operator isn't constexpr since it calls non-constexpr function.
+			auto f= lambda() : u32 { return Bar(); };
+		}
+		fn Foo()
+		{
+			auto x= S::f();
+			halt if( x != 7767u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

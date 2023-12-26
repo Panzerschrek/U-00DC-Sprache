@@ -1156,6 +1156,44 @@ U_TEST( LambdasMangling_Test10 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_2_clERKS_" ) != nullptr );
 }
 
+U_TEST( LambdasMangling_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			// Should properly encode lambda in static variable initialization.
+			auto f= lambda() {};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_clERKNS_46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_E" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_10destructorERNS_46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_E" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test12 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ size_type S />
+		class IVec polymorph
+		{
+			[ i32, S ] v;
+		}
+		// Use lambda for calculation of temlate variable argument in class parents list.
+		class IVec4 : IVec</ lambda() : size_type { return 16s; } () />
+		{
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
 } // namespace
 
 } // namespace U

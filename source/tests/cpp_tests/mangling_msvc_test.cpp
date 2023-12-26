@@ -1296,6 +1296,45 @@ U_TEST( LambdasMangling_Test10 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??R_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_2_@@YANAEBU0@@Z" ) != nullptr );
 }
 
+U_TEST( LambdasMangling_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			// Should properly encode lambda in static variable initialization.
+			auto f= lambda() {};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??R_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_@S@@YAXAEBU01@@Z" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_@S@@YAXAEAU12@@Z" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test12 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ size_type S />
+		class IVec polymorph
+		{
+			[ i32, S ] v;
+		}
+		// Use lambda for calculation of temlate variable argument in class parents list.
+		class IVec4 : IVec</ lambda() : size_type { return 16s; } () />
+		{
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??R_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_@@YA_KAEBU0@@Z" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
+}
+
+
 } // namespace
 
 } // namespace U
