@@ -221,6 +221,7 @@ private:
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const;
 	void EncodeTemplateClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
+	void EncodeLambdaClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
 	void EncodeCoroutineClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
 	void EncodeNumber( ManglerState& mangler_state, const llvm::APInt& num, bool is_signed ) const;
 	void EncodeReferencePollution( ManglerState& mangler_state, const std::set<FunctionType::ReferencePollution>& references_pollution ) const;
@@ -408,6 +409,12 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		else if( std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data ) != nullptr )
 		{
 			EncodeCoroutineClassName( mangler_state, class_type );
+			// Finish list of name components.
+			mangler_state.PushElement( g_terminator );
+		}
+		else if( std::holds_alternative<LambdaClassData>( class_type->generated_class_data ) )
+		{
+			EncodeLambdaClassName( mangler_state, class_type );
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
@@ -610,6 +617,11 @@ void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const N
 			EncodeCoroutineClassName( mangler_state, the_class );
 			return;
 		}
+		if( std::holds_alternative<LambdaClassData>( the_class->generated_class_data ) )
+		{
+			EncodeLambdaClassName( mangler_state, the_class );
+			return;
+		}
 	}
 
 	mangler_state.EncodeName( scope.GetThisNamespaceName() );
@@ -638,6 +650,33 @@ void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const Cl
 
 	if( namespace_containing_template->GetParent() != nullptr )
 		EncodeNamespacePostfix_r( mangler_state, *namespace_containing_template );
+}
+
+void ManglerMSVC::EncodeLambdaClassName( ManglerState& mangler_state, const ClassPtr the_class ) const
+{
+	const auto lambda_class_data= std::get_if<LambdaClassData>( &the_class->generated_class_data );
+	U_ASSERT( lambda_class_data != nullptr );
+
+	if( lambda_class_data->template_args.empty() )
+	{
+		mangler_state.EncodeName( the_class->members->GetThisNamespaceName() );
+		EncodeNamespacePostfix_r( mangler_state, *the_class->members->GetParent() );
+	}
+	else
+	{
+		// Use separate backreferences table.
+		std::string template_name;
+		{
+			ManglerState template_mangler_state( template_name );
+
+			template_mangler_state.PushElement( g_template_prefix );
+			template_mangler_state.EncodeName( the_class->members->GetThisNamespaceName() );
+			EncodeTemplateArgs( template_mangler_state, lambda_class_data->template_args );
+		}
+		mangler_state.EncodeNameNoTerminator( template_name );
+
+		EncodeNamespacePostfix_r( mangler_state, *the_class->members->GetParent()->GetParent() );
+	}
 }
 
 void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const ClassPtr the_class ) const
