@@ -1235,6 +1235,22 @@ U_TEST( LambdasMangling_Test14 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_fe964b16fbd643221bceead27f12ded1_5_23_ILy33EfE10destructorERS0_" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test15 )
+{
+	// Should encode template args of type alias.
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		type Vec4= [ T, lambda() : size_type { return 4s; } () ];
+		type U64Vec4= Vec4</u64/>;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_adadc97c08e291b99448d2a4c19ed996_3_18_IyEclERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_adadc97c08e291b99448d2a4c19ed996_3_18_IyE10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
 } // namespace
 
 } // namespace U

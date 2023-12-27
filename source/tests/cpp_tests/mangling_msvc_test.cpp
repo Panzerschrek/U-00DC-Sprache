@@ -1375,6 +1375,22 @@ U_TEST( LambdasMangling_Test14 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$_lambda_fe964b16fbd643221bceead27f12ded1_5_23_@_K$0CB@M@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test15 )
+{
+	// Should encode template args of type alias.
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		type Vec4= [ T, lambda() : size_type { return 4s; } () ];
+		type U64Vec4= Vec4</u64/>;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??R?$_lambda_adadc97c08e291b99448d2a4c19ed996_3_18_@_K@@YA_KAEBU0@@Z" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$_lambda_adadc97c08e291b99448d2a4c19ed996_3_18_@_K@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
+}
+
 } // namespace
 
 } // namespace U
