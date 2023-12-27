@@ -1334,7 +1334,6 @@ U_TEST( LambdasMangling_Test12 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
 }
 
-
 } // namespace
 
 } // namespace U

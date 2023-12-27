@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_set>
 #include "names_scope.hpp"
+#include "template_types.hpp"
 
 namespace U
 {
@@ -35,6 +36,7 @@ struct LambdaClassData
 	};
 
 	std::vector<Capture> captures;
+	std::vector<TemplateArg> template_args; // For some lambdas (like in template functions).
 };
 
 struct LambdaPreprocessingContext

@@ -129,18 +129,47 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		return it->second.get();
 	}
 
+	std::vector<TemplateArg> template_args;
+	if( lambda_class_parent_scope->GetThisNamespaceName() == NamesScope::c_template_args_namespace_name )
+	{
+		// This is a lambda inside template function or in template class declaration expression.
+		// Extract template args for later usage for lambda name mangling.
+		using NamedTemplateArg= std::pair< std::string_view, TemplateArg >;
+		llvm::SmallVector< NamedTemplateArg, 4 > named_template_args;
+		lambda_class_parent_scope->ForEachInThisScope(
+			[&]( const std::string_view name, const NamesScopeValue& value )
+			{
+				if( const auto t= value.value.GetTypeName() )
+					named_template_args.emplace_back( name, *t );
+				else if( const auto v= value.value.GetVariable() )
+					named_template_args.emplace_back( name, TemplateVariableArg( *v ) );
+			} );
+
+		// Sort template args by name in order to obtain some stable order.
+		// This order should not be the same as order in the template itself. It should only be deterministic.
+		std::sort(
+			named_template_args.begin(), named_template_args.end(),
+			[&]( const NamedTemplateArg& l, const NamedTemplateArg& r ) { return l.first < r.first; } );
+
+		// Populate result template args.
+		template_args.reserve( named_template_args.size() );
+		for( NamedTemplateArg& template_arg : named_template_args )
+			template_args.push_back( std::move( template_arg.second ) );
+	}
+
 	// Create the class.
 	auto class_ptr= std::make_unique<Class>( GetLambdaBaseName( lambda, key.tuple_for_indices ), lambda_class_parent_scope );
 	Class* const class_= class_ptr.get();
 	lambda_classes_table_.emplace( std::move(key), std::move(class_ptr) );
 
+	class_->members->SetClass( class_ );
 	class_->src_loc= lambda.src_loc;
 	class_->kind= Class::Kind::Struct; // Set temporary to struct in order to allow generation of some methods.
 	class_->parents_list_prepared= true;
 	class_->have_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
 	class_->can_be_constexpr= false; // Set later.
-	class_->generated_class_data= LambdaClassData{};
+	class_->generated_class_data= LambdaClassData{ {}, std::move(template_args) };
 	class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_ ) );
 
 	const auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.

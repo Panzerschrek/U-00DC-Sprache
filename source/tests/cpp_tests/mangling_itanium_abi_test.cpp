@@ -986,8 +986,8 @@ U_TEST( LambdasMangling_Test3 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_clERKNS0_46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_E" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_10destructorERNS0_46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_E" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_clERKS1_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_10destructorERS1_" ) != nullptr ); // Destructor.
 }
 
 U_TEST( LambdasMangling_Test4 )
@@ -1006,8 +1006,8 @@ U_TEST( LambdasMangling_Test4 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_clERKNS_46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_E" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_10destructorERNS_46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_E" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_10destructorERS0_" ) != nullptr ); // Destructor.
 }
 
 U_TEST( LambdasMangling_Test5 )
@@ -1032,8 +1032,8 @@ U_TEST( LambdasMangling_Test5 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_clERKNS1_47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_E" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_10destructorERNS1_47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_E" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_clERKS2_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_f98dcc267252fcfbaf3c8415a51682f7_11_13_10destructorERS2_" ) != nullptr ); // Destructor.
 }
 
 U_TEST( LambdasMangling_Test6 )
@@ -1063,8 +1063,8 @@ U_TEST( LambdasMangling_Test6 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_clERKNS_47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_E" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_10destructorERNS_47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_E" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_10destructorERS0_" ) != nullptr ); // Destructor.
 }
 
 U_TEST( LambdasMangling_Test7 )
@@ -1080,8 +1080,8 @@ U_TEST( LambdasMangling_Test7 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_clERKNS_46_lambda_c81936537015db40f92af46cf866ea7c_5_10_E" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_10destructorERNS_46_lambda_c81936537015db40f92af46cf866ea7c_5_10_E" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_10destructorERS0_" ) != nullptr ); // Destructor.
 }
 
 U_TEST( LambdasMangling_Test8 )
@@ -1169,8 +1169,8 @@ U_TEST( LambdasMangling_Test11 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_clERKNS_46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_E" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_10destructorERNS_46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_E" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_10destructorERS0_" ) != nullptr ); // Destructor.
 }
 
 U_TEST( LambdasMangling_Test12 )
@@ -1192,6 +1192,47 @@ U_TEST( LambdasMangling_Test12 )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_clERKS_" ) != nullptr ); // Call operator itslef.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_0deddda2a19dc4d577209b770d67d6cc_8_23_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test13 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		fn Bar()
+		{
+			auto f= lambda(){};
+		}
+		fn Foo()
+		{
+			Bar</ f64 />();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_ff38ed8c4972a1c123a9ae13633e72f4_5_11_IdEclERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_ff38ed8c4972a1c123a9ae13633e72f4_5_11_IdE10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test14 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Use lambda in non-sync expression of template struct.
+		// Should encode template params and class itself in lambda name.
+		template</ type T, size_type S />
+		struct Box non_sync( lambda() : bool { return false; } () )
+		{
+			[ T, S ] arr;
+		}
+		type FloatBox= Box</f32, 33s />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_2de8d5ed7352bac451f7eb480f27fa1a_5_23_ILy33Ef3BoxIfLy33EEEclERKS2_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_2de8d5ed7352bac451f7eb480f27fa1a_5_23_ILy33Ef3BoxIfLy33EEE10destructorERS2_" ) != nullptr ); // Destructor.
 }
 
 } // namespace
