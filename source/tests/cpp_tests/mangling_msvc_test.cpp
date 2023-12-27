@@ -1360,7 +1360,7 @@ U_TEST( LambdasMangling_Test14 )
 	static const char c_program_text[]=
 	R"(
 		// Use lambda in non-sync expression of template struct.
-		// Should encode template params and class itself in lambda name.
+		// Should encode template args here.
 		template</ type T, size_type S />
 		struct Box non_sync( lambda() : bool { return false; } () )
 		{
@@ -1371,8 +1371,8 @@ U_TEST( LambdasMangling_Test14 )
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??R?$_lambda_2de8d5ed7352bac451f7eb480f27fa1a_5_23_@_K$0CB@MU?$Box@M_K$0CB@@@@@YA_NAEBU0@@Z" ) != nullptr ); // Call operator itslef.
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$_lambda_2de8d5ed7352bac451f7eb480f27fa1a_5_23_@_K$0CB@MU?$Box@M_K$0CB@@@@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??R?$_lambda_fe964b16fbd643221bceead27f12ded1_5_23_@_K$0CB@M@@YA_NAEBU0@@Z" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$_lambda_fe964b16fbd643221bceead27f12ded1_5_23_@_K$0CB@M@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
 }
 
 } // namespace

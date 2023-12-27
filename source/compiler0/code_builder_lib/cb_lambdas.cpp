@@ -140,7 +140,15 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			[&]( const std::string_view name, const NamesScopeValue& value )
 			{
 				if( const auto t= value.value.GetTypeName() )
+				{
+					if( const auto class_= t->GetClassType() )
+					{
+						if( class_->members->GetThisNamespaceName() == Class::c_template_class_name &&
+							class_->members->GetParent() == lambda_class_parent_scope )
+							return; // Skip class of this class template.
+					}
 					named_template_args.emplace_back( name, *t );
+				}
 				else if( const auto v= value.value.GetVariable() )
 					named_template_args.emplace_back( name, TemplateVariableArg( *v ) );
 			} );
