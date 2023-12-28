@@ -191,6 +191,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Run preprocessing.
 	{
 		LambdaPreprocessingContext lambda_preprocessing_context;
+		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CallectCurrentFunctionVariables( function_context );
 		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
 		lambda_preprocessing_context.lambda_this_value_type= lambda_this_value_type;
@@ -566,7 +567,7 @@ std::unordered_set<VariablePtr> CodeBuilder::CallectCurrentFunctionVariables( Fu
 	return result;
 }
 
-VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
+void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const VariablePtr& variable,
@@ -574,14 +575,34 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 	const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
-	auto& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
-	U_ASSERT( lambda_preprocessing_context.external_variables.count( variable ) > 0 );
+	const LambdaPreprocessingContext& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
 
-	if( lambda_preprocessing_context.allowed_for_capture_variables != std::nullopt &&
+	if( lambda_preprocessing_context.external_variables.count( variable ) > 0 &&
+		lambda_preprocessing_context.allowed_for_capture_variables != std::nullopt &&
 		lambda_preprocessing_context.allowed_for_capture_variables->count( variable ) == 0 )
 		REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
 
-	// Create special temporary reference grap nodes for captured external variable.
+	// Do not allow to capture variables through another lambda.
+	const LambdaPreprocessingContext* current_context= function_context.lambda_preprocessing_context->parent;
+	while( current_context != nullptr )
+	{
+		if( current_context->external_variables.count( variable ) > 0 )
+			REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
+
+		current_context= current_context->parent;
+	}
+}
+
+VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const std::string& name )
+{
+	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
+	auto& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
+	U_ASSERT( lambda_preprocessing_context.external_variables.count( variable ) > 0 );
+
+	// Create special temporary reference graph nodes for captured external variable.
 
 	LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
 

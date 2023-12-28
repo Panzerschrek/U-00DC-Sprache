@@ -694,3 +694,56 @@ def VariableIsNotCapturedByLambda_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 5 ) )
+
+
+def VariableIsNotCapturedByLambda_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var u32 x(0);
+			auto f0=
+				lambda[&]() : u32
+				{
+					auto f1=
+						lambda[&]() : u32
+						{
+							// Capture a variable that is not captured specially by the outer lambda.
+							// This should not be allowed.
+							return x;
+						};
+					return f1();
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 13 ) )
+
+
+def VariableIsNotCapturedByLambda_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var u32 x(0);
+			auto f0=
+				lambda[=]() : u32
+				{
+					auto f1=
+						lambda[=]() : u32
+						{
+							auto f2=
+								lambda[=]() : u32
+								{
+									// Capture a variable that is not captured specially by the outer lambda.
+									// This should not be allowed.
+									return x;
+								};
+							return f2();
+						};
+					return f1();
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 16 ) )

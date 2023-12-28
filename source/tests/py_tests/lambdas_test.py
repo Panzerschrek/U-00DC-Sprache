@@ -203,6 +203,31 @@ def LambdaCaptureAllByValue_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def LambdaCaptureAllByValue_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 7890;
+			auto f0=
+				lambda[=]() : i32
+				{
+					// Capture variable in level0 lambda.
+					auto x_copy= x;
+					auto f1=
+						lambda[=]() : i32
+						{
+							// Capture variable from level0 lambda in level1 lambda.
+							return x_copy;
+						};
+					return f1();
+				};
+			halt if( f0() != 7890 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def Lambda_ReturnReferenceToCapturedVariable_Test0():
 	c_program_text= """
 		fn Foo()
@@ -488,6 +513,34 @@ def LambdaCaptureAllByReference_Test8():
 			var S mut s= zero_init;
 			s.SomeMethod();
 			halt if( s.x != 7777 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto mut f0=
+				lambda[&]()
+				{
+					// Capture variable in level0 lambda.
+					auto &mut x_ref= x;
+					auto f1=
+						lambda[&]()
+						{
+							// Capture variable from level0 lambda in level1 lambda.
+							x_ref= 55665544;
+						};
+					f1();
+				};
+			f0();
+			move(f0);
+			++x;
+			halt if( x != 55665545 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
