@@ -1,0 +1,15 @@
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
+{
+	// TODO
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( lambda_ );
+	return ErrorValue();
+}
+
+} // namespace U1

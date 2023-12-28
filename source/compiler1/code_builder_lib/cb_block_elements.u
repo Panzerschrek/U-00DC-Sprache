@@ -3044,6 +3044,8 @@ fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_
 // Move and take have side effects.
 fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
 fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }
+// It's dumm to define lambda and do not use it.
+fn SingleExpressionIsUselessImpl( Synt::Lambda& e ) : bool { ust::ignore_unused(e); return true; }
 // Casts have no side effects.
 fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }

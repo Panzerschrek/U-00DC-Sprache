@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/shared_ptr.u"
 import "/string_conversions.u"
 import "/unordered_set.u"
@@ -175,6 +176,7 @@ private:
 	fn ParseRawPointerType( mut this ) : RawPointerType;
 	fn ParseFunctionType( mut this ) : FunctionType;
 	fn ParseCoroutineType( mut this ) : CoroutineType;
+	fn ParseLambda( mut this ) : Lambda;
 	fn ParseFunctionParam( mut this ) : FunctionType::Param;
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
 
@@ -910,6 +912,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(take_operator);
 	}
+	if( IsKeyword( it_.front(), Keyword::lambda_ ) )
+	{
+		return ParseLambda();
+	}
 	if( IsKeyword( it_.front(), Keyword::select_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
@@ -1204,6 +1210,82 @@ fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 	}
 
 	return move(coroutine_type);
+}
+
+fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
+{
+	debug_assert( IsKeyword( it_.front(), Keyword::lambda_ ) );
+	var Function mut lambda_function{ .src_loc= it_.front().src_loc };
+	var Lambda mut result{ .src_loc= it_.front().src_loc, .function( move(lambda_function) ) };
+
+	NextLexem(); // Skip "lambda" keyword
+
+	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
+	{
+		// Non-empty capture list.
+		NextLexem();
+
+		if( it_.front().lexem_type == Lexem::Type::Assignment )
+		{
+			NextLexem();
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+			result.capture= Lambda::CaptureAllByValue();
+		}
+		else if( it_.front().lexem_type== Lexem::Type::And && it_[1s].lexem_type == Lexem::Type::SquareBracketRight )
+		{
+			NextLexem();
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+			result.capture= Lambda::CaptureAllByReference();
+		}
+		else
+		{
+			// Full capture list.
+
+			// TODO - parse it.
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+		}
+	}
+	else
+	{
+		result.capture= Lambda::CaptureNothing();
+	}
+
+	// Parse params.
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		result.function.deref().function_type.params.push_back( ParseFunctionParam() );
+
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::BracketRight ) // Prevent ')' after ','
+			{
+				PushErrorMessage();
+				break;
+			}
+		}
+	}  // for params.
+
+	ParseFunctionTypeEnding( result.function.deref().function_type );
+
+	// Lambdas always have a body.
+	result.function.deref().block.reset( ParseBlock() );
+
+	return move(result);
 }
 
 fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
