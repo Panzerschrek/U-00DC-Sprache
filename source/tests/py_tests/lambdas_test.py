@@ -413,6 +413,87 @@ def LambdaCaptureAllByReference_Test5():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def LambdaCaptureAllByReference_Test6():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SomeMethod( mut this )
+			{
+				// Can capture reference to "this" field by binding it first to a local reference.
+				auto &mut x_ref= x;
+				auto f= lambda[&]() { x_ref= 112233; };
+				f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			s.SomeMethod();
+			halt if( s.x != 112233 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test7():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			i32 y;
+			fn SomeMethod( mut this )
+			{
+				// Can capture reference to different "this" fields by binding them first to local references.
+				auto &mut x_ref= x;
+				auto &mut y_ref= y;
+				auto f=
+					lambda[&]()
+					{
+						auto tmp= x_ref;
+						x_ref= y_ref;
+						y_ref= tmp;
+					};
+				f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 33, .y= 66 };
+			s.SomeMethod();
+			halt if( s.x != 66 );
+			halt if( s.y != 33 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test8():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SomeMethod( mut this )
+			{
+				// Can capture reference to "this" by binding it first to a local reference.
+				auto &mut self= this;
+				auto f= lambda[&]() { self.x= 7777; };
+				f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			s.SomeMethod();
+			halt if( s.x != 7777 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def LambdaMayBeCopyable_Test0():
 	c_program_text= """
 		fn Foo()

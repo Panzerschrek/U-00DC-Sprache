@@ -1,6 +1,6 @@
 from py_tests_common import *
 
-def ThisUnavailable_ForLambdaClassThis_Tetst0():
+def AccessingThisInLambda_Tetst0():
 	# "this" should be not available in lambdas for hidden "this" parameter of a lambda function.
 	c_program_text= """
 		fn Foo()
@@ -17,7 +17,7 @@ def ThisUnavailable_ForLambdaClassThis_Tetst0():
 	assert( HaveError( errors_list, "ThisUnavailable", 7 ) )
 
 
-def ThisUnavailable_ForLambdaClassThis_Tetst1():
+def AccessingThisInLambda_Tetst1():
 	# "this" should be not available in lambdas for hidden "this" parameter of a lambda function.
 	# This is true even if lamda captures names by value.
 	c_program_text= """
@@ -30,6 +30,148 @@ def ThisUnavailable_ForLambdaClassThis_Tetst1():
 					auto x_copy= x;
 					auto& ref= this;
 				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisUnavailable", 9 ) )
+
+
+def AccessingThisInLambda_Test2():
+	# "this" should be not available for struct.
+	c_program_text= """
+		struct S
+		{
+			fn Foo(this)
+			{
+				auto f=
+					lambda[&]()
+					{
+						auto& self= this;
+					};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisUnavailable", 9 ) )
+
+
+def AccessingThisInLambda_Test3():
+	c_program_text= """
+		class C
+		{
+			fn Foo(this)
+			{
+				auto f=
+					lambda[&]()
+					{
+						Bar(); // Can't call this-call method, because "this" can't be captured.
+					};
+			}
+			fn Bar( this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 9 ) )
+
+
+def AccessingThisInLambda_Test4():
+	c_program_text= """
+		class Base polymorph {}
+		class Derived : Base
+		{
+			fn Foo(this)
+			{
+				auto f=
+					lambda[&]()
+					{
+						auto& base_ref= base; // Can't access "base", because "this" is not captured by the lambda.
+					};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "BaseUnavailable", 10 ) )
+
+
+def AccessingThisInLambda_Test5():
+	c_program_text= """
+		struct S
+		{
+			f32 some_field;
+			fn Foo( mut this )
+			{
+				auto f=
+					lambda[&]()
+					{
+						auto& r=some_field; // Can't access field, because "this" is not captured by the lambda.
+					};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 10 ) )
+
+
+def AccessingThisInLambda_Test6():
+	c_program_text= """
+		class Base polymorph
+		{
+			i32 x;
+		}
+		class Derived : Base
+		{
+			fn Foo(this)
+			{
+				auto f=
+					lambda[&]()
+					{
+						auto& x_ref= x; // Can't access field of the base class, because "this" is not captured by the lambda.
+					};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 13 ) )
+
+
+def AccessingThisInLambda_Test7():
+	c_program_text= """
+		struct S
+		{
+			f32 some_field;
+			fn Foo( mut this )
+			{
+				auto f=
+					lambda[=]() // Even by-value capture still doesn't give access to "this".
+					{
+						auto& r=some_field; // Can't access field, because "this" is not captured by the lambda.
+					};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 10 ) )
+
+
+def AccessingThisInLambda_Test8():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( this )
+			{
+				auto f=
+					lambda[=]() // Even by-value capture still doesn't give access to "this".
+					{
+						auto& r=this; // Can't access "this" because it is not captured.
+					};
+			}
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
