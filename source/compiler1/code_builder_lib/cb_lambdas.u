@@ -1,3 +1,4 @@
+import "/keywords.uh"
 import "code_builder.uh"
 
 namespace U1
@@ -7,9 +8,27 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 {
 	var ClassTypePtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda_ );
 
-	// TODO - create lambda object instance.
+	var Variable mut result_value
+	{
+		.t= lambda_class,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.name= "value of " + Type(lambda_class).ToString(),
+	};
 
-	return ErrorValue();
+	if( !function_context.is_functionless_context )
+	{
+		result_value.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result_value.t.GetLLVMType(), g_null_string ) );
+		CreateLifetimeStart( function_context, result_value.llvm_value );
+	}
+
+	var VariablePtr result= move(result_value).CreatePtr();
+	function_context.references_graph.AddNode( result );
+
+	// TODO - fill captures.
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr
@@ -25,13 +44,81 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	}
 
 	var NamesScopeMutPtr class_members( NamesScope( "_TODO - lambda name", parent_scope ) );
-	var ClassType mut class_type{ .members= class_members, .members_initial= class_members };
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.members_initial= class_members,
+		.kind= ClassType::Kind::Struct, // Set temporary to struct in order to allow generation of some methods.
+		.parents_list_prepared= true,
+		.have_explicit_noncopy_constructors= false,
+		.is_default_constructible= false,
+		.can_be_constexpr= true, // Set later.
+		.generated_class_data= LambdaClassData()
+	};
 
 	var ClassTypePtr class_type_ptr( move(class_type) );
 	lambda_classes_table_.insert( key, class_type_ptr );
 
+	with( mut members_lock : class_members.lock_mut() )
+	{
+		var NamesScope &mut members= members_lock.deref();
+
+		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
+		// TODO - what about user-specified non-public constructors and assignment operators?
+		var FunctionsSet functions_set{ .class_= class_type_ptr };
+		members.AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		members.AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		members.AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+
+		// Add special member to names scope to identify it as class names scope
+		members.SetClass( class_type_ptr );
+
+		// Allow accessing private members of class for all it's inner namespaces.
+		members.AddAccessRightsFor( class_type_ptr, Synt::ClassVisibility::Private );
+	}
+
+	with( mangled_name : mangler_.deref().MangleType( class_type_ptr ) )
+	{
+		with( mut class_lock : class_type_ptr.lock_mut() )
+		{
+			class_lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, mangled_name.front() ) );
+		}
+	}
+
 	// TODO - finish class here.
 	ust::ignore_unused(function_context);
+
+	// Set LLVM struct type body.
+	with( mut class_lock : class_type_ptr.lock_mut() )
+	{
+		var ClassType &mut class_type= class_lock.deref();
+
+		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+		foreach( &field_pair : class_type.fields_order )
+		{
+			with( &field : field_pair[1].lock_imut().deref() )
+			{
+				var LLVMTypeRef llvm_type= field.t.GetLLVMType();
+				fields_llvm_types.push_back( select( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type ) );
+			}
+		}
+		unsafe( LLVMStructSetBody( class_type.llvm_type, fields_llvm_types.data(), u32( fields_llvm_types.size() ), LLVMBool::False ) );
+
+		class_type.is_complete= true;
+	}
+
+	// Try to generate important methods.
+	TryGenerateCopyConstructor( class_type_ptr );
+	TryGenerateCopyAssignmentOperator( class_type_ptr );
+	TryGenerateDestructorPrototype( class_type_ptr );
+	TryGenerateDestructor( class_type_ptr );
+	// Equality compare operator is not needed for lambdas.
+
+	with( mut class_lock : class_type_ptr.lock_mut() )
+	{
+		// Set to class after methods generation.
+		class_lock.deref().kind= ClassType::Kind::NonPolymorph;
+	}
 
 	return class_type_ptr;
 }

@@ -703,7 +703,6 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
 	}
 
-
 	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
