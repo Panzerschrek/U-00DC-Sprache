@@ -747,3 +747,66 @@ def VariableIsNotCapturedByLambda_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 16 ) )
+
+
+def LambaCaptureIsNotConstexpr_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 constexpr x= 333;
+			auto f=
+				lambda[=]()
+				{
+					// Captured by lambda "constexpr" local variables are not "constexpr" in the lambda.
+					static_assert( x == 333 );
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
+
+
+def LambaCaptureIsNotConstexpr_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 constexpr x= 333;
+			auto f=
+				lambda[&]()
+				{
+					// Captured by lambda "constexpr" local variables are not "constexpr" in the lambda.
+					static_assert( x == 333 );
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
+
+
+def LambaCaptureIsNotConstexpr_Test2():
+	c_program_text= """
+		var i32 constexpr x= 333;
+		fn Foo()
+		{
+			auto f=
+				lambda()
+				{
+					// Ok - "x" is not a captured variable but global variable and still remains "constexpr"
+					static_assert( x == 333 );
+				};
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DeriveFromLambda_Test0():
+	c_program_text= """
+		auto f= lambda(){};
+		type FType= typeof(f);
+		class C : FType {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 4 ) )

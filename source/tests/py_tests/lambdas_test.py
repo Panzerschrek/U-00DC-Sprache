@@ -37,6 +37,20 @@ def SimpleLambda_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SimpleLambda_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			// Each lambda has its own type, even if they have identical bodies.
+			auto f0= lambda(){};
+			auto f1= lambda(){};
+			static_assert( !same_type</ typeof(f0), typeof(f1) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def NonCaptureLambda_Test0():
 	c_program_text= """
 		fn Foo()
@@ -1175,6 +1189,137 @@ def LambdaInGlobalContext_Test2():
 		{
 			auto x= S::f();
 			halt if( x != 7767u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Simple lambda with no captures should be not non_sync.
+			auto f= lambda(){};
+			static_assert( !non_sync</ typeof(f) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test1():
+	c_program_text= """
+		struct S non_sync{}
+		static_assert( non_sync</ S /> );
+		fn Foo()
+		{
+			// Simple lambda with no captures should be not non_sync, even if it uses non_sync types inside.
+			auto f=
+				lambda()
+				{
+					var S s;
+				};
+			static_assert( !non_sync</ typeof(f) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test2():
+	c_program_text= """
+		struct S non_sync{}
+		static_assert( non_sync</ S /> );
+		fn Foo()
+		{
+			// Simple lambda with no captures should be not non_sync, even if it has non_sync paramters and return value.
+			auto f=
+				lambda( S s ) : S
+				{
+					return s;
+				};
+			static_assert( !non_sync</ typeof(f) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test3():
+	c_program_text= """
+		struct S{ i32 x; }
+		static_assert( !non_sync</ S /> );
+		fn Foo()
+		{
+			// A lambda that captures non-non_sync type by value is not non-non_sync.
+			var S s= zero_init;
+			auto f=
+				lambda[=]()
+				{
+					auto& s_ref= s;
+				};
+			static_assert( !non_sync</ typeof(f) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test4():
+	c_program_text= """
+		struct S{ i32 x; }
+		static_assert( !non_sync</ S /> );
+		fn Foo()
+		{
+			// A lambda that captures non-non_sync type by reference is non-non_sync.
+			var S s= zero_init;
+			auto f=
+				lambda[&]()
+				{
+					auto& s_ref= s;
+				};
+			static_assert( !non_sync</ typeof(f) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test5():
+	c_program_text= """
+		struct S non_sync { i32 x; }
+		static_assert( non_sync</ S /> );
+		fn Foo()
+		{
+			// A lambda that captures non_sync type by value is non_sync.
+			var S s= zero_init;
+			auto f=
+				lambda[=]()
+				{
+					auto& s_ref= s;
+				};
+			static_assert( non_sync</ typeof(f) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaNonSync_Test6():
+	c_program_text= """
+		struct S non_sync { i32 x; }
+		static_assert( non_sync</ S /> );
+		fn Foo()
+		{
+			// A lambda that captures non_sync type by reference is non_sync.
+			var S s= zero_init;
+			auto f=
+				lambda[&]()
+				{
+					auto& s_ref= s;
+				};
+			static_assert( non_sync</ typeof(f) /> );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
