@@ -303,6 +303,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		{
 			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
 		}
+		foreach( &class_type_pair : lambda_classes_table_ )
+		{
+			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
+		}
 	}
 	// Replace usage of temporary allocation functions with usage of library allocation functions.
 	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").

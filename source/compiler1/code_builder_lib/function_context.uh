@@ -18,6 +18,33 @@ struct LoopFrame
 	ust::vector</ReferencesGraph/> continue_references_graphs;
 }
 
+struct LambdaPreprocessingContext
+{
+	type AllowedForCaptureVariables= ust::unordered_set</ VariablePtr />;
+
+	struct CapturedVariableData
+	{
+		// Variable from parent function.
+		VariablePtr source_variable;
+
+		// Newly-created nodes inside the lambda.
+		VariablePtr variable_node;
+		VariablePtr reference_node;
+		ust::vector</VariablePtr/> accessible_variables;
+	}
+
+	// Inputs (filled before lambda preprocessing).
+	ust::weak_ptr_imut</ LambdaPreprocessingContext /> parent;
+	ust::unordered_set</VariablePtr/> external_variables;
+	ust::optional</AllowedForCaptureVariables/> allowed_for_capture_variables; // If none - all variables are allowed.
+	ValueType lambda_this_value_type= ValueType::ReferenceImut;
+	bool capture_by_value= false;
+
+	// Outputs (filled during lambda preprocessing).
+
+	ust::unordered_map</ust::string8, CapturedVariableData/> captured_external_variables;
+}
+
 class FunctionContext
 {
 public:
@@ -70,6 +97,8 @@ public:
 	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
 
 	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
+
+	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context;
 }
 
 class VariablesFrameHolder

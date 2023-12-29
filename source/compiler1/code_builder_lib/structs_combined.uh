@@ -172,7 +172,7 @@ struct ClassType
 	struct NonGeneratedClassTag{}
 
 	// Class is just regular class or it has base template or it is typeinfo class or it is coroutine class.
-	type GeneratedClassData= ust::variant</ tup[ NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription ] />;
+	type GeneratedClassData= ust::variant</ tup[ NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription, LambdaClassData ] />;
 
 	struct Parent
 	{
@@ -569,6 +569,37 @@ struct CoroutineTypeDescriptionHasher
 	fn hash(CoroutineTypeDescription& d) : size_type;
 }
 
+// Lambdas
+
+struct LambdaKey
+{
+	// Store here scope in order to distinguish lambdas in different template instantiations.
+	NamesScopePtr parent_scope;
+	// SrcLoc of lambda syntax element.
+	SrcLoc src_loc;
+
+	// We need to create distinct lambdas on each iteration of tuple-for.
+	ust::vector</u32/> tuple_for_indices;
+
+	type hasher= LambdaKeyHasher;
+}
+
+struct LambdaKeyHasher
+{
+	fn hash(LambdaKey& k) : size_type;
+}
+
+struct LambdaClassData
+{
+	struct Capture
+	{
+		ust::string8 captured_variable_name;
+		ClassFieldPtr field;
+	}
+
+	ust::vector</Capture/> captures;
+}
+
 //
 // Templates
 //
@@ -950,5 +981,6 @@ private:
 }
 
 fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr;
+fn GetClosestNamedSpaceOrRoot( NamesScopePtr& names_scope ) : NamesScopePtr;
 
 } // namespace U1

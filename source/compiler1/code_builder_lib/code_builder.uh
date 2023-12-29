@@ -928,6 +928,7 @@ private:
 	// Lambdas
 
 	fn BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value;
+	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
 
 	// Methods generation
 
@@ -1239,6 +1240,8 @@ private:
 	Coro coro_;
 
 	ust::unordered_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
+
+	ust::unordered_map</ LambdaKey, ClassTypePtr /> lambda_classes_table_;
 }
 
 } // namespace U1

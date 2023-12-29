@@ -5,11 +5,35 @@ namespace U1
 
 fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
 {
-	// TODO
-	ust::ignore_unused( names_scope );
-	ust::ignore_unused( function_context );
-	ust::ignore_unused( lambda_ );
+	var ClassTypePtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda_ );
+
+	// TODO - create lambda object instance.
+
 	return ErrorValue();
+}
+
+fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr
+{
+	var NamesScopePtr parent_scope= GetClosestNamedSpaceOrRoot( names_scope );
+	var LambdaKey key{ .parent_scope= parent_scope, .src_loc= lambda_.src_loc };
+
+	// TODO - fill tuple indices.
+
+	if_var( &existing_class : lambda_classes_table_.find( key ) )
+	{
+		return existing_class;
+	}
+
+	var NamesScopeMutPtr class_members( NamesScope( "_TODO - lambda name", parent_scope ) );
+	var ClassType mut class_type{ .members= class_members, .members_initial= class_members };
+
+	var ClassTypePtr class_type_ptr( move(class_type) );
+	lambda_classes_table_.insert( key, class_type_ptr );
+
+	// TODO - finish class here.
+	ust::ignore_unused(function_context);
+
+	return class_type_ptr;
 }
 
 } // namespace U1
