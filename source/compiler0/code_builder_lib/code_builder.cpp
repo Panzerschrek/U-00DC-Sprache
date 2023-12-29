@@ -1661,6 +1661,7 @@ Type CodeBuilder::BuildFuncCode(
 					} );
 
 				// Make "this" unavailable in lambdas.
+				// Save "this" into a stack variable in order to prevent its destruction.
 				lambda_this= function_context.this_;
 				function_context.this_= nullptr;
 			}

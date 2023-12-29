@@ -45,6 +45,7 @@ struct LambdaPreprocessingContext
 
 	struct CapturedVariableData
 	{
+		// Variable from parent function.
 		VariablePtr source_variable;
 
 		// Newly-created nodes inside the lambda.
@@ -63,14 +64,15 @@ struct LambdaPreprocessingContext
 
 public:
 
-	// Inputs.
+	// Inputs (filled before lambda preprocessing).
 	LambdaPreprocessingContext* parent= nullptr;
 	std::unordered_set<VariablePtr> external_variables;
 	std::optional<AllowedForCaptureVariables> allowed_for_capture_variables; // If none - all variables are allowed.
 	ValueType lambda_this_value_type= ValueType::ReferenceImut;
 	bool capture_by_value= false;
 
-	// Outputs.
+	// Outputs (filled during lambda preprocessing).
+
 	std::unordered_map<std::string, CapturedVariableData> captured_external_variables;
 
 	std::set<FunctionType::ParamReference> return_references;

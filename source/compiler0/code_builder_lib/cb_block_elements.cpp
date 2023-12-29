@@ -640,13 +640,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		if( function_context.lambda_preprocessing_context != nullptr )
-		{
 			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
-		}
 		else
-		{
 			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
-		}
 
 		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
@@ -905,6 +901,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			loop_names.AddName( range_for_operator.loop_variable_name, NamesScopeValue( variable_reference, range_for_operator.src_loc, force_referenced ) );
 
 			// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+			// TODO - maybe make this counter available for a programmer?
 			{
 				const auto index_value= llvm::ConstantInt::get( fundamental_llvm_types_.u32_, uint64_t(element_index) );
 				VariablePtr tuple_for_index= Variable::Create(

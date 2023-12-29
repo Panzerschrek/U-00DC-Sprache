@@ -384,12 +384,12 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[dst_param_index];
 
-		for( size_t dst_rag= 0; dst_rag < node_pair.first->inner_reference_nodes.size(); ++dst_rag )
+		for( size_t dst_tag= 0; dst_tag < node_pair.first->inner_reference_nodes.size(); ++dst_tag )
 		{
-			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[dst_rag];
+			const VariablePtr& inner_reference= node_pair.first->inner_reference_nodes[dst_tag];
 			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 			{
-				if( dst_rag < node_pair.second.size() && accesible_variable == node_pair.second[dst_rag] )
+				if( dst_tag < node_pair.second.size() && accesible_variable == node_pair.second[dst_tag] )
 					continue;
 
 				std::optional<FunctionType::ParamReference> src_reference;
@@ -408,7 +408,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 					FunctionType::ReferencePollution pollution;
 					pollution.src= *src_reference;
 					pollution.dst.first= uint8_t(dst_param_index);
-					pollution.dst.second= uint8_t(dst_rag);
+					pollution.dst.second= uint8_t(dst_tag);
 					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 						continue;
 				}
@@ -552,7 +552,7 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 		}
 	}
 
-	// TODO - collect also pollution for labda captured variables as destination.
+	// TODO - collect also pollution for lambda captured variables as destination.
 }
 
 } // namespace U

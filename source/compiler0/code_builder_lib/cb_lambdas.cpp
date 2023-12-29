@@ -23,73 +23,70 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	}
 
 	// Copy captured values.
-	if( const auto lambda_class_data= std::get_if<LambdaClassData>( &lambda_class->generated_class_data ) )
+	const auto lambda_class_data= std::get_if<LambdaClassData>( &lambda_class->generated_class_data );
+	U_ASSERT( lambda_class_data != nullptr );
+
+	llvm::SmallVector<llvm::Constant*, 4> constexpr_initializers;
+	if( lambda_class->can_be_constexpr )
+		constexpr_initializers.resize( lambda_class->llvm_type->getNumElements() );
+	size_t num_constexpr_initializers= 0;
+
+	for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
 	{
-		llvm::SmallVector<llvm::Constant*, 4> constexpr_initializers;
-		if( lambda_class->can_be_constexpr )
-			constexpr_initializers.resize( lambda_class->llvm_type->getNumElements() );
-		size_t num_constexpr_initializers= 0;
-
-		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
+		if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )
 		{
-			const NameLookupResult lookup_result= LookupName( names, capture.captured_variable_name, lambda.src_loc );
-			if( lookup_result.value != nullptr )
+			if( const auto variable= lookup_value->value.GetVariable() )
 			{
-				if( const auto variable= lookup_result.value->value.GetVariable() )
+				U_ASSERT( variable->type == capture.field->type );
+
+				const auto field_value= CreateClassFieldGEP( function_context, *result, capture.field->index );
+
+				if( capture.field->is_reference )
 				{
-					const auto field_value= CreateClassFieldGEP( function_context, *result, capture.field->index );
+					CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
 
-					if( capture.field->is_reference )
+					// Link references.
+					U_ASSERT( capture.field->reference_tag < result->inner_reference_nodes.size() );
+					function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ capture.field->reference_tag ], names.GetErrors(), lambda.src_loc );
+
+					if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
 					{
-						CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
-
-						// Link references.
-						U_ASSERT( capture.field->reference_tag < result->inner_reference_nodes.size() );
-						function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ capture.field->reference_tag ], names.GetErrors(), lambda.src_loc );
-
-						if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
-						{
-							// We needs to store constant somewhere. Create global variable for it.
-							llvm::Constant* const constant_stored= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
-							constexpr_initializers[ capture.field->index ]= constant_stored;
-							++num_constexpr_initializers;
-						}
+						// We needs to store constant somewhere. Create global variable for it.
+						llvm::Constant* const constant_stored= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
+						constexpr_initializers[ capture.field->index ]= constant_stored;
+						++num_constexpr_initializers;
 					}
-					else
+				}
+				else
+				{
+					if( !variable->type.IsCopyConstructible() )
+						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), lambda.src_loc, variable->type );
+					else if( !function_context.is_functionless_context )
+						BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
+
+					// Link references.
+					const size_t reference_tag_count= capture.field->type.ReferenceTagCount();
+					U_ASSERT( capture.field->inner_reference_tags.size() == reference_tag_count );
+					U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
+					for( size_t i= 0; i < reference_tag_count; ++i )
 					{
-						U_ASSERT( variable->type == capture.field->type );
-						if( !variable->type.IsCopyConstructible() )
-							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), lambda.src_loc, variable->type );
-						else if( !function_context.is_functionless_context )
-							BuildCopyConstructorPart(
-								field_value, variable->llvm_value,
-								variable->type,
-								function_context );
+						const size_t dst_node_index= capture.field->inner_reference_tags[i];
+						U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
+						function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), lambda.src_loc );
+					}
 
-						// Link references.
-						const size_t reference_tag_count= capture.field->type.ReferenceTagCount();
-						U_ASSERT( capture.field->inner_reference_tags.size() == reference_tag_count );
-						U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
-						for( size_t i= 0; i < reference_tag_count; ++i )
-						{
-							const size_t dst_node_index= capture.field->inner_reference_tags[i];
-							U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
-							function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), lambda.src_loc );
-						}
-
-						if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
-						{
-							constexpr_initializers[ capture.field->index ]= variable->constexpr_value;
-							++num_constexpr_initializers;
-						}
+					if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
+					{
+						constexpr_initializers[ capture.field->index ]= variable->constexpr_value;
+						++num_constexpr_initializers;
 					}
 				}
 			}
 		}
-
-		if( lambda_class->can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
-			result->constexpr_value= llvm::ConstantStruct::get( lambda_class->llvm_type, constexpr_initializers );
 	}
+
+	if( lambda_class->can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
+		result->constexpr_value= llvm::ConstantStruct::get( lambda_class->llvm_type, constexpr_initializers );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
@@ -99,7 +96,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 {
 	// Use first named namespace as lambda class parent.
 	// We can't use namespace of function variables here, because it will be destroyed later.
-	// Usually this is a closest global scope that contains this function - some namespace, struct, class.
+	// Usually this is a closest global scope that contains this function - some namespace, struct, class or a template args namespace.
 	NamesScope* const lambda_class_parent_scope= names.GetClosestNamedSpaceOrRoot();
 
 	LambdaKey key;
@@ -154,7 +151,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			} );
 
 		// Sort template args by name in order to obtain some stable order.
-		// This order should not be the same as order in the template itself. It should only be deterministic.
+		// This order should not be the same as order in the template itself, it should only be deterministic.
 		std::sort(
 			named_template_args.begin(), named_template_args.end(),
 			[&]( const NamedTemplateArg& l, const NamedTemplateArg& r ) { return l.first < r.first; } );
@@ -192,7 +189,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
-		lambda_preprocessing_context.external_variables= CallectCurrentFunctionVariables( function_context );
+		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
 		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
 		lambda_preprocessing_context.lambda_this_value_type= lambda_this_value_type;
 
@@ -208,7 +205,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			FunctionVariable op_variable;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
 			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
-			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
+			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
 			op_variable.is_this_call= true;
 
 			BuildFuncCode(
@@ -303,12 +300,13 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				captured_variable_to_lambda_param_reference.emplace( captured_variable.data.variable_node, FunctionType::ParamReference( this_param_index, FunctionType::c_param_reference_number ) );
 
 				// Each reference tag of each captured variable get its own reference tag in result lambda class.
+				U_ASSERT( captured_variable.data.accessible_variables.size() == reference_tag_cout );
 				field->inner_reference_tags.reserve( reference_tag_cout );
 				for( size_t i= 0; i < reference_tag_cout; ++i )
 				{
 					const uint8_t reference_tag= uint8_t( class_->inner_references.size() );
 					field->inner_reference_tags.push_back( reference_tag );
-					class_->inner_references.push_back( type.GetInnerReferenceType( i ) );
+					class_->inner_references.push_back( type.GetInnerReferenceType(i) );
 
 					captured_variable_to_lambda_param_reference.emplace( captured_variable.data.accessible_variables[i], FunctionType::ParamReference( this_param_index, reference_tag ) );
 				}
@@ -453,7 +451,7 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const ll
 		// Encode file.
 		U_ASSERT( source_graph_ != nullptr );
 		U_ASSERT( src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
-		// Use file contenst hash instead of file index, because we need to use stable identifier independing on from which main file this file is imported.
+		// Use file contenst hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
 		name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].contents_hash;
 		name+= "_";
 
@@ -464,11 +462,11 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const ll
 		name+= std::to_string( src_loc.GetColumn() );
 		name+= "_";
 
-		const auto macro_expansion_context= src_loc.GetMacroExpansionIndex();
-		if( macro_expansion_context != SrcLoc::c_max_macro_expanison_index )
+		const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+		if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
 		{
 			// If this is a lambda defined via macro - add macro expansion context to the name.
-			src_loc= (*macro_expansion_contexts_)[ macro_expansion_context ].src_loc;
+			src_loc= (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc;
 			continue;
 		}
 		else
@@ -508,10 +506,10 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	else
 		function_type.return_value_type= lambda_function_type.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
-	function_type.params.reserve( lambda_function_type.params.size() + 1 );
+	const llvm::ArrayRef<Synt::FunctionParam> synt_params= lambda_function_type.params;
+	function_type.params.reserve( synt_params.size() );
 
 	// First param is always "this" of the lambda type.
-	const llvm::ArrayRef<Synt::FunctionParam> synt_params= lambda_function_type.params;
 	U_ASSERT( ! synt_params.empty() && synt_params.front().name == Keywords::this_ );
 	{
 		FunctionType::Param this_param;
@@ -521,6 +519,7 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 		function_type.params.push_back( std::move( this_param ) );
 	}
 
+	// Iterate over params skipping first "this".
 	for( const Synt::FunctionParam& in_param : synt_params.drop_front() )
 	{
 		FunctionType::Param out_param;
@@ -555,7 +554,7 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	return function_type;
 }
 
-std::unordered_set<VariablePtr> CodeBuilder::CallectCurrentFunctionVariables( FunctionContext& function_context )
+std::unordered_set<VariablePtr> CodeBuilder::CollectCurrentFunctionVariables( FunctionContext& function_context )
 {
 	std::unordered_set<VariablePtr> result;
 	for( const StackVariablesStorage* const variable_frame : function_context.stack_variables_stack )
@@ -609,12 +608,12 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 	if( captured_variable.source_variable == nullptr )
 		captured_variable.source_variable= variable;
 
-	// TODO - what should we do with contexpr values?
-
 	const auto reference_tag_count= variable->type.ReferenceTagCount();
 
 	if( captured_variable.variable_node == nullptr && captured_variable.reference_node == nullptr )
 	{
+		// Do not set "constexpr" values - make "constexpr" captured variables non-constexpr in lambdas.
+
 		captured_variable.variable_node=
 			Variable::Create(
 				variable->type,
@@ -623,12 +622,20 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 				variable->name + " lambda copy",
 				variable->llvm_value );
 
-		// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-		// So, make it immutable.
-		const auto value_type=
-			( lambda_preprocessing_context.capture_by_value && lambda_preprocessing_context.lambda_this_value_type == ValueType::Value )
-				? ValueType::ReferenceImut
-				: variable->value_type;
+		ValueType value_type= ValueType::ReferenceImut;
+		if( lambda_preprocessing_context.capture_by_value )
+		{
+			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+			if( lambda_preprocessing_context.lambda_this_value_type == ValueType::ReferenceImut )
+				value_type= ValueType::ReferenceImut;
+			else
+				value_type= ValueType::ReferenceMut;
+		}
+		else
+		{
+			// While capturing by reference capture mutable values as mutable references, immutable values as immutable references.
+			value_type= variable->value_type;
+		}
 
 		captured_variable.reference_node=
 			Variable::Create(

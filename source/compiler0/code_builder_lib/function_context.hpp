@@ -96,7 +96,7 @@ public:
 	llvm::DIScope* current_debug_info_scope= nullptr;
 
 	// Non-null if this is preprocessed lambda.
-	// Observer pointer.
+	// Non-owning (observer) pointer.
 	LambdaPreprocessingContext* lambda_preprocessing_context= nullptr;
 
 	// Keep "bool" fields last in order to reduce gaps between fields.

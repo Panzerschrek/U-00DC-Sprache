@@ -251,7 +251,6 @@ void EncodeLambdaClassName( ManglerState& mangler_state, const Class& the_class 
 	const auto lambda_class_data= std::get_if<LambdaClassData>( &the_class.generated_class_data );
 	U_ASSERT( lambda_class_data != nullptr );
 
-
 	if( lambda_class_data->template_args.empty() )
 	{
 		const ManglerState::NodeHolder name_node( mangler_state );
