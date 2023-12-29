@@ -4851,7 +4851,7 @@ U_TEST( LambdaDestructor_Test0 )
 		{
 			var S s( 555 );
 			auto f= lambda[&]() : i32 { return s.x; };
-			// Should destroy here lambda, but since it captures by-value, no destructor for copy of "s" is called.
+			// Should destroy here lambda, but since it captures by-reference, no destructor for copy of "s" is called.
 			// Destroy here "s".
 		}
 	)";

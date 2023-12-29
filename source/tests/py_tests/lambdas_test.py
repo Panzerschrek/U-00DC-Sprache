@@ -978,7 +978,7 @@ def LambdaConstexpr_Test5():
 	c_program_text= """
 		fn Foo()
 		{
-			// Lambda object is still considered to be constexpr, even if lambda constains "unsafe" inside/
+			// Lambda object is still considered to be constexpr, even if lambda constains "unsafe" inside.
 			// Later it's impossible to call such lambda in constexpr context.
 			auto constexpr f= lambda() { unsafe{} };
 		}
@@ -992,7 +992,7 @@ def LambdaConstexpr_Test6():
 		fn Foo()
 		{
 			auto constexpr f= lambda() : i32 { unsafe{} return 0; };
-			auto constexpr res= f(); // Error, lambda () operator isn't constexpr, because constains non-constexpr operations inside.
+			auto constexpr res= f(); // Error, lambda () operator isn't constexpr, because it constains non-constexpr operations inside.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1016,7 +1016,7 @@ def LambdaConstexpr_Test7():
 
 def LambdaConstexpr_Test8():
 	c_program_text= """
-		struct S{ fn destructor(); } // This struc tis not constexpr, since it contains non-trivial destructor.
+		struct S{ fn destructor(); } // This struct is not constexpr, since it contains non-trivial destructor.
 		fn Foo()
 		{
 			var S s;
@@ -1193,6 +1193,32 @@ def LambdaInGlobalContext_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaInGlobalContext_Test3():
+	c_program_text= """
+		// Use lambda to initialize global variable.
+		auto two_powers=
+			lambda() : [ u32, 8 ]
+			{
+				var [ u32, 8 ] mut res= zero_init;
+				for( auto mut i= 0u; i < 8u; ++i )
+				{
+					res[ size_type(i) ]= 1u << i;
+				}
+				return res;
+			} ();
+
+		static_assert( two_powers[0] ==   1u );
+		static_assert( two_powers[1] ==   2u );
+		static_assert( two_powers[2] ==   4u );
+		static_assert( two_powers[3] ==   8u );
+		static_assert( two_powers[4] ==  16u );
+		static_assert( two_powers[5] ==  32u );
+		static_assert( two_powers[6] ==  64u );
+		static_assert( two_powers[7] == 128u );
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def LambdaNonSync_Test0():
