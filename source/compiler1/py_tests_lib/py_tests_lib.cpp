@@ -518,6 +518,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"LambdaMayBeCopyable_Test1",
 		"LambdaMayBeCopyable_Test2",
 		"LambdaMayBeCopyable_Test3",
+		"LambdaNonSync_Test3",
+		"LambdaNonSync_Test4",
 		"LambdaNonSync_Test5",
 		"LambdaNonSync_Test6",
 		"LambdaReferencePoillution_Test0",
@@ -533,16 +535,12 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Lambda_ReturnReferenceToCapturedVariable_Test1",
 		"Lambda_ReturnReferenceToCapturedVariable_Test2",
 		"Lambda_ReturnReferenceToCapturedVariable_Test3",
-		"NonCaptureLambda_Test0",
-		"NonCaptureLambda_Test1",
 		"NonCaptureLambda_Test2",
 		"NonCaptureLambda_Test3",
 		"NonCaptureLambda_Test4",
-		"NonCaptureLambda_Test5",
 		"UnsafeLambda_Test1",
 		"UnsafeLambda_Test2",
 		"ClassTypesInfo_Test1",
-		"UselessExpressionRoot_Test49",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

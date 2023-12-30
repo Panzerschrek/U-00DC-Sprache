@@ -1215,11 +1215,11 @@ fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 {
 	debug_assert( IsKeyword( it_.front(), Keyword::lambda_ ) );
-	var Function mut lambda_function{ .src_loc= it_.front().src_loc };
-	var Lambda mut result{ .src_loc= it_.front().src_loc, .function( move(lambda_function) ) };
+	var SrcLoc lambda_src_loc= it_.front().src_loc;
 
 	NextLexem(); // Skip "lambda" keyword
 
+	var Lambda::Capture mut capture;
 	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
 		// Non-empty capture list.
@@ -1229,13 +1229,13 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		{
 			NextLexem();
 			ExpectLexem( Lexem::Type::SquareBracketRight );
-			result.capture= Lambda::CaptureAllByValue();
+			capture= Lambda::CaptureAllByValue();
 		}
 		else if( it_.front().lexem_type== Lexem::Type::And && it_[1s].lexem_type == Lexem::Type::SquareBracketRight )
 		{
 			NextLexem();
 			ExpectLexem( Lexem::Type::SquareBracketRight );
-			result.capture= Lambda::CaptureAllByReference();
+			capture= Lambda::CaptureAllByReference();
 		}
 		else
 		{
@@ -1247,11 +1247,25 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 	}
 	else
 	{
-		result.capture= Lambda::CaptureNothing();
+		capture= Lambda::CaptureNothing();
 	}
+
+	var Function mut lambda_function{ .src_loc= it_.front().src_loc };
+	lambda_function.name.push_back( KeywordToString( Keyword::lambda_ ) );
 
 	// Parse params.
 	ExpectLexem( Lexem::Type::BracketLeft );
+
+	{ // Always add hidden "this" param.
+		var FunctionType::Param mut this_param
+		{
+			.src_loc= it_.front().src_loc,
+			.name= KeywordToString( Keyword::this_ ),
+			.reference_modifier= ReferenceModifier::Reference,
+			.mutability_modifier= MutabilityModifier::Immutable,
+		};
+		lambda_function.function_type.params.push_back( move(this_param) );
+	}
 
 	while( NotEndOfFile() )
 	{
@@ -1261,7 +1275,7 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 			break;
 		}
 
-		result.function.deref().function_type.params.push_back( ParseFunctionParam() );
+		lambda_function.function_type.params.push_back( ParseFunctionParam() );
 
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
 		{
@@ -1280,11 +1294,12 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		}
 	}  // for params.
 
-	ParseFunctionTypeEnding( result.function.deref().function_type );
+	ParseFunctionTypeEnding( lambda_function.function_type );
 
 	// Lambdas always have a body.
-	result.function.deref().block.reset( ParseBlock() );
+	lambda_function.block.reset( ParseBlock() );
 
+	var Lambda mut result{ .src_loc= lambda_src_loc, .capture= move(capture), .function( move(lambda_function) ) };
 	return move(result);
 }
 

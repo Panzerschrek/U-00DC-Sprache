@@ -1,4 +1,6 @@
+import "/assert.u"
 import "/keywords.uh"
+import "error_reporting.uh"
 import "code_builder.uh"
 
 namespace U1
@@ -85,8 +87,11 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 	}
 
-	// TODO - finish class here.
-	ust::ignore_unused(function_context);
+	// TODO - run preprocessing here.
+
+	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
+
+	var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
 	// Set LLVM struct type body.
 	with( mut class_lock : class_type_ptr.lock_mut() )
@@ -120,7 +125,91 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		class_lock.deref().kind= ClassType::Kind::NonPolymorph;
 	}
 
+	// Create () operator.
+	{
+		auto mut function_type= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
+		var FunctionVariable mut function_variable
+		{
+			.body_syntax_element= lambda_.function,
+			.llvm_function( LazyLLVMFunction( mangler_.deref().MangleFunction( class_members.lock_imut().deref(), call_op_name, function_type ) ) ),
+			.t= move(function_type),
+			.is_this_call= true,
+			.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto,
+		};
+
+		BuildFuncCode( class_members, function_variable );
+
+		var FunctionsSet mut functions_set;
+		functions_set.functions.push_back( move(function_variable) );
+
+		with( mut members_lock : class_members.lock_mut() )
+		{
+			members_lock.deref().AddName( call_op_name, NamesScopeValue( move(functions_set) ) );
+		}
+	}
+
 	return class_type_ptr;
+}
+
+fn CodeBuilder::PrepareLambdaCallOperatorType(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::FunctionType& lambda_function_type,
+	ClassTypePtr& lambda_class_type,
+	ValueType lambda_this_value_type ) : FunctionType
+{
+	var FunctionType mut res
+	{
+		.return_type(
+			select(
+				lambda_function_type.return_type.empty()
+					? Type( void_type_ )
+					: PrepareType( names_scope, function_context, lambda_function_type.return_type.try_deref() ) ) ),
+		.return_value_type= ValueType::Value,
+		.is_unsafe= lambda_function_type.is_unsafe,
+		.calling_convention= GetLLVMCallingConvention( lambda_function_type.calling_convention, names_scope, lambda_function_type.src_loc ),
+	};
+
+	if( lambda_function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		res.return_value_type= select( lambda_function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+	}
+
+	// First param is always "this" of the lambda type.
+	debug_assert( !lambda_function_type.params.empty() );
+	var FunctionType::Param mut this_param
+	{
+		.t= lambda_class_type,
+		.value_type= lambda_this_value_type,
+	};
+	res.params.push_back( move(this_param) );
+
+	auto mut params_except_first= lambda_function_type.params.range();
+	params_except_first.drop_front();
+
+	foreach( &param : params_except_first )
+	{
+		if( IsKeyword( param.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
+		}
+
+		var FunctionType::Param mut out_param
+		{
+			.t= PrepareType( names_scope, function_context, param.t ),
+			.value_type= ValueType::Value,
+		};
+
+		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
+		{
+			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
+
+		res.params.push_back( move(out_param) );
+	}
+
+	return move(res);
 }
 
 } // namespace U1

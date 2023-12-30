@@ -1,6 +1,6 @@
 from py_tests_common import *
 
-def AccessingThisInLambda_Tetst0():
+def AccessingThisInLambda_Test0():
 	# "this" should be not available in lambdas for hidden "this" parameter of a lambda function.
 	c_program_text= """
 		fn Foo()
@@ -17,7 +17,7 @@ def AccessingThisInLambda_Tetst0():
 	assert( HaveError( errors_list, "ThisUnavailable", 7 ) )
 
 
-def AccessingThisInLambda_Tetst1():
+def AccessingThisInLambda_Test1():
 	# "this" should be not available in lambdas for hidden "this" parameter of a lambda function.
 	# This is true even if lamda captures names by value.
 	c_program_text= """

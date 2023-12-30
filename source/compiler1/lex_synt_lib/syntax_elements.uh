@@ -184,7 +184,7 @@ struct Lambda
 
 	SrcLoc src_loc;
 	Capture capture;
-	ust::box</Function/> function;
+	ust::shared_ptr_final</Function/> function;
 }
 
 struct TernaryOperator

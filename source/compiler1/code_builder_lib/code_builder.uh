@@ -929,6 +929,7 @@ private:
 
 	fn BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value;
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
+	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type, ValueType lambda_this_value_type ) : FunctionType;
 
 	// Methods generation
 
