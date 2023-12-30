@@ -933,6 +933,7 @@ private:
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
 	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>;
 	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type, ValueType lambda_this_value_type ) : FunctionType;
+	fn LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr;
 
 	// Methods generation
 

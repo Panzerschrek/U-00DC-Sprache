@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -37,10 +38,40 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 	}
 	var size_type mut num_constexpr_initializers= 0s;
 
-	// TODO - fill captures.
-
 	with( &class_type : lambda_class.lock_imut().deref() )
 	{
+		foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+		{
+			if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )
+			{
+				auto variable_nullable= lookup_result[1].Get</Variable/>();
+				if( !variable_nullable.empty() )
+				{
+					var VariablePtr variable= variable_nullable.try_to_non_nullable();
+					with( &field : capture.field.lock_imut().deref() )
+					{
+						auto field_value= CreateClassFieldGEP( function_context, lambda_class, result.lock_imut().deref().llvm_value, field );
+						if( field.is_reference )
+						{
+							// TODO
+						}
+						else
+						{
+							if( !field.t.IsCopyConstructible() )
+							{
+								REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, lambda_.src_loc, field.t )
+							}
+							else if( !function_context.is_functionless_context )
+							{
+								BuildCopyConstructorPart( names_scope, function_context, field_value, variable.lock_imut().deref().llvm_value, field.t, lambda_.src_loc );
+							}
+							// TODO - link references
+						}
+					}
+				}
+			}
+		}
+
 		if( class_type.can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
 		{
 			with ( mut lock : result.lock_mut() )
@@ -110,8 +141,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
 
-	var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
-
 	var FunctionType::ParamReferences mut return_references;
 	var ust::vector</  FunctionType::ParamReferences /> mut return_inner_references;
 
@@ -149,7 +178,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				.is_this_call= true,
 			};
 
-			BuildFuncCode( class_members, function_variable, lambda_preprocessing_context_ptr );
+			BuildFuncCode( names_scope, function_variable, lambda_preprocessing_context_ptr );
 
 			// Remove temp function.
 			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
@@ -157,6 +186,83 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		auto mut lock= lambda_preprocessing_context_ptr.lock_mut();
 		var LambdaPreprocessingContext &mut lambda_preprocessing_context_result= lock.deref();
+
+		// Extract captured variables and sort them to ensure stable order.
+		var ust::vector</ CapturedVariableForSorting /> mut captured_variables;
+		foreach( &captured_variable_pair : lambda_preprocessing_context_result.captured_external_variables )
+		{
+			auto capture_by_reference= !lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty();
+			auto llvm_type= captured_variable_pair.value().source_variable.lock_imut().deref().t.GetLLVMType();
+
+			var CapturedVariableForSorting mut v
+			{
+				.name= captured_variable_pair.key(),
+				.data= captured_variable_pair.value(),
+				.capture_by_reference= capture_by_reference,
+				.alignment( unsafe( LLVMABIAlignmentOfType( data_layout_, select( capture_by_reference ? LLVMPointerType( llvm_type, 0u ) : llvm_type ) ) ) )
+			};
+
+			captured_variables.push_back( move(v) );
+		}
+
+		// We must sort fields in order to avoid creating fields list in hash-map iteration order (which is non-deterministic).
+		// There should be no equal elements here, because this can prevent sorting to be stable.
+		ust::sort( captured_variables.range() );
+
+		with( mut class_lock : class_type_ptr.lock_mut() )
+		{
+			var ClassType &mut class_type= class_lock.deref();
+
+			var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+			// Iterate over sorted captured variables, create fields for them, setup reference notation.
+			foreach( &captured_variable : captured_variables )
+			{
+				var ClassField mut field
+				{
+					.source_class= class_type_ptr,
+					.syntax_element= dummy_syntax_element,
+					.t= captured_variable.data.source_variable.lock_imut().deref().t,
+					.is_reference= captured_variable.capture_by_reference,
+					.is_mutable= true, // Set later.
+					.index= u32( class_type.fields_order.size() ),
+				};
+
+				if( captured_variable.capture_by_reference )
+				{
+					// TODO
+				}
+				else
+				{
+					// TODO - setup references.
+				}
+
+				var ClassFieldPtr mut field_ptr( move(field) );
+				class_type.fields_order.push_back( ust::make_tuple( captured_variable.name, move(field_ptr) ) );
+				class_type.SetMemberVisibility( captured_variable.name, Synt::ClassVisibility::Private );
+			}
+
+			with( mut members_lock : class_members.lock_mut() )
+			{
+				foreach( &field_pair : class_type.fields_order )
+				{
+					members_lock.deref().AddName( field_pair[0], field_pair[1] );
+				}
+			}
+
+			with( &mut captures : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+			{
+				foreach( &field_pair : class_type.fields_order )
+				{
+					var LambdaClassData::Capture mut capture
+					{
+						.captured_variable_name= field_pair[0],
+						.field= field_pair[1],
+					};
+					captures.push_back( move(capture) );
+				}
+			}
+		}
 
 		// Prepare return references.
 		return_references= take( lambda_preprocessing_context_result.return_references );
@@ -220,6 +326,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	// Create () operator.
 	{
+		var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
+
 		auto mut function_type= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
 		function_type.return_references= move(return_references);
 		function_type.return_inner_references= move(return_inner_references);
@@ -233,7 +341,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto,
 		};
 
-		BuildFuncCode( class_members, function_variable );
+		BuildFuncCode( names_scope, function_variable );
 
 		var FunctionsSet mut functions_set;
 		functions_set.functions.push_back( move(function_variable) );
@@ -319,6 +427,128 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	}
 
 	return move(res);
+}
+
+fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr
+{
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+	debug_assert( lambda_preprocessing_context.external_variables.exists( variable ) );
+
+	auto var_lock= variable.lock_imut();
+	var Variable& v= var_lock.deref();
+
+	var size_type reference_tag_count( v.t.ReferenceTagCount() );
+
+	if( lambda_preprocessing_context.captured_external_variables.find( name ).empty() )
+	{
+		// Do not set "constexpr" values - make "constexpr" captured variables non-constexpr in lambdas.
+
+		var Variable mut variable_node_value
+		{
+			.t= v.t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.name= v.name + " lambda copy",
+			.llvm_value= v.llvm_value,
+		};
+
+		var ValueType mut value_type= ValueType::ReferenceImut;
+		if( lambda_preprocessing_context.capture_by_value )
+		{
+			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+			if( lambda_preprocessing_context.lambda_this_value_type == ValueType::ReferenceImut )
+			{
+				value_type= ValueType::ReferenceImut;
+			}
+			else
+			{
+				value_type= ValueType::ReferenceMut;
+			}
+		}
+		else
+		{
+			// While capturing by reference capture mutable values as mutable references, immutable values as immutable references.
+			value_type= v.value_type;
+		}
+
+		var Variable mut reference_node_value
+		{
+			.t= v.t,
+			.value_type= value_type,
+			.location= Variable::Location::Pointer,
+			.name= v.name + " lambda copy ref",
+			.llvm_value= v.llvm_value,
+		};
+
+		var ust::vector</VariablePtr/> mut accessible_variables;
+		for( auto mut i= 0s; i < reference_tag_count; ++i )
+		{
+			var ust::string8 mut name= "referenced variable ";
+			name+= ust::to_string8(i);
+			name+= " of captured lambda variable ";
+			name+= v.name;
+
+			var Variable mut accessible_variable
+			{
+				.t= invalid_type_,
+				.value_type= ValueType::Value,
+				.location= Variable::Location::Pointer,
+				.name= move(name),
+			};
+			accessible_variables.push_back( move(accessible_variable).CreatePtr() );
+		}
+
+		var LambdaPreprocessingContext::CapturedVariableData mut captured_variable
+		{
+			.source_variable= variable,
+			.variable_node= move(variable_node_value).CreatePtr(),
+			.reference_node= move(reference_node_value).CreatePtr(),
+			.accessible_variables= move(accessible_variables),
+		};
+		lambda_preprocessing_context.captured_external_variables.insert( name, move(captured_variable) );
+	}
+
+	var LambdaPreprocessingContext::CapturedVariableData mut captured_variable= lambda_preprocessing_context.captured_external_variables[name];
+
+	function_context.references_graph.AddNodeIfNotExists( captured_variable.variable_node );
+	function_context.references_graph.AddNodeIfNotExists( captured_variable.reference_node );
+	function_context.references_graph.AddLink( captured_variable.variable_node, captured_variable.reference_node );
+
+	for( auto mut i= 0s; i < reference_tag_count; ++i )
+	{
+		function_context.references_graph.AddNodeIfNotExists( captured_variable.accessible_variables[i] );
+
+		function_context.references_graph.AddLink(
+			captured_variable.accessible_variables[i],
+			captured_variable.variable_node.lock_imut().deref().inner_reference_nodes[i] );
+
+		function_context.references_graph.AddLink(
+			captured_variable.variable_node.lock_imut().deref().inner_reference_nodes[i],
+			captured_variable.reference_node.lock_imut().deref().inner_reference_nodes[i] );
+	}
+
+	return captured_variable.reference_node;
+}
+
+struct CapturedVariableForSorting
+{
+	ust::string8 name;
+	LambdaPreprocessingContext::CapturedVariableData data;
+	u64 alignment;
+	bool capture_by_reference;
+
+	op<=>( CapturedVariableForSorting& l, CapturedVariableForSorting& r ) : i32
+	{
+		// Sort in alignment descending order (to minimize padding).
+		if( l.alignment != r.alignment )
+		{
+			return r.alignment <=> l.alignment;
+		}
+		// If alignment is the same - use name for ordering (it should be unique).
+		return l.name <=> r.name;
+	}
 }
 
 } // namespace U1

@@ -1321,6 +1321,38 @@ fn CodeBuilder::BuildFuncCode(
 		}
 	}
 
+	var ust::shared_ptr_nullable_imut</Variable/> mut lambda_this;
+	if( !function_context.this_.empty() )
+	{
+		var VariablePtr this_= function_context.this_.try_to_non_nullable();
+		var Type this_t= this_.lock_imut().deref().t;
+		if_var( &this_class_type_ptr : this_t.GetClassType() )
+		{
+			with( &this_class_type : this_class_type_ptr.lock_imut().deref() )
+			{
+				if( !this_class_type.generated_class_data.get</ LambdaClassData />().empty() )
+				{
+					foreach( &field_pair : this_class_type.fields_order )
+					{
+						var Value field_value= AccessClassField( args_names_scope_ptr, function_context, this_, field_pair[1].lock_imut().deref(), field_pair[0], body_syntax_element.src_loc );
+						if_var( &variable : field_value.get</VariablePtr/>() )
+						{
+							with( mut lock : args_names_scope_ptr.lock_mut() )
+							{
+								lock.deref().AddName( field_pair[0], variable );
+							}
+						}
+					}
+
+					// Make "this" unavailable in lambdas.
+					// Save "this" into a stack variable in order to prevent its destruction.
+					lambda_this= this_;
+					function_context.this_.reset();
+				}
+			}
+		}
+	}
+
 	if( func_variable.IsCoroutine() )
 	{
 		// Create coroutine entry block after saving args to stack.
