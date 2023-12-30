@@ -443,8 +443,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
 
-		"Typeinfo_ForAsyncFunctions_Test0",
-		"Typeinfo_ForGenerators_Test0",
 		"AccessingLambdaCapturedValueIsNotAllowed_Tes0",
 		"AccessingLambdaCapturedValueIsNotAllowed_Tes1",
 		"AccessingThisInLambda_Test0",
@@ -531,7 +529,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"NonCaptureLambda_Test4",
 		"UnsafeLambda_Test1",
 		"UnsafeLambda_Test2",
-		"ClassTypesInfo_Test1",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
