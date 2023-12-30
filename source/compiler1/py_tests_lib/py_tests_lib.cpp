@@ -524,9 +524,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Lambda_ReturnReferenceToCapturedVariable_Test1",
 		"Lambda_ReturnReferenceToCapturedVariable_Test2",
 		"Lambda_ReturnReferenceToCapturedVariable_Test3",
-		"NonCaptureLambda_Test2",
-		"NonCaptureLambda_Test3",
-		"NonCaptureLambda_Test4",
 		"UnsafeLambda_Test1",
 		"UnsafeLambda_Test2",
 	};

@@ -43,6 +43,9 @@ struct LambdaPreprocessingContext
 	// Outputs (filled during lambda preprocessing).
 
 	ust::unordered_map</ust::string8, CapturedVariableData/> captured_external_variables;
+
+	FunctionType::ParamReferences return_references;
+	ust::vector</FunctionType::ParamReferences/> return_inner_references;
 }
 
 class FunctionContext

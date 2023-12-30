@@ -307,6 +307,7 @@ private:
 	fn CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type );
 
 	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
+	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable, ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
 
 	struct BlockElementBuildInfo
 	{
@@ -906,6 +907,7 @@ private:
 	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
 	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</ FunctionType::ParamReferences />;
 	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
+	fn NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references );
 
 	// Coroutines
 
@@ -929,6 +931,7 @@ private:
 
 	fn BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value;
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
+	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>;
 	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type, ValueType lambda_this_value_type ) : FunctionType;
 
 	// Methods generation
@@ -1009,6 +1012,9 @@ private:
 	fn GetCoroutineInnerReferenceForParamNode( FunctionContext& function_context, VariablePtr& node ) : ust::optional</FunctionType::ParamReference/>;
 
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
+
+	fn LambdaPreprocessingCollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node );
+	fn LambdaPreprocessingCollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& src_loc );

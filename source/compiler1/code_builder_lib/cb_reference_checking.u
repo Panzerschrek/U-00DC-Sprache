@@ -372,6 +372,79 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	}
 }
 
+fn CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node )
+{
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+	foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( return_node ) )
+	{
+		for( auto mut arg_n= 0s; arg_n < function_context.args_nodes.size(); ++arg_n )
+		{
+			if( variable_node == function_context.args_nodes[arg_n] )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number };
+				lambda_preprocessing_context.return_references.push_back( move(param_reference) );
+			}
+		}
+
+		for( auto mut arg_n= 0s; arg_n < function_context.args_inner_variable_nodes.size(); ++arg_n )
+		{
+			for( auto mut tag_n= 0s; tag_n < function_context.args_inner_variable_nodes[arg_n].size(); ++tag_n )
+			{
+				if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
+				{
+
+					var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
+					lambda_preprocessing_context.return_references.push_back( move(param_reference) );
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node )
+{
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+	with( &inner_reference_nodes : return_node.lock_imut().deref().inner_reference_nodes )
+	{
+		if( lambda_preprocessing_context.return_inner_references.size() < inner_reference_nodes.size() )
+		{
+			lambda_preprocessing_context.return_inner_references.resize( inner_reference_nodes.size() );
+		}
+
+		for( auto mut i= 0s; i < inner_reference_nodes.size(); ++i )
+		{
+			foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
+			{
+				for( auto mut arg_n= 0s; arg_n < function_context.args_nodes.size(); ++arg_n )
+				{
+					if( variable_node == function_context.args_nodes[arg_n] )
+					{
+						var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number };
+						lambda_preprocessing_context.return_inner_references[i].push_back( move(param_reference) );
+					}
+				}
+
+				for( auto mut arg_n= 0s; arg_n < function_context.args_inner_variable_nodes.size(); ++arg_n )
+				{
+					for( auto mut tag_n= 0s; tag_n < function_context.args_inner_variable_nodes[arg_n].size(); ++tag_n )
+					{
+						if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
+						{
+
+							var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
+							lambda_preprocessing_context.return_inner_references[i].push_back( move(param_reference) );
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph
 {
 	with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )

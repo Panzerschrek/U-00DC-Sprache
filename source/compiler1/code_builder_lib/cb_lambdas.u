@@ -108,11 +108,67 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 	}
 
-	// TODO - run preprocessing here.
-
 	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
 
 	var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
+
+	var FunctionType::ParamReferences mut return_references;
+	var ust::vector</  FunctionType::ParamReferences /> mut return_inner_references;
+
+	// Run preprocessing.
+	{
+		var LambdaPreprocessingContext mut lambda_preprocessing_context
+		{
+			.parent= function_context.lambda_preprocessing_context,
+			.external_variables= CollectCurrentFunctionVariables( function_context ),
+			.lambda_this_value_type= lambda_this_value_type,
+			.capture_by_value= !lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty()
+		};
+
+		if( !lambda_.capture.get</Synt::Lambda::CaptureNothing/>().empty() )
+		{
+			lambda_preprocessing_context.allowed_for_capture_variables= LambdaPreprocessingContext::AllowedForCaptureVariables();
+		}
+		else if(
+			!lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty() ||
+			!lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty() )
+		{
+			lambda_preprocessing_context.allowed_for_capture_variables= ust::null_optional;
+		}
+		else { halt; }
+
+		var ust::shared_ptr_mut</LambdaPreprocessingContext/> lambda_preprocessing_context_ptr( move(lambda_preprocessing_context) );
+
+		{
+			var FunctionVariable mut function_variable
+			{
+				.body_syntax_element= lambda_.function,
+				.llvm_function( LazyLLVMFunction( "\0" /* The name of temporary function is irrelevant. */ ) ),
+				// It's fine to use incomplete lambda class here, since this class can't be accessed.
+				.t= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type ),
+				.is_this_call= true,
+			};
+
+			BuildFuncCode( class_members, function_variable, lambda_preprocessing_context_ptr );
+
+			// Remove temp function.
+			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
+		}
+
+		auto mut lock= lambda_preprocessing_context_ptr.lock_mut();
+		var LambdaPreprocessingContext &mut lambda_preprocessing_context_result= lock.deref();
+
+		// Prepare return references.
+		return_references= take( lambda_preprocessing_context_result.return_references );
+		NormalizeParamReferencesList( return_references );
+
+		// Prepare return inner references.
+		return_inner_references= take( lambda_preprocessing_context_result.return_inner_references );
+		foreach( &mut list : return_inner_references )
+		{
+			NormalizeParamReferencesList( list );
+		}
+	}
 
 	// Set LLVM struct type body.
 	with( mut class_lock : class_type_ptr.lock_mut() )
@@ -165,6 +221,9 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	// Create () operator.
 	{
 		auto mut function_type= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
+		function_type.return_references= move(return_references);
+		function_type.return_inner_references= move(return_inner_references);
+
 		var FunctionVariable mut function_variable
 		{
 			.body_syntax_element= lambda_.function,
@@ -186,6 +245,19 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	}
 
 	return class_type_ptr;
+}
+
+fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
+{
+	var ust::unordered_set</VariablePtr/> mut result;
+	foreach( &variables_frame : function_context.variables_frames )
+	{
+		foreach( &variable : variables_frame )
+		{
+			result.insert( variable );
+		}
+	}
+	return move(result);
 }
 
 fn CodeBuilder::PrepareLambdaCallOperatorType(

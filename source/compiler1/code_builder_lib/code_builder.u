@@ -1040,6 +1040,15 @@ fn CodeBuilder::CheckOverloadedOperator(
 
 fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
 {
+	BuildFuncCode( names_scope, func_variable, ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
+}
+
+fn CodeBuilder::BuildFuncCode(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionVariable &mut func_variable,
+	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> mut lambda_preprocessing_context )
+{
 	if( func_variable.body_syntax_element.empty() )
 	{
 		return;
@@ -1091,6 +1100,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		llvm_context_,
 		llvm_function,
 		func_variable.t );
+	function_context_value.lambda_preprocessing_context= move(lambda_preprocessing_context);
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
@@ -1098,8 +1108,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// Ensure type completness even for reference args because of reference checking.
-	foreach( &param : func_variable.t.params )
+	foreach( &param : cast_imut(func_variable).t.params )
 	{
+		if( ust::ref_cmp_eq( param, cast_imut(func_variable).t.params.front() ) &&
+			!function_context.lambda_preprocessing_context.empty() )
+		{
+			// While preprocessing lambdas do not trigger type completeness for first arg of the lambda type.
+			continue;
+		}
 		if( !EnsureTypeComplete( param.t ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, param.t )
