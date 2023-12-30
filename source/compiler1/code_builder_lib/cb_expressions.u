@@ -3603,7 +3603,7 @@ fn CodeBuilder::DoCallFunction(
 	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
 
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
-	if( is_constexpr && function_type.return_value_type == ValueType::Value )
+	if( is_constexpr && function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
 	{
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
 	}
