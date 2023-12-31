@@ -908,6 +908,7 @@ private:
 	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</ FunctionType::ParamReferences />;
 	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
 	fn NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references );
+	fn NormalizeReferencesPollution( ust::vector</FunctionType::ReferencePollution/> &mut references_pollution );
 
 	// Coroutines
 
@@ -1016,6 +1017,7 @@ private:
 
 	fn LambdaPreprocessingCollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node );
 	fn LambdaPreprocessingCollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node );
+	fn LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& src_loc );

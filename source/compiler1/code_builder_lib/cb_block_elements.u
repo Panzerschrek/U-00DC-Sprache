@@ -728,7 +728,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-		CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+
+		if( !function_context.lambda_preprocessing_context.empty() )
+		{
+			LambdaPreprocessingCollectReferencePollution( function_context );
+		}
+		else
+		{
+			CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+		}
+
 		function_context.references_graph.RemoveNode( return_node );
 	}
 
@@ -2822,7 +2831,15 @@ fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, Function
 	}
 
 	CallDestructorsForAllVariablesFrames( names_scope, function_context, src_loc );
-	CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+
+	if( !function_context.lambda_preprocessing_context.empty() )
+	{
+		LambdaPreprocessingCollectReferencePollution( function_context );
+	}
+	else
+	{
+		CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+	}
 
 	if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
 	{

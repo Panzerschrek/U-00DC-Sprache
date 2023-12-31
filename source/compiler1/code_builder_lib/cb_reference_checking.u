@@ -430,6 +430,11 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext
 			lambda_preprocessing_context.return_inner_references.resize( inner_reference_nodes.size() );
 		}
 
+		if( lambda_preprocessing_context.captured_variables_return_inner_references.size() < inner_reference_nodes.size() )
+		{
+			lambda_preprocessing_context.captured_variables_return_inner_references.resize( inner_reference_nodes.size() );
+		}
+
 		for( auto mut i= 0s; i < inner_reference_nodes.size(); ++i )
 		{
 			foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[i] ) )
@@ -455,9 +460,105 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext
 						}
 					}
 				}
+
+				foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+				{
+					if( variable_node == captured_variable_pair.value().variable_node )
+					{
+						lambda_preprocessing_context.captured_variables_return_inner_references[i].push_back( variable_node );
+					}
+
+					foreach( &accessible_variable : captured_variable_pair.value().accessible_variables )
+					{
+						if( variable_node == accessible_variable )
+						{
+							lambda_preprocessing_context.captured_variables_return_inner_references[i].push_back( variable_node );
+						}
+					}
+				}
 			}
 		}
 	}
+}
+
+fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context )
+{
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+	auto& function_type= function_context.function_type;
+	auto& params= function_type.params;
+	for( auto mut param_i= 0s; param_i < params.size(); ++param_i )
+	{
+		if( params[param_i].value_type == ValueType::Value )
+		{
+			continue;
+		}
+		with( &inner_reference_nodes : function_context.args_nodes[param_i].try_lock_imut().deref().inner_reference_nodes )
+		{
+			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++tag_i )
+			{
+				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
+				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
+				{
+					if( accessible_variable_node == function_context.args_inner_variable_nodes[param_i][tag_i] )
+					{
+						continue;
+					}
+
+					var ust::optional</ LambdaPreprocessingContext::ReferenceLink /> mut src_param_reference;
+					for( auto mut j= 0s; j < params.size(); ++j )
+					{
+						if( accessible_variable_node == function_context.args_nodes[j] )
+						{
+							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
+							src_param_reference= move(r);
+						}
+						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
+						{
+							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
+							{
+								var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index=u8(tag_j) };
+								src_param_reference= move(r);
+							}
+						}
+					}
+
+					foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+					{
+						if( accessible_variable_node == captured_variable_pair.value().variable_node )
+						{
+							src_param_reference= accessible_variable_node;
+						}
+
+						foreach( &captured_variable_accessible_variable : captured_variable_pair.value().accessible_variables )
+						{
+							if( accessible_variable_node == captured_variable_accessible_variable )
+							{
+								src_param_reference= accessible_variable_node;
+							}
+						}
+					}
+
+					if( src_param_reference.empty() )
+					{
+						continue;
+					}
+
+					var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
+
+					var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
+					{
+						.dst= move(dst_param_reference),
+						.src= src_param_reference.try_deref(),
+					};
+					lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
+				}
+			}
+		}
+	}
+
+	// TODO - collect also pollution for lambda captured variables as destination.
 }
 
 fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph

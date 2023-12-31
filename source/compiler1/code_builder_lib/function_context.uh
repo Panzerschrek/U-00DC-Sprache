@@ -33,6 +33,14 @@ struct LambdaPreprocessingContext
 		ust::vector</VariablePtr/> accessible_variables;
 	}
 
+	struct ReferencePollution
+	{
+		ReferenceLink dst;
+		ReferenceLink src;
+	}
+
+	type ReferenceLink= ust::variant</ tup[ FunctionType::ParamReference, VariablePtr ] />;
+
 	// Inputs (filled before lambda preprocessing).
 	ust::weak_ptr_imut</ LambdaPreprocessingContext /> parent;
 	ust::unordered_set</VariablePtr/> external_variables;
@@ -46,9 +54,11 @@ struct LambdaPreprocessingContext
 
 	FunctionType::ParamReferences return_references;
 	ust::vector</FunctionType::ParamReferences/> return_inner_references;
+	ust::vector</ReferencePollution/> references_pollution;
 
 	// Contains set of variables of the preprocessed lambda.
 	ust::vector</VariablePtr/> captured_variables_return_references;
+	ust::vector</ ust::vector</VariablePtr/> /> captured_variables_return_inner_references;
 }
 
 class FunctionContext

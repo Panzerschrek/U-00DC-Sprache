@@ -175,7 +175,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
 
 	var FunctionType::ParamReferences mut return_references;
-	var ust::vector</  FunctionType::ParamReferences /> mut return_inner_references;
+	var ust::vector</ FunctionType::ParamReferences /> mut return_inner_references;
+	var ust::vector</FunctionType::ReferencePollution/> mut references_pollution;
 
 	// Run preprocessing.
 	{
@@ -330,8 +331,9 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		var u8 this_param_index(0); // Lambda is "this" (argument 0).
 
-		// Prepare return references.
+		// Process return references.
 		return_references= take( lambda_preprocessing_context_result.return_references );
+
 		foreach( &captured_variable_return_reference : lambda_preprocessing_context_result.captured_variables_return_references )
 		{
 			if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ) )
@@ -340,14 +342,79 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				return_references.push_back( move(param_reference) );
 			}
 		}
+
 		NormalizeParamReferencesList( return_references );
 
-		// Prepare return inner references.
+		// Process return inner references.
 		return_inner_references= take( lambda_preprocessing_context_result.return_inner_references );
+
+		if( return_inner_references.size() < lambda_preprocessing_context_result.captured_variables_return_inner_references.size() )
+		{
+			return_inner_references.resize( lambda_preprocessing_context_result.captured_variables_return_inner_references.size() );
+		}
+
+		for( auto mut i= 0s; i < lambda_preprocessing_context_result.captured_variables_return_inner_references.size(); ++i )
+		{
+			foreach( &captured_variable_return_inner_reference : lambda_preprocessing_context_result.captured_variables_return_inner_references[i] )
+			{
+				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_inner_reference ) )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+					return_inner_references[i].push_back( move(param_reference) );
+				}
+			}
+		}
+
 		foreach( &mut list : return_inner_references )
 		{
 			NormalizeParamReferencesList( list );
 		}
+
+		// Process pollution.
+		foreach( &pollution : lambda_preprocessing_context_result.references_pollution )
+		{
+			var FunctionType::ReferencePollution mut result_pollution= zero_init;
+
+			if_var( &dst_param_reference : pollution.dst.get</ FunctionType::ParamReference />() )
+			{
+				result_pollution.dst= dst_param_reference;
+			}
+			else if_var( &dst_variable : pollution.dst.get</ VariablePtr />() )
+			{
+				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+					result_pollution.dst= move(param_reference);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			else { halt; }
+
+			if_var( &src_param_reference : pollution.src.get</ FunctionType::ParamReference />() )
+			{
+				result_pollution.src= src_param_reference;
+			}
+			else if_var( &src_variable : pollution.src.get</ VariablePtr />() )
+			{
+				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(src_variable) )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+					result_pollution.src= move(param_reference);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			else { halt; }
+
+			references_pollution.push_back( move(result_pollution) );
+		}
+
+		NormalizeReferencesPollution( references_pollution );
 	}
 
 	// Set LLVM struct type body.
@@ -405,6 +472,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		auto mut function_type= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
 		function_type.return_references= move(return_references);
 		function_type.return_inner_references= move(return_inner_references);
+		function_type.references_pollution= move(references_pollution);
 
 		var FunctionVariable mut function_variable
 		{
@@ -498,6 +566,19 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 		}
 
 		res.params.push_back( move(out_param) );
+	}
+
+	if( !lambda_function_type.return_value_reference_expression.empty() )
+	{
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.return_value_reference_expression.try_deref() ) )
+	}
+	if( !lambda_function_type.return_value_inner_references_expression.empty() )
+	{
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.return_value_inner_references_expression.try_deref() ) )
+	}
+	if( !lambda_function_type.references_pollution_expression.empty() )
+	{
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.references_pollution_expression.try_deref() ) )
 	}
 
 	return move(res);
