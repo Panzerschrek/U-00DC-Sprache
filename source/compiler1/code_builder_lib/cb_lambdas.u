@@ -584,6 +584,40 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	return move(res);
 }
 
+fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
+	NamesScopePtr& names_scope,
+	FunctionContext& function_context,
+	VariablePtr& variable,
+	ust::string8& name,
+	SrcLoc& src_loc )
+{
+	auto  lock= function_context.lambda_preprocessing_context.try_lock_imut();
+	var LambdaPreprocessingContext& lambda_preprocessing_context= lock.deref();
+
+	if( lambda_preprocessing_context.external_variables.exists( variable ) &&
+		!lambda_preprocessing_context.allowed_for_capture_variables.empty() &&
+		!lambda_preprocessing_context.allowed_for_capture_variables.try_deref().exists( variable ) )
+	{
+		REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
+	}
+
+	// Do not allow to capture variables through another lambda.
+	var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut current_ptr= lambda_preprocessing_context.parent.lock();
+	while( !current_ptr.empty() )
+	{
+		var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut next;
+		with( &current : current_ptr.try_lock_imut().deref() )
+		{
+			if( current.external_variables.exists( variable ) )
+			{
+				REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
+			}
+			next= current.parent.lock();
+		}
+		current_ptr= move(next);
+	}
+}
+
 fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr
 {
 	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();

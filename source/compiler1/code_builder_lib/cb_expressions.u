@@ -673,6 +673,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var VariablePtr variable= variable_opt.try_to_non_nullable();
 			if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
 			{
+				LambdaPreprocessingCheckVariableUsage( names_scope, function_context, variable, move_operator.variable_name, move_operator.src_loc );
 				variable_opt= LambdaPreprocessingAccessExternalVariable( function_context, variable, move_operator.variable_name );
 			}
 		}
