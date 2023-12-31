@@ -508,7 +508,7 @@ def LambdaMoveCapturedVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) or HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test1():

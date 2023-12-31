@@ -667,6 +667,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 		variable_opt= name_lookup_result.try_deref()[1].Get</Variable/>();
+
+		if( !variable_opt.empty() && !function_context.lambda_preprocessing_context.empty() )
+		{
+			var VariablePtr variable= variable_opt.try_to_non_nullable();
+			if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
+			{
+				variable_opt= LambdaPreprocessingAccessExternalVariable( function_context, variable, move_operator.variable_name );
+			}
+		}
 	}
 
 	if( variable_opt.empty() )
