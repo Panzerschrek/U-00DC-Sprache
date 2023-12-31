@@ -445,8 +445,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 		"VariableIsNotCapturedByLambda_Test2",
 		"VariableIsNotCapturedByLambda_Test3",
-		"LambdaConstexpr_Test8",
-		"LambdaConstexpr_Test9",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

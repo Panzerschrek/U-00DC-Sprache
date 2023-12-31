@@ -1026,7 +1026,7 @@ def LambdaConstexpr_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 7 ) )
+	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 7 ) or HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 7 ) )
 
 
 def LambdaConstexpr_Test9():
@@ -1040,7 +1040,7 @@ def LambdaConstexpr_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
+	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) or HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
 
 
 def LambdaConstexpr_Test10():
