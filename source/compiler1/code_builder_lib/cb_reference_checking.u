@@ -394,9 +394,24 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext &mut
 			{
 				if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
 				{
-
 					var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
 					lambda_preprocessing_context.return_references.push_back( move(param_reference) );
+				}
+			}
+		}
+
+		foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+		{
+			if( variable_node == captured_variable_pair.value().variable_node )
+			{
+				lambda_preprocessing_context.captured_variables_return_references.push_back( variable_node );
+			}
+
+			foreach( &accessible_variable : captured_variable_pair.value().accessible_variables )
+			{
+				if( variable_node == accessible_variable )
+				{
+					lambda_preprocessing_context.captured_variables_return_references.push_back( variable_node );
 				}
 			}
 		}

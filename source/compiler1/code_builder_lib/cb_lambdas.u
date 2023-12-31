@@ -48,12 +48,28 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 				if( !variable_nullable.empty() )
 				{
 					var VariablePtr variable= variable_nullable.try_to_non_nullable();
+					auto variable_lock= variable.lock_imut();
+					var Variable& v= variable_lock.deref();
+
 					with( &field : capture.field.lock_imut().deref() )
 					{
 						auto field_value= CreateClassFieldGEP( function_context, lambda_class, result.lock_imut().deref().llvm_value, field );
 						if( field.is_reference )
 						{
-							// TODO
+							CreateTypedReferenceStore( function_context, field.t, v.llvm_value, field_value );
+
+							// Link references.
+							function_context.references_graph.TryAddLink(
+								variable,
+								result.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ],
+								names_scope,
+								lambda_.src_loc );
+
+							if( class_type.can_be_constexpr && v.constexpr_value != LLVMValueRef::Null )
+							{
+								constexpr_initializers[ size_type(field.index) ]= AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value );
+								++num_constexpr_initializers;
+							}
 						}
 						else
 						{
@@ -63,9 +79,26 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 							}
 							else if( !function_context.is_functionless_context )
 							{
-								BuildCopyConstructorPart( names_scope, function_context, field_value, variable.lock_imut().deref().llvm_value, field.t, lambda_.src_loc );
+								BuildCopyConstructorPart( names_scope, function_context, field_value, v.llvm_value, field.t, lambda_.src_loc );
 							}
-							// TODO - link references
+
+							// Link references.
+							auto reference_tag_count= size_type( field.t.ReferenceTagCount() );
+							auto result_lock= result.lock_imut();
+							for( auto mut i= 0s; i < reference_tag_count; ++i )
+							{
+								function_context.references_graph.TryAddLink(
+									v.inner_reference_nodes[i],
+									result_lock.deref().inner_reference_nodes[i],
+									names_scope,
+									lambda_.src_loc );
+							}
+
+							if( class_type.can_be_constexpr && v.constexpr_value != LLVMValueRef::Null )
+							{
+								constexpr_initializers[ size_type(field.index) ]= v.constexpr_value;
+								++num_constexpr_initializers;
+							}
 						}
 					}
 				}
@@ -209,6 +242,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		// There should be no equal elements here, because this can prevent sorting to be stable.
 		ust::sort( captured_variables.range() );
 
+		var ust::unordered_map</ VariablePtr, u8 /> mut captured_variable_to_lambda_inner_reference_tag;
+
 		with( mut class_lock : class_type_ptr.lock_mut() )
 		{
 			var ClassType &mut class_type= class_lock.deref();
@@ -218,11 +253,16 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			// Iterate over sorted captured variables, create fields for them, setup reference notation.
 			foreach( &captured_variable : captured_variables )
 			{
+				auto source_variable_lock= captured_variable.data.source_variable.lock_imut();
+				var Variable& source_variable= source_variable_lock.deref();
+
+				auto reference_tag_cout= size_type( source_variable.t.ReferenceTagCount() );
+
 				var ClassField mut field
 				{
 					.source_class= class_type_ptr,
 					.syntax_element= dummy_syntax_element,
-					.t= captured_variable.data.source_variable.lock_imut().deref().t,
+					.t= source_variable.t,
 					.is_reference= captured_variable.capture_by_reference,
 					.is_mutable= true, // Set later.
 					.index= u32( class_type.fields_order.size() ),
@@ -230,11 +270,35 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 				if( captured_variable.capture_by_reference )
 				{
-					// TODO
+					// Captured reference mutability is determined by mutability of source variable.
+					field.is_mutable= source_variable.value_type == ValueType::ReferenceMut;
+
+					// Create a reference tag for captured reference.
+					field.reference_tag= u8( class_type.inner_references.size() );
+					class_type.inner_references.push_back( select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+
+					if( reference_tag_cout > 0s )
+					{
+						REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, lambda_.src_loc, captured_variable.name )
+					}
+
+					// Captured by reference variable points to one of inner reference tags of lambda this.
+					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, field.reference_tag );
 				}
 				else
 				{
-					// TODO - setup references.
+					// Captured by value variable points to lambda this param ptself.
+					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
+
+					// Each reference tag of each captured variable get its own reference tag in result lambda class.
+					for( auto mut i= 0s; i < reference_tag_cout; ++i )
+					{
+						auto reference_tag= u8( class_type.inner_references.size() );
+						field.inner_reference_tags.push_back( reference_tag );
+						class_type.inner_references.push_back( source_variable.t.GetInnerReferenceKind(i) );
+
+						captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.accessible_variables[i], reference_tag );
+					}
 				}
 
 				var ClassFieldPtr mut field_ptr( move(field) );
@@ -264,8 +328,18 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			}
 		}
 
+		var u8 this_param_index(0); // Lambda is "this" (argument 0).
+
 		// Prepare return references.
 		return_references= take( lambda_preprocessing_context_result.return_references );
+		foreach( &captured_variable_return_reference : lambda_preprocessing_context_result.captured_variables_return_references )
+		{
+			if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ) )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+				return_references.push_back( move(param_reference) );
+			}
+		}
 		NormalizeParamReferencesList( return_references );
 
 		// Prepare return inner references.

@@ -46,6 +46,9 @@ struct LambdaPreprocessingContext
 
 	FunctionType::ParamReferences return_references;
 	ust::vector</FunctionType::ParamReferences/> return_inner_references;
+
+	// Contains set of variables of the preprocessed lambda.
+	ust::vector</VariablePtr/> captured_variables_return_references;
 }
 
 class FunctionContext
