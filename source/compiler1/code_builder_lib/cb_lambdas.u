@@ -753,6 +753,12 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 
 	debug_assert( lambda_preprocessing_context.external_variables.exists( variable ) );
 
+	// Mark source variable as used.
+	with( mut lock : variable.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
 	auto var_lock= variable.lock_imut();
 	var Variable& v= var_lock.deref();
 
