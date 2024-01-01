@@ -2231,6 +2231,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						.location= Variable::Location::LLVMRegister,
 						.llvm_value= index_value,
 						.constexpr_value= index_value,
+						.referenced= true,
 					};
 					lock.deref().AddName( " tuple for index", move(tuple_for_index).CreatePtr() ).empty();
 				}
