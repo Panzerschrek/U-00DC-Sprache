@@ -141,6 +141,7 @@ fn LoadSourceGraph_r(
 	var SourceGraph::Node mut node
 	{
 		.file_path_normalized= file_path_normalized,
+		.contents_hash= source_file_contents_hashing_function( file_content_view ),
 	};
 
 	// Recursively load imports.
@@ -206,7 +207,7 @@ fn LoadSourceGraph_r(
 			lex_result.lexems,
 			move(macros),
 			source_graph.macro_expansion_contexts,
-			source_file_contents_hashing_function( file_content_view ) );
+			node.contents_hash );
 
 	foreach( &error : synt_result.errors )
 	{

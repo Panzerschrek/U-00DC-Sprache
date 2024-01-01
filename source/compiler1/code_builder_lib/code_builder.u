@@ -140,8 +140,9 @@ fn CodeBuilder::constructor(
 	}
 }
 
-fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult
+fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult
 {
+	source_graph_.reset( source_graph );
 	macro_expansion_contexts_ = source_graph.macro_expansion_contexts;
 
 	unsafe // Create module.
@@ -341,6 +342,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	typeinfo_cache_.clear();
 	non_sync_expression_stack_.clear();
 	macro_expansion_contexts_.reset();
+	source_graph_.reset();
 
 	var BuildResult mut res
 	{

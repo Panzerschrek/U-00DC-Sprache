@@ -94,7 +94,7 @@ public:
 		LLVMModuleRef llvm_module;
 	}
 
-	fn BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult;
+	fn BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult;
 
 private:
 	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
@@ -932,6 +932,7 @@ private:
 
 	fn BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value;
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
+	fn GetLambdaBaseName( this, Synt::Lambda& lambda_ ) : ust::string8;
 	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>;
 	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type, ValueType lambda_this_value_type ) : FunctionType;
 	fn LambdaPreprocessingCheckVariableUsage( NamesScopePtr& names_scope, FunctionContext& function_context, VariablePtr& variable, ust::string8& name, SrcLoc& src_loc );
@@ -1178,6 +1179,8 @@ private:
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
 
 	ErrorsContainerPtr root_errors_container_;
+
+	ust::optional_ref_imut</SourceGraph/> source_graph_; // Current source graph.
 
 	type ClassesMembersNamespacesTable= ust::unordered_map</ ClassTypePtr, ust::shared_ptr_imut</ NamesScope /> />;
 	struct SourceGraphNodeBuildResult

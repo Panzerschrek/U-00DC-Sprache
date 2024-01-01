@@ -130,7 +130,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		return existing_class;
 	}
 
-	var NamesScopeMutPtr class_members( NamesScope( "_TODO - lambda name", parent_scope ) );
+	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_ ), parent_scope ) );
 	var ClassType mut class_type
 	{
 		.members= class_members,
@@ -495,6 +495,42 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	}
 
 	return class_type_ptr;
+}
+
+fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_ ) : ust::string8
+{
+	var ust::string8 mut name;
+	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
+
+	var SrcLoc mut src_loc= lambda_.src_loc;
+	loop
+	{
+		// Encode file.
+		// Use file contenst hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+		name+= source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].contents_hash;
+		name+= "_";
+
+		// Encode line and column into name to produce different names for different lambdas in the same file.
+		name+= ust::to_string8( src_loc.GetLine() );
+		name+= "_";
+
+		name+= ust::to_string8( src_loc.GetColumn() );
+		name+= "_";
+
+		auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+		if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
+		{
+			// If this is a lambda defined via macro - add macro expansion context to the name.
+			src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+			continue;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return name;
 }
 
 fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
