@@ -51,6 +51,25 @@ def SimpleLambda_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SimpleLambda_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			// Local type alias should be visible inside lambda signature and body.
+			type Int= i32;
+			auto f=
+				lambda ( Int x ) : Int
+				{
+					var Int res= x * 2;
+					return res;
+				};
+			halt if( f( 67 ) != 67 * 2 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def NonCaptureLambda_Test0():
 	c_program_text= """
 		fn Foo()
@@ -236,6 +255,28 @@ def LambdaCaptureAllByValue_Test4():
 					return f1();
 				};
 			halt if( f0() != 7890 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByValue_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 543;
+			auto f=
+				lambda [=] () : i32
+				{
+					// "typeof" captures value.
+					var typeof(x) res= 210;
+					return res;
+				};
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.field_count == 1s );
+			static_assert( ti.size_of == typeinfo</ typeof(x) />.size_of );
+			halt if( f() != 210 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -555,6 +596,29 @@ def LambdaCaptureAllByReference_Test9():
 			move(f0);
 			++x;
 			halt if( x != 55665545 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureAllByReference_Test10():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 543;
+			auto f=
+				lambda [&] () : i32
+				{
+					// "typeof" captures value.
+					var typeof(x) res= 210;
+					return res;
+				};
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.field_count == 1s );
+			static_assert( ti.size_of == typeinfo</ $( typeof(x) ) />.size_of );
+			static_assert( ti.reference_tag_count == 1s );
+			halt if( f() != 210 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

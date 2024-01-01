@@ -810,3 +810,22 @@ def DeriveFromLambda_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 4 ) )
+
+
+def GlobalsLoopForLambda_Test0():
+	c_program_text= """
+		auto f= lambda() : i32 { return f(); };
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def GlobalsLoopForLambda_Test1():
+	c_program_text= """
+		auto f= lambda() : i32 { return g(); };
+		auto g= lambda() : i32 { auto mut f_copy= f; return 0; };
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
