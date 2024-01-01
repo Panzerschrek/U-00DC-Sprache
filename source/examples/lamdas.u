@@ -1,0 +1,121 @@
+// This example demonstraits usage of lambdas.
+
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	// Basic non-capture lambda.
+	{
+		auto div=
+			lambda( u32 a, u32 b ) : u32
+			{
+				return a / b;
+			};
+
+		halt if( div( 78u, 3u ) != 78u / 3u );
+		auto x= div( 124u, 5u ) * 2u;
+		halt if( x != 124u / 5u * 2u );
+	}
+
+	// Lambda with capure by copy.
+	{
+		var i32 mut x= 15, mut y= 7;
+		auto f= lambda[=]( i32 a ) : i32 { return a * x + y; };
+		// Since lambda captures by copy, modifying source variables doesn't affect lambda.
+		x= 0;
+		y= 0;
+		halt if( f( 5 ) != 5 * 15 + 7 );
+		halt if( f( -12 ) != -12 * 15 + 7 );
+	}
+
+	// Lambda with capture by reference.
+	{
+		var u64 x( 12345 );
+		auto f= lambda[&]( f64 a ) : f64 { return f64(x) / a; };
+		static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s ); // 1 reference is captured.
+		halt if( f( 0.25 ) != 12345.0 / 0.25 );
+		halt if( f( 7.0 ) != 12345.0 / 7.0 );
+	}
+
+	// Lambda with capture by mutable reference.
+	// Mutability of captured reference is determined by the mutability of the source variable.
+	{
+		var f32 mut x= 1.5f;
+		// It is possible to pass lambda directly into a function.
+		RunFunc( lambda[&](){ x *= 3.0f; } );
+		// After lambda call source variable is modified.
+		halt if( x != 1.5f * 3.0f );
+	}
+
+	// Lambda with two captured mutable references returns these references.
+	{
+		var i32 mut x= 0, mut y= 0;
+		auto f=
+			lambda[&]( bool cond ) : i32 &mut
+			{
+				return select( cond ? x : y );
+			};
+
+		f( true )= 16;
+		halt if( x != 16 );
+		halt if( y != 0 );
+
+		f( false )= 100;
+		halt if( x != 16 );
+		halt if( y != 100 );
+	}
+
+	{ // A lambda may be constexpr if it satisfies constexpr function requirements.
+		auto shift_val= 7u;
+		auto shift= lambda[=]( u32 x ) : u32 { return x << shift_val; };
+		static_assert( shift(13u) == 13u << 7u );
+		static_assert( shift(98u) == 98u << 7u );
+	}
+
+	halt if( unsafe( global_unsafe_lambda() ) != 667766 );
+
+	return 0;
+}
+
+template</type Func/>
+fn RunFunc( Func& func )
+{
+	func();
+}
+
+// Use lambda to initialize global variable.
+auto two_powers=
+	lambda() : [ u32, 8 ]
+	{
+		// There is no any limit for lambda body complexity.
+		// All constructions as for usual functions are allowed.
+		var [ u32, 8 ] mut res= zero_init;
+		for( auto mut i= 0u; i < 8u; ++i )
+		{
+			res[ size_type(i) ]= 1u << i;
+		}
+		return res;
+	} (); // Call the lambda directly after its declaration.
+
+static_assert( two_powers[0] ==   1u );
+static_assert( two_powers[1] ==   2u );
+static_assert( two_powers[2] ==   4u );
+static_assert( two_powers[3] ==   8u );
+static_assert( two_powers[4] ==  16u );
+static_assert( two_powers[5] ==  32u );
+static_assert( two_powers[6] ==  64u );
+static_assert( two_powers[7] == 128u );
+
+// A lambda object may still be constexpr even if its body doesn't satisfy constexpr function requirements.
+// But such lambda can't be called in constexpr context.
+auto constexpr global_unsafe_lambda =
+	lambda() unsafe : i32
+	{
+		// Using unsafe block prevents this lambda op() to be constexpr.
+		return unsafe( UnsafeFunc() );
+	};
+
+fn UnsafeFunc() : i32
+{
+	return 667766;
+}
