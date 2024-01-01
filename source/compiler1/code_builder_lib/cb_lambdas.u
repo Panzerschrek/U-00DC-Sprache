@@ -121,9 +121,45 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr
 {
 	var NamesScopePtr parent_scope= GetClosestNamedSpaceOrRoot( names_scope );
-	var LambdaKey key{ .parent_scope= parent_scope, .src_loc= lambda_.src_loc };
+	var LambdaKey mut key{ .parent_scope= parent_scope, .src_loc= lambda_.src_loc };
 
-	// TODO - fill tuple indices.
+	// Extract tuple-for indices.
+	{
+		var NamesScopePtr mut current_ptr= names_scope;
+		loop
+		{
+			var ust::shared_ptr_nullable_imut</NamesScope/> mut next_ptr;
+			with( &current : current_ptr.lock_imut().deref() )
+			{
+				if_var( &tuple_for_index : current.GetThisScopeValue( " tuple for index" ) )
+				{
+					auto variable_ptr= tuple_for_index.Get</Variable/>();
+					if( !variable_ptr.empty() )
+					{
+						auto constexpr_value= variable_ptr.try_lock_imut().deref().constexpr_value;
+						if( constexpr_value != LLVMValueRef::Null )
+						{
+							key.tuple_for_indices.push_back( u32( unsafe( LLVMConstIntGetZExtValue( constexpr_value ) ) ) );
+						}
+					}
+				}
+
+				next_ptr= current.GetParent();
+			}
+
+			if( next_ptr.empty() )
+			{
+				break;
+			}
+			current_ptr= next_ptr.try_to_non_nullable();
+		}
+
+		// Since we iterate over name scopes in reverse order reverse the result container.
+		for( var size_type mut i= 0s, s= key.tuple_for_indices.size(); i < s / 2s; ++i )
+		{
+			key.tuple_for_indices.swap( i, s - i - 1s );
+		}
+	}
 
 	if_var( &existing_class : lambda_classes_table_.find( key ) )
 	{
@@ -172,7 +208,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 	}
 
-	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_ ), parent_scope ) );
+	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_, key.tuple_for_indices.range() ), parent_scope ) );
 
 	var LambdaClassData mut lambda_class_data{ .template_args= move(template_args) };
 
@@ -189,7 +225,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	};
 
 	var ClassTypePtr class_type_ptr( move(class_type) );
-	lambda_classes_table_.insert( key, class_type_ptr );
+	lambda_classes_table_.insert( move(key), class_type_ptr );
 
 	with( mut members_lock : class_members.lock_mut() )
 	{
@@ -542,7 +578,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	return class_type_ptr;
 }
 
-fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_ ) : ust::string8
+fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8
 {
 	var ust::string8 mut name;
 	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
@@ -572,6 +608,17 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_ ) : ust::string8
 		else
 		{
 			break;
+		}
+	}
+
+	if( !tuple_for_indices.empty() )
+	{
+		name+= "tf_";
+
+		foreach( tuple_for_index : tuple_for_indices )
+		{
+			name+= ust::to_string8( tuple_for_index );
+			name+= "_";
 		}
 	}
 

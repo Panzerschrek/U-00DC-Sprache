@@ -2219,6 +2219,21 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			with( mut lock : names_scope.lock_mut() )
 			{
 				lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
+
+				// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+				// TODO - maybe make this counter available for a programmer?
+				{
+					auto index_value= unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
+					var Variable mut tuple_for_index
+					{
+						.t= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ ),
+						.value_type= ValueType::Value,
+						.location= Variable::Location::LLVMRegister,
+						.llvm_value= index_value,
+						.constexpr_value= index_value,
+					};
+					lock.deref().AddName( " tuple for index", move(tuple_for_index).CreatePtr() ).empty();
+				}
 			}
 
 			var bool is_last_iteration= i + 1s == tuple_type.element_types.size();

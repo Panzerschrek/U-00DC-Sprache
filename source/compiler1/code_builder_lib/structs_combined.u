@@ -932,7 +932,10 @@ fn LambdaKeyHasher::hash( LambdaKey& k ) : size_type
 	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetColumn() ) );
 	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetMacroExpansionIndex() ) );
 
-	// TODO - hash template args.
+	foreach( index : k.tuple_for_indices )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type( index ) );
+	}
 
 	return hash;
 }
