@@ -3,7 +3,7 @@ from sphinx.highlighting import lexers
 
 project = "Ü Sprache"
 author = "Panzerschrek"
-copyright = "Panzerschrek 2019-2023"
+copyright = "Panzerschrek 2019-2024"
 html_theme = "sphinxdoc"
 html_copy_source = False
 html_logo = "../logo-Gebrochene-Grotesk.png"

@@ -63,4 +63,4 @@ The compiler downloads are available on the actions page - as action artifacts.
 It's recommended to use latest build of the *master* branch.
 
 ### Authors
-Copyright © 2016-2023 "Panzerschrek".
+Copyright © 2016-2024 "Panzerschrek".
