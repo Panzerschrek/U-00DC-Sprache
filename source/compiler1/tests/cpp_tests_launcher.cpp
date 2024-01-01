@@ -67,14 +67,8 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"LambdasMangling_Test3",
-		"LambdasMangling_Test4",
-		"LambdasMangling_Test5",
-		"LambdasMangling_Test6",
-		"LambdasMangling_Test7",
 		"LambdasMangling_Test9",
 		"LambdasMangling_Test10",
-		"LambdasMangling_Test11",
 		"LambdasMangling_Test13",
 		"LambdasMangling_Test14",
 		"LambdasMangling_Test15",

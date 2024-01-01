@@ -47,6 +47,7 @@ private:
 	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state, NamesScope& scope );
 	fn EncodeTemplateClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
+	fn EncodeLambdaClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
 	fn EncodeCoroutineClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
 	fn EncodeNumber( this, ManglerState &mut mangler_state, i64 num );
 	fn EncodeNumber( this, ManglerState &mut mangler_state, u64 num );
@@ -280,6 +281,12 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
+		else if( !class_type.generated_class_data.get</ LambdaClassData />().empty() )
+		{
+			EncodeLambdaClassName( mangler_state, class_type );
+			// Finish list of name components.
+			mangler_state.PushElement( g_terminator );
+		}
 		else
 		{
 			EncodeFullName( mangler_state, class_members_ref.GetThisNamespaceName().range(), class_members_ref.GetParent().try_lock_imut().deref() );
@@ -510,6 +517,11 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state,
 			EncodeCoroutineClassName( mangler_state, class_ );
 			return;
 		}
+		if( !class_.generated_class_data.get</ LambdaClassData />().empty() )
+		{
+			EncodeLambdaClassName( mangler_state, class_ );
+			return;
+		}
 	}
 
 	mangler_state.EncodeName( scope.GetThisNamespaceName().range() );
@@ -535,6 +547,21 @@ fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, 
 	}
 
 	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.lock().try_lock_imut().deref() );
+}
+
+fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, ClassType& the_class )
+{
+	auto& lambda_class_data= the_class.generated_class_data.get</ LambdaClassData />().try_deref();
+
+	with( &members : the_class.members.lock_imut().deref() )
+	{
+		mangler_state.EncodeName( members.GetThisNamespaceName().range() );
+
+		EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref() );
+	}
+
+	// TODO - encode template args
+	ust::ignore_unused(lambda_class_data);
 }
 
 fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state, ClassType& the_class )
