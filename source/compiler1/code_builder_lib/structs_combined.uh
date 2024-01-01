@@ -598,6 +598,7 @@ struct LambdaClassData
 	}
 
 	ust::vector</Capture/> captures;
+	TemplateArgsFinished template_args;
 }
 
 //

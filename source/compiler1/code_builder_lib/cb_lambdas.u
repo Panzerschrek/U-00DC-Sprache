@@ -130,7 +130,52 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		return existing_class;
 	}
 
+	var TemplateArgsFinished mut template_args;
+	with( &parent : parent_scope.lock_imut().deref() )
+	{
+		if( parent.GetThisNamespaceName() == NamesScope::c_template_args_namespace_name )
+		{
+			// This is a lambda inside template function or in template class declaration expression.
+			// Extract template args for later usage for lambda name mangling.
+			type NamedTemplateArg= tup[ ust::string8, TemplateArgFinished ];
+			var ust::vector</ NamedTemplateArg /> mut named_template_args;
+
+			foreach( &v : parent )
+			{
+				auto template_arg_ptr= v.value().Get</TemplateArg/>();
+				if( !template_arg_ptr.empty() )
+				{
+					with( &template_arg : template_arg_ptr.try_lock_imut().deref() )
+					{
+						if_var( &t : template_arg.something.get</Type/>() )
+						{
+							named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(t) ) );
+						}
+						else if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
+						{
+							named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(v_ptr) ) );
+						}
+					}
+				}
+			}
+
+			// Sort template args by name in order to obtain some stable order.
+			// This order should not be the same as order in the template itself, it should only be deterministic.
+			ust::sort(
+				named_template_args.range(),
+				lambda( NamedTemplateArg& l, NamedTemplateArg& r ) : bool { return l[0] < r[0]; } );
+
+			foreach( &mut named_template_arg : named_template_args )
+			{
+				template_args.push_back( take( named_template_arg[1] ) );
+			}
+		}
+	}
+
 	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_ ), parent_scope ) );
+
+	var LambdaClassData mut lambda_class_data{ .template_args= move(template_args) };
+
 	var ClassType mut class_type
 	{
 		.members= class_members,
@@ -140,7 +185,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		.have_explicit_noncopy_constructors= false,
 		.is_default_constructible= false,
 		.can_be_constexpr= true, // Set later.
-		.generated_class_data= LambdaClassData()
+		.generated_class_data= move(lambda_class_data)
 	};
 
 	var ClassTypePtr class_type_ptr( move(class_type) );

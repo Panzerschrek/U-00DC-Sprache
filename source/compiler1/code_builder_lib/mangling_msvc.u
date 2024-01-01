@@ -555,13 +555,24 @@ fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, Cl
 
 	with( &members : the_class.members.lock_imut().deref() )
 	{
-		mangler_state.EncodeName( members.GetThisNamespaceName().range() );
+		if( lambda_class_data.template_args.empty() )
+		{
+			mangler_state.EncodeName( members.GetThisNamespaceName().range() );
+			EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref() );
+		}
+		else
+		{
+			var ManglerState mut template_mangler_state;
 
-		EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref() );
+			template_mangler_state.PushElement( g_template_prefix );
+			template_mangler_state.EncodeName( members.GetThisNamespaceName().range() );
+			EncodeTemplateArgs( template_mangler_state, lambda_class_data.template_args );
+
+			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+
+			EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref().GetParent().try_lock_imut().deref() );
+		}
 	}
-
-	// TODO - encode template args
-	ust::ignore_unused(lambda_class_data);
 }
 
 fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state, ClassType& the_class )

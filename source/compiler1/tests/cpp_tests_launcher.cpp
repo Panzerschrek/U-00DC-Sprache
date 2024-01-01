@@ -69,9 +69,6 @@ bool FilterTest( const std::string& test_name )
 	{
 		"LambdasMangling_Test9",
 		"LambdasMangling_Test10",
-		"LambdasMangling_Test13",
-		"LambdasMangling_Test14",
-		"LambdasMangling_Test15",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
