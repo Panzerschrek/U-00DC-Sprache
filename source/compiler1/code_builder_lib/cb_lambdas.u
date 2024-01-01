@@ -253,7 +253,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				.body_syntax_element= lambda_.function,
 				.llvm_function( LazyLLVMFunction( "\0" /* The name of temporary function is irrelevant. */ ) ),
 				// It's fine to use incomplete lambda class here, since this class can't be accessed.
-				.t= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type ),
+				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type ),
 				.is_this_call= true,
 			};
 
@@ -514,7 +514,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	{
 		var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
-		auto mut function_type= PrepareLambdaCallOperatorType( class_members, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
+		auto mut function_type= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
 		function_type.return_references= move(return_references);
 		function_type.return_inner_references= move(return_inner_references);
 		function_type.references_pollution= move(references_pollution);
