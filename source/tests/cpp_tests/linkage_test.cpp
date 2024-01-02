@@ -220,6 +220,107 @@ U_TEST( FunctionLinkage_Test4 )
 	U_TEST_ASSERT( !foo->hasComdat() );
 }
 
+U_TEST( LambdasLinkage_Test0 )
+{
+	// All lambda methods should be private.
+
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			auto f= lambda[=]( i32 a ) : i32 { return x * a; };
+			return f( y );
+		}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const call_operator= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_clERKS_i" );
+	U_TEST_ASSERT( call_operator != nullptr );
+	U_TEST_ASSERT( call_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const destructor= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_10destructorERS_" );
+	U_TEST_ASSERT( destructor != nullptr );
+	U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const copy_constructor= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_11constructorERS_RKS_" );
+	U_TEST_ASSERT( copy_constructor != nullptr );
+	U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_aSERS_RKS_" );
+	U_TEST_ASSERT( copy_assignment_operator != nullptr );
+	U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+}
+
+U_TEST( LambdasLinkage_Test1 )
+{
+	// All lambda methods should be private, even for lambda in global space.
+	static const char c_program_text[]=
+	R"(
+		auto f= lambda(){};
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const call_operator= module->getFunction( "_ZN46_lambda_bd6f49d675a76049d075b67bcb1073e2_2_10_clERKS_" );
+	U_TEST_ASSERT( call_operator != nullptr );
+	U_TEST_ASSERT( call_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const destructor= module->getFunction( "_ZN46_lambda_bd6f49d675a76049d075b67bcb1073e2_2_10_10destructorERS_" );
+	U_TEST_ASSERT( destructor != nullptr );
+	U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const copy_constructor= module->getFunction( "_ZN46_lambda_bd6f49d675a76049d075b67bcb1073e2_2_10_11constructorERS_RKS_" );
+	U_TEST_ASSERT( copy_constructor != nullptr );
+	U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN46_lambda_bd6f49d675a76049d075b67bcb1073e2_2_10_aSERS_RKS_" );
+	U_TEST_ASSERT( copy_assignment_operator != nullptr );
+	U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+}
+
+U_TEST( LambdasLinkage_Test2 )
+{
+	// All lambda methods should be private, even if lambda is in imported file.
+
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			auto f= lambda[=]( i32 a ) : i32 { return x * a; };
+			return f( y );
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+	)";
+
+	const auto module= BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+
+	const llvm::Function* const call_operator= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_clERKS_i" );
+	U_TEST_ASSERT( call_operator != nullptr );
+	U_TEST_ASSERT( call_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const destructor= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_10destructorERS_" );
+	U_TEST_ASSERT( destructor != nullptr );
+	U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const copy_constructor= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_11constructorERS_RKS_" );
+	U_TEST_ASSERT( copy_constructor != nullptr );
+	U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN46_lambda_320db96fe11148d72174af6aff172f7b_4_11_aSERS_RKS_" );
+	U_TEST_ASSERT( copy_assignment_operator != nullptr );
+	U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+}
+
 U_TEST( VariableLinkage_Test0 )
 {
 	// All constant global variables should have private linkage.
