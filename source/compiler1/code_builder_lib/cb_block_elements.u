@@ -1646,11 +1646,15 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
 		if( is_signed )
 		{
-			ust::sort( all_ranges.range(), SwitchCaseCompareSigned() );
+			ust::sort(
+				all_ranges.range(),
+				lambda( SwitchCaseRange& l, SwitchCaseRange& r ) : bool { return i64(l.low) < i64(r.low); } );
 		}
 		else
 		{
-			ust::sort( all_ranges.range(), SwitchCaseCompareUnsigned() );
+			ust::sort(
+				all_ranges.range(),
+				lambda( SwitchCaseRange& l, SwitchCaseRange& r ) : bool { return l.low < r.low; } );
 		}
 
 		// Check for overlaps and gaps between ranges.
@@ -3134,22 +3138,6 @@ struct SwitchCaseRange
 	u64 low;
 	u64 high;
 	SrcLoc src_loc;
-}
-
-struct SwitchCaseCompareSigned
-{
-	op()( this, SwitchCaseRange& l, SwitchCaseRange& r ) : bool
-	{
-		return i64(l.low) < i64(r.low);
-	}
-}
-
-struct SwitchCaseCompareUnsigned
-{
-	op()( this, SwitchCaseRange& l, SwitchCaseRange& r ) : bool
-	{
-		return l.low < r.low;
-	}
 }
 
 } // namespace U1
