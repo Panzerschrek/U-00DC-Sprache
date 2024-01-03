@@ -19,7 +19,7 @@ def AccessingThisInLambda_Test0():
 
 def AccessingThisInLambda_Test1():
 	# "this" should be not available in lambdas for hidden "this" parameter of a lambda function.
-	# This is true even if lamda captures names by value.
+	# This is true even if lambda captures names by value.
 	c_program_text= """
 		fn Foo()
 		{

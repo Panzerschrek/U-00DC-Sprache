@@ -35,5 +35,4 @@ foreach( EXAMPLE_SOURCE ${EXAMPLES_SOURCES} )
 	add_executable( ${EXAMPLE_EXECUTABLE} ../tests/dummy.cpp ${EXAMPLE_SOURCE} ${EXAMPLE_SOURCE_RELATIVE}.o )
 	add_dependencies( ${EXAMPLE_EXECUTABLE} Compiler${CURRENT_COMPILER_GENERATION} )
 
-
 endforeach()

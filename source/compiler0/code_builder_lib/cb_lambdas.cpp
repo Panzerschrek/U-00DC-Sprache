@@ -273,7 +273,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				return l.name < r.name;
 			} );
 
-		std::unordered_map<VariablePtr, FunctionType::ParamReference> captured_variable_to_lambda_param_reference;
+		std::unordered_map<VariablePtr, uint8_t> captured_variable_to_lambda_inner_reference_tag;
 
 		// Iterate over sorted captured variables, create fields for them, setup reference notation.
 		for( const CapturedVariableForSorting& captured_variable : captured_variables )
@@ -286,8 +286,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			class_->fields_order.push_back( field );
 
 			const auto reference_tag_cout= type.ReferenceTagCount();
-
-			const uint8_t this_param_index= 0; // Lambda is "this" (argument 0).
 
 			if( captured_variable.capture_by_reference )
 			{
@@ -302,13 +300,13 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				if( reference_tag_cout > 0 )
 					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names.GetErrors(), lambda.src_loc, captured_variable.name );
 
-				// Captured by reference variable points to one of inner reference tags of lambda this.
-				captured_variable_to_lambda_param_reference.emplace( captured_variable.data.variable_node, FunctionType::ParamReference( this_param_index, field->reference_tag ) );
+				// Captured by reference variable points to one of the inner reference tags of lambda this.
+				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, field->reference_tag );
 			}
 			else
 			{
 				// Captured by value variable points to lambda this param ptself.
-				captured_variable_to_lambda_param_reference.emplace( captured_variable.data.variable_node, FunctionType::ParamReference( this_param_index, FunctionType::c_param_reference_number ) );
+				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
 
 				// Each reference tag of each captured variable get its own reference tag in result lambda class.
 				U_ASSERT( captured_variable.data.accessible_variables.size() == reference_tag_cout );
@@ -319,7 +317,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 					field->inner_reference_tags.push_back( reference_tag );
 					class_->inner_references.push_back( type.GetInnerReferenceType(i) );
 
-					captured_variable_to_lambda_param_reference.emplace( captured_variable.data.accessible_variables[i], FunctionType::ParamReference( this_param_index, reference_tag ) );
+					captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.accessible_variables[i], reference_tag );
 				}
 			}
 
@@ -334,12 +332,14 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			std::get_if<LambdaClassData>( &class_->generated_class_data )->captures.push_back( std::move(capture) );
 		}
 
+		const uint8_t this_param_index= 0; // Lambda is "this" (argument 0).
+
 		// Process return references.
 		return_references= std::move(lambda_preprocessing_context.return_references);
 		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 		{
-			if( const auto it= captured_variable_to_lambda_param_reference.find( captured_variable_return_reference ); it != captured_variable_to_lambda_param_reference.end() )
-				return_references.insert( it->second );
+			if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
+				return_references.emplace( this_param_index, it->second );
 		}
 
 		// Process return inner references.
@@ -350,8 +350,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		{
 			for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
 			{
-				if( const auto it= captured_variable_to_lambda_param_reference.find( captured_variable_return_reference ); it != captured_variable_to_lambda_param_reference.end() )
-					return_inner_references[tag_n].insert( it->second );
+				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
+					return_inner_references[tag_n].emplace( this_param_index, it->second );
 			}
 		}
 
@@ -363,8 +363,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				result_pollution.dst= *dst_param_reference;
 			else if( const auto dst_variable_ptr= std::get_if<VariablePtr>( &pollution.dst ) )
 			{
-				if( const auto it= captured_variable_to_lambda_param_reference.find( *dst_variable_ptr ); it != captured_variable_to_lambda_param_reference.end() )
-					result_pollution.dst= it->second;
+				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( *dst_variable_ptr ); it != captured_variable_to_lambda_inner_reference_tag.end() )
+					result_pollution.dst= std::make_pair( this_param_index, it->second );
 				else
 					continue;
 			}
@@ -374,8 +374,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				result_pollution.src= *src_param_reference;
 			else if( const auto src_variable_ptr= std::get_if<VariablePtr>( &pollution.src ) )
 			{
-				if( const auto it= captured_variable_to_lambda_param_reference.find( *src_variable_ptr ); it != captured_variable_to_lambda_param_reference.end() )
-					result_pollution.src= it->second;
+				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( *src_variable_ptr ); it != captured_variable_to_lambda_inner_reference_tag.end() )
+					result_pollution.src= std::make_pair( this_param_index, it->second );
 				else
 					continue;
 			}
@@ -468,7 +468,7 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const ll
 		name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].contents_hash;
 		name+= "_";
 
-		// Encode line and column into name to produce different names for different lambdas in the same file.
+		// Encode line and column into the name to produce different names for different lambdas in the same file.
 		name+= std::to_string( src_loc.GetLine() );
 		name+= "_";
 
@@ -523,7 +523,7 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	function_type.params.reserve( synt_params.size() );
 
 	// First param is always "this" of the lambda type.
-	U_ASSERT( ! synt_params.empty() && synt_params.front().name == Keywords::this_ );
+	U_ASSERT( !synt_params.empty() && synt_params.front().name == Keywords::this_ );
 	{
 		FunctionType::Param this_param;
 		this_param.value_type= lambda_this_value_type;
@@ -535,11 +535,10 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	// Iterate over params skipping first "this".
 	for( const Synt::FunctionParam& in_param : synt_params.drop_front() )
 	{
-		FunctionType::Param out_param;
-
 		if( IsKeyword( in_param.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), in_param.src_loc );
 
+		FunctionType::Param out_param;
 		out_param.type= PrepareType( in_param.type, names, function_context );
 
 		if( in_param.reference_modifier == Synt::ReferenceModifier::None )

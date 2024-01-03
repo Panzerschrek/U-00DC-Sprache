@@ -1115,7 +1115,7 @@ fn CodeBuilder::BuildFuncCode(
 		if( ust::ref_cmp_eq( param, cast_imut(func_variable).t.params.front() ) &&
 			!function_context.lambda_preprocessing_context.empty() )
 		{
-			// While preprocessing lambdas do not trigger type completeness for first arg of the lambda type.
+			// While preprocessing lambdas do not trigger type completeness for the first arg of the lambda type.
 			continue;
 		}
 		if( !EnsureTypeComplete( param.t ) )

@@ -33,7 +33,7 @@ If ``[=]`` is used, the compiler will find all usages of external variables.
 When a lambda object is constructed, all these variables are copied into it.
 Such captured variables become effectively hidden lambda class fields.
 
-Since with usage of ``[=]`` variables are copied into the lambda, they may be modified or even destroyed and this will not affect the lambda object.
+Since with usage of ``[=]`` variables are copied into the lambda, they may be modified or even destroyed, but this will not affect the lambda object.
 
 .. code-block:: u_spr
 
@@ -79,7 +79,7 @@ Also it's possible to use ``typeof``.
    auto f= lambda(){};
    var typeof(f) f_copy= f;
 
-Lambdas with captures are just like classes with fields that correspond to captured variables.
+Lambdas with captures are just classes with fields that correspond to captured variables.
 For captured by value variables destructors are called properly.
 Copy constructor and copy assignment operator may or may not be generated depending on captured variable types.
 ``non_sync`` tag for lambdas is calculated based on captured variable types.

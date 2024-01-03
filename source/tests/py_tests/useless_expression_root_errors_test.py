@@ -601,7 +601,7 @@ def UselessExpressionRoot_Test48():
 		fn Foo()
 		{
 			var i32 x= 0;
-			lambda[=](){ return x; }; // Useless lambda wit captures.
+			lambda[=](){ return x; }; // Useless lambda with captures.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

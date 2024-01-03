@@ -28,18 +28,16 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 	var VariablePtr result= move(result_value).CreatePtr();
 	function_context.references_graph.AddNode( result );
 
-	var ust::vector</LLVMValueRef/> mut constexpr_initializers;
 	with( &class_type : lambda_class.lock_imut().deref() )
 	{
+		var ust::vector</LLVMValueRef/> mut constexpr_initializers;
+		var size_type mut num_constexpr_initializers= 0s;
+
 		if( class_type.can_be_constexpr )
 		{
 			constexpr_initializers.resize( class_type.fields_order.size(), LLVMValueRef::Null );
 		}
-	}
-	var size_type mut num_constexpr_initializers= 0s;
 
-	with( &class_type : lambda_class.lock_imut().deref() )
-	{
 		foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
 		{
 			if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )
@@ -53,6 +51,8 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 					with( &field : capture.field.lock_imut().deref() )
 					{
+						debug_assert( v.t == field.t );
+
 						auto field_value= CreateClassFieldGEP( function_context, lambda_class, result.lock_imut().deref().llvm_value, field );
 						if( field.is_reference )
 						{
@@ -120,7 +120,11 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr
 {
+	// Use first named namespace as lambda class parent.
+	// We can't use namespace of function variables here, because it will be destroyed later.
+	// Usually this is a closest global scope that contains this function - some namespace, struct, class or a template args namespace.
 	var NamesScopePtr parent_scope= GetClosestNamedSpaceOrRoot( names_scope );
+
 	var LambdaKey mut key{ .parent_scope= parent_scope, .src_loc= lambda_.src_loc };
 
 	// Extract tuple-for indices.
@@ -232,13 +236,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		var NamesScope &mut members= members_lock.deref();
 
 		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
-		// TODO - what about user-specified non-public constructors and assignment operators?
 		var FunctionsSet functions_set{ .class_= class_type_ptr };
 		members.AddName( KeywordToString( Keyword::constructor_ ), functions_set );
 		members.AddName( KeywordToString( Keyword::destructor_  ), functions_set );
 		members.AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
 
-		// Add special member to names scope to identify it as class names scope
+		// Add special member to names scope to identify it as class names scope.
 		members.SetClass( class_type_ptr );
 
 		// Allow accessing private members of class for all it's inner namespaces.
@@ -367,7 +370,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 						REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, lambda_.src_loc, captured_variable.name )
 					}
 
-					// Captured by reference variable points to one of inner reference tags of lambda this.
+					// Captured by reference variable points to one of inner the reference tags of lambda this.
 					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, field.reference_tag );
 				}
 				else
@@ -597,7 +600,7 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 		name+= source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].contents_hash;
 		name+= "_";
 
-		// Encode line and column into name to produce different names for different lambdas in the same file.
+		// Encode line and column into the name to produce different names for different lambdas in the same file.
 		name+= ust::to_string8( src_loc.GetLine() );
 		name+= "_";
 
@@ -613,7 +616,7 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 		}
 		else
 		{
-			break;
+			break; // Not a macro expansion context.
 		}
 	}
 
@@ -629,19 +632,6 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 	}
 
 	return name;
-}
-
-fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
-{
-	var ust::unordered_set</VariablePtr/> mut result;
-	foreach( &variables_frame : function_context.variables_frames )
-	{
-		foreach( &variable : variables_frame )
-		{
-			result.insert( variable );
-		}
-	}
-	return move(result);
 }
 
 fn CodeBuilder::PrepareLambdaCallOperatorType(
@@ -681,6 +671,7 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	auto mut params_except_first= lambda_function_type.params.range();
 	params_except_first.drop_front();
 
+	// Iterate over params skipping first "this".
 	foreach( &param : params_except_first )
 	{
 		if( IsKeyword( param.name ) )
@@ -716,6 +707,19 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	}
 
 	return move(res);
+}
+
+fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
+{
+	var ust::unordered_set</VariablePtr/> mut result;
+	foreach( &variables_frame : function_context.variables_frames )
+	{
+		foreach( &variable : variables_frame )
+		{
+			result.insert( variable );
+		}
+	}
+	return move(result);
 }
 
 fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
@@ -770,6 +774,8 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 
 	auto var_lock= variable.lock_imut();
 	var Variable& v= var_lock.deref();
+
+	// Create special temporary reference graph nodes for captured external variable.
 
 	var size_type reference_tag_count( v.t.ReferenceTagCount() );
 
@@ -842,7 +848,7 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 		lambda_preprocessing_context.captured_external_variables.insert( name, move(captured_variable) );
 	}
 
-	var LambdaPreprocessingContext::CapturedVariableData mut captured_variable= lambda_preprocessing_context.captured_external_variables[name];
+	var LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
 
 	function_context.references_graph.AddNodeIfNotExists( captured_variable.variable_node );
 	function_context.references_graph.AddNodeIfNotExists( captured_variable.reference_node );

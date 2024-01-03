@@ -1457,7 +1457,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( const FunctionType::Param& arg : function_type.params )
 	{
 		if( lambda_preprocessing_context != nullptr && &arg == &function_type.params.front() )
-		{} // While preprocessing lambdas do not trigger type completeness for first arg of the lambda type.
+		{} // While preprocessing lambdas do not trigger type completeness for the first arg of the lambda type.
 		else if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, arg.type );
 	}
