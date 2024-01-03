@@ -442,9 +442,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
-
-		"VariableIsNotCapturedByLambda_Test2",
-		"VariableIsNotCapturedByLambda_Test3",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

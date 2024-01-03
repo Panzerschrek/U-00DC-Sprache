@@ -181,6 +181,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
+	bool has_preprocessing_errors= false;
 	std::set<FunctionType::ParamReference> return_references;
 	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
 	std::set<FunctionType::ReferencePollution> references_pollution;
@@ -221,6 +222,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			// Remove temp function.
 			op_variable.llvm_function->function->eraseFromParent();
 		}
+
+		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 
 		// Extract captured variables and sort them to ensure stable order.
 		struct CapturedVariableForSorting
@@ -424,14 +427,15 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		auto functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( op_variable );
 
-		BuildFuncCode(
-			functions_set->functions.back(),
-			class_,
-			names,
-			call_op_name,
-			lambda.function.type.params,
-			*lambda.function.block,
-			nullptr );
+		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
+			BuildFuncCode(
+				functions_set->functions.back(),
+				class_,
+				names,
+				call_op_name,
+				lambda.function.type.params,
+				*lambda.function.block,
+				nullptr );
 
 		class_->members->AddName(
 			call_op_name,
@@ -575,19 +579,26 @@ void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
-	const LambdaPreprocessingContext& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
+	LambdaPreprocessingContext& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
 
 	if( lambda_preprocessing_context.external_variables.count( variable ) > 0 &&
 		lambda_preprocessing_context.allowed_for_capture_variables != std::nullopt &&
 		lambda_preprocessing_context.allowed_for_capture_variables->count( variable ) == 0 )
+	{
 		REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
+		lambda_preprocessing_context.has_preprocessing_errors= true;
+	}
 
 	// Do not allow to capture variables through another lambda.
 	const LambdaPreprocessingContext* current_context= function_context.lambda_preprocessing_context->parent;
 	while( current_context != nullptr )
 	{
 		if( current_context->external_variables.count( variable ) > 0 )
+		{
 			REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
+			function_context.variables_state.AddNode( variable ); // Prevent further errors.
+			lambda_preprocessing_context.has_preprocessing_errors= true;
+		}
 
 		current_context= current_context->parent;
 	}

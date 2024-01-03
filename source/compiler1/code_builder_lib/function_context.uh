@@ -59,6 +59,8 @@ struct LambdaPreprocessingContext
 	// Contains set of variables of the preprocessed lambda.
 	ust::vector</VariablePtr/> captured_variables_return_references;
 	ust::vector</ ust::vector</VariablePtr/> /> captured_variables_return_inner_references;
+
+	bool has_preprocessing_errors= false;
 }
 
 class FunctionContext

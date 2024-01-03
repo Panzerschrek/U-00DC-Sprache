@@ -82,6 +82,8 @@ public:
 	// Contains set of variables of the preprocessed lambda.
 	std::set<VariablePtr> captured_variables_return_references;
 	std::vector<std::set<VariablePtr>> captured_variables_return_inner_references;
+
+	bool has_preprocessing_errors= false;
 };
 
 } // namespace U

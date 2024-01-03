@@ -255,6 +255,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
 
+	var bool mut has_preprocessing_errors= false;
 	var FunctionType::ParamReferences mut return_references;
 	var ust::vector</ FunctionType::ParamReferences /> mut return_inner_references;
 	var ust::vector</FunctionType::ReferencePollution/> mut references_pollution;
@@ -301,6 +302,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		auto mut lock= lambda_preprocessing_context_ptr.lock_mut();
 		var LambdaPreprocessingContext &mut lambda_preprocessing_context_result= lock.deref();
+
+		has_preprocessing_errors= lambda_preprocessing_context_result.has_preprocessing_errors;
 
 		// Extract captured variables and sort them to ensure stable order.
 		var ust::vector</ CapturedVariableForSorting /> mut captured_variables;
@@ -564,7 +567,10 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto,
 		};
 
-		BuildFuncCode( names_scope, function_variable );
+		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
+		{
+			BuildFuncCode( names_scope, function_variable );
+		}
 
 		var FunctionsSet mut functions_set;
 		functions_set.functions.push_back( move(function_variable) );
@@ -714,19 +720,20 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 
 fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	NamesScopePtr& names_scope,
-	FunctionContext& function_context,
+	FunctionContext &mut function_context,
 	VariablePtr& variable,
 	ust::string8& name,
 	SrcLoc& src_loc )
 {
-	auto  lock= function_context.lambda_preprocessing_context.try_lock_imut();
-	var LambdaPreprocessingContext& lambda_preprocessing_context= lock.deref();
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
 
 	if( lambda_preprocessing_context.external_variables.exists( variable ) &&
 		!lambda_preprocessing_context.allowed_for_capture_variables.empty() &&
 		!lambda_preprocessing_context.allowed_for_capture_variables.try_deref().exists( variable ) )
 	{
 		REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
+		lambda_preprocessing_context.has_preprocessing_errors= true;
 	}
 
 	// Do not allow to capture variables through another lambda.
@@ -739,6 +746,8 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 			if( current.external_variables.exists( variable ) )
 			{
 				REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
+				function_context.references_graph.AddNode( variable ); // Prevent further errors.
+				lambda_preprocessing_context.has_preprocessing_errors= true;
 			}
 			next= current.parent.lock();
 		}
