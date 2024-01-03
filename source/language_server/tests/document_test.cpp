@@ -977,13 +977,6 @@ U_TEST( DocumentCompletion_Test24 )
 
 U_TEST( DocumentCompletion_Test25 )
 {
-	// TODO - fix this.
-	// Completion isn't working properly in lambdas, because CodeBuilder skips lambda preprocessing,
-	// since it assumes that it is already ready, because lambda source location is the same as during compilation.
-	// We need to fix this (somehow) by modifying lambda source location, by changing lambdas storage or by forcing to run lambda preprocessing again.
-	// But it is for now too complicated.
-	DISABLE_TEST;
-
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
 	const IVfs::Path path= "/test.u";
@@ -997,7 +990,6 @@ U_TEST( DocumentCompletion_Test25 )
 
 	// Should suggest external variable in lambda body.
 	document.UpdateText( DocumentRange{ { 1, 63 }, { 1, 63 } }, "auto c= ext" );
-	std::cout << document.GetCurrentText() << std::endl;
 
 	const CompletionItemsNormalized expected_completion_result{ "external_variable" };
 

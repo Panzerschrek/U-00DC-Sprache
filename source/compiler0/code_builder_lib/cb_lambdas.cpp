@@ -119,6 +119,14 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		std::reverse( key.tuple_for_indices.begin(), key.tuple_for_indices.end() );
 	}
 
+	if( completion_request_index_ > 0 )
+	{
+		// Workaround for language server.
+		// On each completion request increase this index and use it for lambdas caching,
+		// in order to preprocess same lambdas in completion.
+		key.tuple_for_indices.push_back( completion_request_index_ );
+	}
+
 	if( const auto it= lambda_classes_table_.find(key); it != lambda_classes_table_.end() )
 	{
 		// Already generated.

@@ -120,6 +120,8 @@ public: // IDE helpers.
 	template<typename T>
 	std::vector<CompletionItem> Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
 	{
+		++completion_request_index_;
+
 		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
 			return {};
@@ -132,6 +134,7 @@ public: // IDE helpers.
 	std::vector<SignatureHelpItem> GetSignatureHelp( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
 	{
 		// Use same routines for completion and signature help.
+		++completion_request_index_;
 
 		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
@@ -1485,6 +1488,7 @@ private:
 	// Use dummy namespace as source point for dummy instantiations of templates.
 	NamesScopePtr dummy_template_instantiation_args_scope_;
 
+	uint32_t completion_request_index_= 0;
 	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;
 	// Output container for signature help result items.
