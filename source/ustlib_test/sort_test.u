@@ -330,6 +330,20 @@ fn nomangle main() : i32
 		ust::sort( IntRange(arr), CompareGreater() );
 		halt if( !IsSorted( arr, CompareGreater() ) );
 	}
+	{ // Sort, using custom comparator in form of lambda.
+		auto num= 99;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32(gen.Next());
+		}
+
+		auto greater= lambda( i32 x, i32 y ) : bool { return x > y; };
+		ust::sort( IntRange(arr), greater );
+		halt if( !IsSorted( arr, greater ) );
+	}
 	{
 		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
 

@@ -53,6 +53,22 @@ fn nomangle main() : i32
 		halt if( y != 1 );
 	}
 	{
+		// Can create thread for lambda.
+		var IntShared x(0);
+		var i32 mut y= 0;
+
+		auto mut thread= ust::make_thread_void(
+			lambda[=]()
+			{
+				auto mut l= x.lock_mut();
+				l.deref()= 33;
+			});
+
+		move(thread).join();
+
+		halt if( x.lock_imut().deref() != 33 );
+	}
+	{
 		// Can get result of thread.
 		auto mut thread= ust::make_thread</ i32 />( (fn() : i32 )( Get42 ) );
 		var i32 res= move(thread).join();
