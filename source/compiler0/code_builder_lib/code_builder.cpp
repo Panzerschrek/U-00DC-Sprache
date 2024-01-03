@@ -41,7 +41,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options,
-	const SourceGraph& source_graph )
+	const SourceGraphPtr& source_graph )
 {
 	CodeBuilder code_builder(
 		llvm_context,
@@ -60,7 +60,7 @@ std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options,
-	const SourceGraph& source_graph )
+	const SourceGraphPtr& source_graph )
 {
 	std::unique_ptr<CodeBuilder> instance(
 		new CodeBuilder(
@@ -176,15 +176,15 @@ CodeBuilder::CodeBuilder(
 	}
 }
 
-void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
+void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 {
-	source_graph_= &source_graph;
-	macro_expansion_contexts_= source_graph.macro_expansion_contexts;
+	source_graph_= source_graph;
+	macro_expansion_contexts_= source_graph->macro_expansion_contexts;
 
 	U_ASSERT( module_ == nullptr );
 	module_=
 		std::make_unique<llvm::Module>(
-			source_graph.nodes_storage.front().file_path,
+			source_graph->nodes_storage.front().file_path,
 			llvm_context_ );
 
 	// Setup data layout and target triple.
@@ -270,11 +270,11 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	global_function_context_->is_functionless_context= true;
 	global_function_context_variables_storage_= std::make_unique<StackVariablesStorage>( *global_function_context_ );
 
-	debug_info_builder_.emplace( llvm_context_, data_layout_, source_graph, *module_, build_debug_info_ );
+	debug_info_builder_.emplace( llvm_context_, data_layout_, *source_graph, *module_, build_debug_info_ );
 
 	// Build graph.
-	compiled_sources_.resize( source_graph.nodes_storage.size() );
-	BuildSourceGraphNode( source_graph, 0u );
+	compiled_sources_.resize( source_graph->nodes_storage.size() );
+	BuildSourceGraphNode( *source_graph, 0u );
 
 	// Perform post-checks for non_sync tags.
 	// Do this at the end to avoid dependency loops.
@@ -292,7 +292,7 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	// Leave internal structures intact.
 
 	// Normalize result errors.
-	*global_errors_= NormalizeErrors( *global_errors_, *source_graph.macro_expansion_contexts );
+	*global_errors_= NormalizeErrors( *global_errors_, *source_graph->macro_expansion_contexts );
 }
 
 void CodeBuilder::FinalizeProgram()

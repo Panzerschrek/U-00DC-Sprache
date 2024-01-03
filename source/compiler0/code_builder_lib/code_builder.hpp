@@ -79,6 +79,8 @@ public:
 		// TODO - fill parameters range.
 	};
 
+	using SourceGraphPtr= std::shared_ptr<const SourceGraph>;
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -89,7 +91,7 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraph& source_graph );
+		const SourceGraphPtr& source_graph );
 
 	// Build program, but leave internal state and LLVM module.
 	// Use this for expecting program after its building (in IDE language server, for example).
@@ -98,7 +100,7 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraph& source_graph );
+		const SourceGraphPtr& source_graph );
 
 public: // IDE helpers.
 	CodeBuilderErrorsContainer TakeErrors();
@@ -152,7 +154,7 @@ private:
 		const CodeBuilderOptions& options );
 
 	// This function may be called exactly once.
-	void BuildProgramInternal( const SourceGraph& source_graph );
+	void BuildProgramInternal( const SourceGraphPtr& source_graph );
 
 	// Run code, necessary for result LLVM module finalization, but not (strictly) necessary for other purposes.
 	void FinalizeProgram();
@@ -1434,7 +1436,10 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
-	const SourceGraph* source_graph_= nullptr; // Current source graph.
+	// Current source graph.
+	// Store shared_ptr because we need to keep it alive, because some internal structures contain raw pointers to its contents.
+	SourceGraphPtr source_graph_;
+
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
 	std::vector<SourceBuildResult> compiled_sources_;
 

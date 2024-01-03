@@ -243,7 +243,7 @@ void Document::OnPossibleDependentFileChanged( const IVfs::Path& file_path_norma
 	if( compiled_state_ == nullptr )
 		return;
 
-	for( const SourceGraph::Node& node : compiled_state_->source_graph.nodes_storage )
+	for( const SourceGraph::Node& node : compiled_state_->source_graph->nodes_storage )
 	{
 		if( node.file_path == file_path_normalized )
 		{
@@ -355,8 +355,8 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 		location.src_loc= *result_src_loc;
 
 		const uint32_t file_index= result_src_loc->GetFileIndex();
-		if( file_index < compiled_state_->source_graph.nodes_storage.size() )
-			location.uri= Uri::FromFilePath( compiled_state_->source_graph.nodes_storage[ file_index ].file_path );
+		if( file_index < compiled_state_->source_graph->nodes_storage.size() )
+			location.uri= Uri::FromFilePath( compiled_state_->source_graph->nodes_storage[ file_index ].file_path );
 		else
 			location.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
 
@@ -422,8 +422,8 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 		location.src_loc= result_src_loc;
 
 		const uint32_t file_index= result_src_loc.GetFileIndex();
-		if( file_index < compiled_state_->source_graph.nodes_storage.size() )
-			location.uri= Uri::FromFilePath( compiled_state_->source_graph.nodes_storage[ file_index ].file_path );
+		if( file_index < compiled_state_->source_graph->nodes_storage.size() )
+			location.uri= Uri::FromFilePath( compiled_state_->source_graph->nodes_storage[ file_index ].file_path );
 		else
 			location.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
 
@@ -442,7 +442,7 @@ Symbols Document::GetSymbols()
 		// Normal case - use last valid state of syntax tree in order to build symbols.
 		return
 			BuildSymbols(
-				compiled_state_->source_graph.nodes_storage.front().ast,
+				compiled_state_->source_graph->nodes_storage.front().ast,
 				// Map src_loc in compiled state to range in current state of the document.
 				[this]( const SrcLoc& src_loc ) { return GetIdentifierRange(src_loc); } );
 	}
@@ -465,7 +465,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 {
 	TryTakeBackgroundStateUpdate();
 
-	if( compiled_state_ == nullptr || compiled_state_->source_graph.nodes_storage.empty() )
+	if( compiled_state_ == nullptr || compiled_state_->source_graph->nodes_storage.empty() )
 	{
 		log_() << "Can't complete - document is not compiled" << std::endl;
 		return {};
@@ -560,7 +560,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	const auto synt_result=
 		Synt::SyntaxAnalysis(
 			lexems,
-			TakeMacrosFromImports( compiled_state_->source_graph ),
+			TakeMacrosFromImports( *compiled_state_->source_graph ),
 			std::make_shared<Synt::MacroExpansionContexts>(),
 			CalculateSourceFileContentsHash( text_ ) );
 
@@ -594,7 +594,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 {
 	TryTakeBackgroundStateUpdate();
 
-	if( compiled_state_ == nullptr || compiled_state_->source_graph.nodes_storage.empty() )
+	if( compiled_state_ == nullptr || compiled_state_->source_graph->nodes_storage.empty() )
 	{
 		log_() << "Can't get signature help - document is not compiled" << std::endl;
 		return {};
@@ -690,7 +690,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	const auto synt_result=
 		Synt::SyntaxAnalysis(
 			lexems,
-			TakeMacrosFromImports( compiled_state_->source_graph ),
+			TakeMacrosFromImports( *compiled_state_->source_graph ),
 			std::make_shared<Synt::MacroExpansionContexts>(),
 			CalculateSourceFileContentsHash( text_ ) );
 
@@ -850,7 +850,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 			num_text_changes_at_compilation_task_start,
 			text= text_,
 			line_to_linear_position_index= line_to_linear_position_index_,
-			source_graph= std::move(source_graph),
+			source_graph= std::make_shared<SourceGraph>( std::move(source_graph) ),
 			build_options= build_options_ // Capture copy of build options in case this update func outlives this class instance.
 		]
 		() mutable // Mutable in order to move captured variables.
@@ -935,7 +935,7 @@ void Document::TryTakeBackgroundStateUpdate()
 		}
 
 		PopulateDiagnostics(
-			compiled_state_->source_graph,
+			*compiled_state_->source_graph,
 			compiled_state_->code_builder->TakeErrors(),
 			compiled_state_->text,
 			compiled_state_->line_to_linear_position_index,
