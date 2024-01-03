@@ -166,6 +166,27 @@ struct TakeOperator
 	ust::box</Expression/> expression;
 }
 
+struct Lambda
+{
+	struct CaptureNothing{}
+	struct CaptureAllByValue{}
+	struct CaptureAllByReference{}
+
+	struct CaptureListElement
+	{
+		ust::string8 name;
+		bool by_reference= false;
+	}
+
+	type CaptureList= ust::vector</ CaptureListElement />;
+
+	type Capture= ust::variant</ tup[ CaptureNothing, CaptureAllByValue, CaptureAllByReference, CaptureList ] />;
+
+	SrcLoc src_loc;
+	Capture capture;
+	ust::shared_ptr_final</Function/> function;
+}
+
 struct TernaryOperator
 {
 	SrcLoc src_loc;
@@ -262,6 +283,7 @@ type Expression= ust::variant</ tup[
 	UnsafeExpression,
 	MoveOperator,
 	TakeOperator,
+	Lambda,
 	TernaryOperator,
 	ReferenceToRawPointerOperator,
 	RawPointerToReferenceOperator,

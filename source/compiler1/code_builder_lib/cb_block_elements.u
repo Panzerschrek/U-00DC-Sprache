@@ -620,7 +620,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			var VariableLite expr= expr_ptr.lock_imut().deref();
 
-			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+			if( !function_context.lambda_preprocessing_context.empty() )
+			{
+				LambdaPreprocessingCollectReturnInnerReferences( function_context, expr_ptr );
+			}
+			else
+			{
+				CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+			}
 
 			function_context.references_graph.TryAddInnerLinks( expr_ptr, return_node, names_scope, return_operator.src_loc );
 
@@ -703,8 +710,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				return block_element_build_info;
 			}
 
-			CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
-			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+			if( !function_context.lambda_preprocessing_context.empty() )
+			{
+				LambdaPreprocessingCollectReturnReferences( function_context, expr_ptr );
+				LambdaPreprocessingCollectReturnInnerReferences( function_context, expr_ptr );
+			}
+			else
+			{
+				CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+				CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+			}
 
 			// Link result with return node. This allow us to prevent returning of reference to local variable.
 			function_context.references_graph.TryAddLink( expr_ptr, return_node, names_scope, return_operator.src_loc );
@@ -713,7 +728,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-		CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+
+		if( !function_context.lambda_preprocessing_context.empty() )
+		{
+			LambdaPreprocessingCollectReferencePollution( function_context );
+		}
+		else
+		{
+			CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+		}
+
 		function_context.references_graph.RemoveNode( return_node );
 	}
 
@@ -1622,11 +1646,15 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
 		if( is_signed )
 		{
-			ust::sort( all_ranges.range(), SwitchCaseCompareSigned() );
+			ust::sort(
+				all_ranges.range(),
+				lambda( SwitchCaseRange& l, SwitchCaseRange& r ) : bool { return i64(l.low) < i64(r.low); } );
 		}
 		else
 		{
-			ust::sort( all_ranges.range(), SwitchCaseCompareUnsigned() );
+			ust::sort(
+				all_ranges.range(),
+				lambda( SwitchCaseRange& l, SwitchCaseRange& r ) : bool { return l.low < r.low; } );
 		}
 
 		// Check for overlaps and gaps between ranges.
@@ -2195,6 +2223,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			with( mut lock : names_scope.lock_mut() )
 			{
 				lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
+
+				// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+				// TODO - maybe make this counter available for a programmer?
+				{
+					auto index_value= unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
+					var Variable mut tuple_for_index
+					{
+						.t= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ ),
+						.value_type= ValueType::Value,
+						.location= Variable::Location::LLVMRegister,
+						.llvm_value= index_value,
+						.constexpr_value= index_value,
+						.referenced= true,
+					};
+					lock.deref().AddName( " tuple for index", move(tuple_for_index).CreatePtr() ).empty();
+				}
 			}
 
 			var bool is_last_iteration= i + 1s == tuple_type.element_types.size();
@@ -2807,7 +2851,15 @@ fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, Function
 	}
 
 	CallDestructorsForAllVariablesFrames( names_scope, function_context, src_loc );
-	CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+
+	if( !function_context.lambda_preprocessing_context.empty() )
+	{
+		LambdaPreprocessingCollectReferencePollution( function_context );
+	}
+	else
+	{
+		CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+	}
 
 	if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
 	{
@@ -3044,6 +3096,8 @@ fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_
 // Move and take have side effects.
 fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
 fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }
+// It's dumm to define lambda and do not use it.
+fn SingleExpressionIsUselessImpl( Synt::Lambda& e ) : bool { ust::ignore_unused(e); return true; }
 // Casts have no side effects.
 fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }
@@ -3084,22 +3138,6 @@ struct SwitchCaseRange
 	u64 low;
 	u64 high;
 	SrcLoc src_loc;
-}
-
-struct SwitchCaseCompareSigned
-{
-	op()( this, SwitchCaseRange& l, SwitchCaseRange& r ) : bool
-	{
-		return i64(l.low) < i64(r.low);
-	}
-}
-
-struct SwitchCaseCompareUnsigned
-{
-	op()( this, SwitchCaseRange& l, SwitchCaseRange& r ) : bool
-	{
-		return l.low < r.low;
-	}
 }
 
 } // namespace U1

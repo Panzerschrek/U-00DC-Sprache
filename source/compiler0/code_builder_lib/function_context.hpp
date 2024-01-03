@@ -3,6 +3,7 @@
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/IRBuilder.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "lambdas.hpp"
 #include "references_graph.hpp"
 
 namespace U
@@ -93,6 +94,10 @@ public:
 	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
+
+	// Non-null if this is preprocessed lambda.
+	// Non-owning (observer) pointer.
+	LambdaPreprocessingContext* lambda_preprocessing_context= nullptr;
 
 	// Keep "bool" fields last in order to reduce gaps between fields.
 

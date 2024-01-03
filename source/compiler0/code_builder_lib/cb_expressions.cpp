@@ -1213,6 +1213,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const Value& resolved_value= resolved_value_ptr->value;
 		resolved_variable= resolved_value.GetVariable();
 		kind_name= resolved_value.GetKindName();
+
+		if( resolved_variable != nullptr && function_context.lambda_preprocessing_context != nullptr )
+		{
+			LambdaPreprocessingCheckVariableUsage( names, function_context, resolved_variable, move_operator.var_name, move_operator.src_loc );
+			if( function_context.lambda_preprocessing_context->external_variables.count( resolved_variable ) > 0 )
+				resolved_variable= LambdaPreprocessingAccessExternalVariable( function_context, resolved_variable, move_operator.var_name );
+		}
 	}
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.
@@ -1368,6 +1375,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::Lambda& lambda )
+{
+	return BuildLambda( names, function_context, lambda );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(

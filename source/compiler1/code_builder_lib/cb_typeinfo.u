@@ -394,6 +394,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		{
 			ADD_BOOL_FIELD( "is_coroutine", false )
 		}
+
+		ADD_BOOL_FIELD( "is_lambda", !class_.generated_class_data.get</ LambdaClassData />().empty() )
 	}
 	else if_var( &enum_ptr : t.GetEnumType() )
 	{

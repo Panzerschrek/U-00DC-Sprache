@@ -1,0 +1,892 @@
+import "/assert.u"
+import "/sort.u"
+import "/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
+{
+	var ClassTypePtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda_ );
+
+	var Variable mut result_value
+	{
+		.t= lambda_class,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.name= "value of " + Type(lambda_class).ToString(),
+	};
+
+	if( !function_context.is_functionless_context )
+	{
+		result_value.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result_value.t.GetLLVMType(), g_null_string ) );
+		CreateLifetimeStart( function_context, result_value.llvm_value );
+	}
+
+	var VariablePtr result= move(result_value).CreatePtr();
+	function_context.references_graph.AddNode( result );
+
+	with( &class_type : lambda_class.lock_imut().deref() )
+	{
+		var ust::vector</LLVMValueRef/> mut constexpr_initializers;
+		var size_type mut num_constexpr_initializers= 0s;
+
+		if( class_type.can_be_constexpr )
+		{
+			constexpr_initializers.resize( class_type.fields_order.size(), LLVMValueRef::Null );
+		}
+
+		foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+		{
+			if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )
+			{
+				auto variable_nullable= lookup_result[1].Get</Variable/>();
+				if( !variable_nullable.empty() )
+				{
+					var VariablePtr variable= variable_nullable.try_to_non_nullable();
+					auto variable_lock= variable.lock_imut();
+					var Variable& v= variable_lock.deref();
+
+					with( &field : capture.field.lock_imut().deref() )
+					{
+						debug_assert( v.t == field.t );
+
+						auto field_value= CreateClassFieldGEP( function_context, lambda_class, result.lock_imut().deref().llvm_value, field );
+						if( field.is_reference )
+						{
+							CreateTypedReferenceStore( function_context, field.t, v.llvm_value, field_value );
+
+							// Link references.
+							function_context.references_graph.TryAddLink(
+								variable,
+								result.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ],
+								names_scope,
+								lambda_.src_loc );
+
+							if( class_type.can_be_constexpr && v.constexpr_value != LLVMValueRef::Null )
+							{
+								constexpr_initializers[ size_type(field.index) ]= AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value );
+								++num_constexpr_initializers;
+							}
+						}
+						else
+						{
+							if( !field.t.IsCopyConstructible() )
+							{
+								REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, lambda_.src_loc, field.t )
+							}
+							else if( !function_context.is_functionless_context )
+							{
+								BuildCopyConstructorPart( names_scope, function_context, field_value, v.llvm_value, field.t, lambda_.src_loc );
+							}
+
+							// Link references.
+							auto reference_tag_count= size_type( field.t.ReferenceTagCount() );
+							auto result_lock= result.lock_imut();
+							for( auto mut i= 0s; i < reference_tag_count; ++i )
+							{
+								function_context.references_graph.TryAddLink(
+									v.inner_reference_nodes[i],
+									result_lock.deref().inner_reference_nodes[i],
+									names_scope,
+									lambda_.src_loc );
+							}
+
+							if( class_type.can_be_constexpr && v.constexpr_value != LLVMValueRef::Null )
+							{
+								constexpr_initializers[ size_type(field.index) ]= v.constexpr_value;
+								++num_constexpr_initializers;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if( class_type.can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
+		{
+			with ( mut lock : result.lock_mut() )
+			{
+				lock.deref().constexpr_value= unsafe( LLVMConstNamedStruct( class_type.llvm_type, constexpr_initializers.data(), u32(constexpr_initializers.size()) ) );
+			}
+		}
+	}
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
+fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr
+{
+	// Use first named namespace as lambda class parent.
+	// We can't use namespace of function variables here, because it will be destroyed later.
+	// Usually this is a closest global scope that contains this function - some namespace, struct, class or a template args namespace.
+	var NamesScopePtr parent_scope= GetClosestNamedSpaceOrRoot( names_scope );
+
+	var LambdaKey mut key{ .parent_scope= parent_scope, .src_loc= lambda_.src_loc };
+
+	// Extract tuple-for indices.
+	{
+		var NamesScopePtr mut current_ptr= names_scope;
+		loop
+		{
+			var ust::shared_ptr_nullable_imut</NamesScope/> mut next_ptr;
+			with( &current : current_ptr.lock_imut().deref() )
+			{
+				if_var( &tuple_for_index : current.GetThisScopeValue( " tuple for index" ) )
+				{
+					auto variable_ptr= tuple_for_index.Get</Variable/>();
+					if( !variable_ptr.empty() )
+					{
+						auto constexpr_value= variable_ptr.try_lock_imut().deref().constexpr_value;
+						if( constexpr_value != LLVMValueRef::Null )
+						{
+							key.tuple_for_indices.push_back( u32( unsafe( LLVMConstIntGetZExtValue( constexpr_value ) ) ) );
+						}
+					}
+				}
+
+				next_ptr= current.GetParent();
+			}
+
+			if( next_ptr.empty() )
+			{
+				break;
+			}
+			current_ptr= next_ptr.try_to_non_nullable();
+		}
+
+		// Since we iterate over name scopes in reverse order reverse the result container.
+		for( var size_type mut i= 0s, s= key.tuple_for_indices.size(); i < s / 2s; ++i )
+		{
+			key.tuple_for_indices.swap( i, s - i - 1s );
+		}
+	}
+
+	if_var( &existing_class : lambda_classes_table_.find( key ) )
+	{
+		return existing_class;
+	}
+
+	var TemplateArgsFinished mut template_args;
+	with( &parent : parent_scope.lock_imut().deref() )
+	{
+		if( parent.GetThisNamespaceName() == NamesScope::c_template_args_namespace_name )
+		{
+			// This is a lambda inside template function or in template class declaration expression.
+			// Extract template args for later usage for lambda name mangling.
+			type NamedTemplateArg= tup[ ust::string8, TemplateArgFinished ];
+			var ust::vector</ NamedTemplateArg /> mut named_template_args;
+
+			foreach( &v : parent )
+			{
+				auto template_arg_ptr= v.value().Get</TemplateArg/>();
+				if( !template_arg_ptr.empty() )
+				{
+					with( &template_arg : template_arg_ptr.try_lock_imut().deref() )
+					{
+						if_var( &t : template_arg.something.get</Type/>() )
+						{
+							named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(t) ) );
+						}
+						else if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
+						{
+							named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(v_ptr) ) );
+						}
+					}
+				}
+			}
+
+			// Sort template args by name in order to obtain some stable order.
+			// This order should not be the same as order in the template itself, it should only be deterministic.
+			ust::sort(
+				named_template_args.range(),
+				lambda( NamedTemplateArg& l, NamedTemplateArg& r ) : bool { return l[0] < r[0]; } );
+
+			foreach( &mut named_template_arg : named_template_args )
+			{
+				template_args.push_back( take( named_template_arg[1] ) );
+			}
+		}
+	}
+
+	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_, key.tuple_for_indices.range() ), parent_scope ) );
+
+	var LambdaClassData mut lambda_class_data{ .template_args= move(template_args) };
+
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.members_initial= class_members,
+		.kind= ClassType::Kind::Struct, // Set temporary to struct in order to allow generation of some methods.
+		.parents_list_prepared= true,
+		.have_explicit_noncopy_constructors= false,
+		.is_default_constructible= false,
+		.can_be_constexpr= true, // Set later.
+		.generated_class_data= move(lambda_class_data)
+	};
+
+	var ClassTypePtr class_type_ptr( move(class_type) );
+	lambda_classes_table_.insert( move(key), class_type_ptr );
+
+	with( mut members_lock : class_members.lock_mut() )
+	{
+		var NamesScope &mut members= members_lock.deref();
+
+		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
+		var FunctionsSet functions_set{ .class_= class_type_ptr };
+		members.AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		members.AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		members.AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+
+		// Add special member to names scope to identify it as class names scope.
+		members.SetClass( class_type_ptr );
+
+		// Allow accessing private members of class for all it's inner namespaces.
+		members.AddAccessRightsFor( class_type_ptr, Synt::ClassVisibility::Private );
+	}
+
+	with( mangled_name : mangler_.deref().MangleType( class_type_ptr ) )
+	{
+		with( mut class_lock : class_type_ptr.lock_mut() )
+		{
+			class_lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, mangled_name.front() ) );
+		}
+	}
+
+	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
+
+	var bool mut has_preprocessing_errors= false;
+	var FunctionType::ParamReferences mut return_references;
+	var ust::vector</ FunctionType::ParamReferences /> mut return_inner_references;
+	var ust::vector</FunctionType::ReferencePollution/> mut references_pollution;
+
+	// Run preprocessing.
+	{
+		var LambdaPreprocessingContext mut lambda_preprocessing_context
+		{
+			.parent= function_context.lambda_preprocessing_context,
+			.external_variables= CollectCurrentFunctionVariables( function_context ),
+			.lambda_this_value_type= lambda_this_value_type,
+			.capture_by_value= !lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty()
+		};
+
+		if( !lambda_.capture.get</Synt::Lambda::CaptureNothing/>().empty() )
+		{
+			lambda_preprocessing_context.allowed_for_capture_variables= LambdaPreprocessingContext::AllowedForCaptureVariables();
+		}
+		else if(
+			!lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty() ||
+			!lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty() )
+		{
+			lambda_preprocessing_context.allowed_for_capture_variables= ust::null_optional;
+		}
+		else { halt; }
+
+		var ust::shared_ptr_mut</LambdaPreprocessingContext/> lambda_preprocessing_context_ptr( move(lambda_preprocessing_context) );
+
+		{
+			var FunctionVariable mut function_variable
+			{
+				.body_syntax_element= lambda_.function,
+				.llvm_function( LazyLLVMFunction( "\0" /* The name of temporary function is irrelevant. */ ) ),
+				// It's fine to use incomplete lambda class here, since this class can't be accessed.
+				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type ),
+				.is_this_call= true,
+			};
+
+			BuildFuncCode( names_scope, function_variable, lambda_preprocessing_context_ptr );
+
+			// Remove temp function.
+			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
+		}
+
+		auto mut lock= lambda_preprocessing_context_ptr.lock_mut();
+		var LambdaPreprocessingContext &mut lambda_preprocessing_context_result= lock.deref();
+
+		has_preprocessing_errors= lambda_preprocessing_context_result.has_preprocessing_errors;
+
+		// Extract captured variables and sort them to ensure stable order.
+		var ust::vector</ CapturedVariableForSorting /> mut captured_variables;
+		foreach( &captured_variable_pair : lambda_preprocessing_context_result.captured_external_variables )
+		{
+			auto capture_by_reference= !lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty();
+			auto llvm_type= captured_variable_pair.value().source_variable.lock_imut().deref().t.GetLLVMType();
+
+			var CapturedVariableForSorting mut v
+			{
+				.name= captured_variable_pair.key(),
+				.data= captured_variable_pair.value(),
+				.capture_by_reference= capture_by_reference,
+				.alignment( unsafe( LLVMABIAlignmentOfType( data_layout_, select( capture_by_reference ? LLVMPointerType( llvm_type, 0u ) : llvm_type ) ) ) )
+			};
+
+			captured_variables.push_back( move(v) );
+		}
+
+		// We must sort fields in order to avoid creating fields list in hash-map iteration order (which is non-deterministic).
+		// There should be no equal elements here, because this can prevent sorting to be stable.
+		ust::sort( captured_variables.range() );
+
+		var ust::unordered_map</ VariablePtr, u8 /> mut captured_variable_to_lambda_inner_reference_tag;
+
+		with( mut class_lock : class_type_ptr.lock_mut() )
+		{
+			var ClassType &mut class_type= class_lock.deref();
+
+			var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+			// Iterate over sorted captured variables, create fields for them, setup reference notation.
+			foreach( &captured_variable : captured_variables )
+			{
+				auto source_variable_lock= captured_variable.data.source_variable.lock_imut();
+				var Variable& source_variable= source_variable_lock.deref();
+
+				auto reference_tag_cout= size_type( source_variable.t.ReferenceTagCount() );
+
+				var ClassField mut field
+				{
+					.source_class= class_type_ptr,
+					.syntax_element= dummy_syntax_element,
+					.t= source_variable.t,
+					.is_reference= captured_variable.capture_by_reference,
+					.is_mutable= true, // Set later.
+					.index= u32( class_type.fields_order.size() ),
+				};
+
+				if( captured_variable.capture_by_reference )
+				{
+					// Captured reference mutability is determined by mutability of source variable.
+					field.is_mutable= source_variable.value_type == ValueType::ReferenceMut;
+
+					// Create a reference tag for captured reference.
+					field.reference_tag= u8( class_type.inner_references.size() );
+					class_type.inner_references.push_back( select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+
+					if( reference_tag_cout > 0s )
+					{
+						REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, lambda_.src_loc, captured_variable.name )
+					}
+
+					// Captured by reference variable points to one of inner the reference tags of lambda this.
+					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, field.reference_tag );
+				}
+				else
+				{
+					// Captured by value variable points to lambda this param ptself.
+					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
+
+					// Each reference tag of each captured variable get its own reference tag in result lambda class.
+					for( auto mut i= 0s; i < reference_tag_cout; ++i )
+					{
+						auto reference_tag= u8( class_type.inner_references.size() );
+						field.inner_reference_tags.push_back( reference_tag );
+						class_type.inner_references.push_back( source_variable.t.GetInnerReferenceKind(i) );
+
+						captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.accessible_variables[i], reference_tag );
+					}
+				}
+
+				var ClassFieldPtr mut field_ptr( move(field) );
+				class_type.fields_order.push_back( ust::make_tuple( captured_variable.name, move(field_ptr) ) );
+				class_type.SetMemberVisibility( captured_variable.name, Synt::ClassVisibility::Private );
+			}
+
+			with( mut members_lock : class_members.lock_mut() )
+			{
+				foreach( &field_pair : class_type.fields_order )
+				{
+					members_lock.deref().AddName( field_pair[0], field_pair[1] );
+				}
+			}
+
+			with( &mut captures : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+			{
+				foreach( &field_pair : class_type.fields_order )
+				{
+					var LambdaClassData::Capture mut capture
+					{
+						.captured_variable_name= field_pair[0],
+						.field= field_pair[1],
+					};
+					captures.push_back( move(capture) );
+				}
+			}
+		}
+
+		var u8 this_param_index(0); // Lambda is "this" (argument 0).
+
+		// Process return references.
+		return_references= take( lambda_preprocessing_context_result.return_references );
+
+		foreach( &captured_variable_return_reference : lambda_preprocessing_context_result.captured_variables_return_references )
+		{
+			if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ) )
+			{
+				var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+				return_references.push_back( move(param_reference) );
+			}
+		}
+
+		NormalizeParamReferencesList( return_references );
+
+		// Process return inner references.
+		return_inner_references= take( lambda_preprocessing_context_result.return_inner_references );
+
+		if( return_inner_references.size() < lambda_preprocessing_context_result.captured_variables_return_inner_references.size() )
+		{
+			return_inner_references.resize( lambda_preprocessing_context_result.captured_variables_return_inner_references.size() );
+		}
+
+		for( auto mut i= 0s; i < lambda_preprocessing_context_result.captured_variables_return_inner_references.size(); ++i )
+		{
+			foreach( &captured_variable_return_inner_reference : lambda_preprocessing_context_result.captured_variables_return_inner_references[i] )
+			{
+				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_inner_reference ) )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+					return_inner_references[i].push_back( move(param_reference) );
+				}
+			}
+		}
+
+		foreach( &mut list : return_inner_references )
+		{
+			NormalizeParamReferencesList( list );
+		}
+
+		// Process pollution.
+		foreach( &pollution : lambda_preprocessing_context_result.references_pollution )
+		{
+			var FunctionType::ReferencePollution mut result_pollution= zero_init;
+
+			if_var( &dst_param_reference : pollution.dst.get</ FunctionType::ParamReference />() )
+			{
+				result_pollution.dst= dst_param_reference;
+			}
+			else if_var( &dst_variable : pollution.dst.get</ VariablePtr />() )
+			{
+				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+					result_pollution.dst= move(param_reference);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			else { halt; }
+
+			if_var( &src_param_reference : pollution.src.get</ FunctionType::ParamReference />() )
+			{
+				result_pollution.src= src_param_reference;
+			}
+			else if_var( &src_variable : pollution.src.get</ VariablePtr />() )
+			{
+				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(src_variable) )
+				{
+					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
+					result_pollution.src= move(param_reference);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			else { halt; }
+
+			references_pollution.push_back( move(result_pollution) );
+		}
+
+		NormalizeReferencesPollution( references_pollution );
+	}
+
+	// Set LLVM struct type body.
+	with( mut class_lock : class_type_ptr.lock_mut() )
+	{
+		var ClassType &mut class_type= class_lock.deref();
+
+		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+		foreach( &field_pair : class_type.fields_order )
+		{
+			with( &field : field_pair[1].lock_imut().deref() )
+			{
+				var LLVMTypeRef llvm_type= field.t.GetLLVMType();
+				fields_llvm_types.push_back( select( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type ) );
+			}
+		}
+		unsafe( LLVMStructSetBody( class_type.llvm_type, fields_llvm_types.data(), u32( fields_llvm_types.size() ), LLVMBool::False ) );
+
+		class_type.is_complete= true;
+	}
+
+	// Try to generate important methods.
+	TryGenerateCopyConstructor( class_type_ptr );
+	TryGenerateCopyAssignmentOperator( class_type_ptr );
+	TryGenerateDestructorPrototype( class_type_ptr );
+	TryGenerateDestructor( class_type_ptr );
+	// Equality compare operator is not needed for lambdas.
+
+	with( mut class_lock : class_type_ptr.lock_mut() )
+	{
+		var ClassType &mut class_type= class_lock.deref();
+
+		// Set to class after methods generation.
+		class_type.kind= ClassType::Kind::NonPolymorph;
+
+		// Calculate constexpr property.
+		class_type.can_be_constexpr= true;
+		foreach( &field_pair : class_type.fields_order )
+		{
+			with( &field : field_pair[1].lock_imut().deref() )
+			{
+				if( !field.t.CanBeConstexpr() || ( field.is_reference && field.is_mutable ) )
+				{
+					class_type.can_be_constexpr= false;
+					break;
+				}
+			}
+		}
+	}
+
+	// Create () operator.
+	{
+		var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
+
+		auto mut function_type= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
+		function_type.return_references= move(return_references);
+		function_type.return_inner_references= move(return_inner_references);
+		function_type.references_pollution= move(references_pollution);
+
+		var FunctionVariable mut function_variable
+		{
+			.body_syntax_element= lambda_.function,
+			.llvm_function( LazyLLVMFunction( mangler_.deref().MangleFunction( class_members.lock_imut().deref(), call_op_name, function_type ) ) ),
+			.t= move(function_type),
+			.is_this_call= true,
+			.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto,
+		};
+
+		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
+		{
+			BuildFuncCode( names_scope, function_variable );
+		}
+
+		var FunctionsSet mut functions_set;
+		functions_set.functions.push_back( move(function_variable) );
+
+		with( mut members_lock : class_members.lock_mut() )
+		{
+			members_lock.deref().AddName( call_op_name, NamesScopeValue( move(functions_set) ) );
+		}
+	}
+
+	return class_type_ptr;
+}
+
+fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8
+{
+	var ust::string8 mut name;
+	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
+
+	var SrcLoc mut src_loc= lambda_.src_loc;
+	loop
+	{
+		// Encode file.
+		// Use file contenst hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+		name+= source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].contents_hash;
+		name+= "_";
+
+		// Encode line and column into the name to produce different names for different lambdas in the same file.
+		name+= ust::to_string8( src_loc.GetLine() );
+		name+= "_";
+
+		name+= ust::to_string8( src_loc.GetColumn() );
+		name+= "_";
+
+		auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+		if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
+		{
+			// If this is a lambda defined via macro - add macro expansion context to the name.
+			src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+			continue;
+		}
+		else
+		{
+			break; // Not a macro expansion context.
+		}
+	}
+
+	if( !tuple_for_indices.empty() )
+	{
+		name+= "tf_";
+
+		foreach( tuple_for_index : tuple_for_indices )
+		{
+			name+= ust::to_string8( tuple_for_index );
+			name+= "_";
+		}
+	}
+
+	return name;
+}
+
+fn CodeBuilder::PrepareLambdaCallOperatorType(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::FunctionType& lambda_function_type,
+	ClassTypePtr& lambda_class_type,
+	ValueType lambda_this_value_type ) : FunctionType
+{
+	var FunctionType mut res
+	{
+		.return_type(
+			select(
+				lambda_function_type.return_type.empty()
+					? Type( void_type_ )
+					: PrepareType( names_scope, function_context, lambda_function_type.return_type.try_deref() ) ) ),
+		.return_value_type= ValueType::Value,
+		.is_unsafe= lambda_function_type.is_unsafe,
+		.calling_convention= GetLLVMCallingConvention( lambda_function_type.calling_convention, names_scope, lambda_function_type.src_loc ),
+	};
+
+	if( lambda_function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		res.return_value_type= select( lambda_function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+	}
+
+	// First param is always "this" of the lambda type.
+	debug_assert( !lambda_function_type.params.empty() );
+	var FunctionType::Param mut this_param
+	{
+		.t= lambda_class_type,
+		.value_type= lambda_this_value_type,
+	};
+	res.params.push_back( move(this_param) );
+
+	auto mut params_except_first= lambda_function_type.params.range();
+	params_except_first.drop_front();
+
+	// Iterate over params skipping first "this".
+	foreach( &param : params_except_first )
+	{
+		if( IsKeyword( param.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
+		}
+
+		var FunctionType::Param mut out_param
+		{
+			.t= PrepareType( names_scope, function_context, param.t ),
+			.value_type= ValueType::Value,
+		};
+
+		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
+		{
+			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
+
+		res.params.push_back( move(out_param) );
+	}
+
+	if( !lambda_function_type.return_value_reference_expression.empty() )
+	{
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.return_value_reference_expression.try_deref() ) )
+	}
+	if( !lambda_function_type.return_value_inner_references_expression.empty() )
+	{
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.return_value_inner_references_expression.try_deref() ) )
+	}
+	if( !lambda_function_type.references_pollution_expression.empty() )
+	{
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.references_pollution_expression.try_deref() ) )
+	}
+
+	return move(res);
+}
+
+fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
+{
+	var ust::unordered_set</VariablePtr/> mut result;
+	foreach( &variables_frame : function_context.variables_frames )
+	{
+		foreach( &variable : variables_frame )
+		{
+			result.insert( variable );
+		}
+	}
+	return move(result);
+}
+
+fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& variable,
+	ust::string8& name,
+	SrcLoc& src_loc )
+{
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+	if( lambda_preprocessing_context.external_variables.exists( variable ) &&
+		!lambda_preprocessing_context.allowed_for_capture_variables.empty() &&
+		!lambda_preprocessing_context.allowed_for_capture_variables.try_deref().exists( variable ) )
+	{
+		REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
+		lambda_preprocessing_context.has_preprocessing_errors= true;
+	}
+
+	// Do not allow to capture variables through another lambda.
+	var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut current_ptr= lambda_preprocessing_context.parent.lock();
+	while( !current_ptr.empty() )
+	{
+		var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut next;
+		with( &current : current_ptr.try_lock_imut().deref() )
+		{
+			if( current.external_variables.exists( variable ) )
+			{
+				REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
+				function_context.references_graph.AddNode( variable ); // Prevent further errors.
+				lambda_preprocessing_context.has_preprocessing_errors= true;
+			}
+			next= current.parent.lock();
+		}
+		current_ptr= move(next);
+	}
+}
+
+fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr
+{
+	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+	debug_assert( lambda_preprocessing_context.external_variables.exists( variable ) );
+
+	// Mark source variable as used.
+	with( mut lock : variable.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
+	auto var_lock= variable.lock_imut();
+	var Variable& v= var_lock.deref();
+
+	// Create special temporary reference graph nodes for captured external variable.
+
+	var size_type reference_tag_count( v.t.ReferenceTagCount() );
+
+	if( lambda_preprocessing_context.captured_external_variables.find( name ).empty() )
+	{
+		// Do not set "constexpr" values - make "constexpr" captured variables non-constexpr in lambdas.
+
+		var Variable mut variable_node_value
+		{
+			.t= v.t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.name= v.name + " lambda copy",
+			.llvm_value= v.llvm_value,
+		};
+
+		var ValueType mut value_type= ValueType::ReferenceImut;
+		if( lambda_preprocessing_context.capture_by_value )
+		{
+			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+			if( lambda_preprocessing_context.lambda_this_value_type == ValueType::ReferenceImut )
+			{
+				value_type= ValueType::ReferenceImut;
+			}
+			else
+			{
+				value_type= ValueType::ReferenceMut;
+			}
+		}
+		else
+		{
+			// While capturing by reference capture mutable values as mutable references, immutable values as immutable references.
+			value_type= v.value_type;
+		}
+
+		var Variable mut reference_node_value
+		{
+			.t= v.t,
+			.value_type= value_type,
+			.location= Variable::Location::Pointer,
+			.name= v.name + " lambda copy ref",
+			.llvm_value= v.llvm_value,
+		};
+
+		var ust::vector</VariablePtr/> mut accessible_variables;
+		for( auto mut i= 0s; i < reference_tag_count; ++i )
+		{
+			var ust::string8 mut name= "referenced variable ";
+			name+= ust::to_string8(i);
+			name+= " of captured lambda variable ";
+			name+= v.name;
+
+			var Variable mut accessible_variable
+			{
+				.t= invalid_type_,
+				.value_type= ValueType::Value,
+				.location= Variable::Location::Pointer,
+				.name= move(name),
+			};
+			accessible_variables.push_back( move(accessible_variable).CreatePtr() );
+		}
+
+		var LambdaPreprocessingContext::CapturedVariableData mut captured_variable
+		{
+			.source_variable= variable,
+			.variable_node= move(variable_node_value).CreatePtr(),
+			.reference_node= move(reference_node_value).CreatePtr(),
+			.accessible_variables= move(accessible_variables),
+		};
+		lambda_preprocessing_context.captured_external_variables.insert( name, move(captured_variable) );
+	}
+
+	var LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
+
+	function_context.references_graph.AddNodeIfNotExists( captured_variable.variable_node );
+	function_context.references_graph.AddNodeIfNotExists( captured_variable.reference_node );
+	function_context.references_graph.AddLink( captured_variable.variable_node, captured_variable.reference_node );
+
+	for( auto mut i= 0s; i < reference_tag_count; ++i )
+	{
+		function_context.references_graph.AddNodeIfNotExists( captured_variable.accessible_variables[i] );
+
+		function_context.references_graph.AddLink(
+			captured_variable.accessible_variables[i],
+			captured_variable.variable_node.lock_imut().deref().inner_reference_nodes[i] );
+
+		function_context.references_graph.AddLink(
+			captured_variable.variable_node.lock_imut().deref().inner_reference_nodes[i],
+			captured_variable.reference_node.lock_imut().deref().inner_reference_nodes[i] );
+	}
+
+	return captured_variable.reference_node;
+}
+
+struct CapturedVariableForSorting
+{
+	ust::string8 name;
+	LambdaPreprocessingContext::CapturedVariableData data;
+	u64 alignment;
+	bool capture_by_reference;
+
+	op<=>( CapturedVariableForSorting& l, CapturedVariableForSorting& r ) : i32
+	{
+		// Sort in alignment descending order (to minimize padding).
+		if( l.alignment != r.alignment )
+		{
+			return r.alignment <=> l.alignment;
+		}
+		// If alignment is the same - use name for ordering (it should be unique).
+		return l.name <=> r.name;
+	}
+}
+
+} // namespace U1

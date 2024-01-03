@@ -75,6 +75,7 @@ struct TernaryOperator;
 struct ReferenceToRawPointerOperator;
 struct RawPointerToReferenceOperator;
 struct TakeOperator;
+struct Lambda;
 struct CastMut;
 struct CastImut;
 struct CastRef;
@@ -193,6 +194,7 @@ using Expression= std::variant<
 	std::unique_ptr<const ReferenceToRawPointerOperator>,
 	std::unique_ptr<const RawPointerToReferenceOperator>,
 	std::unique_ptr<const TakeOperator>,
+	std::unique_ptr<const Lambda>,
 	std::unique_ptr<const CastMut>,
 	std::unique_ptr<const CastImut>,
 	std::unique_ptr<const CastRef>,
@@ -1201,6 +1203,32 @@ struct Function
 	bool no_mangle= false;
 	bool is_conversion_constructor= false;
 	bool constexpr_= false;
+};
+
+struct Lambda
+{
+	struct CaptureNothing{};
+	struct CaptureAllByValue{};
+	struct CaptureAllByReference{};
+
+	struct CaptureListElement
+	{
+		std::string name;
+		bool by_reference= false;
+	};
+
+	using CaptureList= std::vector<CaptureListElement>;
+
+	using Capture= std::variant<CaptureNothing, CaptureAllByValue, CaptureAllByReference, CaptureList >;
+
+public:
+	explicit Lambda( const SrcLoc& src_loc )
+		: src_loc(src_loc), function(src_loc) {}
+
+public:
+	SrcLoc src_loc;
+	Capture capture;
+	Function function;
 };
 
 struct TypeAlias

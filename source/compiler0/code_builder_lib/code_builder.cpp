@@ -41,7 +41,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options,
-	const SourceGraph& source_graph )
+	const SourceGraphPtr& source_graph )
 {
 	CodeBuilder code_builder(
 		llvm_context,
@@ -60,7 +60,7 @@ std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options,
-	const SourceGraph& source_graph )
+	const SourceGraphPtr& source_graph )
 {
 	std::unique_ptr<CodeBuilder> instance(
 		new CodeBuilder(
@@ -176,19 +176,20 @@ CodeBuilder::CodeBuilder(
 	}
 }
 
-void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
+void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 {
+	source_graph_= source_graph;
+	macro_expansion_contexts_= source_graph->macro_expansion_contexts;
+
 	U_ASSERT( module_ == nullptr );
 	module_=
 		std::make_unique<llvm::Module>(
-			source_graph.nodes_storage.front().file_path,
+			source_graph->nodes_storage.front().file_path,
 			llvm_context_ );
 
 	// Setup data layout and target triple.
 	module_->setDataLayout(data_layout_);
 	module_->setTargetTriple(target_triple_.normalize());
-
-	macro_expansion_contexts_= source_graph.macro_expansion_contexts;
 
 	// Prepare halt func.
 	halt_func_=
@@ -269,11 +270,11 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	global_function_context_->is_functionless_context= true;
 	global_function_context_variables_storage_= std::make_unique<StackVariablesStorage>( *global_function_context_ );
 
-	debug_info_builder_.emplace( llvm_context_, data_layout_, source_graph, *module_, build_debug_info_ );
+	debug_info_builder_.emplace( llvm_context_, data_layout_, *source_graph, *module_, build_debug_info_ );
 
 	// Build graph.
-	compiled_sources_.resize( source_graph.nodes_storage.size() );
-	BuildSourceGraphNode( source_graph, 0u );
+	compiled_sources_.resize( source_graph->nodes_storage.size() );
+	BuildSourceGraphNode( *source_graph, 0u );
 
 	// Perform post-checks for non_sync tags.
 	// Do this at the end to avoid dependency loops.
@@ -291,7 +292,7 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	// Leave internal structures intact.
 
 	// Normalize result errors.
-	*global_errors_= NormalizeErrors( *global_errors_, *source_graph.macro_expansion_contexts );
+	*global_errors_= NormalizeErrors( *global_errors_, *source_graph->macro_expansion_contexts );
 }
 
 void CodeBuilder::FinalizeProgram()
@@ -1408,7 +1409,8 @@ Type CodeBuilder::BuildFuncCode(
 	const std::string_view func_name,
 	const llvm::ArrayRef<Synt::FunctionParam> params,
 	const Synt::Block& block,
-	const Synt::StructNamedInitializer* const constructor_initialization_list )
+	const Synt::StructNamedInitializer* const constructor_initialization_list,
+	LambdaPreprocessingContext* const lambda_preprocessing_context )
 {
 	U_ASSERT( !func_variable.have_body );
 	func_variable.have_body= true;
@@ -1454,7 +1456,9 @@ Type CodeBuilder::BuildFuncCode(
 	// Require full completeness even for reference arguments.
 	for( const FunctionType::Param& arg : function_type.params )
 	{
-		if( !EnsureTypeComplete( arg.type ) )
+		if( lambda_preprocessing_context != nullptr && &arg == &function_type.params.front() )
+		{} // While preprocessing lambdas do not trigger type completeness for the first arg of the lambda type.
+		else if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, arg.type );
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )
@@ -1499,6 +1503,7 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 	function_context.args_nodes.resize( function_type.params.size() );
+	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
 
@@ -1634,6 +1639,33 @@ Type CodeBuilder::BuildFuncCode(
 
 		llvm_arg.setName( "_arg_" + arg_name );
 		++arg_number;
+	}
+
+	VariablePtr lambda_this;
+	if( function_context.this_ != nullptr )
+	{
+		if( const auto this_class= function_context.this_->type.GetClassType() )
+		{
+			if( std::holds_alternative<LambdaClassData>( this_class->generated_class_data ) )
+			{
+				// Create names for lambda fields.
+				this_class->members->ForEachInThisScope(
+					[&]( const std::string_view member_name, const NamesScopeValue& value )
+					{
+						if( const auto class_field= value.value.GetClassField() )
+						{
+							const auto field_value= AccessClassField( function_names, function_context, function_context.this_, *class_field, std::string(member_name), block.src_loc );
+							function_names.AddName( member_name, NamesScopeValue( field_value, block.src_loc ) );
+							// TODO - create debug info?
+						}
+					} );
+
+				// Make "this" unavailable in lambdas.
+				// Save "this" into a stack variable in order to prevent its destruction.
+				lambda_this= function_context.this_;
+				function_context.this_= nullptr;
+			}
+		}
 	}
 
 	if( func_variable.IsCoroutine() )

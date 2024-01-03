@@ -382,6 +382,12 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( take_operator->expression, stream );
 			stream << " )";
 		}
+		void operator()( const std::unique_ptr<const Lambda>& lambda ) const
+		{
+			U_UNUSED(lambda);
+			// For now do not print whole lambda - just create dummy.
+			stream << Keyword( Keywords::lambda_ ) << "(){}";
+		}
 		void operator()( const std::unique_ptr<const CastRef>& cast_ref ) const
 		{
 			stream << Keyword( Keywords::cast_ref_ ) << "</ ";

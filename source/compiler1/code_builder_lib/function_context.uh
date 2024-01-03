@@ -18,6 +18,51 @@ struct LoopFrame
 	ust::vector</ReferencesGraph/> continue_references_graphs;
 }
 
+struct LambdaPreprocessingContext
+{
+	type AllowedForCaptureVariables= ust::unordered_set</ VariablePtr />;
+
+	struct CapturedVariableData
+	{
+		// Variable from parent function.
+		VariablePtr source_variable;
+
+		// Newly-created nodes inside the lambda.
+		VariablePtr variable_node;
+		VariablePtr reference_node;
+		ust::vector</VariablePtr/> accessible_variables;
+	}
+
+	struct ReferencePollution
+	{
+		ReferenceLink dst;
+		ReferenceLink src;
+	}
+
+	type ReferenceLink= ust::variant</ tup[ FunctionType::ParamReference, VariablePtr ] />;
+
+	// Inputs (filled before lambda preprocessing).
+	ust::weak_ptr_imut</ LambdaPreprocessingContext /> parent;
+	ust::unordered_set</VariablePtr/> external_variables;
+	ust::optional</AllowedForCaptureVariables/> allowed_for_capture_variables; // If none - all variables are allowed.
+	ValueType lambda_this_value_type= ValueType::ReferenceImut;
+	bool capture_by_value;
+
+	// Outputs (filled during lambda preprocessing).
+
+	ust::unordered_map</ust::string8, CapturedVariableData/> captured_external_variables;
+
+	FunctionType::ParamReferences return_references;
+	ust::vector</FunctionType::ParamReferences/> return_inner_references;
+	ust::vector</ReferencePollution/> references_pollution;
+
+	// Contains set of variables of the preprocessed lambda.
+	ust::vector</VariablePtr/> captured_variables_return_references;
+	ust::vector</ ust::vector</VariablePtr/> /> captured_variables_return_inner_references;
+
+	bool has_preprocessing_errors= false;
+}
+
 class FunctionContext
 {
 public:
@@ -70,6 +115,8 @@ public:
 	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
 
 	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
+
+	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context;
 }
 
 class VariablesFrameHolder

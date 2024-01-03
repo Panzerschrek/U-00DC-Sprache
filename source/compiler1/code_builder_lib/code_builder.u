@@ -140,8 +140,9 @@ fn CodeBuilder::constructor(
 	}
 }
 
-fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult
+fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult
 {
+	source_graph_.reset( source_graph );
 	macro_expansion_contexts_ = source_graph.macro_expansion_contexts;
 
 	unsafe // Create module.
@@ -303,6 +304,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		{
 			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
 		}
+		foreach( &class_type_pair : lambda_classes_table_ )
+		{
+			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
+		}
 	}
 	// Replace usage of temporary allocation functions with usage of library allocation functions.
 	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").
@@ -337,6 +342,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	typeinfo_cache_.clear();
 	non_sync_expression_stack_.clear();
 	macro_expansion_contexts_.reset();
+	source_graph_.reset();
 
 	var BuildResult mut res
 	{
@@ -1036,6 +1042,15 @@ fn CodeBuilder::CheckOverloadedOperator(
 
 fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
 {
+	BuildFuncCode( names_scope, func_variable, ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
+}
+
+fn CodeBuilder::BuildFuncCode(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionVariable &mut func_variable,
+	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> mut lambda_preprocessing_context )
+{
 	if( func_variable.body_syntax_element.empty() )
 	{
 		return;
@@ -1087,6 +1102,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		llvm_context_,
 		llvm_function,
 		func_variable.t );
+	function_context_value.lambda_preprocessing_context= move(lambda_preprocessing_context);
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
@@ -1094,8 +1110,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// Ensure type completness even for reference args because of reference checking.
-	foreach( &param : func_variable.t.params )
+	foreach( &param : cast_imut(func_variable).t.params )
 	{
+		if( ust::ref_cmp_eq( param, cast_imut(func_variable).t.params.front() ) &&
+			!function_context.lambda_preprocessing_context.empty() )
+		{
+			// While preprocessing lambdas do not trigger type completeness for the first arg of the lambda type.
+			continue;
+		}
 		if( !EnsureTypeComplete( param.t ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, param.t )
@@ -1296,6 +1318,38 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				if( !insert_ok )
 				{
 					REPORT_ERROR( Redefinition, names_scope, in_param.src_loc, in_param.name )
+				}
+			}
+		}
+	}
+
+	var ust::shared_ptr_nullable_imut</Variable/> mut lambda_this;
+	if( !function_context.this_.empty() )
+	{
+		var VariablePtr this_= function_context.this_.try_to_non_nullable();
+		var Type this_t= this_.lock_imut().deref().t;
+		if_var( &this_class_type_ptr : this_t.GetClassType() )
+		{
+			with( &this_class_type : this_class_type_ptr.lock_imut().deref() )
+			{
+				if( !this_class_type.generated_class_data.get</ LambdaClassData />().empty() )
+				{
+					foreach( &field_pair : this_class_type.fields_order )
+					{
+						var Value field_value= AccessClassField( args_names_scope_ptr, function_context, this_, field_pair[1].lock_imut().deref(), field_pair[0], body_syntax_element.src_loc );
+						if_var( &variable : field_value.get</VariablePtr/>() )
+						{
+							with( mut lock : args_names_scope_ptr.lock_mut() )
+							{
+								lock.deref().AddName( field_pair[0], variable );
+							}
+						}
+					}
+
+					// Make "this" unavailable in lambdas.
+					// Save "this" into a stack variable in order to prevent its destruction.
+					lambda_this= this_;
+					function_context.this_.reset();
 				}
 			}
 		}

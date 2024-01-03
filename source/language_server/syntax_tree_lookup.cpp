@@ -203,6 +203,11 @@ void FindImpl( const Synt::TakeOperator& take_operator )
 	FindImpl( take_operator.expression );
 }
 
+void FindImpl( const Synt::Lambda& lambda )
+{
+	FindImpl( lambda.function );
+}
+
 void FindImpl( const Synt::CastMut& cast_mut )
 {
 	FindImpl( cast_mut.expression );

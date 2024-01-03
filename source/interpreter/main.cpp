@@ -320,7 +320,7 @@ int Main( int argc, const char* argv[] )
 	bool have_some_errors= false;
 	for( const std::string& input_file : input_files )
 	{
-		const SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
+		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
 
 		std::vector<IVfs::Path> dependent_files;
 		dependent_files.reserve( source_graph.nodes_storage.size() );
@@ -340,7 +340,7 @@ int Main( int argc, const char* argv[] )
 				data_layout,
 				target_triple,
 				CodeBuilderOptions(),
-				source_graph );
+				std::make_shared<SourceGraph>( std::move(source_graph) ) );
 
 		PrintErrors( dependent_files, build_result.errors, errors_format );
 

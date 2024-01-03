@@ -18,6 +18,7 @@ struct SourceGraph
 	struct Node
 	{
 		ust::string8 file_path_normalized;
+		ust::string8 contents_hash;
 		Synt::SyntaxAnalysisResult synt_result;
 		ust::vector</size_type/> children;
 	}

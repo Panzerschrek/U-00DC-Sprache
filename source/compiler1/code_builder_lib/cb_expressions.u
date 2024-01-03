@@ -667,6 +667,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 		variable_opt= name_lookup_result.try_deref()[1].Get</Variable/>();
+
+		if( !variable_opt.empty() && !function_context.lambda_preprocessing_context.empty() )
+		{
+			var VariablePtr variable= variable_opt.try_to_non_nullable();
+			if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
+			{
+				LambdaPreprocessingCheckVariableUsage( names_scope, function_context, variable, move_operator.variable_name, move_operator.src_loc );
+				variable_opt= LambdaPreprocessingAccessExternalVariable( function_context, variable, move_operator.variable_name );
+			}
+		}
 	}
 
 	if( variable_opt.empty() )
@@ -835,6 +845,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// Register variable for references checking and destruction.
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
+{
+	return BuildLambda( names_scope, function_context, lambda_ );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TernaryOperator& ternary_operator ) : Value
@@ -3598,7 +3613,7 @@ fn CodeBuilder::DoCallFunction(
 	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
 
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
-	if( is_constexpr && function_type.return_value_type == ValueType::Value )
+	if( is_constexpr && function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
 	{
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
 	}

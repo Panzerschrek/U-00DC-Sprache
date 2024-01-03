@@ -41,5 +41,6 @@ Contents
    coroutines
    generators
    async_functions
+   lambdas
    c_interaction
    unsafe_code_requirements

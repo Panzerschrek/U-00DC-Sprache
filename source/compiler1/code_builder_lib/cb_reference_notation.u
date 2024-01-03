@@ -132,7 +132,7 @@ fn CodeBuilder::EvaluateFunctionReferencePollution(
 			result.push_back( pollution );
 		}
 
-		NormalizeList(result);
+		NormalizeReferencesPollution(result);
 		return move(result);
 	}
 	else
@@ -174,7 +174,7 @@ fn CodeBuilder::EvaluateFunctionReturnReferences(
 			}
 		}
 
-		NormalizeList(result);
+		NormalizeParamReferencesList(result);
 		return move(result);
 	}
 	else
@@ -224,7 +224,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 						tag_list.push_back( param_reference );
 					}
 				}
-				NormalizeList( tag_list );
+				NormalizeParamReferencesList( tag_list );
 			}
 			else
 			{
@@ -250,6 +250,16 @@ fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& na
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 		return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
 	}
+}
+
+fn CodeBuilder::NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references )
+{
+	NormalizeList( param_references );
+}
+
+fn CodeBuilder::NormalizeReferencesPollution( ust::vector</FunctionType::ReferencePollution/> &mut references_pollution )
+{
+	NormalizeList( references_pollution );
 }
 
 fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />

@@ -135,7 +135,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	auto this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 
-	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
+	var SrcLoc src_loc= GetClassSrcLoc( class_type );
 
 	if( !base_class.empty() )
 	{
@@ -360,7 +360,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
 
-	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
+	var SrcLoc src_loc= GetClassSrcLoc( class_type );
 
 	if( !base_class.empty() )
 	{
@@ -544,7 +544,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
 
-	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
+	var SrcLoc src_loc= GetClassSrcLoc( class_type );
 
 	if( !base_class.empty() )
 	{		
@@ -1213,6 +1213,20 @@ fn CodeBuilder::BuildMembersDestructors( mut this, FunctionContext &mut function
 
 		BuildDestructorPart( class_members_ptr, function_context, field_llvm_value, class_field.t, src_loc ); // TODO - maybe use field src_loc instead?
 	}
+}
+
+fn GetClassSrcLoc( ClassTypePtr& class_type_ptr ) : SrcLoc
+{
+	with( &syntax_element_ptr : class_type_ptr.lock_imut().deref().syntax_element )
+	{
+		if( !syntax_element_ptr.empty() )
+		{
+			return syntax_element_ptr.try_deref().src_loc;
+		}
+	}
+
+	// TODO - save some SrcLoc in the class for such case.
+	return SrcLoc();
 }
 
 } // namespace U1

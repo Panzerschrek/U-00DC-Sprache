@@ -20,7 +20,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 {
 	CodeBuilderLaunchResult result;
 
-	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
+	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
 
 	result.dependent_files.reserve( source_graph.nodes_storage.size() );
 	for( const SourceGraph::Node& node : source_graph.nodes_storage )
@@ -42,7 +42,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			data_layout,
 			target_triple,
 			options,
-			source_graph );
+			std::make_shared<SourceGraph>( std::move(source_graph) ) );
 
 	result.code_builder_errors= std::move( build_result.errors );
 	result.llvm_module= std::move( build_result.module );

@@ -245,6 +245,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		}
 		else
 			add_bool_field( "is_coroutine", false );
+
+		add_bool_field( "is_lambda", std::holds_alternative<LambdaClassData>( class_type->generated_class_data ) );
 	}
 	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{

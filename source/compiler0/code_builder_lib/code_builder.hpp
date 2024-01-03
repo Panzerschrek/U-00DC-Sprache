@@ -17,6 +17,7 @@
 #include "debug_info_builder.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
+#include "lambdas.hpp"
 #include "mangling.hpp"
 #include "tbaa_metadata_builder.hpp"
 #include "template_signature_param.hpp"
@@ -78,6 +79,8 @@ public:
 		// TODO - fill parameters range.
 	};
 
+	using SourceGraphPtr= std::shared_ptr<const SourceGraph>;
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -88,7 +91,7 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraph& source_graph );
+		const SourceGraphPtr& source_graph );
 
 	// Build program, but leave internal state and LLVM module.
 	// Use this for expecting program after its building (in IDE language server, for example).
@@ -97,7 +100,7 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraph& source_graph );
+		const SourceGraphPtr& source_graph );
 
 public: // IDE helpers.
 	CodeBuilderErrorsContainer TakeErrors();
@@ -117,6 +120,8 @@ public: // IDE helpers.
 	template<typename T>
 	std::vector<CompletionItem> Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
 	{
+		++completion_request_index_;
+
 		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
 			return {};
@@ -129,6 +134,7 @@ public: // IDE helpers.
 	std::vector<SignatureHelpItem> GetSignatureHelp( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
 	{
 		// Use same routines for completion and signature help.
+		++completion_request_index_;
 
 		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
 		if( names_scope == nullptr )
@@ -151,7 +157,7 @@ private:
 		const CodeBuilderOptions& options );
 
 	// This function may be called exactly once.
-	void BuildProgramInternal( const SourceGraph& source_graph );
+	void BuildProgramInternal( const SourceGraphPtr& source_graph );
 
 	// Run code, necessary for result LLVM module finalization, but not (strictly) necessary for other purposes.
 	void FinalizeProgram();
@@ -713,7 +719,8 @@ private:
 		std::string_view func_name,
 		llvm::ArrayRef<Synt::FunctionParam> params,
 		const Synt::Block& block,
-		const Synt::StructNamedInitializer* constructor_initialization_list );
+		const Synt::StructNamedInitializer* constructor_initialization_list,
+		LambdaPreprocessingContext* lambda_preprocessing_context= nullptr );
 
 	// Expressions.
 	VariablePtr BuildExpressionCodeEnsureVariable(
@@ -750,6 +757,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperatorCompletion& move_operator_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TakeOperator& move_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastMut& cast_mut );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastImut& cast_imut );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRef& cast_ref );
@@ -1221,6 +1229,10 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	void LambdaPreprocessingCollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void LambdaPreprocessingCollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context );
+
 	// Reference notation.
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
@@ -1248,6 +1260,16 @@ private:
 	Value BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+
+	// Lambdas
+
+	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	std::string GetLambdaBaseName( const Synt::Lambda& lambda, llvm::ArrayRef<uint32_t> tuple_for_indices );
+	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type, ValueType lambda_this_value_type );
+	std::unordered_set<VariablePtr> CollectCurrentFunctionVariables( FunctionContext& function_context );
+	void LambdaPreprocessingCheckVariableUsage( NamesScope& names, FunctionContext& function_context, const VariablePtr& variable, const std::string& name, const SrcLoc& src_loc );
+	VariablePtr LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name );
 
 	// NamesScope fill
 
@@ -1417,6 +1439,10 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
+	// Current source graph.
+	// Store shared_ptr because we need to keep it alive, because some internal structures contain raw pointers to its contents.
+	SourceGraphPtr source_graph_;
+
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
 	std::vector<SourceBuildResult> compiled_sources_;
 
@@ -1446,6 +1472,8 @@ private:
 
 	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
 
+	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
+
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.
 	struct DefinitionPoint
@@ -1460,6 +1488,7 @@ private:
 	// Use dummy namespace as source point for dummy instantiations of templates.
 	NamesScopePtr dummy_template_instantiation_args_scope_;
 
+	uint32_t completion_request_index_= 0;
 	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;
 	// Output container for signature help result items.

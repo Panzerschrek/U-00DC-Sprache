@@ -9,7 +9,6 @@ General:
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
-*) Lambdas.
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) Continious initializer for arrays
 *) Auto-move in "return" for local variable
@@ -30,6 +29,15 @@ Templates:
 *) Variadic templates
 *) Function templates with template-dependent reference and mutability modifiers for arguments. Conditional move for
 	such arguments.
+
+Lambdas:
+*) Lambdas with "mut this" and possibility to mutate captured values
+*) Lambdas with "byval this" and possibility to move captured values
+*) Capture list for lambdas - with listing of all captured variables and individual flag for by value/by reference
+	capturing for each variable
+*) Arbitrary expressions in lambda capture lists
+*) Coroutine lambdas (async, generators)
+*) Non-capture lambda to function pointer conversion
 
 Standart library:
 *) Compilation speed-up - avoid generating some helper classes/functions

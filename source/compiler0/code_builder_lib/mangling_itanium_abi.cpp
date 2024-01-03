@@ -246,6 +246,39 @@ void EncodeTemplateClassName( ManglerState& mangler_state, const Class& the_clas
 	EncodeTemplateArgs( mangler_state, base_template->signature_args );
 }
 
+void EncodeLambdaClassName( ManglerState& mangler_state, const Class& the_class )
+{
+	const auto lambda_class_data= std::get_if<LambdaClassData>( &the_class.generated_class_data );
+	U_ASSERT( lambda_class_data != nullptr );
+
+	if( lambda_class_data->template_args.empty() )
+	{
+		const ManglerState::NodeHolder name_node( mangler_state );
+
+		if( const auto parent= the_class.members->GetParent() )
+			if( !parent->GetThisNamespaceName().empty() )
+				EncodeNamespacePrefix_r( mangler_state, *parent );
+
+		mangler_state.PushLengthPrefixed( the_class.members->GetThisNamespaceName() );
+	}
+	else
+	{
+		const ManglerState::NodeHolder result_node( mangler_state );
+		{
+			const ManglerState::NodeHolder name_node( mangler_state );
+
+			// Skip template parameters namespace.
+			U_ASSERT( the_class.members->GetParent() != nullptr );
+			if( const auto parent= the_class.members->GetParent()->GetParent() )
+				if( !parent->GetThisNamespaceName().empty() )
+					EncodeNamespacePrefix_r( mangler_state, *parent );
+
+			mangler_state.PushLengthPrefixed( the_class.members->GetThisNamespaceName() );
+		}
+		EncodeTemplateArgs( mangler_state, lambda_class_data->template_args );
+	}
+}
+
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope )
 {
 	if( const ClassPtr the_class= names_scope.GetClass() )
@@ -259,6 +292,11 @@ void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& nam
 		else if( std::get_if<CoroutineTypeDescription>( &the_class->generated_class_data ) != nullptr )
 		{
 			EncodeCoroutineType( mangler_state, the_class );
+			return;
+		}
+		else if( std::holds_alternative<LambdaClassData>( the_class->generated_class_data ) )
+		{
+			EncodeLambdaClassName( mangler_state, *the_class );
 			return;
 		}
 	}
@@ -580,6 +618,8 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			else
 				EncodeTemplateClassName( mangler_state, *class_type );
 		}
+		else if( std::holds_alternative<LambdaClassData>( class_type->generated_class_data ) )
+			EncodeLambdaClassName( mangler_state, *class_type );
 		else
 			EncodeNestedName( mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
 	}

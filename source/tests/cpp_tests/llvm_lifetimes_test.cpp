@@ -956,6 +956,61 @@ U_TEST( LifetimesForAwaitOperator_Test0 )
 	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
+U_TEST( LifetimesForLambdas_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			// Call lifetime start for lambda, move it to auto variable, call lifetime end at lambda destruction.
+			auto f= lambda(){};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 2 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // f
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeEnd ); // f
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
+}
+
+U_TEST( LifetimesForLambdas_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			// Call lifetime start for lambda, call it, call lifetime end at lambda destruction.
+			var i32 x= lambda() : i32 { return 123; } ();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 4 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart ); // lambda
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd ); // lambda
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // x
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].address == g_lifetimes_call_sequence[2].address );
+}
+
 } // namespace
 
 } // namespace U

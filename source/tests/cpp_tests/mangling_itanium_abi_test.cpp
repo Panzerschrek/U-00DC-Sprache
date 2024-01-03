@@ -911,6 +911,346 @@ U_TEST( VirtualTableMangling_Test1 )
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZTVN3Lol3WTFE", true ) != nullptr );
 }
 
+U_TEST( LambdasMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto f= lambda( i32 x, f32& y ) {};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_11_clERKS_iRKf" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_37389c86aec1c171f5a5ea1c99fa3ab2_4_11_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar()
+		{
+			var i32 x= 0;
+			// These lambdas are practically identical, but still are different classes.
+			auto f0= lambda[=]() : i32 { return x; };
+			auto f1= lambda[=]() : i32 { return x; };
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_6_12_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_6_12_10destructorERS_" ) != nullptr ); // Destructor.
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_7_12_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_10dc947b6ebd99491b21a0054987f108_7_12_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			// Lambda with by-reference capturing - nothing special.
+			auto f0= lambda[&]( i32 y ) : i32 { return y * x; };
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_326fb0be30230539be75b457a531cd60_6_12_clERKS_i" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_326fb0be30230539be75b457a531cd60_6_12_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Lol
+		{
+			namespace What
+			{
+				fn Foo()
+				{
+					// Lambda class name should contain enclosed namespace prefix.
+					auto f= lambda(){};
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_clERKS1_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Lol4What46_lambda_dde73c3ed253793bc832a3587be39fed_9_13_10destructorERS1_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		class Some
+		{
+			fn Foo( this )
+			{
+				// Lambda class name should contain enclosed namespace prefix (here class name).
+				auto f= lambda(){};
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4Some46_lambda_885cf66f6cb9419ca09cc783385a4642_7_12_10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Prefix
+		{
+			template</ type T, u64 S />
+			struct Box
+			{
+				[ T, S ] contents;
+				fn Foo( this )
+				{
+					// Lambda class name should contain enclosed namespace prefix (here class name including template stuff).
+					auto f= lambda(){};
+				}
+			}
+		}
+		type IntVec4Box= Prefix::Box</ i32, 4u64 />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_58cffb4e1eb5791bdb38e16b1abbc43d_11_13_clERKS2_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6Prefix3BoxIiLy4EE47_lambda_58cffb4e1eb5791bdb38e16b1abbc43d_11_13_10destructorERS2_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		class S
+		{
+			fn Foo( this, bool cond0, bool cond1 )
+			{
+				{
+					while( cond0 )
+					{
+						if( cond1 )
+						{
+							unsafe
+							{
+								// Scopes of function blocks should be ignored while composing lambda name.
+								auto f= lambda(){};
+							}
+						}
+					}
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S47_lambda_c9f02c2d45b85f9c1349656a0f11d19d_14_16_10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct spqr
+		{
+			// Should include struct name as lambda prefix.
+			i32 x= lambda() : i32 { return 42; } ();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN4spqr46_lambda_c81936537015db40f92af46cf866ea7c_5_10_10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		?macro <? DEFINE_LAMBDA:block ?> -> <? auto f = lambda(){}; ?>
+		fn Foo()
+		{
+			// Lambda name should encode macro expansion context.
+			DEFINE_LAMBDA
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN83_lambda_ab05617aabb05c0fc242caebbebb2910_2_50_ab05617aabb05c0fc242caebbebb2910_6_3_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN83_lambda_ab05617aabb05c0fc242caebbebb2910_2_50_ab05617aabb05c0fc242caebbebb2910_6_3_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test9 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[ f32, i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				// Should produce here 3 distinct lambdas - for each tuple-for iteration.
+				auto f= lambda[=]() : f64 { return f64(el); };
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_0_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_0_10destructorERS_" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_1_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_1_10destructorERS_" ) != nullptr ); // Destructor.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_2_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN51_lambda_5e2746f59dd72ad91092fde7c587e0bf_8_12_tf_2_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test10 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[ f32, i32 ] t0= zero_init;
+			var tup[ i64, f64, u32 ] t1= zero_init;
+			for( el0 : t0 )
+			{
+				// Should produce here lambdas for each tuple-for combination.
+				for( el1 : t1 )
+				{
+					auto f= lambda[=]() : f64 { return f64(el0) * f64(el1); };
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_0_0_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_0_1_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_0_2_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_0_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_1_clERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN54_lambda_aad100a36c92a7d970360fe32a49ebda_11_13_tf_1_2_clERKS_" ) != nullptr );
+}
+
+U_TEST( LambdasMangling_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			// Should properly encode lambda in static variable initialization.
+			auto f= lambda() {};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_clERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S46_lambda_6b87f26714d940306e3c14c4c7140d1f_5_11_10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test12 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ u64 S />
+		class IVec polymorph
+		{
+			[ i32, S ] v;
+		}
+		// Use lambda for calculation of temlate variable argument in class parents list.
+		class IVec4 : IVec</ lambda() : u64 { return 16u64; } () />
+		{
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_dfc55a700ed21c85b6a53d00e3076c1f_8_23_clERKS_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_dfc55a700ed21c85b6a53d00e3076c1f_8_23_10destructorERS_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test13 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		fn Bar()
+		{
+			auto f= lambda(){};
+		}
+		fn Foo()
+		{
+			Bar</ f64 />();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_ff38ed8c4972a1c123a9ae13633e72f4_5_11_IdEclERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_ff38ed8c4972a1c123a9ae13633e72f4_5_11_IdE10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test14 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Use lambda in non-sync expression of template struct.
+		// Should encode template args here.
+		template</ type T, u64 S />
+		struct Box non_sync( lambda() : bool { return false; } () )
+		{
+			[ T, S ] arr;
+		}
+		type FloatBox= Box</f32, 33u64 />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_a27f810123558fda7268fd5e43a5137d_5_23_ILy33EfEclERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_a27f810123558fda7268fd5e43a5137d_5_23_ILy33EfE10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
+U_TEST( LambdasMangling_Test15 )
+{
+	// Should encode template args of type alias.
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		type Vec4= [ T, lambda() : u64 { return 4u64; } () ];
+		type U64Vec4= Vec4</u64/>;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_5cd35d2582e59b3a7ad332605201dcf1_3_18_IyEclERKS0_" ) != nullptr ); // Call operator itslef.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_5cd35d2582e59b3a7ad332605201dcf1_3_18_IyE10destructorERS0_" ) != nullptr ); // Destructor.
+}
+
 } // namespace
 
 } // namespace U

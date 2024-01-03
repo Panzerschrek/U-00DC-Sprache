@@ -60,7 +60,7 @@ void PrintLexSyntErrors( const SourceGraph& source_graph )
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, const SourceGraph& source_graph )
+CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, SourceGraph source_graph )
 {
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
@@ -74,21 +74,21 @@ CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, c
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			source_graph );
+			std::make_shared<SourceGraph>( std::move(source_graph) ) );
 }
 
 std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bool enable_unsed_name_errors )
 {
 	const std::string file_path= "_";
 	SingeFileVfs vfs( file_path, text );
-	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 
 	if( !source_graph.errors.empty() )
 		return nullptr;
 
-	CodeBuilder::BuildResult build_result= RunCodeBuilder( enable_unsed_name_errors, source_graph );
+	CodeBuilder::BuildResult build_result= RunCodeBuilder( enable_unsed_name_errors, std::move(source_graph) );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cerr << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << " " << error.text << "\n";
@@ -399,7 +399,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 
 	const std::string file_path= "_";
 	SingeFileVfs vfs( file_path, program_text );
-	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 
@@ -409,7 +409,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( RunCodeBuilder( enable_unused_variable_errors != 0, source_graph ).errors );
+	PyObject* const list= BuildErrorsList( RunCodeBuilder( enable_unused_variable_errors != 0, std::move(source_graph) ).errors );
 	llvm::llvm_shutdown();
 
 	return list;

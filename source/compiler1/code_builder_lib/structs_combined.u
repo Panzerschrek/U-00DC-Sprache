@@ -922,6 +922,24 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 	return hash;
 }
 
+fn LambdaKeyHasher::hash( LambdaKey& k ) : size_type
+{
+	auto mut hash= ust::default_hasher::hash( k.parent_scope );
+
+	// TODO - create separate function for src_loc hashing.
+	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetFileIndex() ) );
+	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetLine() ) );
+	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetColumn() ) );
+	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetMacroExpansionIndex() ) );
+
+	foreach( index : k.tuple_for_indices )
+	{
+		hash= TypeHasher::hash_combine( hash, size_type( index ) );
+	}
+
+	return hash;
+}
+
 //
 // ClassType
 //
@@ -1675,6 +1693,30 @@ fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr
 	}
 
 	return move(root_names_scope);
+}
+
+fn GetClosestNamedSpaceOrRoot( NamesScopePtr& names_scope ) : NamesScopePtr
+{
+	var NamesScopePtr mut current= names_scope;
+
+	loop
+	{
+		var ust::shared_ptr_nullable_imut</NamesScope/> mut parent;
+		with( &current_ref : current.lock_imut().deref() )
+		{
+			if( !current_ref.GetThisNamespaceName().empty() )
+			{
+				return current;
+			}
+			parent= current_ref.GetParent();
+		}
+
+		if( parent.empty() )
+		{
+			return current;
+		}
+		current= parent.try_to_non_nullable();
+	}
 }
 
 } // namespace U1

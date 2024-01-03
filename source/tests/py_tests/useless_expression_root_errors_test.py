@@ -582,3 +582,44 @@ def UselessExpressionRoot_Test46():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+
+
+def UselessExpressionRoot_Test47():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda(){}; // Useless lambda.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+
+
+def UselessExpressionRoot_Test48():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			lambda[=](){ return x; }; // Useless lambda with captures.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UselessExpressionRoot", 5 ) )
+
+
+def UselessExpressionRoot_Test49():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda()
+				{
+					42; // Useless expression inside lambda.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UselessExpressionRoot", 7 ) )

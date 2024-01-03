@@ -35,6 +35,8 @@ public:
 	NamesScope* GetRoot();
 	const NamesScope* GetRoot() const;
 
+	NamesScope* GetClosestNamedSpaceOrRoot();
+
 	// Store class for namespaces of classes.
 	void SetClass( ClassPtr in_class );
 	ClassPtr GetClass() const;

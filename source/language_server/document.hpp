@@ -107,7 +107,7 @@ private:
 		size_t num_text_changes_at_compilation_task_start= 0; // Used only when updating state.
 		std::string text;
 		LineToLinearPositionIndex line_to_linear_position_index;
-		SourceGraph source_graph;
+		CodeBuilder::SourceGraphPtr source_graph;
 		std::unique_ptr<llvm::LLVMContext> llvm_context;
 		std::unique_ptr<CodeBuilder> code_builder; // Still may be modified in const state because of indirection.
 	};

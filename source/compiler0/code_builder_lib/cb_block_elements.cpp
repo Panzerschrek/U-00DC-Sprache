@@ -61,6 +61,8 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::MoveOperator& ) { return false; }
 		bool operator()( const Synt::MoveOperatorCompletion& ) { return false; }
 		bool operator()( const std::unique_ptr<const Synt::TakeOperator>& ) { return false; }
+		// There is no reason not to use a declared lambda.
+		bool operator()( const std::unique_ptr<const Synt::Lambda>& ) { return true; }
 		// Casts have no side effects.
 		bool operator()( const std::unique_ptr<const Synt::CastMut>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::CastImut>& ) { return true; }
@@ -637,7 +639,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		if( function_context.lambda_preprocessing_context != nullptr )
+			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+		else
+			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+
 		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
@@ -730,8 +736,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
 		}
 
-		CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
-		CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		if( function_context.lambda_preprocessing_context != nullptr )
+		{
+			LambdaPreprocessingCollectReturnReferences( function_context, expression_result );
+			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+		}
+		else
+		{
+			CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+		}
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
 		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
@@ -741,7 +755,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc );
-	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
+
+	if( function_context.lambda_preprocessing_context != nullptr )
+		LambdaPreprocessingCollectReferencePollution( function_context );
+	else
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
+
 	function_context.variables_state.RemoveNode( return_value_node );
 
 	if( function_context.destructor_end_block != nullptr )
@@ -880,6 +899,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const bool force_referenced= range_for_operator.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
 
 			loop_names.AddName( range_for_operator.loop_variable_name, NamesScopeValue( variable_reference, range_for_operator.src_loc, force_referenced ) );
+
+			// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+			// TODO - maybe make this counter available for a programmer?
+			{
+				const auto index_value= llvm::ConstantInt::get( fundamental_llvm_types_.u32_, uint64_t(element_index) );
+				VariablePtr tuple_for_index= Variable::Create(
+					FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ ),
+					ValueType::Value,
+					Variable::Location::LLVMRegister,
+					"",
+					index_value,
+					index_value );
+				loop_names.AddName( " tuple for index", NamesScopeValue( std::move(tuple_for_index), range_for_operator.src_loc, true ) );
+			}
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
@@ -2750,7 +2783,11 @@ void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, src_loc );
-	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+
+	if( function_context.lambda_preprocessing_context != nullptr )
+		LambdaPreprocessingCollectReferencePollution( function_context );
+	else
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
 
 	if( function_context.destructor_end_block == nullptr )
 		function_context.llvm_ir_builder.CreateRetVoid();

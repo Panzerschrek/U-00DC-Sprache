@@ -257,6 +257,21 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	if_var( &lookup_result : LookupName( names_scope, function_context, name_lookup.name, name_lookup.src_loc ) )
 	{
 		BuildGlobalThingDuringResolveIfNecessary( lookup_result[0], lookup_result[1] );
+
+		auto variable_nullable= lookup_result[1].Get</Variable/>();
+		if( !variable_nullable.empty() )
+		{
+			var VariablePtr variable= variable_nullable.try_to_non_nullable();
+			if( !function_context.lambda_preprocessing_context.empty() )
+			{
+				LambdaPreprocessingCheckVariableUsage( names_scope, function_context, variable, name_lookup.name, name_lookup.src_loc );
+				if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
+				{
+					return NamesScopeValue( LambdaPreprocessingAccessExternalVariable( function_context, variable, name_lookup.name ) );
+				}
+			}
+		}
+
 		return lookup_result[1];
 	}
 

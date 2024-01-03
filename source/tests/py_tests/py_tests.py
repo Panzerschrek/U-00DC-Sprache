@@ -57,6 +57,8 @@ def main():
 		"in_class_fields_initializers_errors_test",
 		"inheritance_test",
 		"inheritance_errors_test",
+		"lambdas_errors_test",
+		"lambdas_test",
 		"macro_errors_test",
 		"macro_test",
 		"methods_generation_test",
