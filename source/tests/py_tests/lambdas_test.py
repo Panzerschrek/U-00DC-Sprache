@@ -1515,3 +1515,48 @@ def LambdaMutableThis_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test4():
+	c_program_text= """
+	struct R{ i32& x; }
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+	fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			var R r{ .x= x };
+			auto mut f=
+				lambda[=] mut ( i32& a )
+				{
+					// Perform pollution for local copy of "r".
+					MakePollution( r, a );
+				};
+			f(y);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test5():
+	c_program_text= """
+	struct R{ i32 &mut x; }
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn MakePollution( R &mut r, i32 &mut x ) @(pollution) {}
+	fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			auto mut f=
+				lambda[=] mut ( R &mut r )
+				{
+					// Perform pollution for argument "r" by local copy of "y".
+					MakePollution( r, y );
+				};
+
+			var R mut r{ .x= x };
+			f( r );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

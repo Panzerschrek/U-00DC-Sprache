@@ -829,3 +829,53 @@ def GlobalsLoopForLambda_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def LambdaReferencePollutionForThis_Test0():
+	c_program_text= """
+	struct R{ i32 &mut x; }
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn MakePollution( R &mut r, i32 &mut x ) @(pollution) {}
+	fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var R r{ .x= x };
+			auto mut f=
+				lambda[=] mut ( i32 &mut a )
+				{
+					// Perform pollution for local copy of "r".
+					MakePollution( r, a );
+				};
+			f(y);
+			++y; // Can't change this variable, since it has a reference inside lambda "f".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 16 ) )
+
+
+def LambdaReferencePollutionForThis_Test1():
+	c_program_text= """
+	struct R{ i32 &mut x; }
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn MakePollution( R &mut r, i32 &mut x ) @(pollution) {}
+	fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0, mut z= 0;
+			auto mut f=
+				lambda[=] mut ( R &mut r )
+				{
+					// Perform pollution for argument "r" by local copy of "y".
+					MakePollution( r, y );
+				};
+
+			var R mut r{ .x= x };
+			f( r );
+			var R mut another_r{ .x= z };
+			f( another_r ); // Can't access this lambda anymore, because there is a mutable reference to it inside "r".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
