@@ -1414,3 +1414,34 @@ def LambdaNonSync_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutabilityModifier_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda imut() {};
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaMutabilityModifier_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda mut(){};
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaMutabilityModifier_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			auto f= lambda [=] mut ( i32 a ) : i32 { return x * a; };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
