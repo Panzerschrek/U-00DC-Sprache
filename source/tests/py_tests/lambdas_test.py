@@ -1424,6 +1424,7 @@ def LambdaMutabilityModifier_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def LambdaMutabilityModifier_Test1():
@@ -1434,6 +1435,7 @@ def LambdaMutabilityModifier_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def LambdaMutabilityModifier_Test2():
@@ -1445,6 +1447,7 @@ def LambdaMutabilityModifier_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def LambdaMutableThis_Test0():
@@ -1469,3 +1472,46 @@ def LambdaMutableThis_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test2():
+	c_program_text= """
+	fn Foo()
+		{
+			auto mut x= 0;
+			auto mut f=
+				lambda [=] mut () : i32
+				{
+					++x; // Modify captured by copy value.
+					return x;
+				};
+			halt if( f() != 1 );
+			halt if( f() != 2 );
+			halt if( f() != 3 );
+			halt if( x != 0 ); // Source variable shouldn't be modified.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test3():
+	c_program_text= """
+	fn Foo()
+		{
+			auto x= 0;
+			auto mut f=
+				lambda [=] mut () : i32
+				{
+					++x; // Even if source captured variable isn't mutable, we can mutate captured copy here.
+					return x;
+				};
+			halt if( f() != 1 );
+			halt if( f() != 2 );
+			halt if( f() != 3 );
+			halt if( x != 0 ); // Source variable shouldn't be modified.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

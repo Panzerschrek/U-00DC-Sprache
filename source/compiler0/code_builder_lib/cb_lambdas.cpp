@@ -185,8 +185,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->generated_class_data= LambdaClassData{ {}, std::move(template_args) };
 	class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_ ) );
 
-	const auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
-
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
 	bool has_preprocessing_errors= false;
@@ -200,7 +198,13 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
 		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
-		lambda_preprocessing_context.lambda_this_value_type= lambda_this_value_type;
+
+		U_ASSERT( !lambda.function.type.params.empty() );
+		{
+			const Synt::FunctionParam& in_this_param= lambda.function.type.params.front();
+			U_ASSERT( in_this_param.name == Keywords::this_ );
+			lambda_preprocessing_context.lambda_this_is_mutable= in_this_param.mutability_modifier == Synt::MutabilityModifier::Mutable;
+		}
 
 		if( std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
 			lambda_preprocessing_context.allowed_for_capture_variables= LambdaPreprocessingContext::AllowedForCaptureVariables();
@@ -653,10 +657,7 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 		if( lambda_preprocessing_context.capture_by_value )
 		{
 			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-			if( lambda_preprocessing_context.lambda_this_value_type == ValueType::ReferenceImut )
-				value_type= ValueType::ReferenceImut;
-			else
-				value_type= ValueType::ReferenceMut;
+			value_type= lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		}
 		else
 		{
