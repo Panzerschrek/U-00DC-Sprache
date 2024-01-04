@@ -1445,3 +1445,27 @@ def LambdaMutabilityModifier_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def LambdaMutableThis_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda mut (){};
+			f(); // Can't call lambda with "mut this" op(), because the instance is immutable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def LambdaMutableThis_Test1():
+	c_program_text= """
+	fn Foo()
+		{
+			auto mut f= lambda mut (){};
+			f(); // Ok - call for mutable instance.
+		}
+	"""
+	tests_lib.build_program( c_program_text )

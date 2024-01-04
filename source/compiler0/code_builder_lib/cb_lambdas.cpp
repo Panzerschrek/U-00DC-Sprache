@@ -213,7 +213,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		{
 			FunctionVariable op_variable;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
-			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
+			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
 			op_variable.is_this_call= true;
 
@@ -421,7 +421,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Create () operator.
 	{
 		FunctionVariable op_variable;
-		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_, lambda_this_value_type );
+		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.type.references_pollution= std::move(references_pollution);
@@ -504,8 +504,7 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::FunctionType& lambda_function_type,
-	const ClassPtr lambda_class_type,
-	const ValueType lambda_this_value_type )
+	const ClassPtr lambda_class_type )
 {
 	FunctionType function_type;
 
@@ -523,11 +522,20 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	function_type.params.reserve( synt_params.size() );
 
 	// First param is always "this" of the lambda type.
-	U_ASSERT( !synt_params.empty() && synt_params.front().name == Keywords::this_ );
+	U_ASSERT( !synt_params.empty() );
 	{
+		const Synt::FunctionParam& in_this_param= synt_params.front();
+		U_ASSERT( in_this_param.name == Keywords::this_ );
+
 		FunctionType::Param this_param;
-		this_param.value_type= lambda_this_value_type;
 		this_param.type= lambda_class_type;
+
+		if( in_this_param.reference_modifier == Synt::ReferenceModifier::None )
+			this_param.value_type= ValueType::Value;
+		else if( in_this_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
+			this_param.value_type= ValueType::ReferenceMut;
+		else
+			this_param.value_type= ValueType::ReferenceImut;
 
 		function_type.params.push_back( std::move( this_param ) );
 	}
