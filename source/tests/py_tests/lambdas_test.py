@@ -1560,3 +1560,52 @@ def LambdaMutableThis_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test6():
+	c_program_text= """
+		fn Swap( i32& mut x, i32 &mut y )
+		{
+			auto tmp= x;
+			x= y;
+			y= tmp;
+		}
+		fn Foo()
+		{
+			var i32 x= 14, y= 55;
+			auto mut f=
+				lambda[=] mut () : i32
+				{
+					// Capture "x" and "y" by value.
+					// It should be possible to get mutable references to both of them in the same time.
+					Swap( x, y );
+					return x - y;
+				};
+			halt if( f() != 55 - 14 ); halt if( x != 14 ); halt if( y != 55 );
+			halt if( f() != 14 - 55 ); halt if( x != 14 ); halt if( y != 55 );
+			halt if( f() != 55 - 14 ); halt if( x != 14 ); halt if( y != 55 );
+			halt if( f() != 14 - 55 ); halt if( x != 14 ); halt if( y != 55 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 x= 1.0f;
+			auto f =
+				lambda [&] mut ()
+				{
+					// Capture "x" as reference.
+					// Since it is captured by reference it remains immutable even in "mut this" lambda.
+					// So, this should be an error.
+					x= 0.0f;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 11 ) )
