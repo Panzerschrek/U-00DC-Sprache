@@ -37,6 +37,7 @@ Lambdas:
 	capturing for each variable
 *) Arbitrary expressions in lambda capture lists
 *) Coroutine lambdas (async, generators)
+*) Lambas (or something similar) which create a coroutine object (async function, generator) directly
 *) Non-capture lambda to function pointer conversion
 
 Standart library:
@@ -116,4 +117,5 @@ CPP Header converter:
 *) Ignore some headers or split result into several files
 
 Documentation:
-*) More, then one language
+*) Other languages (not only russian and english)
+*) Describe more language details
