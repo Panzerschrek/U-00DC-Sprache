@@ -159,10 +159,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 
 		// Since we iterate over name scopes in reverse order reverse the result container.
-		for( var size_type mut i= 0s, s= key.tuple_for_indices.size(); i < s / 2s; ++i )
-		{
-			key.tuple_for_indices.swap( i, s - i - 1s );
-		}
+		key.tuple_for_indices.range().reverse();
 	}
 
 	if_var( &existing_class : lambda_classes_table_.find( key ) )

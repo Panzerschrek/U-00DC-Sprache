@@ -210,6 +210,16 @@ public:
 		unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
 	}
 
+	fn enable_if( is_mutable ) reverse( this )
+	{
+		for( var size_type mut i= 0s, half_size= size_ / 2s; i < half_size; ++i )
+		{
+			auto i0= i;
+			auto i1= (size_ - 1s) - i;
+			unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
+		}
+	}
+
 private:
 	type this_type= random_access_range</ T, is_mutable />;
 

@@ -184,5 +184,22 @@ fn nomangle main() : i32
 		halt if( !r_imut.empty() );
 	}
 
+	// Reverse
+	{
+		var [ i32, 4 ] mut a[ 1, 2, 3, 4 ]; // Even number of elements
+		IntRangeMut(a).reverse();
+		halt if( a != ust::make_array( 4, 3, 2, 1 ) );
+	}
+	{
+		var [ i32, 5 ] mut a[ 1, 2, 3, 4, 5 ]; // Odd number of elements
+		IntRangeMut(a).reverse();
+		halt if( a != ust::make_array( 5, 4, 3, 2, 1 ) );
+	}
+	{
+		var [ i32, 0 ] mut a[]; // Empty array
+		IntRangeMut(a).reverse();
+		halt if( a != ust::make_array</i32/>() );
+	}
+
 	return 0;
 }
