@@ -1413,6 +1413,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 				if( it_->type != Lexem::Type::Identifier )
 					PushErrorMessage();
 
+				capture_element.src_loc= it_->src_loc;
 				capture_element.name= it_->text;
 				NextLexem();
 

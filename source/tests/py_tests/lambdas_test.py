@@ -1635,3 +1635,20 @@ def LambdaMutableThis_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )
+
+
+def LambdaCaptureList_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 33;
+			// Capture "x" explicitely by value.
+			auto f= lambda[x]() : i32 { return x; };
+			static_assert( f() == 33 );
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.reference_tag_count == 0s );
+			static_assert( ti.size_of == 4s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

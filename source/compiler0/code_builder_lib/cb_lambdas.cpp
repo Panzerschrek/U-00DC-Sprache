@@ -212,6 +212,28 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture ) ||
 			std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture ) )
 			lambda_preprocessing_context.allowed_for_capture_variables= std::nullopt; // Allow to capture anything.
+		else if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
+		{
+			LambdaPreprocessingContext::AllowedForCaptureVariables allowed_for_capture_variables;
+			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
+			{
+				// TODO - detect duplicates.
+				if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
+				{
+					if( const VariablePtr variable= value->value.GetVariable() )
+						allowed_for_capture_variables.insert( variable );
+					else
+					{
+						// TODO - produce error.
+					}
+				}
+				else
+				{
+					// TODO - report error.
+				}
+			}
+			lambda_preprocessing_context.allowed_for_capture_variables= std::move(allowed_for_capture_variables);
+		}
 		else U_ASSERT(false);
 
 		{

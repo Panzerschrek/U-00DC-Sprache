@@ -1213,6 +1213,7 @@ struct Lambda
 
 	struct CaptureListElement
 	{
+		SrcLoc src_loc;
 		std::string name;
 		bool by_reference= false;
 	};
