@@ -1,5 +1,6 @@
 // This example demonstraits usage of lambdas.
 
+import "/assert.u"
 import "/stdout.u"
 
 fn nomangle main() : i32
@@ -12,9 +13,9 @@ fn nomangle main() : i32
 				return a / b;
 			};
 
-		halt if( div( 78u, 3u ) != 78u / 3u );
+		assert( div( 78u, 3u ) == 78u / 3u );
 		auto x= div( 124u, 5u ) * 2u;
-		halt if( x != 124u / 5u * 2u );
+		assert( x == 124u / 5u * 2u );
 	}
 
 	// Lambda with capure by copy.
@@ -24,8 +25,8 @@ fn nomangle main() : i32
 		// Since lambda captures by copy, modifying source variables doesn't affect lambda.
 		x= 0;
 		y= 0;
-		halt if( f( 5 ) != 5 * 15 + 7 );
-		halt if( f( -12 ) != -12 * 15 + 7 );
+		assert( f( 5 ) == 5 * 15 + 7 );
+		assert( f( -12 ) == -12 * 15 + 7 );
 	}
 
 	// Lambda which may mutate captured by copy variables.
@@ -37,10 +38,10 @@ fn nomangle main() : i32
 				x <<= 1u; // Change captured copy here.
 				return x;
 			};
-		halt if( f() != 2u );
-		halt if( f() != 4u );
-		halt if( f() != 8u );
-		halt if( x != 1u ); // The source variable should not be modified.
+		assert( f() == 2u );
+		assert( f() == 4u );
+		assert( f() == 8u );
+		assert( x == 1u ); // The source variable should not be modified.
 	}
 
 	// Lambda with capture by reference.
@@ -48,8 +49,8 @@ fn nomangle main() : i32
 		var u64 x( 12345 );
 		auto f= lambda[&]( f64 a ) : f64 { return f64(x) / a; };
 		static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s ); // 1 reference is captured.
-		halt if( f( 0.25 ) != 12345.0 / 0.25 );
-		halt if( f( 7.0 ) != 12345.0 / 7.0 );
+		assert( f( 0.25 ) == 12345.0 / 0.25 );
+		assert( f( 7.0 ) == 12345.0 / 7.0 );
 	}
 
 	// Lambda with capture by mutable reference.
@@ -59,7 +60,7 @@ fn nomangle main() : i32
 		// It is possible to pass lambda directly into a function.
 		RunFunc( lambda[&](){ x *= 3.0f; } );
 		// After lambda call source variable is modified.
-		halt if( x != 1.5f * 3.0f );
+		assert( x == 1.5f * 3.0f );
 	}
 
 	// Lambda with two captured mutable references returns these references.
@@ -72,12 +73,12 @@ fn nomangle main() : i32
 			};
 
 		f( true )= 16;
-		halt if( x != 16 );
-		halt if( y != 0 );
+		assert( x == 16 );
+		assert( y == 0 );
 
 		f( false )= 100;
-		halt if( x != 16 );
-		halt if( y != 100 );
+		assert( x == 16 );
+		assert( y == 100 );
 	}
 
 	{ // A lambda may be constexpr if it satisfies constexpr function requirements.
@@ -88,7 +89,7 @@ fn nomangle main() : i32
 	}
 
 	// Call global lambda object.
-	halt if( unsafe( global_unsafe_lambda() ) != 667766 );
+	assert( unsafe( global_unsafe_lambda() ) == 667766 );
 
 	return 0;
 }
