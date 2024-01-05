@@ -12,17 +12,17 @@ public:
 	fn virtual pure MangleFunction(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type ) : ust::string8;
 
 	fn virtual pure MangleFunction(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type,
 		TemplateArgsFinished& template_args ) : ust::string8;
 
-	fn virtual pure MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
+	fn virtual pure MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual pure MangleType( mut this, Type& t ) : ust::string8;
 	fn virtual pure MangleVirtualTable( mut this, Type& t ) : ust::string8;
 }

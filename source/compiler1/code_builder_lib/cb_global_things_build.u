@@ -1341,7 +1341,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		var Enum::Element mut out_element;
 
-		auto name_mangled= mangler_.deref().MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name, enum_type, true );
+		auto name_mangled= mangler_.deref().MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name.range(), enum_type, true );
 		out_element.constexpr_value= unsafe( LLVMConstInt( underlying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False ) );
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled.range(), underlying_type.llvm_type, out_element.constexpr_value );
 
@@ -1456,7 +1456,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	auto mut constexpr_value= LLVMValueRef::Null;
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, t, !is_mutable );
+		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name.range(), t, !is_mutable );
 		auto llvm_value= select( is_mutable
 			? AddGlobalMutableVariable( name_mangled.range(), t.GetLLVMType(), externally_available )
 			: AddGlobalConstantVariable( name_mangled.range(), t.GetLLVMType(), LLVMValueRef::Null ) );
@@ -1645,7 +1645,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
+		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name.range(), variable.t, !is_mutable );
 		variable.llvm_value= select( is_mutable
 			? AddGlobalMutableVariable( name_mangled.range(), variable.t.GetLLVMType(), externally_available )
 			: AddGlobalConstantVariable( name_mangled.range(), variable.t.GetLLVMType(), expr.constexpr_value ) );

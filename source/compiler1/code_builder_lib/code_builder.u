@@ -551,7 +551,7 @@ fn CodeBuilder::PrepareFunction(
 		llvm_function_name=
 			mangler_.deref().MangleFunction(
 				names_scope_ptr.lock_imut().deref(),
-				func_name,
+				func_name.range(),
 				function_type );
 	}
 

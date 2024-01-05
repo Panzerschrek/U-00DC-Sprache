@@ -28,17 +28,17 @@ public:
 	fn virtual override MangleFunction(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type ) : ust::string8;
 
 	fn virtual override MangleFunction(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type,
 		TemplateArgsFinished& template_args ) : ust::string8;
 
-	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
+	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual override MangleType( mut this, Type& t ) : ust::string8;
 	fn virtual override MangleVirtualTable( mut this, Type& t ) : ust::string8;
 
@@ -46,7 +46,7 @@ private:
 	fn MangleFunctionImpl(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type,
 		ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8;
 
@@ -57,7 +57,7 @@ private:
 fn ManglerItaniumABI::MangleFunction(
 	mut this,
 	NamesScope& parent_scope,
-	ust::string8& name,
+	ust::string_view8 name,
 	FunctionType& function_type ) : ust::string8
 {
 	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>() );
@@ -66,14 +66,14 @@ fn ManglerItaniumABI::MangleFunction(
 fn ManglerItaniumABI::MangleFunction(
 	mut this,
 	NamesScope& parent_scope,
-	ust::string8& name,
+	ust::string_view8 name,
 	FunctionType& function_type,
 	TemplateArgsFinished& template_args ) : ust::string8
 {
 	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>(template_args) );
 }
 
-fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8
+fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8
 {
 	// type/constantness is not used in this mangling scheme.
 	ust::ignore_unused( t );
@@ -82,7 +82,7 @@ fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, 
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent().empty() )
 	{
-		return variable_name + "\0";
+		return ust::string8(variable_name) + "\0";
 	}
 
 	state_.Push( "_Z" );
@@ -106,7 +106,7 @@ fn ManglerItaniumABI::MangleVirtualTable( mut this,Type& t ) : ust::string8
 fn ManglerItaniumABI::MangleFunctionImpl(
 	mut this,
 	NamesScope& parent_scope,
-	ust::string8& name,
+	ust::string_view8 name,
 	FunctionType& function_type,
 	ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8
 {
@@ -978,7 +978,7 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 	mangler_state.Push( "E" );
 }
 
-fn DecodeOperator( ust::string8& o ) : ust::string_view8
+fn DecodeOperator( ust::string_view8 o ) : ust::string_view8
 {
 	if( o == "+" ){ return "pl"; }
 	if( o == "-" ){ return "mi"; }

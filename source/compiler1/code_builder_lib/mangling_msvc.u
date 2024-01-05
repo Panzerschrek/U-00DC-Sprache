@@ -18,17 +18,17 @@ public:
 	fn virtual override MangleFunction(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type ) : ust::string8;
 
 	fn virtual override MangleFunction(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type,
 		TemplateArgsFinished& template_args ) : ust::string8;
 
-	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
+	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual override MangleType( mut this, Type& t ) : ust::string8;
 	fn virtual override MangleVirtualTable( mut this, Type& t ) : ust::string8;
 
@@ -36,7 +36,7 @@ private:
 	fn MangleFunctionImpl(
 		mut this,
 		NamesScope& parent_scope,
-		ust::string8& name,
+		ust::string_view8 name,
 		FunctionType& function_type,
 		ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8;
 
@@ -68,7 +68,7 @@ fn ManglerMSVC::constructor(bool is_32_bit)
 fn ManglerMSVC::MangleFunction(
 	mut this,
 	NamesScope& parent_scope,
-	ust::string8& name,
+	ust::string_view8 name,
 	FunctionType& function_type ) : ust::string8
 {
 	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>() );
@@ -77,14 +77,14 @@ fn ManglerMSVC::MangleFunction(
 fn ManglerMSVC::MangleFunction(
 	mut this,
 	NamesScope& parent_scope,
-	ust::string8& name,
+	ust::string_view8 name,
 	FunctionType& function_type,
 	TemplateArgsFinished& template_args ) : ust::string8
 {
 	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>(template_args) );
 }
 
-fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8
+fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8
 {
 	var ManglerState mut mangler_state;
 
@@ -123,7 +123,7 @@ fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
 fn ManglerMSVC::MangleFunctionImpl(
 	mut this,
 	NamesScope& parent_scope,
-	ust::string8& name,
+	ust::string_view8 name,
 	FunctionType& function_type,
 	ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8
 {
@@ -886,7 +886,7 @@ private:
 	ust::string8 res_;
 }
 
-fn DecodeOperator( ust::string8& o ) : ust::string_view8
+fn DecodeOperator( ust::string_view8 o ) : ust::string_view8
 {
 	if( o == "+" ){ return "?H"; }
 	if( o == "-" ){ return "?G"; }
