@@ -494,6 +494,42 @@ def LambdaModifyCapturedVariable_Test2():
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
+def LambdaModifyCapturedVariable_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[&x]()
+				{
+					// Can't modify captured explicitely immutable reference.
+					++x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+
+
+def LambdaModifyCapturedVariable_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[x]()
+				{
+					// Can't modify captured explicitely copy.
+					++x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+
+
 def LambdaMoveCapturedVariable_Test0():
 	c_program_text= """
 		fn Foo()
@@ -747,6 +783,34 @@ def VariableIsNotCapturedByLambda_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 16 ) )
+
+
+def VariableIsNotCapturedByLambda_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			// Specify empty capture list - without actually referenced variable.
+			auto f= lambda[]() : i32 { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+
+
+def VariableIsNotCapturedByLambda_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			// Specify different from the used variable.
+			auto f= lambda[&x]() : i32 { return y; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
 
 
 def LambaCaptureIsNotConstexpr_Test0():

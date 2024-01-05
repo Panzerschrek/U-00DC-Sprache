@@ -1398,34 +1398,37 @@ Lambda SyntaxAnalyzer::ParseLambda()
 			// Full capture list.
 			Lambda::CaptureList capture_list;
 
-			while( NotEndOfFile() )
+			if( it_->type != Lexem::Type::SquareBracketRight )
 			{
-				Lambda::CaptureListElement capture_element;
-
-				if( it_->type == Lexem::Type::And )
+				while( NotEndOfFile() )
 				{
-					capture_element.by_reference= true;
+					Lambda::CaptureListElement capture_element;
+
+					if( it_->type == Lexem::Type::And )
+					{
+						capture_element.by_reference= true;
+						NextLexem();
+					}
+					else
+						capture_element.by_reference= false;
+
+					if( it_->type != Lexem::Type::Identifier )
+						PushErrorMessage();
+
+					capture_element.src_loc= it_->src_loc;
+					capture_element.name= it_->text;
 					NextLexem();
+
+					capture_list.push_back( std::move( capture_element ) );
+
+					if( it_->type == Lexem::Type::Comma )
+					{
+						NextLexem();
+						continue;
+					}
+					else
+						break;
 				}
-				else
-					capture_element.by_reference= false;
-
-				if( it_->type != Lexem::Type::Identifier )
-					PushErrorMessage();
-
-				capture_element.src_loc= it_->src_loc;
-				capture_element.name= it_->text;
-				NextLexem();
-
-				capture_list.push_back( std::move( capture_element ) );
-
-				if( it_->type == Lexem::Type::Comma )
-				{
-					NextLexem();
-					continue;
-				}
-				else
-					break;
 			}
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
