@@ -28,6 +28,21 @@ fn nomangle main() : i32
 		halt if( f( -12 ) != -12 * 15 + 7 );
 	}
 
+	// Lambda which may mutate captured by copy variables.
+	{
+		var u32 x= 1u;
+		auto mut f=
+			lambda [=] mut () : u32
+			{
+				x <<= 1u; // Change captured copy here.
+				return x;
+			};
+		halt if( f() != 2u );
+		halt if( f() != 4u );
+		halt if( f() != 8u );
+		halt if( x != 1u ); // The source variable should not be modified.
+	}
+
 	// Lambda with capture by reference.
 	{
 		var u64 x( 12345 );
@@ -72,6 +87,7 @@ fn nomangle main() : i32
 		static_assert( shift(98u) == 98u << 7u );
 	}
 
+	// Call global lambda object.
 	halt if( unsafe( global_unsafe_lambda() ) != 667766 );
 
 	return 0;
