@@ -933,7 +933,7 @@ private:
 	fn BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value;
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
 	fn GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8;
-	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type, ValueType lambda_this_value_type ) : FunctionType;
+	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type ) : FunctionType;
 	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>;
 	fn LambdaPreprocessingCheckVariableUsage( NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name, SrcLoc& src_loc );
 	fn LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr;

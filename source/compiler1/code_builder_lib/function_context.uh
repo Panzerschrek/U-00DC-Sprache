@@ -45,8 +45,8 @@ struct LambdaPreprocessingContext
 	ust::weak_ptr_imut</ LambdaPreprocessingContext /> parent;
 	ust::unordered_set</VariablePtr/> external_variables;
 	ust::optional</AllowedForCaptureVariables/> allowed_for_capture_variables; // If none - all variables are allowed.
-	ValueType lambda_this_value_type= ValueType::ReferenceImut;
 	bool capture_by_value;
+	bool lambda_this_is_mutable;
 
 	// Outputs (filled during lambda preprocessing).
 
