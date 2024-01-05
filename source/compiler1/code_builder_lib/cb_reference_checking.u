@@ -488,6 +488,8 @@ fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& f
 
 	auto& function_type= function_context.function_type;
 	auto& params= function_type.params;
+
+	// Process args destinations.
 	for( auto mut param_i= 0s; param_i < params.size(); ++param_i )
 	{
 		if( params[param_i].value_type == ValueType::Value )
@@ -507,6 +509,8 @@ fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& f
 					}
 
 					var ust::optional</ LambdaPreprocessingContext::ReferenceLink /> mut src_param_reference;
+
+					// Process args sources.
 					for( auto mut j= 0s; j < params.size(); ++j )
 					{
 						if( accessible_variable_node == function_context.args_nodes[j] )
@@ -524,6 +528,7 @@ fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& f
 						}
 					}
 
+					// Process captured variables sources.
 					foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 					{
 						if( accessible_variable_node == captured_variable_pair.value().variable_node )
@@ -558,7 +563,74 @@ fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& f
 		}
 	}
 
-	// TODO - collect also pollution for lambda captured variables as destination.
+	// Process captured variables destinations.
+	foreach( &dst_captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+	{
+		var VariablePtr& captured_variable= dst_captured_variable_pair.value().reference_node;
+		with( &inner_reference_nodes : captured_variable.lock_imut().deref().inner_reference_nodes )
+		{
+			for( auto mut dst_tag= 0s; dst_tag < inner_reference_nodes.size(); ++dst_tag )
+			{
+				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_nodes[ dst_tag ] ) )
+				{
+					var VariablePtr& dst_node= dst_captured_variable_pair.value().accessible_variables[ dst_tag ];
+					if( accessible_variable_node == dst_node )
+					{
+						continue;
+					}
+
+					var ust::optional</ LambdaPreprocessingContext::ReferenceLink /> mut src_param_reference;
+
+					// Process args sources.
+					for( auto mut j= 0s; j < params.size(); ++j )
+					{
+						if( accessible_variable_node == function_context.args_nodes[j] )
+						{
+							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
+							src_param_reference= move(r);
+						}
+						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
+						{
+							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
+							{
+								var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index=u8(tag_j) };
+								src_param_reference= move(r);
+							}
+						}
+					}
+
+					// Process captured variables sources.
+					foreach( &src_captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+					{
+						if( accessible_variable_node == src_captured_variable_pair.value().variable_node )
+						{
+							src_param_reference= accessible_variable_node;
+						}
+
+						foreach( &src_captured_variable_accessible_variable : src_captured_variable_pair.value().accessible_variables )
+						{
+							if( accessible_variable_node == src_captured_variable_accessible_variable )
+							{
+								src_param_reference= accessible_variable_node;
+							}
+						}
+					}
+
+					if( src_param_reference.empty() )
+					{
+						continue;
+					}
+
+					var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
+					{
+						.dst= dst_node,
+						.src= src_param_reference.try_deref(),
+					};
+					lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
+				}
+			}
+		}
+	}
 }
 
 fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph
