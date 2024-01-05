@@ -217,23 +217,23 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			LambdaPreprocessingContext::AllowedForCaptureVariables explicit_captures;
 			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 			{
-				// TODO - detect duplicates.
 				if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
 				{
 					if( const VariablePtr variable= value->value.GetVariable() )
 					{
-						LambdaPreprocessingContext::ExplicitCapture explicit_capture;
-						explicit_capture.capture_by_value= !capture.by_reference;
-						explicit_captures.emplace( variable, std::move(explicit_capture) );
+						if( explicit_captures.count( variable ) > 0 )
+							REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
+						else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
+							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+						else
+						{
+							LambdaPreprocessingContext::ExplicitCapture explicit_capture;
+							explicit_capture.capture_by_value= !capture.by_reference;
+							explicit_captures.emplace( variable, std::move(explicit_capture) );
+						}
 					}
 					else
-					{
-						// TODO - produce error.
-					}
-				}
-				else
-				{
-					// TODO - report error.
+						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
 				}
 			}
 			lambda_preprocessing_context.explicit_captures= std::move(explicit_captures);

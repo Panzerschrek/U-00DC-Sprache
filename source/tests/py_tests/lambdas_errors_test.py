@@ -879,3 +879,85 @@ def LambdaReferencePollutionForThis_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+
+
+def ExplicitCaptureListErrors_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Error - name "x" not found.
+			lambda [x](){};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 5 ) )
+
+
+def ExplicitCaptureListErrors_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Error - name "f64" is not a variable.
+			lambda [f64](){};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
+
+
+def ExplicitCaptureListErrors_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn Foo( this )
+			{
+				// Error - name "f64" is not a variable but a class field.
+				lambda [x](){};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def ExplicitCaptureListErrors_Test3():
+	c_program_text= """
+		var i32 x= 0;
+		fn Foo()
+		{
+			lambda [x](){}; // Error - capturing global variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
+
+
+def DuplicatedCapture_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			lambda [x, x](){}; // Capturing the same variable twice.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
+
+
+def DuplicatedCapture_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			lambda [&x, x](){}; // Capturing the same variable twice with different reference modifiers.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
