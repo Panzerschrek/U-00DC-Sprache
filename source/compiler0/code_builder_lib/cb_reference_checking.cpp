@@ -505,6 +505,7 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 {
 	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
 
+	// Process args destinations.
 	for( size_t dst_param_index= 0u; dst_param_index < function_context.function_type.params.size(); ++dst_param_index )
 	{
 		if( function_context.function_type.params[dst_param_index].value_type == ValueType::Value )
@@ -521,6 +522,8 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 					continue;
 
 				std::optional<LambdaPreprocessingContext::ReferenceLink> src_reference;
+
+				// Process args sources.
 				for( size_t src_param_index= 0u; src_param_index < function_context.function_type.params.size(); ++src_param_index )
 				{
 					if( accesible_variable == function_context.args_nodes[src_param_index].first )
@@ -531,6 +534,7 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
 				}
 
+				// Process captured variables sources.
 				for( const auto& captured_variable_pair : function_context.lambda_preprocessing_context->captured_external_variables )
 				{
 					if( accesible_variable == captured_variable_pair.second.variable_node )
@@ -552,7 +556,54 @@ void CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext&
 		}
 	}
 
-	// TODO - collect also pollution for lambda captured variables as destination.
+	// Process captured variables destinations.
+	for( const auto& dst_captured_variable_pair : function_context.lambda_preprocessing_context->captured_external_variables )
+	{
+		const VariablePtr& captured_variable= dst_captured_variable_pair.second.reference_node;
+		for( size_t dst_tag= 0; dst_tag < captured_variable->inner_reference_nodes.size(); ++dst_tag )
+		{
+			U_ASSERT( captured_variable->inner_reference_nodes.size() == dst_captured_variable_pair.second.accessible_variables.size() );
+
+			const VariablePtr& inner_reference= captured_variable->inner_reference_nodes[dst_tag];
+			for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+			{
+				if( accesible_variable == dst_captured_variable_pair.second.accessible_variables[dst_tag] )
+					continue;
+
+				std::optional<LambdaPreprocessingContext::ReferenceLink> src_reference;
+
+				// Process args sources.
+				for( size_t src_param_index= 0u; src_param_index < function_context.function_type.params.size(); ++src_param_index )
+				{
+					if( accesible_variable == function_context.args_nodes[src_param_index].first )
+						src_reference= FunctionType::ParamReference( uint8_t(src_param_index), FunctionType::c_param_reference_number );
+
+					for( size_t src_tag= 0; src_tag < function_context.args_nodes[src_param_index].second.size(); ++src_tag )
+						if( accesible_variable == function_context.args_nodes[src_param_index].second[src_tag] )
+							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
+				}
+
+				// Process captured variables sources.
+				for( const auto& src_captured_variable_pair : function_context.lambda_preprocessing_context->captured_external_variables )
+				{
+					if( accesible_variable == src_captured_variable_pair.second.variable_node )
+						src_reference= accesible_variable;
+
+					for( const VariablePtr& captured_variable_accessible_variable : src_captured_variable_pair.second.accessible_variables )
+						if( accesible_variable == captured_variable_accessible_variable )
+							src_reference= accesible_variable;
+				}
+
+				if( src_reference != std::nullopt )
+				{
+					LambdaPreprocessingContext::ReferencePollution pollution;
+					pollution.src= *src_reference;
+					pollution.dst= dst_captured_variable_pair.second.accessible_variables[dst_tag];
+					function_context.lambda_preprocessing_context->references_pollution.push_back( std::move(pollution) );
+				}
+			}
+		}
+	}
 }
 
 } // namespace U

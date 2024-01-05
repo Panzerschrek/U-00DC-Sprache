@@ -64,6 +64,38 @@ Captured by reference variables become reference fields in the lambda class.
 All reference checking rules work for lambdas that capture references, as for any other types with references inside.
 
 
+**************************
+*Lambda object mutability*
+**************************
+
+By default ``()`` operator of lambdas has immutable ``this`` parameter.
+But it may be changed by marking a lambda with ``mut``.
+It's allowed for a ``mut`` lambda  to change captured by value variables, even if the source variable isn't mutable.
+But such lambdas may be called only if a lambda object is mutable.
+
+.. code-block:: u_spr
+
+   fn Foo()
+   {
+       auto x= 0;
+       auto mut f=
+           lambda [=] mut () : i32
+           {
+               ++x; // Change captured copy of an external variable.
+               return x;
+           };
+       // Lambda produces different results, because it changes its internal state on each call.
+       halt if( f() != 1 );
+       halt if( f() != 2 );
+       halt if( f() != 3 );
+       halt if( x != 0 ); // The source variable should not be changed.
+   }
+
+``mut`` is useful for lambdas with captured values.
+For lambdas with no captures or lambdas which capture only references it's pointless to use ``mut``.
+It's also possible to mark a lambda with ``imut``, which is the same as the default mutability.
+
+
 *******************************
 *Lambdas functionality details*
 *******************************
@@ -112,19 +144,14 @@ Also unique reference tags are created for each inner reference tag of a capture
    auto f= lambda[&]() : i32 { return x; };
    static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
 
-
-``()`` operator of a lambda has ``this`` parameter as immutable reference.
-Thus it's not possible to change captured by value variables inside a lambda.
-``this`` itself of the ``()`` in lambdas is unavailable.
+``this`` itself of the ``()`` operator in lambdas is unavailable.
 
 .. code-block:: u_spr
 
-   auto mut x= 0;
    auto f=
-       lambda[=]()
+       lambda()
        {
            auto& this_ref= this; // Error - "this" is unavailable.
-           ++x; // Error - can't change captured by value variable.
        };
 
 Lambdas can't capture ``this`` in methods with ``this`` parameter.

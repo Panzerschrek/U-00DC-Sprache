@@ -1253,8 +1253,6 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 	var Function mut lambda_function{ .src_loc= it_.front().src_loc };
 	lambda_function.name.push_back( KeywordToString( Keyword::lambda_ ) );
 
-	// Parse params.
-	ExpectLexem( Lexem::Type::BracketLeft );
 
 	{ // Always add hidden "this" param.
 		var FunctionType::Param mut this_param
@@ -1264,8 +1262,26 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 			.reference_modifier= ReferenceModifier::Reference,
 			.mutability_modifier= MutabilityModifier::Immutable,
 		};
+
+		// TODO - parse "byval" here.
+
+		// Parse mutability modifier of lambda "this".
+		if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			this_param.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			this_param.mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+
 		lambda_function.function_type.params.push_back( move(this_param) );
 	}
+
+	// Parse params.
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	while( NotEndOfFile() )
 	{

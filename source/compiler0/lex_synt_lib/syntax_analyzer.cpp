@@ -1376,8 +1376,6 @@ Lambda SyntaxAnalyzer::ParseLambda()
 
 	NextLexem(); // Skip "lambda" keyword
 
-	// TODO - parse "byval" here.
-
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
 		// Non-empty capture list.
@@ -1406,16 +1404,31 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	else
 		result.capture= Lambda::CaptureNothing{};
 
-	// Parse params.
-	ExpectLexem( Lexem::Type::BracketLeft );
-
 	{ // Always add hidden "this" param.
 		FunctionParam this_param( it_->src_loc );
 		this_param.name= Keyword( Keywords::this_ );
 		this_param.reference_modifier= ReferenceModifier::Reference;
 		this_param.mutability_modifier= MutabilityModifier::Immutable;
+
+		// TODO - parse "byval" here.
+
+		// Parse mutability modifier of lambda "this".
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+		{
+			this_param.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+		{
+			this_param.mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+
 		result.function.type.params.push_back( std::move( this_param ) );
 	}
+
+	// Parse params.
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{

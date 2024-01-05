@@ -1414,3 +1414,224 @@ def LambdaNonSync_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutabilityModifier_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda imut() {};
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutabilityModifier_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda mut(){};
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutabilityModifier_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			auto f= lambda [=] mut ( i32 a ) : i32 { return x * a; };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda mut (){};
+			f(); // Can't call lambda with "mut this" op(), because the instance is immutable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def LambdaMutableThis_Test1():
+	c_program_text= """
+	fn Foo()
+		{
+			auto mut f= lambda mut (){};
+			f(); // Ok - call for mutable instance.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test2():
+	c_program_text= """
+	fn Foo()
+		{
+			auto mut x= 0;
+			auto mut f=
+				lambda [=] mut () : i32
+				{
+					++x; // Modify captured by copy value.
+					return x;
+				};
+			halt if( f() != 1 );
+			halt if( f() != 2 );
+			halt if( f() != 3 );
+			halt if( x != 0 ); // Source variable shouldn't be modified.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			auto mut f=
+				lambda [=] mut () : i32
+				{
+					++x; // Even if source captured variable isn't mutable, we can mutate captured copy here.
+					return x;
+				};
+			halt if( f() != 1 );
+			halt if( f() != 2 );
+			halt if( f() != 3 );
+			halt if( x != 0 ); // Source variable shouldn't be modified.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test4():
+	c_program_text= """
+	struct R{ i32& x; }
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+	fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			var R r{ .x= x };
+			auto mut f=
+				lambda[=] mut ( i32& a )
+				{
+					// Perform pollution for local copy of "r".
+					MakePollution( r, a );
+				};
+			f(y);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test5():
+	c_program_text= """
+	struct R{ i32 &mut x; }
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn MakePollution( R &mut r, i32 &mut x ) @(pollution) {}
+	fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			auto mut f=
+				lambda[=] mut ( R &mut r )
+				{
+					// Perform pollution for argument "r" by local copy of "y".
+					MakePollution( r, y );
+				};
+
+			var R mut r{ .x= x };
+			f( r );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test6():
+	c_program_text= """
+		fn Swap( i32& mut x, i32 &mut y )
+		{
+			auto tmp= x;
+			x= y;
+			y= tmp;
+		}
+		fn Foo()
+		{
+			var i32 x= 14, y= 55;
+			auto mut f=
+				lambda[=] mut () : i32
+				{
+					// Capture "x" and "y" by value.
+					// It should be possible to get mutable references to both of them in the same time.
+					Swap( x, y );
+					return x - y;
+				};
+			halt if( f() != 55 - 14 ); halt if( x != 14 ); halt if( y != 55 );
+			halt if( f() != 14 - 55 ); halt if( x != 14 ); halt if( y != 55 );
+			halt if( f() != 55 - 14 ); halt if( x != 14 ); halt if( y != 55 );
+			halt if( f() != 14 - 55 ); halt if( x != 14 ); halt if( y != 55 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaMutableThis_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 x= 1.0f;
+			auto f =
+				lambda [&] mut ()
+				{
+					// Capture "x" as reference.
+					// Since it is captured by reference it remains immutable even in "mut this" lambda.
+					// So, this should be an error.
+					x= 0.0f;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 11 ) )
+
+
+def LambdaMutableThis_Test8():
+	c_program_text= """
+		// It is even possible to create global mut lambda. But there is no practical reason to do so.
+		auto f = lambda mut(){};
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaMutableThis_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			var u64 x(0);
+			auto f =
+				lambda [=] mut ()
+				{
+					// Can't move in mutable this lambda, since captured variable is a lambda class field.
+					move(x);
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )

@@ -253,8 +253,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 	}
 
-	auto lambda_this_value_type= ValueType::ReferenceImut; // TODO - allow to change it.
-
 	var bool mut has_preprocessing_errors= false;
 	var FunctionType::ParamReferences mut return_references;
 	var ust::vector</ FunctionType::ParamReferences /> mut return_inner_references;
@@ -266,8 +264,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			.parent= function_context.lambda_preprocessing_context,
 			.external_variables= CollectCurrentFunctionVariables( function_context ),
-			.lambda_this_value_type= lambda_this_value_type,
-			.capture_by_value= !lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty()
+			.capture_by_value= !lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty(),
+			.lambda_this_is_mutable= lambda_.function.deref().function_type.params.front().mutability_modifier == Synt::MutabilityModifier::Mutable,
 		};
 
 		if( !lambda_.capture.get</Synt::Lambda::CaptureNothing/>().empty() )
@@ -290,7 +288,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				.body_syntax_element= lambda_.function,
 				.llvm_function( LazyLLVMFunction( "\0" /* The name of temporary function is irrelevant. */ ) ),
 				// It's fine to use incomplete lambda class here, since this class can't be accessed.
-				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type ),
+				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr ),
 				.is_this_call= true,
 			};
 
@@ -553,7 +551,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	{
 		var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
-		auto mut function_type= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr, lambda_this_value_type );
+		auto mut function_type= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr );
 		function_type.return_references= move(return_references);
 		function_type.return_inner_references= move(return_inner_references);
 		function_type.references_pollution= move(references_pollution);
@@ -636,8 +634,7 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	Synt::FunctionType& lambda_function_type,
-	ClassTypePtr& lambda_class_type,
-	ValueType lambda_this_value_type ) : FunctionType
+	ClassTypePtr& lambda_class_type ) : FunctionType
 {
 	var FunctionType mut res
 	{
@@ -657,13 +654,31 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	}
 
 	// First param is always "this" of the lambda type.
-	debug_assert( !lambda_function_type.params.empty() );
-	var FunctionType::Param mut this_param
 	{
-		.t= lambda_class_type,
-		.value_type= lambda_this_value_type,
-	};
-	res.params.push_back( move(this_param) );
+		debug_assert( !lambda_function_type.params.empty() );
+		var Synt::FunctionType::Param& in_this_param= lambda_function_type.params.front();
+
+		var FunctionType::Param mut this_param
+		{
+			.t= lambda_class_type,
+			.value_type= ValueType::ReferenceImut,
+		};
+
+		if( in_this_param.reference_modifier == Synt::ReferenceModifier::None )
+		{
+			this_param.value_type= ValueType::Value;
+		}
+		else if( in_this_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
+		{
+			this_param.value_type= ValueType::ReferenceMut;
+		}
+		else
+		{
+			this_param.value_type= ValueType::ReferenceImut;
+		}
+
+		res.params.push_back( move(this_param) );
+	}
 
 	auto mut params_except_first= lambda_function_type.params.range();
 	params_except_first.drop_front();
@@ -793,14 +808,7 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 		if( lambda_preprocessing_context.capture_by_value )
 		{
 			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-			if( lambda_preprocessing_context.lambda_this_value_type == ValueType::ReferenceImut )
-			{
-				value_type= ValueType::ReferenceImut;
-			}
-			else
-			{
-				value_type= ValueType::ReferenceMut;
-			}
+			value_type= select( lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		}
 		else
 		{
