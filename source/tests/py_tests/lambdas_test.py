@@ -1498,7 +1498,7 @@ def LambdaMutableThis_Test2():
 
 def LambdaMutableThis_Test3():
 	c_program_text= """
-	fn Foo()
+		fn Foo()
 		{
 			auto x= 0;
 			auto mut f=
