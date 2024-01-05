@@ -1652,3 +1652,41 @@ def LambdaCaptureList_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 778;
+			// Capture "x" explicitely by reference.
+			auto f= lambda[&x]() : i32 { return x; };
+			halt if( f() != 778 );
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.reference_tag_count == 1s );
+			static_assert( ti.size_of == typeinfo</ $(i32) />.size_of );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 778, mut y= 0;
+			{
+				// Capture "x" explicitely by value and "y" by reference.
+				auto f= lambda[x, &y]() { y= x; };
+				f();
+				auto& ti= typeinfo</ typeof(f) />;
+				static_assert( ti.reference_tag_count == 1s );
+				// Should have size for value and for pointer.
+				static_assert( ti.size_of == typeinfo</ $(i32) />.size_of * 2s );
+			}
+			halt if( y != 778 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
