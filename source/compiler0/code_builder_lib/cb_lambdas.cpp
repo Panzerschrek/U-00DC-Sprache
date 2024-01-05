@@ -197,7 +197,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
-		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
+		lambda_preprocessing_context.capture_by_reference= std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture );
 
 		U_ASSERT( !lambda.function.type.params.empty() );
 		{
@@ -207,14 +207,14 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		if( std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
-			lambda_preprocessing_context.explicit_captures= LambdaPreprocessingContext::AllowedForCaptureVariables();
+			lambda_preprocessing_context.explicit_captures= LambdaPreprocessingContext::ExplicitCaptures();
 		else if(
 			std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture ) ||
 			std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture ) )
 			lambda_preprocessing_context.explicit_captures= std::nullopt; // Allow to capture anything.
 		else if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
 		{
-			LambdaPreprocessingContext::AllowedForCaptureVariables explicit_captures;
+			LambdaPreprocessingContext::ExplicitCaptures explicit_captures;
 			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 			{
 				if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
@@ -228,7 +228,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 						else
 						{
 							LambdaPreprocessingContext::ExplicitCapture explicit_capture;
-							explicit_capture.capture_by_value= !capture.by_reference;
+							explicit_capture.capture_by_reference= capture.by_reference;
 							explicit_captures.emplace( variable, std::move(explicit_capture) );
 						}
 					}
@@ -280,12 +280,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			v.name= captured_variable_pair.first;
 			v.data= std::move(captured_variable_pair.second);
 
-			v.capture_by_reference= !lambda_preprocessing_context.capture_by_value;
+			v.capture_by_reference= lambda_preprocessing_context.capture_by_reference;
 			if( lambda_preprocessing_context.explicit_captures != std::nullopt )
 			{
-				// If has explicit captures - use individual by value capture flags.
+				// If has explicit captures - use individual by reference capture flags.
 				if( const auto it= lambda_preprocessing_context.explicit_captures->find( v.data.source_variable ); it != lambda_preprocessing_context.explicit_captures->end() )
-					v.capture_by_reference= !it->second.capture_by_value;
+					v.capture_by_reference= it->second.capture_by_reference;
 			}
 
 			const auto llvm_type= v.data.source_variable->type.GetLLVMType();
@@ -688,24 +688,25 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 
 		ValueType value_type= ValueType::ReferenceImut;
 
-		bool capture_by_value= lambda_preprocessing_context.capture_by_value;
+		bool capture_by_reference= lambda_preprocessing_context.capture_by_reference;
 		if( lambda_preprocessing_context.explicit_captures != std::nullopt )
 		{
-			// If has explicit captures - use individual by value capture flags.
+			// If has explicit captures - use individual by reference capture flags.
 			if( const auto it= lambda_preprocessing_context.explicit_captures->find( variable ); it != lambda_preprocessing_context.explicit_captures->end() )
-				capture_by_value= it->second.capture_by_value;
+				capture_by_reference= it->second.capture_by_reference;
 		}
 
-		if( capture_by_value )
-		{
-			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-			value_type= lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		}
-		else
+		if( capture_by_reference )
 		{
 			// While capturing by reference capture mutable values as mutable references, immutable values as immutable references.
 			value_type= variable->value_type;
 		}
+		else
+		{
+			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+			value_type= lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		}
+
 
 		captured_variable.reference_node=
 			Variable::Create(

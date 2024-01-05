@@ -44,10 +44,10 @@ struct LambdaPreprocessingContext
 {
 	struct ExplicitCapture
 	{
-		bool capture_by_value= true;
+		bool capture_by_reference= false;
 	};
 
-	using AllowedForCaptureVariables= std::unordered_map<VariablePtr, ExplicitCapture>;
+	using ExplicitCaptures= std::unordered_map<VariablePtr, ExplicitCapture>;
 
 	struct CapturedVariableData
 	{
@@ -73,8 +73,8 @@ public:
 	// Inputs (filled before lambda preprocessing).
 	LambdaPreprocessingContext* parent= nullptr;
 	std::unordered_set<VariablePtr> external_variables;
-	std::optional<AllowedForCaptureVariables> explicit_captures; // If none - all variables are allowed.
-	bool capture_by_value= false;
+	std::optional<ExplicitCaptures> explicit_captures; // If none - all variables are allowed for capture.
+	bool capture_by_reference= false;
 	bool lambda_this_is_mutable= false;
 
 	// Outputs (filled during lambda preprocessing).
