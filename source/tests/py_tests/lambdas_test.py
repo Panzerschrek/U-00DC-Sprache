@@ -1609,3 +1609,29 @@ def LambdaMutableThis_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 11 ) )
+
+
+def LambdaMutableThis_Test8():
+	c_program_text= """
+		// It is even possible to create global mut lambda. But there is no practical reason to do so.
+		auto f = lambda mut(){};
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def LambdaMutableThis_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			var u64 x(0);
+			auto f =
+				lambda [=] mut ()
+				{
+					// Can't move in mutable this lambda, since captured variable is a lambda class field.
+					move(x);
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )

@@ -1251,6 +1251,22 @@ U_TEST( LambdasMangling_Test15 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_5cd35d2582e59b3a7ad332605201dcf1_3_18_IyE10destructorERS0_" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test16 )
+{
+	// Should encode mutable this parameter of lambdas operator().
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto f= lambda mut(){};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN46_lambda_9fb393ef56b4b4cf3ac8c99be9349c03_4_11_clERS_" ) != nullptr ); // Call operator itslef.
+}
+
 } // namespace
 
 } // namespace U

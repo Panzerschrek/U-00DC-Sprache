@@ -1391,6 +1391,22 @@ U_TEST( LambdasMangling_Test15 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$_lambda_5cd35d2582e59b3a7ad332605201dcf1_3_18_@_K@@YAXAEAU1@@Z" ) != nullptr ); // Destructor.
 }
 
+U_TEST( LambdasMangling_Test16 )
+{
+	// Should encode mutable this parameter of lambdas operator().
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto f= lambda mut(){};
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??R_lambda_9fb393ef56b4b4cf3ac8c99be9349c03_4_11_@@YAXAEAU0@@Z" ) != nullptr ); // Call operator itslef.
+}
+
 } // namespace
 
 } // namespace U
