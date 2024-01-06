@@ -217,6 +217,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			LambdaPreprocessingContext::ExplicitCaptures explicit_captures;
 			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 			{
+				if( capture.completion_requested )
+					NameLookupCompleteImpl( names, capture.name );
+
 				if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
 				{
 					CollectDefinition( *value, capture.src_loc );

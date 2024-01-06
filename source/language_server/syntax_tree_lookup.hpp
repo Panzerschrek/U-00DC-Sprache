@@ -16,7 +16,8 @@ using CompletionSyntaxElement= std::variant<
 	const Synt::MoveOperatorCompletion*,
 	const Synt::Function::NameComponent*,
 	const Synt::CallOperatorSignatureHelp*,
-	const Synt::ConstructorInitializerSignatureHelp*>;
+	const Synt::ConstructorInitializerSignatureHelp*,
+	const Synt::Lambda::CaptureListElement*>;
 
 using GlobalItem= std::variant<
 	const Synt::Namespace*,

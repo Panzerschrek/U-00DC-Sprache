@@ -1412,12 +1412,21 @@ Lambda SyntaxAnalyzer::ParseLambda()
 					else
 						capture_element.by_reference= false;
 
-					if( it_->type != Lexem::Type::Identifier )
+					if( it_->type == Lexem::Type::Identifier )
+					{
+						capture_element.src_loc= it_->src_loc;
+						capture_element.name= it_->text;
+						NextLexem();
+					}
+					else if( it_->type == Lexem::Type::CompletionIdentifier )
+					{
+						capture_element.src_loc= it_->src_loc;
+						capture_element.name= it_->text;
+						capture_element.completion_requested= true;
+						NextLexem();
+					}
+					else
 						PushErrorMessage();
-
-					capture_element.src_loc= it_->src_loc;
-					capture_element.name= it_->text;
-					NextLexem();
 
 					capture_list.push_back( std::move( capture_element ) );
 
