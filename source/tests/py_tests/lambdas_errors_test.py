@@ -1025,3 +1025,35 @@ def DuplicatedCapture_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
+
+
+def UnusedCapture_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			lambda [x](){}; // "x" is not used.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedCapture", 5 ) )
+
+
+def UnusedCapture_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			lambda [&x]()
+			{
+				static_if( false )
+				{
+					++x; // This doesn't count as capture, because it happens in false branch of static_if.
+				}
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedCapture", 5 ) )

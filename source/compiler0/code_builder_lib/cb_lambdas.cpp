@@ -263,6 +263,17 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 
+		// Check if explicitely specified captures are not used.
+		// It's important to produce such error, becase later unused captures will NOT be actually captured.
+		if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
+		{
+			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
+			{
+				if( lambda_preprocessing_context.captured_external_variables.count( capture.name ) == 0 )
+					REPORT_ERROR( UnusedCapture, names.GetErrors(), capture.src_loc, capture.name );
+			}
+		}
+
 		// Extract captured variables and sort them to ensure stable order.
 		struct CapturedVariableForSorting
 		{

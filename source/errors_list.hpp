@@ -247,3 +247,4 @@ PROCESS_ERROR( AwaitOutsideAsyncFunction, "\"await\" operator is used outside as
 PROCESS_ERROR( ReferenceNotationForLambda, "It's not allowed to specify reference notation for lambdas - it is calculated automatically." )
 PROCESS_ERROR( VariableIsNotCapturedByLambda, "Variable \"{0}\" is not captured by lambda." )
 PROCESS_ERROR( DuplicatedCapture, "Duplicated capture for variable \"{0}\"." )
+PROCESS_ERROR( UnusedCapture, "Capture \"{0}\" is not used." )
