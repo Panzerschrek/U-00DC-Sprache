@@ -502,7 +502,7 @@ def LambdaModifyCapturedVariable_Test3():
 			auto f=
 				lambda[&x]()
 				{
-					// Can't modify captured explicitely immutable reference.
+					// Can't modify captured explicitly immutable reference.
 					++x;
 				};
 		}
@@ -520,7 +520,7 @@ def LambdaModifyCapturedVariable_Test4():
 			auto f=
 				lambda[x]()
 				{
-					// Can't modify captured explicitely copy.
+					// Can't modify captured explicitly copy.
 					++x;
 				};
 		}

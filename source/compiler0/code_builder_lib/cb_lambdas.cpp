@@ -263,7 +263,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 
-		// Check if explicitely specified captures are not used.
+		// Check if explicitly specified captures are not used.
 		// It's important to produce such error, becase later unused captures will NOT be actually captured.
 		if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
 		{

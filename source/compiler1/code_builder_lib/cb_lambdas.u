@@ -336,7 +336,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		has_preprocessing_errors= lambda_preprocessing_context_result.has_preprocessing_errors;
 
-		// Check if explicitely specified captures are not used.
+		// Check if explicitly specified captures are not used.
 		// It's important to produce such error, becase later unused captures will NOT be actually captured.
 		if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
 		{

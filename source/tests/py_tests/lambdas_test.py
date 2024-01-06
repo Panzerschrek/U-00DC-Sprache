@@ -1642,7 +1642,7 @@ def LambdaCaptureList_Test0():
 		fn Foo()
 		{
 			var i32 x= 33;
-			// Capture "x" explicitely by value.
+			// Capture "x" explicitly by value.
 			auto f= lambda[x]() : i32 { return x; };
 			static_assert( f() == 33 );
 			auto& ti= typeinfo</ typeof(f) />;
@@ -1659,7 +1659,7 @@ def LambdaCaptureList_Test1():
 		fn Foo()
 		{
 			var i32 x= 778;
-			// Capture "x" explicitely by reference.
+			// Capture "x" explicitly by reference.
 			auto f= lambda[&x]() : i32 { return x; };
 			halt if( f() != 778 );
 			auto& ti= typeinfo</ typeof(f) />;
@@ -1677,7 +1677,7 @@ def LambdaCaptureList_Test2():
 		{
 			var i32 x= 778, mut y= 0;
 			{
-				// Capture "x" explicitely by value and "y" by reference.
+				// Capture "x" explicitly by value and "y" by reference.
 				auto f= lambda[x, &y]() { y= x; };
 				f();
 				auto& ti= typeinfo</ typeof(f) />;
