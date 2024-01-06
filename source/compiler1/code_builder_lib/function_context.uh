@@ -20,7 +20,12 @@ struct LoopFrame
 
 struct LambdaPreprocessingContext
 {
-	type AllowedForCaptureVariables= ust::unordered_set</ VariablePtr />;
+	type ExplicitCaptures= ust::unordered_map</ VariablePtr, ExplicitCapture />;
+
+	struct ExplicitCapture
+	{
+		bool capture_by_reference;
+	}
 
 	struct CapturedVariableData
 	{
@@ -44,8 +49,8 @@ struct LambdaPreprocessingContext
 	// Inputs (filled before lambda preprocessing).
 	ust::weak_ptr_imut</ LambdaPreprocessingContext /> parent;
 	ust::unordered_set</VariablePtr/> external_variables;
-	ust::optional</AllowedForCaptureVariables/> allowed_for_capture_variables; // If none - all variables are allowed.
-	bool capture_by_value;
+	ust::optional</ExplicitCaptures/> explicit_captures; // If none - all variables are allowed for captured.
+	bool capture_by_reference;
 	bool lambda_this_is_mutable;
 
 	// Outputs (filled during lambda preprocessing).

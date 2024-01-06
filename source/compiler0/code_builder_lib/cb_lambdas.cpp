@@ -718,7 +718,6 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 			value_type= lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		}
 
-
 		captured_variable.reference_node=
 			Variable::Create(
 				variable->type,

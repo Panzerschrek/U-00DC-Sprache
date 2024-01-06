@@ -1240,8 +1240,48 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		else
 		{
 			// Full capture list.
+			var Lambda::CaptureList mut capture_list;
 
-			// TODO - parse it.
+			if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
+			{
+				while( NotEndOfFile() )
+				{
+					var Lambda::CaptureListElement mut capture_element;
+
+					if( it_.front().lexem_type == Lexem::Type::And )
+					{
+						capture_element.by_reference= true;
+						NextLexem();
+					}
+					else
+					{
+						capture_element.by_reference= false;
+					}
+
+					if( it_.front().lexem_type != Lexem::Type::Identifier )
+					{
+						PushErrorMessage();
+					}
+
+					capture_element.src_loc= it_.front().src_loc;
+					capture_element.name= it_.front().text;
+					NextLexem();
+
+					capture_list.push_back( move(capture_element ) );
+
+					if( it_.front().lexem_type == Lexem::Type::Comma )
+					{
+						NextLexem();
+						continue;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+
+			capture= move(capture_list);
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 		}
 	}
