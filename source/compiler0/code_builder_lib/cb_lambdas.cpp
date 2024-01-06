@@ -219,6 +219,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			{
 				if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
 				{
+					CollectDefinition( *value, capture.src_loc );
 					if( const VariablePtr variable= value->value.GetVariable() )
 					{
 						if( explicit_captures.count( variable ) > 0 )
