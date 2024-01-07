@@ -494,6 +494,42 @@ def LambdaModifyCapturedVariable_Test2():
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
+def LambdaModifyCapturedVariable_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[&x]()
+				{
+					// Can't modify captured explicitly immutable reference.
+					++x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+
+
+def LambdaModifyCapturedVariable_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[x]()
+				{
+					// Can't modify captured explicitly copy.
+					++x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+
+
 def LambdaMoveCapturedVariable_Test0():
 	c_program_text= """
 		fn Foo()
@@ -749,6 +785,34 @@ def VariableIsNotCapturedByLambda_Test3():
 	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 16 ) )
 
 
+def VariableIsNotCapturedByLambda_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			// Specify empty capture list - without actually referenced variable.
+			auto f= lambda[]() : i32 { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+
+
+def VariableIsNotCapturedByLambda_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			// Specify different from the used variable.
+			auto f= lambda[&x]() : i32 { return y; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+
+
 def LambaCaptureIsNotConstexpr_Test0():
 	c_program_text= """
 		fn Foo()
@@ -879,3 +943,169 @@ def LambdaReferencePollutionForThis_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+
+
+def ExplicitCaptureListErrors_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Error - name "x" not found.
+			lambda [x](){};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 5 ) )
+
+
+def ExplicitCaptureListErrors_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Error - name "f64" is not a variable.
+			lambda [f64](){};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
+
+
+def ExplicitCaptureListErrors_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn Foo( this )
+			{
+				// Error - name "f64" is not a variable but a class field.
+				lambda [x](){};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def ExplicitCaptureListErrors_Test3():
+	c_program_text= """
+		var i32 x= 0;
+		fn Foo()
+		{
+			lambda [x](){}; // Error - capturing global variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
+
+
+def ExplicitCaptureListErrors_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda [this](){};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisUnavailable", 4 ) )
+
+
+def ExplicitCaptureListErrors_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( this )
+			{
+				// Can't capture "this" even with usage of capture list.
+				auto f= lambda [this](){};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 7 ) )
+
+
+def ExplicitCaptureListErrors_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 6765;
+			auto f0=
+				lambda[&]() : i32
+				{
+					// Specify a variable from outer lambda in capture list of inner lambda.
+					// This should still not be allowed.
+					auto f1=
+						lambda[x]() : i32
+						{
+							return x;
+						};
+					return f1();
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 11 ) )
+
+
+def DuplicatedCapture_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			lambda [x, x](){}; // Capturing the same variable twice.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
+
+
+def DuplicatedCapture_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			lambda [&x, x](){}; // Capturing the same variable twice with different reference modifiers.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
+
+
+def UnusedCapture_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			lambda [x](){}; // "x" is not used.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedCapture", 5 ) )
+
+
+def UnusedCapture_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			lambda [&x]()
+			{
+				static_if( false )
+				{
+					++x; // This doesn't count as capture, because it happens in false branch of static_if.
+				}
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedCapture", 5 ) )

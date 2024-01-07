@@ -64,6 +64,41 @@ Captured by reference variables become reference fields in the lambda class.
 All reference checking rules work for lambdas that capture references, as for any other types with references inside.
 
 
+**************
+*Capture list*
+**************
+
+It's possible to explicitly specify captured by a lambda variables - via capture list inside ``[]``.
+This list contains comma-separated variable names, which needed to be captured.
+If a variable in this list has prefix ``&`` - it will be captured by reference, else - by value.
+
+.. code-block:: u_spr
+
+   fn Foo()
+   {
+       var f32 mut x= 1.0f, mut y= 1.0f;
+       {
+           // Capture the first variable by mutable reference, the second one by copy.
+           auto mut f=
+               lambda[&x, y] mut () : f32
+               {
+                   x*= 2.0f; // Affect external variable.
+                   y*= 3.0f; // Modify captured copy.
+                   return x * y;
+               };
+           halt if( f() != 6.0f );
+           halt if( f() != 36.0f );
+           halt if( f() != 216.0f );
+       }
+       halt if( x != 8.0f ); // Should be changed.
+       halt if( y != 1.0f ); // Should not be changed.
+   }
+
+It has sense to use capture list where it is necessary to explicitly designate captured variables.
+It's also useful in cases where some variables are needed to be captured by reference and other by value.
+With usage of capture list an error will be produced, if a listed variable is not used inside the lambda, or if an external variable which is not listed is used inside the lambda.
+
+
 **************************
 *Lambda object mutability*
 **************************

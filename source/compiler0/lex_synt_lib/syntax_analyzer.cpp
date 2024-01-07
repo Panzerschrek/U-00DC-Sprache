@@ -1396,9 +1396,52 @@ Lambda SyntaxAnalyzer::ParseLambda()
 		else
 		{
 			// Full capture list.
+			Lambda::CaptureList capture_list;
 
-			// TODO - parse it.
+			if( it_->type != Lexem::Type::SquareBracketRight )
+			{
+				while( NotEndOfFile() )
+				{
+					Lambda::CaptureListElement capture_element;
+
+					if( it_->type == Lexem::Type::And )
+					{
+						capture_element.by_reference= true;
+						NextLexem();
+					}
+					else
+						capture_element.by_reference= false;
+
+					if( it_->type == Lexem::Type::Identifier )
+					{
+						capture_element.src_loc= it_->src_loc;
+						capture_element.name= it_->text;
+						NextLexem();
+					}
+					else if( it_->type == Lexem::Type::CompletionIdentifier )
+					{
+						capture_element.src_loc= it_->src_loc;
+						capture_element.name= it_->text;
+						capture_element.completion_requested= true;
+						NextLexem();
+					}
+					else
+						PushErrorMessage();
+
+					capture_list.push_back( std::move( capture_element ) );
+
+					if( it_->type == Lexem::Type::Comma )
+					{
+						NextLexem();
+						continue;
+					}
+					else
+						break;
+				}
+			}
+
 			ExpectLexem( Lexem::Type::SquareBracketRight );
+			result.capture= std::move(capture_list);
 		}
 	}
 	else

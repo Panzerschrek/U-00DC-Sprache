@@ -81,6 +81,23 @@ fn nomangle main() : i32
 		assert( y == 100 );
 	}
 
+	// Lambda with capture list.
+	{
+		var i32 mut x= 778, mut y= 0;
+		{
+			// Capture "x" explicitly by value and "y" by reference.
+			auto f=
+				lambda[x, &y] ()
+				{
+					y= x; // Update the value of an external variable.
+				};
+			x= 555; // Can modify "x" here, since the lambda captured only copy of it.
+			f(); // Should update "y" in this call.
+		}
+		assert( x == 555 );
+		assert( y == 778 );
+	}
+
 	{ // A lambda may be constexpr if it satisfies constexpr function requirements.
 		auto shift_val= 7u;
 		auto shift= lambda[=]( u32 x ) : u32 { return x << shift_val; };

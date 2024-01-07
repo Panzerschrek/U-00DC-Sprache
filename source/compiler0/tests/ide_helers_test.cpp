@@ -739,6 +739,50 @@ U_TEST( GoToDefinition_Test22 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 3 ) == SrcLoc( 0,  2, 5 ) );
 }
 
+U_TEST( GoToDefinition_Test23 )
+{
+	// Should collect usage for an external variable in lambda body.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 local_var= 0;
+			auto f=
+				lambda[=]() : i32
+				{
+					return local_var * 2;
+				};
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text, true );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 8, 13 ) == SrcLoc( 0, 4, 11 ) );
+}
+
+U_TEST( GoToDefinition_Test24 )
+{
+	// Should collect usage for captured variable in lambda capture list and in lambda body itself.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 local_arg )
+		{
+			auto f=
+				lambda[local_arg]() : i32
+				{
+					return local_arg * 2;
+				};
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text, true );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5, 11 ) == SrcLoc( 0, 2, 14 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 12 ) == SrcLoc( 0, 2, 14 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=

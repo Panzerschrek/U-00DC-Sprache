@@ -264,19 +264,64 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			.parent= function_context.lambda_preprocessing_context,
 			.external_variables= CollectCurrentFunctionVariables( function_context ),
-			.capture_by_value= !lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty(),
+			.capture_by_reference= !lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty(),
 			.lambda_this_is_mutable= lambda_.function.deref().function_type.params.front().mutability_modifier == Synt::MutabilityModifier::Mutable,
 		};
 
 		if( !lambda_.capture.get</Synt::Lambda::CaptureNothing/>().empty() )
 		{
-			lambda_preprocessing_context.allowed_for_capture_variables= LambdaPreprocessingContext::AllowedForCaptureVariables();
+			lambda_preprocessing_context.explicit_captures= LambdaPreprocessingContext::ExplicitCaptures();
 		}
 		else if(
 			!lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty() ||
 			!lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty() )
 		{
-			lambda_preprocessing_context.allowed_for_capture_variables= ust::null_optional;
+			lambda_preprocessing_context.explicit_captures= ust::null_optional;
+		}
+		else if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
+		{
+			var LambdaPreprocessingContext::ExplicitCaptures mut explicit_captures;
+			foreach( &capture : capture_list )
+			{
+				if( capture.name == KeywordToString( Keyword::this_ ) || capture.name == KeywordToString( Keyword::base_ ) )
+				{
+					if( function_context.this_.empty() )
+					{
+						REPORT_ERROR( ThisUnavailable, names_scope, capture.src_loc )
+					}
+					else
+					{
+						// Do not allow to capture "this" even via capture list.
+						REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, capture.name )
+					}
+				}
+				else if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
+				{
+					auto variable_ptr_nullable= name[1].Get</Variable/>();
+					if( !variable_ptr_nullable.empty() )
+					{
+						var VariablePtr variable_ptr= variable_ptr_nullable.try_to_non_nullable();
+						if( !explicit_captures.find( variable_ptr ).empty() )
+						{
+							REPORT_ERROR( DuplicatedCapture, names_scope, capture.src_loc, capture.name )
+						}
+						else if( !lambda_preprocessing_context.external_variables.exists( variable_ptr ) )
+						{
+							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "non-local variable" )
+						}
+						else
+						{
+							var LambdaPreprocessingContext::ExplicitCapture mut explicit_capture{ .capture_by_reference= capture.by_reference };
+							explicit_captures.insert( variable_ptr, move(explicit_capture) );
+						}
+					}
+					else
+					{
+						REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "some non-variable value" )
+					}
+				}
+			}
+			lambda_preprocessing_context.explicit_captures= move(explicit_captures);
 		}
 		else { halt; }
 
@@ -303,11 +348,33 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		has_preprocessing_errors= lambda_preprocessing_context_result.has_preprocessing_errors;
 
+		// Check if explicitly specified captures are not used.
+		// It's important to produce such error, becase later unused captures will NOT be actually captured.
+		if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
+		{
+			foreach( &capture : capture_list )
+			{
+				if( lambda_preprocessing_context_result.captured_external_variables.find( capture.name ).empty() )
+				{
+					REPORT_ERROR( UnusedCapture, names_scope, capture.src_loc, capture.name )
+				}
+			}
+		}
+
 		// Extract captured variables and sort them to ensure stable order.
 		var ust::vector</ CapturedVariableForSorting /> mut captured_variables;
 		foreach( &captured_variable_pair : lambda_preprocessing_context_result.captured_external_variables )
 		{
-			auto capture_by_reference= !lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty();
+			var bool mut capture_by_reference= lambda_preprocessing_context_result.capture_by_reference;
+			if_var( &explicit_captures : lambda_preprocessing_context_result.explicit_captures )
+			{
+				// If has explicit captures - use individual by reference capture flags.
+				if_var( &explicit_capture : explicit_captures.find( captured_variable_pair.value().source_variable ) )
+				{
+					capture_by_reference= explicit_capture.capture_by_reference;
+				}
+			}
+
 			auto llvm_type= captured_variable_pair.value().source_variable.lock_imut().deref().t.GetLLVMType();
 
 			var CapturedVariableForSorting mut v
@@ -745,8 +812,8 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
 
 	if( lambda_preprocessing_context.external_variables.exists( variable ) &&
-		!lambda_preprocessing_context.allowed_for_capture_variables.empty() &&
-		!lambda_preprocessing_context.allowed_for_capture_variables.try_deref().exists( variable ) )
+		!lambda_preprocessing_context.explicit_captures.empty() &&
+		lambda_preprocessing_context.explicit_captures.try_deref().find( variable ).empty() )
 	{
 		REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
 		lambda_preprocessing_context.has_preprocessing_errors= true;
@@ -805,15 +872,26 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 		};
 
 		var ValueType mut value_type= ValueType::ReferenceImut;
-		if( lambda_preprocessing_context.capture_by_value )
+
+		var bool mut capture_by_reference= lambda_preprocessing_context.capture_by_reference;
+		if_var( &explicit_captures : lambda_preprocessing_context.explicit_captures )
 		{
-			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-			value_type= select( lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			// If has explicit captures - use individual by reference capture flags.
+			if_var( &explicit_capture : explicit_captures.find( variable ) )
+			{
+				capture_by_reference= explicit_capture.capture_by_reference;
+			}
 		}
-		else
+
+		if( capture_by_reference )
 		{
 			// While capturing by reference capture mutable values as mutable references, immutable values as immutable references.
 			value_type= v.value_type;
+		}
+		else
+		{
+			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+			value_type= select( lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		}
 
 		var Variable mut reference_node_value

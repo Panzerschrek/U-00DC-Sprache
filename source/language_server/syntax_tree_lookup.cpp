@@ -205,6 +205,18 @@ void FindImpl( const Synt::TakeOperator& take_operator )
 
 void FindImpl( const Synt::Lambda& lambda )
 {
+	if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
+	{
+		for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
+		{
+			if( capture.src_loc.GetLine() == line_ && capture.src_loc.GetColumn() == column_ )
+			{
+				U_ASSERT( global_item_ != std::nullopt );
+				result_= SyntaxTreeLookupResult{ prefix_, &capture, *global_item_ };
+			}
+		}
+	}
+
 	FindImpl( lambda.function );
 }
 

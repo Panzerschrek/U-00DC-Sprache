@@ -1635,3 +1635,123 @@ def LambdaMutableThis_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )
+
+
+def LambdaCaptureList_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 33;
+			// Capture "x" explicitly by value.
+			auto f= lambda[x]() : i32 { return x; };
+			static_assert( f() == 33 );
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.reference_tag_count == 0s );
+			static_assert( ti.size_of == 4s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 778;
+			// Capture "x" explicitly by reference.
+			auto f= lambda[&x]() : i32 { return x; };
+			halt if( f() != 778 );
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.reference_tag_count == 1s );
+			static_assert( ti.size_of == typeinfo</ $(i32) />.size_of );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 778, mut y= 0;
+			{
+				// Capture "x" explicitly by value and "y" by reference.
+				auto f= lambda[x, &y]() { y= x; };
+				f();
+				auto& ti= typeinfo</ typeof(f) />;
+				static_assert( ti.reference_tag_count == 1s );
+				// Should have size for value and for pointer.
+				static_assert( ti.size_of == typeinfo</ $(i32) />.size_of * 2s );
+			}
+			halt if( y != 778 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 mut x= 1.0f, mut y= 1.0f;
+			{
+				// Capture the first variable by mutable reference, the second one by copy.
+				// Modify them both.
+				auto mut f=
+					lambda[&x, y] mut () : f32
+					{
+						x*= 2.0f; // Affect external variable.
+						y*= 3.0f; // Modify captured copy.
+						return x * y;
+					};
+				halt if( f() != 6.0f );
+				halt if( f() != 36.0f );
+				halt if( f() != 216.0f );
+			}
+			halt if( x != 8.0f ); // Should be changed.
+			halt if( y != 1.0f ); // Should not be changed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 17;
+			auto& x_ref0= x;
+			var i32& x_ref1= x;
+			// Capture two values of the same variable. Should have 2 values inside.
+			auto f= lambda[x_ref0, x_ref1]() : i32 { return x_ref0 * x_ref1; };
+			halt if( f() != 17 * 17 );
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.reference_tag_count == 0s );
+			static_assert( ti.size_of == typeinfo</ i32 />.size_of * 2s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCaptureList_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= -61;
+			auto& x_ref0= x;
+			var i32& x_ref1= x;
+			// Capture two references of the same variable. Should have 2 references inside.
+			auto f= lambda[&x_ref0, &x_ref1]() : i32 { return x_ref0 * x_ref1; };
+			halt if( f() != 61 * 61 );
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.reference_tag_count == 2s );
+			static_assert( ti.size_of == typeinfo</ $(i32) />.size_of * 2s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

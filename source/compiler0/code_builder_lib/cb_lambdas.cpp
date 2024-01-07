@@ -197,7 +197,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
-		lambda_preprocessing_context.capture_by_value= std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture );
+		lambda_preprocessing_context.capture_by_reference= std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture );
 
 		U_ASSERT( !lambda.function.type.params.empty() );
 		{
@@ -207,11 +207,51 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		if( std::holds_alternative<Synt::Lambda::CaptureNothing>( lambda.capture ) )
-			lambda_preprocessing_context.allowed_for_capture_variables= LambdaPreprocessingContext::AllowedForCaptureVariables();
+			lambda_preprocessing_context.explicit_captures= LambdaPreprocessingContext::ExplicitCaptures();
 		else if(
 			std::holds_alternative<Synt::Lambda::CaptureAllByValue>( lambda.capture ) ||
 			std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture ) )
-			lambda_preprocessing_context.allowed_for_capture_variables= std::nullopt; // Allow to capture anything.
+			lambda_preprocessing_context.explicit_captures= std::nullopt; // Allow to capture anything.
+		else if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
+		{
+			LambdaPreprocessingContext::ExplicitCaptures explicit_captures;
+			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
+			{
+				if( capture.completion_requested )
+					NameLookupCompleteImpl( names, capture.name );
+
+				if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
+				{
+					if( function_context.this_ == nullptr )
+						REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
+					else
+					{
+						// Do not allow to capture "this" even via capture list.
+						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
+					}
+				}
+				else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
+				{
+					CollectDefinition( *value, capture.src_loc );
+					if( const VariablePtr variable= value->value.GetVariable() )
+					{
+						if( explicit_captures.count( variable ) > 0 )
+							REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
+						else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
+							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+						else
+						{
+							LambdaPreprocessingContext::ExplicitCapture explicit_capture;
+							explicit_capture.capture_by_reference= capture.by_reference;
+							explicit_captures.emplace( variable, std::move(explicit_capture) );
+						}
+					}
+					else
+						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
+				}
+			}
+			lambda_preprocessing_context.explicit_captures= std::move(explicit_captures);
+		}
 		else U_ASSERT(false);
 
 		{
@@ -237,6 +277,17 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 
+		// Check if explicitly specified captures are not used.
+		// It's important to produce such error, becase later unused captures will NOT be actually captured.
+		if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
+		{
+			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
+			{
+				if( lambda_preprocessing_context.captured_external_variables.count( capture.name ) == 0 )
+					REPORT_ERROR( UnusedCapture, names.GetErrors(), capture.src_loc, capture.name );
+			}
+		}
+
 		// Extract captured variables and sort them to ensure stable order.
 		struct CapturedVariableForSorting
 		{
@@ -253,7 +304,14 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			CapturedVariableForSorting v;
 			v.name= captured_variable_pair.first;
 			v.data= std::move(captured_variable_pair.second);
-			v.capture_by_reference= std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture );
+
+			v.capture_by_reference= lambda_preprocessing_context.capture_by_reference;
+			if( lambda_preprocessing_context.explicit_captures != std::nullopt )
+			{
+				// If has explicit captures - use individual by reference capture flags.
+				if( const auto it= lambda_preprocessing_context.explicit_captures->find( v.data.source_variable ); it != lambda_preprocessing_context.explicit_captures->end() )
+					v.capture_by_reference= it->second.capture_by_reference;
+			}
 
 			const auto llvm_type= v.data.source_variable->type.GetLLVMType();
 			v.alignment=
@@ -601,8 +659,8 @@ void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	LambdaPreprocessingContext& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
 
 	if( lambda_preprocessing_context.external_variables.count( variable ) > 0 &&
-		lambda_preprocessing_context.allowed_for_capture_variables != std::nullopt &&
-		lambda_preprocessing_context.allowed_for_capture_variables->count( variable ) == 0 )
+		lambda_preprocessing_context.explicit_captures != std::nullopt &&
+		lambda_preprocessing_context.explicit_captures->count( variable ) == 0 )
 	{
 		REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
 		lambda_preprocessing_context.has_preprocessing_errors= true;
@@ -654,15 +712,24 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 				variable->llvm_value );
 
 		ValueType value_type= ValueType::ReferenceImut;
-		if( lambda_preprocessing_context.capture_by_value )
+
+		bool capture_by_reference= lambda_preprocessing_context.capture_by_reference;
+		if( lambda_preprocessing_context.explicit_captures != std::nullopt )
 		{
-			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-			value_type= lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			// If has explicit captures - use individual by reference capture flags.
+			if( const auto it= lambda_preprocessing_context.explicit_captures->find( variable ); it != lambda_preprocessing_context.explicit_captures->end() )
+				capture_by_reference= it->second.capture_by_reference;
 		}
-		else
+
+		if( capture_by_reference )
 		{
 			// While capturing by reference capture mutable values as mutable references, immutable values as immutable references.
 			value_type= variable->value_type;
+		}
+		else
+		{
+			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
+			value_type= lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		}
 
 		captured_variable.reference_node=

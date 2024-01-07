@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 #include <unordered_set>
 #include "names_scope.hpp"
 #include "template_types.hpp"
@@ -41,7 +42,12 @@ struct LambdaClassData
 
 struct LambdaPreprocessingContext
 {
-	using AllowedForCaptureVariables= std::unordered_set<VariablePtr>;
+	struct ExplicitCapture
+	{
+		bool capture_by_reference= false;
+	};
+
+	using ExplicitCaptures= std::unordered_map<VariablePtr, ExplicitCapture>;
 
 	struct CapturedVariableData
 	{
@@ -67,8 +73,8 @@ public:
 	// Inputs (filled before lambda preprocessing).
 	LambdaPreprocessingContext* parent= nullptr;
 	std::unordered_set<VariablePtr> external_variables;
-	std::optional<AllowedForCaptureVariables> allowed_for_capture_variables; // If none - all variables are allowed.
-	bool capture_by_value= false;
+	std::optional<ExplicitCaptures> explicit_captures; // If none - all variables are allowed for capture.
+	bool capture_by_reference= false;
 	bool lambda_this_is_mutable= false;
 
 	// Outputs (filled during lambda preprocessing).
