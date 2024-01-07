@@ -1029,6 +1029,30 @@ def ExplicitCaptureListErrors_Test5():
 	assert( HaveError( errors_list, "ExpectedVariable", 7 ) )
 
 
+def ExplicitCaptureListErrors_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 6765;
+			auto f0=
+				lambda[&]() : i32
+				{
+					// Specify a variable from outer lambda in capture list of inner lambda.
+					// This should still not be allowed.
+					auto f1=
+						lambda[x]() : i32
+						{
+							return x;
+						};
+					return f1();
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 11 ) )
+
+
 def DuplicatedCapture_Test0():
 	c_program_text= """
 		fn Foo()
