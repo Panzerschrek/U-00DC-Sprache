@@ -1001,6 +1001,34 @@ def ExplicitCaptureListErrors_Test3():
 	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
 
 
+def ExplicitCaptureListErrors_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda [this](){};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisUnavailable", 4 ) )
+
+
+def ExplicitCaptureListErrors_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( this )
+			{
+				// Can't capture "this" even with usage of capture list.
+				auto f= lambda [this](){};
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 7 ) )
+
+
 def DuplicatedCapture_Test0():
 	c_program_text= """
 		fn Foo()

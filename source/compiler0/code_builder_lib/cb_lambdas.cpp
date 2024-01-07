@@ -220,7 +220,17 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				if( capture.completion_requested )
 					NameLookupCompleteImpl( names, capture.name );
 
-				if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
+				if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
+				{
+					if( function_context.this_ == nullptr )
+						REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
+					else
+					{
+						// Do not allow to capture "this" even via capture list.
+						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
+					}
+				}
+				else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
 				{
 					CollectDefinition( *value, capture.src_loc );
 					if( const VariablePtr variable= value->value.GetVariable() )

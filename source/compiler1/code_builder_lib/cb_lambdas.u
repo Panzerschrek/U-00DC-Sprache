@@ -283,7 +283,19 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			var LambdaPreprocessingContext::ExplicitCaptures mut explicit_captures;
 			foreach( &capture : capture_list )
 			{
-				if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
+				if( capture.name == KeywordToString( Keyword::this_ ) || capture.name == KeywordToString( Keyword::base_ ) )
+				{
+					if( function_context.this_.empty() )
+					{
+						REPORT_ERROR( ThisUnavailable, names_scope, capture.src_loc )
+					}
+					else
+					{
+						// Do not allow to capture "this" even via capture list.
+						REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, capture.name )
+					}
+				}
+				else if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
 				{
 					auto variable_ptr_nullable= name[1].Get</Variable/>();
 					if( !variable_ptr_nullable.empty() )
