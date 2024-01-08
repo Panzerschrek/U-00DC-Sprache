@@ -122,14 +122,7 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 	}
 	else
 	{
-		// TODO - process possible move-initialization.
-
-		if( !variable->type.IsCopyConstructible() )
-			REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
-		else if( !function_context.is_functionless_context )
-			BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
-
-		// Link references.
+		// Link references (before performing potential move).
 		const size_t reference_tag_count= field.type.ReferenceTagCount();
 		U_ASSERT( field.inner_reference_tags.size() == reference_tag_count );
 		U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
@@ -140,8 +133,30 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 			function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), src_loc );
 		}
 
-		if( variable->constexpr_value != nullptr )
-			return variable->constexpr_value;
+		if( variable->type.GetFundamentalType() != nullptr||
+			variable->type.GetEnumType() != nullptr ||
+			variable->type.GetRawPointerType() != nullptr ||
+			variable->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
+		{
+			// Just copy simple scalar.
+			CreateTypedStore( function_context, variable->type, CreateMoveToLLVMRegisterInstruction( *variable, function_context ), field_value );
+		}
+		else
+		{
+			if( variable->value_type == ValueType::Value )
+			{
+				// Move.
+				function_context.variables_state.MoveNode( variable );
+				if( !function_context.is_functionless_context )
+					CopyBytes( field_value, variable->llvm_value, variable->type, function_context );
+			}
+			else if( !variable->type.IsCopyConstructible() )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
+			else if( !function_context.is_functionless_context )
+				BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
+		}
+
+		return variable->constexpr_value;
 	}
 
 	return nullptr;
@@ -333,14 +348,26 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 					const VariableMutPtr capture_variable= Variable::Create(
 						expr_result->type,
-						// Make immediate values constant. TODO - is it necessary?
+						// Make immediate values constant.
 						expr_result->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-						expr_result->location,
+						Variable::Location::Pointer,
 						expr_result->name,
 						expr_result->llvm_value,
 						expr_result->constexpr_value );
 
-					// TODO - move into memory variables in LLVM registers.
+					if( expr_result->location == Variable::Location::LLVMRegister || expr_result->llvm_value == nullptr )
+					{
+						// Create proper address for this variable in order to avoid crashes in preprocessing.
+						// We can't "alloca" in this function, so, create global variable for that (which will be anyway removed later ).
+						const auto llvm_type= expr_result->type.GetLLVMType();
+						capture_variable->llvm_value=
+							new llvm::GlobalVariable(
+								*module_,
+								llvm_type,
+								false, // is constant
+								llvm::GlobalValue::PrivateLinkage,
+								llvm::UndefValue::get( llvm_type ) );
+					}
 
 					function_context.variables_state.AddNode( capture_variable );
 					custom_captures_names_scope.AddName( capture.name, NamesScopeValue( capture_variable, capture.src_loc ) );

@@ -1761,12 +1761,49 @@ def CaptureListExpression_Test0():
 	c_program_text= """
 		fn Foo()
 		{
+			// Capture constant.
 			auto f=
 				lambda[ x= 42 ] () : i32
 				{
 					return x;
 				};
 			halt if( f() != 42 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 667;
+			// Capture local variable.
+			auto f=
+				lambda[ x_copy= x ] () : i32
+				{
+					return x_copy;
+				};
+			halt if( f() != 667 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 mut x= 1.25f, mut y= 0.25f;
+			// Capture binary expression result.
+			auto f=
+				lambda[ val= x / y ] () : f32
+				{
+					return val;
+				};
+			halt if( f() != 1.25f / 0.25f );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
