@@ -1428,6 +1428,12 @@ Lambda SyntaxAnalyzer::ParseLambda()
 					else
 						PushErrorMessage();
 
+					if( it_->type == Lexem::Type::Assignment )
+					{
+						NextLexem();
+						capture_element.expression= ParseExpression();
+					}
+
 					capture_list.push_back( std::move( capture_element ) );
 
 					if( it_->type == Lexem::Type::Comma )

@@ -1215,6 +1215,7 @@ struct Lambda
 	{
 		SrcLoc src_loc;
 		std::string name;
+		Expression expression; // If not an EmptyVariant - contains initializer expression.
 		bool by_reference= false;
 		bool completion_requested= false;
 	};
