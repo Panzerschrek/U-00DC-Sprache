@@ -249,6 +249,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Run preprocessing.
 	{
+		const auto function_context_state= SaveFunctionContextState( function_context );
+		NamesScope custom_captures_names_scope( "", &names );
+
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
@@ -275,34 +278,77 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				if( capture.completion_requested )
 					NameLookupCompleteImpl( names, capture.name );
 
-				if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
+				if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 				{
-					if( function_context.this_ == nullptr )
-						REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
-					else
+					// Simple capture with only name.
+					if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
 					{
-						// Do not allow to capture "this" even via capture list.
-						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
-					}
-				}
-				else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
-				{
-					CollectDefinition( *value, capture.src_loc );
-					if( const VariablePtr variable= value->value.GetVariable() )
-					{
-						if( explicit_captures.count( variable ) > 0 )
-							REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
-						else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
-							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+						if( function_context.this_ == nullptr )
+							REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
 						else
 						{
-							LambdaPreprocessingContext::ExplicitCapture explicit_capture;
-							explicit_capture.capture_by_reference= capture.by_reference;
-							explicit_captures.emplace( variable, std::move(explicit_capture) );
+							// Do not allow to capture "this" even via capture list.
+							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
 						}
 					}
-					else
-						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
+					else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
+					{
+						CollectDefinition( *value, capture.src_loc );
+						if( const VariablePtr variable= value->value.GetVariable() )
+						{
+							if( explicit_captures.count( variable ) > 0 )
+								REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
+							else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
+								REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+							else
+							{
+								LambdaPreprocessingContext::ExplicitCapture explicit_capture;
+								explicit_capture.capture_by_reference= capture.by_reference;
+								explicit_captures.emplace( variable, std::move(explicit_capture) );
+							}
+						}
+						else
+							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
+					}
+				}
+				else
+				{
+					// Capture with initializer expression.
+					VariablePtr expr_result;
+
+					{
+						const bool prev_is_functionless_context= function_context.is_functionless_context;
+						function_context.is_functionless_context= true;
+						const auto state= SaveFunctionContextState( function_context );
+						{
+							const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+							// TODO - use preevaluation cache?
+							expr_result= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
+						}
+
+						RestoreFunctionContextState( function_context, state );
+						function_context.is_functionless_context= prev_is_functionless_context;
+					}
+
+					const VariableMutPtr capture_variable= Variable::Create(
+						expr_result->type,
+						// Make immediate values constant. TODO - is it necessary?
+						expr_result->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+						expr_result->location,
+						expr_result->name,
+						expr_result->llvm_value,
+						expr_result->constexpr_value );
+
+					// TODO - move into memory variables in LLVM registers.
+
+					function_context.variables_state.AddNode( capture_variable );
+					custom_captures_names_scope.AddName( capture.name, NamesScopeValue( capture_variable, capture.src_loc ) );
+					lambda_preprocessing_context.external_variables.insert( capture_variable );
+
+					LambdaPreprocessingContext::ExplicitCapture explicit_capture;
+					explicit_capture.capture_by_reference= capture.by_reference;
+					explicit_captures.emplace( capture_variable, std::move(explicit_capture) );
 				}
 			}
 			lambda_preprocessing_context.explicit_captures= std::move(explicit_captures);
@@ -319,7 +365,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			BuildFuncCode(
 				op_variable,
 				class_,
-				names,
+				custom_captures_names_scope,
 				call_op_name,
 				lambda.function.type.params,
 				*lambda.function.block,
@@ -329,6 +375,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			// Remove temp function.
 			op_variable.llvm_function->function->eraseFromParent();
 		}
+
+		// Remove created temporary variables for captures.
+		RestoreFunctionContextState( function_context, function_context_state );
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 

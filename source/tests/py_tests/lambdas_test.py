@@ -1755,3 +1755,19 @@ def LambdaCaptureList_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[ x= 42 ] () : i32
+				{
+					return x;
+				};
+			halt if( f() != 42 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
