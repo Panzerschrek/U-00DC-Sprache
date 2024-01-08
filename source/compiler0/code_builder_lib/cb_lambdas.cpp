@@ -31,53 +31,52 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 		constexpr_initializers.resize( lambda_class->llvm_type->getNumElements() );
 	size_t num_constexpr_initializers= 0;
 
-	for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
+	if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
 	{
-		if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )
+		// Initialize lamda fields in capture list order.
+		for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 		{
-			if( const auto variable= lookup_value->value.GetVariable() )
+			if( const auto field_value= lambda_class->members->GetThisScopeValue( capture.name ) )
 			{
-				U_ASSERT( variable->type == capture.field->type );
-
-				const auto field_value= CreateClassFieldGEP( function_context, *result, capture.field->index );
-
-				if( capture.field->is_reference )
+				if( const auto field= field_value->value.GetClassField() )
 				{
-					CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
-
-					// Link references.
-					U_ASSERT( capture.field->reference_tag < result->inner_reference_nodes.size() );
-					function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ capture.field->reference_tag ], names.GetErrors(), lambda.src_loc );
-
-					if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
+					llvm::Constant* constexpr_value= nullptr;
+					if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 					{
-						// We needs to store constant somewhere. Create global variable for it.
-						llvm::Constant* const constant_stored= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
-						constexpr_initializers[ capture.field->index ]= constant_stored;
+						// Simple capture - lookup variable for it by name.
+						if( const auto lookup_value= LookupName( names, capture.name, lambda.src_loc ).value )
+							if( const auto variable= lookup_value->value.GetVariable() )
+								constexpr_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+					}
+					else
+					{
+						// Capture with expression specified.
+						const VariablePtr variable= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
+						constexpr_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+					}
+
+					if( lambda_class->can_be_constexpr && constexpr_value != nullptr )
+					{
+						constexpr_initializers[ field->index ]= constexpr_value;
 						++num_constexpr_initializers;
 					}
 				}
-				else
+			}
+		}
+	}
+	else
+	{
+		// Initialize lamda fields in natural order.
+		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
+		{
+			if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )
+			{
+				if( const auto variable= lookup_value->value.GetVariable() )
 				{
-					if( !variable->type.IsCopyConstructible() )
-						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), lambda.src_loc, variable->type );
-					else if( !function_context.is_functionless_context )
-						BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
-
-					// Link references.
-					const size_t reference_tag_count= capture.field->type.ReferenceTagCount();
-					U_ASSERT( capture.field->inner_reference_tags.size() == reference_tag_count );
-					U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
-					for( size_t i= 0; i < reference_tag_count; ++i )
+					const auto constexpr_value= InitializeLambdaField( names, function_context, *capture.field, variable, result, lambda.src_loc );
+					if( lambda_class->can_be_constexpr && constexpr_value != nullptr )
 					{
-						const size_t dst_node_index= capture.field->inner_reference_tags[i];
-						U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
-						function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), lambda.src_loc );
-					}
-
-					if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
-					{
-						constexpr_initializers[ capture.field->index ]= variable->constexpr_value;
+						constexpr_initializers[ capture.field->index ]= constexpr_value;
 						++num_constexpr_initializers;
 					}
 				}
@@ -90,6 +89,62 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
+}
+
+llvm::Constant* CodeBuilder::InitializeLambdaField(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const ClassField& field,
+	const VariablePtr& variable,
+	const VariablePtr& result,
+	const SrcLoc& src_loc )
+{
+	U_ASSERT( variable->type == field.type );
+
+	const auto field_value= CreateClassFieldGEP( function_context, *result, field.index );
+
+	if( field.is_reference )
+	{
+		// TODO - check if input value is reference.
+		// TODO - check mutability correctness.
+
+		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
+
+		// Link references.
+		U_ASSERT( field.reference_tag < result->inner_reference_nodes.size() );
+		function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ field.reference_tag ], names.GetErrors(), src_loc );
+
+		if( variable->constexpr_value != nullptr )
+		{
+			// We needs to store constant somewhere. Create global variable for it.
+			return CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
+		}
+	}
+	else
+	{
+		// TODO - process possible move-initialization.
+
+		if( !variable->type.IsCopyConstructible() )
+			REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
+		else if( !function_context.is_functionless_context )
+			BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
+
+		// Link references.
+		const size_t reference_tag_count= field.type.ReferenceTagCount();
+		U_ASSERT( field.inner_reference_tags.size() == reference_tag_count );
+		U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
+		for( size_t i= 0; i < reference_tag_count; ++i )
+		{
+			const size_t dst_node_index= field.inner_reference_tags[i];
+			U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
+			function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), src_loc );
+		}
+
+		if( variable->constexpr_value != nullptr )
+			return variable->constexpr_value;
+	}
+
+	return nullptr;
 }
 
 ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
