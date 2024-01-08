@@ -87,6 +87,12 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	if( lambda_class->can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
 		result->constexpr_value= llvm::ConstantStruct::get( lambda_class->llvm_type, constexpr_initializers );
 
+	if( std::holds_alternative<Synt::Lambda::CaptureList>( lambda.capture ) )
+	{
+		// Destroy temporaries in lambda captures initializers.
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), lambda.src_loc );
+	}
+
 	RegisterTemporaryVariable( function_context, result );
 	return result;
 }
@@ -264,7 +270,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Run preprocessing.
 	{
-		const auto function_context_state= SaveFunctionContextState( function_context );
 		NamesScope custom_captures_names_scope( "", &names );
 
 		LambdaPreprocessingContext lambda_preprocessing_context;
@@ -329,8 +334,11 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				else
 				{
 					// Capture with initializer expression.
-					VariablePtr expr_result;
 
+					if( IsKeyword( capture.name ) )
+						REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), lambda.src_loc );
+
+					VariablePtr expr_result;
 					{
 						const bool prev_is_functionless_context= function_context.is_functionless_context;
 						function_context.is_functionless_context= true;
@@ -338,7 +346,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 						{
 							const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-							// TODO - use preevaluation cache?
+							// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
 							expr_result= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
 						}
 
@@ -358,7 +366,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 					if( expr_result->location == Variable::Location::LLVMRegister || expr_result->llvm_value == nullptr )
 					{
 						// Create proper address for this variable in order to avoid crashes in preprocessing.
-						// We can't "alloca" in this function, so, create global variable for that (which will be anyway removed later ).
+						// We can't "alloca" in this function, so, create global variable for that ( which will be anyway removed later ).
 						const auto llvm_type= expr_result->type.GetLLVMType();
 						capture_variable->llvm_value=
 							new llvm::GlobalVariable(
@@ -369,7 +377,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 								llvm::UndefValue::get( llvm_type ) );
 					}
 
-					function_context.variables_state.AddNode( capture_variable );
+					// No need to add this variable into context of current function, since it is not used in it.
+
+					// Make this variable accessible by its name inside preprocessed function.
 					custom_captures_names_scope.AddName( capture.name, NamesScopeValue( capture_variable, capture.src_loc ) );
 					lambda_preprocessing_context.external_variables.insert( capture_variable );
 
@@ -402,9 +412,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			// Remove temp function.
 			op_variable.llvm_function->function->eraseFromParent();
 		}
-
-		// Remove created temporary variables for captures.
-		RestoreFunctionContextState( function_context, function_context_state );
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 
