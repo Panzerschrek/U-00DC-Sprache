@@ -130,7 +130,10 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 
 		if( variable->constexpr_value != nullptr )
 		{
-			// We needs to store constant somewhere. Create global variable for it.
+			if( variable != nullptr && llvm::isa<llvm::GlobalVariable>( variable->llvm_value ) )
+				return llvm::dyn_cast<llvm::Constant>(variable->llvm_value); // Return address of existing global constant.
+
+			// We need to store constant somewhere. Create global variable for it.
 			return CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
 		}
 	}
@@ -369,17 +372,17 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 					const VariableMutPtr capture_variable= Variable::Create(
 						expr_result->type,
-						// Make immediate values constant.
+						// Make immediate values in preprocessing constant.
 						expr_result->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 						Variable::Location::Pointer,
 						expr_result->name,
 						expr_result->llvm_value,
-						expr_result->constexpr_value );
+						nullptr /* no need to use constexpr in preprocessing */ );
 
 					if( expr_result->location == Variable::Location::LLVMRegister || expr_result->llvm_value == nullptr )
 					{
 						// Create proper address for this variable in order to avoid crashes in preprocessing.
-						// We can't "alloca" in this function, so, create global variable for that ( which will be anyway removed later ).
+						// We can't "alloca" in this function, so, create global variable for that.
 						const auto llvm_type= expr_result->type.GetLLVMType();
 						capture_variable->llvm_value=
 							new llvm::GlobalVariable(

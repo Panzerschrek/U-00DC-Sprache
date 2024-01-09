@@ -1830,6 +1830,7 @@ def CaptureListExpression_Test3():
 				{
 					return c.x;
 				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
 			halt if( f() != 176 );
 		}
 	"""
@@ -1853,6 +1854,7 @@ def CaptureListExpression_Test4():
 				{
 					return c.x + 77;
 				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
 			halt if( f() != 2233 + 77 );
 		}
 	"""
@@ -1877,6 +1879,7 @@ def CaptureListExpression_Test5():
 				{
 					return c_moved.x / 3;
 				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
 			halt if( f() != 887766 / 3 );
 		}
 	"""
