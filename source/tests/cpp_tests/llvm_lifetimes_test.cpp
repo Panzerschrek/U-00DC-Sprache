@@ -1011,6 +1011,46 @@ U_TEST( LifetimesForLambdas_Test1 )
 	U_TEST_ASSERT( g_lifetimes_call_sequence[1].address == g_lifetimes_call_sequence[2].address );
 }
 
+U_TEST( LifetimesForLambdas_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 x; }
+		fn Foo()
+		{
+			// Call lifetime start for "s".
+			var S mut s{ .x= 123 };
+			// Call lifetime start for lambda.
+			// Call lifetime end for "s".
+			auto f= lambda[ s= move(s) ] () : i32 { return s.x; };
+			// Call lifetime start for "f_res".
+			auto f_res= f();
+			// Call lifetime end for "f_res".
+			// Call lifetime end for lambda.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart ); // lambda
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeStart ); // f_res
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd ); // f_res
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // lambda
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].address == g_lifetimes_call_sequence[5].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].address == g_lifetimes_call_sequence[4].address );
+}
+
 } // namespace
 
 } // namespace U

@@ -162,7 +162,12 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 				// Move.
 				function_context.variables_state.MoveNode( variable );
 				if( !function_context.is_functionless_context )
+				{
 					CopyBytes( field_value, variable->llvm_value, variable->type, function_context );
+
+					if( variable->location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, variable->llvm_value );
+				}
 			}
 			else if( !variable->type.IsCopyConstructible() )
 				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );

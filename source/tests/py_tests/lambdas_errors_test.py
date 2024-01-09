@@ -1260,3 +1260,44 @@ def UsingKeywordAsName_ForLambdaCaptureList_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test0():
+	c_program_text= """
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32& x;
+			fn constructor( i32& in_x ) @(reference_pollution)
+				( x= in_x ) {}
+		}
+		fn Foo()
+		{
+			// Error - "f" contains reference to temporary "42".
+			auto f= lambda[ s= S(42) ] () : i32 { return s.x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 12 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test1():
+	c_program_text= """
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32& x;
+			fn constructor( i32& in_x ) @(reference_pollution)
+				( x= in_x ) {}
+		}
+		fn Foo()
+		{
+			// Error - "f" contains reference to temporary call result.
+			auto f= lambda[ s= S( Bar() ) ] () : i32 { return s.x; };
+		}
+		fn Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 12 ) )
