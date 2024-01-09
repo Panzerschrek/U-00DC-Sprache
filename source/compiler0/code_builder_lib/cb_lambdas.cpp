@@ -111,14 +111,22 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 
 	if( field.is_reference )
 	{
-		// TODO - check if input value is reference.
-		// TODO - check mutability correctness.
-
-		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
+		if( variable->value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			return nullptr;
+		}
+		if( field.is_mutable && variable->value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+			return nullptr;
+		}
 
 		// Link references.
 		U_ASSERT( field.reference_tag < result->inner_reference_nodes.size() );
 		function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ field.reference_tag ], names.GetErrors(), src_loc );
+
+		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
 
 		if( variable->constexpr_value != nullptr )
 		{

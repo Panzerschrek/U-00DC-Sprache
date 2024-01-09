@@ -221,6 +221,27 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test1():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
+def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test2():
+	c_program_text= """
+		class C
+		{
+			fn constructor()= default;
+		}
+		fn Foo( S& s )
+		{
+			var C c;
+			auto f=
+				lambda [ c_copy= c ] () // Try to call copying in initialization of lambda capture in capture lust.
+				{
+					auto& c_ref= c_copy;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
 def CopyAssign_ForLambdaWithReferencesInside_Test0():
 	c_program_text= """
 		fn Foo()
@@ -865,6 +886,23 @@ def LambaCaptureIsNotConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def LambaCaptureIsNotConstexpr_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[x= 4455]()
+				{
+					// Captured by lambda "constexpr" expressions are not "constexpr" in the lambda.
+					static_assert( x == 4455 );
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
+
+
 def DeriveFromLambda_Test0():
 	c_program_text= """
 		auto f= lambda(){};
@@ -1109,3 +1147,61 @@ def UnusedCapture_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedCapture", 5 ) )
+
+
+def ExpectedReferenceValue_ForCaptureListExpression_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Initialize lambda reference with value.
+			lambda[ &x= 42 ]() : i32 { return x; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def ExpectedReferenceValue_ForCaptureListExpression_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Initialize lambda reference with value call result.
+			lambda[ &x= Bar() ]() : f32 { return x; };
+		}
+		fn Bar() : f32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def ExpectedReferenceValue_ForCaptureListExpression_Test2():
+	c_program_text= """
+		fn Foo( u32 x, u32 y )
+		{
+			// Initialize lambda reference with binary operator result.
+			lambda[ &r= x + y ]() : f32 { return r; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def ExpectedReferenceValue_ForCaptureListExpression_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			// Initialize lambda reference with temporary value.
+			lambda[ &s= S(33) ]() : i32 { return s.x; };
+		}
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
