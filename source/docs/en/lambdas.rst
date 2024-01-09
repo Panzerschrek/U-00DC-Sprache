@@ -98,6 +98,57 @@ It has sense to use capture list where it is necessary to explicitly designate c
 It's also useful in cases where some variables are needed to be captured by reference and other by value.
 With usage of capture list an error will be produced, if a listed variable is not used inside the lambda, or if an external variable which is not listed is used inside the lambda.
 
+Explicit initializers in capture list
+-------------------------------------
+
+There is also possibility to specify initializer expression for a name in a capture list.
+If such expression exists, its result will be captured, instead of capturing some named variable.
+
+.. code-block:: u_spr
+
+   fn Foo()
+   {
+       // Create captured variable with name "x".
+       auto f=
+           lambda [ x= 42 ] () : i32
+           {
+               return x;
+           };
+   }
+
+It's possible to explicitly capture references:
+
+.. code-block:: u_spr
+
+   struct S
+   {
+       i32 x;
+       fn Foo( this )
+       {
+           // Capture "this" reference.
+           auto f=
+               lambda[ &self= this ]() : i32
+               {
+                   return self.x * 3;
+               };
+       }
+   }
+
+Especially this feature is useful for capturing of values of non-copyable types:
+
+.. code-block:: u_spr
+
+   class C {} // Classes are non-copyable by default.
+   fn Foo( C mut c )
+   {
+       // Capture a variable by moving it.
+       auto f=
+           lambda [ c= move(c) ] ()
+           {
+               auto& c_ref= c;
+           };
+   }
+
 
 **************************
 *Lambda object mutability*
