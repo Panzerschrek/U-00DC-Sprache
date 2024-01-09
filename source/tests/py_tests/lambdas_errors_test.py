@@ -551,6 +551,25 @@ def LambdaModifyCapturedVariable_Test4():
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
+def LambdaModifyCapturedVariable_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			// Mutability modifier for captures with initializer is still determined via mutability of the source variable.
+			auto f=
+				lambda[&x_ref= x]()
+				{
+					// Can't modify captured explicitly reference.
+					++x_ref;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 10 ) )
+
+
 def LambdaMoveCapturedVariable_Test0():
 	c_program_text= """
 		fn Foo()
@@ -1205,3 +1224,39 @@ def ExpectedReferenceValue_ForCaptureListExpression_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def UsingKeywordAsName_ForLambdaCaptureList_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda[ this= 42 ]() : i32 { return tris; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def UsingKeywordAsName_ForLambdaCaptureList_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda[ conversion_constructor= 42 ]() : i32 { return conversion_constructor; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def UsingKeywordAsName_ForLambdaCaptureList_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda[ f64= 42 ]() : i32 { return f64; };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
