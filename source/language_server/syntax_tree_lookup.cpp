@@ -209,6 +209,8 @@ void FindImpl( const Synt::Lambda& lambda )
 	{
 		for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 		{
+			FindImpl( capture.expression );
+
 			if( capture.src_loc.GetLine() == line_ && capture.src_loc.GetColumn() == column_ )
 			{
 				U_ASSERT( global_item_ != std::nullopt );
