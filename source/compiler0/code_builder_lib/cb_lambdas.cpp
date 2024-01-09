@@ -153,7 +153,7 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 		if( variable->type.GetFundamentalType() != nullptr||
 			variable->type.GetEnumType() != nullptr ||
 			variable->type.GetRawPointerType() != nullptr ||
-			variable->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
+			variable->type.GetFunctionPointerType() != nullptr )
 		{
 			// Just copy simple scalar.
 			CreateTypedStore( function_context, variable->type, CreateMoveToLLVMRegisterInstruction( *variable, function_context ), field_value );
