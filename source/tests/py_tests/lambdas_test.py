@@ -1755,3 +1755,379 @@ def LambdaCaptureList_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Capture constant.
+			auto f=
+				lambda[ x= 42 ] () : i32
+				{
+					return x;
+				};
+			halt if( f() != 42 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 667;
+			// Capture local variable.
+			auto f=
+				lambda[ x_copy= x ] () : i32
+				{
+					return x_copy;
+				};
+			halt if( f() != 667 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 mut x= 1.25f, mut y= 0.25f;
+			// Capture binary expression result.
+			auto f=
+				lambda[ val= x / y ] () : f32
+				{
+					return val;
+				};
+			halt if( f() != 1.25f / 0.25f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test3():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn MakeC() : C
+		{
+			return C( 176 );
+		}
+		fn Foo()
+		{
+			// Capture call result of noncopyable type.
+			auto f=
+				lambda[ c= MakeC() ] () : i32
+				{
+					return c.x;
+				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
+			halt if( f() != 176 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test4():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			// Capture temporary of noncopyable type.
+			auto f=
+				lambda[ c= C(2233) ] () : i32
+				{
+					return c.x + 77;
+				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
+			halt if( f() != 2233 + 77 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test5():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			// Capture moved value of noncopyable type.
+			var C mut c( 887766 );
+			auto f=
+				lambda[ c_moved= move(c) ] () : i32
+				{
+					return c_moved.x / 3;
+				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
+			halt if( f() != 887766 / 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test6():
+	c_program_text= """
+		// Preserve "constexpr" in expressions in capture list.
+		fn Foo()
+		{
+			var i32 y= 654;
+			auto z= 66;
+			auto f=
+				lambda[ x= 678, y, z_copy= z ] ( i32 w ) : i32
+				{
+					return x + y / z_copy - w;
+				};
+			static_assert( f(13) == 678 + 654 / 66 - 13 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 33;
+			// Capture by reference with expression initializer.
+			auto f=
+				lambda[ &x_ref= x ] () : i32
+				{
+					return x_ref + 5;
+				};
+			halt if( f() != 33 + 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 77;
+			// Capture by mutuable reference with expression initializer.
+			auto f=
+				lambda[ &x_ref= x ] ()
+				{
+					x_ref= 52;
+				};
+			f();
+			halt if( x != 52 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			var u64 some_var(44554433);
+			// May use same name for capture.
+			auto f=
+				lambda[ some_var= some_var ] () : u32
+				{
+					return u32( some_var / 256u64 );
+				};
+			halt if( f() != u32( 44554433u64 / 256u64 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test10():
+	c_program_text= """
+		fn Foo()
+		{
+			var u32 mut num(66);
+			// May use same name for by referene capture.
+			auto f=
+				lambda[ &num= num ] ()
+				{
+					num /= 3u;
+				};
+			f();
+			halt if( num != 22u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test11():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 653;
+			var f32 y= 8987.0f;
+			var u32 z= 13u;
+			// May redefine outer variables in capture list.
+			auto f=
+				lambda[ x=y, y=z, z=x ] () : f64
+				{
+					static_assert( same_type</ typeof(x), f32 /> );
+					static_assert( same_type</ typeof(y), u32 /> );
+					static_assert( same_type</ typeof(z), i32 /> );
+					return f64(x) / f64(y) + f64(z);
+				};
+			halt if( f() != f64(y) / f64(z) + f64(x) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test12():
+	c_program_text= """
+		var f64 x= 765.25;
+		// It's possible to capture global variable if it is specified in capture list expression.
+		auto f= lambda[ x= x ]() : f64 { return x / 2.0; };
+		static_assert( typeinfo</ typeof(f) />.size_of == typeinfo</f64/>.size_of );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CaptureListExpression_Test13():
+	c_program_text= """
+		var i32 pi= 4;
+		// It's possible to capture reference to global variable if it is specified in capture list expression.
+		auto f= lambda[ &c= pi ]() : i32 { return c * 2; };
+		static_assert( typeinfo</ typeof(f) />.size_of == typeinfo</ $(i32) />.size_of );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CaptureListExpression_Test14():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SomeMethod( mut this ) : i32
+			{
+				// Capture "this" by value.
+				auto f=
+					lambda[ self= this ]() : i32
+					{
+						return self.x;
+					};
+				x= 55;
+				return f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 765 };
+			halt if( s.SomeMethod() != 765 );
+			halt if( s.x != 55 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test15():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SomeMethod( mut this )
+			{
+				// Capture "this" by reference.
+				auto f=
+					lambda[ &self= this ]()
+					{
+						self.x= -565;
+					};
+				f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 8899232 };
+			s.SomeMethod();
+			halt if( s.x != -565 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test16():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SomeMethod( mut this ) : i32
+			{
+				// Capture field of "this" by value.
+				auto f=
+					lambda[ x= x ]() : i32
+					{
+						return x;
+					};
+				x= 66566;
+				return f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= -123 };
+			halt if( s.SomeMethod() != -123 );
+			halt if( s.x != 66566 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CaptureListExpression_Test17():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SomeMethod( mut this )
+			{
+				// Capture field of "this" by reference.
+				auto f=
+					lambda[ &x= x ]()
+					{
+						x= 9999;
+					};
+				f();
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 1 };
+			s.SomeMethod();
+			halt if( s.x != 9999 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

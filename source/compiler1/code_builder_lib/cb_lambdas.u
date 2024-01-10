@@ -38,65 +38,94 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 			constexpr_initializers.resize( class_type.fields_order.size(), LLVMValueRef::Null );
 		}
 
-		foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+		if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
 		{
-			if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )
+			var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
+			// Initialize lamda fields in capture list order.
+			foreach( &capture : capture_list )
 			{
-				auto variable_nullable= lookup_result[1].Get</Variable/>();
-				if( !variable_nullable.empty() )
+				if_var( &field_value : class_type.members.lock_imut().deref().GetThisScopeValue( capture.name ) )
 				{
-					var VariablePtr variable= variable_nullable.try_to_non_nullable();
-					auto variable_lock= variable.lock_imut();
-					var Variable& v= variable_lock.deref();
-
-					with( &field : capture.field.lock_imut().deref() )
+					auto field_ptr= field_value.Get</ClassField/>();
+					if( !field_ptr.empty() )
 					{
-						debug_assert( v.t == field.t );
-
-						auto field_value= CreateClassFieldGEP( function_context, lambda_class, result.lock_imut().deref().llvm_value, field );
-						if( field.is_reference )
+						with( &field : field_ptr.try_lock_imut().deref() )
 						{
-							CreateTypedReferenceStore( function_context, field.t, v.llvm_value, field_value );
-
-							// Link references.
-							function_context.references_graph.TryAddLink(
-								variable,
-								result.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ],
-								names_scope,
-								lambda_.src_loc );
-
-							if( class_type.can_be_constexpr && v.constexpr_value != LLVMValueRef::Null )
+							var tup[ LLVMValueRef, LLVMValueRef ] mut init_value= zero_init;
+							if( capture.expression.empty() )
 							{
-								constexpr_initializers[ size_type(field.index) ]= AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value );
+								// Simple capture - lookup variable for it by name.
+								if_var( &lookup_result : LookupName( names_scope, function_context, capture.name, lambda_.src_loc ) )
+								{
+									auto variable_nullable= lookup_result[1].Get</Variable/>();
+									if( !variable_nullable.empty() )
+									{
+										init_value= InitializeLambdaField( names_scope, function_context, field, variable_nullable.try_to_non_nullable(), result, lambda_.src_loc );
+									}
+								}
+							}
+							else
+							{
+								// Capture with expression specified.
+								var VariablePtr variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
+								init_value= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc );
+							}
+
+							if( class_type.can_be_constexpr && init_value[1] != LLVMValueRef::Null )
+							{
+								constexpr_initializers[ size_type(field.index) ]= init_value[1];
 								++num_constexpr_initializers;
 							}
+
+							if( !field.is_reference && // No need to destruct reference fields.
+								ust::ref_cmp_ne( capture, capture_list.back() ) && // No need to register last one.
+								field.t.HaveDestructor() && // No need to call destructors.
+								init_value[0] != LLVMValueRef::Null )
+							{
+								// Temportary register field value for destruction,
+								// in case if "return" or "await" happens in evaluation of further captrure expressions.
+								var Variable mut temp_initialized_variable
+								{
+									.t= field.t,
+									.value_type= ValueType::Value,
+									.location= Variable::Location::Pointer,
+									.llvm_value= init_value[0],
+									.name= capture.name,
+									.preserve_temporary= true
+								};
+								var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+								function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+								RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+								temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+							}
 						}
-						else
+					}
+				}
+			}
+
+			foreach( & temp_initialized_variable : temp_initialized_variables )
+			{
+				function_context.references_graph.MoveNode( temp_initialized_variable );
+			}
+		}
+		else
+		{
+			// Initialize lamda fields in natural order.
+			foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+			{
+				if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )
+				{
+					auto variable_nullable= lookup_result[1].Get</Variable/>();
+					if( !variable_nullable.empty() )
+					{
+						var VariablePtr variable= variable_nullable.try_to_non_nullable();
+						with( &field : capture.field.lock_imut().deref() )
 						{
-							if( !field.t.IsCopyConstructible() )
+							auto constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc )[1];
+							if( class_type.can_be_constexpr && constant != LLVMValueRef::Null )
 							{
-								REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, lambda_.src_loc, field.t )
-							}
-							else if( !function_context.is_functionless_context )
-							{
-								BuildCopyConstructorPart( names_scope, function_context, field_value, v.llvm_value, field.t, lambda_.src_loc );
-							}
-
-							// Link references.
-							auto reference_tag_count= size_type( field.t.ReferenceTagCount() );
-							auto result_lock= result.lock_imut();
-							for( auto mut i= 0s; i < reference_tag_count; ++i )
-							{
-								function_context.references_graph.TryAddLink(
-									v.inner_reference_nodes[i],
-									result_lock.deref().inner_reference_nodes[i],
-									names_scope,
-									lambda_.src_loc );
-							}
-
-							if( class_type.can_be_constexpr && v.constexpr_value != LLVMValueRef::Null )
-							{
-								constexpr_initializers[ size_type(field.index) ]= v.constexpr_value;
+								constexpr_initializers[ size_type(field.index) ]= constant;
 								++num_constexpr_initializers;
 							}
 						}
@@ -116,6 +145,106 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
+}
+
+fn CodeBuilder::InitializeLambdaField(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ClassField& field,
+	VariablePtr& variable,
+	VariablePtr& result,
+	SrcLoc& src_loc ) : tup[ LLVMValueRef, LLVMValueRef ]
+{
+	auto v_lock= variable.lock_imut();
+	var Variable& v= v_lock.deref();
+
+	debug_assert( v.t == field.t );
+
+	var VariableLite r= result.lock_imut().deref();
+	auto field_address= CreateClassFieldGEP( function_context, r, field );
+
+	if( field.is_reference )
+	{
+		if( v.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+			return ust::make_tuple( field_address, LLVMValueRef::Null );
+		}
+		if( field.is_mutable && v.value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+			return ust::make_tuple( field_address, LLVMValueRef::Null );
+		}
+
+		// Link references.
+		function_context.references_graph.TryAddLink(
+			variable,
+			result.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ],
+			names_scope,
+			src_loc );
+
+		CreateTypedReferenceStore( function_context, field.t, v.llvm_value, field_address );
+
+		if( v.constexpr_value != LLVMValueRef::Null )
+		{
+			return ust::make_tuple( field_address, AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value ) );
+		}
+
+		return ust::make_tuple( field_address, LLVMValueRef::Null );
+	}
+	else
+	{
+		// Link references (before performing potential move).
+		auto reference_tag_count= size_type( field.t.ReferenceTagCount() );
+		auto result_lock= result.lock_imut();
+		for( auto mut i= 0s; i < reference_tag_count; ++i )
+		{
+			function_context.references_graph.TryAddLink(
+				v.inner_reference_nodes[i],
+				result_lock.deref().inner_reference_nodes[i],
+				names_scope,
+				src_loc );
+		}
+
+		if(
+			!v.t.GetFundamentalType().empty() ||
+			!v.t.GetEnumType().empty() ||
+			!v.t.GetRawPointerType().empty() ||
+			!v.t.GetFunctionPointerType().empty() )
+		{
+			// Just copy simple scalar.
+			auto value_to_store= CreateMoveToLLVMRegisterInstruction( v, function_context );
+			CreateTypedStore( function_context, v.t, value_to_store, field_address );
+		}
+		else
+		{
+			if( v.value_type == ValueType::Value )
+			{
+				// Move.
+				function_context.references_graph.MoveNode( variable );
+				if( !function_context.is_functionless_context )
+				{
+					CopyBytes( field_address, v.llvm_value, v.t, function_context );
+
+					if( v.location == Variable::Location::Pointer )
+					{
+						CreateLifetimeEnd( function_context, v.llvm_value );
+					}
+				}
+			}
+			else if( !field.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, field.t )
+			}
+			else if( !function_context.is_functionless_context )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, field_address, v.llvm_value, field.t, src_loc );
+			}
+		}
+
+		return ust::make_tuple( field_address, v.constexpr_value );
+	}
 }
 
 fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr
@@ -260,6 +389,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	// Run preprocessing.
 	{
+		var NamesScopeMutPtr custom_captures_names_scope( NamesScope( "", names_scope ) );
+
 		var LambdaPreprocessingContext mut lambda_preprocessing_context
 		{
 			.parent= function_context.lambda_preprocessing_context,
@@ -283,41 +414,113 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			var LambdaPreprocessingContext::ExplicitCaptures mut explicit_captures;
 			foreach( &capture : capture_list )
 			{
-				if( capture.name == KeywordToString( Keyword::this_ ) || capture.name == KeywordToString( Keyword::base_ ) )
+				if( capture.expression.empty() )
 				{
-					if( function_context.this_.empty() )
+					// Simple capture with only name.
+					if( capture.name == KeywordToString( Keyword::this_ ) || capture.name == KeywordToString( Keyword::base_ ) )
 					{
-						REPORT_ERROR( ThisUnavailable, names_scope, capture.src_loc )
-					}
-					else
-					{
-						// Do not allow to capture "this" even via capture list.
-						REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, capture.name )
-					}
-				}
-				else if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
-				{
-					auto variable_ptr_nullable= name[1].Get</Variable/>();
-					if( !variable_ptr_nullable.empty() )
-					{
-						var VariablePtr variable_ptr= variable_ptr_nullable.try_to_non_nullable();
-						if( !explicit_captures.find( variable_ptr ).empty() )
+						if( function_context.this_.empty() )
 						{
-							REPORT_ERROR( DuplicatedCapture, names_scope, capture.src_loc, capture.name )
-						}
-						else if( !lambda_preprocessing_context.external_variables.exists( variable_ptr ) )
-						{
-							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "non-local variable" )
+							REPORT_ERROR( ThisUnavailable, names_scope, capture.src_loc )
 						}
 						else
 						{
-							var LambdaPreprocessingContext::ExplicitCapture mut explicit_capture{ .capture_by_reference= capture.by_reference };
-							explicit_captures.insert( variable_ptr, move(explicit_capture) );
+							// Do not allow to capture "this" even via capture list.
+							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, capture.name )
 						}
 					}
-					else
+					else if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
 					{
-						REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "some non-variable value" )
+						auto variable_ptr_nullable= name[1].Get</Variable/>();
+						if( !variable_ptr_nullable.empty() )
+						{
+							var VariablePtr variable_ptr= variable_ptr_nullable.try_to_non_nullable();
+							if( !explicit_captures.find( variable_ptr ).empty() )
+							{
+								REPORT_ERROR( DuplicatedCapture, names_scope, capture.src_loc, capture.name )
+							}
+							else if( !lambda_preprocessing_context.external_variables.exists( variable_ptr ) )
+							{
+								REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "non-local variable" )
+							}
+							else
+							{
+								var LambdaPreprocessingContext::ExplicitCapture mut explicit_capture{ .capture_by_reference= capture.by_reference };
+								explicit_captures.insert( variable_ptr, move(explicit_capture) );
+							}
+						}
+						else
+						{
+							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "some non-variable value" )
+						}
+					}
+				}
+				else
+				{
+					// Capture with initializer expression.
+
+					if( IsKeyword( capture.name ) )
+					{
+						REPORT_ERROR( UsingKeywordAsName, names_scope, lambda_.src_loc )
+					}
+
+					var ust::optional</VariablePtr/> mut expr_result_ptr;
+					{
+						var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+						auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+						var bool prev_is_functionless_context= function_context.is_functionless_context;
+						function_context.is_functionless_context= true;
+
+						auto state= SaveFunctionContextState( function_context );
+
+						// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
+						expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
+
+						RestoreFunctionContextState( function_context, state );
+						function_context.is_functionless_context= prev_is_functionless_context;
+					}
+
+					with( &expr_result : expr_result_ptr.try_deref().lock_imut().deref() )
+					{
+						auto mut llvm_value= expr_result.llvm_value;
+						if( expr_result.location == Variable::Location::LLVMRegister || llvm_value == LLVMValueRef::Null )
+						{
+							// Create proper address for this variable in order to avoid crashes in preprocessing.
+							// We can't "alloca" in this function, so, create global variable for that.
+							auto llvm_type= expr_result.t.GetLLVMType();
+							unsafe
+							{
+								var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, g_null_string );
+								LLVMSetLinkage( global_value, LLVMLinkage::Private );
+								LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
+								LLVMSetInitializer( global_value, LLVMGetUndef( llvm_type ) );
+								llvm_value= global_value;
+							}
+						}
+
+						var Variable mut capture_variable
+						{
+							.t= expr_result.t,							// Make immediate values in preprocessing constant.
+							.value_type = select( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+							.location= Variable::Location::Pointer,
+							.llvm_value= llvm_value,
+							.constexpr_value= LLVMValueRef::Null, // no need to use constexpr in preprocessing.
+						};
+						var VariablePtr captured_variable_ptr= move(capture_variable).CreatePtr();
+
+						// No need to add this variable into context of current function, since it is not used in it.
+
+						// Make this variable accessible by its name inside preprocessed function.
+						with( &mut lock : custom_captures_names_scope.lock_mut() )
+						{
+							lock.deref().AddName( capture.name, captured_variable_ptr );
+						}
+
+						lambda_preprocessing_context.external_variables.insert( captured_variable_ptr );
+
+						var LambdaPreprocessingContext::ExplicitCapture mut explicit_capture{ .capture_by_reference= capture.by_reference };
+						explicit_captures.insert( captured_variable_ptr, move(explicit_capture) );
 					}
 				}
 			}
@@ -337,7 +540,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				.is_this_call= true,
 			};
 
-			BuildFuncCode( names_scope, function_variable, lambda_preprocessing_context_ptr );
+			BuildFuncCode( custom_captures_names_scope, function_variable, lambda_preprocessing_context_ptr );
 
 			// Remove temp function.
 			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );

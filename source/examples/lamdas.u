@@ -98,6 +98,22 @@ fn nomangle main() : i32
 		assert( y == 778 );
 	}
 
+	// Expressions in capture list.
+	{
+		auto x= 675;
+		auto y= 33;
+		auto mut z= 0;
+		// Arbitrary expressions may be used to initialize lambda captures.
+		// It may be usefull for move-initialization of captures.
+		auto f=
+			lambda[ x_scaled= x * 4, y, &z= z, w= -5 ]()
+			{
+				z= x_scaled + y + w;
+			};
+		f();
+		assert( z == 675 * 4 + 33 - 5 );
+	}
+
 	{ // A lambda may be constexpr if it satisfies constexpr function requirements.
 		auto shift_val= 7u;
 		auto shift= lambda[=]( u32 x ) : u32 { return x << shift_val; };

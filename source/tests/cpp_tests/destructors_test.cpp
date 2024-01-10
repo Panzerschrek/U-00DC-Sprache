@@ -4030,6 +4030,56 @@ U_TEST(AwaitOperator_Destruction_Test19)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 777 } ) );
 }
 
+U_TEST(AwaitOperator_Destruction_Test20)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn async Get123() : i32
+		{
+			yield;
+			return 123;
+		}
+		fn async Bar()
+		{
+			var S s0( 777 );
+			// Should destroy captured variable "a" if execution after "await" doesn't resume.
+			auto f=
+				lambda[ a= S( 33 ), b= S( Get123().await ), c= S( 66 ) ] ()
+				{
+					auto& a_ref= a;
+					auto& b_ref= b;
+					auto& c_ref= c;
+				};
+		}
+		fn Foo()
+		{
+			auto mut f= Bar();
+			if_coro_advance( x : f )
+			{
+				halt; // First advance should not finish.
+			}
+			// Destroy "f" here before it finishes.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 33, 777 } ) );
+}
+
 U_TEST(AwaitOperator_Destruction_WithInlining_Test0)
 {
 	static const char c_program_text[]=
@@ -4999,6 +5049,72 @@ U_TEST( LambdaDestructor_Test4 )
 	engine->runFunction( function, {} );
 
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 878, 878 * 2, 878 * 2, -878, -878, -878 } ) );
+}
+
+U_TEST( LambdaDestructor_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			var S mut s( 7678 );
+			auto f= lambda[ s= move(s) ]() : i32 { return s.x; }; // Move here "s".
+			halt if( f() != 7678 );
+			// Destroy here "s" inside "f".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 7678, -7678 } ) );
+}
+
+U_TEST( LambdaDestructor_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			var S mut s( 11 );
+			// Take copy of "s" and than move it.
+			auto f= lambda[ s_copy= s, s= move(s) ]() : i32 { return s_copy.x + s.x * 2; };
+			halt if( f() != 33 );
+			// Destroy here "s_copy" inside "f".
+			// Destroy here "s" inside "f".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 11, 22, -11, -11 } ) );
 }
 
 } // namespace

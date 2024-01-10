@@ -770,3 +770,35 @@ def CStyleForOperator_IterationPartEvaluationOrder_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 5271 )
+
+
+def LambdaCaptureListOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut q= 0;
+			// Expressions in lambda capture list should be evaluated in direct order.
+			auto f=
+				lambda [ a= AddMul10( q, 5 ), x= AddMul10( q, 7 ), b= AddMul10( q, 3 ), y= AddMul10( q, 2 ), c= AddMul10( q, 9 ), z= AddMul10( q, 6 ) ] () : i32
+				{
+					halt if( a != 5 );
+					halt if( x != 57 );
+					halt if( b != 573 );
+					halt if( y != 5732 );
+					halt if( c != 57329 );
+					halt if( z != 573296 );
+					return a * x + b * y + c * z;
+				};
+			f();
+			return q;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 573296 )

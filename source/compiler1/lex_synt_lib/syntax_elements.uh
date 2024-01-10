@@ -176,6 +176,7 @@ struct Lambda
 	{
 		SrcLoc src_loc;
 		ust::string8 name;
+		ust::box_nullable</Expression/> expression; // If non-empty - contains initializer expression.
 		bool by_reference= false;
 	}
 

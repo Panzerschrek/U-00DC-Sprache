@@ -31,53 +31,76 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 		constexpr_initializers.resize( lambda_class->llvm_type->getNumElements() );
 	size_t num_constexpr_initializers= 0;
 
-	for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
+	if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
 	{
-		if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )
+		llvm::SmallVector<VariablePtr, 4> temp_initialized_variables;
+
+		// Initialize lamda fields in capture list order.
+		for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 		{
-			if( const auto variable= lookup_value->value.GetVariable() )
+			if( const auto field_value= lambda_class->members->GetThisScopeValue( capture.name ) )
 			{
-				U_ASSERT( variable->type == capture.field->type );
-
-				const auto field_value= CreateClassFieldGEP( function_context, *result, capture.field->index );
-
-				if( capture.field->is_reference )
+				if( const auto field= field_value->value.GetClassField() )
 				{
-					CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
-
-					// Link references.
-					U_ASSERT( capture.field->reference_tag < result->inner_reference_nodes.size() );
-					function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ capture.field->reference_tag ], names.GetErrors(), lambda.src_loc );
-
-					if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
+					std::pair<llvm::Value*, llvm::Constant*> init_value( nullptr, nullptr );
+					if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 					{
-						// We needs to store constant somewhere. Create global variable for it.
-						llvm::Constant* const constant_stored= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
-						constexpr_initializers[ capture.field->index ]= constant_stored;
+						// Simple capture - lookup variable for it by name.
+						if( const auto lookup_value= LookupName( names, capture.name, lambda.src_loc ).value )
+							if( const auto variable= lookup_value->value.GetVariable() )
+								init_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+					}
+					else
+					{
+						// Capture with expression specified.
+						const VariablePtr variable= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
+						init_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+					}
+
+					if( lambda_class->can_be_constexpr && init_value.second != nullptr )
+					{
+						constexpr_initializers[ field->index ]= init_value.second;
 						++num_constexpr_initializers;
 					}
-				}
-				else
-				{
-					if( !variable->type.IsCopyConstructible() )
-						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), lambda.src_loc, variable->type );
-					else if( !function_context.is_functionless_context )
-						BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
 
-					// Link references.
-					const size_t reference_tag_count= capture.field->type.ReferenceTagCount();
-					U_ASSERT( capture.field->inner_reference_tags.size() == reference_tag_count );
-					U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
-					for( size_t i= 0; i < reference_tag_count; ++i )
+					if( !field->is_reference && // No need to destruct reference fields.
+						&capture != &capture_list->back() && // No need to register last one.
+						field->type.HaveDestructor() && // No need to call destructors.
+						init_value.first != nullptr )
 					{
-						const size_t dst_node_index= capture.field->inner_reference_tags[i];
-						U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
-						function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), lambda.src_loc );
+						// Temportary register field value for destruction,
+						// in case if "return" or "await" happens in evaluation of further captrure expressions.
+						VariableMutPtr temp_initialized_variable= Variable::Create(
+							field->type,
+							ValueType::Value,
+							Variable::Location::Pointer,
+							result->name + "." + capture.name,
+							init_value.first );
+						temp_initialized_variable->preserve_temporary= true;
+						function_context.variables_state.AddNode( temp_initialized_variable );
+						RegisterTemporaryVariable( function_context, temp_initialized_variable );
+						temp_initialized_variables.push_back( std::move(temp_initialized_variable) );
 					}
+				}
+			}
+		}
 
-					if( lambda_class->can_be_constexpr && variable->constexpr_value != nullptr )
+		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
+			function_context.variables_state.MoveNode( temp_initialized_variable );
+	}
+	else
+	{
+		// Initialize lamda fields in natural order.
+		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
+		{
+			if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )
+			{
+				if( const auto variable= lookup_value->value.GetVariable() )
+				{
+					const auto constexpr_value= InitializeLambdaField( names, function_context, *capture.field, variable, result, lambda.src_loc ).second;
+					if( lambda_class->can_be_constexpr && constexpr_value != nullptr )
 					{
-						constexpr_initializers[ capture.field->index ]= variable->constexpr_value;
+						constexpr_initializers[ capture.field->index ]= constexpr_value;
 						++num_constexpr_initializers;
 					}
 				}
@@ -88,8 +111,101 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	if( lambda_class->can_be_constexpr && num_constexpr_initializers == constexpr_initializers.size() )
 		result->constexpr_value= llvm::ConstantStruct::get( lambda_class->llvm_type, constexpr_initializers );
 
+	if( std::holds_alternative<Synt::Lambda::CaptureList>( lambda.capture ) )
+	{
+		// Destroy temporaries in lambda captures initializers.
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), lambda.src_loc );
+	}
+
 	RegisterTemporaryVariable( function_context, result );
 	return result;
+}
+
+std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const ClassField& field,
+	const VariablePtr& variable,
+	const VariablePtr& result,
+	const SrcLoc& src_loc )
+{
+	U_ASSERT( variable->type == field.type );
+
+	const auto field_address= CreateClassFieldGEP( function_context, *result, field.index );
+
+	if( field.is_reference )
+	{
+		if( variable->value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			return std::make_pair( field_address, nullptr );
+		}
+		if( field.is_mutable && variable->value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+			return std::make_pair( field_address, nullptr );
+		}
+
+		// Link references.
+		U_ASSERT( field.reference_tag < result->inner_reference_nodes.size() );
+		function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ field.reference_tag ], names.GetErrors(), src_loc );
+
+		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_address );
+
+		if( variable->constexpr_value != nullptr )
+		{
+			if( variable != nullptr && llvm::isa<llvm::GlobalVariable>( variable->llvm_value ) )
+				return std::make_pair( field_address, llvm::dyn_cast<llvm::Constant>(variable->llvm_value) ); // Return address of existing global constant.
+
+			// We need to store constant somewhere. Create global variable for it.
+			const auto global_constant= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
+			return std::make_pair( field_address, global_constant );
+		}
+		return std::make_pair( field_address, nullptr );
+	}
+	else
+	{
+		// Link references (before performing potential move).
+		const size_t reference_tag_count= field.type.ReferenceTagCount();
+		U_ASSERT( field.inner_reference_tags.size() == reference_tag_count );
+		U_ASSERT( variable->inner_reference_nodes.size() == reference_tag_count );
+		for( size_t i= 0; i < reference_tag_count; ++i )
+		{
+			const size_t dst_node_index= field.inner_reference_tags[i];
+			U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
+			function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), src_loc );
+		}
+
+		if( variable->type.GetFundamentalType() != nullptr||
+			variable->type.GetEnumType() != nullptr ||
+			variable->type.GetRawPointerType() != nullptr ||
+			variable->type.GetFunctionPointerType() != nullptr )
+		{
+			// Just copy simple scalar.
+			CreateTypedStore( function_context, variable->type, CreateMoveToLLVMRegisterInstruction( *variable, function_context ), field_address );
+		}
+		else
+		{
+			if( variable->value_type == ValueType::Value )
+			{
+				// Move.
+				function_context.variables_state.MoveNode( variable );
+				if( !function_context.is_functionless_context )
+				{
+					CopyBytes( field_address, variable->llvm_value, variable->type, function_context );
+
+					if( variable->location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, variable->llvm_value );
+				}
+			}
+			else if( !variable->type.IsCopyConstructible() )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
+			else if( !function_context.is_functionless_context )
+				BuildCopyConstructorPart( field_address, variable->llvm_value, variable->type, function_context );
+		}
+
+		return std::make_pair( field_address, variable->constexpr_value );
+	}
 }
 
 ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
@@ -194,6 +310,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Run preprocessing.
 	{
+		NamesScope custom_captures_names_scope( "", &names );
+
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
@@ -220,34 +338,94 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				if( capture.completion_requested )
 					NameLookupCompleteImpl( names, capture.name );
 
-				if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
+				if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 				{
-					if( function_context.this_ == nullptr )
-						REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
-					else
+					// Simple capture with only name.
+					if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
 					{
-						// Do not allow to capture "this" even via capture list.
-						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
-					}
-				}
-				else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
-				{
-					CollectDefinition( *value, capture.src_loc );
-					if( const VariablePtr variable= value->value.GetVariable() )
-					{
-						if( explicit_captures.count( variable ) > 0 )
-							REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
-						else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
-							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+						if( function_context.this_ == nullptr )
+							REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
 						else
 						{
-							LambdaPreprocessingContext::ExplicitCapture explicit_capture;
-							explicit_capture.capture_by_reference= capture.by_reference;
-							explicit_captures.emplace( variable, std::move(explicit_capture) );
+							// Do not allow to capture "this" even via capture list.
+							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
 						}
 					}
-					else
-						REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
+					else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
+					{
+						CollectDefinition( *value, capture.src_loc );
+						if( const VariablePtr variable= value->value.GetVariable() )
+						{
+							if( explicit_captures.count( variable ) > 0 )
+								REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
+							else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
+								REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+							else
+							{
+								LambdaPreprocessingContext::ExplicitCapture explicit_capture;
+								explicit_capture.capture_by_reference= capture.by_reference;
+								explicit_captures.emplace( variable, std::move(explicit_capture) );
+							}
+						}
+						else
+							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
+					}
+				}
+				else
+				{
+					// Capture with initializer expression.
+
+					if( IsKeyword( capture.name ) )
+						REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), lambda.src_loc );
+
+					VariablePtr expr_result;
+					{
+						const bool prev_is_functionless_context= function_context.is_functionless_context;
+						function_context.is_functionless_context= true;
+						const auto state= SaveFunctionContextState( function_context );
+						{
+							const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+							// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
+							expr_result= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
+						}
+
+						RestoreFunctionContextState( function_context, state );
+						function_context.is_functionless_context= prev_is_functionless_context;
+					}
+
+					const VariableMutPtr capture_variable= Variable::Create(
+						expr_result->type,
+						// Make immediate values in preprocessing constant.
+						expr_result->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+						Variable::Location::Pointer,
+						expr_result->name,
+						expr_result->llvm_value,
+						nullptr /* no need to use constexpr in preprocessing */ );
+
+					if( expr_result->location == Variable::Location::LLVMRegister || expr_result->llvm_value == nullptr )
+					{
+						// Create proper address for this variable in order to avoid crashes in preprocessing.
+						// We can't "alloca" in this function, so, create global variable for that.
+						const auto llvm_type= expr_result->type.GetLLVMType();
+						capture_variable->llvm_value=
+							new llvm::GlobalVariable(
+								*module_,
+								llvm_type,
+								false, // is constant
+								llvm::GlobalValue::PrivateLinkage,
+								llvm::UndefValue::get( llvm_type ) );
+					}
+
+					// No need to add this variable into context of current function, since it is not used in it.
+
+					// Make this variable accessible by its name inside preprocessed function.
+					custom_captures_names_scope.AddName( capture.name, NamesScopeValue( capture_variable, capture.src_loc ) );
+					lambda_preprocessing_context.external_variables.insert( capture_variable );
+
+					LambdaPreprocessingContext::ExplicitCapture explicit_capture;
+					explicit_capture.capture_by_reference= capture.by_reference;
+					explicit_captures.emplace( capture_variable, std::move(explicit_capture) );
 				}
 			}
 			lambda_preprocessing_context.explicit_captures= std::move(explicit_captures);
@@ -264,7 +442,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			BuildFuncCode(
 				op_variable,
 				class_,
-				names,
+				custom_captures_names_scope,
 				call_op_name,
 				lambda.function.type.params,
 				*lambda.function.block,
