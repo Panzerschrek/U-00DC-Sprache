@@ -33,6 +33,8 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 
 	if( const auto capture_list= std::get_if<Synt::Lambda::CaptureList>( &lambda.capture ) )
 	{
+		llvm::SmallVector<VariablePtr, 4> temp_initialized_variables;
+
 		// Initialize lamda fields in capture list order.
 		for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 		{
@@ -40,29 +42,51 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 			{
 				if( const auto field= field_value->value.GetClassField() )
 				{
-					llvm::Constant* constexpr_value= nullptr;
+					std::pair<llvm::Value*, llvm::Constant*> init_value( nullptr, nullptr );
 					if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 					{
 						// Simple capture - lookup variable for it by name.
 						if( const auto lookup_value= LookupName( names, capture.name, lambda.src_loc ).value )
 							if( const auto variable= lookup_value->value.GetVariable() )
-								constexpr_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+								init_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
 					}
 					else
 					{
 						// Capture with expression specified.
 						const VariablePtr variable= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
-						constexpr_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+						init_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
 					}
 
-					if( lambda_class->can_be_constexpr && constexpr_value != nullptr )
+					if( lambda_class->can_be_constexpr && init_value.second != nullptr )
 					{
-						constexpr_initializers[ field->index ]= constexpr_value;
+						constexpr_initializers[ field->index ]= init_value.second;
 						++num_constexpr_initializers;
+					}
+
+					if( !field->is_reference && // No need to destruct reference fields.
+						&capture != &capture_list->back() && // No need to register last one.
+						field->type.HaveDestructor() && // No need to call destructors.
+						init_value.first != nullptr )
+					{
+						// Temportary register field value for destruction,
+						// in case if "return" or "await" happens in evaluation of further captrure expressions.
+						VariableMutPtr temp_initialized_variable= Variable::Create(
+							field->type,
+							ValueType::Value,
+							Variable::Location::Pointer,
+							result->name + "." + capture.name,
+							init_value.first );
+						temp_initialized_variable->preserve_temporary= true;
+						function_context.variables_state.AddNode( temp_initialized_variable );
+						RegisterTemporaryVariable( function_context, temp_initialized_variable );
+						temp_initialized_variables.push_back( std::move(temp_initialized_variable) );
 					}
 				}
 			}
 		}
+
+		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
+			function_context.variables_state.MoveNode( temp_initialized_variable );
 	}
 	else
 	{
@@ -73,7 +97,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 			{
 				if( const auto variable= lookup_value->value.GetVariable() )
 				{
-					const auto constexpr_value= InitializeLambdaField( names, function_context, *capture.field, variable, result, lambda.src_loc );
+					const auto constexpr_value= InitializeLambdaField( names, function_context, *capture.field, variable, result, lambda.src_loc ).second;
 					if( lambda_class->can_be_constexpr && constexpr_value != nullptr )
 					{
 						constexpr_initializers[ capture.field->index ]= constexpr_value;
@@ -97,7 +121,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	return result;
 }
 
-llvm::Constant* CodeBuilder::InitializeLambdaField(
+std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 	NamesScope& names,
 	FunctionContext& function_context,
 	const ClassField& field,
@@ -107,35 +131,37 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 {
 	U_ASSERT( variable->type == field.type );
 
-	const auto field_value= CreateClassFieldGEP( function_context, *result, field.index );
+	const auto field_address= CreateClassFieldGEP( function_context, *result, field.index );
 
 	if( field.is_reference )
 	{
 		if( variable->value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
-			return nullptr;
+			return std::make_pair( field_address, nullptr );
 		}
 		if( field.is_mutable && variable->value_type == ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
-			return nullptr;
+			return std::make_pair( field_address, nullptr );
 		}
 
 		// Link references.
 		U_ASSERT( field.reference_tag < result->inner_reference_nodes.size() );
 		function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ field.reference_tag ], names.GetErrors(), src_loc );
 
-		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_value );
+		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_address );
 
 		if( variable->constexpr_value != nullptr )
 		{
 			if( variable != nullptr && llvm::isa<llvm::GlobalVariable>( variable->llvm_value ) )
-				return llvm::dyn_cast<llvm::Constant>(variable->llvm_value); // Return address of existing global constant.
+				return std::make_pair( field_address, llvm::dyn_cast<llvm::Constant>(variable->llvm_value) ); // Return address of existing global constant.
 
 			// We need to store constant somewhere. Create global variable for it.
-			return CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
+			const auto global_constant= CreateGlobalConstantVariable( variable->type, "_temp_const", variable->constexpr_value );
+			return std::make_pair( field_address, global_constant );
 		}
+		return std::make_pair( field_address, nullptr );
 	}
 	else
 	{
@@ -156,7 +182,7 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 			variable->type.GetFunctionPointerType() != nullptr )
 		{
 			// Just copy simple scalar.
-			CreateTypedStore( function_context, variable->type, CreateMoveToLLVMRegisterInstruction( *variable, function_context ), field_value );
+			CreateTypedStore( function_context, variable->type, CreateMoveToLLVMRegisterInstruction( *variable, function_context ), field_address );
 		}
 		else
 		{
@@ -166,7 +192,7 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 				function_context.variables_state.MoveNode( variable );
 				if( !function_context.is_functionless_context )
 				{
-					CopyBytes( field_value, variable->llvm_value, variable->type, function_context );
+					CopyBytes( field_address, variable->llvm_value, variable->type, function_context );
 
 					if( variable->location == Variable::Location::Pointer )
 						CreateLifetimeEnd( function_context, variable->llvm_value );
@@ -175,13 +201,11 @@ llvm::Constant* CodeBuilder::InitializeLambdaField(
 			else if( !variable->type.IsCopyConstructible() )
 				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
 			else if( !function_context.is_functionless_context )
-				BuildCopyConstructorPart( field_value, variable->llvm_value, variable->type, function_context );
+				BuildCopyConstructorPart( field_address, variable->llvm_value, variable->type, function_context );
 		}
 
-		return variable->constexpr_value;
+		return std::make_pair( field_address, variable->constexpr_value );
 	}
-
-	return nullptr;
 }
 
 ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )

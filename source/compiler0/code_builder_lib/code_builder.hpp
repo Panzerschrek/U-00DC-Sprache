@@ -1264,7 +1264,7 @@ private:
 	// Lambdas
 
 	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
-	llvm::Constant* InitializeLambdaField( NamesScope& names, FunctionContext& function_context, const ClassField& field, const VariablePtr& variable, const VariablePtr& result, const SrcLoc& src_loc );
+	std::pair<llvm::Value*, llvm::Constant*> InitializeLambdaField( NamesScope& names, FunctionContext& function_context, const ClassField& field, const VariablePtr& variable, const VariablePtr& result, const SrcLoc& src_loc );
 	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	std::string GetLambdaBaseName( const Synt::Lambda& lambda, llvm::ArrayRef<uint32_t> tuple_for_indices );
 	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type );

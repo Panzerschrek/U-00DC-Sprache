@@ -40,6 +40,8 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 		if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
 		{
+			var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
 			// Initialize lamda fields in capture list order.
 			foreach( &capture : capture_list )
 			{
@@ -50,7 +52,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 					{
 						with( &field : field_ptr.try_lock_imut().deref() )
 						{
-							var LLVMValueRef mut constant= LLVMValueRef::Null;
+							var tup[ LLVMValueRef, LLVMValueRef ] mut init_value= zero_init;
 							if( capture.expression.empty() )
 							{
 								// Simple capture - lookup variable for it by name.
@@ -59,7 +61,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 									auto variable_nullable= lookup_result[1].Get</Variable/>();
 									if( !variable_nullable.empty() )
 									{
-										constant= InitializeLambdaField( names_scope, function_context, field, variable_nullable.try_to_non_nullable(), result, lambda_.src_loc );
+										init_value= InitializeLambdaField( names_scope, function_context, field, variable_nullable.try_to_non_nullable(), result, lambda_.src_loc );
 									}
 								}
 							}
@@ -67,17 +69,44 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 							{
 								// Capture with expression specified.
 								var VariablePtr variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
-								constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc );
+								init_value= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc );
 							}
 
-							if( class_type.can_be_constexpr && constant != LLVMValueRef::Null )
+							if( class_type.can_be_constexpr && init_value[1] != LLVMValueRef::Null )
 							{
-								constexpr_initializers[ size_type(field.index) ]= constant;
+								constexpr_initializers[ size_type(field.index) ]= init_value[1];
 								++num_constexpr_initializers;
+							}
+
+							if( !field.is_reference && // No need to destruct reference fields.
+								ust::ref_cmp_ne( capture, capture_list.back() ) && // No need to register last one.
+								field.t.HaveDestructor() && // No need to call destructors.
+								init_value[0] != LLVMValueRef::Null )
+							{
+								// Temportary register field value for destruction,
+								// in case if "return" or "await" happens in evaluation of further captrure expressions.
+								var Variable mut temp_initialized_variable
+								{
+									.t= field.t,
+									.value_type= ValueType::Value,
+									.location= Variable::Location::Pointer,
+									.llvm_value= init_value[0],
+									.name= capture.name,
+									.preserve_temporary= true
+								};
+								var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+								function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+								RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+								temp_initialized_variables.push_back( temp_initialized_variable_ptr );
 							}
 						}
 					}
 				}
+			}
+
+			foreach( & temp_initialized_variable : temp_initialized_variables )
+			{
+				function_context.references_graph.MoveNode( temp_initialized_variable );
 			}
 		}
 		else
@@ -93,7 +122,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 						var VariablePtr variable= variable_nullable.try_to_non_nullable();
 						with( &field : capture.field.lock_imut().deref() )
 						{
-							auto constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc );
+							auto constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc )[1];
 							if( class_type.can_be_constexpr && constant != LLVMValueRef::Null )
 							{
 								constexpr_initializers[ size_type(field.index) ]= constant;
@@ -125,7 +154,7 @@ fn CodeBuilder::InitializeLambdaField(
 	ClassField& field,
 	VariablePtr& variable,
 	VariablePtr& result,
-	SrcLoc& src_loc ) : LLVMValueRef
+	SrcLoc& src_loc ) : tup[ LLVMValueRef, LLVMValueRef ]
 {
 	auto v_lock= variable.lock_imut();
 	var Variable& v= v_lock.deref();
@@ -140,12 +169,12 @@ fn CodeBuilder::InitializeLambdaField(
 		if( v.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
-			return LLVMValueRef::Null;
+			return ust::make_tuple( field_address, LLVMValueRef::Null );
 		}
 		if( field.is_mutable && v.value_type == ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
-			return LLVMValueRef::Null;
+			return ust::make_tuple( field_address, LLVMValueRef::Null );
 		}
 
 		// Link references.
@@ -159,10 +188,10 @@ fn CodeBuilder::InitializeLambdaField(
 
 		if( v.constexpr_value != LLVMValueRef::Null )
 		{
-			return AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value );
+			return ust::make_tuple( field_address, AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value ) );
 		}
 
-		return LLVMValueRef::Null;
+		return ust::make_tuple( field_address, LLVMValueRef::Null );
 	}
 	else
 	{
@@ -214,7 +243,7 @@ fn CodeBuilder::InitializeLambdaField(
 			}
 		}
 
-		return v.constexpr_value;
+		return ust::make_tuple( field_address, v.constexpr_value );
 	}
 }
 

@@ -931,7 +931,17 @@ private:
 	// Lambdas
 
 	fn BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value;
-	fn InitializeLambdaField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ClassField& field, VariablePtr& variable, VariablePtr& result, SrcLoc& src_loc ) : LLVMValueRef;
+
+	// Returns pair of address and constexpr value
+	fn InitializeLambdaField(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ClassField& field,
+		VariablePtr& variable,
+		VariablePtr& result,
+		SrcLoc& src_loc ) : tup[ LLVMValueRef, LLVMValueRef ];
+
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
 	fn GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8;
 	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type ) : FunctionType;
