@@ -614,6 +614,23 @@ def LambdaModifyCapturedVariable_Test5():
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 10 ) )
 
 
+def LambdaModifyCapturedVariable_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[=] byval ()
+				{
+					++x; // Error - can't modify immutable value, even in "byval" but not "mut" lambda.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
 def LambdaMoveCapturedVariable_Test0():
 	c_program_text= """
 		fn Foo()

@@ -2192,3 +2192,61 @@ def ByValLambda_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut f=
+				lambda[ x= 33 ] byval mut () : i32
+				{
+					x*= 2; // Mutate captured "x", but because this lambda is "byval", this mutation is not observable.
+					return x;
+				};
+			halt if( f() != 66 );
+			halt if( f() != 66 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 567;
+			// "byval this" lambda may be constexpr.
+			auto constexpr f=
+				lambda[x] byval ( i32 a ) : i32
+				{
+					return a * x / 3;
+				};
+			static_assert( f( 13 ) == 13 * 567 / 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 x= 5.0f, y= 17.25f;
+			// "byval this" lambda with captured references.
+			auto f=
+				lambda[&] byval () : f32
+				{
+					return x * y;
+				};
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.is_copy_constructible );
+			static_assert( ti.reference_tag_count == 2s );
+			static_assert( ti.size_of == typeinfo</ $(i32) />.size_of * 2s );
+			halt if( f() != 5.0f * 17.25f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
