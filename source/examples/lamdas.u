@@ -114,6 +114,20 @@ fn nomangle main() : i32
 		assert( z == 675 * 4 + 33 - 5 );
 	}
 
+	// "byval" lambda.
+	{
+		auto x= 33;
+		auto f=
+			lambda[=] byval mut () : i32
+			{
+				x*= 2; // Mutate captured "x", but because this lambda is "byval", this mutation is not observable.
+				return x;
+			};
+		// Copy lambda in each call.
+		assert( f() == 66 );
+		assert( f() == 66 );
+	}
+
 	{ // A lambda may be constexpr if it satisfies constexpr function requirements.
 		auto shift_val= 7u;
 		auto shift= lambda[=]( u32 x ) : u32 { return x << shift_val; };
