@@ -1456,9 +1456,7 @@ Type CodeBuilder::BuildFuncCode(
 	// Require full completeness even for reference arguments.
 	for( const FunctionType::Param& arg : function_type.params )
 	{
-		if( lambda_preprocessing_context != nullptr && &arg == &function_type.params.front() )
-		{} // While preprocessing lambdas do not trigger type completeness for the first arg of the lambda type.
-		else if( !EnsureTypeComplete( arg.type ) )
+		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, arg.type );
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )

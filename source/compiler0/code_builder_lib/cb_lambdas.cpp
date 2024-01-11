@@ -435,7 +435,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		{
 			FunctionVariable op_variable;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
-			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
+			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names ) );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
 			op_variable.is_this_call= true;
 
@@ -689,6 +689,35 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			call_op_name,
 			NamesScopeValue( std::move(functions_set), lambda.src_loc ) );
 	}
+
+	return class_;
+}
+
+ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names )
+{
+	if( lambda_preprocessing_dummy_class_ != nullptr )
+		return lambda_preprocessing_dummy_class_.get();
+
+	auto class_ptr= std::make_unique<Class>( "_lambda_preprocessing_dummy", names.GetRoot() );
+	Class* const class_= class_ptr.get();
+	lambda_preprocessing_dummy_class_= std::move(class_ptr);
+
+	class_->members->SetClass( class_ );
+	class_->kind= Class::Kind::Struct;
+	class_->parents_list_prepared= true;
+	class_->have_explicit_noncopy_constructors= false;
+	class_->is_default_constructible= false;
+	class_->can_be_constexpr= true;
+	class_->generated_class_data= LambdaClassData{};
+	class_->field_count= 0;
+	class_->is_complete= true;
+	class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_ ) );
+	class_->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+
+	// Try to generate important methods.
+	TryGenerateCopyConstructor( class_ );
+	TryGenerateCopyAssignmentOperator( class_ );
+	TryGenerateDestructor( class_ );
 
 	return class_;
 }
