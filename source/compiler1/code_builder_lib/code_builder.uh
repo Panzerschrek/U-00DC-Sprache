@@ -943,6 +943,7 @@ private:
 		SrcLoc& src_loc ) : tup[ LLVMValueRef, LLVMValueRef ];
 
 	fn PrepareLambdaClass( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : ClassTypePtr;
+	fn GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names_scope ) : ClassTypePtr;
 	fn GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8;
 	fn PrepareLambdaCallOperatorType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& lambda_function_type, ClassTypePtr& lambda_class_type ) : FunctionType;
 	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>;
@@ -1267,6 +1268,7 @@ private:
 	ust::unordered_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
 
 	ust::unordered_map</ LambdaKey, ClassTypePtr /> lambda_classes_table_;
+	ust::shared_ptr_nullable_mut</ ClassType /> lambda_preprocessing_dummy_class_;  // Lazily created.
 }
 
 } // namespace U1

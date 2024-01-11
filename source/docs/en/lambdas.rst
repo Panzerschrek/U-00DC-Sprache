@@ -182,6 +182,52 @@ For lambdas with no captures or lambdas which capture only references it's point
 It's also possible to mark a lambda with ``imut``, which is the same as the default mutability.
 
 
+***************
+*byval lambdas*
+***************
+
+``()`` method of lambdas may accept the lambda object by value, if the lambda is declared with ``byval`` modifier.
+This works exactly like with any other ``byval`` method.
+
+.. code-block:: u_spr
+
+   fn Foo()
+   {
+       auto f=
+           lambda[ x= 33 ] byval mut () : i32
+           {
+               x*= 2; // Change the captured value, but this change doesn't affect the source lambda object, because its local copy is modified instead.
+               return x;
+           };
+       // Here the lambda object is copied in each call.
+       halt if( f() != 66 );
+       halt if( f() != 66 );
+   }
+
+``byval`` lambdas with captured non-copyable variables may be called only by moving the lambda object.
+
+.. code-block:: u_spr
+
+   class C
+   {
+       i32 x;
+       fn constructor( i32 in_x ) ( x= in_x ) {}
+   }
+   static_assert( !typeinfo</C/>.is_copy_constructible ); // Classes are non-copyable by default.
+   fn Foo()
+   {
+       var C mut c( 142 );
+       // "byval" lambda with a captured non-copyable value.
+       auto mut f=
+           lambda[ c= move(c) ] byval () : i32
+           {
+               return c.x;
+           };
+       // This lambda may be called only once.
+       halt if( move(f)() != 142 );
+   }
+
+
 *******************************
 *Lambdas functionality details*
 *******************************

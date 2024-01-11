@@ -1305,11 +1305,15 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		{
 			.src_loc= it_.front().src_loc,
 			.name= KeywordToString( Keyword::this_ ),
-			.reference_modifier= ReferenceModifier::Reference,
+			.reference_modifier= ReferenceModifier::Reference, // Default is by-reference "this".
 			.mutability_modifier= MutabilityModifier::Immutable,
 		};
 
-		// TODO - parse "byval" here.
+		if( IsKeyword( it_.front(), Keyword::byval_ ) )
+		{
+			this_param.reference_modifier= ReferenceModifier::None;
+			NextLexem();
+		}
 
 		// Parse mutability modifier of lambda "this".
 		if( IsKeyword( it_.front(), Keyword::imut_ ) )

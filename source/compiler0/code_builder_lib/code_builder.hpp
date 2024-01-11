@@ -1266,6 +1266,7 @@ private:
 	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
 	std::pair<llvm::Value*, llvm::Constant*> InitializeLambdaField( NamesScope& names, FunctionContext& function_context, const ClassField& field, const VariablePtr& variable, const VariablePtr& result, const SrcLoc& src_loc );
 	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	ClassPtr GetLambdaPreprocessingDummyClass( NamesScope& names );
 	std::string GetLambdaBaseName( const Synt::Lambda& lambda, llvm::ArrayRef<uint32_t> tuple_for_indices );
 	FunctionType PrepareLambdaCallOperatorType( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& lambda_function_type, ClassPtr lambda_class_type );
 	std::unordered_set<VariablePtr> CollectCurrentFunctionVariables( FunctionContext& function_context );
@@ -1474,6 +1475,7 @@ private:
 	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
 
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
+	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

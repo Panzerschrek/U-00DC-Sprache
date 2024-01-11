@@ -2131,3 +2131,145 @@ def CaptureListExpression_Test17():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 654;
+			auto f=
+				lambda[=] byval ( i32 a ) : i32
+				{
+					return x - a;
+				};
+			halt if( f( 54 ) != 654 - 54 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&] byval ( i32 a )
+				{
+					x= a;
+				};
+			f( 334433 );
+			halt if( x != 334433 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test2():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			// This lambda is non-copyable, because it captures non-copyable variable.
+			// This lambda is also "byval", which means, that in can be called only by moving its instance.
+			auto mut f=
+				lambda[ c= C(142) ] byval () : i32
+				{
+					return c.x;
+				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
+			// Can call such lambda only by moving it.
+			halt if( move(f)() != 142 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[ x= 33 ] byval mut () : i32
+				{
+					x*= 2; // Mutate captured "x", but because this lambda is "byval", this mutation is not observable.
+					return x;
+				};
+			halt if( f() != 66 );
+			halt if( f() != 66 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 567;
+			// "byval this" lambda may be constexpr.
+			auto constexpr f=
+				lambda[x] byval ( i32 a ) : i32
+				{
+					return a * x / 3;
+				};
+			static_assert( f( 13 ) == 13 * 567 / 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var f32 x= 5.0f, y= 17.25f;
+			// "byval this" lambda with captured references.
+			auto f=
+				lambda[&] byval () : f32
+				{
+					return x * y;
+				};
+			auto& ti= typeinfo</ typeof(f) />;
+			static_assert( ti.is_copy_constructible );
+			static_assert( ti.reference_tag_count == 2s );
+			static_assert( ti.size_of == typeinfo</ $(i32) />.size_of * 2s );
+			halt if( f() != 5.0f * 17.25f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test6():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			// Directly call  non-copyable byval lambda just after its creation.
+			auto x=
+				lambda[ c= C(675) ] byval () : i32
+				{
+					return c.x;
+				} ();
+			halt if( x != 675 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

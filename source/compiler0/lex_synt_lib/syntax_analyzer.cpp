@@ -1456,10 +1456,14 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	{ // Always add hidden "this" param.
 		FunctionParam this_param( it_->src_loc );
 		this_param.name= Keyword( Keywords::this_ );
-		this_param.reference_modifier= ReferenceModifier::Reference;
+		this_param.reference_modifier= ReferenceModifier::Reference; // Default is by-reference "this".
 		this_param.mutability_modifier= MutabilityModifier::Immutable;
 
-		// TODO - parse "byval" here.
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::byval_ )
+		{
+			NextLexem();
+			this_param.reference_modifier= ReferenceModifier::None;
+		}
 
 		// Parse mutability modifier of lambda "this".
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )

@@ -264,6 +264,28 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test3():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
 
 
+def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test4():
+	c_program_text= """
+		class C
+		{
+			fn constructor()= default;
+		}
+		fn Foo( S& s )
+		{
+			// This lambda is non-copyable, since it captures non-copyable class.
+			auto f=
+				lambda [ c= C() ] byval ()
+				{
+					auto& c_ref= c;
+				};
+			f(); // Error - copy-construction lambda in "byval this" call without moving of the lamda object.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
+
+
 def CopyAssign_ForLambdaWithReferencesInside_Test0():
 	c_program_text= """
 		fn Foo()
@@ -590,6 +612,23 @@ def LambdaModifyCapturedVariable_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 10 ) )
+
+
+def LambdaModifyCapturedVariable_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f=
+				lambda[=] byval ()
+				{
+					++x; // Error - can't modify immutable value, even in "byval" but not "mut" lambda.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test0():
@@ -1323,3 +1362,23 @@ def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 12 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForByvalLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			auto f=
+				lambda[=] byval () : i32&
+				{
+					// Capture copy of "x" inside lambda.
+					// Since this is "byval" lambda "this" will be destroyed at the end of this function execution.
+					// This makes impossible returning of reference to "x".
+					return x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )

@@ -531,12 +531,14 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		var ust::shared_ptr_mut</LambdaPreprocessingContext/> lambda_preprocessing_context_ptr( move(lambda_preprocessing_context) );
 
 		{
+			auto lambda_preprocessing_dummy_class= GetLambdaPreprocessingDummyClass( names_scope );
+
 			var FunctionVariable mut function_variable
 			{
 				.body_syntax_element= lambda_.function,
 				.llvm_function( LazyLLVMFunction( "\0" /* The name of temporary function is irrelevant. */ ) ),
 				// It's fine to use incomplete lambda class here, since this class can't be accessed.
-				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr ),
+				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, lambda_preprocessing_dummy_class ),
 				.is_this_call= true,
 			};
 
@@ -848,6 +850,67 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			members_lock.deref().AddName( call_op_name, NamesScopeValue( move(functions_set) ) );
 		}
 	}
+
+	return class_type_ptr;
+}
+
+fn CodeBuilder::GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names_scope ) : ClassTypePtr
+{
+	if( !lambda_preprocessing_dummy_class_.empty() )
+	{
+		return lambda_preprocessing_dummy_class_.try_to_non_nullable();
+	}
+
+	var NamesScopeMutPtr class_members( NamesScope( "_lambda_preprocessing_dummy", GetRootNamespace( names_scope ) ) );
+
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.members_initial= class_members,
+		.kind= ClassType::Kind::Struct,
+		.parents_list_prepared= true,
+		.have_explicit_noncopy_constructors= false,
+		.is_default_constructible= false,
+		.can_be_constexpr= true,
+		.is_complete= true,
+		.generated_class_data= LambdaClassData(),
+	};
+
+	var ClassTypePtr class_type_ptr( move(class_type) );
+	lambda_preprocessing_dummy_class_= class_type_ptr;
+
+	with( mut members_lock : class_members.lock_mut() )
+	{
+		var NamesScope &mut members= members_lock.deref();
+
+		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
+		var FunctionsSet functions_set{ .class_= class_type_ptr };
+		members.AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		members.AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		members.AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+
+		// Add special member to names scope to identify it as class names scope.
+		members.SetClass( class_type_ptr );
+
+		// Allow accessing private members of class for all it's inner namespaces.
+		members.AddAccessRightsFor( class_type_ptr, Synt::ClassVisibility::Private );
+	}
+
+	with( mangled_name : mangler_.deref().MangleType( class_type_ptr ) )
+	{
+		with( mut class_lock : class_type_ptr.lock_mut() )
+		{
+			auto llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, mangled_name.front() ) );
+			unsafe( LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False ) );
+			class_lock.deref().llvm_type= llvm_type;
+		}
+	}
+
+	// Try to generate important methods.
+	TryGenerateCopyConstructor( class_type_ptr );
+	TryGenerateCopyAssignmentOperator( class_type_ptr );
+	TryGenerateDestructorPrototype( class_type_ptr );
+	TryGenerateDestructor( class_type_ptr );
 
 	return class_type_ptr;
 }
