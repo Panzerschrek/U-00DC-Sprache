@@ -2198,7 +2198,7 @@ def ByValLambda_Test3():
 	c_program_text= """
 		fn Foo()
 		{
-			auto mut f=
+			auto f=
 				lambda[ x= 33 ] byval mut () : i32
 				{
 					x*= 2; // Mutate captured "x", but because this lambda is "byval", this mutation is not observable.
@@ -2246,6 +2246,29 @@ def ByValLambda_Test5():
 			static_assert( ti.reference_tag_count == 2s );
 			static_assert( ti.size_of == typeinfo</ $(i32) />.size_of * 2s );
 			halt if( f() != 5.0f * 17.25f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test6():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			// Directly call  non-copyable byval lambda just after its creation.
+			auto x=
+				lambda[ c= C(675) ] byval () : i32
+				{
+					return c.x;
+				} ();
+			halt if( x != 675 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

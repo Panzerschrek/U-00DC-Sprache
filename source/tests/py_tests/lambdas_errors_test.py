@@ -1362,3 +1362,23 @@ def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 12 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForByvalLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			auto f=
+				lambda[=] byval () : i32&
+				{
+					// Capture copy of "x" inside lambda.
+					// Since this is "byval" lambda "this" will be destroyed at the end of this function execution.
+					// This makes impossible returning of reference to "x".
+					return x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )
