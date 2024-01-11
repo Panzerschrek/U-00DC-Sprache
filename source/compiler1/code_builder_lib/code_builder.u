@@ -308,6 +308,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		{
 			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
 		}
+		if( !lambda_preprocessing_dummy_class_.empty() )
+		{
+			ClearClassInternals( lambda_preprocessing_dummy_class_.try_to_non_nullable(), dummy_class_names_scope );
+		}
 	}
 	// Replace usage of temporary allocation functions with usage of library allocation functions.
 	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").
@@ -1112,12 +1116,6 @@ fn CodeBuilder::BuildFuncCode(
 	// Ensure type completness even for reference args because of reference checking.
 	foreach( &param : cast_imut(func_variable).t.params )
 	{
-		if( ust::ref_cmp_eq( param, cast_imut(func_variable).t.params.front() ) &&
-			!function_context.lambda_preprocessing_context.empty() )
-		{
-			// While preprocessing lambdas do not trigger type completeness for the first arg of the lambda type.
-			continue;
-		}
 		if( !EnsureTypeComplete( param.t ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, param.t )
