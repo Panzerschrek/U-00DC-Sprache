@@ -2131,3 +2131,64 @@ def CaptureListExpression_Test17():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 654;
+			auto f=
+				lambda[=] byval ( i32 a ) : i32
+				{
+					return x - a;
+				};
+			halt if( f( 54 ) != 654 - 54 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&] byval ( i32 a )
+				{
+					x= a;
+				};
+			f( 334433 );
+			halt if( x != 334433 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambda_Test2():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			// This lambda is non-copyable, because it captures non-copyable variable.
+			// This lambda is also "byval", which means, that in can be called only by moving its instance.
+			auto mut f=
+				lambda[ c= C(142) ] byval () : i32
+				{
+					return c.x;
+				};
+			static_assert( !typeinfo</ typeof(f) />.is_copy_constructible );
+			// Can call such lambda only by moving it.
+			halt if( move(f)() != 142 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

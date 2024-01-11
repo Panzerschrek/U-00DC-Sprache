@@ -5117,6 +5117,79 @@ U_TEST( LambdaDestructor_Test6 )
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 11, 22, -11, -11 } ) );
 }
 
+U_TEST( LambdaDestructor_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			auto f=
+				lambda[ s= S( 545 ) ] byval () : i32
+				{
+					var S local_s( 434 );
+					return s.x;
+				};
+			// Call here "byval" lambda - copy construct it (including captured "s"), than destroy it.
+			halt if( f() != 545 );
+			// Destroy lambda here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 545, 545 * 2, 434, -434, -545, -545 } ) );
+}
+
+U_TEST( LambdaDestructor_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			auto mut f=
+				lambda[ s= S( 7799 ) ] byval () : i32
+				{
+					var S local_s( 9977 );
+					return s.x;
+				};
+			// Call here "byval" lambda by moving lambda object. No copy construction will be triggered, only lambda destruction itself at the end of the call.
+			halt if( move(f)() != 7799 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 7799, 9977, -9977, -7799 } ) );
+}
+
 } // namespace
 
 } // namespace U

@@ -264,6 +264,28 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test3():
 	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
 
 
+def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test4():
+	c_program_text= """
+		class C
+		{
+			fn constructor()= default;
+		}
+		fn Foo( S& s )
+		{
+			// This lambda is non-copyable, since it captures non-copyable class.
+			auto f=
+				lambda [ c= C() ] byval ()
+				{
+					auto& c_ref= c;
+				};
+			f(); // Error - copy-construction lambda in "byval this" call without moving of the lamda object.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
+
+
 def CopyAssign_ForLambdaWithReferencesInside_Test0():
 	c_program_text= """
 		fn Foo()
