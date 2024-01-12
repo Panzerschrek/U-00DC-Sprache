@@ -128,6 +128,16 @@ fn nomangle main() : i32
 		assert( f() == 66 );
 	}
 
+	// Move captured variable in "byval" lambda.
+	{
+		auto f=
+			lambda[ x= 123 ] byval mut () : i32
+			{
+				return move(x);
+			};
+		assert( f() == 123 );
+	}
+
 	{ // A lambda may be constexpr if it satisfies constexpr function requirements.
 		auto shift_val= 7u;
 		auto shift= lambda[=]( u32 x ) : u32 { return x << shift_val; };
