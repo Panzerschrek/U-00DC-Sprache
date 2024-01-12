@@ -1218,7 +1218,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			LambdaPreprocessingCheckVariableUsage( names, function_context, resolved_variable, move_operator.var_name, move_operator.src_loc );
 			if( function_context.lambda_preprocessing_context->external_variables.count( resolved_variable ) > 0 )
-				resolved_variable= LambdaPreprocessingAccessExternalVariable( function_context, resolved_variable, move_operator.var_name );
+				return LambdaPreprocessingHandleCapturedVariableMove( names, function_context, resolved_variable, move_operator.var_name, move_operator.src_loc );
 		}
 	}
 

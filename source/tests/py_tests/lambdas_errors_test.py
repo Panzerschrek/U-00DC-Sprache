@@ -665,6 +665,57 @@ def LambdaMoveCapturedVariable_Test1():
 	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
 
 
+def LambdaMoveCapturedVariable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&] byval mut ()
+				{
+					move(x); // In "byval mut this" lambda captured reference is assumed to be a class refernce field, not a variable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def LambdaMoveCapturedVariable_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[=] byval imut ()
+				{
+					move(x); // In "byval imut this" lambda captured variable is immutable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) or HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
+def LambdaMoveCapturedVariable_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&x_ref= x] byval mut ()
+				{
+					move(x_ref); // Can't move explicitly-initialized reference capture in "byval mut" lambda.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
 def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
@@ -1382,3 +1433,92 @@ def DestroyedVariableStillHaveReferences_ForByvalLambda_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )
+
+
+def DestroyedVariableStillHaveReferences_ForByvalLambda_Test1():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			auto x= 0;
+			auto f=
+				lambda[=] byval ( R &mut r )
+				{
+					// Save reference to captured by value variable "x" in an argument.
+					// But because this lambda is "byval", "this" including captured variable is destroyed at the end of this function.
+					MakePollution( r, x );
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 14 ) )
+
+
+def AccessingMovedVariable_ForByvalMutLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[x= 34] byval mut ()
+				{
+					move(x);
+					auto y= x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+
+
+def AccessingMovedVariable_ForByvalMutLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[x= 34] byval mut ()
+				{
+					move(x);
+					move(x);
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+
+
+def LambdaCapturedVariableMoveErrors_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut f=
+				lambda[x= 123] byval mut ()
+				{
+					auto& x_ref= x;
+					move(x); // Can't move - there is a reference to "x".
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 8 ) )
+
+
+def LambdaCapturedVariableMoveErrors_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut f=
+				lambda[x= 123] byval imut ()
+				{
+					move(x); // Can't move  - "byval this" is immutable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 7 ) )

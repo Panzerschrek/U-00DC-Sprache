@@ -949,6 +949,7 @@ private:
 	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>;
 	fn LambdaPreprocessingCheckVariableUsage( NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name, SrcLoc& src_loc );
 	fn LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr;
+	fn LambdaPreprocessingHandleCapturedVariableMove( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name, SrcLoc& src_loc ) : Value;
 
 	// Methods generation
 

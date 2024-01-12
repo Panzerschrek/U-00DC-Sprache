@@ -1272,6 +1272,7 @@ private:
 	std::unordered_set<VariablePtr> CollectCurrentFunctionVariables( FunctionContext& function_context );
 	void LambdaPreprocessingCheckVariableUsage( NamesScope& names, FunctionContext& function_context, const VariablePtr& variable, const std::string& name, const SrcLoc& src_loc );
 	VariablePtr LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name );
+	Value LambdaPreprocessingHandleCapturedVariableMove( NamesScope& names, FunctionContext& function_context, const VariablePtr& variable,  const std::string& name, const SrcLoc& src_loc );
 
 	// NamesScope fill
 

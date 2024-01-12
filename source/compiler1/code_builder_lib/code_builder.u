@@ -1286,7 +1286,7 @@ fn CodeBuilder::BuildFuncCode(
 
 				var Variable mut accesible_variable
 				{
-					.t= type_param.t,
+					.t= invalid_type_,
 					.value_type= ValueType::Value,
 					.location= Variable::Location::Pointer,
 					.name= in_param.name + " referenced variable"
@@ -1332,14 +1332,97 @@ fn CodeBuilder::BuildFuncCode(
 			{
 				if( !this_class_type.generated_class_data.get</ LambdaClassData />().empty() )
 				{
-					foreach( &field_pair : this_class_type.fields_order )
+					if( func_variable.t.params.front().value_type == ValueType::Value &&
+						body_syntax_element.function_type.params.front().mutability_modifier == Synt::MutabilityModifier::Mutable )
 					{
-						var Value field_value= AccessClassField( args_names_scope_ptr, function_context, this_, field_pair[1].lock_imut().deref(), field_pair[0], body_syntax_element.src_loc );
-						if_var( &variable : field_value.get</VariablePtr/>() )
+						// If this is a "byval mut" lambda - create names for captured variables as params, in order to have possibility to move them.
+						foreach( &field_pair : this_class_type.fields_order )
 						{
+							auto& field_name= field_pair[0];
+							auto field_lock= field_pair[1].lock_imut();
+							var ClassField& field= field_lock.deref();
+
+							var LLVMValueRef field_address= CreateClassFieldGEP( function_context, this_class_type_ptr, this_.lock_imut().deref().llvm_value, field );
+							var LLVMValueRef llvm_value=
+								select( field.is_reference
+									? CreateTypedReferenceLoad( function_context, field.t, field_address )
+									: field_address );
+
+							var Variable mut variable
+							{
+								.t= field.t,
+								.value_type= ValueType::Value,
+								.location= Variable::Location::Pointer,
+								.name= field_name,
+								.llvm_value= llvm_value,
+							};
+							var VariablePtr variable_ptr= move(variable).CreatePtr();
+
+							var Variable mut variable_reference
+							{
+								.t= field.t,
+								.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+								.location= Variable::Location::Pointer,
+								.name= field_name,
+								.llvm_value= llvm_value,
+							};
+							var VariablePtr variable_reference_ptr= move(variable_reference).CreatePtr();
+
+							function_context.references_graph.AddNode( variable_ptr );
+							function_context.references_graph.AddNode( variable_reference_ptr );
+							function_context.references_graph.AddLink( variable_ptr, variable_reference_ptr );
+
+							if( !field.is_reference )
+							{
+								RegisterTopFrameVariable( function_context, variable_ptr );
+							}
+							RegisterTopFrameVariable( function_context, variable_reference_ptr );
+
+							auto reference_tag_count= size_type(field.t.ReferenceTagCount());
+							for( auto mut i= 0s; i < reference_tag_count; ++i )
+							{
+								var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
+
+								var Variable mut accesible_variable
+								{
+									.t= invalid_type_,
+									.value_type= ValueType::Value,
+									.location= Variable::Location::Pointer,
+									.name= field_name + " referenced variable"
+								};
+								var VariablePtr accesible_variable_ptr= move(accesible_variable).CreatePtr();
+								function_context.references_graph.AddNode( accesible_variable_ptr );
+								function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
+								function_context.references_graph.AddLink(
+									variable_inner_reference_node,
+									variable_reference_ptr.lock_imut().deref().inner_reference_nodes[i] );
+							}
+
 							with( mut lock : args_names_scope_ptr.lock_mut() )
 							{
-								lock.deref().AddName( field_pair[0], variable );
+								lock.deref().AddName( field_name, variable_reference_ptr );
+							}
+						}
+
+						// Move "this" to prevent its destruction.
+						// Destroy instead each member separately.
+						var ReferencesGraph::NodesSet this_input_nodes= function_context.references_graph.GetNodeInputLinks( this_ );
+						debug_assert( this_input_nodes.size() == 1s );
+						function_context.references_graph.MoveNode( this_input_nodes.range().front() );
+						function_context.references_graph.MoveNode( this_ );
+					}
+					else
+					{
+						// Just create names for lambda fields, if it's not possible to move these fields.
+						foreach( &field_pair : this_class_type.fields_order )
+						{
+							var Value field_value= AccessClassField( args_names_scope_ptr, function_context, this_, field_pair[1].lock_imut().deref(), field_pair[0], body_syntax_element.src_loc );
+							if_var( &variable : field_value.get</VariablePtr/>() )
+							{
+								with( mut lock : args_names_scope_ptr.lock_mut() )
+								{
+									lock.deref().AddName( field_pair[0], variable );
+								}
 							}
 						}
 					}

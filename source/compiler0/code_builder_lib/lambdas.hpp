@@ -36,7 +36,7 @@ struct LambdaClassData
 		ClassFieldPtr field;
 	};
 
-	std::vector<Capture> captures;
+	std::vector<Capture> captures; // Should be in fields order.
 	std::vector<TemplateArg> template_args; // For some lambdas (like in template functions).
 };
 

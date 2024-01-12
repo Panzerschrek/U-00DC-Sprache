@@ -5190,6 +5190,129 @@ U_TEST( LambdaDestructor_Test8 )
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 7799, 9977, -9977, -7799 } ) );
 }
 
+U_TEST( LambdaDestructor_Test9 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			auto mut f=
+				lambda[ s= S( 11333 ) ] byval mut () : i32
+				{
+					auto res= s.x;
+					var S local_s0( 22333 );
+					move(s);
+					// Destroy "s" here.
+					var S local_s1( 33333 );
+					// Destroy "local_s1" here.
+					// Destroy "local_s0" here.
+					return res;
+				};
+			// Call here "byval" lambda by moving lambda object. No copy construction will be triggered.
+			halt if( move(f)() != 11333 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 11333, 22333, -11333, 33333, -33333, -22333 } ) );
+}
+
+U_TEST( LambdaDestructor_Test10 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			var S s0(5550);
+			// Capture in "byval mut" lambda a reference and two values.
+			// Should destroy values properly, but not reference.
+			auto mut f=
+				lambda[ &s0, s1= S( 5551 ), s2= S( 5552 ) ] byval mut () : i32
+				{
+					return s0.x + s1.x + s2.x;
+					// Destroy here s2, s1.
+				};
+			// Call here "byval" lambda by moving lambda object. No copy construction will be triggered.
+			halt if( move(f)() != 5550 + 5551 + 5552 );
+			var S s3(5553);
+			// Destroy here "s3".
+			// Destroy here "s0".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 5550, 5551, 5552, -5552, -5551, 5553, -5553, -5550 } ) );
+}
+
+U_TEST( LambdaDestructor_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x(in_x) ) { DestructorCalled(x); }
+			fn constructor( mut this, S& other ) ( x(other.x) ) { DestructorCalled( x * 2 ); }
+			fn destructor() { DestructorCalled( -x ); }
+		}
+		fn Foo()
+		{
+			// Move "s" into lambda, that move-return it from it.
+			var S mut s(9988);
+			auto mut f=
+				lambda[ s= move(s) ] byval mut () : S
+				{
+					return move(s);
+				};
+			var S intermediate_s(767);
+			auto s_reborn= move(f)();
+			// Destroy "s_reborn" here.
+			// Destroy "intermediate_s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 9988, 767, -9988, -767 } ) );
+}
+
 } // namespace
 
 } // namespace U

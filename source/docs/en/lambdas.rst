@@ -227,6 +227,8 @@ This works exactly like with any other ``byval`` method.
        halt if( move(f)() != 142 );
    }
 
+It's possible (if it is necessary) to move captured by value variables in ``byval mut`` lambdas.
+
 
 *******************************
 *Lambdas functionality details*
