@@ -973,4 +973,51 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 	return captured_variable.reference_node;
 }
 
+Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const std::string& name,
+	const SrcLoc& src_loc )
+{
+	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
+	auto& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
+	U_ASSERT( lambda_preprocessing_context.external_variables.count( variable ) > 0 );
+
+	const VariablePtr resolved_variable= LambdaPreprocessingAccessExternalVariable( function_context, variable, name );
+
+	if( resolved_variable->value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+		return ErrorValue();
+	}
+	if( function_context.variables_state.HaveOutgoingLinks( resolved_variable ) )
+	{
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), src_loc, resolved_variable->name );
+		return ErrorValue();
+	}
+	if( function_context.variables_state.NodeMoved( resolved_variable ) )
+	{
+		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, resolved_variable->name );
+		return ErrorValue();
+	}
+
+	const VariablePtr result=
+		Variable::Create(
+			resolved_variable->type,
+			ValueType::Value,
+			resolved_variable->location,
+			"_moved_" + resolved_variable->name,
+			resolved_variable->llvm_value,
+			resolved_variable->constexpr_value );
+	function_context.variables_state.AddNode( result );
+
+	function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names.GetErrors(), src_loc );
+
+	function_context.variables_state.MoveNode( resolved_variable );
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
 } // namespace U

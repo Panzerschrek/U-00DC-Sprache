@@ -1647,16 +1647,101 @@ Type CodeBuilder::BuildFuncCode(
 			if( std::holds_alternative<LambdaClassData>( this_class->generated_class_data ) )
 			{
 				// Create names for lambda fields.
-				this_class->members->ForEachInThisScope(
-					[&]( const std::string_view member_name, const NamesScopeValue& value )
-					{
-						if( const auto class_field= value.value.GetClassField() )
+				U_ASSERT( !function_type.params.empty() );
+				U_ASSERT( !params.empty() );
+
+				if( function_type.params.front().value_type == ValueType::Value &&
+					params.front().mutability_modifier == MutabilityModifier::Mutable )
+				{
+					// If this is a "byval mut" lambda - create names for captured variables as params, in order to have possibility to move them.
+
+					using NamedField= std::pair< std::string, ClassFieldPtr >;
+					llvm::SmallVector< NamedField, 4 > named_fields;
+
+					this_class->members->ForEachInThisScope(
+						[&]( const std::string_view member_name, const NamesScopeValue& value )
 						{
-							const auto field_value= AccessClassField( function_names, function_context, function_context.this_, *class_field, std::string(member_name), block.src_loc );
-							function_names.AddName( member_name, NamesScopeValue( field_value, block.src_loc ) );
-							// TODO - create debug info?
+							if( const auto class_field= value.value.GetClassField() )
+								named_fields.emplace_back( member_name, class_field );
+						} );
+
+					// Avoid creating variables for lambda captures in hash table order.
+					// This may affect order of destruction.
+					std::sort(
+						named_fields.begin(), named_fields.end(),
+						[]( const NamedField& l, const NamedField& r ) { return l.second->index < r.second->index; } );
+
+					for( const auto& named_field : named_fields )
+					{
+						const std::string& field_name= named_field.first;
+						const ClassField& class_field= *named_field.second;
+
+						llvm::Value* const field_address= CreateClassFieldGEP( function_context, *this_class, function_context.this_->llvm_value, class_field.index );
+						llvm::Value* const llvm_value=
+							class_field.is_reference
+								? CreateTypedReferenceLoad( function_context, class_field.type, field_address )
+								: field_address;
+
+						const VariableMutPtr variable=
+							Variable::Create(
+								class_field.type,
+								ValueType::Value,
+								Variable::Location::Pointer,
+								field_name + " variable itself",
+								llvm_value );
+
+						const VariablePtr variable_reference=
+							Variable::Create(
+								class_field.type,
+								class_field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+								Variable::Location::Pointer,
+								field_name,
+								variable->llvm_value );
+
+						function_context.variables_state.AddNode( variable );
+						function_context.variables_state.AddNode( variable_reference );
+						function_context.variables_state.AddLink( variable, variable_reference );
+
+						if( !class_field.is_reference )
+							function_context.stack_variables_stack.back()->RegisterVariable( variable );
+						function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
+						const auto reference_tag_count= class_field.type.ReferenceTagCount();
+						for( size_t i= 0; i < reference_tag_count; ++i )
+						{
+							// Create root variable.
+							const VariablePtr accesible_variable=
+								Variable::Create(
+									invalid_type_,
+									ValueType::Value,
+									Variable::Location::Pointer,
+									field_name + " referenced variable " + std::to_string(i) );
+							function_context.variables_state.AddNode( accesible_variable );
+							function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
+							function_context.variables_state.AddLink( variable->inner_reference_nodes[i], variable_reference->inner_reference_nodes[i] );
 						}
-					} );
+
+						function_names.AddName( field_name, NamesScopeValue( variable_reference, block.src_loc ) );
+					}
+
+					// Move "this" to prevent its destruction.
+					// Destroy instead each member separately.
+					function_context.variables_state.MoveNode( function_context.this_ );
+				}
+				else
+				{
+					// Just create names for lambda fields, if it's not possible to move these fields.
+					this_class->members->ForEachInThisScope(
+						[&]( const std::string_view member_name, const NamesScopeValue& value )
+						{
+							if( const auto class_field= value.value.GetClassField() )
+							{
+								const auto field_value= AccessClassField( function_names, function_context, function_context.this_, *class_field, std::string(member_name), block.src_loc );
+								function_names.AddName( member_name, NamesScopeValue( field_value, block.src_loc ) );
+								// TODO - create debug info?
+							}
+						} );
+				}
 
 				// Make "this" unavailable in lambdas.
 				// Save "this" into a stack variable in order to prevent its destruction.
