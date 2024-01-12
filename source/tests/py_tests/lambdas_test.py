@@ -2275,6 +2275,29 @@ def ByValLambda_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ByValLambda_Test7():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var R r{ .x= x };
+			auto f=
+				lambda[=] byval mut ( i32& y )
+				{
+					// Capture "r" by copy and perform pollution for it.
+					// This has no practical effect in "byval" lambda.
+					MakePollution( r, y );
+				};
+			f( 42 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ByValLambdaMove_Test0():
 	c_program_text= """
 		fn Foo()
