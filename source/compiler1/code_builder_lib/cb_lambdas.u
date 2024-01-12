@@ -1219,6 +1219,54 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 	return captured_variable.reference_node;
 }
 
+fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& variable,
+	ust::string8& name,
+	SrcLoc& src_loc ) : Value
+{
+	var VariablePtr resolved_variable_ptr= LambdaPreprocessingAccessExternalVariable( function_context, variable, name );
+	auto lock= resolved_variable_ptr.lock_imut();
+	var Variable& resolved_variable= lock.deref();
+
+	if( resolved_variable.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, resolved_variable.src_loc )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.NodeIsMoved( resolved_variable_ptr ) )
+	{
+		REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, resolved_variable.name )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.HaveOutgoingLinks( resolved_variable_ptr ) )
+	{
+		REPORT_ERROR( MovedVariableHaveReferences, names_scope, src_loc, resolved_variable.name )
+		return ErrorValue();
+	}
+
+	var Variable mut result
+	{
+		.t= resolved_variable.t,
+		.value_type= ValueType::Value,
+		.location= resolved_variable.location,
+		.llvm_value= resolved_variable.llvm_value,
+		.name= "moved " + resolved_variable.name,
+	};
+	var VariablePtr mut result_ptr= move(result).CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+
+	function_context.references_graph.TryAddInnerLinks( resolved_variable_ptr, result_ptr, names_scope, src_loc );
+
+	function_context.references_graph.MoveNode( resolved_variable_ptr );
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
+}
+
 struct CapturedVariableForSorting
 {
 	ust::string8 name;
