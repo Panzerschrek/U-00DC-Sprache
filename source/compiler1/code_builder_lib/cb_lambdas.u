@@ -1227,6 +1227,8 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 	ust::string8& name,
 	SrcLoc& src_loc ) : Value
 {
+	debug_assert( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) );
+
 	var VariablePtr resolved_variable_ptr= LambdaPreprocessingAccessExternalVariable( function_context, variable, name );
 	auto lock= resolved_variable_ptr.lock_imut();
 	var Variable& resolved_variable= lock.deref();

@@ -981,8 +981,7 @@ Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 	const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.lambda_preprocessing_context != nullptr );
-	auto& lambda_preprocessing_context= *function_context.lambda_preprocessing_context;
-	U_ASSERT( lambda_preprocessing_context.external_variables.count( variable ) > 0 );
+	U_ASSERT( function_context.lambda_preprocessing_context->external_variables.count( variable ) > 0 );
 
 	const VariablePtr resolved_variable= LambdaPreprocessingAccessExternalVariable( function_context, variable, name );
 
