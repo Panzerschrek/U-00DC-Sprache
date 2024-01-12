@@ -1644,7 +1644,7 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		if( const auto this_class= function_context.this_->type.GetClassType() )
 		{
-			if( std::holds_alternative<LambdaClassData>( this_class->generated_class_data ) )
+			if( const auto lambda_class_data= std::get_if<LambdaClassData>( &this_class->generated_class_data ) )
 			{
 				// Create names for lambda fields.
 				U_ASSERT( !function_type.params.empty() );
@@ -1654,27 +1654,10 @@ Type CodeBuilder::BuildFuncCode(
 					params.front().mutability_modifier == MutabilityModifier::Mutable )
 				{
 					// If this is a "byval mut" lambda - create names for captured variables as params, in order to have possibility to move them.
-
-					using NamedField= std::pair< std::string, ClassFieldPtr >;
-					llvm::SmallVector< NamedField, 4 > named_fields;
-
-					this_class->members->ForEachInThisScope(
-						[&]( const std::string_view member_name, const NamesScopeValue& value )
-						{
-							if( const auto class_field= value.value.GetClassField() )
-								named_fields.emplace_back( member_name, class_field );
-						} );
-
-					// Avoid creating variables for lambda captures in hash table order.
-					// This may affect order of destruction.
-					std::sort(
-						named_fields.begin(), named_fields.end(),
-						[]( const NamedField& l, const NamedField& r ) { return l.second->index < r.second->index; } );
-
-					for( const auto& named_field : named_fields )
+					for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
 					{
-						const std::string& field_name= named_field.first;
-						const ClassField& class_field= *named_field.second;
+						const std::string& field_name= capture.captured_variable_name;
+						const ClassField& class_field= *capture.field;
 
 						llvm::Value* const field_address= CreateClassFieldGEP( function_context, *this_class, function_context.this_->llvm_value, class_field.index );
 						llvm::Value* const llvm_value=
