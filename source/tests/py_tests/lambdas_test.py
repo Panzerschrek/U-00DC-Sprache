@@ -2273,3 +2273,22 @@ def ByValLambda_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambdaMove_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 345;
+			auto f=
+				lambda[=] byval mut () : i32
+				{
+					// Capture "x" in "move" operator.
+					// Move "x" from "this" of the lambda.
+					return move(x);
+				};
+			halt if( f() != 345 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

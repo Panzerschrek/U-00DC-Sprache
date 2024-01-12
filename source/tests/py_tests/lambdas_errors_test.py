@@ -665,6 +665,40 @@ def LambdaMoveCapturedVariable_Test1():
 	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
 
 
+def LambdaMoveCapturedVariable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&] byval mut ()
+				{
+					move(x); // In "byval mut this" lambda captured reference is assumed to be a class refernce field, not a variable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def LambdaMoveCapturedVariable_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[=] byval imut ()
+				{
+					move(x); // In "byval imut this" lambda captured variable is immutable.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) or HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
 def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
@@ -1382,3 +1416,37 @@ def DestroyedVariableStillHaveReferences_ForByvalLambda_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )
+
+
+def AccessingMovedVariable_ForByvalMutLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[x= 34] byval mut ()
+				{
+					move(x);
+					auto y= x;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+
+
+def AccessingMovedVariable_ForByvalMutLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f=
+				lambda[x= 34] byval mut ()
+				{
+					move(x);
+					move(x);
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )

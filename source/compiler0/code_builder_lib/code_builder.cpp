@@ -1726,6 +1726,9 @@ Type CodeBuilder::BuildFuncCode(
 
 					// Move "this" to prevent its destruction.
 					// Destroy instead each member separately.
+					const auto this_input_nodes= function_context.variables_state.GetNodeInputLinks( function_context.this_ );
+					U_ASSERT( this_input_nodes.size() == 1 );
+					function_context.variables_state.MoveNode( *this_input_nodes.begin() );
 					function_context.variables_state.MoveNode( function_context.this_ );
 				}
 				else
