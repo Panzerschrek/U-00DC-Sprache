@@ -35,7 +35,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	{
 		llvm::SmallVector<VariablePtr, 4> temp_initialized_variables;
 
-		// Initialize lamda fields in capture list order.
+		// Initialize lambda fields in capture list order.
 		for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 		{
 			if( const auto field_value= lambda_class->members->GetThisScopeValue( capture.name ) )
@@ -90,7 +90,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	}
 	else
 	{
-		// Initialize lamda fields in natural order.
+		// Initialize lambda fields in natural order.
 		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
 		{
 			if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )

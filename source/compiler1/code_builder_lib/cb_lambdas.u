@@ -42,7 +42,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 		{
 			var ust::vector</VariablePtr/> mut temp_initialized_variables;
 
-			// Initialize lamda fields in capture list order.
+			// Initialize lambda fields in capture list order.
 			foreach( &capture : capture_list )
 			{
 				if_var( &field_value : class_type.members.lock_imut().deref().GetThisScopeValue( capture.name ) )
@@ -111,7 +111,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 		}
 		else
 		{
-			// Initialize lamda fields in natural order.
+			// Initialize lambda fields in natural order.
 			foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
 			{
 				if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )

@@ -64,7 +64,7 @@ fn IsBaseHumanColor( RainbowColor c ) : bool
 	}
 }
 
-// Underlying type may be explicitely specified.
+// Underlying type may be explicitly specified.
 enum TooBigEnum : u32
 {
 	A, B,

@@ -278,7 +278,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test4():
 				{
 					auto& c_ref= c;
 				};
-			f(); // Error - copy-construction lambda in "byval this" call without moving of the lamda object.
+			f(); // Error - copy-construction lambda in "byval this" call without moving of the lambda object.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

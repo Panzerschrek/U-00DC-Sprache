@@ -11,7 +11,7 @@ fn nomangle main() : i32
 	assert( DoubleIt( uint_var ) == 1530u );
 
 	var i64 signed_64bit_var( -567 );
-	// It's also possible to specify template arguments explicitely.
+	// It's also possible to specify template arguments explicitly.
 	assert( DoubleIt</ i64 />( signed_64bit_var ) == -1134i64 );
 
 	// It's necessary here to specify template argumentss, since it's not possible to deduce them from the given function arguments.
