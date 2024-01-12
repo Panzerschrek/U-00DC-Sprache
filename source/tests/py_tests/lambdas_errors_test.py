@@ -699,6 +699,23 @@ def LambdaMoveCapturedVariable_Test3():
 	assert( HaveError( errors_list, "ExpectedVariable", 8 ) or HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
+def LambdaMoveCapturedVariable_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto f=
+				lambda[&x_ref= x] byval mut ()
+				{
+					move(x_ref); // Can't move explicitly-initialized reference capture in "byval mut" lambda.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
 def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
 	c_program_text= """
 		struct R{ i32& x; }

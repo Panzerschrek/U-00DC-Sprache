@@ -2292,3 +2292,89 @@ def ByValLambdaMove_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambdaMove_Test1():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		static_assert( !typeinfo</C/>.is_copy_constructible );
+		fn Foo()
+		{
+			auto mut f=
+				lambda[ c= C(7652) ] byval mut () : C
+				{
+					// Move captured variable, that was previously initialized via separate expression.
+					return move(c);
+				};
+			halt if( move(f)().x != 7652 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambdaMove_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 17.5f;
+			auto f=
+				lambda[=] byval mut () : f32
+				{
+					return move(x);
+				};
+			// Can call this lambda multiple times, because its copies are made in each call.
+			halt if( f() != 17.5f );
+			halt if( f() != 17.5f );
+			halt if( f() != 17.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambdaMove_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 8788;
+			// Lambda with captures moving inside still may be constexpr.
+			auto constexpr f=
+				lambda[x] byval mut () : i32
+				{
+					return move(x);
+				};
+			static_assert( f() == 8788 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ByValLambdaMove_Test4():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+		}
+		fn Foo()
+		{
+			var S s{ .x= 987 };
+			auto f=
+				lambda[=] byval mut () : i32
+				{
+					// Use captured variable "s" in two places - read its field and than move it.
+					auto s_x= s.x;
+					move(s);
+					return s_x + 345;
+				};
+			static_assert( typeinfo</ typeof(f) />.size_of == 4s ); // Should capture "s" exactly once.
+			halt if( f() != 987 + 345 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
