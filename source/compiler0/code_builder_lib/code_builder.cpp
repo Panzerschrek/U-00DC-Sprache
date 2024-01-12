@@ -1664,6 +1664,7 @@ Type CodeBuilder::BuildFuncCode(
 							class_field.is_reference
 								? CreateTypedReferenceLoad( function_context, class_field.type, field_address )
 								: field_address;
+						llvm_value->setName( field_name );
 
 						const VariableMutPtr variable=
 							Variable::Create(
