@@ -316,6 +316,33 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
+void SetupSymbolsVisibility( llvm::Module& module )
+{
+	if( Options::symbols_visibility == llvm::GlobalValue::DefaultVisibility )
+		return; // Do nothing, since visibility of symbols should be already default.
+
+	const auto set_visibility=
+		[]( llvm::GlobalValue& v )
+		{
+			if( v.isDeclaration() )
+				return; // Do not touch linkage of declarations.
+
+			const llvm::GlobalValue::LinkageTypes linkage= v.getLinkage();
+			if( linkage == llvm::GlobalValue::InternalLinkage ||
+				linkage == llvm::GlobalValue::PrivateLinkage )
+				return; // Keep default visibility for internal/private symbols.
+
+			// This is non-internal function/variable - set specified visibility.
+			v.setVisibility( Options::symbols_visibility );
+		};
+
+	for( llvm::Function& function : module.functions() )
+		set_visibility( function );
+
+	for( llvm::GlobalVariable& global_variable : module.globals() )
+		set_visibility( global_variable );
+}
+
 int Main( int argc, const char* argv[] )
 {
 	const llvm::InitLLVM llvm_initializer(argc, argv);
@@ -779,10 +806,7 @@ int Main( int argc, const char* argv[] )
 	}
 
 	// Set visibility of symbols in the result module.
-	for( llvm::Function& function : result_module->functions() )
-		function.setVisibility( Options::symbols_visibility );
-	for( llvm::GlobalVariable& global_variable : result_module->globals() )
-		global_variable.setVisibility( Options::symbols_visibility );
+	SetupSymbolsVisibility( *result_module );
 
 	// Dump llvm code after optimization passes.
 	if( Options::print_llvm_asm )
