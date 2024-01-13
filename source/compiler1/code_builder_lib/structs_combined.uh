@@ -591,13 +591,6 @@ struct LambdaKeyHasher
 
 struct LambdaClassData
 {
-	struct Capture
-	{
-		ust::string8 captured_variable_name;
-		ClassFieldPtr field;
-	}
-
-	ust::vector</Capture/> captures;
 	TemplateArgsFinished template_args;
 }
 

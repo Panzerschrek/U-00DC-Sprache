@@ -40,9 +40,10 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 		if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
 		{
+			// Capture list is present - initialize lambda fields in capture list order.
+
 			var ust::vector</VariablePtr/> mut temp_initialized_variables;
 
-			// Initialize lambda fields in capture list order.
 			foreach( &capture : capture_list )
 			{
 				if_var( &field_value : class_type.members.lock_imut().deref().GetThisScopeValue( capture.name ) )
@@ -111,16 +112,17 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 		}
 		else
 		{
-			// Initialize lambda fields in natural order.
-			foreach( &capture : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
+			// No capture list - initialize lambda fields in natural order.
+			foreach( &filed_pair : class_type.fields_order )
 			{
-				if_var( &lookup_result : LookupName( names_scope, function_context, capture.captured_variable_name, lambda_.src_loc ) )
+				// Since field names are the same as captured variable names, use field name to perform variable lookup.
+				if_var( &lookup_result : LookupName( names_scope, function_context, filed_pair[0], lambda_.src_loc ) )
 				{
 					auto variable_nullable= lookup_result[1].Get</Variable/>();
 					if( !variable_nullable.empty() )
 					{
 						var VariablePtr variable= variable_nullable.try_to_non_nullable();
-						with( &field : capture.field.lock_imut().deref() )
+						with( &field : filed_pair[1].lock_imut().deref() )
 						{
 							auto constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc )[1];
 							if( class_type.can_be_constexpr && constant != LLVMValueRef::Null )
@@ -666,19 +668,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				foreach( &field_pair : class_type.fields_order )
 				{
 					members_lock.deref().AddName( field_pair[0], field_pair[1] );
-				}
-			}
-
-			with( &mut captures : class_type.generated_class_data.get</ LambdaClassData />().try_deref().captures )
-			{
-				foreach( &field_pair : class_type.fields_order )
-				{
-					var LambdaClassData::Capture mut capture
-					{
-						.captured_variable_name= field_pair[0],
-						.field= field_pair[1],
-					};
-					captures.push_back( move(capture) );
 				}
 			}
 		}
