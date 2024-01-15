@@ -5,19 +5,19 @@ Delete the features from the list as soon as they are implemented.
 General:
 *) build-in "for" for array types.
 *) Disassembly operator - declare variables with initializer as members of value of composite type.
-*) Function to function pointer assignment
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) Continious initializer for arrays
-*) Auto-move in "return" for local variable
+*) Auto-move in "return" for local variables
 *) More advanced macros - more context, elements, string manipulations
 *) switch-style operator for expression context
 *) thread-local variables
 *) A way to construct temporary variable with sequence initializer, struct named initializer,
 	etc. (in expression context)
 *) "nodiscard" for types (and/or) functions
+*) Function to function pointer assignment with multiple possible functions
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
