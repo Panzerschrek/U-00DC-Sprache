@@ -422,3 +422,62 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+
+
+def ImplicitFunctionsSetToPointerConversionErrors_Test0():
+	c_program_text= """
+		fn Bar( f32 x );
+		fn Bar( bool b );
+		fn Foo()
+		{
+			var ( fn( f32 x ) ) mut ptr= zero_init;
+			// Error - conversion doesn't work, because there are two functions with the same name.
+			// It doesn't work even if assignment destination type is known, since it is not known at conversion point.
+			ptr= Bar;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )
+
+
+def ImplicitFunctionsSetToPointerConversionErrors_Test1():
+	c_program_text= """
+		fn Bar( f32 x );
+		template</type T/> fn Bar( T t ) {}
+		fn Foo()
+		{
+			var ( fn( f32 x ) ) mut ptr= zero_init;
+			// Conversion doesn't work because of template function.
+			ptr= Bar;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+
+
+def ImplicitFunctionsSetToPointerConversionErrors_Test2():
+	c_program_text= """
+		template</type T/> fn Bar( T t ) {}
+		fn Baz( ( fn( f32 x ) ) ptr );
+		fn Foo()
+		{
+			// Conversion doesn't work because the single possible function is template.
+			Baz( Bar );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedVariable", 7 ) )
+
+
+def ImplicitFunctionsSetToPointerConversionErrors_Test3():
+	c_program_text= """
+		fn Bar( i32 x ) {}
+		fn Baz( ( fn( f32 x ) ) ptr );
+		fn Foo()
+		{
+			// Conversion works, but function pointer type is wrong.
+			Baz( Bar );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )

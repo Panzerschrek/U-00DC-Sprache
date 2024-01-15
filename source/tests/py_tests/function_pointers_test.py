@@ -666,7 +666,7 @@ def MutabilityModifiersInFunctionTypeTest():
 	tests_lib.build_program( c_program_text )
 
 
-def ImplicitFunctionsSetToPointerConvertion_Test0():
+def ImplicitFunctionsSetToPointerConversion_Test0():
 	c_program_text= """
 		fn Bar( f32 x ) : i32
 		{
@@ -684,7 +684,7 @@ def ImplicitFunctionsSetToPointerConvertion_Test0():
 	assert( call_result == 247 )
 
 
-def ImplicitFunctionsSetToPointerConvertion_Test1():
+def ImplicitFunctionsSetToPointerConversion_Test1():
 	c_program_text= """
 		fn Bar( f32 x ) : i32
 		{
@@ -705,7 +705,7 @@ def ImplicitFunctionsSetToPointerConvertion_Test1():
 	assert( call_result == 68 )
 
 
-def ImplicitFunctionsSetToPointerConvertion_Test2():
+def ImplicitFunctionsSetToPointerConversion_Test2():
 	c_program_text= """
 		struct S
 		{
@@ -731,7 +731,7 @@ def ImplicitFunctionsSetToPointerConvertion_Test2():
 	assert( call_result == 50 )
 
 
-def ImplicitFunctionsSetToPointerConvertion_Test3():
+def ImplicitFunctionsSetToPointerConversion_Test3():
 	c_program_text= """
 		struct S
 		{
@@ -759,3 +759,18 @@ def ImplicitFunctionsSetToPointerConvertion_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 321 )
+
+
+def ImplicitFunctionsSetToPointerConversion_Test4():
+	c_program_text= """
+		fn Bar(){}
+		fn Foo()
+		{
+			var ( fn() ) ptr= Bar;
+			// Should perform functions set to pointer convertion and this convertion should be "constexpr".
+			static_assert( ptr == Bar );
+			static_assert( Bar == ptr );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
