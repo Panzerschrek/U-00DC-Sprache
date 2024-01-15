@@ -13,7 +13,8 @@ U_TEST(InvalidTypeForAutoVariableTest0)
 	// SPRACHE_TODO - mayebe allow functions references?
 	static const char c_program_text[]=
 	R"(
-		fn Bar(){}
+		fn Bar();
+		fn Bar( i32 x );
 		fn Foo()
 		{
 			auto x= Bar;
@@ -26,7 +27,7 @@ U_TEST(InvalidTypeForAutoVariableTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(InvalidTypeForAutoVariableTest1)

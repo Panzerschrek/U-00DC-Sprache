@@ -152,6 +152,7 @@ def ExpectedVariable_InStaticIf_Test0():
 		{
 			static_if( Foo ) {}
 		}
+		fn Foo( i32 x );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 1 )

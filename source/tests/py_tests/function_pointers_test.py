@@ -664,3 +664,68 @@ def MutabilityModifiersInFunctionTypeTest():
 		static_assert(  is_same_type_impl</ fn() : i32 &    />::same</ fn() : i32 &imut />::value );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ImplicitFunctionsSetToPointerConvertion_Test0():
+	c_program_text= """
+		fn Bar( f32 x ) : i32
+		{
+			return i32( x * 2.0f );
+		}
+		fn Foo() : i32
+		{
+			var ( fn( f32 x ) : i32 ) mut ptr= zero_init;
+			ptr= Bar; // Since only one such function exists, perform convertion of "Bar" into function pointer and perform assignment.
+			return ptr( 123.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 247 )
+
+
+def ImplicitFunctionsSetToPointerConvertion_Test1():
+	c_program_text= """
+		fn Bar( f32 x ) : i32
+		{
+			return i32( x * 2.0f );
+		}
+		fn Baz( ( fn( f32 x ) : i32 ) ptr ) : i32
+		{
+			return ptr( 34.0f );
+		}
+		fn Foo() : i32
+		{
+			// Convert functions set into function pointer in call.
+			return Baz( Bar );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 68 )
+
+
+def ImplicitFunctionsSetToPointerConvertion_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 field;
+			fn Bar( this, f32 x ) : i32
+			{
+				return field + i32( x * 2.0f );
+			}
+		}
+		fn Baz( S& s, ( fn( S& s, f32 x ) : i32 ) ptr ) : i32
+		{
+			return ptr( s, -3.0f );
+		}
+		fn Foo() : i32
+		{
+			var S s{ .field = 56 };
+			// Convert functions set of a struct into function pointer in call.
+			return Baz( s, S::Bar );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 50 )

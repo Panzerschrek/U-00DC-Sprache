@@ -1867,6 +1867,7 @@ U_TEST(ExpectedVariableInAssignmentTest0)
 	R"(
 		struct C{}
 		fn Bar(){}
+		fn Bar(i32 x){}
 		fn Foo()
 		{
 			var i32 x= 0;
@@ -1879,11 +1880,11 @@ U_TEST(ExpectedVariableInAssignmentTest0)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 7u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
 }
 
 U_TEST(ExpectedVariableInBinaryOperatorTest0)
@@ -1892,24 +1893,25 @@ U_TEST(ExpectedVariableInBinaryOperatorTest0)
 	R"(
 		struct C{}
 		fn Bar(){}
+		fn Bar(i32 x){}
 		fn Foo()
 		{
 			var i32 x= 0;
-			Bar + x;  // variable and function
-			x / Bar;  // function and variable
+			Bar + x;  // variable and functions set
+			x / Bar;  // functions set and variable
 			C * x;    // variable and struct
 			x - C;    // struct and variable
-			C == Bar; // function and struct
+			C == Bar; // functions set and struct
 		}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 7u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
 }
 
 U_TEST(ExpectedVariableAsArgumentTest0)
@@ -1918,17 +1920,18 @@ U_TEST(ExpectedVariableAsArgumentTest0)
 	R"(
 		struct C{}
 		fn Bar( i32 x ){}
+		fn Bar(){}
 		fn Foo()
 		{
 			var i32 x= 0;
-			Bar( Bar ); // Function as argument
+			Bar( Bar ); // Functions set as argument
 			Bar( C ); // struct as argument
 		}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 7u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 }
 
 U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
@@ -1937,24 +1940,25 @@ U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
 	R"(
 		struct C{}
 		fn Bar(){}
+		fn Bar(i32 x){}
 		fn Foo()
 		{
 			var i32 x= 0;
-			Bar+= x;  // variable and function
-			x/= Bar;  // function and variable
+			Bar+= x;  // variable and functions set
+			x/= Bar;  // functions set and variable
 			C*= x;    // variable and struct
 			x-= C;    // struct and variable
-			C|= Bar; // function and struct
+			C|= Bar; // functions set and struct
 		}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 7u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
 }
 
 U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
