@@ -675,7 +675,7 @@ def ImplicitFunctionsSetToPointerConversion_Test0():
 		fn Foo() : i32
 		{
 			var ( fn( f32 x ) : i32 ) mut ptr= zero_init;
-			ptr= Bar; // Since only one such function exists, perform convertion of "Bar" into function pointer and perform assignment.
+			ptr= Bar; // Since only one such function exists, perform conversion of "Bar" into function pointer and perform assignment.
 			return ptr( 123.5f );
 		}
 	"""
@@ -767,7 +767,7 @@ def ImplicitFunctionsSetToPointerConversion_Test4():
 		fn Foo()
 		{
 			var ( fn() ) ptr= Bar;
-			// Should perform functions set to pointer convertion and this convertion should be "constexpr".
+			// Should perform functions set to pointer conversion and this conversion should be "constexpr".
 			static_assert( ptr == Bar );
 			static_assert( Bar == ptr );
 		}
