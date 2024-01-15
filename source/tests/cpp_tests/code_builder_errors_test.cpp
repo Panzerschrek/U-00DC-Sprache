@@ -1967,10 +1967,11 @@ U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
 	R"(
 		struct C{}
 		fn Bar(){}
+		fn Bar(i32 x){}
 		namespace NS{}
 		fn Foo()
 		{
-			++Bar; // function
+			++Bar; // functions set
 			--C;   // class name
 			++u32; // type name
 			--NS;  // namespace
@@ -1979,10 +1980,10 @@ U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 7u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
 }
 
 U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
