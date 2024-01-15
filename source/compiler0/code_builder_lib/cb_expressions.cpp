@@ -28,33 +28,34 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	if( result_variable != nullptr )
 		return result_variable;
 
-	if( const auto functions_set= result.GetFunctionsSet() )
+	OverloadedFunctionsSetConstPtr functions_set= result.GetFunctionsSet();
+	if( const auto this_overloaded_methods_set= result.GetThisOverloadedMethodsSet() )
+		functions_set= this_overloaded_methods_set->overloaded_methods_set;
+
+	if( functions_set != nullptr && functions_set->functions.size() == 1 && functions_set->template_functions.empty() )
 	{
-		if( functions_set->functions.size() == 1 && functions_set->template_functions.empty() )
-		{
-			// If an variable is expected but given value is a functions set with exactly one non-template function,
-			// create function pointer for this function.
-			const FunctionVariable& function= functions_set->functions.front();
+		// If an variable is expected but given value is a functions set with exactly one non-template function,
+		// create function pointer for this function.
+		const FunctionVariable& function= functions_set->functions.front();
 
-			FunctionPointerType fp;
-			fp.function_type= function.type;
-			fp.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
+		FunctionPointerType fp;
+		fp.function_type= function.type;
+		fp.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
 
-			const auto llvm_function= EnsureLLVMFunctionCreated( function );
+		const auto llvm_function= EnsureLLVMFunctionCreated( function );
 
-			const VariablePtr function_pointer=
-				Variable::Create(
-					std::move(fp),
-					ValueType::Value,
-					Variable::Location::LLVMRegister,
-					"single function pointer",
-					llvm_function,
-					llvm_function );
+		const VariablePtr function_pointer=
+			Variable::Create(
+				std::move(fp),
+				ValueType::Value,
+				Variable::Location::LLVMRegister,
+				"single function pointer",
+				llvm_function,
+				llvm_function );
 
-			function_context.variables_state.AddNode( function_pointer );
-			RegisterTemporaryVariable( function_context, function_pointer );
-			return function_pointer;
-		}
+		function_context.variables_state.AddNode( function_pointer );
+		RegisterTemporaryVariable( function_context, function_pointer );
+		return function_pointer;
 	}
 
 	if( result.GetErrorValue() == nullptr )

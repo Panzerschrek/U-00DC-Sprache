@@ -729,3 +729,33 @@ def ImplicitFunctionsSetToPointerConvertion_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 50 )
+
+
+def ImplicitFunctionsSetToPointerConvertion_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 field;
+			fn Bar( this, f32 x ) : i32
+			{
+				return field + i32( x * 2.0f );
+			}
+			fn DoSome( this ) : i32
+			{
+				// Convert "this" + method set of a struct into function pointer in call.
+				return Baz( this, Bar );
+			}
+		}
+		fn Baz( S& s, ( fn( S& s, f32 x ) : i32 ) ptr ) : i32
+		{
+			return ptr( s, -10.0f );
+		}
+		fn Foo() : i32
+		{
+			var S s{ .field = 341 };
+			return s.DoSome();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 321 )
