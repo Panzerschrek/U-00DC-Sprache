@@ -25,25 +25,54 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	Value result= BuildExpressionCode( expression, names, function_context );
 
 	const VariablePtr result_variable= result.GetVariable();
-	if( result_variable == nullptr )
+	if( result_variable != nullptr )
+		return result_variable;
+
+	OverloadedFunctionsSetConstPtr functions_set= result.GetFunctionsSet();
+	if( const auto this_overloaded_methods_set= result.GetThisOverloadedMethodsSet() )
+		functions_set= this_overloaded_methods_set->overloaded_methods_set;
+
+	if( functions_set != nullptr && functions_set->functions.size() == 1 && functions_set->template_functions.empty() )
 	{
-		if( result.GetErrorValue() == nullptr )
-			REPORT_ERROR( ExpectedVariable, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), result.GetKindName() );
+		// If an variable is expected but given value is a functions set with exactly one non-template function,
+		// create function pointer for this function.
+		const FunctionVariable& function= functions_set->functions.front();
 
-		const VariablePtr dummy_result=
+		FunctionPointerType fp;
+		fp.function_type= function.type;
+		fp.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
+
+		const auto llvm_function= EnsureLLVMFunctionCreated( function );
+
+		const VariablePtr function_pointer=
 			Variable::Create(
-				invalid_type_,
+				std::move(fp),
 				ValueType::Value,
-				Variable::Location::Pointer,
-				"error value",
-				llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() ) );
+				Variable::Location::LLVMRegister,
+				"single function pointer",
+				llvm_function,
+				llvm_function );
 
-		function_context.variables_state.AddNode( dummy_result );
-		RegisterTemporaryVariable( function_context, dummy_result );
-
-		return dummy_result;
+		function_context.variables_state.AddNode( function_pointer );
+		RegisterTemporaryVariable( function_context, function_pointer );
+		return function_pointer;
 	}
-	return result_variable;
+
+	if( result.GetErrorValue() == nullptr )
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), result.GetKindName() );
+
+	const VariablePtr dummy_result=
+		Variable::Create(
+			invalid_type_,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			"error value",
+			llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() ) );
+
+	function_context.variables_state.AddNode( dummy_result );
+	RegisterTemporaryVariable( function_context, dummy_result );
+
+	return dummy_result;
 }
 
 Value CodeBuilder::BuildExpressionCode(

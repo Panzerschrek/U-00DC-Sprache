@@ -26,6 +26,11 @@ fn nomangle main() : i32
 	// zero_ptr( 42 );
 	ust::ignore_unused(zero_ptr);
 
+	// Can implicitly convert function to pointer, but only for non-template functions without overloads.
+	assert( CallFunc( Foo, 67 ) == 67 * 2 );
+	other_ptr= Bar;
+	assert( other_ptr( 76 ) == 76 / 3 );
+
 	return 0;
 }
 

@@ -664,3 +664,113 @@ def MutabilityModifiersInFunctionTypeTest():
 		static_assert(  is_same_type_impl</ fn() : i32 &    />::same</ fn() : i32 &imut />::value );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ImplicitFunctionsSetToPointerConversion_Test0():
+	c_program_text= """
+		fn Bar( f32 x ) : i32
+		{
+			return i32( x * 2.0f );
+		}
+		fn Foo() : i32
+		{
+			var ( fn( f32 x ) : i32 ) mut ptr= zero_init;
+			ptr= Bar; // Since only one such function exists, perform conversion of "Bar" into function pointer and perform assignment.
+			return ptr( 123.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 247 )
+
+
+def ImplicitFunctionsSetToPointerConversion_Test1():
+	c_program_text= """
+		fn Bar( f32 x ) : i32
+		{
+			return i32( x * 2.0f );
+		}
+		fn Baz( ( fn( f32 x ) : i32 ) ptr ) : i32
+		{
+			return ptr( 34.0f );
+		}
+		fn Foo() : i32
+		{
+			// Convert functions set into function pointer in call.
+			return Baz( Bar );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 68 )
+
+
+def ImplicitFunctionsSetToPointerConversion_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 field;
+			fn Bar( this, f32 x ) : i32
+			{
+				return field + i32( x * 2.0f );
+			}
+		}
+		fn Baz( S& s, ( fn( S& s, f32 x ) : i32 ) ptr ) : i32
+		{
+			return ptr( s, -3.0f );
+		}
+		fn Foo() : i32
+		{
+			var S s{ .field = 56 };
+			// Convert functions set of a struct into function pointer in call.
+			return Baz( s, S::Bar );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 50 )
+
+
+def ImplicitFunctionsSetToPointerConversion_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 field;
+			fn Bar( this, f32 x ) : i32
+			{
+				return field + i32( x * 2.0f );
+			}
+			fn DoSome( this ) : i32
+			{
+				// Convert "this" + method set of a struct into function pointer in call.
+				return Baz( this, Bar );
+			}
+		}
+		fn Baz( S& s, ( fn( S& s, f32 x ) : i32 ) ptr ) : i32
+		{
+			return ptr( s, -10.0f );
+		}
+		fn Foo() : i32
+		{
+			var S s{ .field = 341 };
+			return s.DoSome();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 321 )
+
+
+def ImplicitFunctionsSetToPointerConversion_Test4():
+	c_program_text= """
+		fn Bar(){}
+		fn Foo()
+		{
+			var ( fn() ) ptr= Bar;
+			// Should perform functions set to pointer conversion and this conversion should be "constexpr".
+			static_assert( ptr == Bar );
+			static_assert( Bar == ptr );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

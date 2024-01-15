@@ -16,6 +16,49 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 		return v_ptr;
 	}
 
+	var ust::shared_ptr_nullable_imut</FunctionsSet/> mut functions_set_ptr;
+	if_var( &f : value.get</FunctionsSetPtr/>() )
+	{
+		functions_set_ptr= f;
+	}
+	if_var( &m : value.get</ThisMethodsSet/>() )
+	{
+		functions_set_ptr= m.functions_set;
+	}
+	if( !functions_set_ptr.empty() )
+	{
+		with( &functions_set : functions_set_ptr.try_lock_imut().deref() )
+		{
+			if( functions_set.functions.size() == 1s && functions_set.function_templates.empty() && functions_set.parameterized_function_templates.empty() )
+			{
+				// If an variable is expected but given value is a functions set with exactly one non-template function,
+				// create function pointer for this function.
+				var FunctionVariable& function= functions_set.functions.front();
+
+				var FunctionPointerType mut fp
+				{
+					.function_type= function.t,
+					.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) )
+				};
+
+				auto llvm_function= EnsureLLVMFunctionCreated( function );
+
+				var Variable mut function_pointer
+				{
+					.t= move(fp),
+					.value_type= ValueType::Value,
+					.location= Variable::Location::LLVMRegister,
+					.llvm_value= llvm_function,
+					.constexpr_value= llvm_function,
+					.name= "single function pointer"
+				};
+				var VariablePtr mut function_pointer_ptr= move(function_pointer).CreatePtr();
+				function_context.references_graph.AddNode( function_pointer_ptr );
+				return move(function_pointer_ptr);
+			}
+		}
+	}
+
 	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetSrcLoc(expression), GetValueKindName(value) )
 
 	var Variable mut dummy

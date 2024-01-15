@@ -60,6 +60,20 @@ It's possible to initialize a function pointer with another function pointer.
        fn_ptr(); // "Bar1" function will be called
    }
 
+There is a possibility to perform implicit conversion from a function into a pointer, but only if there is only one function with such name.
+
+.. code-block:: u_spr
+
+   fn Bar();
+   fn Baz( ( fn() ) ptr );
+   fn Foo()
+   {
+       var ( fn() ) mut ptr= zero_init;
+       ptr= Bar; // Implicitly convert "Bar" into a pointer in assignment.
+       Baz( Bar ); // Implicitly convert "Bar" into a pointer in function argument passing.
+   }
+
+
 ******************************
 *Function pointer conversions*
 ******************************
