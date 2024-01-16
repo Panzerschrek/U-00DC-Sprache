@@ -752,15 +752,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
 		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context );
-
-		// If return value is an instruction produced in current basic block,
-		// mark it as non-null, because references are never null.
-		// Current basic block check if needed in cases,
-		// where instruction may be null and casting to reference happens only in non-null branch.
-		// Generally more deep analysis is required, but same basic block check is fine enough.
-		if( const auto ret_instr= llvm::dyn_cast<llvm::Instruction>( ret ) )
-			if( ret_instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
-				ret_instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc );

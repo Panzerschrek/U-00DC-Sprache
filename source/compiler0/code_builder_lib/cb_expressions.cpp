@@ -989,6 +989,26 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	const auto llvm_value= CreateMoveToLLVMRegisterInstruction( *v, function_context );
+
+	// If a pointer dereference result is an instruction produced in current basic block,
+	// mark it as non-null, because references are never null.
+	// Current basic block check if needed in cases,
+	// where this pointer may be null and dereference happens only in a non-null branch.
+	// Generally more deep control flow analysis is required, but same basic block check is fine enough.
+	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
+	if( llvm_value != nullptr )
+	{
+		if( const auto instr= llvm::dyn_cast<llvm::Instruction>( llvm_value ) )
+		{
+			if( instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
+			{
+				if( !instr->hasMetadata( llvm::LLVMContext::MD_nonnull ) )
+					instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+			}
+		}
+	}
+
 	// Create mutable reference node without any links. TODO - check if this is correct.
 	const VariablePtr result=
 		Variable::Create(
@@ -996,7 +1016,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
 			"$>(" + v->name + ")",
-			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
+			llvm_value );
 
 	function_context.variables_state.AddNode( result );
 
