@@ -1185,12 +1185,29 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
+	auto llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ); // llvm value of reference is actually value of pointer
+
+	// If a pointer dereference result is an instruction produced in current basic block,
+	// mark it as non-null, because references are never null.
+	// Current basic block check if needed in cases,
+	// where this pointer may be null and dereference happens only in a non-null branch.
+	// Generally more deep control flow analysis is required, but same basic block check is fine enough.
+	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
+	if( llvm_value != LLVMValueRef::Null &&
+		unsafe( LLVMIsAInstruction( llvm_value ) ) != LLVMValueRef::Null &&
+		// nonnull is allowed only for "load" instructions.
+		unsafe( LLVMGetInstructionOpcode( llvm_value ) ) == LLVMOpcode::Load &&
+		unsafe( LLVMGetInstructionParent( llvm_value ) ) == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) )
+	{
+		MarkLoadInstructionWithNonNullMetadata( llvm_value );
+	}
+
 	var Variable mut result
 	{
 		.t= pointer_type_ref.try_deref().element_type,
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
-		.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ), // llvm value of reference is actually value of pointer
+		.llvm_value= llvm_value,
 		.name= "$<(" + v.name + ")",
 	};
 
