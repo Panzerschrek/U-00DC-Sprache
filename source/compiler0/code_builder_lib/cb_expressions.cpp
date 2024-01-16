@@ -999,12 +999,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
 	if( llvm_value != nullptr )
 	{
-		if( const auto instr= llvm::dyn_cast<llvm::Instruction>( llvm_value ) )
+		// nonnull is allowed only for "load" instructions.
+		if( const auto load_instr= llvm::dyn_cast<llvm::LoadInst>( llvm_value ) )
 		{
-			if( instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
+			if( load_instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
 			{
-				if( !instr->hasMetadata( llvm::LLVMContext::MD_nonnull ) )
-					instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+				if( !load_instr->hasMetadata( llvm::LLVMContext::MD_nonnull ) )
+					load_instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
 			}
 		}
 	}
