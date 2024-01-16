@@ -1888,8 +1888,6 @@ Value CodeBuilder::AccessClassField(
 						variable->llvm_value,
 						field.index ) ) )
 			{
-				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
-				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
 				result->llvm_value= load_res;
 			}
 		}

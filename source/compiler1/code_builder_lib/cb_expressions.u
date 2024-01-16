@@ -2196,7 +2196,6 @@ fn CodeBuilder::AccessDirectClassField(
 		{
 			var LLVMValueRef gep_result= CreateClassFieldGEP( function_context, variable, field );
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, gep_result );
-			MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 		}
 
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
