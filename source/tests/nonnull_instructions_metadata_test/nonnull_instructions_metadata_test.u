@@ -1,0 +1,99 @@
+import "/optional_ref.u"
+import "/random_access_range.u"
+
+//
+// Case 0 - create optional ref for first element of array view.
+//
+
+fn nomangle ProcessOpt( ust::array_view_imut</i32/> a ) : i32
+{
+	// This code should not contain nullptr-check for array_view_imut internal pointer - only check for range size.
+	auto opt= GetOptForRange(a);
+	if( opt.empty() )
+	{
+		return 12345;
+	}
+	return opt.try_deref();
+}
+
+var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ] ;
+fn GetOptForRange( ust::array_view_imut</i32/> a ) : ust::optional_ref_imut</i32/> @(return_inner_references)
+{
+	if( a.empty() )
+	{
+		return ust::null_optional_ref;
+	}
+
+	// Since a reference to first element is otained here, internal pointer of "optional_ref" is considered to be non-null.
+	return ust::optional_ref_imut</i32/>( a.front() );
+}
+
+//
+// Case 1 - check return references for nullptr.
+//
+
+fn nomangle HaltNullReferenceArg( i32 &mut x )
+{
+	// Check should be omited - param references are never null.
+	halt if( ust::is_nullptr( $<(x) ) );
+}
+
+fn nomangle HaltNullReturnReference()
+{
+	// Check should be omited - since pointer is obtained from function retuirning a reference.
+	halt if( ust::is_nullptr( $<( RetRef() ) ) );
+}
+
+fn nomangle RetRef() : i32 &mut;
+
+//
+// Case 2 - check inner reference.
+//
+
+struct SomeRefWrapper
+{
+	i32& x;
+}
+
+var [ [ char8, 2 ], 1 ] inner_references[ "0a" ];
+
+fn nomangle UnwrapRef( SomeRefWrapper& r ) : i32& @(inner_references)
+{
+	// Check should be omited - reference fields are never null.
+	halt if( ust::is_nullptr( $<( unsafe( cast_mut( r.x ) ) ) ) );
+	return r.x;
+}
+
+//
+// Case 3 - check return pointer.
+//
+
+fn nomangle GetValByPtr() : i32
+{
+	// Since dereference happens here, call result LLVM value is considered to be non-null.
+	var ust::optional_ref_imut</i32/> o( unsafe( $>( RetPtr() ) ) );
+	if( o.empty() )
+	{
+		// This branch should be unreachable.
+		return 999;
+	}
+	return o.try_deref();
+}
+
+fn nomangle RetPtr() : $(i32);
+
+//
+// Case 3 - check return reference.
+//
+
+fn nomangle GetValByRef() : i32
+{
+	// Since function returns reference, its result LLVM value is considered to be non-null.
+	var ust::optional_ref_imut</i32/> o( RetRef() );
+	if( o.empty() )
+	{
+		// This branch should be unreachable.
+		return 999;
+	}
+	return o.try_deref();
+}
