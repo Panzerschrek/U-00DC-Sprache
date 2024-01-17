@@ -999,7 +999,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
 	if( llvm_value != nullptr )
 	{
-		// nonnull is allowed only for "load" instructions.
+		// nonnull metadata is allowed only for "load" instructions.
 		if( const auto load_instr= llvm::dyn_cast<llvm::LoadInst>( llvm_value ) )
 		{
 			if( load_instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
@@ -1007,6 +1007,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( !load_instr->hasMetadata( llvm::LLVMContext::MD_nonnull ) )
 					load_instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
 			}
+		}
+		// For "call" instructions use return value attribute "nonnull".
+		if( const auto call_instr= llvm::dyn_cast<llvm::CallInst>( llvm_value ) )
+		{
+			if( call_instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
+				call_instr->addRetAttr( llvm::Attribute::NonNull );
 		}
 	}
 
