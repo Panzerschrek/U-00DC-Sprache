@@ -1197,13 +1197,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		unsafe( LLVMIsAInstruction( llvm_value ) ) != LLVMValueRef::Null &&
 		unsafe( LLVMGetInstructionParent( llvm_value ) ) == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) )
 	{
+		auto opcode= unsafe( LLVMGetInstructionOpcode( llvm_value ) );
 		// nonnull metadata is allowed only for "load" instructions.
-		if( unsafe( LLVMGetInstructionOpcode( llvm_value ) ) == LLVMOpcode::Load )
+		if( opcode == LLVMOpcode::Load )
 		{
 			MarkLoadInstructionWithNonNullMetadata( llvm_value );
 		}
 		// For "call" instructions use return value attribute "nonnull".
-		if( unsafe( LLVMGetInstructionOpcode( llvm_value ) ) == LLVMOpcode::Call )
+		if( opcode == LLVMOpcode::Call )
 		{
 			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("nonnull"), 0u64 ) );
 			unsafe( LLVMAddCallSiteAttribute( llvm_value, LLVMAttributeReturnIndex, attr ) );
