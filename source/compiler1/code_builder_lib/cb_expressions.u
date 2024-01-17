@@ -3989,12 +3989,11 @@ fn CodeBuilder::DoCallFunction(
 	}
 	else if( !function_context.is_functionless_context )
 	{
+		var bool is_function= unsafe( LLVMIsAFunction( function ) ) != LLVMValueRef::Null;
+
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		var LLVMTypeRef function_llvm_type=
-			unsafe( select(
-				LLVMIsAFunction( function ) == LLVMValueRef::Null
-					? GetLLVMFunctionType( function_type )
-					: U1_GetFunctionType( function ) ) );
+			unsafe( select( is_function ? U1_GetFunctionType( function ) : GetLLVMFunctionType( function_type ) ) );
 
 		var LLVMValueRef call_result=
 			unsafe( LLVMBuildCall2(
@@ -4005,6 +4004,14 @@ fn CodeBuilder::DoCallFunction(
 				g_null_string ) );
 
 		unsafe( LLVMSetInstructionCallConv( call_result, function_type.calling_convention ) );
+
+		if( !is_function && function_type.return_value_type != ValueType::Value )
+		{
+			// In calls via function pointer set "nonnull" attribute for functions returning references.
+			// It is needed only for pointer calls, since regular functions already have "nonnull" attribute on return value.
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("nonnull"), 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
+		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 		{

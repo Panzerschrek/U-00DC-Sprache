@@ -3611,14 +3611,18 @@ Value CodeBuilder::DoCallFunction(
 	{}
 	else if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
-		llvm::FunctionType* llvm_function_type= nullptr;
-		if( const auto really_function= llvm::dyn_cast<llvm::Function>(function) )
-			llvm_function_type= really_function->getFunctionType();
-		else
-			llvm_function_type= GetLLVMFunctionType( function_type );
+		const auto really_function= llvm::dyn_cast<llvm::Function>(function);
+
+		llvm::FunctionType* const llvm_function_type=
+			really_function != nullptr ? really_function->getFunctionType() : GetLLVMFunctionType( function_type );
 
 		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( llvm_function_type, function, llvm_args );
 		call_instruction->setCallingConv( function_type.calling_convention );
+
+		// In calls via function pointer set "nonnull" attribute for functions returning references.
+		// It is needed only for pointer calls, since regular functions already have "nonnull" attribute on return value.
+		if( really_function == nullptr && function_type.return_value_type != ValueType::Value )
+			call_instruction->addRetAttr( llvm::Attribute::NonNull );
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );

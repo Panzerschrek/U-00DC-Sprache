@@ -97,3 +97,13 @@ fn nomangle GetValByRef() : i32
 	}
 	return o.try_deref();
 }
+
+//
+// Case 4 - reference result of a function called via pointer is not null
+//
+
+fn nomangle HaltReferenceResultIsNull( (fn() : i32& mut) ptr )
+{
+	// Should remove this check, because call result is reference and references are never null.
+	halt if( ust::is_nullptr( $<( ptr() ) ) );
+}
