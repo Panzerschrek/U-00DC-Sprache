@@ -152,6 +152,7 @@ CodeBuilder::CodeBuilder(
 		ArrayType a;
 		a.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
 		a.element_count= 2;
+		a.llvm_type= llvm::ArrayType::get( a.element_type.GetLLVMType(), a.element_count );
 		reference_notation_param_reference_description_type_= std::move(a);
 	}
 	{
@@ -159,6 +160,7 @@ CodeBuilder::CodeBuilder(
 		ArrayType a;
 		a.element_type= reference_notation_param_reference_description_type_;
 		a.element_count= 2;
+		a.llvm_type= llvm::ArrayType::get( a.element_type.GetLLVMType(), a.element_count );
 		reference_notation_pollution_element_type_= std::move(a);
 	}
 

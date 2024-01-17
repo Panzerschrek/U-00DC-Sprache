@@ -259,8 +259,33 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_bool_field( "return_value_is_reference", function_type.return_value_type != ValueType::Value );
 		add_bool_field( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut );
 		add_bool_field( "unsafe"                   , function_type.unsafe );
-		// SPRACHE_TODO - add also reference pollution.
 
+		{
+			llvm::SmallVector< llvm::Constant*, 4 > return_references;
+			return_references.reserve( function_type.return_references.size() );
+			for( const FunctionType::ParamReference& return_reference : function_type.return_references )
+			{
+				char initializer[2]{ 0, 0 };
+				initializer[0]= char( '0' + return_reference.first );
+				initializer[1]= return_reference.second == FunctionType::c_param_reference_number ? '_' : char( 'a' + return_reference.second );
+				return_references.push_back( llvm::ConstantDataArray::get( llvm_context_, initializer ) );
+			}
+
+			ArrayType array_type;
+			array_type.element_type= reference_notation_param_reference_description_type_;
+			array_type.element_count= return_references.size();
+			const auto array_llvm_type= llvm::ArrayType::get( array_type.element_type.GetLLVMType(), array_type.element_count );
+			array_type.llvm_type= array_llvm_type;
+
+			typeinfo_class->members->AddName(
+				"return_references",
+				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, std::move(array_type), uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			fields_llvm_types.push_back( array_llvm_type );
+			fields_initializers.push_back( llvm::ConstantArray::get( array_type.llvm_type, return_references ) );
+		}
+
+		// TODO - encode return inner references.
+		// TODO - encode reference pollution.
 	}
 	else U_ASSERT(false);
 
