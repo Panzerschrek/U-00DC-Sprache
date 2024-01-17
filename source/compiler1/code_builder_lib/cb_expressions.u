@@ -1185,12 +1185,38 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
+	auto llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ); // llvm value of reference is actually value of pointer
+
+	// If a pointer dereference result is an instruction produced in current basic block,
+	// mark it as non-null, because references are never null.
+	// Current basic block check if needed in cases,
+	// where this pointer may be null and dereference happens only in a non-null branch.
+	// Generally more deep control flow analysis is required, but same basic block check is fine enough.
+	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
+	if( llvm_value != LLVMValueRef::Null &&
+		unsafe( LLVMIsAInstruction( llvm_value ) ) != LLVMValueRef::Null &&
+		unsafe( LLVMGetInstructionParent( llvm_value ) ) == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) )
+	{
+		auto opcode= unsafe( LLVMGetInstructionOpcode( llvm_value ) );
+		// nonnull metadata is allowed only for "load" instructions.
+		if( opcode == LLVMOpcode::Load )
+		{
+			MarkLoadInstructionWithNonNullMetadata( llvm_value );
+		}
+		// For "call" instructions use return value attribute "nonnull".
+		if( opcode == LLVMOpcode::Call )
+		{
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("nonnull"), 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( llvm_value, LLVMAttributeReturnIndex, attr ) );
+		}
+	}
+
 	var Variable mut result
 	{
 		.t= pointer_type_ref.try_deref().element_type,
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
-		.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ), // llvm value of reference is actually value of pointer
+		.llvm_value= llvm_value,
 		.name= "$<(" + v.name + ")",
 	};
 
@@ -2179,7 +2205,6 @@ fn CodeBuilder::AccessDirectClassField(
 		{
 			var LLVMValueRef gep_result= CreateClassFieldGEP( function_context, variable, field );
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, gep_result );
-			MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 		}
 
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
@@ -3965,12 +3990,11 @@ fn CodeBuilder::DoCallFunction(
 	}
 	else if( !function_context.is_functionless_context )
 	{
+		var bool is_function= unsafe( LLVMIsAFunction( function ) ) != LLVMValueRef::Null;
+
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		var LLVMTypeRef function_llvm_type=
-			unsafe( select(
-				LLVMIsAFunction( function ) == LLVMValueRef::Null
-					? GetLLVMFunctionType( function_type )
-					: U1_GetFunctionType( function ) ) );
+			unsafe( select( is_function ? U1_GetFunctionType( function ) : GetLLVMFunctionType( function_type ) ) );
 
 		var LLVMValueRef call_result=
 			unsafe( LLVMBuildCall2(
@@ -3981,6 +4005,14 @@ fn CodeBuilder::DoCallFunction(
 				g_null_string ) );
 
 		unsafe( LLVMSetInstructionCallConv( call_result, function_type.calling_convention ) );
+
+		if( !is_function && function_type.return_value_type != ValueType::Value )
+		{
+			// In calls via function pointer set "nonnull" attribute for functions returning references.
+			// It is needed only for pointer calls, since regular functions already have "nonnull" attribute on return value.
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("nonnull"), 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
+		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 		{

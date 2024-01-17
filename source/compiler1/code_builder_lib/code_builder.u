@@ -2420,6 +2420,9 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 		MarkInstructionWithTBAAMetadata( result, access_tag );
 	}
 
+	// References are never null, so, mark result of reference load with "nonnull" metadata.
+	MarkLoadInstructionWithNonNullMetadata( result );
+
 	return result;
 }
 

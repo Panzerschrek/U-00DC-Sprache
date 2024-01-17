@@ -356,6 +356,7 @@ fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 
 fn nomangle LLVMGetInstructionOpcode(LLVMValueRef Inst) unsafe : LLVMOpcodeType;
+fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe : LLVMBasicBlockRef;
 
 fn nomangle LLVMGetAllocatedType(LLVMValueRef Alloca) unsafe : LLVMTypeRef;
 
@@ -531,6 +532,7 @@ fn nomangle LLVMCreateTypeAttribute(LLVMContextRef C, u32 KindID, LLVMTypeRef ty
 fn nomangle LLVMGetEnumAttributeKindForName($(char8) Name, size_type SLen) unsafe : u32;
 
 fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
+fn nomangle LLVMAddCallSiteAttribute(LLVMValueRef C, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
 
 // Metadata
 
