@@ -1220,3 +1220,25 @@ def TypeinfoForReturnInnerReferences_Test1():
 		static_assert( typeinfo</FnPtr/>.return_inner_references == expected_return_inner_references );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReferencePollution_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		type FnPtr= fn( S &mut s, i32& x ) @(reference_pollution);
+		var [ [ [ char8, 2 ], 2 ], 1 ] expected_reference_pollution[ [ "0a", "1_" ] ];
+		static_assert( typeinfo</FnPtr/>.reference_pollution == expected_reference_pollution );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReferencePollution_Test1():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 2 ] reference_pollution[ [ "2a", "1_" ], [ "0a", "1_" ] ];
+		type FnPtr= fn( S &mut s0, i32& x, S &mut s1 ) @(reference_pollution);
+		var [ [ [ char8, 2 ], 2 ], 2 ] expected_reference_pollution[ [ "0a", "1_" ], [ "2a", "1_" ] ]; // should be normalized
+		static_assert( typeinfo</FnPtr/>.reference_pollution == expected_reference_pollution );
+	"""
+	tests_lib.build_program( c_program_text )

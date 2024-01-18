@@ -261,12 +261,7 @@ std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnReferencesConstant( const
 	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
 	constant_initializers.reserve( return_references.size() );
 	for( const FunctionType::ParamReference& return_reference : return_references )
-	{
-		char initializer[2]{ 0, 0 };
-		initializer[0]= char( '0' + return_reference.first );
-		initializer[1]= return_reference.second == FunctionType::c_param_reference_number ? '_' : char( 'a' + return_reference.second );
-		constant_initializers.push_back( llvm::ConstantDataArray::get( llvm_context_, initializer ) );
-	}
+		constant_initializers.push_back( GetParamReferenceConstant( return_reference ) );
 
 	ArrayType array_type;
 	array_type.element_type= reference_notation_param_reference_description_type_;
@@ -300,6 +295,42 @@ std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnInnerReferencesConstant( 
 	tuple_type.llvm_type= tuple_llvm_type;
 
 	return std::make_pair( std::move(tuple_type), llvm::ConstantStruct::get( tuple_llvm_type, constant_initializers ) );
+}
+
+std::pair<Type, llvm::Constant*> CodeBuilder::GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution )
+{
+	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
+	constant_initializers.reserve( reference_pollution.size() );
+
+	const auto element_llvm_type= llvm::dyn_cast<llvm::ArrayType>( reference_notation_pollution_element_type_.GetLLVMType() );
+	for( const FunctionType::ReferencePollution& pollution : reference_pollution )
+	{
+		llvm::Constant* const initializer[2]
+		{
+			GetParamReferenceConstant( pollution.dst ),
+			GetParamReferenceConstant( pollution.src ),
+		};
+		constant_initializers.push_back( llvm::ConstantArray::get( element_llvm_type, initializer ) );
+	}
+
+	ArrayType array_type;
+	array_type.element_type= reference_notation_pollution_element_type_;
+	array_type.element_count= constant_initializers.size();
+	const auto array_llvm_type= llvm::ArrayType::get( element_llvm_type, array_type.element_count );
+	array_type.llvm_type= array_llvm_type;
+
+	return std::make_pair( std::move(array_type), llvm::ConstantArray::get( array_llvm_type, constant_initializers ) );
+}
+
+llvm::Constant* CodeBuilder::GetParamReferenceConstant( const FunctionType::ParamReference& param_reference )
+{
+	const char initializer[2]
+	{
+		char( '0' + param_reference.first ),
+		param_reference.second == FunctionType::c_param_reference_number ? '_' : char( 'a' + param_reference.second ),
+	};
+
+	return llvm::ConstantDataArray::get( llvm_context_, initializer );
 }
 
 } // namespace U

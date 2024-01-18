@@ -1244,6 +1244,8 @@ private:
 
 	std::pair<Type, llvm::Constant*> GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references );
 	std::pair<Type, llvm::Constant*> GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references );
+	std::pair<Type, llvm::Constant*> GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution );
+	llvm::Constant* GetParamReferenceConstant( const FunctionType::ParamReference& param_reference ); // Type is reference_notation_param_reference_description_type_
 
 	// Coroutines
 

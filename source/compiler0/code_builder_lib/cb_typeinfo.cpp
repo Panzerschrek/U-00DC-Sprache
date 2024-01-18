@@ -261,25 +261,32 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_bool_field( "unsafe"                   , function_type.unsafe );
 
 		{
-			const auto return_references_contant= GetReturnReferencesConstant( function_type.return_references );
+			const auto return_references_constant= GetReturnReferencesConstant( function_type.return_references );
 
 			typeinfo_class->members->AddName(
 				"return_references",
-				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, return_references_contant.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-			fields_llvm_types.push_back( return_references_contant.first.GetLLVMType() );
-			fields_initializers.push_back( return_references_contant.second );
+				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, return_references_constant.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			fields_llvm_types.push_back( return_references_constant.first.GetLLVMType() );
+			fields_initializers.push_back( return_references_constant.second );
 		}
 		{
-			const auto return_inner_references_contant= GetReturnInnerReferencesConstant( function_type.return_inner_references );
+			const auto return_inner_references_constant= GetReturnInnerReferencesConstant( function_type.return_inner_references );
 
 			typeinfo_class->members->AddName(
 				"return_inner_references",
-				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, return_inner_references_contant.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-			fields_llvm_types.push_back( return_inner_references_contant.first.GetLLVMType() );
-			fields_initializers.push_back( return_inner_references_contant.second );
+				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, return_inner_references_constant.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			fields_llvm_types.push_back( return_inner_references_constant.first.GetLLVMType() );
+			fields_initializers.push_back( return_inner_references_constant.second );
 		}
+		{
+			const auto reference_pollution_constant= GetReferencePollutionConstant( function_type.references_pollution );
 
-		// TODO - encode reference pollution.
+			typeinfo_class->members->AddName(
+				"reference_pollution",
+				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, reference_pollution_constant.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			fields_llvm_types.push_back( reference_pollution_constant.first.GetLLVMType() );
+			fields_initializers.push_back( reference_pollution_constant.second );
+		}
 	}
 	else U_ASSERT(false);
 
