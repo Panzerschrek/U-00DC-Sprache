@@ -225,6 +225,9 @@ Type information for  coroutines also contains following fields:
 * ``bool return_value_is_mutable`` - does function return mutable value
 * ``bool unsafe`` - is function marked as ``unsafe``
 * ``tup[] params_list`` - a tuple, each element of which contains information about a function parameter
+* ``return_references`` - an array with return references description (as in notation with ``@``)
+* ``return_inner_references`` - a tuple with return inner references description (as in notation with ``@``)
+* ``references_pollution`` - an array with references pollution description (as in notation with ``@``)
 
 Each parameter description contains:
 
