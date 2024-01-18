@@ -1189,7 +1189,7 @@ private:
 	void CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void CheckFunctionReferencesNotationMutabilityCorrectness( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
-	void CheckReferenceNotationMutabilityViolationForReturnReferences( const FunctionType& function_type, const std::set<FunctionType::ParamReference>& return_references, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	void CheckReferenceNotationMutabilityViolationForReturnReferences( const FunctionType& function_type, const FunctionType::ReturnReferences& return_references, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 	void CheckReferenceNotationMutabilityViolationForMutableReference( const FunctionType& function_type, const FunctionType::ParamReference& param_reference, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
@@ -1237,10 +1237,16 @@ private:
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
-	std::set<FunctionType::ReferencePollution> EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
-	std::set<FunctionType::ParamReference> EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
-	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	FunctionType::ReferencesPollution EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	FunctionType::ReturnReferences EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
+	FunctionType::ReturnInnerReferences EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
+
+	using ReferenceNotationConstant= std::pair<Type, llvm::Constant*>;
+	ReferenceNotationConstant GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references );
+	ReferenceNotationConstant GetReturnInnerReferencesConstant( const FunctionType::ReturnInnerReferences& return_inner_references );
+	ReferenceNotationConstant GetReferencesPollutionConstant( const FunctionType::ReferencesPollution& references_pollution );
+	llvm::Constant* GetParamReferenceConstant( const FunctionType::ParamReference& param_reference ); // Type is reference_notation_param_reference_description_type_
 
 	// Coroutines
 

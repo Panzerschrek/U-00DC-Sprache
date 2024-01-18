@@ -224,9 +224,9 @@ private:
 	void EncodeLambdaClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
 	void EncodeCoroutineClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
 	void EncodeNumber( ManglerState& mangler_state, const llvm::APInt& num, bool is_signed ) const;
-	void EncodeReferencePollution( ManglerState& mangler_state, const std::set<FunctionType::ReferencePollution>& references_pollution ) const;
-	void EncodeReturnReferences( ManglerState& mangler_state, const std::set<FunctionType::ParamReference>& return_references ) const;
-	void EncodeReturnInnerReferences( ManglerState& mangler_state, const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references ) const;
+	void EncodeReferencePollution( ManglerState& mangler_state, const FunctionType::ReferencesPollution& references_pollution ) const;
+	void EncodeReturnReferences( ManglerState& mangler_state, const FunctionType::ReturnReferences& return_references ) const;
+	void EncodeReturnInnerReferences( ManglerState& mangler_state, const FunctionType::ReturnInnerReferences& return_inner_references ) const;
 	void EncodeParamReference( ManglerState& mangler_state, const FunctionType::ParamReference& param_reference ) const;
 
 private:
@@ -768,7 +768,7 @@ void ManglerMSVC::EncodeNumber( ManglerState& mangler_state, const llvm::APInt& 
 	}
 }
 
-void ManglerMSVC::EncodeReferencePollution( ManglerState& mangler_state, const std::set<FunctionType::ReferencePollution>& references_pollution ) const
+void ManglerMSVC::EncodeReferencePollution( ManglerState& mangler_state, const FunctionType::ReferencesPollution& references_pollution ) const
 {
 	// Encode references pollution like template class with special name and numeric args.
 	mangler_state.PushElement( g_class_type_prefix );
@@ -813,7 +813,7 @@ void ManglerMSVC::EncodeReferencePollution( ManglerState& mangler_state, const s
 	mangler_state.PushElement( g_terminator );
 }
 
-void ManglerMSVC::EncodeReturnReferences( ManglerState& mangler_state, const std::set<FunctionType::ParamReference>& return_references ) const
+void ManglerMSVC::EncodeReturnReferences( ManglerState& mangler_state, const FunctionType::ReturnReferences& return_references ) const
 {
 	// Encode return references, like template class with special name and numeric args.
 
@@ -847,7 +847,7 @@ void ManglerMSVC::EncodeReturnReferences( ManglerState& mangler_state, const std
 	mangler_state.PushElement( g_terminator );
 }
 
-void ManglerMSVC::EncodeReturnInnerReferences( ManglerState& mangler_state, const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references ) const
+void ManglerMSVC::EncodeReturnInnerReferences( ManglerState& mangler_state, const FunctionType::ReturnInnerReferences& return_inner_references ) const
 {
 	// Encode return inner references, like template class with special name and numeric args.
 	mangler_state.PushElement( g_class_type_prefix );

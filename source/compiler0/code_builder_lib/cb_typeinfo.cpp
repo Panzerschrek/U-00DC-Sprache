@@ -94,7 +94,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 	const auto add_bool_field=
-	[&]( const std::string& name, const bool value )
+	[&]( const std::string_view name, const bool value )
 	{
 		typeinfo_class->members->AddName(
 			name,
@@ -104,7 +104,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	};
 
 	const auto add_size_field=
-	[&]( const std::string& name, const uint64_t value )
+	[&]( const std::string_view name, const uint64_t value )
 	{
 		typeinfo_class->members->AddName(
 			name,
@@ -117,7 +117,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	};
 
 	const auto add_typeinfo_field=
-	[&]( const std::string& name, const Type& dependent_type )
+	[&]( const std::string_view name, const Type& dependent_type )
 	{
 		const VariablePtr dependent_type_typeinfo= BuildTypeInfo( dependent_type, root_namespace );
 
@@ -126,6 +126,16 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 			NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
+	};
+
+	const auto add_reference_notation_filed=
+	[&]( const std::string_view name, const ReferenceNotationConstant& reference_notation )
+	{
+		typeinfo_class->members->AddName(
+			name,
+			NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, reference_notation.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		fields_llvm_types.push_back( reference_notation.first.GetLLVMType() );
+		fields_initializers.push_back( reference_notation.second );
 	};
 
 	// Fields sorted by alignment - first, "size_type" types and reference types, then, bool types.
@@ -259,8 +269,10 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_bool_field( "return_value_is_reference", function_type.return_value_type != ValueType::Value );
 		add_bool_field( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut );
 		add_bool_field( "unsafe"                   , function_type.unsafe );
-		// SPRACHE_TODO - add also reference pollution.
 
+		add_reference_notation_filed( "return_references", GetReturnReferencesConstant( function_type.return_references ) );
+		add_reference_notation_filed( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) );
+		add_reference_notation_filed( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) );
 	}
 	else U_ASSERT(false);
 

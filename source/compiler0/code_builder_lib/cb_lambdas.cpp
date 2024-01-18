@@ -304,9 +304,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
 	bool has_preprocessing_errors= false;
-	std::set<FunctionType::ParamReference> return_references;
-	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
-	std::set<FunctionType::ReferencePollution> references_pollution;
+	FunctionType::ReturnReferences return_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
+	FunctionType::ReferencesPollution references_pollution;
 
 	// Run preprocessing.
 	{

@@ -5,7 +5,6 @@ Delete the features from the list as soon as they are implemented.
 General:
 *) build-in "for" for array types.
 *) Disassembly operator - declare variables with initializer as members of value of composite type.
-*) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)

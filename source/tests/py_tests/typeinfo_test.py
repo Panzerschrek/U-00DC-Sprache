@@ -1167,3 +1167,78 @@ def TypeinfoClassHasNoDestructor_Test2():
 		static_assert(  ClassHasMethod</ SomeClass />( "constructor" ) );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnReferences_Test0():
+	c_program_text= """
+		type FnPtr= fn( i32& x ) : i32&; // Return references are implicit.
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "0_" ];
+		static_assert( typeinfo</FnPtr/>.return_references == expected_return_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnReferences_Test1():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "1a" ];
+		type FnPtr= fn( i32& x, S& s ) : i32& @(return_references);
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "1a" ];
+		static_assert( typeinfo</FnPtr/>.return_references == expected_return_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnReferences_Test2():
+	c_program_text= """
+		struct S{ i32& @("a"c8) x; i32& @("b"c8) y; }
+		var [ [ char8, 2 ], 3 ] return_references[ "0_", "1b", "0_" ];
+		type FnPtr= fn( S& s0, S& s1 ) : i32& @(return_references);
+		var [ [ char8, 2 ], 2 ] expected_return_references[ "0_", "1b" ]; // return references should be normalized
+		static_assert( typeinfo</FnPtr/>.return_references == expected_return_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnInnerReferences_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		type FnPtr= fn( i32& x ) : S @(return_inner_references);
+		var tup[ [ [ char8, 2 ], 1 ] ] expected_return_inner_references[ [ "0_" ] ];
+		static_assert( typeinfo</FnPtr/>.return_inner_references == expected_return_inner_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnInnerReferences_Test1():
+	c_program_text= """
+		struct S{ i32& @("a"c8) x; i32& @("b"c8) y; }
+		var tup[ [ [ char8, 2 ], 2 ], [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "0_", "0_" ], [ "2_", "1b" ] ];
+		type FnPtr= fn( i32& x, S s, i32& y ) : S @(return_inner_references);
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 2 ] ] expected_return_inner_references[ [ "0_" ], [ "1b", "2_" ] ]; // return inner references should be normalized
+		static_assert( typeinfo</FnPtr/>.return_inner_references == expected_return_inner_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReferencePollution_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		type FnPtr= fn( S &mut s, i32& x ) @(reference_pollution);
+		var [ [ [ char8, 2 ], 2 ], 1 ] expected_reference_pollution[ [ "0a", "1_" ] ];
+		static_assert( typeinfo</FnPtr/>.references_pollution == expected_reference_pollution );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReferencePollution_Test1():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 2 ] reference_pollution[ [ "2a", "1_" ], [ "0a", "1_" ] ];
+		type FnPtr= fn( S &mut s0, i32& x, S &mut s1 ) @(reference_pollution);
+		var [ [ [ char8, 2 ], 2 ], 2 ] expected_reference_pollution[ [ "0a", "1_" ], [ "2a", "1_" ] ]; // should be normalized
+		static_assert( typeinfo</FnPtr/>.references_pollution == expected_reference_pollution );
+	"""
+	tests_lib.build_program( c_program_text )

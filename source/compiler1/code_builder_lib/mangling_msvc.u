@@ -51,9 +51,9 @@ private:
 	fn EncodeCoroutineClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
 	fn EncodeNumber( this, ManglerState &mut mangler_state, i64 num );
 	fn EncodeNumber( this, ManglerState &mut mangler_state, u64 num );
-	fn EncodeReferencePollution( this, ManglerState &mut mangler_state, ust::vector</FunctionType::ReferencePollution/>& references_pollution );
+	fn EncodeReferencePollution( this, ManglerState &mut mangler_state, FunctionType::ReferencesPollution& references_pollution );
 	fn EncodeReturnReferences( this, ManglerState &mut mangler_state, FunctionType::ParamReferences& return_references );
-	fn EncodeReturnInnerReferences( this, ManglerState &mut mangler_state, ust::vector</FunctionType::ParamReferences/>& return_inner_references );
+	fn EncodeReturnInnerReferences( this, ManglerState &mut mangler_state, FunctionType::ReturnInnerReferences& return_inner_references );
 	fn EncodeParamReference( this, ManglerState &mut mangler_state, FunctionType::ParamReference& param_reference );
 
 private:
@@ -668,7 +668,7 @@ fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, u64 num )
 	}
 }
 
-fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state, ust::vector</FunctionType::ReferencePollution/>& references_pollution )
+fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state, FunctionType::ReferencesPollution& references_pollution )
 {
 	// Encode references pollution like template class with special name and numeric args.
 	mangler_state.PushElement( g_class_type_prefix );
@@ -749,7 +749,7 @@ fn ManglerMSVC::EncodeReturnReferences( this, ManglerState &mut mangler_state, F
 	mangler_state.PushElement( g_terminator );
 }
 
-fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_state, ust::vector</FunctionType::ParamReferences/>& return_inner_references )
+fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_state, FunctionType::ReturnInnerReferences& return_inner_references )
 {
 	// Encode return inner references, like template class with special name and numeric args.
 	mangler_state.PushElement( g_class_type_prefix );

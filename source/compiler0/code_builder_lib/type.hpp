@@ -170,6 +170,9 @@ public:
 	static constexpr uint8_t c_param_reference_number= 255u;
 	using ParamReference= std::pair< uint8_t, uint8_t >;
 
+	using ReturnReferences= std::set<ParamReference>;
+	using ReturnInnerReferences= std::vector<ReturnReferences>;
+
 	struct ReferencePollution
 	{
 		ParamReference dst;
@@ -177,6 +180,8 @@ public:
 		bool operator==( const ReferencePollution& other ) const;
 		bool operator<( const ReferencePollution& other ) const;
 	};
+
+	using ReferencesPollution= std::set<ReferencePollution>;
 
 	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
 	bool ReturnsCompositeValue() const;
@@ -192,12 +197,12 @@ public:
 	// Use "std::set" for references description, because we needs stable order for function type mangling.
 
 	// Tags of returned reference.
-	std::set<ParamReference> return_references;
+	ReturnReferences return_references;
 
 	// Tags for each inner reference node for returned value/reference.
-	std::vector<std::set<ParamReference>> return_inner_references;
+	ReturnInnerReferences return_inner_references;
 
-	std::set<ReferencePollution> references_pollution;
+	ReferencesPollution references_pollution;
 
 	// Do not store llvm type here, because calculating exact llvm type requires complete types of arguments and return value.
 };

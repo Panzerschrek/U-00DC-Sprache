@@ -903,12 +903,18 @@ private:
 
 	fn EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>;
 	fn EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>;
-	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</FunctionType::ReferencePollution/> ;
+	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ReferencesPollution;
 	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
-	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : ust::vector</ FunctionType::ParamReferences />;
+	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ReturnInnerReferences;
 	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
 	fn NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references );
-	fn NormalizeReferencesPollution( ust::vector</FunctionType::ReferencePollution/> &mut references_pollution );
+	fn NormalizeReferencesPollution( FunctionType::ReferencesPollution &mut references_pollution );
+
+	type ReferenceNotationConstant= tup[ Type, LLVMValueRef ]; // Second - llvm constant
+	fn GetReturnReferencesConstant( this, FunctionType::ParamReferences& return_references ) : ReferenceNotationConstant;
+	fn GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant;
+	fn GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant;
+	fn GetParamReferenceConstant( this, FunctionType::ParamReference& param_reference ) : LLVMValueRef; // Type is reference_notation_param_reference_description_type_
 
 	// Coroutines
 

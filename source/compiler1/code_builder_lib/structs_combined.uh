@@ -69,6 +69,9 @@ struct RawPointerType
 
 struct FunctionType
 {
+	// Inner types.
+	//
+
 	type Param = VariableTypeExtended;
 
 	struct ParamReference
@@ -81,6 +84,7 @@ struct FunctionType
 	var u8 c_param_reference_number= ~0u8;
 
 	type ParamReferences= ust::vector</ParamReference/>; // Sorted by param index.
+	type ReturnInnerReferences= ust::vector</ParamReferences/>;
 
 	struct ReferencePollution
 	{
@@ -90,6 +94,11 @@ struct FunctionType
 		op<=>(ReferencePollution& l, ReferencePollution& r) : i32;
 	}
 
+	type ReferencesPollution= ust::vector</ReferencePollution/>;
+
+	// Fields
+	//
+
 	ust::vector</Param/> params;
 	Type return_type;
 	ValueType return_value_type;
@@ -98,10 +107,11 @@ struct FunctionType
 	bool is_unsafe= false;
 
 	ParamReferences return_references;
-	ust::vector</ ParamReferences /> return_inner_references; // References for inner reference tags.
+	ReturnInnerReferences return_inner_references; // References for inner reference tags.
+	ReferencesPollution references_pollution; // Sorted.
 
-	// Sorted.
-	ust::vector</ReferencePollution/> references_pollution;
+	// Methods
+	//
 
 	// Can use default == operator, since this struct contains no LLVM type.
 	op==( FunctionType& l, FunctionType& r ) : bool = default;
@@ -559,7 +569,7 @@ struct CoroutineTypeDescription
 	bool non_sync_;
 
 	FunctionType::ParamReferences return_references;
-	ust::vector</FunctionType::ParamReferences/> return_inner_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
 
 	type hasher= CoroutineTypeDescriptionHasher;
 }
@@ -759,7 +769,7 @@ public:
 		bool non_sync_;
 
 		FunctionType::ParamReferences return_references;
-		ust::vector</FunctionType::ParamReferences/> return_inner_references;
+		FunctionType::ReturnInnerReferences return_inner_references;
 	}
 
 	struct SpecializedTemplateParam
