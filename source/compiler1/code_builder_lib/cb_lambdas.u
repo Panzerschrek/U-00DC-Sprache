@@ -386,8 +386,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	var bool mut has_preprocessing_errors= false;
 	var FunctionType::ParamReferences mut return_references;
-	var ust::vector</ FunctionType::ParamReferences /> mut return_inner_references;
-	var ust::vector</FunctionType::ReferencePollution/> mut references_pollution;
+	var FunctionType::ReturnInnerReferences mut return_inner_references;
+	var FunctionType::ReferencesPollution mut references_pollution;
 
 	// Run preprocessing.
 	{

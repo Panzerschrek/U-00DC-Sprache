@@ -81,9 +81,9 @@ fn CodeBuilder::EvaluateFunctionReferencePollution(
 	mut this,
 	NamesScopePtr& names_scope,
 	Synt::Expression& expression,
-	size_type num_params ) : ust::vector</FunctionType::ReferencePollution/>
+	size_type num_params ) : FunctionType::ReferencesPollution
 {
-	var ust::vector</FunctionType::ReferencePollution/> mut result;
+	var FunctionType::ReferencesPollution mut result;
 
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
@@ -188,9 +188,9 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	mut this,
 	NamesScopePtr& names_scope,
 	Synt::Expression& expression,
-	size_type num_params ) : ust::vector</ FunctionType::ParamReferences />
+	size_type num_params ) : FunctionType::ReturnInnerReferences
 {
-	var ust::vector</ FunctionType::ParamReferences /> mut result;
+	var FunctionType::ReturnInnerReferences mut result;
 
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
@@ -257,7 +257,7 @@ fn CodeBuilder::NormalizeParamReferencesList( FunctionType::ParamReferences &mut
 	NormalizeList( param_references );
 }
 
-fn CodeBuilder::NormalizeReferencesPollution( ust::vector</FunctionType::ReferencePollution/> &mut references_pollution )
+fn CodeBuilder::NormalizeReferencesPollution( FunctionType::ReferencesPollution &mut references_pollution )
 {
 	NormalizeList( references_pollution );
 }
@@ -284,7 +284,7 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 		unsafe( LLVMConstArray( element_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
 }
 
-fn CodeBuilder::GetReturnInnerReferencesConstant( this, ust::vector</ FunctionType::ParamReferences />& return_inner_references ) : ReferenceNotationConstant
+fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant
 {
 	var TupleType mut tuple_type;
 	var ust::vector</LLVMTypeRef/> mut elements_llvm_types;
@@ -305,7 +305,7 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, ust::vector</ FunctionTy
 		unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool::False ) ) );
 }
 
-fn CodeBuilder::GetReferencePollutionConstant( this, ust::vector</FunctionType::ReferencePollution/>& references_pollution ) : ReferenceNotationConstant
+fn CodeBuilder::GetReferencePollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant
 {
 	var ust::vector</LLVMValueRef/> mut constant_initializers;
 

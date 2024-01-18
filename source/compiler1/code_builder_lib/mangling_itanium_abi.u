@@ -477,7 +477,7 @@ fn EncodeParamReference( ManglerState &mut mangler_state, FunctionType::ParamRef
 	mangler_state.Push( "E" );
 }
 
-fn EncodeReferencePollutionAsType( ManglerState& mut mangler_state, ust::vector</FunctionType::ReferencePollution/>& reference_pollution )
+fn EncodeReferencePollutionAsType( ManglerState& mut mangler_state, FunctionType::ReferencesPollution& reference_pollution )
 {
 	ADD_NODE( mangler_state )
 	{
@@ -532,7 +532,7 @@ fn EncodeReturnReferencesAsType( ManglerState& mut mangler_state, FunctionType::
 	}
 }
 
-fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, ust::vector</FunctionType::ParamReferences/>& return_inner_references )
+fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, FunctionType::ReturnInnerReferences& return_inner_references )
 {
 	ADD_NODE( mangler_state )
 	{

@@ -58,7 +58,7 @@ struct LambdaPreprocessingContext
 	ust::unordered_map</ust::string8, CapturedVariableData/> captured_external_variables;
 
 	FunctionType::ParamReferences return_references;
-	ust::vector</FunctionType::ParamReferences/> return_inner_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
 	ust::vector</ReferencePollution/> references_pollution;
 
 	// Contains set of variables of the preprocessed lambda.
