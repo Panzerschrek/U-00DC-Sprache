@@ -60,7 +60,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
 
 	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
-	std::vector<std::set<FunctionType::ParamReference>> coroutine_return_inner_ferences;
+	FunctionType::ReturnInnerReferences coroutine_return_inner_ferences;
 
 	for( const FunctionType::Param& param : coroutine_function_type.params )
 	{
@@ -76,7 +76,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				{
 					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceType(i) );
 					coroutine_return_inner_ferences.push_back(
-						std::set<FunctionType::ParamReference>{
+						FunctionType::ReturnReferences{
 							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
 				}
 			}
@@ -85,7 +85,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		{
 			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 			coroutine_return_inner_ferences.push_back(
-				std::set<FunctionType::ParamReference>{
+				FunctionType::ReturnReferences{
 					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
 		}
 	}

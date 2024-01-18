@@ -20,10 +20,10 @@ public:
 	ValueType return_value_type= ValueType::Value;
 
 	// Tags of returned reference.
-	std::set<FunctionType::ParamReference> return_references;
+	FunctionType::ReturnReferences return_references;
 
 	// Tags for each inner reference node for returned value/reference.
-	std::vector<std::set<FunctionType::ParamReference>> return_inner_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
 
 	// Inner references of coroutine type itself.
 	llvm::SmallVector<InnerReferenceType, 4> inner_references;

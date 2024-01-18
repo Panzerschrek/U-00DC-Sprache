@@ -110,12 +110,12 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 	return std::move(result);
 }
 
-std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferencePollution(
+FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollution(
 	NamesScope& names_scope,
 	const Synt::Expression& expression,
 	const size_t num_params )
 {
-	std::set<FunctionType::ReferencePollution> result;
+	FunctionType::ReferencesPollution result;
 
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
@@ -166,12 +166,12 @@ std::set<FunctionType::ReferencePollution> CodeBuilder::EvaluateFunctionReferenc
 	return result;
 }
 
-std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnReferences(
+FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 	NamesScope& names_scope,
 	const Synt::Expression& expression,
 	const size_t num_params )
 {
-	std::set<FunctionType::ParamReference> result;
+	FunctionType::ReturnReferences result;
 
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
@@ -202,12 +202,12 @@ std::set<FunctionType::ParamReference> CodeBuilder::EvaluateFunctionReturnRefere
 	return result;
 }
 
-std::vector<std::set<FunctionType::ParamReference>> CodeBuilder::EvaluateFunctionReturnInnerReferences(
+FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	NamesScope& names_scope,
 	const Synt::Expression& expression,
 	const size_t num_params )
 {
-	std::vector<std::set<FunctionType::ParamReference>> result;
+	FunctionType::ReturnInnerReferences result;
 
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
@@ -256,7 +256,7 @@ VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
 }
 
-CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references )
 {
 	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
 	constant_initializers.reserve( return_references.size() );
@@ -272,7 +272,7 @@ CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant(
 	return std::make_pair( std::move(array_type), llvm::ConstantArray::get( array_llvm_type, constant_initializers ) );
 }
 
-CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnInnerReferencesConstant( const FunctionType::ReturnInnerReferences& return_inner_references )
 {
 	TupleType tuple_type;
 	tuple_type.element_types.reserve( return_inner_references.size() );
@@ -297,13 +297,13 @@ CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnInnerReferencesCons
 	return std::make_pair( std::move(tuple_type), llvm::ConstantStruct::get( tuple_llvm_type, constant_initializers ) );
 }
 
-CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReferencePollutionConstant( const FunctionType::ReferencesPollution& references_pollution )
 {
 	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
-	constant_initializers.reserve( reference_pollution.size() );
+	constant_initializers.reserve( references_pollution.size() );
 
 	const auto element_llvm_type= llvm::dyn_cast<llvm::ArrayType>( reference_notation_pollution_element_type_.GetLLVMType() );
-	for( const FunctionType::ReferencePollution& pollution : reference_pollution )
+	for( const FunctionType::ReferencePollution& pollution : references_pollution )
 	{
 		llvm::Constant* const initializer[2]
 		{

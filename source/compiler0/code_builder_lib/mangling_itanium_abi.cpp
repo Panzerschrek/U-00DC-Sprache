@@ -426,7 +426,7 @@ void EncodeParamReference( ManglerState& mangler_state, const FunctionType::Para
 	mangler_state.Push( "E" );
 }
 
-void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set<FunctionType::ReferencePollution>& reference_pollution )
+void EncodeReferencePollutionAsType( ManglerState& mangler_state, const FunctionType::ReferencesPollution& references_pollution )
 {
 	const ManglerState::NodeHolder result_node( mangler_state );
 	{
@@ -439,7 +439,7 @@ void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set
 		mangler_state.Push( "X" );
 
 		mangler_state.Push( "il" );
-		for( const FunctionType::ReferencePollution& pollution_element : reference_pollution )
+		for( const FunctionType::ReferencePollution& pollution_element : references_pollution )
 		{
 			mangler_state.Push( "il" );
 			EncodeParamReference( mangler_state, pollution_element.dst );
@@ -453,7 +453,7 @@ void EncodeReferencePollutionAsType( ManglerState& mangler_state, const std::set
 	mangler_state.Push( "E" );
 }
 
-void EncodeReturnReferencesAsType( ManglerState& mangler_state, const std::set<FunctionType::ParamReference>& return_references )
+void EncodeReturnReferencesAsType( ManglerState& mangler_state, const FunctionType::ReturnReferences& return_references )
 {
 	const ManglerState::NodeHolder result_node( mangler_state );
 	{
@@ -475,7 +475,7 @@ void EncodeReturnReferencesAsType( ManglerState& mangler_state, const std::set<F
 	mangler_state.Push( "E" );
 }
 
-void EncodeReturnInnerReferencesAsType( ManglerState& mangler_state, const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
+void EncodeReturnInnerReferencesAsType( ManglerState& mangler_state, const FunctionType::ReturnInnerReferences& return_inner_references )
 {
 	const ManglerState::NodeHolder result_node( mangler_state );
 	{

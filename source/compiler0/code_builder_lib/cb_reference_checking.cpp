@@ -138,7 +138,7 @@ void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
 
 void CodeBuilder::CheckReferenceNotationMutabilityViolationForReturnReferences(
 	const FunctionType& function_type,
-	const std::set<FunctionType::ParamReference>& return_references,
+	const FunctionType::ReturnReferences& return_references,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
