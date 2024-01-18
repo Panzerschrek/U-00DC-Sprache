@@ -74,6 +74,28 @@ import "code_builder.uh"
 	}
 ?>
 
+?macro <? ADD_REFERENCE_NOTATION_FIELD:block( ?name:expr, ?constant_value:expr ) ?>
+->
+<?
+	{
+		var ClassField mut class_field
+		{
+			.t= ?constant_value[0],
+			.is_mutable= true,
+			.is_reference= false,
+			.index= u32(fields_llvm_types.size()),
+			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
+		};
+
+		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+		fields_initializers.push_back( ?constant_value[1] );
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.deref().AddName( ?name, move(class_field) );
+	}
+?>
+
 ?macro <? ADD_NAME_FIELD:block( ?name:expr ) ?>
 ->
 <?
@@ -313,7 +335,10 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_type != ValueType::Value )
 		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut )
 		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
-		// SPRACHE_TODO - add also reference pollution.
+
+		ADD_REFERENCE_NOTATION_FIELD( "return_references", GetReturnReferencesConstant( function_type.return_references ) )
+		ADD_REFERENCE_NOTATION_FIELD( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) )
+		ADD_REFERENCE_NOTATION_FIELD( "reference_pollution", GetReferencePollutionConstant( function_type.references_pollution ) )
 	}
 	else if_var( &class_ptr : t.GetClassType() )
 	{

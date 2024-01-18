@@ -113,6 +113,7 @@ fn CodeBuilder::constructor(
 		{
 			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
 			.element_count(2),
+			.llvm_type= unsafe( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ) ),
 		};
 		reference_notation_param_reference_description_type_= move(a);
 	}
@@ -122,6 +123,7 @@ fn CodeBuilder::constructor(
 		{
 			.element_type= reference_notation_param_reference_description_type_,
 			.element_count(2),
+			.llvm_type= unsafe( LLVMArrayType( reference_notation_param_reference_description_type_.GetLLVMType(), 2u ) ),
 		};
 		reference_notation_pollution_element_type_= move(a);
 	}
