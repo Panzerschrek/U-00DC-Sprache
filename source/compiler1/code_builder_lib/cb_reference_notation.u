@@ -270,18 +270,18 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 		constant_initializers.push_back( GetParamReferenceConstant( return_reference ) );
 	}
 
-	var LLVMTypeRef element_type= reference_notation_param_reference_description_type_.GetLLVMType();
+	var LLVMTypeRef element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
 
 	var ArrayType mut array_type
 	{
 		.element_type= reference_notation_param_reference_description_type_,
 		.element_count= u64( constant_initializers.size() ),
-		.llvm_type= unsafe( LLVMArrayType( element_type, u32( constant_initializers.size() ) ) ),
+		.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
 	};
 
 	return ust::make_tuple(
 		Type( move(array_type) ),
-		unsafe( LLVMConstArray( element_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
+		unsafe( LLVMConstArray( element_llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
 }
 
 fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant
@@ -309,7 +309,7 @@ fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPo
 {
 	var ust::vector</LLVMValueRef/> mut constant_initializers;
 
-	var LLVMTypeRef element_llvm_type= reference_notation_pollution_element_type_.GetLLVMType();
+	var LLVMTypeRef pair_element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
 	foreach( &pollution : references_pollution )
 	{
 		var [ LLVMValueRef, 2 ] mut initializer
@@ -317,21 +317,21 @@ fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPo
 			GetParamReferenceConstant( pollution.dst ),
 			GetParamReferenceConstant( pollution.src ),
 		];
-		constant_initializers.push_back( unsafe( LLVMConstArray( element_llvm_type, $<(initializer[0]), 2u ) ) );
+		constant_initializers.push_back( unsafe( LLVMConstArray( pair_element_llvm_type, $<(initializer[0]), 2u ) ) );
 	}
 
-	var LLVMTypeRef element_type= reference_notation_pollution_element_type_.GetLLVMType();
+	var LLVMTypeRef element_llvm_type= reference_notation_pollution_element_type_.GetLLVMType();
 
 	var ArrayType mut array_type
 	{
 		.element_type= reference_notation_pollution_element_type_,
 		.element_count= u64( constant_initializers.size() ),
-		.llvm_type= unsafe( LLVMArrayType( element_type, u32( constant_initializers.size() ) ) ),
+		.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
 	};
 
 	return ust::make_tuple(
 		Type( move(array_type) ),
-		unsafe( LLVMConstArray( element_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
+		unsafe( LLVMConstArray( element_llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
 }
 
 fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& param_reference ) : LLVMValueRef
@@ -344,7 +344,7 @@ fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& p
 				? "_"c8
 				: char8( u32( "a"c8 ) + u32( param_reference.reference_index ) ) ),
 	];
-	return unsafe( LLVMConstStringInContext( llvm_context_, $<(initializer[0]), 2u, LLVMBool::False ) );
+	return unsafe( U1_ConstDataArray( fundamental_llvm_types_.char8_, $<( cast_ref_unsafe</byte8/>( initializer[0] ) ), 2s, 2s ) );
 }
 
 fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />
