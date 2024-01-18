@@ -1242,9 +1242,10 @@ private:
 	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
-	std::pair<Type, llvm::Constant*> GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references );
-	std::pair<Type, llvm::Constant*> GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references );
-	std::pair<Type, llvm::Constant*> GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution );
+	using ReferenceNotationConstant= std::pair<Type, llvm::Constant*>;
+	ReferenceNotationConstant GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references );
+	ReferenceNotationConstant GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references );
+	ReferenceNotationConstant GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution );
 	llvm::Constant* GetParamReferenceConstant( const FunctionType::ParamReference& param_reference ); // Type is reference_notation_param_reference_description_type_
 
 	// Coroutines

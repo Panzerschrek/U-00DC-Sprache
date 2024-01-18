@@ -256,7 +256,7 @@ VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
 }
 
-std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references )
 {
 	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
 	constant_initializers.reserve( return_references.size() );
@@ -272,7 +272,7 @@ std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnReferencesConstant( const
 	return std::make_pair( std::move(array_type), llvm::ConstantArray::get( array_llvm_type, constant_initializers ) );
 }
 
-std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
 {
 	TupleType tuple_type;
 	tuple_type.element_types.reserve( return_inner_references.size() );
@@ -297,7 +297,7 @@ std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnInnerReferencesConstant( 
 	return std::make_pair( std::move(tuple_type), llvm::ConstantStruct::get( tuple_llvm_type, constant_initializers ) );
 }
 
-std::pair<Type, llvm::Constant*> CodeBuilder::GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReferencePollutionConstant( const std::set<FunctionType::ReferencePollution>& reference_pollution )
 {
 	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
 	constant_initializers.reserve( reference_pollution.size() );
