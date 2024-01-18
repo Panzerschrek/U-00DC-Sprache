@@ -913,7 +913,7 @@ private:
 	type ReferenceNotationConstant= tup[ Type, LLVMValueRef ]; // Second - llvm constant
 	fn GetReturnReferencesConstant( this, FunctionType::ParamReferences& return_references ) : ReferenceNotationConstant;
 	fn GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant;
-	fn GetReferencePollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant;
+	fn GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant;
 	fn GetParamReferenceConstant( this, FunctionType::ParamReference& param_reference ) : LLVMValueRef; // Type is reference_notation_param_reference_description_type_
 
 	// Coroutines

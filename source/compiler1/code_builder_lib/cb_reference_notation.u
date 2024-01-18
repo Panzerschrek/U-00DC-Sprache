@@ -305,7 +305,7 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInne
 		unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool::False ) ) );
 }
 
-fn CodeBuilder::GetReferencePollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant
+fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant
 {
 	var ust::vector</LLVMValueRef/> mut constant_initializers;
 

@@ -1245,7 +1245,7 @@ private:
 	using ReferenceNotationConstant= std::pair<Type, llvm::Constant*>;
 	ReferenceNotationConstant GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references );
 	ReferenceNotationConstant GetReturnInnerReferencesConstant( const FunctionType::ReturnInnerReferences& return_inner_references );
-	ReferenceNotationConstant GetReferencePollutionConstant( const FunctionType::ReferencesPollution& references_pollution );
+	ReferenceNotationConstant GetReferencesPollutionConstant( const FunctionType::ReferencesPollution& references_pollution );
 	llvm::Constant* GetParamReferenceConstant( const FunctionType::ParamReference& param_reference ); // Type is reference_notation_param_reference_description_type_
 
 	// Coroutines

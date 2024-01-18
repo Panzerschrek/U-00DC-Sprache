@@ -338,7 +338,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 
 		ADD_REFERENCE_NOTATION_FIELD( "return_references", GetReturnReferencesConstant( function_type.return_references ) )
 		ADD_REFERENCE_NOTATION_FIELD( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) )
-		ADD_REFERENCE_NOTATION_FIELD( "reference_pollution", GetReferencePollutionConstant( function_type.references_pollution ) )
+		ADD_REFERENCE_NOTATION_FIELD( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) )
 	}
 	else if_var( &class_ptr : t.GetClassType() )
 	{

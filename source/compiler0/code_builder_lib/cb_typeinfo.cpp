@@ -272,7 +272,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 		add_reference_notation_filed( "return_references", GetReturnReferencesConstant( function_type.return_references ) );
 		add_reference_notation_filed( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) );
-		add_reference_notation_filed( "reference_pollution", GetReferencePollutionConstant( function_type.references_pollution ) );
+		add_reference_notation_filed( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) );
 	}
 	else U_ASSERT(false);
 

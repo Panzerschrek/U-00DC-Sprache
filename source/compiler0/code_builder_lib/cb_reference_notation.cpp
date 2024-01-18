@@ -297,7 +297,7 @@ CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnInnerReferencesCons
 	return std::make_pair( std::move(tuple_type), llvm::ConstantStruct::get( tuple_llvm_type, constant_initializers ) );
 }
 
-CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReferencePollutionConstant( const FunctionType::ReferencesPollution& references_pollution )
+CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReferencesPollutionConstant( const FunctionType::ReferencesPollution& references_pollution )
 {
 	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
 	constant_initializers.reserve( references_pollution.size() );

@@ -1228,7 +1228,7 @@ def TypeinfoForReferencePollution_Test0():
 		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
 		type FnPtr= fn( S &mut s, i32& x ) @(reference_pollution);
 		var [ [ [ char8, 2 ], 2 ], 1 ] expected_reference_pollution[ [ "0a", "1_" ] ];
-		static_assert( typeinfo</FnPtr/>.reference_pollution == expected_reference_pollution );
+		static_assert( typeinfo</FnPtr/>.references_pollution == expected_reference_pollution );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1239,6 +1239,6 @@ def TypeinfoForReferencePollution_Test1():
 		var [ [ [ char8, 2 ], 2 ], 2 ] reference_pollution[ [ "2a", "1_" ], [ "0a", "1_" ] ];
 		type FnPtr= fn( S &mut s0, i32& x, S &mut s1 ) @(reference_pollution);
 		var [ [ [ char8, 2 ], 2 ], 2 ] expected_reference_pollution[ [ "0a", "1_" ], [ "2a", "1_" ] ]; // should be normalized
-		static_assert( typeinfo</FnPtr/>.reference_pollution == expected_reference_pollution );
+		static_assert( typeinfo</FnPtr/>.references_pollution == expected_reference_pollution );
 	"""
 	tests_lib.build_program( c_program_text )
