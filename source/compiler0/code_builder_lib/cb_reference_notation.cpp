@@ -256,4 +256,50 @@ VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
 }
 
+std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references )
+{
+	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
+	constant_initializers.reserve( return_references.size() );
+	for( const FunctionType::ParamReference& return_reference : return_references )
+	{
+		char initializer[2]{ 0, 0 };
+		initializer[0]= char( '0' + return_reference.first );
+		initializer[1]= return_reference.second == FunctionType::c_param_reference_number ? '_' : char( 'a' + return_reference.second );
+		constant_initializers.push_back( llvm::ConstantDataArray::get( llvm_context_, initializer ) );
+	}
+
+	ArrayType array_type;
+	array_type.element_type= reference_notation_param_reference_description_type_;
+	array_type.element_count= constant_initializers.size();
+	const auto array_llvm_type= llvm::ArrayType::get( array_type.element_type.GetLLVMType(), array_type.element_count );
+	array_type.llvm_type= array_llvm_type;
+
+	return std::make_pair( std::move(array_type), llvm::ConstantArray::get( array_llvm_type, constant_initializers ) );
+}
+
+std::pair<Type, llvm::Constant*> CodeBuilder::GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references )
+{
+	TupleType tuple_type;
+	tuple_type.element_types.reserve( return_inner_references.size() );
+
+	llvm::SmallVector<llvm::Type*, 8> elements_llvm_types;
+	elements_llvm_types.reserve( return_inner_references.size() );
+
+	llvm::SmallVector<llvm::Constant*, 8> constant_initializers;
+	constant_initializers.reserve( return_inner_references.size() );
+
+	for( const auto& return_references : return_inner_references )
+	{
+		auto return_references_contant= GetReturnReferencesConstant( return_references );
+		elements_llvm_types.push_back( return_references_contant.first.GetLLVMType() );
+		tuple_type.element_types.push_back( std::move(return_references_contant.first) );
+		constant_initializers.push_back( return_references_contant.second );
+	}
+
+	const auto tuple_llvm_type= llvm::StructType::get( llvm_context_, elements_llvm_types );
+	tuple_type.llvm_type= tuple_llvm_type;
+
+	return std::make_pair( std::move(tuple_type), llvm::ConstantStruct::get( tuple_llvm_type, constant_initializers ) );
+}
+
 } // namespace U

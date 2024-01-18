@@ -1242,6 +1242,9 @@ private:
 	std::vector<std::set<FunctionType::ParamReference>> EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
 
+	std::pair<Type, llvm::Constant*> GetReturnReferencesConstant( const std::set<FunctionType::ParamReference>& return_references );
+	std::pair<Type, llvm::Constant*> GetReturnInnerReferencesConstant( const std::vector<std::set<FunctionType::ParamReference>>& return_inner_references );
+
 	// Coroutines
 
 	// Call this before transforming function type.

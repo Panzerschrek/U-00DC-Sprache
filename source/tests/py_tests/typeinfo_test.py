@@ -1198,3 +1198,25 @@ def TypeinfoForReturnReferences_Test2():
 		static_assert( typeinfo</FnPtr/>.return_references == expected_return_references );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnInnerReferences_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		type FnPtr= fn( i32& x ) : S @(return_inner_references);
+		var tup[ [ [ char8, 2 ], 1 ] ] expected_return_inner_references[ [ "0_" ] ];
+		static_assert( typeinfo</FnPtr/>.return_inner_references == expected_return_inner_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForReturnInnerReferences_Test1():
+	c_program_text= """
+		struct S{ i32& @("a"c8) x; i32& @("b"c8) y; }
+		var tup[ [ [ char8, 2 ], 2 ], [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "0_", "0_" ], [ "2_", "1b" ] ];
+		type FnPtr= fn( i32& x, S s, i32& y ) : S @(return_inner_references);
+		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 2 ] ] expected_return_inner_references[ [ "0_" ], [ "1b", "2_" ] ]; // return inner references should be normalized
+		static_assert( typeinfo</FnPtr/>.return_inner_references == expected_return_inner_references );
+	"""
+	tests_lib.build_program( c_program_text )
