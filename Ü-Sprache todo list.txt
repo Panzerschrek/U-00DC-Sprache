@@ -17,6 +17,8 @@ General:
 	etc. (in expression context)
 *) "nodiscard" for types (and/or) functions
 *) Function to function pointer assignment with multiple possible functions
+*) Automatically calculate reference notation for "auto"-return functions
+*) Support "auto" return for class methods
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -30,6 +32,7 @@ Templates:
 	such arguments.
 
 Lambdas:
+*) "auto" for return type
 *) Coroutine lambdas (async, generators)
 *) Lambas (or something similar) which create a coroutine object (async function, generator) directly
 *) Conversion of lambdas with zero captures into function pointers
@@ -78,6 +81,7 @@ Interpreter:
 *) Support math functions
 
 Compiler1:
+*) Support "auto" for functions return type
 *) Support 128-bit types in switch operator
 
 QtCreator plugin:
