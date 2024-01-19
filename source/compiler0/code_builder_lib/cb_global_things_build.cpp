@@ -804,11 +804,38 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			Value& value= names_scope_value.value;
 			if( const auto functions_set= value.GetFunctionsSet() )
 			{
-				// Build only special methods.
-				if( name == Keywords::constructor_ ||
+				// We need to build special methods.
+				bool need_to_build=
+					name == Keywords::constructor_ ||
 					name == Keywords::destructor_ ||
 					name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
-					name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) )
+					name == OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+				if( !need_to_build )
+				{
+					// Functions declared virtual requires building in order to build virtual table later.
+					for( const FunctionVariable& function : functions_set->functions )
+						need_to_build|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
+					for( const Synt::Function* const synt_function : functions_set->syntax_elements )
+						need_to_build|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
+				}
+				if( !need_to_build )
+				{
+					// Also we need to check parent for virtual functions.
+					for( const Class::Parent& parent : the_class.parents )
+					{
+						if( const auto parent_member= parent.class_->members->GetThisScopeValue( name ) )
+						{
+							if( const auto parent_functions_set= parent_member->value.GetFunctionsSet() )
+							{
+								for( const FunctionVariable& parent_function : parent_functions_set->functions )
+									need_to_build|= parent_function.virtual_table_index != ~0u;
+							}
+						}
+					}
+				}
+
+				if( need_to_build )
 					GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
 			}
 			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
