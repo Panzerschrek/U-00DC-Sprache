@@ -796,62 +796,47 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.fields_order[field->index]= field;
 		} );
 
-	// Complete another body elements.
-	// For class completeness we needs only fields, functions. Constants, types are not needed.
+	// Build declarations for some necessary methods.
 	the_class.members->ForEachInThisScope(
 		[&]( const std::string_view name, NamesScopeValue& names_scope_value )
 		{
-			Value& value= names_scope_value.value;
-			if( const auto functions_set= value.GetFunctionsSet() )
-			{
-				// We need to build special methods.
-				bool need_to_build=
-					name == Keywords::constructor_ ||
-					name == Keywords::destructor_ ||
-					name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
-					name == OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+			const auto functions_set= names_scope_value.value.GetFunctionsSet();
+			if( functions_set == nullptr )
+				return;
 
-				if( !need_to_build )
+			// We need to build special methods.
+			bool need_to_build=
+				name == Keywords::constructor_ ||
+				name == Keywords::destructor_ ||
+				name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+				name == OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+			if( !need_to_build )
+			{
+				// Functions declared virtual requires building in order to build virtual table later.
+				for( const FunctionVariable& function : functions_set->functions )
+					need_to_build|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
+				for( const Synt::Function* const synt_function : functions_set->syntax_elements )
+					need_to_build|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
+			}
+			if( !need_to_build )
+			{
+				// Also we need to check parent for virtual functions.
+				for( const Class::Parent& parent : the_class.parents )
 				{
-					// Functions declared virtual requires building in order to build virtual table later.
-					for( const FunctionVariable& function : functions_set->functions )
-						need_to_build|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
-					for( const Synt::Function* const synt_function : functions_set->syntax_elements )
-						need_to_build|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
-				}
-				if( !need_to_build )
-				{
-					// Also we need to check parent for virtual functions.
-					for( const Class::Parent& parent : the_class.parents )
+					if( const auto parent_member= parent.class_->members->GetThisScopeValue( name ) )
 					{
-						if( const auto parent_member= parent.class_->members->GetThisScopeValue( name ) )
+						if( const auto parent_functions_set= parent_member->value.GetFunctionsSet() )
 						{
-							if( const auto parent_functions_set= parent_member->value.GetFunctionsSet() )
-							{
-								for( const FunctionVariable& parent_function : parent_functions_set->functions )
-									need_to_build|= parent_function.virtual_table_index != ~0u;
-							}
+							for( const FunctionVariable& parent_function : parent_functions_set->functions )
+								need_to_build|= parent_function.virtual_table_index != ~0u;
 						}
 					}
 				}
+			}
 
-				if( need_to_build )
-					GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
-			}
-			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
-			else if( value.GetTypeName() != nullptr ) {}
-			else if( value.GetVariable() != nullptr ){}
-			else if( value.GetErrorValue() != nullptr ){}
-			else if( value.GetStaticAssert() != nullptr ){}
-			else if( value.GetTypeAlias() != nullptr ) {}
-			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
-			{
-				// TODO - do we really need to build type templates set?
-				GlobalThingBuildTypeTemplatesSet( *the_class.members, *type_templates_set );
-			}
-			else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
-			else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
-			else U_ASSERT(false);
+			if( need_to_build )
+				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
 		});
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
@@ -1020,7 +1005,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		const auto parent_class= parent.class_;
 		parent_class->members->ForEachInThisScope(
-			[&]( const std::string_view name, const NamesScopeValue& value )
+			[&]( const std::string_view name, NamesScopeValue& value )
 			{
 				const auto parent_member_visibility= parent_class->GetMemberVisibility( name );
 				if( parent_member_visibility == ClassMemberVisibility::Private )
@@ -1091,10 +1076,16 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				}
 				if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 				{
+					// Build source type templates set.
+					GlobalThingBuildTypeTemplatesSet( *parent_class->members, *type_templates_set );
+
 					if( result_class_value != nullptr )
 					{
 						if( const auto result_type_templates_set= result_class_value->value.GetTypeTemplatesSet() )
 						{
+							// Build destination type templates set.
+							GlobalThingBuildTypeTemplatesSet( *the_class.members, *result_type_templates_set );
+
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->src_loc, name );
 
