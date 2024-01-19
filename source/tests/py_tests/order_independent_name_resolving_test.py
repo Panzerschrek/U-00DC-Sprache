@@ -409,3 +409,30 @@ def MethodsCompletenessForClass_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "GlobalsLoopDetected", 6 ) )
+
+
+def TypesCompletenessForClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			// "typeinfo" triggers "S" completeness, but this doesn't trigger dependency loop,
+			// since type alias completeness isn't required for type completeness.
+			type TypeBytes= [ byte8, typeinfo</S/>.size_of ];
+			i32 x;
+			f32 y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypesCompletenessForClass_Test1():
+	c_program_text= """
+		struct S
+		{
+			// Types list depends on types - so, a global loop is created.
+			type TypesListType= typeof( typeinfo</S/>.types_list );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 5 ) )
