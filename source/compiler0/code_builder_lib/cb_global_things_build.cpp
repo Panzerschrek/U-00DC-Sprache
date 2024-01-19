@@ -798,11 +798,19 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	// Complete another body elements.
 	// For class completeness we needs only fields, functions. Constants, types are not needed.
-	the_class.members->ForEachValueInThisScope(
-		[&]( Value& value )
+	the_class.members->ForEachInThisScope(
+		[&]( const std::string_view name, NamesScopeValue& names_scope_value )
 		{
+			Value& value= names_scope_value.value;
 			if( const auto functions_set= value.GetFunctionsSet() )
-				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
+			{
+				// Build only special methods.
+				if( name == Keywords::constructor_ ||
+					name == Keywords::destructor_ ||
+					name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+					name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) )
+					GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
+			}
 			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
 			else if( value.GetTypeName() != nullptr ) {}
 			else if( value.GetVariable() != nullptr ){}
@@ -810,7 +818,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			else if( value.GetStaticAssert() != nullptr ){}
 			else if( value.GetTypeAlias() != nullptr ) {}
 			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+			{
+				// TODO - do we really need to build type templates set?
 				GlobalThingBuildTypeTemplatesSet( *the_class.members, *type_templates_set );
+			}
 			else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
 			else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
 			else U_ASSERT(false);
@@ -999,10 +1010,16 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
 						return; // Do not inherit constructors, destructors, assignment operators, compare operators.
 
+					// Build source functions set before merging.
+					GlobalThingBuildFunctionsSet( *parent_class->members, *functions, false );
+
 					if( result_class_value != nullptr )
 					{
 						if( const auto result_class_functions= result_class_value->value.GetFunctionsSet() )
 						{
+							// Build destination functions set before merging.
+							GlobalThingBuildFunctionsSet( *the_class.members, *result_class_functions, false );
+
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
 								const auto& src_loc= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->src_loc : result_class_functions->functions.front().prototype_src_loc;
@@ -1108,6 +1125,13 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			const OverloadedFunctionsSetPtr functions_set= value.value.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
+
+			bool has_non_prepared_constexpr_functions= false;
+			for( const Synt::Function* const synt_function : functions_set->syntax_elements )
+				has_non_prepared_constexpr_functions|= synt_function->constexpr_;
+
+			if( has_non_prepared_constexpr_functions )
+				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
 
 			for( FunctionVariable& function : functions_set->functions )
 			{
