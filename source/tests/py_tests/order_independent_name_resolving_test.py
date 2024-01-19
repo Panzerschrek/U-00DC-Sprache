@@ -289,3 +289,69 @@ def GlobalsLoopDetected_Test7():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
 	assert( errors_list[0].src_loc.line == 2 )
+
+
+def MethodsCompletenessForClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			// Require complete type to fetch typeinfo for "S".
+			// But method "Foo" itself isn't required for "S" completeness.
+			fn Foo() : [ byte8, typeinfo</S/>.size_of ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MethodsCompletenessForClass_Test1():
+	c_program_text= """
+		struct S
+		{
+			// Require complete type to fetch typeinfo for "S".
+			// But method "Foo" itself isn't required for "S" completeness.
+			fn enable_if( typeinfo</S/>.size_of < 16s ) Foo( this );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MethodsCompletenessForClass_Test2():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since default constructor is required for type completeness.
+			fn enable_if( typeinfo</S/>.size_of < 16s ) constructor( this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].src_loc.line == 2 )
+
+
+def MethodsCompletenessForClass_Test3():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since constructors are required for type completeness.
+			fn enable_if( typeinfo</S/>.size_of < 16s ) constructor( i32 x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].src_loc.line == 2 )
+
+
+def MethodsCompletenessForClass_Test4():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since assignment operators are required for type completeness.
+			op =( mut this, [ byte8, typeinfo</S/>.size_of ] data );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].src_loc.line == 2 )
