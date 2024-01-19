@@ -289,3 +289,150 @@ def GlobalsLoopDetected_Test7():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
 	assert( errors_list[0].src_loc.line == 2 )
+
+
+def MethodsCompletenessForClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			// Require complete type to fetch typeinfo for "S".
+			// But method "Foo" itself isn't required for "S" completeness.
+			// So, there is no globals loop here.
+			fn Foo() : [ byte8, typeinfo</S/>.size_of ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MethodsCompletenessForClass_Test1():
+	c_program_text= """
+		struct S
+		{
+			// Require complete type to fetch typeinfo for "S".
+			// But method "Foo" itself isn't required for "S" completeness.
+			// So, there is no globals loop here.
+			fn enable_if( typeinfo</S/>.size_of < 16s ) Foo( this, f32& y ) : bool;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MethodsCompletenessForClass_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 0;
+			// Require complete type to build global variable "s" of type "S".
+			// But method "Foo" itself isn't required for "S" completeness.
+			// So, there is no globals loop here.
+			fn  Foo( mut this, typeof(s) arg ) : i32;
+		}
+		var S s{ .x= 4 };
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MethodsCompletenessForClass_Test3():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since default constructor is required for type completeness.
+			fn enable_if( typeinfo</S/>.size_of < 16s ) constructor( this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def MethodsCompletenessForClass_Test4():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since constructors are required for type completeness.
+			fn enable_if( typeinfo</S/>.size_of < 16s ) constructor( i32 x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def MethodsCompletenessForClass_Test5():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since assignment operators are required for type completeness.
+			op=( mut this, [ byte8, typeinfo</S/>.size_of ] data );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def MethodsCompletenessForClass_Test6():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since equality compare operators are required for type completeness.
+			op enable_if( typeinfo</S/>.is_class ) == ( S& l, S& r ) : bool;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def MethodsCompletenessForClass_Test7():
+	c_program_text= """
+		struct S
+		{
+			// Has global loop, since virtual methods require completeness.
+			fn virtual Foo( this, [ byte8, typeinfo</S/>.size_of ]& data );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def MethodsCompletenessForClass_Test8():
+	c_program_text= """
+		struct S
+		{
+			// Accessing typeinfo functions list triggers function declarations completeness and thus a global loop,
+			// But not for the class itself, but for the function.
+			fn Foo( typeof( typeinfo</S/>.functions_list ) & arg );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 6 ) )
+
+
+def TypesCompletenessForClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			// "typeinfo" triggers "S" completeness, but this doesn't trigger dependency loop,
+			// since type alias completeness isn't required for type completeness.
+			type TypeBytes= [ byte8, typeinfo</S/>.size_of ];
+			i32 x;
+			f32 y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypesCompletenessForClass_Test1():
+	c_program_text= """
+		struct S
+		{
+			// Types list depends on types - so, a global loop is created.
+			type TypesListType= typeof( typeinfo</S/>.types_list );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 5 ) )

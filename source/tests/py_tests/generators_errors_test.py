@@ -1234,14 +1234,11 @@ def GlobalsLoopDetected_ForGenerators_Test0():
 	c_program_text= """
 		struct S
 		{
-			// All methods type completeness required for class to be complete.
-			// Generator function requires generator type completeness, for which value-param of type "S" completeness is required.
+			// Ok - now completeness is not required for a generator method with this class param.
 			fn generator Foo(S s) : char8;
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	tests_lib.build_program( c_program_text )
 
 
 def GlobalsLoopDetected_ForGenerators_Test1():

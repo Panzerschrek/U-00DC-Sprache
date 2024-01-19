@@ -796,34 +796,56 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.fields_order[field->index]= field;
 		} );
 
-	// Complete another body elements.
-	// For class completeness we needs only fields, functions. Constants, types are not needed.
-	the_class.members->ForEachValueInThisScope(
-		[&]( Value& value )
+	// Build declarations for some necessary methods.
+	the_class.members->ForEachInThisScope(
+		[&]( const std::string_view name, NamesScopeValue& names_scope_value )
 		{
-			if( const auto functions_set= value.GetFunctionsSet() )
+			const auto functions_set= names_scope_value.value.GetFunctionsSet();
+			if( functions_set == nullptr )
+				return;
+
+			// We need to build special methods.
+			bool need_to_build=
+				name == Keywords::constructor_ ||
+				name == Keywords::destructor_ ||
+				name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+				name == OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+			if( !need_to_build )
+			{
+				// Functions declared virtual requires building in order to build virtual table later.
+				for( const FunctionVariable& function : functions_set->functions )
+					need_to_build|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
+				for( const Synt::Function* const synt_function : functions_set->syntax_elements )
+					need_to_build|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
+			}
+			if( !need_to_build )
+			{
+				// Also we need to check parent for virtual functions.
+				for( const Class::Parent& parent : the_class.parents )
+				{
+					if( const auto parent_member= parent.class_->members->GetThisScopeValue( name ) )
+					{
+						if( const auto parent_functions_set= parent_member->value.GetFunctionsSet() )
+						{
+							for( const FunctionVariable& parent_function : parent_functions_set->functions )
+								need_to_build|= parent_function.virtual_table_index != ~0u;
+						}
+					}
+				}
+			}
+
+			if( need_to_build )
 				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
-			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
-			else if( value.GetTypeName() != nullptr ) {}
-			else if( value.GetVariable() != nullptr ){}
-			else if( value.GetErrorValue() != nullptr ){}
-			else if( value.GetStaticAssert() != nullptr ){}
-			else if( value.GetTypeAlias() != nullptr ) {}
-			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
-				GlobalThingBuildTypeTemplatesSet( *the_class.members, *type_templates_set );
-			else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
-			else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
-			else U_ASSERT(false);
 		});
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
 	if( the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
 	{
-		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
 		OverloadedFunctionsSetPtr destructors_set= std::make_shared<OverloadedFunctionsSet>();
-		destructors_set->functions.push_back( std::move(destructor_function_variable) );
+		destructors_set->functions.push_back( GenerateDestructorPrototype( class_type ) );
 		destructors_set->base_class= class_type;
-		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), SrcLoc() ) );
+		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), the_class.src_loc ) );
 	}
 
 	if( the_class.kind == Class::Kind::Interface ||
@@ -982,7 +1004,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		const auto parent_class= parent.class_;
 		parent_class->members->ForEachInThisScope(
-			[&]( const std::string_view name, const NamesScopeValue& value )
+			[&]( const std::string_view name, NamesScopeValue& value )
 			{
 				const auto parent_member_visibility= parent_class->GetMemberVisibility( name );
 				if( parent_member_visibility == ClassMemberVisibility::Private )
@@ -992,17 +1014,23 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				if( const auto functions= value.value.GetFunctionsSet() )
 				{
-					if( name == Keyword( Keywords::constructor_ ) ||
-						name == Keyword( Keywords::destructor_ ) ||
+					if( name == Keywords::constructor_ ||
+						name == Keywords::destructor_ ||
 						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
 						return; // Do not inherit constructors, destructors, assignment operators, compare operators.
 
+					// Build source functions set before merging.
+					GlobalThingBuildFunctionsSet( *parent_class->members, *functions, false );
+
 					if( result_class_value != nullptr )
 					{
 						if( const auto result_class_functions= result_class_value->value.GetFunctionsSet() )
 						{
+							// Build destination functions set before merging.
+							GlobalThingBuildFunctionsSet( *the_class.members, *result_class_functions, false );
+
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
 								const auto& src_loc= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->src_loc : result_class_functions->functions.front().prototype_src_loc;
@@ -1047,10 +1075,16 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				}
 				if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 				{
+					// Build source type templates set.
+					GlobalThingBuildTypeTemplatesSet( *parent_class->members, *type_templates_set );
+
 					if( result_class_value != nullptr )
 					{
 						if( const auto result_type_templates_set= result_class_value->value.GetTypeTemplatesSet() )
 						{
+							// Build destination type templates set.
+							GlobalThingBuildTypeTemplatesSet( *the_class.members, *result_type_templates_set );
+
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->src_loc, name );
 
@@ -1108,6 +1142,13 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			const OverloadedFunctionsSetPtr functions_set= value.value.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
+
+			bool has_non_prepared_constexpr_functions= false;
+			for( const Synt::Function* const synt_function : functions_set->syntax_elements )
+				has_non_prepared_constexpr_functions|= synt_function->constexpr_;
+
+			if( has_non_prepared_constexpr_functions )
+				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
 
 			for( FunctionVariable& function : functions_set->functions )
 			{

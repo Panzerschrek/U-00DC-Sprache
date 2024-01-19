@@ -751,13 +751,16 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 	{
 		foreach( &class_member : class_members_ptr.lock_imut().deref() )
 		{
-			auto functions_set_ptr= class_member.value().Get</FunctionsSet/>();
-			if( functions_set_ptr.empty() )
+			auto functions_set_nullable_ptr= class_member.value().Get</FunctionsSet/>();
+			if( functions_set_nullable_ptr.empty() )
 			{
 				continue;
 			}
+			auto functions_set_ptr= functions_set_nullable_ptr.try_to_non_nullable();
 
-			foreach( &function : functions_set_ptr.try_lock_imut().deref().functions )
+			BuildFunctionsSet( class_members_ptr, functions_set_ptr, false );
+
+			foreach( &function : functions_set_ptr.lock_imut().deref().functions )
 			{
 				var ClassFunctionForTypeinfo mut f
 				{
@@ -830,6 +833,9 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 			}
 			else if( !type_alias_ptr.empty() )
 			{
+				// Make sure type alias is prepared.
+				BuildTypeAlias( class_members_ptr, type_alias_ptr.try_to_non_nullable() );
+
 				var ust::optional</ Type /> inner_type= type_alias_ptr.try_lock_imut().deref().t;
 				if( inner_type.empty() ) { continue; }// WTF?
 				t= inner_type.try_deref();

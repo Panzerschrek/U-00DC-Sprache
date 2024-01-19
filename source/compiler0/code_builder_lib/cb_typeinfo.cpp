@@ -684,9 +684,12 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 	const auto process_class_member=
 		[&]( const std::string_view name, const NamesScopeValue& class_member )
 		{
-			const OverloadedFunctionsSetConstPtr functions_set= class_member.value.GetFunctionsSet();
+			const OverloadedFunctionsSetPtr functions_set= class_member.value.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
+
+			// Make sure functions list is prepared.
+			GlobalThingBuildFunctionsSet( *class_type->members, *functions_set, false );
 
 			for( const FunctionVariable& function : functions_set->functions )
 			{
