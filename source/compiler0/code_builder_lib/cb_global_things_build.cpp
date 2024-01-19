@@ -842,11 +842,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
 	if( the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
 	{
-		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
 		OverloadedFunctionsSetPtr destructors_set= std::make_shared<OverloadedFunctionsSet>();
-		destructors_set->functions.push_back( std::move(destructor_function_variable) );
+		destructors_set->functions.push_back( GenerateDestructorPrototype( class_type ) );
 		destructors_set->base_class= class_type;
-		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), SrcLoc() ) );
+		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), the_class.src_loc ) );
 	}
 
 	if( the_class.kind == Class::Kind::Interface ||
@@ -1015,8 +1014,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				if( const auto functions= value.value.GetFunctionsSet() )
 				{
-					if( name == Keyword( Keywords::constructor_ ) ||
-						name == Keyword( Keywords::destructor_ ) ||
+					if( name == Keywords::constructor_ ||
+						name == Keywords::destructor_ ||
 						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )

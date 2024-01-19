@@ -395,3 +395,17 @@ def MethodsCompletenessForClass_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def MethodsCompletenessForClass_Test8():
+	c_program_text= """
+		struct S
+		{
+			// Accessing typeinfo functions list triggers function declarations completeness and thus a global loop,
+			// But not for the class itself, but for the function.
+			fn Foo( typeof( typeinfo</S/>.functions_list ) & arg );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 6 ) )
