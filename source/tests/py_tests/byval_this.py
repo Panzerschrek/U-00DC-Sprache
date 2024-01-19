@@ -425,14 +425,11 @@ def ByValThisErrors_Test5():
 	c_program_text= """
 		struct S
 		{
-			// For now type completeness required for all value args of generators.
-			// Because of that byval this generator methods are not possible.
+			// It's fine now to have generator method with "byval this".
 			fn generator Gen( byval this );
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	tests_lib.build_program( c_program_text )
 
 
 def ByValThisErrors_Test6():
