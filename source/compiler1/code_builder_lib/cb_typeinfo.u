@@ -833,6 +833,9 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 			}
 			else if( !type_alias_ptr.empty() )
 			{
+				// Make sure type alias is prepared.
+				BuildTypeAlias( class_members_ptr, type_alias_ptr.try_to_non_nullable() );
+
 				var ust::optional</ Type /> inner_type= type_alias_ptr.try_lock_imut().deref().t;
 				if( inner_type.empty() ) { continue; }// WTF?
 				t= inner_type.try_deref();

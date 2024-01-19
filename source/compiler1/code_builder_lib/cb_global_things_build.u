@@ -424,19 +424,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				continue;
 			}
 		}
-
-		// Type aliases required for class completeness.
-		auto type_alias_ptr= member.value().Get</ TypeAlias />();
-		if( !type_alias_ptr.empty() )
-		{
-			BuildTypeAlias( class_members, type_alias_ptr.try_to_non_nullable() );
-		}
-
-		auto type_templates_set_ptr= member.value().Get</ TypeTemplatesSet />();
-		if( !type_templates_set_ptr.empty() )
-		{
-			BuiltTypeTemplatesSet( class_members, type_templates_set_ptr.try_to_non_nullable() );
-		}
 	}
 
 	// Allocate virtual table pointer, if class have no parents.
@@ -872,7 +859,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Prepare functions. Do it before generating methods, but after setting up inner references.
+	// Build declarations for some necessary methods.
+	// Do it before generating methods, but after setting up inner references.
 	foreach( &member : class_members.lock_imut().deref() )
 	{
 		auto functions_set_ptr= member.value().Get</ FunctionsSet />();
@@ -1249,18 +1237,26 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
 					}
 				} // if function set
-				auto src_type_templates_set_ptr= member_value.value().Get</TypeTemplatesSet/>();
-				if( !src_type_templates_set_ptr.empty() )
+				auto src_type_templates_set_nullable_ptr= member_value.value().Get</TypeTemplatesSet/>();
+				if( !src_type_templates_set_nullable_ptr.empty() )
 				{
-					auto src_type_templates_set_lock= src_type_templates_set_ptr.try_lock_imut();
+					auto src_type_templates_set_ptr= src_type_templates_set_nullable_ptr.try_to_non_nullable();
+
+					// Build source type templates set before merging.
+					BuiltTypeTemplatesSet( parent_members, src_type_templates_set_ptr );
+
+					auto src_type_templates_set_lock= src_type_templates_set_ptr.lock_imut();
 					auto& src_type_templates_set= src_type_templates_set_lock.deref();
 
 					if( has_name )
 					{
-						auto result_type_templates_set_ptr= class_members.lock_imut().deref().GetThisScopeValue( member_value.key() ).try_deref().Get</TypeTemplatesSet/>();
+						auto result_type_templates_set_ptr= class_members.lock_imut().deref().GetThisScopeValue( member_value.key() ).try_deref().Get</TypeTemplatesSet/>().try_to_non_nullable();
+
+						// Build destination type templates set before merging.
+						BuiltTypeTemplatesSet( class_members, result_type_templates_set_ptr );
 
 						// Merge type template sets.
-						auto mut result_type_templates_set_lock= result_type_templates_set_ptr.try_lock_mut();
+						auto mut result_type_templates_set_lock= result_type_templates_set_ptr.lock_mut();
 						auto &mut result_type_templates_set= result_type_templates_set_lock.deref();
 
 						if( parent_member_visibility != class_type.lock_imut().deref().GetMemberVisibility( member_value.key() ) )
