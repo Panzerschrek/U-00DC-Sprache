@@ -1041,8 +1041,6 @@ size_t CodeBuilder::PrepareFunction(
 				if( name_lookup->name == Keywords::auto_ )
 				{
 					func_variable.return_type_is_auto= true;
-					if( base_class != nullptr )
-						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc, func_name );
 					if( func.block == nullptr )
 						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
 				}

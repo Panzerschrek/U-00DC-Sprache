@@ -139,3 +139,66 @@ def AutoForFunctionTemplate_Test1():
 		static_assert( Pass(-85.1) == -85.1 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AutoFunctionInsideClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			// auto static method.
+			fn Foo() : auto { return 384; }
+		}
+		fn Foo()
+		{
+			var i32 expected_result= 384;
+			halt if( S::Foo() != expected_result );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test1():
+	c_program_text= """
+		class S
+		{
+			i32 x= 0;
+			// Auto this-call method.
+			fn Foo( mut this, i32 new_x ) : auto
+			{
+				var f32 res= f32(x);
+				x= new_x;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s;
+			s.x= 643;
+			halt if( s.Foo( 134 ) != 643.0f );
+			halt if( s.x != 134 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test2():
+	c_program_text= """
+		struct S
+		{
+			f32 x;
+			// auto-return for "byval this" method.
+			fn Foo( byval this ) : auto
+			{
+				return u64(x) + 15u64;
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 887.3f };
+			halt if( s.Foo() != u64( 887 + 15 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

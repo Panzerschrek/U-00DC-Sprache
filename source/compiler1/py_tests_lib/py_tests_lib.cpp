@@ -432,8 +432,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoForReturnType_Test4",
 		"AutoForReturnType_Test5",
 		"AutoForReturnType_Test6",
-		"AutoFunctionInsideClassesNotAllowed_Test0",
-		"AutoFunctionInsideClassesNotAllowed_Test1",
 		"ExpectedBodyForAutoFunction_Test0",
 		"ExpectedBodyForAutoFunction_Test1",
 		"ExpectedReferenceValue_ForAutoReturnValue_Test0",
@@ -442,6 +440,9 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
+		"AutoFunctionInsideClass_Test0",
+		"AutoFunctionInsideClass_Test1",
+		"AutoFunctionInsideClass_Test2",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
