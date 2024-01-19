@@ -44,3 +44,4 @@
    lambdas
    c_interaction
    unsafe_code_requirements
+   language_limitations
