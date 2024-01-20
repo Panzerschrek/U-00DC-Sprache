@@ -19,7 +19,7 @@ size_t CoroutineTypeDescription::Hash() const
 		for( const FunctionType::ParamReference& param_reference : tags_set )
 			hash= llvm::hash_combine( hash, param_reference );
 
-	for( const InnerReferenceType k : inner_references )
+	for( const InnerReferenceKind k : inner_references )
 		hash= llvm::hash_combine( hash, k );
 
 	return hash;

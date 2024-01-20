@@ -85,7 +85,7 @@ VariableMutPtr Variable::Create(
 			Variable(
 				FundamentalType( U_FundamentalType::InvalidType ),
 				// Mutability of inner reference node is determined only by type properties itself.
-				result->type.GetInnerReferenceType(i) == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				result->type.GetInnerReferenceKind(i) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				result->name + " inner reference " + std::to_string(i),
 				nullptr,

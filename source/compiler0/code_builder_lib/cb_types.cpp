@@ -184,7 +184,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	coroutine_type_description.inner_references.reserve( coroutine_type_name.inner_references.size() );
 	for( const Synt::MutabilityModifier m : coroutine_type_name.inner_references )
-		coroutine_type_description.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+		coroutine_type_description.inner_references.push_back( m == MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 
 	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type_name.non_sync_tag );
 

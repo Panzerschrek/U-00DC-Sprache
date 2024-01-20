@@ -30,7 +30,7 @@ class Class;
 struct Enum;
 class Type;
 
-enum class InnerReferenceType : uint8_t
+enum class InnerReferenceKind : uint8_t
 {
 	Imut, // Type have immutable inner reference
 	Mut, // Type have mutable inner reference
@@ -104,7 +104,7 @@ public:
 	bool IsAbstract() const;
 
 	size_t ReferenceTagCount() const;
-	InnerReferenceType GetInnerReferenceType(size_t index) const;
+	InnerReferenceKind GetInnerReferenceKind(size_t index) const;
 
 	llvm::Type* GetLLVMType() const;
 

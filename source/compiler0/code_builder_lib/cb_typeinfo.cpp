@@ -49,7 +49,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
-	typeinfo_class->inner_references.push_back( InnerReferenceType::Imut ); // Almost all typeinfo have references to another typeinfo.
+	typeinfo_class->inner_references.push_back( InnerReferenceKind::Imut ); // Almost all typeinfo have references to another typeinfo.
 
 	return typeinfo_class;
 }
@@ -153,7 +153,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		bool contains_mutable_references= false;
 		for( size_t i= 0, reference_tag_count= type.ReferenceTagCount(); i < reference_tag_count; ++i )
-			contains_mutable_references |= type.GetInnerReferenceType(i) == InnerReferenceType::Mut;
+			contains_mutable_references |= type.GetInnerReferenceKind(i) == InnerReferenceKind::Mut;
 
 		add_bool_field( "contains_mutable_references", contains_mutable_references );
 	}

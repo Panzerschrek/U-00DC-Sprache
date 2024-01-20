@@ -74,7 +74,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				const auto reference_tag_count= param.type.ReferenceTagCount();
 				for( size_t i= 0; i < reference_tag_count; ++i )
 				{
-					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceType(i) );
+					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
 					coroutine_return_inner_ferences.push_back(
 						FunctionType::ReturnReferences{
 							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
@@ -83,7 +83,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
-			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 			coroutine_return_inner_ferences.push_back(
 				FunctionType::ReturnReferences{
 					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );

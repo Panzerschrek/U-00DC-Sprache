@@ -375,7 +375,7 @@ size_t Type::ReferenceTagCount() const
 	return 0;
 }
 
-InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
+InnerReferenceKind Type::GetInnerReferenceKind( const size_t index ) const
 {
 	U_ASSERT( index < ReferenceTagCount() );
 
@@ -385,7 +385,7 @@ InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 		return class_type->inner_references[index];
 	}
 	else if( const auto array_type= GetArrayType() )
-		return array_type->element_type.GetInnerReferenceType(index);
+		return array_type->element_type.GetInnerReferenceKind(index);
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		size_t offset= 0;
@@ -393,15 +393,15 @@ InnerReferenceType Type::GetInnerReferenceType( const size_t index ) const
 		{
 			const size_t count= element.ReferenceTagCount();
 			if( index >= offset && index < offset + count )
-				return element.GetInnerReferenceType( index - offset );
+				return element.GetInnerReferenceKind( index - offset );
 			offset+= count;
 		}
 		U_ASSERT(false); // Unreachable.
-		return InnerReferenceType::Imut;
+		return InnerReferenceKind::Imut;
 	}
 
 	U_ASSERT(false); // Unreachable - other types have 0 reference tags.
-	return InnerReferenceType::Imut;
+	return InnerReferenceKind::Imut;
 }
 
 llvm::Type* Type::GetLLVMType() const

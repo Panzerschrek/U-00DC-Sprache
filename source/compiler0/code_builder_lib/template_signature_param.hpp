@@ -87,7 +87,7 @@ public:
 		FunctionType::ReturnReferences return_references;
 		FunctionType::ReturnInnerReferences return_inner_references;
 
-		llvm::SmallVector<InnerReferenceType, 4> inner_references;
+		llvm::SmallVector<InnerReferenceKind, 4> inner_references;
 		bool non_sync= false;
 
 		bool operator==( const CoroutineParam& other ) const;

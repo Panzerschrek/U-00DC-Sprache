@@ -119,7 +119,7 @@ void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
 		i < i_end;
 		++i )
 	{
-		if( function_type.return_type.GetInnerReferenceType(i) == InnerReferenceType::Mut )
+		if( function_type.return_type.GetInnerReferenceKind(i) == InnerReferenceKind::Mut )
 			CheckReferenceNotationMutabilityViolationForReturnReferences( function_type, function_type.return_inner_references[i], errors_container, src_loc );
 	}
 
@@ -131,7 +131,7 @@ void CodeBuilder::CheckFunctionReferencesNotationMutabilityCorrectness(
 
 		if( pollution.dst.second != FunctionType::c_param_reference_number &&
 			pollution.dst.second < dst_param.type.ReferenceTagCount() &&
-			dst_param.type.GetInnerReferenceType( pollution.dst.second ) == InnerReferenceType::Mut )
+			dst_param.type.GetInnerReferenceKind( pollution.dst.second ) == InnerReferenceKind::Mut )
 			CheckReferenceNotationMutabilityViolationForMutableReference( function_type, pollution.src, errors_container, src_loc );
 	}
 }
@@ -165,7 +165,7 @@ void CodeBuilder::CheckReferenceNotationMutabilityViolationForMutableReference(
 	else
 	{
 		if( param_reference.second < param.type.ReferenceTagCount() &&
-			param.type.GetInnerReferenceType( param_reference.second ) != InnerReferenceType::Mut )
+			param.type.GetInnerReferenceKind( param_reference.second ) != InnerReferenceKind::Mut )
 			REPORT_ERROR( ReferenceNotationViolatesImmutability, errors_container, src_loc );
 	}
 }

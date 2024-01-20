@@ -542,7 +542,7 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 	}
 
 	// Encode inner references as variable template parameters.
-	for( const InnerReferenceType inner_reference : coroutine_type_description->inner_references )
+	for( const InnerReferenceKind inner_reference : coroutine_type_description->inner_references )
 	{
 		mangler_state.Push( "L" );
 		mangler_state.Push( EncodeFundamentalType( U_FundamentalType::u32_ ) );
