@@ -432,6 +432,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoForReturnType_Test4",
 		"AutoForReturnType_Test5",
 		"AutoForReturnType_Test6",
+		"AutoForReturnType_Test7",
+		"ConstexprFunctionContainsUnallowedOperations_ForAutoReturnFunction_Test0",
 		"ExpectedBodyForAutoFunction_Test0",
 		"ExpectedBodyForAutoFunction_Test1",
 		"ExpectedReferenceValue_ForAutoReturnValue_Test0",
@@ -443,6 +445,9 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoFunctionInsideClass_Test0",
 		"AutoFunctionInsideClass_Test1",
 		"AutoFunctionInsideClass_Test2",
+		"AutoFunctionInsideClass_Test3",
+		"AutoFunctionInsideClass_Test4",
+		"AutoFunctionInsideClass_Test5",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

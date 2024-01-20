@@ -279,6 +279,9 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 				FunctionType function_type= function_variable.type;
 				function_type.return_type= return_type;
 
+				if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+					function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto; // We can deduce "constexpr" property for all auto-return functions.
+
 				function_variable.have_body= false;
 				function_variable.return_type_is_auto= false;
 				function_variable.llvm_function->function->eraseFromParent();
