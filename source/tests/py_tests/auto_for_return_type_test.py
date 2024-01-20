@@ -106,6 +106,18 @@ def AutoForReturnType_Test6():
 	assert( call_result == 54 )
 
 
+def AutoForReturnType_Test7():
+	c_program_text= """
+		// auto-return functions are also auto-constexpr.
+		fn Foo( u32 x ) : auto
+		{
+			return x / 3u;
+		}
+		static_assert( Foo( 16u ) == 5u );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AutoForFunctionTemplate_Test0():
 	c_program_text= """
 		template</ type T />
@@ -139,3 +151,134 @@ def AutoForFunctionTemplate_Test1():
 		static_assert( Pass(-85.1) == -85.1 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AutoFunctionInsideClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			// auto static method.
+			fn Foo() : auto { return 384; }
+		}
+		fn Foo()
+		{
+			var i32 expected_result= 384;
+			halt if( S::Foo() != expected_result );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test1():
+	c_program_text= """
+		class S
+		{
+			i32 x= 0;
+			// Auto this-call method.
+			fn Foo( mut this, i32 new_x ) : auto
+			{
+				var f32 res= f32(x);
+				x= new_x;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s;
+			s.x= 643;
+			halt if( s.Foo( 134 ) != 643.0f );
+			halt if( s.x != 134 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test2():
+	c_program_text= """
+		struct S
+		{
+			f32 x;
+			// auto-return for "byval this" method.
+			fn Foo( byval this ) : auto
+			{
+				return u64(x) + 15u64;
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 887.3f };
+			halt if( s.Foo() != u64( 887 + 15 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test3():
+	c_program_text= """
+		struct S
+		{
+			u32 x;
+			// "auto" for return reference of a method.
+			fn GetXRef( mut this ) : auto &mut
+			{
+				return x;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 989u };
+			s.GetXRef()= 42u;
+			halt if( s.x != 42u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test4():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			// auto-return method is also constexpr.
+			template</type T/>
+			fn Foo( this ) : auto
+			{
+				return T(x);
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 434 };
+			static_assert( s.Foo</f32/>() == 434.0f );
+			static_assert( s.Foo</u32/>() == 434u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoFunctionInsideClass_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			// auto-return template method. Should be also auto-constexpr.
+			template</type T/>
+			fn Foo( this ) : auto
+			{
+				return T(x);
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 6565 };
+			static_assert( s.Foo</f32/>() == 6565.0f );
+			static_assert( s.Foo</u32/>() == 6565u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

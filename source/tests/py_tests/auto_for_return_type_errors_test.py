@@ -51,31 +51,6 @@ def ExpectedBodyForAutoFunction_Test1():
 	assert( errors_list[0].src_loc.line == 2 )
 
 
-def AutoFunctionInsideClassesNotAllowed_Test0():
-	c_program_text= """
-		struct S
-		{
-			fn Foo() : auto { return 0; }
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "AutoFunctionInsideClassesNotAllowed" )
-	assert( errors_list[0].src_loc.line == 4 )
-
-
-def AutoFunctionInsideClassesNotAllowed_Test1():
-	c_program_text= """
-		class S
-		{
-			fn Foo() : auto { return 0; }
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "AutoFunctionInsideClassesNotAllowed" )
-	assert( errors_list[0].src_loc.line == 4 )
-
 def TypesMismtach_ForAutoReturnValue_Test0():
 	c_program_text= """
 		fn Foo( bool b ) : auto
@@ -117,3 +92,15 @@ def ExpectedReferenceValue_ForAutoReturnValue_Test0():
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "ExpectedReferenceValue" )
 	assert( errors_list[1].src_loc.line == 4 )
+
+
+def ConstexprFunctionContainsUnallowedOperations_ForAutoReturnFunction_Test0():
+	c_program_text= """
+		fn constexpr Foo() : auto
+		{
+			unsafe {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
