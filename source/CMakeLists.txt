@@ -166,8 +166,6 @@ else()
 
 endif()
 
-add_subdirectory(sprache_version)
-
 #
 # Generated stuff
 #
@@ -176,129 +174,16 @@ file( READ keywords_list.txt KEYWORDS_LIST_CONTENT )
 set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
 
 #
-# LexSyntLibCommon
+# Common libraries
 #
+add_subdirectory( sprache_version )
+add_subdirectory( lex_synt_lib_common )
+add_subdirectory( code_builder_lib_common )
+add_subdirectory( compilers_support_lib )
+add_subdirectory( compilers_common_lib )
+add_subdirectory( tests/tests_lib )
+add_subdirectory( tests/cpp_tests )
 
-file( GLOB LEX_SYNT_COMMON_SOURCES "lex_synt_lib_common/*" )
-add_library( LexSyntLibCommon ${LEX_SYNT_COMMON_SOURCES} )
-
-#
-# CodeBuilderLibCommon
-#
-
-file( GLOB CODE_BUILDER_COMMON_SOURCES "code_builder_lib_common/*" )
-add_library( CodeBuilderLibCommon ${CODE_BUILDER_COMMON_SOURCES} )
-target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
-
-#
-# CompilersSupportLib
-#
-
-# External AS needed for cross-builds.
-if( DEFINED U_EXTERNAL_LLVM_AS )
-	set( U_LLVM_AS ${U_EXTERNAL_LLVM_AS} )
-else()
-	set( U_LLVM_AS llvm-as )
-endif()
-
-function( CompileLLFile ll_file )
-	get_filename_component( source_name ${ll_file} NAME_WE )
-	set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
-	set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/bc_files_headers/${source_name}.h )
-	add_custom_command(
-		OUTPUT ${bc_name}
-		DEPENDS ${ll_file}
-		DEPENDS ${U_LLVM_AS}
-		COMMAND ${U_LLVM_AS} ${ll_file} -o ${bc_name}
-		)
-	add_custom_command(
-		OUTPUT ${bc_header_path}
-		DEPENDS ${bc_name}
-		DEPENDS ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name}
-		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
-		)
-	set( BC_FILE ${bc_header_path} PARENT_SCOPE )
-endfunction()
-
-file( GLOB LL_FILES ${CMAKE_SOURCE_DIR}/ustlib/src/* )
-foreach( LL_FILE ${LL_FILES} )
-	CompileLLFile( ${LL_FILE} )
-	list( APPEND bc_files ${BC_FILE} )
-endforeach()
-
-# Show in editor also ustlib and ustlib tests files
-file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" )
-file( GLOB_RECURSE USTLIB_SOURCES_LL "ustlib/src/*.ll" )
-file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
-
-file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
-add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
-target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB} )
-target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
-
-install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
-
-#
-# CompilersSupportLib
-#
-if( U_BUILD_COMPILER )
-	message( STATUS "Build compiler" )
-
-	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
-	if( TARGET lldCommon )
-		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "compilers_common_lib/linker_stub.cpp" )
-	else()
-		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "compilers_common_lib/linker.cpp" "compilers_common_lib/linker_elf.cpp" "compilers_common_lib/linker_coff.cpp" )
-	endif()
-	list( REMOVE_ITEM COMPILERS_COMMON_LIB_SOURCES ${COMPILERS_COMMON_LIB_EXCLUDE_SOURCES} )
-
-	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
-	target_link_libraries( CompilersCommonLib CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
-
-	if( TARGET lldCommon )
-		# Hack! LLD libraries do not export their include directories, set it manually.
-		target_include_directories( CompilersCommonLib PRIVATE ${LLVM_EXTERNAL_LLD_SOURCE_DIR}/include )
-		target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/lld/include )
-
-		# TODO - use other linkers.
-		target_link_libraries( CompilersCommonLib lldCOFF lldELF lldMinGW )
-	endif()
-
-else()
-	message( STATUS "Skip compiler" )
-endif()
-
-#
-# TestsLib
-#
-if( U_BUILD_TESTS )
-	file( GLOB TESTS_SOURCES "tests/tests_lib/*" )
-	add_library( TestsLib ${TESTS_SOURCES} )
-endif()
-
-#
-# CppTestsLib
-#
-if( U_BUILD_TESTS )
-	message( STATUS "Build tests" )
-
-	file( GLOB CPP_TESTS_SOURCES "tests/cpp_tests/*" )
-	add_library( CppTestsLib ${CPP_TESTS_SOURCES} )
-	target_link_libraries( CppTestsLib PUBLIC TestsLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
-
-	# Hack! Force use static variables with initializers with tests registration
-	set( CPP_TESTS_LIB_WRAPPED CppTestsLib )
-	if( NOT MSVC )
-		set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
-	endif()
-
-else()
-	message( STATUS "Skip tests" )
-endif()
-
-#
-# Compiler0
-#
 add_subdirectory( compiler0 )
 
 #
