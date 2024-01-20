@@ -1785,13 +1785,6 @@ Type CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info= BuildBlockElements( function_names, function_context, block.elements );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
-	// If we build func code only for return type deducing - we can return. Function code will be generated later.
-	if( func_variable.return_type_is_auto )
-	{
-		func_variable.return_type_is_auto= false;
-		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_;
-	}
-
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
 		// Check function type and function body.
@@ -1811,6 +1804,12 @@ Type CodeBuilder::BuildFuncCode(
 			can_be_constexpr= false;
 
 		if( function_type.return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
+			can_be_constexpr= false;
+
+		// If this is preprocessing of auto-return function, check also deduced return type.
+		if( function_context.deduced_return_type != std::nullopt &&
+			( !function_context.deduced_return_type->CanBeConstexpr() ||
+			  function_context.deduced_return_type->GetFunctionPointerType() != nullptr ) )
 			can_be_constexpr= false;
 
 		for( const FunctionType::Param& param : function_type.params )
@@ -1873,7 +1872,7 @@ Type CodeBuilder::BuildFuncCode(
 			}
 			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
-		else
+		else if( !func_variable.return_type_is_auto )
 		{
 			// Automatically generate "return" for void-return functions.
 			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
@@ -1897,6 +1896,19 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	if( func_variable.return_type_is_auto )
+	{
+		// Early return for auto-return function preprocessing.
+		func_variable.return_type_is_auto= false;
+		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_;
+	}
+
+	// Early return for lambda preprocessing.
+	if( lambda_preprocessing_context != nullptr )
+		return function_type.return_type;
+
+	// Perform final steps for regular functions (if this is not some preprocessing).
 
 	CheckForUnusedLocalNames( function_names );
 
