@@ -182,7 +182,13 @@ add_subdirectory( code_builder_lib_common )
 add_subdirectory( compilers_support_lib )
 add_subdirectory( compilers_common_lib )
 add_subdirectory( tests/tests_lib )
+
 add_subdirectory( tests/cpp_tests )
+# Hack! Force use static variables with initializers with tests registration
+set( CPP_TESTS_LIB_WRAPPED CppTestsLib )
+if( NOT MSVC )
+	set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+endif()
 
 add_subdirectory( compiler0 )
 
