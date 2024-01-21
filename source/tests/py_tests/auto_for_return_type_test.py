@@ -282,3 +282,157 @@ def AutoFunctionInsideClass_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test0():
+	c_program_text= """
+		fn Bar( i32& x, i32& y ) : auto&
+		{
+			return x; // return only first arg
+		}
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "0_" ];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
+		fn Foo()
+		{
+			var i32 x= 42, y= 34;
+			halt if( Bar( x, y ) != 42 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test1():
+	c_program_text= """
+		fn Bar( i32& x, i32& y ) : auto&
+		{
+			return y; // return only second arg
+		}
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "1_" ];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
+		fn Foo()
+		{
+			var i32 x= 789, y= 123;
+			halt if( Bar( x, y ) != 123 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test2():
+	c_program_text= """
+		fn Bar( i32& x, i32& y ) : auto&
+		{
+			return select( x > y ? y : x ); // return both args
+		}
+		var [ [ char8, 2 ], 2 ] expected_return_references[ "0_", "1_" ];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
+		fn Foo()
+		{
+			var i32 x= 67, y= 34;
+			halt if( Bar( x, y ) != 34 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Bar( S a, S b ) : auto&
+		{
+			return a.r; // return inner reference of first arg
+		}
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "0a" ];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
+		fn Foo()
+		{
+			var i32 x= 444, y= 555;
+			var S a{ .r= x }, b{ .r= y };
+			halt if( Bar( a, b ) != 444 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test4():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Bar( S& a, S& b ) : auto&
+		{
+			return b.r; // return inner reference of second arg
+		}
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "1a" ];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
+		fn Foo()
+		{
+			var i32 x= 654, y= 987;
+			var S a{ .r= x }, b{ .r= y };
+			halt if( Bar( a, b ) != 987 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test5():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Bar( i32& x, i32& y ) : auto
+		{
+			var S s{ .r= x };
+			return s; // return inside "s" reference to first arg
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] expected_return_inner_references[ [ "0_" ] ];
+		static_assert( typeinfo</ typeof(Bar) />.return_inner_references == expected_return_inner_references );
+		fn Foo()
+		{
+			var i32 x= 454, y= 787;
+			halt if( Bar( x, y ).r != 454 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test6():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Bar( i32& x, i32& y ) : auto
+		{
+			var S s{ .r= select( x > y ? x : y ) };
+			return s; // return inside "s" references to first args
+		}
+		var tup[ [ [ char8, 2 ], 2 ] ] expected_return_inner_references[ [ "0_", "1_" ] ];
+		static_assert( typeinfo</ typeof(Bar) />.return_inner_references == expected_return_inner_references );
+		fn Foo()
+		{
+			var i32 x= 77, y= 99;
+			halt if( Bar( x, y ).r != 99 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test7():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Bar( bool b, S s ) : auto
+		{
+			return s; // Return just copy of arg (including its internal reference)
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] expected_return_inner_references[ [ "1a" ] ];
+		static_assert( typeinfo</ typeof(Bar) />.return_inner_references == expected_return_inner_references );
+		fn Foo()
+		{
+			var i32 x= 6789;
+			var S s{ .r= x };
+			halt if( Bar( false, s ).r != 6789 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
