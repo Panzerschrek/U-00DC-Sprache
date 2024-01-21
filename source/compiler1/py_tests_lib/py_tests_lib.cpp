@@ -441,6 +441,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoReferenceNotation_Test5",
 		"AutoReferenceNotation_Test6",
 		"AutoReferenceNotation_Test7",
+		"AutoReferenceNotation_Test8",
+		"AutoReferenceNotation_Test9",
 		"ConstexprFunctionContainsUnallowedOperations_ForAutoReturnFunction_Test0",
 		"ExpectedBodyForAutoFunction_Test0",
 		"ExpectedBodyForAutoFunction_Test1",

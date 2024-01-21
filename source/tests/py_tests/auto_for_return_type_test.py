@@ -436,3 +436,53 @@ def AutoReferenceNotation_Test7():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test8():
+	c_program_text= """
+		struct S{ i32& r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( S &mut s, i32& x ) @(pollution) {}
+
+		fn Bar( S &mut s, i32& x ) : auto
+		{
+			// Return nothing, but perform reference pollution.
+			MakePollution( s, x );
+		}
+		var [ [ [ char8, 2 ], 2 ], 1 ] expected_references_pollution[ [ "0a", "1_" ] ];
+		static_assert( typeinfo</ typeof(Bar) />.references_pollution == expected_references_pollution );
+		fn Foo()
+		{
+			var i32 x= 6789, y= 765;
+			var S mut s{ .r= x };
+			Bar( s, y );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test9():
+	c_program_text= """
+		struct S{ i32& r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( S &mut s, i32& x ) @(pollution) {}
+
+		fn Bar( i32& x , S &mut s ) : auto
+		{
+			// Perform reference pollution.
+			MakePollution( s, x );
+			// And return u32.
+			return u32( s.r );
+		}
+		var [ [ [ char8, 2 ], 2 ], 1 ] expected_references_pollution[ [ "1a", "0_" ] ];
+		static_assert( typeinfo</ typeof(Bar) />.references_pollution == expected_references_pollution );
+		fn Foo()
+		{
+			var i32 x= 333, y= 666;
+			var S mut s{ .r= x };
+			halt if( Bar( y, s ) != 333u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

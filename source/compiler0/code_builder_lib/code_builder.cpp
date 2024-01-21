@@ -1875,7 +1875,12 @@ void CodeBuilder::BuildFuncCode(
 			}
 			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
-		else if( !func_variable.return_type_is_auto )
+		else if( return_type_deduction_context != nullptr )
+		{
+			if( reference_notation_deduction_context != nullptr )
+				CollectReferencePollution( function_context );
+		}
+		else
 		{
 			// Automatically generate "return" for void-return functions.
 			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
