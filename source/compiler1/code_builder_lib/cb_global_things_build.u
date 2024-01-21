@@ -227,6 +227,12 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 
 				auto return_type_deduction_context_ptr= ust::make_shared_ptr( ReturnTypeDeductionContext() );
 
+				if( func_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+				{
+					// We can deduce "constexpr" property for all auto-return functions.
+					func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+				}
+
 				BuildFuncCode(
 					names_scope_ptr,
 					func_variable,

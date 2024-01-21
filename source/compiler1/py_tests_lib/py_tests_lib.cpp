@@ -423,8 +423,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"AutoForFunctionTemplate_Test1",
-		"AutoForReturnType_Test7",
 		"AutoReferenceNotation_Test0",
 		"AutoReferenceNotation_Test1",
 		"AutoReferenceNotation_Test2",
