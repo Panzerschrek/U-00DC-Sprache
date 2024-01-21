@@ -1033,24 +1033,16 @@ size_t CodeBuilder::PrepareFunction(
 		if( !func.type.params.empty() && func.type.params.front().name == Keywords::this_ )
 			func_variable.is_this_call= true;
 
-		if( func.type.return_type != nullptr )
+		if( func.type.IsAutoReturn() )
 		{
-			if( const auto name_lookup = std::get_if<Synt::NameLookup>( func.type.return_type.get() ) )
-			{
-				if( name_lookup->name == Keywords::auto_ )
-				{
-					func_variable.return_type_is_auto= true;
-
-					if( func.block == nullptr )
-						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
-					if( func.type.return_value_reference_expression != nullptr )
-						REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_reference_expression ) );
-					if( func.type.return_value_inner_references_expression != nullptr )
-						REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_inner_references_expression ) );
-					if( func.type.references_pollution_expression != nullptr )
-						REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.references_pollution_expression ) );
-				}
-			}
+			if( func.block == nullptr )
+				REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
+			if( func.type.return_value_reference_expression != nullptr )
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_reference_expression ) );
+			if( func.type.return_value_inner_references_expression != nullptr )
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_inner_references_expression ) );
+			if( func.type.references_pollution_expression != nullptr )
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.references_pollution_expression ) );
 		}
 
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
@@ -1099,7 +1091,7 @@ size_t CodeBuilder::PrepareFunction(
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
 
 			// Disable auto-coroutines.
-			if( func_variable.return_type_is_auto )
+			if( func.type.IsAutoReturn() )
 			{
 				REPORT_ERROR( AutoReturnCoroutine, names_scope.GetErrors(), func.type.src_loc );
 				func_variable.kind= FunctionVariable::Kind::Regular;

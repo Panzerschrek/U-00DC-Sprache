@@ -614,8 +614,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( function_context.return_type_deduction_context != nullptr )
 	{
 		// Do not try to perform here any reference conversion or type conversion.
-		// Such conversions may be consufising for a programmer.
-		// So, allow only simplest way of return type deduction - where all types in return operator are identical.
+		// Such conversions may be confusing for a programmer.
+		// So, allow only simplest way of return type deduction - where types in all return operators are identical.
 		if( function_context.return_type_deduction_context->return_type == std::nullopt )
 			function_context.return_type_deduction_context->return_type = expression_result->type;
 		else if( *function_context.return_type_deduction_context->return_type != expression_result->type )
@@ -623,13 +623,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( function_context.reference_notation_deduction_context != nullptr )
 		{
-			if( function_context.function_type.return_value_type == ValueType::Value )
-				CollectReturnInnerReferences( function_context, expression_result );
-			else
-			{
+			if( function_context.function_type.return_value_type != ValueType::Value )
 				CollectReturnReferences( function_context, expression_result );
-				CollectReturnInnerReferences( function_context, expression_result );
-			}
+
+			CollectReturnInnerReferences( function_context, expression_result );
 
 			CollectReferencePollution( function_context );
 		}
