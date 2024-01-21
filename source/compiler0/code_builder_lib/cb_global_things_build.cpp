@@ -262,7 +262,6 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 			FunctionVariable& function_variable= functions_set.functions[function_index];
 
 			// Immediately build functions with auto return type.
-			// TODO - this is too complicated. Maybe remove auto-return functions from language?
 			if( function_variable.return_type_is_auto && !function_variable.have_body && function->block != nullptr )
 			{
 				// First, compile function only for return type deducing.
@@ -274,9 +273,6 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					functions_set_name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get(),
 					&return_type_deduction_context,
 					&reference_notation_deduction_context );
 
@@ -297,14 +293,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 				function_variable.type= std::move(function_type);
 
 				// Then, compile function again, when type already known.
-				BuildFuncCode(
-					function_variable,
-					functions_set.base_class,
-					names_scope,
-					functions_set_name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get() );
+				BuildFuncCode( function_variable, functions_set.base_class, names_scope, functions_set_name );
 			}
 		}
 
@@ -339,10 +328,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name.back().name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get() );
+					function_variable.syntax_element->name.back().name );
 			}
 		}
 	}
@@ -358,10 +344,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name.back().name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get() );
+					function_variable.syntax_element->name.back().name );
 			}
 		}
 	}
@@ -1164,14 +1147,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			{
 				if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
 					!function.have_body && function.syntax_element != nullptr && function.syntax_element->block != nullptr )
-					BuildFuncCode(
-						function,
-						class_type,
-						*the_class.members,
-						name,
-						function.syntax_element->type.params,
-						*function.syntax_element->block,
-						function.syntax_element->constructor_initialization_list.get() );
+					BuildFuncCode( function, class_type, *the_class.members, name );
 			}
 		}); // for functions
 }

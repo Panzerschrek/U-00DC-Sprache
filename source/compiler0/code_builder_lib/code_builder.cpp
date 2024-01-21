@@ -1413,9 +1413,6 @@ void CodeBuilder::BuildFuncCode(
 	const ClassPtr base_class,
 	NamesScope& parent_names_scope,
 	const std::string_view func_name,
-	const llvm::ArrayRef<Synt::FunctionParam> params,
-	const Synt::Block& block,
-	const Synt::StructNamedInitializer* const constructor_initialization_list,
 	ReturnTypeDeductionContext* const return_type_deduction_context,
 	ReferenceNotationDeductionContext* const reference_notation_deduction_context,
 	LambdaPreprocessingContext* const lambda_preprocessing_context )
@@ -1424,6 +1421,14 @@ void CodeBuilder::BuildFuncCode(
 	func_variable.have_body= true;
 
 	const FunctionType& function_type= func_variable.type;
+
+	U_ASSERT( func_variable.syntax_element != nullptr );
+	const Synt::Function& syntax_element= *func_variable.syntax_element;
+
+	const auto& params= func_variable.syntax_element->type.params;
+
+	U_ASSERT( syntax_element.block != nullptr );
+	const Synt::Block& block= *syntax_element.block;
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( func_variable );
 
@@ -1760,7 +1765,7 @@ void CodeBuilder::BuildFuncCode(
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );
 
-		if( constructor_initialization_list == nullptr )
+		if( syntax_element.constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
 			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc );
@@ -1778,7 +1783,7 @@ void CodeBuilder::BuildFuncCode(
 				*base_class,
 				function_names,
 				function_context,
-				*constructor_initialization_list );
+				*syntax_element.constructor_initialization_list );
 	}
 
 	if( ( is_constructor || is_destructor ) && ( base_class->kind == Class::Kind::Abstract || base_class->kind == Class::Kind::Interface ) )

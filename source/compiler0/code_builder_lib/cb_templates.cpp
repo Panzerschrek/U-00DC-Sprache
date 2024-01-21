@@ -1076,14 +1076,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	if( !function_variable.have_body &&
 		!( skip_building_generated_functions_ && function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr ) &&
 		function_declaration.block != nullptr )
-		BuildFuncCode(
-			function_variable,
-			function_template.base_class,
-			*template_args_namespace,
-			func_name,
-			function_declaration.type.params,
-			*function_declaration.block,
-			function_declaration.constructor_initialization_list.get() );
+		BuildFuncCode( function_variable, function_template.base_class, *template_args_namespace, func_name );
 
 	// Two-step preparation needs for recursive function template call.
 

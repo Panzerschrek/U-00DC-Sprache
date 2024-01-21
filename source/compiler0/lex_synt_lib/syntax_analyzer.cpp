@@ -1511,6 +1511,13 @@ Lambda SyntaxAnalyzer::ParseLambda()
 
 	ParseFunctionTypeEnding( result.function.type );
 
+	// Make sure we have non-empty name.
+	result.function.name.push_back(
+		Function::NameComponent{
+			std::string( OverloadedOperatorToString( OverloadedOperator::Call ) ),
+			result.src_loc,
+			false } );
+
 	// Lambdas always have a body.
 	result.function.block= std::make_unique<Block>( ParseBlock() );
 

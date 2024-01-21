@@ -436,6 +436,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		{
 			FunctionVariable op_variable;
+			op_variable.syntax_element= &lambda.function;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
 			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names ) );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
@@ -446,9 +447,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				class_,
 				custom_captures_names_scope,
 				call_op_name,
-				lambda.function.type.params,
-				*lambda.function.block,
-				nullptr,
 				nullptr,
 				&reference_notation_deduction_context,
 				&lambda_preprocessing_context );
@@ -666,6 +664,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Create () operator.
 	{
 		FunctionVariable op_variable;
+		op_variable.syntax_element= &lambda.function;
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
@@ -677,18 +676,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		// Use auto-constexpr for () operator.
 		op_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
+		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
+			BuildFuncCode( op_variable, class_, names, call_op_name );
+
 		auto functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( op_variable );
-
-		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
-			BuildFuncCode(
-				functions_set->functions.back(),
-				class_,
-				names,
-				call_op_name,
-				lambda.function.type.params,
-				*lambda.function.block,
-				nullptr );
+		functions_set->base_class= class_;
 
 		class_->members->AddName(
 			call_op_name,

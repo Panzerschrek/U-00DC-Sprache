@@ -716,9 +716,6 @@ private:
 		ClassPtr base_class,
 		NamesScope& parent_names_scope,
 		std::string_view func_name,
-		llvm::ArrayRef<Synt::FunctionParam> params,
-		const Synt::Block& block,
-		const Synt::StructNamedInitializer* constructor_initialization_list= nullptr,
 		// Contexts for different kinds of preprocessing.
 		ReturnTypeDeductionContext* return_type_deduction_context= nullptr,
 		ReferenceNotationDeductionContext* reference_notation_deduction_context= nullptr,
