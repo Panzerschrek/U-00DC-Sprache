@@ -2379,6 +2379,15 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 			llvm_function->addDereferenceableParamAttr( param_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
 		}
+		if( pass_value_param_by_hidden_ref )
+		{
+			// As i understand adding "byval" for arguments passed by hidden reference
+			// allows for the optimizer to remove any unnecessary writes to this argumet,
+			// because these writes are assumed to be unobservable by the caller.
+			llvm::AttrBuilder builder(llvm_context_);
+			builder.addByValAttr( param.type.GetLLVMType() );
+			llvm_function->addParamAttrs( param_attr_index, builder );
+		}
 	}
 
 	const auto llvm_ret_type= function_type.return_type.GetLLVMType();
