@@ -644,8 +644,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		if( function_context.lambda_preprocessing_context != nullptr )
-			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+		if( function_context.reference_notation_deduction_context != nullptr )
+			CollectReturnInnerReferences( function_context, expression_result );
 		else
 			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
 
@@ -741,10 +741,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
 		}
 
-		if( function_context.lambda_preprocessing_context != nullptr )
+		if( function_context.reference_notation_deduction_context != nullptr )
 		{
-			LambdaPreprocessingCollectReturnReferences( function_context, expression_result );
-			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+			CollectReturnReferences( function_context, expression_result );
+			CollectReturnInnerReferences( function_context, expression_result );
 		}
 		else
 		{
@@ -761,8 +761,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc );
 
-	if( function_context.lambda_preprocessing_context != nullptr )
-		LambdaPreprocessingCollectReferencePollution( function_context );
+	if( function_context.reference_notation_deduction_context != nullptr )
+		CollectReferencePollution( function_context );
 	else
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
 
@@ -2789,8 +2789,8 @@ void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function
 
 	CallDestructorsBeforeReturn( names, function_context, src_loc );
 
-	if( function_context.lambda_preprocessing_context != nullptr )
-		LambdaPreprocessingCollectReferencePollution( function_context );
+	if( function_context.reference_notation_deduction_context != nullptr )
+		CollectReferencePollution( function_context );
 	else
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
 

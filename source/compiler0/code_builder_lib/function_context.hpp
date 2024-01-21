@@ -42,7 +42,16 @@ struct LoopFrame final
 
 struct ReturnTypeDeductionContext
 {
+	// Filled during function preprocessing.
 	std::optional<Type> return_type;
+};
+
+struct ReferenceNotationDeductionContext
+{
+	// Filled during function preprocessing.
+	FunctionType::ReturnReferences return_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
+	FunctionType::ReferencesPollution references_pollution;
 };
 
 struct FunctionContext
@@ -99,6 +108,7 @@ public:
 
 	// Observer pointers. May be null.
 	ReturnTypeDeductionContext* return_type_deduction_context= nullptr; // Non-null if preprocessing auto-return function.
+	ReferenceNotationDeductionContext* reference_notation_deduction_context= nullptr; // Non-null if performing reference notation deduction in preprocessing.
 	LambdaPreprocessingContext* lambda_preprocessing_context= nullptr; // Non-null if this is preprocessed lambda.
 
 	// Keep "bool" fields last in order to reduce gaps between fields.

@@ -312,6 +312,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		NamesScope custom_captures_names_scope( "", &names );
 
+		ReferenceNotationDeductionContext reference_notation_deduction_context;
+
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
@@ -448,6 +450,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				*lambda.function.block,
 				nullptr,
 				nullptr,
+				&reference_notation_deduction_context,
 				&lambda_preprocessing_context );
 
 			// Remove temp function.
@@ -576,7 +579,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		const uint8_t this_param_index= 0; // Lambda is "this" (argument 0).
 
 		// Process return references.
-		return_references= std::move(lambda_preprocessing_context.return_references);
+		return_references= std::move(reference_notation_deduction_context.return_references);
 		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 		{
 			if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
@@ -584,7 +587,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		// Process return inner references.
-		return_inner_references= std::move(lambda_preprocessing_context.return_inner_references);
+		return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
 		if( return_inner_references.size() < lambda_preprocessing_context.captured_variables_return_inner_references.size() )
 			return_inner_references.resize( lambda_preprocessing_context.captured_variables_return_inner_references.size() );
 		for( size_t tag_n= 0; tag_n < lambda_preprocessing_context.captured_variables_return_inner_references.size(); ++tag_n )
@@ -597,6 +600,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		// Process pollution.
+		references_pollution= std::move(reference_notation_deduction_context.references_pollution);
 		for( const LambdaPreprocessingContext::ReferencePollution& pollution : lambda_preprocessing_context.references_pollution )
 		{
 			FunctionType::ReferencePollution result_pollution;

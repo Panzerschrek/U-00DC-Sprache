@@ -1410,6 +1410,7 @@ void CodeBuilder::BuildFuncCode(
 	const Synt::Block& block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list,
 	ReturnTypeDeductionContext* const return_type_deduction_context,
+	ReferenceNotationDeductionContext* const reference_notation_deduction_context,
 	LambdaPreprocessingContext* const lambda_preprocessing_context )
 {
 	U_ASSERT( !func_variable.have_body );
@@ -1498,6 +1499,7 @@ void CodeBuilder::BuildFuncCode(
 	FunctionContext function_context( function_type, llvm_context_, llvm_function );
 
 	function_context.return_type_deduction_context= return_type_deduction_context;
+	function_context.reference_notation_deduction_context= reference_notation_deduction_context;
 	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
 
 	const StackVariablesStorage args_storage( function_context );
