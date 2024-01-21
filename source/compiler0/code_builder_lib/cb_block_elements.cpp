@@ -565,6 +565,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.return_type_deduction_context->return_type = void_type_;
 			else if( *function_context.return_type_deduction_context->return_type != void_type_ )
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, void_type_ );
+
+			CollectReferencePollution( function_context );
+
 			return block_info;
 		}
 
@@ -617,6 +620,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.return_type_deduction_context->return_type = expression_result->type;
 		else if( *function_context.return_type_deduction_context->return_type != expression_result->type )
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, expression_result->type );
+
+		if( function_context.reference_notation_deduction_context != nullptr )
+		{
+			if( function_context.function_type.return_value_type == ValueType::Value )
+				CollectReturnInnerReferences( function_context, expression_result );
+			else
+			{
+				CollectReturnReferences( function_context, expression_result );
+				CollectReturnInnerReferences( function_context, expression_result );
+			}
+
+			CollectReferencePollution( function_context );
+		}
+
 		return block_info;
 	}
 
