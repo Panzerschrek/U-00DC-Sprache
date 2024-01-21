@@ -17,7 +17,6 @@ General:
 	etc. (in expression context)
 *) "nodiscard" for types (and/or) functions
 *) Function to function pointer assignment with multiple possible functions
-*) Automatically calculate reference notation for "auto"-return functions
 *) Provide calling convention in typeinfo for function types
 
 References:
