@@ -221,13 +221,65 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	var bool is_class_method= !functions_set.class_.empty();
 	foreach( &mut func_variable : functions_set.functions )
 	{
+		// Immediately build auto-return functions.
+		if( !func_variable.body_syntax_element.empty() &&
+			!func_variable.body_syntax_element.try_deref().block.empty() &&
+			func_variable.body_syntax_element.try_deref().function_type.IsAutoReturn() )
+		{
+			auto llvm_function= func_variable.llvm_function.lock_imut().deref().function;
+			if( llvm_function == LLVMValueRef::Null || unsafe( LLVMCountBasicBlocks( llvm_function ) ) == 0u )
+			{
+				// Preprocess function in order to deduce return type and reference notation.
+				var ReturnTypeDeductionContext return_type_deduction_context;
+
+				auto return_type_deduction_context_ptr= ust::make_shared_ptr( ReturnTypeDeductionContext() );
+
+				BuildFuncCode(
+					names_scope_ptr,
+					func_variable,
+					return_type_deduction_context_ptr,
+					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
+
+				// Update function type.
+				auto return_type= return_type_deduction_context_ptr.lock_imut().deref().return_type;
+				func_variable.t.return_type= select( return_type.empty() ? void_type_ : return_type.try_deref() );
+
+				// Remove old LLVM function and create new one (with name based on exact deduced function type).
+				auto prev_llvm_function= func_variable.llvm_function.lock_imut().deref().function;
+				if( prev_llvm_function != LLVMValueRef::Null )
+				{
+					unsafe( LLVMDeleteFunction( prev_llvm_function ) );
+				}
+
+				with( &name : func_variable.body_syntax_element.try_deref().name.back() )
+				{
+					func_variable.llvm_function.reset(
+						LazyLLVMFunction(
+							select( func_variable.no_mangle
+								? name + "\0"
+								: mangler_.deref().MangleFunction( names_scope_ptr.lock_imut().deref(), name.range(), func_variable.t ) ) ) );
+				}
+
+				// Compile function when its type is exactly known.
+				BuildFuncCode(
+					names_scope_ptr,
+					func_variable,
+					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
+			}
+		}
+
 		// Immediately build body of "constexpr" functions.
 		if( !func_variable.is_inherited )
 		{
 			if( build_body ||
 				( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
 			{
-				BuildFuncCode( names_scope_ptr, func_variable );
+				BuildFuncCode(
+					names_scope_ptr,
+					func_variable,
+					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 			}
 		}
 	}
@@ -1342,7 +1394,11 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 			{
-				BuildFuncCode( class_members, func_variable );
+				BuildFuncCode(
+					class_members,
+					func_variable,
+					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 			}
 		}
 

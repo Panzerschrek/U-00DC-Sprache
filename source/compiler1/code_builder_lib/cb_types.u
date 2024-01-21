@@ -198,7 +198,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.return_type(
 			select(
-				function_type.return_type.empty()
+				function_type.return_type.empty() || function_type.IsAutoReturn()
 					? Type( void_type_ )
 					: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
 		.return_value_type= ValueType::Value,

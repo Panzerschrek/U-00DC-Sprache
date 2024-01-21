@@ -18,6 +18,12 @@ struct LoopFrame
 	ust::vector</ReferencesGraph/> continue_references_graphs;
 }
 
+struct ReturnTypeDeductionContext
+{
+	// Filled during function preprocessing.
+	ust::optional</Type/> return_type;
+}
+
 struct LambdaPreprocessingContext
 {
 	type ExplicitCaptures= ust::unordered_map</ VariablePtr, ExplicitCapture />;
@@ -121,6 +127,7 @@ public:
 
 	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
 
+	ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> return_type_deduction_context;
 	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context;
 }
 

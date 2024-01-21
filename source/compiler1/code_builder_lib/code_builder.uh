@@ -306,8 +306,12 @@ private:
 
 	fn CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type );
 
-	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
-	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable, ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
+	fn BuildFuncCode(
+		mut this,
+		NamesScopePtr& names_scope_ptr,
+		FunctionVariable &mut func_variable,
+		ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> return_type_deduction_context,
+		ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
 
 	struct BlockElementBuildInfo
 	{

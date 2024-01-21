@@ -367,6 +367,8 @@ struct FunctionType
 	ust::box_nullable</Expression/> return_value_inner_references_expression;
 	ust::optional</ust::string8/> calling_convention;
 	bool is_unsafe= false;
+
+	fn IsAutoReturn( this ) : bool;
 }
 
 type TypeName= ust::variant</ tup[

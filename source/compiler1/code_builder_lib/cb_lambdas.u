@@ -544,7 +544,11 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				.is_this_call= true,
 			};
 
-			BuildFuncCode( custom_captures_names_scope, function_variable, lambda_preprocessing_context_ptr );
+			BuildFuncCode(
+				custom_captures_names_scope,
+				function_variable,
+				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				lambda_preprocessing_context_ptr );
 
 			// Remove temp function.
 			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
@@ -828,7 +832,11 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
 		{
-			BuildFuncCode( names_scope, function_variable );
+			BuildFuncCode(
+				names_scope,
+				function_variable,
+				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 		}
 
 		var FunctionsSet mut functions_set;
