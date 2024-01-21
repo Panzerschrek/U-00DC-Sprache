@@ -510,6 +510,26 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	if( function_declaration.function_type.IsAutoReturn() )
+	{
+		if( function_declaration.block.empty() )
+		{
+			REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope_ptr, function_declaration.src_loc, func_name )
+		}
+		if( !function_declaration.function_type.return_value_reference_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_reference_expression.try_deref() ) )
+		}
+		if( !function_declaration.function_type.return_value_inner_references_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_inner_references_expression.try_deref() ) )
+		}
+		if( !function_declaration.function_type.references_pollution_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.references_pollution_expression.try_deref() ) )
+		}
+	}
+
 	var FunctionType mut function_type= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
 
 	var FunctionVariable::Kind mut function_kind= function_declaration.kind;

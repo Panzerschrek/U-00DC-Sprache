@@ -433,14 +433,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoReferenceNotation_Test7",
 		"AutoReferenceNotation_Test8",
 		"AutoReferenceNotation_Test9",
-		"ExpectedBodyForAutoFunction_Test0",
-		"ExpectedBodyForAutoFunction_Test1",
-		"ReferenceNotationForAutoFunction_Test0",
-		"ReferenceNotationForAutoFunction_Test1",
-		"ReferenceNotationForAutoFunction_Test2",
 		"TemplateParametersDeductionFailed_Test11",
-		"AutoFunctionInsideClass_Test4",
-		"AutoFunctionInsideClass_Test5",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
