@@ -266,7 +266,6 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 	global_function_context_=
 		std::make_unique<FunctionContext> (
 			std::move(global_function_type),
-			void_type_,
 			llvm_context_,
 			global_function );
 	global_function_context_->is_functionless_context= true;
@@ -1034,17 +1033,16 @@ size_t CodeBuilder::PrepareFunction(
 		if( !func.type.params.empty() && func.type.params.front().name == Keywords::this_ )
 			func_variable.is_this_call= true;
 
-		if( func.type.return_type != nullptr )
+		if( func.type.IsAutoReturn() )
 		{
-			if( const auto name_lookup = std::get_if<Synt::NameLookup>( func.type.return_type.get() ) )
-			{
-				if( name_lookup->name == Keywords::auto_ )
-				{
-					func_variable.return_type_is_auto= true;
-					if( func.block == nullptr )
-						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
-				}
-			}
+			if( func.block == nullptr )
+				REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
+			if( func.type.return_value_reference_expression != nullptr )
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_reference_expression ) );
+			if( func.type.return_value_inner_references_expression != nullptr )
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_inner_references_expression ) );
+			if( func.type.references_pollution_expression != nullptr )
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.references_pollution_expression ) );
 		}
 
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
@@ -1093,7 +1091,7 @@ size_t CodeBuilder::PrepareFunction(
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
 
 			// Disable auto-coroutines.
-			if( func_variable.return_type_is_auto )
+			if( func.type.IsAutoReturn() )
 			{
 				REPORT_ERROR( AutoReturnCoroutine, names_scope.GetErrors(), func.type.src_loc );
 				func_variable.kind= FunctionVariable::Kind::Regular;
@@ -1402,20 +1400,27 @@ void CodeBuilder::CheckOverloadedOperator(
 	};
 }
 
-Type CodeBuilder::BuildFuncCode(
+void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassPtr base_class,
 	NamesScope& parent_names_scope,
 	const std::string_view func_name,
-	const llvm::ArrayRef<Synt::FunctionParam> params,
-	const Synt::Block& block,
-	const Synt::StructNamedInitializer* const constructor_initialization_list,
+	ReturnTypeDeductionContext* const return_type_deduction_context,
+	ReferenceNotationDeductionContext* const reference_notation_deduction_context,
 	LambdaPreprocessingContext* const lambda_preprocessing_context )
 {
 	U_ASSERT( !func_variable.have_body );
 	func_variable.have_body= true;
 
 	const FunctionType& function_type= func_variable.type;
+
+	U_ASSERT( func_variable.syntax_element != nullptr );
+	const Synt::Function& syntax_element= *func_variable.syntax_element;
+
+	const auto& params= func_variable.syntax_element->type.params;
+
+	U_ASSERT( syntax_element.block != nullptr );
+	const Synt::Block& block= *syntax_element.block;
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( func_variable );
 
@@ -1494,14 +1499,15 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	NamesScope function_names( "", &parent_names_scope );
-	FunctionContext function_context(
-		function_type,
-		func_variable.return_type_is_auto ? std::optional<Type>(): function_type.return_type,
-		llvm_context_,
-		llvm_function );
+
+	FunctionContext function_context( function_type, llvm_context_, llvm_function );
+
+	function_context.return_type_deduction_context= return_type_deduction_context;
+	function_context.reference_notation_deduction_context= reference_notation_deduction_context;
+	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
+
 	const StackVariablesStorage args_storage( function_context );
 	function_context.args_nodes.resize( function_type.params.size() );
-	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
 
@@ -1751,7 +1757,7 @@ Type CodeBuilder::BuildFuncCode(
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );
 
-		if( constructor_initialization_list == nullptr )
+		if( syntax_element.constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
 			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc );
@@ -1769,7 +1775,7 @@ Type CodeBuilder::BuildFuncCode(
 				*base_class,
 				function_names,
 				function_context,
-				*constructor_initialization_list );
+				*syntax_element.constructor_initialization_list );
 	}
 
 	if( ( is_constructor || is_destructor ) && ( base_class->kind == Class::Kind::Abstract || base_class->kind == Class::Kind::Interface ) )
@@ -1807,9 +1813,10 @@ Type CodeBuilder::BuildFuncCode(
 			can_be_constexpr= false;
 
 		// If this is preprocessing of auto-return function, check also deduced return type.
-		if( function_context.deduced_return_type != std::nullopt &&
-			( !function_context.deduced_return_type->CanBeConstexpr() ||
-			  function_context.deduced_return_type->GetFunctionPointerType() != nullptr ) )
+		if( function_context.return_type_deduction_context != nullptr &&
+			function_context.return_type_deduction_context->return_type != std::nullopt &&
+			( !function_context.return_type_deduction_context->return_type->CanBeConstexpr() ||
+			   function_context.return_type_deduction_context->return_type->GetFunctionPointerType() != nullptr ) )
 			can_be_constexpr= false;
 
 		for( const FunctionType::Param& param : function_type.params )
@@ -1868,17 +1875,22 @@ Type CodeBuilder::BuildFuncCode(
 			if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			{
 				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );
-				return function_type.return_type;
+				return;
 			}
 			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
-		else if( !func_variable.return_type_is_auto )
+		else if( return_type_deduction_context != nullptr )
+		{
+			if( reference_notation_deduction_context != nullptr )
+				CollectReferencePollution( function_context );
+		}
+		else
 		{
 			// Automatically generate "return" for void-return functions.
 			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 			{
 				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );
-				return function_type.return_type;
+				return;
 			}
 			BuildEmptyReturn( function_names, function_context, block.end_src_loc );
 		}
@@ -1897,24 +1909,19 @@ Type CodeBuilder::BuildFuncCode(
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
-	if( func_variable.return_type_is_auto )
-	{
-		// Early return for auto-return function preprocessing.
-		func_variable.return_type_is_auto= false;
-		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_;
-	}
+	// Early return for auto-return function preprocessing.
+	if( return_type_deduction_context != nullptr )
+		return;
 
 	// Early return for lambda preprocessing.
 	if( lambda_preprocessing_context != nullptr )
-		return function_type.return_type;
+		return;
 
 	// Perform final steps for regular functions (if this is not some preprocessing).
 
 	CheckForUnusedLocalNames( function_names );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
-
-	return function_type.return_type;
 }
 
 void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )

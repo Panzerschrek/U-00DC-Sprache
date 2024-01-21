@@ -262,42 +262,36 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 			FunctionVariable& function_variable= functions_set.functions[function_index];
 
 			// Immediately build functions with auto return type.
-			// TODO - this is too complicated. Maybe remove auto-return functions from language?
-			if( function_variable.return_type_is_auto && !function_variable.have_body && function->block != nullptr )
+			if( function->type.IsAutoReturn() && !function_variable.have_body && function->block != nullptr )
 			{
-				// First, compile function only for return type deducing.
-				const Type return_type=
-					BuildFuncCode(
-						function_variable,
-						functions_set.base_class,
-						names_scope,
-						functions_set_name,
-						function_variable.syntax_element->type.params,
-						*function_variable.syntax_element->block,
-						function_variable.syntax_element->constructor_initialization_list.get() );
-
-				FunctionType function_type= function_variable.type;
-				function_type.return_type= return_type;
+				// Preprocess function in order to deduce return type and reference notation.
+				ReturnTypeDeductionContext return_type_deduction_context;
+				ReferenceNotationDeductionContext reference_notation_deduction_context;
 
 				if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 					function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto; // We can deduce "constexpr" property for all auto-return functions.
 
-				function_variable.have_body= false;
-				function_variable.return_type_is_auto= false;
-				function_variable.llvm_function->function->eraseFromParent();
-				function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name.back().name : mangler_->MangleFunction( names_scope, function->name.back().name, function_type ) );
-
-				function_variable.type= std::move(function_type);
-
-				// Then, compile function again, when type already known.
 				BuildFuncCode(
 					function_variable,
 					functions_set.base_class,
 					names_scope,
 					functions_set_name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get() );
+					&return_type_deduction_context,
+					&reference_notation_deduction_context );
+
+				// Update function type.
+				function_variable.type.return_type= return_type_deduction_context.return_type.value_or( void_type_ );
+				function_variable.type.return_references= std::move(reference_notation_deduction_context.return_references);
+				function_variable.type.return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
+				function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
+
+				function_variable.have_body= false;
+				// Remove old LLVM function and create new one (with name based on exact deduced function type).
+				function_variable.llvm_function->function->eraseFromParent();
+				function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name.back().name : mangler_->MangleFunction( names_scope, function->name.back().name, function_variable.type ) );
+
+				// Compile function when its type is exactly known.
+				BuildFuncCode( function_variable, functions_set.base_class, names_scope, functions_set_name );
 			}
 		}
 
@@ -325,17 +319,17 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 				continue;
 			}
 
-			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block != nullptr &&
-				!function_variable.have_body && !function_variable.return_type_is_auto && !function_variable.is_inherited )
+			if( function_variable.syntax_element != nullptr &&
+				function_variable.syntax_element->block != nullptr &&
+				!function_variable.have_body &&
+				!function_variable.syntax_element->type.IsAutoReturn() &&
+				!function_variable.is_inherited )
 			{
 				BuildFuncCode(
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name.back().name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get() );
+					function_variable.syntax_element->name.back().name );
 			}
 		}
 	}
@@ -351,10 +345,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name.back().name,
-					function_variable.syntax_element->type.params,
-					*function_variable.syntax_element->block,
-					function_variable.syntax_element->constructor_initialization_list.get() );
+					function_variable.syntax_element->name.back().name );
 			}
 		}
 	}
@@ -1157,14 +1148,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			{
 				if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
 					!function.have_body && function.syntax_element != nullptr && function.syntax_element->block != nullptr )
-					BuildFuncCode(
-						function,
-						class_type,
-						*the_class.members,
-						name,
-						function.syntax_element->type.params,
-						*function.syntax_element->block,
-						function.syntax_element->constructor_initialization_list.get() );
+					BuildFuncCode( function, class_type, *the_class.members, name );
 			}
 		}); // for functions
 }

@@ -216,18 +216,10 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 
 	if( function_type_name.return_type == nullptr )
 		function_type.return_type= void_type_;
+	else if( function_type_name.IsAutoReturn() )
+		function_type.return_type= void_type_;
 	else
-	{
-		bool is_auto_return= false;
-		if( const auto name_lookup = std::get_if<Synt::NameLookup>( function_type_name.return_type.get() ) )
-			if( name_lookup->name == Keywords::auto_ )
-				is_auto_return= true;
-
-		if( is_auto_return )
-			function_type.return_type= void_type_;
-		else
-			function_type.return_type= PrepareType( *function_type_name.return_type, names_scope, function_context );
-	}
+		function_type.return_type= PrepareType( *function_type_name.return_type, names_scope, function_context );
 
 	if( function_type_name.return_value_reference_modifier == ReferenceModifier::None )
 		function_type.return_value_type= ValueType::Value;

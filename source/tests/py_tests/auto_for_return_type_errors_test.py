@@ -104,3 +104,44 @@ def ConstexprFunctionContainsUnallowedOperations_ForAutoReturnFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+
+
+def ReferenceNotationForAutoFunction_Test0():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( i32& x ) : auto& @(return_references)
+		{
+			return x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 3 ) )
+
+
+def ReferenceNotationForAutoFunction_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn Foo( i32& x ) : auto @(return_inner_references)
+		{
+			var S s{ .r= x };
+			return s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
+
+
+def ReferenceNotationForAutoFunction_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Bar( S &mut s, i32& x ) @(pollution) : auto
+		{
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )

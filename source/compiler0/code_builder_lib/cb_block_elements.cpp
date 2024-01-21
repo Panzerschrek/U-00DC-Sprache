@@ -528,9 +528,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression) != nullptr )
 	{
-		if( function_context.coro_suspend_bb != nullptr && function_context.return_type != std::nullopt )
+		if( function_context.coro_suspend_bb != nullptr )
 		{
-			if( const auto class_type= function_context.return_type->GetClassType() )
+			if( const auto class_type= function_context.function_type.return_type.GetClassType() )
 			{
 				if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 				{
@@ -544,7 +544,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					case CoroutineKind::AsyncFunc:
 						// For void-return async functions do not evaluate result - just return.
 						if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
-							REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, void_type_, *function_context.return_type );
+							REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, void_type_, coroutine_type_description->return_type );
 
 						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
 						break;
@@ -553,7 +553,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 			return block_info;
 		}
-		if( function_context.return_type == std::nullopt )
+		if( function_context.return_type_deduction_context != nullptr )
 		{
 			if( function_context.function_type.return_value_type != ValueType::Value )
 			{
@@ -561,10 +561,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				return block_info;
 			}
 
-			if( function_context.deduced_return_type == std::nullopt )
-				function_context.deduced_return_type = void_type_;
-			else if( *function_context.deduced_return_type != void_type_ )
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.deduced_return_type, void_type_ );
+			if( function_context.return_type_deduction_context->return_type == std::nullopt )
+				function_context.return_type_deduction_context->return_type = void_type_;
+			else if( *function_context.return_type_deduction_context->return_type != void_type_ )
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, void_type_ );
+
+			CollectReferencePollution( function_context );
+
 			return block_info;
 		}
 
@@ -573,9 +576,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	if( function_context.coro_suspend_bb != nullptr && function_context.return_type != std::nullopt )
+	if( function_context.coro_suspend_bb != nullptr )
 	{
-		if( const auto class_type= function_context.return_type->GetClassType() )
+		if( const auto class_type= function_context.function_type.return_type.GetClassType() )
 		{
 			if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 			{
@@ -608,18 +611,34 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	// For functions with "auto" on return type use type of first return expression.
-	if( function_context.return_type == std::nullopt )
+	if( function_context.return_type_deduction_context != nullptr )
 	{
-		if( function_context.deduced_return_type == std::nullopt )
-			function_context.deduced_return_type = expression_result->type;
-		else if( *function_context.deduced_return_type != expression_result->type )
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.deduced_return_type, expression_result->type );
+		// Do not try to perform here any reference conversion or type conversion.
+		// Such conversions may be confusing for a programmer.
+		// So, allow only simplest way of return type deduction - where types in all return operators are identical.
+		if( function_context.return_type_deduction_context->return_type == std::nullopt )
+			function_context.return_type_deduction_context->return_type = expression_result->type;
+		else if( *function_context.return_type_deduction_context->return_type != expression_result->type )
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, expression_result->type );
+
+		if( function_context.reference_notation_deduction_context != nullptr )
+		{
+			if( function_context.function_type.return_value_type != ValueType::Value )
+				CollectReturnReferences( function_context, expression_result );
+
+			CollectReturnInnerReferences( function_context, expression_result );
+
+			CollectReferencePollution( function_context );
+		}
+
 		return block_info;
 	}
 
+	const Type& return_type= function_context.function_type.return_type;
+
 	const VariablePtr return_value_node=
 		Variable::Create(
-			*function_context.return_type,
+			return_type,
 			function_context.function_type.return_value_type,
 			Variable::Location::Pointer,
 			"return value lock" );
@@ -628,19 +647,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::Value* ret= nullptr;
 	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
-		if( expression_result->type.ReferenceIsConvertibleTo( *function_context.return_type ) )
+		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
-		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc ) )
-			expression_result= ConvertVariable( expression_result, *function_context.return_type, *conversion_contructor, names, function_context, return_operator.src_loc );
+		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names.GetErrors(), return_operator.src_loc ) )
+			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names, function_context, return_operator.src_loc );
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return block_info;
 		}
 
-		if( function_context.lambda_preprocessing_context != nullptr )
-			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+		if( function_context.reference_notation_deduction_context != nullptr )
+			CollectReturnInnerReferences( function_context, expression_result );
 		else
 			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
 
@@ -654,7 +673,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( expression_result->type != void_type_ )
 				ret= CreateMoveToLLVMRegisterInstruction( *expression_result, function_context );
 		}
-		else if( expression_result->value_type == ValueType::Value && expression_result->type == function_context.return_type ) // Move composite value.
+		else if( expression_result->value_type == ValueType::Value && expression_result->type == return_type ) // Move composite value.
 		{
 			function_context.variables_state.MoveNode( expression_result );
 
@@ -666,7 +685,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				U_ASSERT( function_context.s_ret != nullptr );
-				CopyBytes( function_context.s_ret, expression_result->llvm_value, *function_context.return_type, function_context );
+				CopyBytes( function_context.s_ret, expression_result->llvm_value, return_type, function_context );
 			}
 
 			if( expression_result->location == Variable::Location::Pointer )
@@ -674,30 +693,30 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else // Copy composite value.
 		{
-			if( !function_context.return_type->IsCopyConstructible() )
+			if( !return_type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), return_operator.src_loc, *function_context.return_type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), return_operator.src_loc, return_type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
-			if( function_context.return_type->IsAbstract() )
+			if( return_type.IsAbstract() )
 			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), return_operator.src_loc, *function_context.return_type );
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), return_operator.src_loc, return_type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
 
-			if( const auto single_scalar_type= GetSingleScalarType( function_context.return_type->GetLLVMType() ) )
+			if( const auto single_scalar_type= GetSingleScalarType( return_type.GetLLVMType() ) )
 			{
 				U_ASSERT( function_context.s_ret == nullptr );
 				// Call copy constructor on temp address, load then value from it.
-				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( function_context.return_type->GetLLVMType() );
+				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType() );
 				CreateLifetimeStart( function_context, temp );
 
 				BuildCopyConstructorPart(
 					temp,
-					CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
-					*function_context.return_type,
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
+					return_type,
 					function_context );
 
 				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
@@ -710,17 +729,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				U_ASSERT( function_context.s_ret != nullptr );
 				BuildCopyConstructorPart(
 					function_context.s_ret,
-					CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
-					*function_context.return_type,
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
+					return_type,
 					function_context );
 			}
 		}
 	}
 	else
 	{
-		if( !ReferenceIsConvertible( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc ) )
+		if( !ReferenceIsConvertible( expression_result->type, return_type, names.GetErrors(), return_operator.src_loc ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return block_info;
 		}
@@ -736,10 +755,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
 		}
 
-		if( function_context.lambda_preprocessing_context != nullptr )
+		if( function_context.reference_notation_deduction_context != nullptr )
 		{
-			LambdaPreprocessingCollectReturnReferences( function_context, expression_result );
-			LambdaPreprocessingCollectReturnInnerReferences( function_context, expression_result );
+			CollectReturnReferences( function_context, expression_result );
+			CollectReturnInnerReferences( function_context, expression_result );
 		}
 		else
 		{
@@ -751,13 +770,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
 
-		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context );
+		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context );
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc );
 
-	if( function_context.lambda_preprocessing_context != nullptr )
-		LambdaPreprocessingCollectReferencePollution( function_context );
+	if( function_context.reference_notation_deduction_context != nullptr )
+		CollectReferencePollution( function_context );
 	else
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
 
@@ -2776,16 +2795,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 
 void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc )
 {
-	if( !( function_context.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
+	if( !( function_context.function_type.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
 	{
-		REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, void_type_, *function_context.return_type );
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, void_type_, function_context.function_type.return_type );
 		return;
 	}
 
 	CallDestructorsBeforeReturn( names, function_context, src_loc );
 
-	if( function_context.lambda_preprocessing_context != nullptr )
-		LambdaPreprocessingCollectReferencePollution( function_context );
+	if( function_context.reference_notation_deduction_context != nullptr )
+		CollectReferencePollution( function_context );
 	else
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
 

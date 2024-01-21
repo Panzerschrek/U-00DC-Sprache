@@ -504,6 +504,9 @@ struct FunctionType
 	FunctionType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
+	bool IsAutoReturn() const;
+
+public:
 	SrcLoc src_loc;
 	std::vector<FunctionParam> params;
 	std::optional<std::string> calling_convention;
@@ -1168,6 +1171,7 @@ struct Function
 	explicit Function( const SrcLoc& src_loc )
 		: src_loc(src_loc), type(src_loc) {}
 
+public:
 	enum class BodyKind : uint8_t
 	{
 		None,
@@ -1189,6 +1193,7 @@ struct Function
 		bool completion_requested= false;
 	};
 
+public:
 	SrcLoc src_loc;
 	std::vector<NameComponent> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition; // Empty variant if has no condition.

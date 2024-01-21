@@ -407,14 +407,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	FunctionVariable& function_variable= functions_set.functions[ function_index ];
 
 	// Build function code - complete names inside its body.
-	BuildFuncCode(
-		function_variable,
-		base_class,
-		*actual_names_scope,
-		name.back().name,
-		function.type.params,
-		*function.block,
-		function.constructor_initialization_list.get() );
+	BuildFuncCode( function_variable, base_class, *actual_names_scope, name.back().name );
 
 	// Clear garbage - remove created llvm function.
 	if( function_variable.llvm_function->function != nullptr )

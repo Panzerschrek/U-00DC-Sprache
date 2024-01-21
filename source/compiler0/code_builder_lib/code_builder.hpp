@@ -711,15 +711,14 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	// Returns type of return value.
-	Type BuildFuncCode(
+	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassPtr base_class,
 		NamesScope& parent_names_scope,
 		std::string_view func_name,
-		llvm::ArrayRef<Synt::FunctionParam> params,
-		const Synt::Block& block,
-		const Synt::StructNamedInitializer* constructor_initialization_list,
+		// Contexts for different kinds of preprocessing.
+		ReturnTypeDeductionContext* return_type_deduction_context= nullptr,
+		ReferenceNotationDeductionContext* reference_notation_deduction_context= nullptr,
 		LambdaPreprocessingContext* lambda_preprocessing_context= nullptr );
 
 	// Expressions.
@@ -1229,9 +1228,10 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	void LambdaPreprocessingCollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
-	void LambdaPreprocessingCollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node );
-	void LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context );
+	// If this is preprocessing with reference notation deduction - collect actual reference effects.
+	void CollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void CollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void CollectReferencePollution( FunctionContext& function_context );
 
 	// Reference notation.
 

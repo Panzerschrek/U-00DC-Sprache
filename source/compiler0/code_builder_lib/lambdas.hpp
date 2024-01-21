@@ -81,8 +81,6 @@ public:
 
 	std::unordered_map<std::string, CapturedVariableData> captured_external_variables;
 
-	FunctionType::ReturnReferences return_references;
-	FunctionType::ReturnInnerReferences return_inner_references;
 	std::vector<ReferencePollution> references_pollution;
 
 	// Contains set of variables of the preprocessed lambda.

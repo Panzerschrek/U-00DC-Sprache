@@ -312,6 +312,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		NamesScope custom_captures_names_scope( "", &names );
 
+		ReferenceNotationDeductionContext reference_notation_deduction_context;
+
 		LambdaPreprocessingContext lambda_preprocessing_context;
 		lambda_preprocessing_context.parent= function_context.lambda_preprocessing_context;
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
@@ -434,6 +436,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 		{
 			FunctionVariable op_variable;
+			op_variable.syntax_element= &lambda.function;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
 			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names ) );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
@@ -444,9 +447,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				class_,
 				custom_captures_names_scope,
 				call_op_name,
-				lambda.function.type.params,
-				*lambda.function.block,
 				nullptr,
+				&reference_notation_deduction_context,
 				&lambda_preprocessing_context );
 
 			// Remove temp function.
@@ -575,7 +577,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		const uint8_t this_param_index= 0; // Lambda is "this" (argument 0).
 
 		// Process return references.
-		return_references= std::move(lambda_preprocessing_context.return_references);
+		return_references= std::move(reference_notation_deduction_context.return_references);
 		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 		{
 			if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
@@ -583,7 +585,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		// Process return inner references.
-		return_inner_references= std::move(lambda_preprocessing_context.return_inner_references);
+		return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
 		if( return_inner_references.size() < lambda_preprocessing_context.captured_variables_return_inner_references.size() )
 			return_inner_references.resize( lambda_preprocessing_context.captured_variables_return_inner_references.size() );
 		for( size_t tag_n= 0; tag_n < lambda_preprocessing_context.captured_variables_return_inner_references.size(); ++tag_n )
@@ -596,6 +598,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		// Process pollution.
+		references_pollution= std::move(reference_notation_deduction_context.references_pollution);
 		for( const LambdaPreprocessingContext::ReferencePollution& pollution : lambda_preprocessing_context.references_pollution )
 		{
 			FunctionType::ReferencePollution result_pollution;
@@ -661,6 +664,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Create () operator.
 	{
 		FunctionVariable op_variable;
+		op_variable.syntax_element= &lambda.function;
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
@@ -672,18 +676,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		// Use auto-constexpr for () operator.
 		op_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
+		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
+			BuildFuncCode( op_variable, class_, names, call_op_name );
+
 		auto functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( op_variable );
-
-		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
-			BuildFuncCode(
-				functions_set->functions.back(),
-				class_,
-				names,
-				call_op_name,
-				lambda.function.type.params,
-				*lambda.function.block,
-				nullptr );
+		functions_set->base_class= class_;
 
 		class_->members->AddName(
 			call_op_name,

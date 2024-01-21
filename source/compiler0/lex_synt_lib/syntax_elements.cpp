@@ -1,5 +1,6 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "syntax_analyzer.hpp"
+#include "keywords.hpp"
 #include "../../lex_synt_lib_common/size_assert.hpp"
 
 namespace U
@@ -17,6 +18,14 @@ SIZE_ASSERT( Initializer, 56u )
 SIZE_ASSERT( BlockElementsList, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ClassElementsList, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ProgramElementsList, 16u ) // Variant index + unique_ptr
+
+bool FunctionType::IsAutoReturn() const
+{
+	if( return_type != nullptr )
+		if( const auto name_lookup= std::get_if<Synt::NameLookup>( return_type.get() ) )
+			return name_lookup->name == Keywords::auto_;
+	return false;
+}
 
 struct GetSrcLocVisitor final
 {
