@@ -1040,8 +1040,15 @@ size_t CodeBuilder::PrepareFunction(
 				if( name_lookup->name == Keywords::auto_ )
 				{
 					func_variable.return_type_is_auto= true;
+
 					if( func.block == nullptr )
 						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
+					if( func.type.return_value_reference_expression != nullptr )
+						REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_reference_expression ) );
+					if( func.type.return_value_inner_references_expression != nullptr )
+						REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_inner_references_expression ) );
+					if( func.type.references_pollution_expression != nullptr )
+						REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.references_pollution_expression ) );
 				}
 			}
 		}

@@ -181,6 +181,7 @@ PROCESS_ERROR( NonSyncTagAdditionInInheritance, "Class \"{0}\" is marked as \"no
 
 // Auto functions errors
 PROCESS_ERROR( ExpectedBodyForAutoFunction, "Expected body for function \"{0}\", because return type declared as \"auto\"." )
+PROCESS_ERROR( ReferenceNotationForAutoFunction, "It's not allowed to specify reference notation for auto return functions - it is calculated automatically." )
 
 // Virtual functions errors
 PROCESS_ERROR( VirtualForNonclassFunction, "Virtual for non-class function \"{0}\"." )
