@@ -40,12 +40,16 @@ struct LoopFrame final
 	std::vector<ReferencesGraph> continue_variables_states;
 };
 
+struct ReturnTypeDeductionContext
+{
+	std::optional<Type> return_type;
+};
+
 struct FunctionContext
 {
 public:
 	FunctionContext(
 		FunctionType function_type,
-		const std::optional<Type>& return_type,
 		llvm::LLVMContext& llvm_context,
 		llvm::Function* function );
 
@@ -53,8 +57,6 @@ public:
 
 public:
 	const FunctionType function_type;
-	const std::optional<Type> return_type; // std::nullopt if type not known yet and must be deduced.
-	std::optional<Type> deduced_return_type; // for functions with "auto" return type.
 
 	llvm::Function* const function;
 
@@ -95,9 +97,9 @@ public:
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
 
-	// Non-null if this is preprocessed lambda.
-	// Non-owning (observer) pointer.
-	LambdaPreprocessingContext* lambda_preprocessing_context= nullptr;
+	// Observer pointers. May be null.
+	ReturnTypeDeductionContext* return_type_deduction_context= nullptr; // Non-null if preprocessing auto-return function.
+	LambdaPreprocessingContext* lambda_preprocessing_context= nullptr; // Non-null if this is preprocessed lambda.
 
 	// Keep "bool" fields last in order to reduce gaps between fields.
 

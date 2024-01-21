@@ -711,15 +711,16 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	// Returns type of return value.
-	Type BuildFuncCode(
+	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassPtr base_class,
 		NamesScope& parent_names_scope,
 		std::string_view func_name,
 		llvm::ArrayRef<Synt::FunctionParam> params,
 		const Synt::Block& block,
-		const Synt::StructNamedInitializer* constructor_initialization_list,
+		const Synt::StructNamedInitializer* constructor_initialization_list= nullptr,
+		// Contexts for different kinds of preprocessing.
+		ReturnTypeDeductionContext* return_type_deduction_context= nullptr,
 		LambdaPreprocessingContext* lambda_preprocessing_context= nullptr );
 
 	// Expressions.

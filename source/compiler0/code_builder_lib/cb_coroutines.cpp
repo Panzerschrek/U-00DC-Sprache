@@ -255,7 +255,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
 
-	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
@@ -406,7 +406,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 		return;
 	}
 
-	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
@@ -526,7 +526,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 
 void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
-	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
@@ -668,18 +668,15 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
 		return ErrorValue();
 	}
-	if( function_context.return_type != std::nullopt )
+	if( const auto function_class_type= function_context.function_type.return_type.GetClassType() )
 	{
-		if( const auto function_class_type= function_context.return_type->GetClassType() )
+		if( const auto function_coroutine_type_description= std::get_if<CoroutineTypeDescription>( &function_class_type->generated_class_data ) )
 		{
-			if( const auto function_coroutine_type_description= std::get_if<CoroutineTypeDescription>( &function_class_type->generated_class_data ) )
+			if( function_coroutine_type_description->kind != CoroutineKind::AsyncFunc )
 			{
-				if( function_coroutine_type_description->kind != CoroutineKind::AsyncFunc )
-				{
-					// Prevent usage of "await" in generators.
-					REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
-					return ErrorValue();
-				}
+				// Prevent usage of "await" in generators.
+				REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+				return ErrorValue();
 			}
 		}
 	}

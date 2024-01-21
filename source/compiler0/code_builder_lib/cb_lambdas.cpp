@@ -447,6 +447,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				lambda.function.type.params,
 				*lambda.function.block,
 				nullptr,
+				nullptr,
 				&lambda_preprocessing_context );
 
 			// Remove temp function.

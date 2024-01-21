@@ -118,7 +118,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 
 	FunctionContext function_context(
 		constructor_variable->type,
-		void_type_,
 		llvm_context_,
 		llvm_function );
 	StackVariablesStorage function_variables_storage( function_context );
@@ -307,7 +306,6 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 
 	FunctionContext function_context(
 		constructor_variable->type,
-		void_type_,
 		llvm_context_,
 		llvm_function );
 
@@ -402,7 +400,6 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 
 	FunctionContext function_context(
 		destructor_type,
-		destructor_type.return_type,
 		llvm_context_,
 		llvm_function );
 	function_context.this_= this_;
@@ -568,7 +565,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 	FunctionContext function_context(
 		operator_variable->type,
-		void_type_,
 		llvm_context_,
 		llvm_function );
 
@@ -723,7 +719,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 	FunctionContext function_context(
 		operator_variable->type,
-		bool_type_,
 		llvm_context_,
 		llvm_function );
 

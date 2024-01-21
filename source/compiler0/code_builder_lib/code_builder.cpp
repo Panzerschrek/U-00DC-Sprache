@@ -266,7 +266,6 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 	global_function_context_=
 		std::make_unique<FunctionContext> (
 			std::move(global_function_type),
-			void_type_,
 			llvm_context_,
 			global_function );
 	global_function_context_->is_functionless_context= true;
@@ -1402,7 +1401,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	};
 }
 
-Type CodeBuilder::BuildFuncCode(
+void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassPtr base_class,
 	NamesScope& parent_names_scope,
@@ -1410,6 +1409,7 @@ Type CodeBuilder::BuildFuncCode(
 	const llvm::ArrayRef<Synt::FunctionParam> params,
 	const Synt::Block& block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list,
+	ReturnTypeDeductionContext* const return_type_deduction_context,
 	LambdaPreprocessingContext* const lambda_preprocessing_context )
 {
 	U_ASSERT( !func_variable.have_body );
@@ -1494,14 +1494,14 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	NamesScope function_names( "", &parent_names_scope );
-	FunctionContext function_context(
-		function_type,
-		func_variable.return_type_is_auto ? std::optional<Type>(): function_type.return_type,
-		llvm_context_,
-		llvm_function );
+
+	FunctionContext function_context( function_type, llvm_context_, llvm_function );
+
+	function_context.return_type_deduction_context= return_type_deduction_context;
+	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
+
 	const StackVariablesStorage args_storage( function_context );
 	function_context.args_nodes.resize( function_type.params.size() );
-	function_context.lambda_preprocessing_context= lambda_preprocessing_context;
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
 
@@ -1807,9 +1807,10 @@ Type CodeBuilder::BuildFuncCode(
 			can_be_constexpr= false;
 
 		// If this is preprocessing of auto-return function, check also deduced return type.
-		if( function_context.deduced_return_type != std::nullopt &&
-			( !function_context.deduced_return_type->CanBeConstexpr() ||
-			  function_context.deduced_return_type->GetFunctionPointerType() != nullptr ) )
+		if( function_context.return_type_deduction_context != nullptr &&
+			function_context.return_type_deduction_context->return_type != std::nullopt &&
+			( !function_context.return_type_deduction_context->return_type->CanBeConstexpr() ||
+			   function_context.return_type_deduction_context->return_type->GetFunctionPointerType() != nullptr ) )
 			can_be_constexpr= false;
 
 		for( const FunctionType::Param& param : function_type.params )
@@ -1868,7 +1869,7 @@ Type CodeBuilder::BuildFuncCode(
 			if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			{
 				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );
-				return function_type.return_type;
+				return;
 			}
 			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
@@ -1878,7 +1879,7 @@ Type CodeBuilder::BuildFuncCode(
 			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 			{
 				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );
-				return function_type.return_type;
+				return;
 			}
 			BuildEmptyReturn( function_names, function_context, block.end_src_loc );
 		}
@@ -1897,24 +1898,19 @@ Type CodeBuilder::BuildFuncCode(
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
-	if( func_variable.return_type_is_auto )
-	{
-		// Early return for auto-return function preprocessing.
-		func_variable.return_type_is_auto= false;
-		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_;
-	}
+	// Early return for auto-return function preprocessing.
+	if( return_type_deduction_context != nullptr )
+		return;
 
 	// Early return for lambda preprocessing.
 	if( lambda_preprocessing_context != nullptr )
-		return function_type.return_type;
+		return;
 
 	// Perform final steps for regular functions (if this is not some preprocessing).
 
 	CheckForUnusedLocalNames( function_names );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
-
-	return function_type.return_type;
 }
 
 void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )

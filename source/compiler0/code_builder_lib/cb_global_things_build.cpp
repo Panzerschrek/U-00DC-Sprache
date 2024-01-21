@@ -266,18 +266,20 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 			if( function_variable.return_type_is_auto && !function_variable.have_body && function->block != nullptr )
 			{
 				// First, compile function only for return type deducing.
-				const Type return_type=
-					BuildFuncCode(
-						function_variable,
-						functions_set.base_class,
-						names_scope,
-						functions_set_name,
-						function_variable.syntax_element->type.params,
-						*function_variable.syntax_element->block,
-						function_variable.syntax_element->constructor_initialization_list.get() );
+				ReturnTypeDeductionContext return_type_deduction_context;
+
+				BuildFuncCode(
+					function_variable,
+					functions_set.base_class,
+					names_scope,
+					functions_set_name,
+					function_variable.syntax_element->type.params,
+					*function_variable.syntax_element->block,
+					function_variable.syntax_element->constructor_initialization_list.get(),
+					&return_type_deduction_context );
 
 				FunctionType function_type= function_variable.type;
-				function_type.return_type= return_type;
+				function_type.return_type= return_type_deduction_context.return_type.value_or( void_type_ );
 
 				if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 					function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto; // We can deduce "constexpr" property for all auto-return functions.
