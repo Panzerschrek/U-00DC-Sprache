@@ -437,8 +437,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AutoReferenceNotation_Test9",
 		"ExpectedBodyForAutoFunction_Test0",
 		"ExpectedBodyForAutoFunction_Test1",
-		"GlobalsLoop_ForFunctionWithAutoReturnType_Test0",
-		"GlobalsLoop_ForFunctionWithAutoReturnType_Test1",
 		"ReferenceNotationForAutoFunction_Test0",
 		"ReferenceNotationForAutoFunction_Test1",
 		"ReferenceNotationForAutoFunction_Test2",
