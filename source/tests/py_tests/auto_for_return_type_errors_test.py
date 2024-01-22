@@ -145,3 +145,30 @@ def ReferenceNotationForAutoFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
+
+
+def AutoForFunctionTypeReturnType_Test0():
+	c_program_text= """
+		type BrokenPtr= fn() : auto;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForFunctionTypeReturnType", 2 ) )
+
+
+def AutoForFunctionTypeReturnType_Test1():
+	c_program_text= """
+		type BrokenPtr= fn() : auto&;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForFunctionTypeReturnType", 2 ) )
+
+
+def AutoForFunctionTypeReturnType_Test2():
+	c_program_text= """
+		type BrokenPtr= fn() : [ auto, 4 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 2 ) )
