@@ -959,6 +959,15 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 			return;
 		}
 
+		const Value& value= names_scope_value.value;
+
+		if( const auto functions_set= value.GetFunctionsSet() )
+		{
+			// Ignore functions set with no functions (for example, if they are disabled via "enable_if").
+			if( functions_set->functions.empty() && functions_set->template_functions.empty() )
+				return;
+		}
+
 		CompletionItem item;
 		item.name= std::string(value_name);
 
@@ -971,7 +980,6 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 
 		// TODO - fill detail for other kinds of values.
 
-		const Value& value= names_scope_value.value;
 		if( const auto variable= value.GetVariable() )
 		{
 			item.kind= CompletionItemKind::Variable;
