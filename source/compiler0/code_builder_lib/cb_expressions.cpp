@@ -3660,6 +3660,9 @@ Value CodeBuilder::DoCallFunction(
 			if( arg_reference.first < args_nodes.size() )
 			{
 				const auto& arg_node= args_nodes[arg_reference.first];
+				if( arg_node == nullptr )
+					continue;
+
 				if( arg_reference.second == FunctionType::c_param_reference_number )
 					function_context.variables_state.TryAddLink( arg_node, result, names.GetErrors(), call_src_loc );
 				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
@@ -3676,6 +3679,9 @@ Value CodeBuilder::DoCallFunction(
 			if( arg_reference.first < args_nodes.size() )
 			{
 				const auto& arg_node= args_nodes[arg_reference.first];
+				if( arg_node == nullptr )
+					continue;
+
 				if( arg_reference.second == FunctionType::c_param_reference_number )
 					function_context.variables_state.TryAddLink( arg_node, dst_node, names.GetErrors(), call_src_loc );
 				else if( arg_reference.second < arg_node->inner_reference_nodes.size() )
