@@ -1112,6 +1112,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			result_names_scope,
 			function_variable,
 			ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+			ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
 			ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 	}
 

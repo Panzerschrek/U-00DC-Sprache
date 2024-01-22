@@ -423,16 +423,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"AutoReferenceNotation_Test0",
-		"AutoReferenceNotation_Test1",
-		"AutoReferenceNotation_Test2",
-		"AutoReferenceNotation_Test3",
-		"AutoReferenceNotation_Test4",
-		"AutoReferenceNotation_Test5",
-		"AutoReferenceNotation_Test6",
-		"AutoReferenceNotation_Test7",
-		"AutoReferenceNotation_Test8",
-		"AutoReferenceNotation_Test9",
 		"TemplateParametersDeductionFailed_Test11",
 	};
 

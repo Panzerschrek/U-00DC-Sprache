@@ -1074,6 +1074,7 @@ fn CodeBuilder::BuildFuncCode(
 	NamesScopePtr& names_scope,
 	FunctionVariable &mut func_variable,
 	ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> mut return_type_deduction_context,
+	ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> mut reference_notation_deduction_context,
 	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> mut lambda_preprocessing_context )
 {
 	if( func_variable.body_syntax_element.empty() )
@@ -1128,6 +1129,7 @@ fn CodeBuilder::BuildFuncCode(
 		llvm_function,
 		func_variable.t );
 	function_context_value.return_type_deduction_context= move(return_type_deduction_context);
+	function_context_value.reference_notation_deduction_context= move(reference_notation_deduction_context);
 	function_context_value.lambda_preprocessing_context= move(lambda_preprocessing_context);
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
@@ -1535,6 +1537,10 @@ fn CodeBuilder::BuildFuncCode(
 			}
 			else if( !function_context.return_type_deduction_context.empty() )
 			{
+				if( !function_context.reference_notation_deduction_context.empty() )
+				{
+					CollectReferencePollution( function_context );
+				}
 			}
 			else
 			{

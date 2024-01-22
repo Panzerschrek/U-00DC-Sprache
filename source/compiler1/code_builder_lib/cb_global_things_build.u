@@ -227,6 +227,8 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 
 				auto return_type_deduction_context_ptr= ust::make_shared_ptr( ReturnTypeDeductionContext() );
 
+				auto reference_notation_deduction_context_ptr= ust::make_shared_ptr( ReferenceNotationDeductionContext() );
+
 				if( func_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 				{
 					// We can deduce "constexpr" property for all auto-return functions.
@@ -237,11 +239,27 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 					names_scope_ptr,
 					func_variable,
 					return_type_deduction_context_ptr,
+					reference_notation_deduction_context_ptr,
 					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 
 				// Update function type.
 				auto return_type= return_type_deduction_context_ptr.lock_imut().deref().return_type;
 				func_variable.t.return_type= select( return_type.empty() ? void_type_ : return_type.try_deref() );
+
+				with( mut lock : reference_notation_deduction_context_ptr.lock_mut() )
+				{
+					func_variable.t.return_references= take( lock.deref().return_references );
+					NormalizeParamReferencesList( func_variable.t.return_references );
+
+					func_variable.t.return_inner_references= take( lock.deref().return_inner_references );
+					foreach( &mut list : func_variable.t.return_inner_references )
+					{
+						NormalizeParamReferencesList( list );
+					}
+
+					func_variable.t.references_pollution= take( lock.deref().references_pollution );
+					NormalizeReferencesPollution( func_variable.t.references_pollution );
+				}
 
 				// Remove old LLVM function and create new one (with name based on exact deduced function type).
 				auto prev_llvm_function= func_variable.llvm_function.lock_imut().deref().function;
@@ -264,6 +282,7 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 					names_scope_ptr,
 					func_variable,
 					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+					ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
 					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 			}
 		}
@@ -288,6 +307,7 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 					names_scope_ptr,
 					func_variable,
 					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+					ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
 					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 			}
 		}
@@ -1407,6 +1427,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					class_members,
 					func_variable,
 					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+					ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
 					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 			}
 		}
