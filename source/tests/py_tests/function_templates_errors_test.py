@@ -362,7 +362,7 @@ def TemplateParametersDeductionFailed_Test11():
 		class B : A{}
 		fn Foo()
 		{
-			Bar( A(), B() ); // Error, T deduced to "A" or "B". Reference conversion does not works here.
+			Bar( B(), A() ); // Error, T deduced to "B" and later "A" can't be casted to "B".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

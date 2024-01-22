@@ -423,7 +423,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"TemplateParametersDeductionFailed_Test11",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
