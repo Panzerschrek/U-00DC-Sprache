@@ -1582,18 +1582,30 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		auto mut can_be_constexpr= true;
 
+		auto& function_type= func_variable.t;
+
+		can_be_constexpr&=
+			!function_type.is_unsafe &&
+			function_type.return_type.CanBeConstexpr() &&
+			function_type.return_type.GetFunctionPointerType().empty();
+
+		foreach( &param : function_type.params )
 		{
-			auto& function_type= func_variable.t;
-
 			can_be_constexpr&=
-				!function_type.is_unsafe &&
-				function_type.return_type.CanBeConstexpr();
+				param.t.CanBeConstexpr() &&
+				param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+		}
 
-			foreach( &param : function_type.params )
+		if( !function_context.return_type_deduction_context.empty() )
+		{
+			with( &return_type_deduction_context : function_context.return_type_deduction_context.try_lock_imut().deref() )
 			{
-				can_be_constexpr&=
-					param.t.CanBeConstexpr() &&
-					param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+				if_var( &t : return_type_deduction_context.return_type )
+				{
+					can_be_constexpr&=
+						t.CanBeConstexpr() &&
+						t.GetFunctionPointerType().empty();
+				}
 			}
 		}
 
