@@ -530,7 +530,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 		else { halt; }
 
-		var ust::shared_ptr_mut</LambdaPreprocessingContext/> lambda_preprocessing_context_ptr( move(lambda_preprocessing_context) );
+		auto lambda_preprocessing_context_ptr= ust::make_shared_ptr( move(lambda_preprocessing_context) );
 		auto reference_notation_deduction_context_ptr= ust::make_shared_ptr( ReferenceNotationDeductionContext() );
 
 		{

@@ -563,33 +563,33 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 						auto mut lock= lambda_preprocessing_context_ptr.try_lock_mut();
 						var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
 
-						var ust::optional</ VariablePtr /> mut src_param_reference;
+						var ust::shared_ptr_nullable_mut</Variable/> mut src_captured_variable;
 
 						// Process captured variables sources.
 						foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 						{
 							if( accessible_variable_node == captured_variable_pair.value().variable_node )
 							{
-								src_param_reference= accessible_variable_node;
+								src_captured_variable= accessible_variable_node;
 							}
 
 							foreach( &captured_variable_accessible_variable : captured_variable_pair.value().accessible_variables )
 							{
 								if( accessible_variable_node == captured_variable_accessible_variable )
 								{
-									src_param_reference= accessible_variable_node;
+									src_captured_variable= accessible_variable_node;
 								}
 							}
 						}
 
-						if( !src_param_reference.empty() )
+						if( !src_captured_variable.empty() )
 						{
 							var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
 
 							var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
 							{
 								.dst= move(dst_param_reference),
-								.src= src_param_reference.try_deref(),
+								.src= src_captured_variable.try_to_non_nullable(),
 							};
 							lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
 						}
