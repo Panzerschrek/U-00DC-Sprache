@@ -184,6 +184,7 @@ PROCESS_ERROR( ExpectedBodyForAutoFunction, "Expected body for function \"{0}\",
 PROCESS_ERROR( ReferenceNotationForAutoFunction, "It's not allowed to specify reference notation for auto return functions - it is calculated automatically." )
 PROCESS_ERROR( AutoForFunctionTypeReturnType, "Function type can't have \"auto\" for return type." )
 PROCESS_ERROR( AutoForSpecialMethod, "\"auto\" isn't allowed for special methods." )
+PROCESS_ERROR( AutoForVirtualMethod, "\"auto\" isn't allowed for virtual methods." )
 
 // Virtual functions errors
 PROCESS_ERROR( VirtualForNonclassFunction, "Virtual for non-class function \"{0}\"." )

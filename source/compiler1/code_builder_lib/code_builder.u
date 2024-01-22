@@ -526,6 +526,10 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( AutoForSpecialMethod, names_scope_ptr, function_declaration.src_loc )
 		}
+		if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
+		{
+			REPORT_ERROR( AutoForVirtualMethod, names_scope_ptr, function_declaration.src_loc )
+		}
 		if( !function_declaration.function_type.return_value_reference_expression.empty() )
 		{
 			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_reference_expression.try_deref() ) )

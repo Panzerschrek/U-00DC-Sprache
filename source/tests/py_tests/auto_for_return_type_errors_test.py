@@ -263,3 +263,29 @@ def AutoForSpecialMethod_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForVirtualMethod_Test0():
+	c_program_text= """
+		class C polymorph
+		{
+			fn virtual Foo(this) : auto
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForVirtualMethod", 4 ) )
+
+
+def AutoForVirtualMethod_Test1():
+	c_program_text= """
+		class C interface
+		{
+			op virtual ()(this) : auto
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForVirtualMethod", 4 ) )
