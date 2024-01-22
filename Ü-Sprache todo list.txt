@@ -80,7 +80,6 @@ Interpreter:
 *) Support math functions
 
 Compiler1:
-*) Support "auto" for functions return type
 *) Support 128-bit types in switch operator
 
 QtCreator plugin:
