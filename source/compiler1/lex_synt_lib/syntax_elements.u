@@ -1,3 +1,4 @@
+import "/keywords.uh"
 import "syntax_elements.uh"
 
 namespace U1
@@ -5,6 +6,21 @@ namespace U1
 
 namespace Synt
 {
+
+fn FunctionType::IsAutoReturn( this ) : bool
+{
+	if_var( &r : return_type )
+	{
+		if_var( &n : r.get</ComplexName/>() )
+		{
+			if_var( &l : n.get</NameLookup/>() )
+			{
+				return l.name == KeywordToString( Keyword::auto_ );
+			}
+		}
+	}
+	return false;
+}
 
 fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 {

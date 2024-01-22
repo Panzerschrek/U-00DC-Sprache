@@ -306,8 +306,13 @@ private:
 
 	fn CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type );
 
-	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
-	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable, ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
+	fn BuildFuncCode(
+		mut this,
+		NamesScopePtr& names_scope_ptr,
+		FunctionVariable &mut func_variable,
+		ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> return_type_deduction_context,
+		ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context,
+		ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
 
 	struct BlockElementBuildInfo
 	{
@@ -1036,9 +1041,9 @@ private:
 
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 
-	fn LambdaPreprocessingCollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node );
-	fn LambdaPreprocessingCollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node );
-	fn LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context );
+	fn CollectReturnReferences( FunctionContext& function_context, VariablePtr& return_node );
+	fn CollectReturnInnerReferences( FunctionContext& function_context, VariablePtr& return_node );
+	fn CollectReferencePollution( FunctionContext& function_context );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& src_loc );

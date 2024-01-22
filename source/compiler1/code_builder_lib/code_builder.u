@@ -510,14 +510,36 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	if( function_declaration.function_type.IsAutoReturn() )
+	{
+		if( function_declaration.block.empty() )
+		{
+			REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope_ptr, function_declaration.src_loc, func_name )
+		}
+		if( !function_declaration.function_type.return_value_reference_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_reference_expression.try_deref() ) )
+		}
+		if( !function_declaration.function_type.return_value_inner_references_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_inner_references_expression.try_deref() ) )
+		}
+		if( !function_declaration.function_type.references_pollution_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.references_pollution_expression.try_deref() ) )
+		}
+	}
+
 	var FunctionType mut function_type= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
 
-	if( function_declaration.kind != FunctionVariable::Kind::Regular )
+	var FunctionVariable::Kind mut function_kind= function_declaration.kind;
+
+	if( function_kind != FunctionVariable::Kind::Regular )
 	{
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
 
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
-		TransformCoroutineFunctionType( GetRootNamespace( names_scope_ptr ), function_type, function_declaration.kind, non_sync_ );
+		TransformCoroutineFunctionType( GetRootNamespace( names_scope_ptr ), function_type, function_kind, non_sync_ );
 
 		if_var( &type_name : function_declaration.function_type.return_type )
 		{
@@ -528,6 +550,7 @@ fn CodeBuilder::PrepareFunction(
 					if( name_lookup.name == KeywordToString( Keyword::auto_ ) )
 					{
 						REPORT_ERROR( AutoReturnCoroutine, names_scope_ptr, function_declaration.src_loc )
+						function_kind= FunctionVariable::Kind::Regular;
 					}
 				}
 			}
@@ -565,7 +588,7 @@ fn CodeBuilder::PrepareFunction(
 	{
 		.t= move(function_type),
 		.llvm_function( LazyLLVMFunction( move(llvm_function_name) ) ),
-		.kind= function_declaration.kind,
+		.kind= function_kind,
 	};
 	if( function_declaration.block.empty() )
 	{
@@ -1046,15 +1069,12 @@ fn CodeBuilder::CheckOverloadedOperator(
 	}
 }
 
-fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
-{
-	BuildFuncCode( names_scope, func_variable, ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
-}
-
 fn CodeBuilder::BuildFuncCode(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionVariable &mut func_variable,
+	ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> mut return_type_deduction_context,
+	ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> mut reference_notation_deduction_context,
 	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> mut lambda_preprocessing_context )
 {
 	if( func_variable.body_syntax_element.empty() )
@@ -1108,6 +1128,8 @@ fn CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function,
 		func_variable.t );
+	function_context_value.return_type_deduction_context= move(return_type_deduction_context);
+	function_context_value.reference_notation_deduction_context= move(reference_notation_deduction_context);
 	function_context_value.lambda_preprocessing_context= move(lambda_preprocessing_context);
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
@@ -1513,6 +1535,13 @@ fn CodeBuilder::BuildFuncCode(
 
 				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
 			}
+			else if( !function_context.return_type_deduction_context.empty() )
+			{
+				if( !function_context.reference_notation_deduction_context.empty() )
+				{
+					CollectReferencePollution( function_context );
+				}
+			}
 			else
 			{
 				// Automatically generate "return" for void-return functions.
@@ -1549,24 +1578,34 @@ fn CodeBuilder::BuildFuncCode(
 
 	CheckForUnusedLocalNames( args_names_scope_ptr );
 
-	unsafe( U1_TryToPerformReturnValueAllocationOptimization( llvm_function ) );
-
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
 		auto mut can_be_constexpr= true;
 
+		auto& function_type= func_variable.t;
+
+		can_be_constexpr&=
+			!function_type.is_unsafe &&
+			function_type.return_type.CanBeConstexpr() &&
+			function_type.return_type.GetFunctionPointerType().empty();
+
+		foreach( &param : function_type.params )
 		{
-			auto& function_type= func_variable.t;
-
 			can_be_constexpr&=
-				!function_type.is_unsafe &&
-				function_type.return_type.CanBeConstexpr();
+				param.t.CanBeConstexpr() &&
+				param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+		}
 
-			foreach( &param : function_type.params )
+		if( !function_context.return_type_deduction_context.empty() )
+		{
+			with( &return_type_deduction_context : function_context.return_type_deduction_context.try_lock_imut().deref() )
 			{
-				can_be_constexpr&=
-					param.t.CanBeConstexpr() &&
-					param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+				if_var( &t : return_type_deduction_context.return_type )
+				{
+					can_be_constexpr&=
+						t.CanBeConstexpr() &&
+						t.GetFunctionPointerType().empty();
+				}
 			}
 		}
 
@@ -1591,6 +1630,23 @@ fn CodeBuilder::BuildFuncCode(
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
 		}
 	}
+
+	// Early return for auto-return function preprocessing.
+	if( !function_context.return_type_deduction_context.empty() )
+	{
+		return;
+	}
+
+	// Early return for lambda preprocessing.
+	if( !function_context.lambda_preprocessing_context.empty() )
+	{
+		return;
+	}
+
+	// Perform final steps for regular functions (if this is not some preprocessing).
+
+	unsafe( U1_TryToPerformReturnValueAllocationOptimization( llvm_function ) );
+
 }
 
 fn CodeBuilder::TryCallCopyConstructor(

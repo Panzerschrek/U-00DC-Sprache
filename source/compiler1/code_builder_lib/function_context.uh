@@ -18,6 +18,20 @@ struct LoopFrame
 	ust::vector</ReferencesGraph/> continue_references_graphs;
 }
 
+struct ReturnTypeDeductionContext
+{
+	// Filled during function preprocessing.
+	ust::optional</Type/> return_type;
+}
+
+struct ReferenceNotationDeductionContext
+{
+	// Filled during function preprocessing.
+	FunctionType::ParamReferences return_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
+	FunctionType::ReferencesPollution references_pollution;
+}
+
 struct LambdaPreprocessingContext
 {
 	type ExplicitCaptures= ust::unordered_map</ VariablePtr, ExplicitCapture />;
@@ -57,8 +71,6 @@ struct LambdaPreprocessingContext
 
 	ust::unordered_map</ust::string8, CapturedVariableData/> captured_external_variables;
 
-	FunctionType::ParamReferences return_references;
-	FunctionType::ReturnInnerReferences return_inner_references;
 	ust::vector</ReferencePollution/> references_pollution;
 
 	// Contains set of variables of the preprocessed lambda.
@@ -121,6 +133,8 @@ public:
 
 	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
 
+	ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> return_type_deduction_context;
+	ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context;
 	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context;
 }
 

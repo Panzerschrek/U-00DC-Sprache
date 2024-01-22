@@ -372,10 +372,12 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node )
+fn CodeBuilder::CollectReturnReferences( FunctionContext& function_context, VariablePtr& return_node )
 {
-	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
-	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+	auto mut lock= function_context.reference_notation_deduction_context.try_lock_mut();
+	var ReferenceNotationDeductionContext &mut reference_notation_deduction_context= lock.deref();
+
+	auto& lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
 
 	foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( return_node ) )
 	{
@@ -384,7 +386,7 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext &mut
 			if( variable_node == function_context.args_nodes[arg_n] )
 			{
 				var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number };
-				lambda_preprocessing_context.return_references.push_back( move(param_reference) );
+				reference_notation_deduction_context.return_references.push_back( move(param_reference) );
 			}
 		}
 
@@ -395,44 +397,46 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnReferences( FunctionContext &mut
 				if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
 				{
 					var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
-					lambda_preprocessing_context.return_references.push_back( move(param_reference) );
+					reference_notation_deduction_context.return_references.push_back( move(param_reference) );
 				}
 			}
 		}
 
-		foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+		if( !lambda_preprocessing_context_ptr.empty() )
 		{
-			if( variable_node == captured_variable_pair.value().variable_node )
+			auto mut lock= lambda_preprocessing_context_ptr.try_lock_mut();
+			var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+			foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 			{
-				lambda_preprocessing_context.captured_variables_return_references.push_back( variable_node );
-			}
-
-			foreach( &accessible_variable : captured_variable_pair.value().accessible_variables )
-			{
-				if( variable_node == accessible_variable )
+				if( variable_node == captured_variable_pair.value().variable_node )
 				{
 					lambda_preprocessing_context.captured_variables_return_references.push_back( variable_node );
+				}
+
+				foreach( &accessible_variable : captured_variable_pair.value().accessible_variables )
+				{
+					if( variable_node == accessible_variable )
+					{
+						lambda_preprocessing_context.captured_variables_return_references.push_back( variable_node );
+					}
 				}
 			}
 		}
 	}
 }
 
-fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node )
+fn CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_context, VariablePtr& return_node )
 {
-	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
-	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+	auto mut lock= function_context.reference_notation_deduction_context.try_lock_mut();
+	var ReferenceNotationDeductionContext &mut reference_notation_deduction_context= lock.deref();
+
+	auto& lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
 
 	with( &inner_reference_nodes : return_node.lock_imut().deref().inner_reference_nodes )
 	{
-		if( lambda_preprocessing_context.return_inner_references.size() < inner_reference_nodes.size() )
+		if( reference_notation_deduction_context.return_inner_references.size() < inner_reference_nodes.size() )
 		{
-			lambda_preprocessing_context.return_inner_references.resize( inner_reference_nodes.size() );
-		}
-
-		if( lambda_preprocessing_context.captured_variables_return_inner_references.size() < inner_reference_nodes.size() )
-		{
-			lambda_preprocessing_context.captured_variables_return_inner_references.resize( inner_reference_nodes.size() );
+			reference_notation_deduction_context.return_inner_references.resize( inner_reference_nodes.size() );
 		}
 
 		for( auto mut i= 0s; i < inner_reference_nodes.size(); ++i )
@@ -444,7 +448,7 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext
 					if( variable_node == function_context.args_nodes[arg_n] )
 					{
 						var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number };
-						lambda_preprocessing_context.return_inner_references[i].push_back( move(param_reference) );
+						reference_notation_deduction_context.return_inner_references[i].push_back( move(param_reference) );
 					}
 				}
 
@@ -456,23 +460,35 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext
 						{
 
 							var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
-							lambda_preprocessing_context.return_inner_references[i].push_back( move(param_reference) );
+							reference_notation_deduction_context.return_inner_references[i].push_back( move(param_reference) );
 						}
 					}
 				}
 
-				foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+
+				if( !lambda_preprocessing_context_ptr.empty() )
 				{
-					if( variable_node == captured_variable_pair.value().variable_node )
+					auto mut lock= lambda_preprocessing_context_ptr.try_lock_mut();
+					var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+					if( lambda_preprocessing_context.captured_variables_return_inner_references.size() < inner_reference_nodes.size() )
 					{
-						lambda_preprocessing_context.captured_variables_return_inner_references[i].push_back( variable_node );
+						lambda_preprocessing_context.captured_variables_return_inner_references.resize( inner_reference_nodes.size() );
 					}
 
-					foreach( &accessible_variable : captured_variable_pair.value().accessible_variables )
+					foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 					{
-						if( variable_node == accessible_variable )
+						if( variable_node == captured_variable_pair.value().variable_node )
 						{
 							lambda_preprocessing_context.captured_variables_return_inner_references[i].push_back( variable_node );
+						}
+
+						foreach( &accessible_variable : captured_variable_pair.value().accessible_variables )
+						{
+							if( variable_node == accessible_variable )
+							{
+								lambda_preprocessing_context.captured_variables_return_inner_references[i].push_back( variable_node );
+							}
 						}
 					}
 				}
@@ -481,10 +497,12 @@ fn CodeBuilder::LambdaPreprocessingCollectReturnInnerReferences( FunctionContext
 	}
 }
 
-fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& function_context )
+fn CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 {
-	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
-	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+	auto mut lock= function_context.reference_notation_deduction_context.try_lock_mut();
+	var ReferenceNotationDeductionContext &mut reference_notation_deduction_context= lock.deref();
+
+	auto& lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
 
 	auto& function_type= function_context.function_type;
 	auto& params= function_type.params;
@@ -508,7 +526,7 @@ fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& f
 						continue;
 					}
 
-					var ust::optional</ LambdaPreprocessingContext::ReferenceLink /> mut src_param_reference;
+					var ust::optional</ FunctionType::ParamReference /> mut src_param_reference;
 
 					// Process args sources.
 					for( auto mut j= 0s; j < params.size(); ++j )
@@ -528,40 +546,66 @@ fn CodeBuilder::LambdaPreprocessingCollectReferencePollution( FunctionContext& f
 						}
 					}
 
-					// Process captured variables sources.
-					foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+					if( !src_param_reference.empty() )
 					{
-						if( accessible_variable_node == captured_variable_pair.value().variable_node )
-						{
-							src_param_reference= accessible_variable_node;
-						}
+						var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
 
-						foreach( &captured_variable_accessible_variable : captured_variable_pair.value().accessible_variables )
+						var FunctionType::ReferencePollution mut actual_reference_pollution
 						{
-							if( accessible_variable_node == captured_variable_accessible_variable )
+							.dst= move(dst_param_reference),
+							.src= src_param_reference.try_deref(),
+						};
+						reference_notation_deduction_context.references_pollution.push_back( move(actual_reference_pollution) );
+					}
+
+					if( !lambda_preprocessing_context_ptr.empty() )
+					{
+						auto mut lock= lambda_preprocessing_context_ptr.try_lock_mut();
+						var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
+
+						var ust::shared_ptr_nullable_mut</Variable/> mut src_captured_variable;
+
+						// Process captured variables sources.
+						foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+						{
+							if( accessible_variable_node == captured_variable_pair.value().variable_node )
 							{
-								src_param_reference= accessible_variable_node;
+								src_captured_variable= accessible_variable_node;
+							}
+
+							foreach( &captured_variable_accessible_variable : captured_variable_pair.value().accessible_variables )
+							{
+								if( accessible_variable_node == captured_variable_accessible_variable )
+								{
+									src_captured_variable= accessible_variable_node;
+								}
 							}
 						}
+
+						if( !src_captured_variable.empty() )
+						{
+							var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
+
+							var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
+							{
+								.dst= move(dst_param_reference),
+								.src= src_captured_variable.try_to_non_nullable(),
+							};
+							lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
+						}
 					}
-
-					if( src_param_reference.empty() )
-					{
-						continue;
-					}
-
-					var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
-
-					var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
-					{
-						.dst= move(dst_param_reference),
-						.src= src_param_reference.try_deref(),
-					};
-					lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
 				}
 			}
 		}
 	}
+
+	if( lambda_preprocessing_context_ptr.empty() )
+	{
+		return;
+	}
+
+	auto mut lambda_preprocessing_context_lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lambda_preprocessing_context_lock.deref();
 
 	// Process captured variables destinations.
 	foreach( &dst_captured_variable_pair : lambda_preprocessing_context.captured_external_variables )

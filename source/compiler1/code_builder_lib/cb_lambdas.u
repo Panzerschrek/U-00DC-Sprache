@@ -530,7 +530,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 		else { halt; }
 
-		var ust::shared_ptr_mut</LambdaPreprocessingContext/> lambda_preprocessing_context_ptr( move(lambda_preprocessing_context) );
+		auto lambda_preprocessing_context_ptr= ust::make_shared_ptr( move(lambda_preprocessing_context) );
+		auto reference_notation_deduction_context_ptr= ust::make_shared_ptr( ReferenceNotationDeductionContext() );
 
 		{
 			auto lambda_preprocessing_dummy_class= GetLambdaPreprocessingDummyClass( names_scope );
@@ -544,10 +545,22 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				.is_this_call= true,
 			};
 
-			BuildFuncCode( custom_captures_names_scope, function_variable, lambda_preprocessing_context_ptr );
+			BuildFuncCode(
+				custom_captures_names_scope,
+				function_variable,
+				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				reference_notation_deduction_context_ptr,
+				lambda_preprocessing_context_ptr );
 
 			// Remove temp function.
 			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
+		}
+
+		with( mut lock : reference_notation_deduction_context_ptr.lock_mut() )
+		{
+			return_references= take( lock.deref().return_references );
+			return_inner_references= take( lock.deref().return_inner_references );
+			references_pollution= take( lock.deref().references_pollution );
 		}
 
 		auto mut lock= lambda_preprocessing_context_ptr.lock_mut();
@@ -675,8 +688,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		var u8 this_param_index(0); // Lambda is "this" (argument 0).
 
 		// Process return references.
-		return_references= take( lambda_preprocessing_context_result.return_references );
-
 		foreach( &captured_variable_return_reference : lambda_preprocessing_context_result.captured_variables_return_references )
 		{
 			if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ) )
@@ -689,8 +700,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		NormalizeParamReferencesList( return_references );
 
 		// Process return inner references.
-		return_inner_references= take( lambda_preprocessing_context_result.return_inner_references );
-
 		if( return_inner_references.size() < lambda_preprocessing_context_result.captured_variables_return_inner_references.size() )
 		{
 			return_inner_references.resize( lambda_preprocessing_context_result.captured_variables_return_inner_references.size() );
@@ -828,7 +837,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
 		{
-			BuildFuncCode( names_scope, function_variable );
+			BuildFuncCode(
+				names_scope,
+				function_variable,
+				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 		}
 
 		var FunctionsSet mut functions_set;

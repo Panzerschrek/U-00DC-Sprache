@@ -1108,7 +1108,12 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
 	{
 		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
-		BuildFuncCode( result_names_scope, function_variable );
+		BuildFuncCode(
+			result_names_scope,
+			function_variable,
+			ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+			ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
+			ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 	}
 
 	with( mut lock : result_functions_set_ptr.try_lock_mut() )

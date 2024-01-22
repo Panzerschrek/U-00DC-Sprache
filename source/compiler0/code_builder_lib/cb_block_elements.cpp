@@ -566,7 +566,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else if( *function_context.return_type_deduction_context->return_type != void_type_ )
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, void_type_ );
 
-			CollectReferencePollution( function_context );
+			if( function_context.reference_notation_deduction_context != nullptr )
+				CollectReferencePollution( function_context );
 
 			return block_info;
 		}
