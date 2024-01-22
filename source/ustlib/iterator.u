@@ -23,6 +23,12 @@ public:
 		return impl_.next();
 	}
 
+	// Consume this iterator and retun first element (if it exists).
+	fn first( byval mut this ) : auto
+	{
+		return impl_.next();
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 

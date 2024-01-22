@@ -1118,7 +1118,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			function_context,
 			variable_ptr,
 			constructors_ptr.try_to_non_nullable(),
-			args.range(),
+			args,
 			src_loc );
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );

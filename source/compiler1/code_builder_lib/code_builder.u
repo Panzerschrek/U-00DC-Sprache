@@ -1432,7 +1432,7 @@ fn CodeBuilder::BuildFuncCode(
 						// Destroy instead each member separately.
 						var ReferencesGraph::NodesSet this_input_nodes= function_context.references_graph.GetNodeInputLinks( this_ );
 						debug_assert( this_input_nodes.size() == 1s );
-						function_context.references_graph.MoveNode( this_input_nodes.range().front() );
+						function_context.references_graph.MoveNode( this_input_nodes.iter().first().try_deref() );
 						function_context.references_graph.MoveNode( this_ );
 					}
 					else
