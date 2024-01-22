@@ -29,14 +29,14 @@ fn nomangle main() : i32
 		var ust::unordered_map</i32, C/> m;
 		auto m_copy= m; //##expect_error CopyConstructValueOfNoncopyableType
 	}
-	{ // Range has reference to map.
+	{ // Iterator has reference to map.
 		var ust::unordered_map</i32, i32/> mut m;
-		auto r_imut= cast_imut(m).range();
-		auto r_mut = m.range(); //##expect_error ReferenceProtectionError
+		auto i_imut= cast_imut(m).iter();
+		auto i_mut = m.iter(); //##expect_error ReferenceProtectionError
 	}
-	{ // Range has reference to map.
+	{ // Iterator has reference to map.
 		var ust::unordered_map</i32, i32/> mut m;
-		auto r= m.range();
+		auto i= m.iter();
 		m.insert( 0, 5 ); //##expect_error ReferenceProtectionError
 	}
 
