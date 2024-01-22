@@ -1,8 +1,10 @@
 import "aligned_storage.u"
 import "alloc.u"
 import "container_utils.u"
+import "iterator.u"
 import "minmax.u"
 import "hash.u"
+import "optional.u"
 import "optional_ref.u"
 
 namespace ust
@@ -197,14 +199,14 @@ public:
 		size_= 0s;
 	}
 
-	fn range( imut this ) : unordered_map_range</false/> @( reference_notation::return_inner_references::param0 )
+	fn iter( imut this ) : iterator</ unordered_map_iterator_raw</false/> /> @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( unordered_map_range</false/>( table_, size_, capacity_ ) );
+		return wrap_raw_iterator( unsafe( unordered_map_iterator_raw</false/>( table_, size_, capacity_ ) ) );
 	}
 
-	fn range(  mut this ) : unordered_map_range</true /> @( reference_notation::return_inner_references::param0 )
+	fn iter(  mut this ) : iterator</ unordered_map_iterator_raw</true /> /> @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( unordered_map_range</true />( table_, size_, capacity_ ) );
+		return wrap_raw_iterator( unsafe( unordered_map_iterator_raw</true />( table_, size_, capacity_ ) ) );
 	}
 
 private:
@@ -307,12 +309,14 @@ private:
 
 public:
 	template</ bool is_mutable />
-	class unordered_map_range
+	class unordered_map_iterator_raw
 	{
 		class element_imut
 		{
 			fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::param0_param_1_reference ) unsafe
 			( table_value_(table_value) ) {}
+
+			fn constructor( mut this, element_imut& other )= default;
 
 			fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
 			{
@@ -333,6 +337,8 @@ public:
 			fn constructor( mut this, TableValue & mut table_value ) @( reference_notation::pollution::param0_param_1_reference ) unsafe
 			( table_value_(table_value) ) {}
 
+			fn constructor( mut this, element_mut& other )= default;
+
 			fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
 			{
 				return table_value_.key_storage;
@@ -352,62 +358,51 @@ public:
 		fn constructor( ptr_type table, size_type size, size_type capacity ) unsafe
 		( table_(table), size_(size), capacity_(capacity) )
 		{
-			advance_to_next_element();
-		}
-
-		fn size( this ) : size_type
-		{
-			return size_;
-		}
-
-		fn empty( this ) : bool
-		{
-			return size_ == 0s;
-		}
-
-		fn drop_front( mut this )
-		{
-			halt if( empty() );
-			unsafe( drop_front_unchecked() );
-		}
-
-		fn drop_front_unchecked( mut this ) unsafe
-		{
-			halt if(empty());
-			--size_;
-			++table_;
-			--capacity_;
-			advance_to_next_element();
+			unsafe( advance_to_next_element() );
 		}
 
 		fn enable_if( is_mutable )
-		front( this ) : element_mut @( reference_notation::return_inner_references::param0_inner_reference0 )
+		next( mut this )
+			: optional</ element_mut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
-			halt if(empty());
-			return unsafe( front_unchecked() );
+			if( size_ == 0s )
+			{
+				return null_optional;
+			}
+			unsafe
+			{
+				var optional</ element_mut /> mut res( element_mut( $>(table_) ) );
+				drop_front_unchecked();
+				advance_to_next_element();
+				return move(res);
+			}
 		}
 
 		fn enable_if( !is_mutable )
-		front( this ) : element_imut @( reference_notation::return_inner_references::param0_inner_reference0 )
+		next( mut this )
+			: optional</ element_imut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
-			halt if(empty());
-			return unsafe( front_unchecked() );
-		}
-
-		fn enable_if( is_mutable )
-		front_unchecked( this ) unsafe : element_mut @( reference_notation::return_inner_references::param0_inner_reference0 )
-		{
-			return unsafe( element_mut( $>(table_) ) );
-		}
-
-		fn enable_if( !is_mutable )
-		front_unchecked( this ) unsafe : element_imut @( reference_notation::return_inner_references::param0_inner_reference0 )
-		{
-			return unsafe( element_imut( $>(table_) ) );
+			if( size_ == 0s )
+			{
+				return null_optional;
+			}
+			unsafe
+			{
+				var optional</ element_imut /> mut res( element_imut( $>(table_) ) );
+				drop_front_unchecked();
+				advance_to_next_element();
+				return move(res);
+			}
 		}
 
 	private:
-		fn advance_to_next_element( mut this )
+		fn drop_front_unchecked( mut this ) unsafe
+		{
+			--size_;
+			++table_;
+			--capacity_;
+		}
+		fn advance_to_next_element( mut this ) unsafe
 		{
 			unsafe
 			{

@@ -1,0 +1,39 @@
+import "reference_notation.u"
+
+namespace ust
+{
+
+// Main iterator class.
+// Is just a wrapper for a base interator class, which implements some extra methods.
+template</type RawIterator/>
+class iterator
+{
+public:
+	fn constructor( mut this, RawIterator mut impl )
+		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
+		( impl_= move(impl) )
+	{}
+
+	// Main method of iterator classes.
+	// Usually it returns something like "optional" and "optional_ref".
+	// If an iterator reaches its end, "next" returns empty result.
+	// Some iterators may not reach its end at all.
+	fn next( mut this ) : auto
+	{
+		return impl_.next();
+	}
+
+private:
+	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
+
+private:
+	RawIterator impl_;
+}
+
+template</type T/>
+fn wrap_raw_iterator( T mut t ) : auto
+{
+	return iterator</T/>( move(t) );
+}
+
+} // namespace ust

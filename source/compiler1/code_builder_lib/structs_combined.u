@@ -1512,11 +1512,6 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 	return errors_container_;
 }
 
-fn NamesScope::range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/> @(ret_tags)
-{
-	return names_map_.range();
-}
-
 fn NamesScope::GetThisNamespaceName( this ) : ust::string8&
 {
 	return name_;

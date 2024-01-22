@@ -56,51 +56,35 @@ public:
 		impl_.clear();
 	}
 
-	fn range( this ) : unordered_set_range @( reference_notation::return_inner_references::param0 )
+	fn iter( this ) : iterator</ unordered_set_iterator_raw /> @( reference_notation::return_inner_references::param0 )
 	{
-		return unordered_set_range( impl_.range() );
+		return wrap_raw_iterator( unordered_set_iterator_raw( impl_.iter() ) );
 	}
 
 public:
-	class unordered_set_range
+	class unordered_set_iterator_raw
 	{
 	public:
-		fn constructor( mut this, Impl::unordered_map_range</false/> mut impl ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		fn constructor( mut this, ImplIter mut impl ) @( reference_notation::pollution::param0_param_1_inner_reference )
 			( impl_( move(impl) ) )
 		{}
 
-		fn size( this ) : size_type
+		fn next( mut this )
+			: optional_ref_imut</ T /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
-			return impl_.size();
-		}
-
-		fn empty( this ) : bool
-		{
-			return impl_.empty();
-		}
-
-		fn drop_front( mut this )
-		{
-			return impl_.drop_front();
-		}
-
-		fn drop_front_unchecked( mut this ) unsafe
-		{
-			unsafe{  return impl_.drop_front_unchecked();  }
-		}
-
-		fn front( this ) : T & @( reference_notation::return_references::param0_inner_reference0 )
-		{
-			return impl_.front().key();
-		}
-
-		fn front_unchecked( this ) unsafe : T & @( reference_notation::return_references::param0_inner_reference0 )
-		{
-			unsafe{  return impl_.front_unchecked().key();  }
+			auto next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return null_optional_ref;
+			}
+			return optional_ref_imut</ T />( next_res.try_deref().key() );
 		}
 
 	private:
-		Impl::unordered_map_range</false/> impl_;
+		type ImplIter= iterator</ Impl::unordered_map_iterator_raw</false/> />;
+
+	private:
+		ImplIter impl_;
 	}
 
 private:

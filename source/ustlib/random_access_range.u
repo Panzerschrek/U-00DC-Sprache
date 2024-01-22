@@ -1,7 +1,9 @@
 import "aligned_storage.u"
 import "container_utils.u"
 import "helpers.u"
+import "iterator.u"
 import "memory.u"
+import "optional_ref.u"
 import "reference_notation.u"
 
 namespace ust
@@ -189,9 +191,9 @@ public:
 		--size_;
 	}
 
-	fn range( this ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	fn iter( this ) : iterator</iterator_raw/> @( reference_notation::return_inner_references::param0_inner_reference0 )
 	{
-		return this;
+		return wrap_raw_iterator( iterator_raw(this) );
 	}
 
 	// Access raw data.
@@ -218,6 +220,36 @@ public:
 			auto i1= (size_ - 1s) - i;
 			unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
 		}
+	}
+
+public:
+	// Iterator over range.
+	class iterator_raw
+	{
+	public:
+		fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+			( range_= move(range) )
+		{}
+
+		fn next( mut this )
+			: optional_ref</ T, is_mutable /> @( reference_notation::return_inner_references::param0_inner_reference0 )
+		{
+			if( range_.empty() )
+			{
+				return null_optional_ref;
+			}
+
+			// HACK! Use unsafe, since we need to change range after taking a reference to it.
+			unsafe
+			{
+				var optional_ref</ T, is_mutable /> mut res( $>( range_.data() ) );
+				range_.drop_front_unchecked();
+				return move(res);
+			}
+		}
+
+	private:
+		random_access_range</ T, is_mutable /> range_;
 	}
 
 private:

@@ -221,6 +221,16 @@ public:
 		return this_type( range().subrange( start_index, end_index ) );
 	}
 
+	fn iter(  mut this ) : auto
+	{
+		return range().iter();
+	}
+
+	fn iter( imut this ) : auto
+	{
+		return range().iter();
+	}
+
 	// Access raw data.
 	fn data( mut this ) unsafe : $(char_type)
 	{

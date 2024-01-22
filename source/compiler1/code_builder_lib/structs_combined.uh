@@ -954,7 +954,10 @@ public:
 	fn GetErrors( this ) : ErrorsContainerPtr;
 
 	// For iteration over NamesScope values
-	fn range( this ) : ust::unordered_map</ust::string8, NamesScopeValue/>::unordered_map_range</false/> @(ret_tags);
+	fn iter( this ) : auto
+	{
+		return names_map_.iter();
+	}
 
 	fn GetThisNamespaceName( this ) : ust::string8&;
 

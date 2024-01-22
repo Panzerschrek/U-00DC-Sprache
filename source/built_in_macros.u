@@ -41,9 +41,15 @@
 		}
 		else
 		{
-			for( auto mut ??r= ??e_result.range(); !??r.empty(); unsafe( ??r.drop_front_unchecked() ) ) ?l<? label ?l ?>
+			auto mut ??i= ??e_result.iter();
+			loop ?l<? label ?l ?>
 			{
-				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??r.front_unchecked() ) )
+				auto ??next_res= ??i.next();
+				if( ??next_res.empty() )
+				{
+					break;
+				}
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??next_res.deref_unchecked() ) )
 				{
 					?b
 				}
