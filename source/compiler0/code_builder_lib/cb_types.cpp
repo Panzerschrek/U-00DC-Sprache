@@ -132,6 +132,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name )
 {
+	if( function_type_name.IsAutoReturn() )
+		REPORT_ERROR( AutoForFunctionTypeReturnType, names_scope.GetErrors(), function_type_name.src_loc );
+
 	return FunctionTypeToPointer( PrepareFunctionType( names_scope, function_context, function_type_name ) );
 }
 

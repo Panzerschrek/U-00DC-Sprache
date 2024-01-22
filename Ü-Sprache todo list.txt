@@ -40,7 +40,6 @@ Standart library:
 *) Compilation speed-up - avoid generating some helper classes/functions
 *) Improve/fix unordered_map
 *) Support types with references inside in some containers (variant, result, unordered_map)
-*) Support reference notation for make_array/make_tuple
 *) switch-like macro for variant
 *) Associative containers - map, set, string_map
 *) More algorithms

@@ -12,6 +12,11 @@ private:
 	i32 x_;
 }
 
+struct Ref
+{
+	i32& r;
+}
+
 fn nomangle main() : i32
 {
 	//
@@ -107,6 +112,13 @@ fn nomangle main() : i32
 		var [[char8, 4], 2] constexpr arr = ust::make_array("ABCD", "0123");
 		halt if(arr[0] != ust::string8("ABCD"));
 		halt if(arr[1] != ust::string8("0123"));
+	}
+	{ // make_array for types with references inside.
+		var i32 x= 1, y= 2;
+		var Ref rx{ .r= x }, ry{ .r= y };
+		auto arr= ust::make_array( rx, ry );
+		halt if( arr[0].r != 1 );
+		halt if( arr[1].r != 2 );
 	}
 
 	//
@@ -224,6 +236,14 @@ fn nomangle main() : i32
 		halt if(t[1][1] != 88u64);
 		halt if(t[1][2] != 123u64);
 	}
+	{ // make_tuple for types with references inside.
+		var i32 x= 11, y= 22;
+		var Ref rx{ .r= x }, ry{ .r= y };
+		auto arr= ust::make_tuple( rx, ry );
+		halt if( arr[0].r != 11 );
+		halt if( arr[1].r != 22 );
+	}
+
 
 	// homogeneous_tuple test
 	static_assert( same_type</ ust::homogeneous_tuple</i32, 0s/>, tup[] /> );

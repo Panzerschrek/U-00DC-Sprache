@@ -142,6 +142,11 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
 {
+	if( function_type.IsAutoReturn() )
+	{
+		REPORT_ERROR( AutoForFunctionTypeReturnType, names_scope, function_type.src_loc )
+	}
+
 	var FunctionType mut res= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() );
 	return FunctionTypeToPointer( move(res) );
 }
