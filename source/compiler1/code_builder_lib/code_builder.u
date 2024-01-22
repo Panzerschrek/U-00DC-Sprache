@@ -493,7 +493,10 @@ fn CodeBuilder::PrepareFunction(
 	auto& function_declaration= function_declaration_ptr.deref();
 	auto& func_name= function_declaration.name.back();
 
-	if( !function_declaration.constructor_initializer_list.empty() && func_name != KeywordToString( Keyword::constructor_ ) )
+	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
+	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
+
+	if( !function_declaration.constructor_initializer_list.empty() && !is_constructor )
 	{
 		REPORT_ERROR( InitializationListInNonConstructor, names_scope_ptr, function_declaration.constructor_initializer_list.try_deref().src_loc )
 	}
@@ -515,6 +518,13 @@ fn CodeBuilder::PrepareFunction(
 		if( function_declaration.block.empty() )
 		{
 			REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope_ptr, function_declaration.src_loc, func_name )
+		}
+		if( is_constructor ||
+			is_destructor ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) )
+		{
+			REPORT_ERROR( AutoForSpecialMethod, names_scope_ptr, function_declaration.src_loc )
 		}
 		if( !function_declaration.function_type.return_value_reference_expression.empty() )
 		{
@@ -602,9 +612,6 @@ fn CodeBuilder::PrepareFunction(
 	function_variable.is_this_call=
 		!function_declaration.function_type.params.empty() &&
 		function_declaration.function_type.params.front().name == KeywordToString( Keyword::this_ );
-
-	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
-	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 
 	if( function_variable.IsCoroutine() && ( is_constructor || is_destructor ) )
 	{

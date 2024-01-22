@@ -1037,6 +1037,12 @@ size_t CodeBuilder::PrepareFunction(
 		{
 			if( func.block == nullptr )
 				REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
+
+			if( is_special_method ||
+				func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+				func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) )
+				REPORT_ERROR( AutoForSpecialMethod, names_scope.GetErrors(), func.src_loc );
+
 			if( func.type.return_value_reference_expression != nullptr )
 				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_reference_expression ) );
 			if( func.type.return_value_inner_references_expression != nullptr )

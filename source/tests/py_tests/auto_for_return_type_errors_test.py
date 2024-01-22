@@ -172,3 +172,94 @@ def AutoForFunctionTypeReturnType_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "NameNotFound", 2 ) )
+
+
+def AutoForSpecialMethod_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor() : auto // default constructor
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForSpecialMethod_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( i32 x ) : auto // custom constructor
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForSpecialMethod_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn destructor() : auto
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForSpecialMethod_Test3():
+	c_program_text= """
+		struct S
+		{
+			op=( mut this, S& other ) : auto // auto for copy-assignment operator
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForSpecialMethod_Test4():
+	c_program_text= """
+		struct S
+		{
+			op=( mut this, i32 x ) : auto // auto for custom assignment operator
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForSpecialMethod_Test5():
+	c_program_text= """
+		struct S
+		{
+			op==( S& a, S& b ) : auto // auto for equality compare operator
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+
+
+def AutoForSpecialMethod_Test6():
+	c_program_text= """
+		struct S
+		{
+			op==( S& a, f32 x ) : auto // auto for custom equality compare operator
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
