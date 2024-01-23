@@ -44,7 +44,7 @@ Standart library:
 *) switch-like macro for variant
 *) Associative containers - map, set, string_map
 *) More algorithms
-*) Iterators library with transformations/operations (map, filter, reduce, fold, etc.)
+*) Improve iterator class - add methods like "map", "filter", "fold", "chain", "zip" and other
 *) Time library - get time functions, timers
 *) File library
 *) Console input/output library
