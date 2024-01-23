@@ -4,7 +4,7 @@ namespace ust
 {
 
 // Main iterator class.
-// Is just a wrapper for a base interator class, which implements some extra methods.
+// It is just a wrapper for a base interator class, which implements some extra methods.
 template</type RawIterator/>
 class iterator
 {
@@ -21,13 +21,14 @@ public:
 	// Main method of iterator classes.
 	// Usually it returns something like "optional" and "optional_ref".
 	// If an iterator reaches its end, "next" returns empty result.
-	// Some iterators may not reach its end at all.
+	// Some iterators may not have end at all.
+	// It should be safe to call this method if previous "next" call already returned empty result.
 	fn next( mut this ) : auto
 	{
 		return impl_.next();
 	}
 
-	// Consume this iterator and retun first element (if it exists).
+	// Consume this iterator and return first element (if it exists).
 	fn first( byval mut this ) : auto
 	{
 		return impl_.next();
@@ -42,6 +43,7 @@ private:
 	RawIterator impl_;
 }
 
+// Simple wrapper for the iterator class construction.
 template</type T/>
 fn wrap_raw_iterator( T mut t ) : auto
 {

@@ -201,12 +201,12 @@ public:
 
 	fn iter( imut this ) : auto
 	{
-		return wrap_raw_iterator( iterator_raw</false/>( this ) );
+		return wrap_raw_iterator( raw_iterator</false/>( this ) );
 	}
 
 	fn iter(  mut this ) : auto
 	{
-		return wrap_raw_iterator( iterator_raw</true />( this ) );
+		return wrap_raw_iterator( raw_iterator</true />( this ) );
 	}
 
 private:
@@ -308,6 +308,9 @@ private:
 	}
 
 public:
+	// Iterator element classes - for immutable and mutable iteration.
+	// They are needed to wrap TableValue nicely.
+
 	class iterator_element_imut
 	{
 		fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::param0_param_1_reference )
@@ -352,14 +355,14 @@ public:
 		TableValue & mut table_value_;
 	}
 
+	// Iterator for unordered_map.
+	// Internally this iterator basically scans hash table and returns contents of non-empty cells.
+	// It finishes when it reaches the table end.
 	template</ bool is_mutable />
-	class iterator_raw
+	class raw_iterator
 	{
 	public:
 		// These constructors are safe, since they assume that passed "unordered_map" is always in valid state.
-
-		// Internally this iterator basically scans hash table and returns contents of non-empty cells.
-		// It finishes when it reaches the table end.
 
 		fn enable_if( is_mutable )
 		constructor( this_type & mut m ) @( reference_notation::pollution::param0_param_1_reference )
@@ -371,7 +374,7 @@ public:
 			( table_(m.table_), capacity_(m.capacity_) )
 		{}
 
-		fn constructor( mut this, iterator_raw</is_mutable/>& other )= default;
+		fn constructor( mut this, raw_iterator</is_mutable/>& other )= default;
 
 		fn enable_if( is_mutable )
 		next( mut this )

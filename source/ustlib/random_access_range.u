@@ -223,7 +223,7 @@ public:
 
 	fn iter( this ) : auto
 	{
-		return wrap_raw_iterator( iterator_raw(this) );
+		return wrap_raw_iterator( raw_iterator(this) );
 	}
 
 	// Access raw data.
@@ -254,15 +254,15 @@ public:
 
 public:
 	// Iterator over range.
-	class iterator_raw
+	class raw_iterator
 	{
 	public:
 		fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
 			( range_= move(range) )
 		{}
 
-		fn constructor( mut this, iterator_raw& other )= default;
-		op=( mut this, iterator_raw& other )= default;
+		fn constructor( mut this, raw_iterator& other )= default;
+		op=( mut this, raw_iterator& other )= default;
 
 		fn next( mut this ) : auto
 		{

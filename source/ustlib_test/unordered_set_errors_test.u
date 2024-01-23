@@ -22,7 +22,7 @@ fn nomangle main() : i32
 		auto i= s.iter();
 		i.first().try_deref() *= 2u; //##expect_error ExpectedReferenceValue
 	}
-	{ // Range has reference to set.
+	{ // Iterator has reference to set.
 		var ust::unordered_set</i32/> mut s;
 		auto i= s.iter();
 		s.insert( 5 ); //##expect_error ReferenceProtectionError
