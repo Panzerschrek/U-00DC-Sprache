@@ -191,6 +191,36 @@ public:
 		--size_;
 	}
 
+	fn enable_if(is_mutable) drop_and_get_front( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_front_unchecked() );
+	}
+
+	fn enable_if(!is_mutable) drop_and_get_front( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_front_unchecked() );
+	}
+
+	// Precondition - range is nonempty.
+	fn enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		auto & mut res= unsafe( $>(begin_) );
+		++begin_;
+		--size_;
+		return res;
+	}
+
+	// Precondition - range is nonempty.
+	fn enable_if(!is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		auto &imut res= unsafe( $>(begin_) );
+		++begin_;
+		--size_;
+		return res;
+	}
+
 	fn iter( this ) : iterator</iterator_raw/> @( reference_notation::return_inner_references::param0_inner_reference0 )
 	{
 		return wrap_raw_iterator( iterator_raw(this) );
@@ -234,21 +264,13 @@ public:
 		fn constructor( mut this, iterator_raw& other )= default;
 		op=( mut this, iterator_raw& other )= default;
 
-		fn next( mut this )
-			: optional_ref</ T, is_mutable /> @( reference_notation::return_inner_references::param0_inner_reference0 )
+		fn next( mut this ) : auto
 		{
 			if( range_.empty() )
 			{
-				return null_optional_ref;
+				return optional_ref</ T, is_mutable />();
 			}
-
-			// HACK! Use unsafe, since we need to change range after taking a reference to it.
-			unsafe
-			{
-				var optional_ref</ T, is_mutable /> mut res( $>( range_.data() ) );
-				range_.drop_front_unchecked();
-				return move(res);
-			}
+			return optional_ref</ T, is_mutable />( range_.drop_and_get_front() );
 		}
 
 	private:
