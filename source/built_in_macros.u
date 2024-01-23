@@ -41,15 +41,20 @@
 		}
 		else
 		{
-			auto mut ??i= ??e_result.iter();
+			// Generic iteration code.
+			// First call "iter" method to obtain iterator object.
+			auto mut ??it= ??e_result.iter();
 			loop ?l<? label ?l ?>
 			{
-				auto ??next_res= ??i.next();
+				// Obtain next result - "optional" or "optional_ref".
+				auto mut ??next_res= ??it.next();
 				if( ??next_res.empty() )
 				{
+					// End iteration if "next" call result is empty.
 					break;
 				}
-				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??next_res.deref_unchecked() ) )
+				// Unwrap "optional" or "optional_ref".
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??next_res.try_take() ) )
 				{
 					?b
 				}

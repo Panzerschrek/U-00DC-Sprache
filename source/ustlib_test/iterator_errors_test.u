@@ -17,6 +17,10 @@ class NonIteratorClass
 {
 }
 
+class NonCopyableClass
+{
+}
+
 fn nomangle main() : i32
 {
 	{ // Can't mutate data with iterator over immutable data.
@@ -42,6 +46,12 @@ fn nomangle main() : i32
 		auto it= IntRangeMut( ints ).iter();
 		// Can't take a reference to source sequence when mutable iterator exists.
 		auto& ref= cast_imut(ints); //##expect_error ReferenceProtectionError
+	}
+	{
+		var [ NonCopyableClass, 3 ] sequece;
+		 // Try to copy non-copyable class in iteration.
+		foreach( c : sequece ) //##expect_error MacroExpansionContext
+		{}
 	}
 	return 0;
 }

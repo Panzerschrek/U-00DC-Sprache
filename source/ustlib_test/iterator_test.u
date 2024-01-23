@@ -2,6 +2,7 @@
 import "../ustlib/optional.u"
 import "../ustlib/optional_ref.u"
 import "../ustlib/random_access_range.u"
+import "../ustlib/vector.u"
 
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
@@ -11,6 +12,8 @@ class NonCopyable
 	i32 x;
 	fn constructor( i32 in_x ) ( x= in_x ) {}
 }
+
+static_assert( !typeinfo</NonCopyable/>.is_copy_constructible );
 
 template</ size_type size0, size_type size1 />
 fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
@@ -59,7 +62,6 @@ template</type T/> fn IsOptionalRefMut( T& t ) : bool
 	return false;
 }
 
-
 template</type T/> fn IsOptionalRefImut( ust::optional_ref</T, false/>& t ) : bool
 {
 	return true;
@@ -68,6 +70,38 @@ template</type T/> fn IsOptionalRefImut( ust::optional_ref</T, false/>& t ) : bo
 template</type T/> fn IsOptionalRefImut( T& t ) : bool
 {
 	return false;
+}
+
+class C
+{
+	i32 x;
+	fn constructor( i32 in_x ) ( x= in_x ) {}
+}
+
+class CSequenceIterator
+{
+public:
+	fn next( mut this ) : ust::optional</C/>
+	{
+		if( x >= 10 )
+		{
+			return ust::null_optional;
+		}
+		var ust::optional</C/> mut res( C(x) );
+		++x;
+		return move(res);
+	}
+
+private:
+	i32 x= 0;
+}
+
+class CSequenceIteratorCreator
+{
+	fn iter() : auto
+	{
+		return ust::wrap_raw_iterator( CSequenceIterator() );
+	}
 }
 
 fn nomangle main() : i32
@@ -205,6 +239,44 @@ fn nomangle main() : i32
 			++num_iterations;
 		}
 		halt if( num_iterations != 4s );
+	}
+	{
+		// Should properly handle iterator returning values.
+		var size_type mut num_iterations= 0s;
+		foreach( c : CSequenceIteratorCreator() )
+		{
+			halt if( c.x != i32(num_iterations) );
+			++num_iterations;
+		}
+		halt if( num_iterations != 10s );
+	}
+	{
+		// Should properly handle iterator returning values and create a reference for temp value.
+		var size_type mut num_iterations= 0s;
+		foreach( &c : CSequenceIteratorCreator() )
+		{
+			halt if( c.x != i32(num_iterations) );
+			++num_iterations;
+		}
+		halt if( num_iterations != 10s );
+	}
+	{
+		// Should properly handle iterator returning values and move such values.
+		var ust::vector</C/> mut values;
+		var size_type mut num_iterations= 0s;
+		foreach( mut c : CSequenceIteratorCreator() )
+		{
+			values.push_back( move(c) );
+		}
+		halt if( values.size() != 10s );
+
+		num_iterations= 0s;
+		foreach( &c : values )
+		{
+			halt if( c.x != i32(num_iterations) );
+			++num_iterations;
+		}
+		++num_iterations;
 	}
 
 	return 0;
