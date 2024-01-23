@@ -272,7 +272,7 @@ public:
 	// order compare
 	op<=>( this_type& l, this_type& r ) : i32
 	{
-		for( var size_type mut i= 0s, min_s= ust::min( l.size(), r.size() ); i < min_s; ++i )
+		for( var size_type mut i= 0s, min_s= min( l.size(), r.size() ); i < min_s; ++i )
 		{
 			unsafe
 			{

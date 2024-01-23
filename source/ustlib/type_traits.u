@@ -98,7 +98,7 @@ fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name
 		}
 	}
 
-	ust::ignore_unused(name);
+	ignore_unused(name);
 	return false;
 }
 

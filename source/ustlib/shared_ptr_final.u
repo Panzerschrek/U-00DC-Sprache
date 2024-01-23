@@ -156,7 +156,7 @@ struct shared_ptr_final_base_hasher
 	template</type T, bool is_nullable/>
 	fn hash( shared_ptr_final_base</T, is_nullable/>& ptr ) : size_type
 	{
-		return ust::ptr_to_int( unsafe( ptr.get_ptr() ) );
+		return ptr_to_int( unsafe( ptr.get_ptr() ) );
 	}
 }
 

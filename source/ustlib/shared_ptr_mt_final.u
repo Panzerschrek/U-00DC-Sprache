@@ -159,7 +159,7 @@ struct shared_ptr_mt_final_base_hasher
 	template</type T, bool is_nullable/>
 	fn hash( shared_ptr_mt_final_base</T, is_nullable/>& ptr ) : size_type
 	{
-		return ust::ptr_to_int( unsafe( ptr.get_ptr() ) );
+		return ptr_to_int( unsafe( ptr.get_ptr() ) );
 	}
 }
 
@@ -189,13 +189,13 @@ struct storage
 fn counter_inc( u32& mut c ) : u32
 {
 	// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-	return ust::atomic_inc(c);
+	return atomic_inc(c);
 }
 
 fn counter_dec( u32& mut c ) : u32
 {
 	// Normally overflow is not possible here.
-	return ust::atomic_dec(c);
+	return atomic_dec(c);
 }
 
 } // namespace shared_ptr_mt_final_impl

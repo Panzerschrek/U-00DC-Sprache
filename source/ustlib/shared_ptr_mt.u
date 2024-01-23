@@ -247,7 +247,7 @@ struct shared_ptr_mt_base_hasher
 	template</type T, bool is_nullable, bool is_mutable/>
 	fn hash( shared_ptr_mt_base</T, is_nullable, is_mutable/>& ptr ) : size_type
 	{
-		return ust::ptr_to_int( unsafe( ptr.get_value_ptr() ) );
+		return ptr_to_int( unsafe( ptr.get_value_ptr() ) );
 	}
 }
 

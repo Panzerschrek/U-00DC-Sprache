@@ -4,13 +4,13 @@ namespace ust
 {
 
 template</type T/>
-fn sort( ust::random_access_range</T, true/> range )
+fn sort( random_access_range</T, true/> range )
 {
 	sort_impl::do_sort( range, sort_impl::default_compare</T/>() );
 }
 
 template</type T, type Compare/>
-fn sort( ust::random_access_range</T, true/> range, Compare& comp )
+fn sort( random_access_range</T, true/> range, Compare& comp )
 {
 	sort_impl::do_sort( range, comp );
 }
@@ -38,7 +38,7 @@ Simple quicksort implementation. Average complexity - O(log(n)), worst case comp
 */
 
 template</type T, type Compare/>
-fn do_sort( ust::random_access_range</T, true/> range, Compare& comp )
+fn do_sort( random_access_range</T, true/> range, Compare& comp )
 {
 	if( range.size() <= 1s )
 	{
@@ -48,7 +48,7 @@ fn do_sort( ust::random_access_range</T, true/> range, Compare& comp )
 	{
 		var bool mut c= false;
 		{
-			var ust::random_access_range_imut</T/> range_copy= range;
+			var random_access_range_imut</T/> range_copy= range;
 			c= comp( range_copy.front(), range_copy.back() );
 		}
 		if( !c )
@@ -64,7 +64,7 @@ fn do_sort( ust::random_access_range</T, true/> range, Compare& comp )
 	{
 		var bool mut c= false;
 		{
-			var ust::random_access_range_imut</T/> range_copy= range;
+			var random_access_range_imut</T/> range_copy= range;
 			c= comp( range_copy[lo], range_copy[last] );
 		}
 
