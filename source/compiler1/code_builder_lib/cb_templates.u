@@ -259,7 +259,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 		if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 		{
 			var TemplateSignatureParam mut param=
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), template_param.t, template_params_usage_flags.range() );
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
 			if_var( &type_param : param.GetTypeParam() )
 			{
 				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )

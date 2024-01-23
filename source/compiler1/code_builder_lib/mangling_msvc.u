@@ -89,7 +89,7 @@ fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::s
 	var ManglerState mut mangler_state;
 
 	mangler_state.PushElement( g_name_prefix );
-	EncodeFullName( mangler_state, variable_name.range(), parent_scope );
+	EncodeFullName( mangler_state, variable_name, parent_scope );
 
 	mangler_state.PushElement( "3"c8 ); // Special name for global variables.
 	EncodeType( mangler_state, t );
@@ -148,7 +148,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 			}
 			else
 			{
-				template_mangler_state.EncodeName( name.range() );
+				template_mangler_state.EncodeName( name );
 			}
 			EncodeTemplateArgs( template_mangler_state, template_args.try_deref() );
 		}
@@ -163,7 +163,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 		}
 		else
 		{
-			mangler_state.EncodeName( name.range() );
+			mangler_state.EncodeName( name );
 		}
 	}
 

@@ -1,0 +1,53 @@
+import "reference_notation.u"
+
+namespace ust
+{
+
+// Main iterator class.
+// It is just a wrapper for a base interator class, which implements some extra methods.
+template</type RawIterator/>
+class iterator
+{
+public:
+	fn constructor( mut this, RawIterator mut impl )
+		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
+		( impl_= move(impl) )
+	{}
+
+	// Iterator is copyable if implementation is copyable.
+	fn enable_if( typeinfo</RawIterator/>.is_copy_constructible ) constructor( mut this, this_type& other )= default;
+	op enable_if( typeinfo</RawIterator/>.is_copy_assignable ) =( mut this, this_type& other )= default;
+
+	// Main method of iterator classes.
+	// Usually it returns something like "optional" and "optional_ref".
+	// If an iterator reaches its end, "next" returns empty result.
+	// Some iterators may not have end at all.
+	// It should be safe to call this method if previous "next" call already returned empty result.
+	fn next( mut this ) : auto
+	{
+		return impl_.next();
+	}
+
+	// Consume this iterator and return first element (if it exists).
+	fn first( byval mut this ) : auto
+	{
+		return impl_.next();
+	}
+
+private:
+	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
+
+	type this_type= iterator</RawIterator/>;
+
+private:
+	RawIterator impl_;
+}
+
+// Simple wrapper for the iterator class construction.
+template</type T/>
+fn wrap_raw_iterator( T mut t ) : auto
+{
+	return iterator</T/>( move(t) );
+}
+
+} // namespace ust

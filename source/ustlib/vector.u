@@ -392,6 +392,18 @@ public:
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
 	}
 
+	fn enable_if( c_reference_tag_count == 0s )
+	iter(  mut this ) : auto
+	{
+		return range().iter();
+	}
+
+	fn enable_if( c_reference_tag_count == 0s )
+	iter( imut this ) : auto
+	{
+		return range().iter();
+	}
+
 	// Access raw data.
 	fn data( mut this ) unsafe : $(T)
 	{

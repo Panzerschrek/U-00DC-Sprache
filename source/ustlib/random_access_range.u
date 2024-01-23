@@ -1,7 +1,9 @@
 import "aligned_storage.u"
 import "container_utils.u"
 import "helpers.u"
+import "iterator.u"
 import "memory.u"
+import "optional_ref.u"
 import "reference_notation.u"
 
 namespace ust
@@ -189,9 +191,39 @@ public:
 		--size_;
 	}
 
-	fn range( this ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	fn enable_if(is_mutable) drop_and_get_front( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
-		return this;
+		halt if( empty() );
+		return unsafe( drop_and_get_front_unchecked() );
+	}
+
+	fn enable_if(!is_mutable) drop_and_get_front( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_front_unchecked() );
+	}
+
+	// Precondition - range is nonempty.
+	fn enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		auto & mut res= unsafe( $>(begin_) );
+		++begin_;
+		--size_;
+		return res;
+	}
+
+	// Precondition - range is nonempty.
+	fn enable_if(!is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		auto &imut res= unsafe( $>(begin_) );
+		++begin_;
+		--size_;
+		return res;
+	}
+
+	fn iter( this ) : auto
+	{
+		return wrap_raw_iterator( raw_iterator(this) );
 	}
 
 	// Access raw data.
@@ -218,6 +250,31 @@ public:
 			auto i1= (size_ - 1s) - i;
 			unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
 		}
+	}
+
+public:
+	// Iterator over range.
+	class raw_iterator
+	{
+	public:
+		fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+			( range_= move(range) )
+		{}
+
+		fn constructor( mut this, raw_iterator& other )= default;
+		op=( mut this, raw_iterator& other )= default;
+
+		fn next( mut this ) : auto
+		{
+			if( range_.empty() )
+			{
+				return optional_ref</ T, is_mutable />();
+			}
+			return optional_ref</ T, is_mutable />( range_.drop_and_get_front() );
+		}
+
+	private:
+		random_access_range</ T, is_mutable /> range_;
 	}
 
 private:

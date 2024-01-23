@@ -767,7 +767,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	var VariablePtr& variable_for_move= input_nodes.range().front();
+	var VariablePtr& variable_for_move= input_nodes.iter().first().try_deref();
 	if( variable_for_move.lock_imut().deref().value_type != ValueType::Value )
 	{
 		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )

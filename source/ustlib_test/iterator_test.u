@@ -1,0 +1,283 @@
+//##success_test
+import "../ustlib/optional.u"
+import "../ustlib/optional_ref.u"
+import "../ustlib/random_access_range.u"
+import "../ustlib/vector.u"
+
+type IntRangeMut = ust::random_access_range_mut </i32/>;
+type IntRangeImut= ust::random_access_range_imut</i32/>;
+
+class NonCopyable
+{
+	i32 x;
+	fn constructor( i32 in_x ) ( x= in_x ) {}
+}
+
+static_assert( !typeinfo</NonCopyable/>.is_copy_constructible );
+
+template</ size_type size0, size_type size1 />
+fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+{
+	if( size0 != size1 ) { return false; }
+
+	for( var size_type mut i(0); i < size0; ++i )
+	{
+		if( s0[i] != s1[i] ) { return false; }
+	}
+	return true;
+}
+
+template</type T/>
+fn constexpr GetNextMethodIndex() : size_type
+{
+	auto mut index= 0s;
+	for( &func : typeinfo</T/>.functions_list )
+	{
+		if( string_equals( func.name, "next" ) )
+		{
+			return index;
+		}
+		++index;
+	}
+	halt; // Not found.
+}
+
+template</type T/> fn IsOptional( ust::optional</T/>& t ) : bool
+{
+	return true;
+}
+
+template</type T/> fn IsOptional( T& t ) : bool
+{
+	return false;
+}
+
+template</type T/> fn IsOptionalRefMut( ust::optional_ref</T, true/>& t ) : bool
+{
+	return true;
+}
+
+template</type T/> fn IsOptionalRefMut( T& t ) : bool
+{
+	return false;
+}
+
+template</type T/> fn IsOptionalRefImut( ust::optional_ref</T, false/>& t ) : bool
+{
+	return true;
+}
+
+template</type T/> fn IsOptionalRefImut( T& t ) : bool
+{
+	return false;
+}
+
+class C
+{
+	i32 x;
+	fn constructor( i32 in_x ) ( x= in_x ) {}
+}
+
+class CSequenceIterator
+{
+public:
+	fn next( mut this ) : ust::optional</C/>
+	{
+		if( x >= 10 )
+		{
+			return ust::null_optional;
+		}
+		var ust::optional</C/> mut res( C(x) );
+		++x;
+		return move(res);
+	}
+
+private:
+	i32 x= 0;
+}
+
+class CSequenceIteratorCreator
+{
+	fn iter() : auto
+	{
+		return ust::wrap_raw_iterator( CSequenceIterator() );
+	}
+}
+
+fn nomangle main() : i32
+{
+	{ // Basic iteration.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto mut it= IntRangeImut( ints ).iter();
+		var size_type mut num_iterations= 0s;
+		loop
+		{
+			var ust::optional_ref_imut</i32/> ref= it.next();
+			if( ref.empty() )
+			{
+				break;
+			}
+			halt if( ref.try_deref() != ints[ num_iterations ] );
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+	}
+	{ // Basic iteration with mutation.
+		var [ i32, 4 ] mut ints[ 10, 11, 12, 13 ];
+		var size_type mut num_iterations= 0s;
+		with( mut it : IntRangeMut( ints ).iter() )
+		{
+			loop
+			{
+				var ust::optional_ref_mut</i32/> ref= it.next();
+				if( ref.empty() )
+				{
+					break;
+				}
+				ref.try_deref() *= 3;
+				++num_iterations;
+			}
+		}
+		halt if( num_iterations != 4s );
+		halt if( ints[0] != 30 );
+		halt if( ints[1] != 33 );
+		halt if( ints[2] != 36 );
+		halt if( ints[3] != 39 );
+	}
+	{ // Basic iteration with foreach.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		var size_type mut num_iterations= 0s;
+		foreach( &i : IntRangeImut( ints ) )
+		{
+			halt if( i != ints[ num_iterations ] );
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+	}
+	{ // Basic iteration with mutation via foreacg.
+		var [ i32, 4 ] mut ints[ 10, 11, 12, 13 ];
+		var size_type mut num_iterations= 0s;
+		foreach( &mut i : IntRangeMut( ints ) )
+		{
+			i*= 3;
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+		halt if( ints[0] != 30 );
+		halt if( ints[1] != 33 );
+		halt if( ints[2] != 36 );
+		halt if( ints[3] != 39 );
+	}
+	{ // Immutable iteration over noncopyable type.
+		var [ NonCopyable, 3 ] arr[ (43), (54), (65) ];
+		var size_type mut num_iterations= 0s;
+		foreach( &v : ust::array_view_imut</NonCopyable/>( arr ) )
+		{
+			halt if( v.x != arr[num_iterations].x );
+			++num_iterations;
+		}
+		halt if( num_iterations != 3s );
+	}
+	{ // Mutable iteration over noncopyable type.
+		var [ NonCopyable, 3 ] mut arr[ (0), (0), (0) ];
+		var size_type mut num_iterations= 0s;
+		foreach( &mut v : ust::array_view_mut</NonCopyable/>( arr ) )
+		{
+			v.x= i32(num_iterations) * 10;
+			++num_iterations;
+		}
+		halt if( num_iterations != 3s );
+		halt if( arr[0].x != 0 );
+		halt if( arr[1].x != 10 );
+		halt if( arr[2].x != 20 );
+	}
+	{ // Inspect result types.
+		var IntRangeImut range;
+		auto mut it= range.iter();
+		auto next_res= it.next();
+		halt if( IsOptional(next_res) );
+		halt if( !IsOptionalRefImut(next_res) );
+		halt if( IsOptionalRefMut(next_res) );
+	}
+	{ // Inspect result types.
+		var IntRangeMut range;
+		auto mut it= range.iter();
+		auto next_res= it.next();
+		halt if( IsOptional(next_res) );
+		halt if( IsOptionalRefImut(next_res) );
+		halt if( !IsOptionalRefMut(next_res) );
+	}
+	{ // Iterator is copyable.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto mut it= IntRangeImut( ints ).iter();
+		auto mut it_copy= it; // Make copy.
+
+		// Iterate over copy.
+		var size_type mut num_iterations= 0s;
+		loop
+		{
+			var ust::optional_ref_imut</i32/> ref= it_copy.next();
+			if( ref.empty() )
+			{
+				break;
+			}
+			halt if( ref.try_deref() != ints[ num_iterations ] );
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+
+		// Iterate over original iterator.
+		num_iterations= 0s;
+		loop
+		{
+			var ust::optional_ref_imut</i32/> ref= it.next();
+			if( ref.empty() )
+			{
+				break;
+			}
+			halt if( ref.try_deref() != ints[ num_iterations ] );
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+	}
+	{
+		// Should properly handle iterator returning values.
+		var size_type mut num_iterations= 0s;
+		foreach( c : CSequenceIteratorCreator() )
+		{
+			halt if( c.x != i32(num_iterations) );
+			++num_iterations;
+		}
+		halt if( num_iterations != 10s );
+	}
+	{
+		// Should properly handle iterator returning values and create a reference for temp value.
+		var size_type mut num_iterations= 0s;
+		foreach( &c : CSequenceIteratorCreator() )
+		{
+			halt if( c.x != i32(num_iterations) );
+			++num_iterations;
+		}
+		halt if( num_iterations != 10s );
+	}
+	{
+		// Should properly handle iterator returning values and move such values.
+		var ust::vector</C/> mut values;
+		var size_type mut num_iterations= 0s;
+		foreach( mut c : CSequenceIteratorCreator() )
+		{
+			values.push_back( move(c) );
+		}
+		halt if( values.size() != 10s );
+
+		num_iterations= 0s;
+		foreach( &c : values )
+		{
+			halt if( c.x != i32(num_iterations) );
+			++num_iterations;
+		}
+		++num_iterations;
+	}
+
+	return 0;
+}
