@@ -81,7 +81,7 @@ public:
 		}
 
 	private:
-		type ImplIter= iterator</ Impl::unordered_map_iterator_raw</false/> />;
+		type ImplIter= iterator</ Impl::iterator_raw</false/> />;
 
 	private:
 		ImplIter impl_;

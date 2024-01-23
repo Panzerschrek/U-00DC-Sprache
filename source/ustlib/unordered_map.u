@@ -199,14 +199,14 @@ public:
 		size_= 0s;
 	}
 
-	fn iter( imut this ) : iterator</ unordered_map_iterator_raw</false/> /> @( reference_notation::return_inner_references::param0 )
+	fn iter( imut this ) : auto
 	{
-		return wrap_raw_iterator( unsafe( unordered_map_iterator_raw</false/>( table_, size_, capacity_ ) ) );
+		return wrap_raw_iterator( iterator_raw</false/>( this ) );
 	}
 
-	fn iter(  mut this ) : iterator</ unordered_map_iterator_raw</true /> /> @( reference_notation::return_inner_references::param0 )
+	fn iter(  mut this ) : auto
 	{
-		return wrap_raw_iterator( unsafe( unordered_map_iterator_raw</true />( table_, size_, capacity_ ) ) );
+		return wrap_raw_iterator( iterator_raw</true />( this ) );
 	}
 
 private:
@@ -308,116 +308,125 @@ private:
 	}
 
 public:
-	template</ bool is_mutable />
-	class unordered_map_iterator_raw
+	class iterator_element_imut
 	{
-		class element_imut
+		fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::param0_param_1_reference )
+			( table_value_(table_value) )
+			{}
+
+		fn constructor( mut this, iterator_element_imut& other )= default;
+
+		fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
 		{
-			fn constructor( mut this, TableValue &imut table_value ) @( reference_notation::pollution::param0_param_1_reference ) unsafe
-			( table_value_(table_value) ) {}
-
-			fn constructor( mut this, element_imut& other )= default;
-
-			fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
-			{
-				return table_value_.key_storage;
-			}
-
-			fn value( this ) : value_type &imut @( reference_notation::return_references::param0_inner_reference0 )
-			{
-				return table_value_.value_storage;
-			}
-
-		private:
-			TableValue &imut table_value_;
+			return table_value_.key_storage;
 		}
 
-		class element_mut
+		fn value( this ) : value_type &imut @( reference_notation::return_references::param0_inner_reference0 )
 		{
-			fn constructor( mut this, TableValue & mut table_value ) @( reference_notation::pollution::param0_param_1_reference ) unsafe
-			( table_value_(table_value) ) {}
-
-			fn constructor( mut this, element_mut& other )= default;
-
-			fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
-			{
-				return table_value_.key_storage;
-			}
-
-			fn value( this ) : value_type & mut @( reference_notation::return_references::param0_inner_reference0 )
-			{
-				return table_value_.value_storage;
-			}
-
-		private:
-			TableValue & mut table_value_;
+			return table_value_.value_storage;
 		}
 
+	private:
+		TableValue &imut table_value_;
+	}
+
+	class iterator_element_mut
+	{
+		fn constructor( mut this, TableValue & mut table_value ) @( reference_notation::pollution::param0_param_1_reference )
+			( table_value_(table_value) )
+			{}
+
+		fn constructor( mut this, iterator_element_mut& other )= default;
+
+		fn key( this ) : key_type & @( reference_notation::return_references::param0_inner_reference0 )
+		{
+			return table_value_.key_storage;
+		}
+
+		fn value( this ) : value_type & mut @( reference_notation::return_references::param0_inner_reference0 )
+		{
+			return table_value_.value_storage;
+		}
+
+	private:
+		TableValue & mut table_value_;
+	}
+
+	template</ bool is_mutable />
+	class iterator_raw
+	{
 	public:
-		// 'table' must contain exactly 'size' elements.
-		fn constructor( ptr_type table, size_type size, size_type capacity ) unsafe
-		( table_(table), size_(size), capacity_(capacity) )
-		{
-			unsafe( advance_to_next_element() );
-		}
+		// These constructors are safe, since they assume that passed "unordered_map" is always in valid state.
+
+		// Internally this iterator basically scans hash table and returns contents of non-empty cells.
+		// It finishes when it reaches the table end.
+
+		fn enable_if( is_mutable )
+		constructor( this_type & mut m ) @( reference_notation::pollution::param0_param_1_reference )
+			( table_(m.table_), capacity_(m.capacity_) )
+		{}
+
+		fn enable_if( !is_mutable )
+		constructor( this_type &imut m ) @( reference_notation::pollution::param0_param_1_reference )
+			( table_(m.table_), capacity_(m.capacity_) )
+		{}
+
+		fn constructor( mut this, iterator_raw</is_mutable/>& other )= default;
 
 		fn enable_if( is_mutable )
 		next( mut this )
-			: optional</ element_mut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
+			: optional</ iterator_element_mut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
-			if( size_ == 0s )
+			advance_to_next_element();
+			if( capacity_ == 0s )
 			{
 				return null_optional;
 			}
 			unsafe
 			{
-				var optional</ element_mut /> mut res( element_mut( $>(table_) ) );
+				var optional</ iterator_element_mut /> mut res( iterator_element_mut( $>(table_) ) );
 				drop_front_unchecked();
-				advance_to_next_element();
 				return move(res);
 			}
 		}
 
 		fn enable_if( !is_mutable )
 		next( mut this )
-			: optional</ element_imut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
+			: optional</ iterator_element_imut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
-			if( size_ == 0s )
+			advance_to_next_element();
+			if( capacity_ == 0s )
 			{
 				return null_optional;
 			}
 			unsafe
 			{
-				var optional</ element_imut /> mut res( element_imut( $>(table_) ) );
+				var optional</ iterator_element_imut /> mut res( iterator_element_imut( $>(table_) ) );
 				drop_front_unchecked();
-				advance_to_next_element();
 				return move(res);
 			}
 		}
 
 	private:
-		fn drop_front_unchecked( mut this ) unsafe
+		fn advance_to_next_element( mut this )
 		{
-			--size_;
-			++table_;
-			--capacity_;
-		}
-		fn advance_to_next_element( mut this ) unsafe
-		{
-			unsafe
+			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != TableValue::CellContent::HaveValue )
 			{
-				while( capacity_ > 0s && $>(table_).cell_content != TableValue::CellContent::HaveValue )
-				{
-					++table_;
-					--capacity_;
-				}
+				++table_;
+				--capacity_;
 			}
 		}
 
+		// Precondition - end is not reached.
+		fn drop_front_unchecked( mut this ) unsafe
+		{
+			++table_;
+			--capacity_;
+		}
+
 	private:
-		ReferenceContainerTag</ TableValue, is_mutable /> reference_tag_;
+		ReferenceContainerTag</ this_type, is_mutable /> reference_tag_; // Logically hold a reference to the source container.
 		ptr_type table_;
-		size_type size_;
 		size_type capacity_;
 	}
 
