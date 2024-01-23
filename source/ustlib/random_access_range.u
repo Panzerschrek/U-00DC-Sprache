@@ -231,6 +231,9 @@ public:
 			( range_= move(range) )
 		{}
 
+		fn constructor( mut this, iterator_raw& other )= default;
+		op=( mut this, iterator_raw& other )= default;
+
 		fn next( mut this )
 			: optional_ref</ T, is_mutable /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{

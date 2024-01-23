@@ -173,6 +173,39 @@ fn nomangle main() : i32
 		halt if( IsOptionalRefImut(next_res) );
 		halt if( !IsOptionalRefMut(next_res) );
 	}
+	{ // Iterator is copyable.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto mut it= IntRangeImut( ints ).iter();
+		auto mut it_copy= it; // Make copy.
+
+		// Iterate over copy.
+		var size_type mut num_iterations= 0s;
+		loop
+		{
+			var ust::optional_ref_imut</i32/> ref= it_copy.next();
+			if( ref.empty() )
+			{
+				break;
+			}
+			halt if( ref.try_deref() != ints[ num_iterations ] );
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+
+		// Iterate over original iterator.
+		num_iterations= 0s;
+		loop
+		{
+			var ust::optional_ref_imut</i32/> ref= it.next();
+			if( ref.empty() )
+			{
+				break;
+			}
+			halt if( ref.try_deref() != ints[ num_iterations ] );
+			++num_iterations;
+		}
+		halt if( num_iterations != 4s );
+	}
 
 	return 0;
 }

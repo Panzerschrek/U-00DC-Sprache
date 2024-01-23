@@ -14,6 +14,10 @@ public:
 		( impl_= move(impl) )
 	{}
 
+	// Iterator is copyable if implementation is copyable.
+	fn enable_if( typeinfo</RawIterator/>.is_copy_constructible ) constructor( mut this, this_type& other )= default;
+	op enable_if( typeinfo</RawIterator/>.is_copy_assignable ) =( mut this, this_type& other )= default;
+
 	// Main method of iterator classes.
 	// Usually it returns something like "optional" and "optional_ref".
 	// If an iterator reaches its end, "next" returns empty result.
@@ -31,6 +35,8 @@ public:
 
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
+
+	type this_type= iterator</RawIterator/>;
 
 private:
 	RawIterator impl_;
