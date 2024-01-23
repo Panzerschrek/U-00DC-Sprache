@@ -56,7 +56,7 @@ public:
 		impl_.clear();
 	}
 
-	fn iter( this ) : iterator</ unordered_set_iterator_raw /> @( reference_notation::return_inner_references::param0 )
+	fn iter( this ) : auto
 	{
 		return wrap_raw_iterator( unordered_set_iterator_raw( impl_.iter() ) );
 	}

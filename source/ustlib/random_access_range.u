@@ -221,7 +221,7 @@ public:
 		return res;
 	}
 
-	fn iter( this ) : iterator</iterator_raw/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+	fn iter( this ) : auto
 	{
 		return wrap_raw_iterator( iterator_raw(this) );
 	}
