@@ -34,6 +34,14 @@ public:
 		return impl_.next();
 	}
 
+	// Implement method "iter" for iterator itself.
+	// This is needed, sometimes,
+	// For example, if "foreach" is used not for a container, but for an iterator.
+	fn iter( byval mut this ) : auto
+	{
+		return move(this);
+	}
+
 	// Consume the iterator and count number of elements.
 	// This method may not finish for infinite iterators.
 	// Overflows are also possible.
