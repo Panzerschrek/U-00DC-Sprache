@@ -2,6 +2,7 @@
 import "../ustlib/optional.u"
 import "../ustlib/optional_ref.u"
 import "../ustlib/random_access_range.u"
+import "../ustlib/string.u"
 import "../ustlib/vector.u"
 import "../ustlib/unordered_set.u"
 
@@ -316,6 +317,10 @@ fn nomangle main() : i32
 		halt if( !ints_set.exists( 23 ) );
 		halt if( !ints_set.exists( -5 ) );
 		halt if( !ints_set.exists( 125 ) );
+	}
+	{ // Collect into string.
+		auto str= ust::string_view8( "Gott muss ein Arschloch sein" ).iter().collect</ ust::string8 />();
+		halt if( str != "Gott muss ein Arschloch sein" );
 	}
 
 	return 0;

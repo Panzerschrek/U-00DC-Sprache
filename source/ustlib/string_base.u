@@ -16,6 +16,24 @@ public:
 	type hasher= string_base_hasher;
 
 public:
+	// Factory method for creating string from given iterator.
+	template</type Iterator/>
+	fn from_iterator( Iterator mut it ) : auto
+	{
+		var this_type mut result;
+		loop
+		{
+			auto mut next_result= it.next();
+			if( next_result.empty() )
+			{
+				break;
+			}
+			result.push_back( next_result.try_take() );
+		}
+		return move(result);
+	}
+
+public:
 	// Default constructor.
 	fn constructor()= default;
 
