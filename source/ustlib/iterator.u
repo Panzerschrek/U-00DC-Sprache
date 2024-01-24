@@ -48,6 +48,14 @@ public:
 		return c;
 	}
 
+	// Collect elements into given container.
+	// This method is just a wrapper for a container-specific collection method.
+	template</type Container/>
+	fn collect( byval mut this ) : auto
+	{
+		return Container::from_iterator( move(this) );
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 
