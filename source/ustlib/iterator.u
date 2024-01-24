@@ -34,6 +34,20 @@ public:
 		return impl_.next();
 	}
 
+	// Consume the iterator and count number of elements.
+	// This method may not finish for infinite iterators.
+	// Overflows are also possible.
+	// The complexity is linear, it's recommended to use proper container "size" methods if it is possible.
+	fn count( byval mut this ) : size_type
+	{
+		var size_type mut c= 0s;
+		while( !next().empty() )
+		{
+			++c;
+		}
+		return c;
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 

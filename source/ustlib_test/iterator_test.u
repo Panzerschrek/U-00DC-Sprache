@@ -278,6 +278,13 @@ fn nomangle main() : i32
 		}
 		++num_iterations;
 	}
+	{ // Count for sequence of known length.
+		var [ i32, 42 ] arr= zero_init;
+		halt if( IntRangeImut(arr).iter().count() != 42s );
+	}
+	{ // Count for sequence of with possible dynamic length.
+		halt if( CSequenceIteratorCreator().iter().count() != 10s );
+	}
 
 	return 0;
 }
