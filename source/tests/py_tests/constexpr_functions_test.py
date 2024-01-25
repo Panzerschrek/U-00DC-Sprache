@@ -918,3 +918,24 @@ def ConstexprFunction_RecursiveCall_Test1():
 		} // namespace S
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprStaticMethodBuilding_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			template</type T/>
+			fn Make( T t ) : S
+			{
+				var S mut s{ .x= i32(t) };
+				return s;
+			}
+		}
+		fn Foo()
+		{
+			// Should access template factory method which built is triggered and triggers class building.
+			auto s= S::Make( 34.7f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
