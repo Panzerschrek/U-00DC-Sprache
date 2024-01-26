@@ -743,8 +743,9 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		const NamesScopeValue* constructor_value=
 			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
-		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->value.GetFunctionsSet();
+		const OverloadedFunctionsSetPtr constructors_set= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_type->members, *constructors_set );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
@@ -1036,8 +1037,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->value.GetFunctionsSet();
+		const OverloadedFunctionsSetPtr constructors_set= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_type->members, *constructors_set );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;

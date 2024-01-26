@@ -732,7 +732,8 @@ void CodeBuilder::CallDestructor(
 	{
 		const NamesScopeValue* const destructor_value= class_->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_value != nullptr );
-		const OverloadedFunctionsSetConstPtr destructors= destructor_value->value.GetFunctionsSet();
+		const OverloadedFunctionsSetPtr destructors= destructor_value->value.GetFunctionsSet();
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_->members, *destructors );
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();

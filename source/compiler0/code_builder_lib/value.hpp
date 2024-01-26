@@ -93,6 +93,7 @@ struct OverloadedFunctionsSet
 	ClassPtr base_class= nullptr;
 
 	bool have_nomangle_function= false;
+	bool has_unbuilt_constexpr_functions= false;
 };
 
 struct TypeTemplatesSet
