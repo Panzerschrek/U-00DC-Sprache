@@ -227,6 +227,7 @@ private:
 
 	fn PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set_ptr );
 	fn BuildFunctionsSetBodies( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set_ptr );
+	fn PrepareFunctionsSetAndBuildConstexprBodies( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set_ptr );
 	fn PrepareClassParentsList( mut this, ClassTypePtr& class_type );
 	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
 	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );

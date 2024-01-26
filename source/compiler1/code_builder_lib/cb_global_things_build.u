@@ -285,6 +285,12 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 		}
 	}
 
+	functions_set.hass_unbuilt_constexpr_functions= false;
+	foreach( &function : functions_set.functions )
+	{
+		functions_set.hass_unbuilt_constexpr_functions |= function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete;
+	}
+
 	// Update functions set after prepareation process.
 	with( mut lock : functions_set_ptr.lock_mut() )
 	{
@@ -303,6 +309,46 @@ fn CodeBuilder::BuildFunctionsSetBodies( mut this, NamesScopePtr& names_scope_pt
 	foreach( &mut func_variable : functions_set.functions )
 	{
 		if( !func_variable.is_inherited )
+		{
+			BuildFuncCode(
+				names_scope_ptr,
+				func_variable,
+				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
+		}
+	}
+
+	// Update functions set after body build process.
+	with( mut lock : functions_set_ptr.lock_mut() )
+	{
+		lock.deref()= move(functions_set);
+	}
+}
+
+fn CodeBuilder::PrepareFunctionsSetAndBuildConstexprBodies( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set_ptr )
+{
+	// Prepare functions before building.
+	PrepareFunctionsSet( names_scope_ptr, functions_set_ptr );
+
+	if( !functions_set_ptr.lock_imut().deref().hass_unbuilt_constexpr_functions )
+	{
+		// Nothing to do.
+		return;
+	}
+
+	// Reset the flag in order to avoid recursion.
+	with( mut lock : functions_set_ptr.lock_mut() )
+	{
+		lock.deref().hass_unbuilt_constexpr_functions= false;
+	}
+
+	// Take copy, and make manipulations only with it. Update value inside shareed pointer in one operation.
+	var FunctionsSet mut functions_set= functions_set_ptr.lock_imut().deref();
+
+	foreach( &mut func_variable : functions_set.functions )
+	{
+		if( !func_variable.is_inherited && func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete )
 		{
 			BuildFuncCode(
 				names_scope_ptr,

@@ -942,10 +942,12 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		}
 
 		// Constructors value should always exists and should always be FunctionsSet.
-		auto constructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
+		auto class_members= class_type.lock_imut().deref().members;
+		auto constructors_ptr= class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, constructors_ptr );
 
 		// Search for copy constructor.
-		foreach( &constructor_ : constructors_ptr.try_lock_imut().deref().functions )
+		foreach( &constructor_ : constructors_ptr.lock_imut().deref().functions )
 		{
 			if( IsCopyConstructor( constructor_, class_type ) )
 			{
@@ -1013,10 +1015,12 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		}
 
 		// Assignment operators value should always exists and should always be FunctionsSet.
-		auto operators_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</FunctionsSet/>();
+		auto class_members= class_type.lock_imut().deref().members;
+		auto operators_ptr= class_members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, operators_ptr );
 
 		// Search for copy assignment operator.
-		foreach( &operator_ : operators_ptr.try_lock_imut().deref().functions )
+		foreach( &operator_ : operators_ptr.lock_imut().deref().functions )
 		{
 			if( IsCopyAssignmentOperator( operator_, class_type ) )
 			{
@@ -1109,8 +1113,11 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 		}
 
 		// Search for "==" operator.
-		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
-		foreach( &op_ : operators_value.Get</FunctionsSet/>().try_lock_imut().deref().functions )
+		auto class_members= class_type.lock_imut().deref().members;
+		auto operators_ptr= class_members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, operators_ptr );
+
+		foreach( &op_ : operators_ptr.lock_imut().deref().functions )
 		{
 			if( !IsEqualityCompareOperator( op_, class_type ) )
 			{
@@ -1171,10 +1178,12 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 	else if_var( &class_type : t.GetClassType() )
 	{
 		// Destructors value should always exists and should always be FunctionsSet.
-		auto destructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>();
+		auto class_members= class_type.lock_imut().deref().members;
+		auto destructors_ptr= class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, destructors_ptr );
 
 		// Destructors set should contain exactly one function.
-		auto destructors_lock= destructors_ptr.try_lock_imut();
+		auto destructors_lock= destructors_ptr.lock_imut();
 		var FunctionVariable& destructor_= destructors_lock.deref().functions.front();
 
 		// Call it.

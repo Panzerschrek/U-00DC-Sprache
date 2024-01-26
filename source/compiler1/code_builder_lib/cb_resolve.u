@@ -514,8 +514,8 @@ fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr
 	auto f_ptr= value.Get</FunctionsSet/>();
 	if( !f_ptr.empty() )
 	{
-		// In case of access to functions set using function name, prepare only prototype, do not build full body.
-		PrepareFunctionsSet( names_scope, f_ptr.try_to_non_nullable() );
+		// Trigger constexpr functions bodies building if this set is referenced.
+		PrepareFunctionsSetAndBuildConstexprBodies( names_scope, f_ptr.try_to_non_nullable() );
 	}
 
 	auto enum_type_ptr= value.Get</Enum/>();

@@ -872,7 +872,7 @@ fn CodeBuilder::GetOverloadedOperator(
 				auto functions_set_ptr= operators_value[0].Get</FunctionsSet/>();
 				if( !functions_set_ptr.empty() )
 				{
-					PrepareFunctionsSet( operators_value[2], functions_set_ptr.try_to_non_nullable() );
+					PrepareFunctionsSetAndBuildConstexprBodies( operators_value[2], functions_set_ptr.try_to_non_nullable() );
 
 					var size_type prev_size= matched_functions.size();
 					FetchMatchedOverloadedFunctions( functions_set_ptr.try_lock_imut().deref(), args, false, names_scope, src_loc, true, matched_functions );
