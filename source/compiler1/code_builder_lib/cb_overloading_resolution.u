@@ -932,8 +932,9 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 
 	auto dst_class_members= dst.GetClassType().try_deref().lock_imut().deref().members;
 
-	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
-	auto constructors_lock= constructors_ptr.try_lock_imut();
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+	PrepareFunctionsSetAndBuildConstexprBodies( dst_class_members, constructors_ptr );
+	auto constructors_lock= constructors_ptr.lock_imut();
 	var FunctionsSet& constructors= constructors_lock.deref();
 
 	var [ VariableTypeExtended, 2 ] constructor_args
@@ -975,8 +976,9 @@ fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, 
 
 	auto dst_class_members= dst.GetClassType().try_deref().lock_imut().deref().members;
 
-	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
-	auto constructors_lock= constructors_ptr.try_lock_imut();
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+	PrepareFunctionsSetAndBuildConstexprBodies( dst_class_members, constructors_ptr );
+	auto constructors_lock= constructors_ptr.lock_imut();
 	var FunctionsSet& constructors= constructors_lock.deref();
 
 	var [ VariableTypeExtended, 2 ] constructor_args

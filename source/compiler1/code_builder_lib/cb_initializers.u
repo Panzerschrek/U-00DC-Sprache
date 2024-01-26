@@ -790,15 +790,15 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			return LLVMValueRef::Null;
 		}
 
-		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>();
 		// Should be functions set 100%
-		// Should be complete here.
+		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, constructors_ptr );
 
 		CallFunctionsSet(
 			names_scope,
 			function_context,
 			variable_ptr,
-			constructors_ptr.try_to_non_nullable(),
+			constructors_ptr,
 			ust::empty_range,
 			src_loc );
 
@@ -1109,15 +1109,15 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>();
 		// Should be functions set 100%
-		// Should be complete here.
+		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, constructors_ptr );
 
 		CallFunctionsSet(
 			names_scope,
 			function_context,
 			variable_ptr,
-			constructors_ptr.try_to_non_nullable(),
+			constructors_ptr,
 			args,
 			src_loc );
 
