@@ -197,7 +197,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 				GlobalThingBuildNamespace( *inner_namespace );
 			else if( const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet() )
-				GlobalThingBuildFunctionsSet( names_scope, *functions_set, true );
+				BuildFunctionsSetBodies( names_scope, *functions_set );
 			else if( const Type* const type= value.GetTypeName() )
 			{
 				if( type->GetFundamentalType() != nullptr ||
@@ -235,95 +235,128 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 		});
 }
 
-void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, const bool build_body )
+void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set )
 {
-	if( !functions_set.syntax_elements.empty() || !functions_set.out_of_line_syntax_elements.empty() || !functions_set.template_syntax_elements.empty() )
+	if( functions_set.syntax_elements.empty() &&
+		functions_set.out_of_line_syntax_elements.empty() &&
+		functions_set.template_syntax_elements.empty() )
+		return;
+
+	SrcLoc functions_set_src_loc;
+	std::string functions_set_name;
+	if( !functions_set.syntax_elements.empty() )
 	{
-		SrcLoc functions_set_src_loc;
-		std::string functions_set_name;
-		if( !functions_set.syntax_elements.empty() )
-		{
-			functions_set_src_loc= functions_set.syntax_elements.front()->src_loc;
-			functions_set_name= functions_set.syntax_elements.front()->name.back().name;
-		}
-		else if( !functions_set.template_syntax_elements.empty() )
-		{
-			functions_set_src_loc= functions_set.template_syntax_elements.front()->src_loc;
-			functions_set_name= functions_set.template_syntax_elements.front()->function->name.back().name;
-		}
-		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_src_loc );
-
-		for( const Synt::Function* const function : functions_set.syntax_elements )
-		{
-			const size_t function_index= PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, false );
-
-			if( function_index == ~0u )
-				continue;
-			FunctionVariable& function_variable= functions_set.functions[function_index];
-
-			// Immediately build functions with auto return type.
-			if( function->type.IsAutoReturn() && !function_variable.have_body && function->block != nullptr )
-			{
-				// Preprocess function in order to deduce return type and reference notation.
-				ReturnTypeDeductionContext return_type_deduction_context;
-				ReferenceNotationDeductionContext reference_notation_deduction_context;
-
-				if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-					function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto; // We can deduce "constexpr" property for all auto-return functions.
-
-				BuildFuncCode(
-					function_variable,
-					functions_set.base_class,
-					names_scope,
-					functions_set_name,
-					&return_type_deduction_context,
-					&reference_notation_deduction_context );
-
-				// Update function type.
-				function_variable.type.return_type= return_type_deduction_context.return_type.value_or( void_type_ );
-				function_variable.type.return_references= std::move(reference_notation_deduction_context.return_references);
-				function_variable.type.return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
-				function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
-
-				function_variable.have_body= false;
-				// Remove old LLVM function and create new one (with name based on exact deduced function type).
-				function_variable.llvm_function->function->eraseFromParent();
-				function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name.back().name : mangler_->MangleFunction( names_scope, function->name.back().name, function_variable.type ) );
-
-				// Compile function when its type is exactly known.
-				BuildFuncCode( function_variable, functions_set.base_class, names_scope, functions_set_name );
-			}
-		}
-
-		for( const Synt::Function* const function : functions_set.out_of_line_syntax_elements )
-			PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, true );
-
-		for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
-			PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
-
-		functions_set.syntax_elements.clear();
-		functions_set.out_of_line_syntax_elements.clear();
-		functions_set.template_syntax_elements.clear();
+		functions_set_src_loc= functions_set.syntax_elements.front()->src_loc;
+		functions_set_name= functions_set.syntax_elements.front()->name.back().name;
 	}
-
-	if( build_body )
+	else if( !functions_set.template_syntax_elements.empty() )
 	{
-		for( FunctionVariable& function_variable : functions_set.functions )
-		{
-			if(
-				skip_building_generated_functions_ &&
-				function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr &&
-				names_scope.IsInsideTemplate() )
-			{
-				// This is some non-constexpr function inside a template and we skip building such functions.
-				continue;
-			}
+		functions_set_src_loc= functions_set.template_syntax_elements.front()->src_loc;
+		functions_set_name= functions_set.template_syntax_elements.front()->function->name.back().name;
+	}
+	DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_src_loc );
 
+	for( const Synt::Function* const function : functions_set.syntax_elements )
+	{
+		const size_t function_index= PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, false );
+
+		if( function_index == ~0u )
+			continue;
+		FunctionVariable& function_variable= functions_set.functions[function_index];
+
+		// Immediately build functions with auto return type.
+		if( function->type.IsAutoReturn() && !function_variable.have_body && function->block != nullptr )
+		{
+			// Preprocess function in order to deduce return type and reference notation.
+			ReturnTypeDeductionContext return_type_deduction_context;
+			ReferenceNotationDeductionContext reference_notation_deduction_context;
+
+			if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+				function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto; // We can deduce "constexpr" property for all auto-return functions.
+
+			BuildFuncCode(
+				function_variable,
+				functions_set.base_class,
+				names_scope,
+				functions_set_name,
+				&return_type_deduction_context,
+				&reference_notation_deduction_context );
+
+			// Update function type.
+			function_variable.type.return_type= return_type_deduction_context.return_type.value_or( void_type_ );
+			function_variable.type.return_references= std::move(reference_notation_deduction_context.return_references);
+			function_variable.type.return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
+			function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
+
+			function_variable.have_body= false;
+			// Remove old LLVM function and create new one (with name based on exact deduced function type).
+			function_variable.llvm_function->function->eraseFromParent();
+			function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name.back().name : mangler_->MangleFunction( names_scope, function->name.back().name, function_variable.type ) );
+
+			// Compile function when its type is exactly known.
+			BuildFuncCode( function_variable, functions_set.base_class, names_scope, functions_set_name );
+		}
+	}
+	functions_set.syntax_elements.clear();
+
+	for( const Synt::Function* const function : functions_set.out_of_line_syntax_elements )
+		PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, true );
+	functions_set.out_of_line_syntax_elements.clear();
+
+	for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
+		PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
+	functions_set.template_syntax_elements.clear();
+
+	functions_set.has_unbuilt_constexpr_functions= false;
+	for( const FunctionVariable& function_variable : functions_set.functions )
+		functions_set.has_unbuilt_constexpr_functions|= function_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete;
+}
+
+void CodeBuilder::BuildFunctionsSetBodies( NamesScope& names_scope, OverloadedFunctionsSet& functions_set )
+{
+	PrepareFunctionsSet( names_scope, functions_set );
+
+	for( FunctionVariable& function_variable : functions_set.functions )
+	{
+		if(
+			skip_building_generated_functions_ &&
+			function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr &&
+			names_scope.IsInsideTemplate() )
+		{
+			// This is some non-constexpr function inside a template and we skip building such functions.
+			continue;
+		}
+
+		if( function_variable.syntax_element != nullptr &&
+			function_variable.syntax_element->block != nullptr &&
+			!function_variable.have_body &&
+			!function_variable.syntax_element->type.IsAutoReturn() &&
+			!function_variable.is_inherited )
+		{
+			BuildFuncCode(
+				function_variable,
+				functions_set.base_class,
+				names_scope,
+				function_variable.syntax_element->name.back().name );
+		}
+	}
+}
+
+void CodeBuilder::PrepareFunctionsSetAndBuildConstexprBodies( NamesScope& names_scope, OverloadedFunctionsSet& functions_set )
+{
+	PrepareFunctionsSet( names_scope, functions_set );
+
+	if( !functions_set.has_unbuilt_constexpr_functions )
+		return; // Nothing to do.
+
+	functions_set.has_unbuilt_constexpr_functions= false; // // Reset the flag in order to avoid recursion.
+
+	for( FunctionVariable& function_variable : functions_set.functions )
+		{
 			if( function_variable.syntax_element != nullptr &&
 				function_variable.syntax_element->block != nullptr &&
 				!function_variable.have_body &&
-				!function_variable.syntax_element->type.IsAutoReturn() &&
-				!function_variable.is_inherited )
+				function_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 			{
 				BuildFuncCode(
 					function_variable,
@@ -332,23 +365,6 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable.syntax_element->name.back().name );
 			}
 		}
-	}
-	else if( functions_set.base_class == nullptr )
-	{
-		// Immediately build constexpr functions.
-		for( FunctionVariable& function_variable : functions_set.functions )
-		{
-			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block != nullptr &&
-				!function_variable.have_body && function_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				BuildFuncCode(
-					function_variable,
-					functions_set.base_class,
-					names_scope,
-					function_variable.syntax_element->name.back().name );
-			}
-		}
-	}
 }
 
 void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type )
@@ -798,22 +814,22 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			if( functions_set == nullptr )
 				return;
 
-			// We need to build special methods.
-			bool need_to_build=
+			// We need to prepare special methods.
+			bool need_to_prepare=
 				name == Keywords::constructor_ ||
 				name == Keywords::destructor_ ||
 				name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 				name == OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 
-			if( !need_to_build )
+			if( !need_to_prepare )
 			{
-				// Functions declared virtual requires building in order to build virtual table later.
+				// Functions declared virtual requires preparation in order to build virtual table later.
 				for( const FunctionVariable& function : functions_set->functions )
-					need_to_build|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
+					need_to_prepare|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
 				for( const Synt::Function* const synt_function : functions_set->syntax_elements )
-					need_to_build|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
+					need_to_prepare|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
 			}
-			if( !need_to_build )
+			if( !need_to_prepare )
 			{
 				// Also we need to check parent for virtual functions.
 				for( const Class::Parent& parent : the_class.parents )
@@ -823,14 +839,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						if( const auto parent_functions_set= parent_member->value.GetFunctionsSet() )
 						{
 							for( const FunctionVariable& parent_function : parent_functions_set->functions )
-								need_to_build|= parent_function.virtual_table_index != ~0u;
+								need_to_prepare|= parent_function.virtual_table_index != ~0u;
 						}
 					}
 				}
 			}
 
-			if( need_to_build )
-				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
+			if( need_to_prepare )
+				PrepareFunctionsSet( *the_class.members, *functions_set );
 		});
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
@@ -1015,15 +1031,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
 						return; // Do not inherit constructors, destructors, assignment operators, compare operators.
 
-					// Build source functions set before merging.
-					GlobalThingBuildFunctionsSet( *parent_class->members, *functions, false );
+					// Prepare source functions set before merging.
+					PrepareFunctionsSet( *parent_class->members, *functions );
 
 					if( result_class_value != nullptr )
 					{
 						if( const auto result_class_functions= result_class_value->value.GetFunctionsSet() )
 						{
-							// Build destination functions set before merging.
-							GlobalThingBuildFunctionsSet( *the_class.members, *result_class_functions, false );
+							// Prepare destination functions set before merging.
+							PrepareFunctionsSet( *the_class.members, *result_class_functions );
 
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
@@ -1128,29 +1144,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	TryGenerateEqualityCompareOperator( class_type );
 
 	CheckClassFieldsInitializers( class_type );
-
-	// Immediately build constexpr functions.
-	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, NamesScopeValue& value )
-		{
-			const OverloadedFunctionsSetPtr functions_set= value.value.GetFunctionsSet();
-			if( functions_set == nullptr )
-				return;
-
-			bool has_non_prepared_constexpr_functions= false;
-			for( const Synt::Function* const synt_function : functions_set->syntax_elements )
-				has_non_prepared_constexpr_functions|= synt_function->constexpr_;
-
-			if( has_non_prepared_constexpr_functions )
-				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
-
-			for( FunctionVariable& function : functions_set->functions )
-			{
-				if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
-					!function.have_body && function.syntax_element != nullptr && function.syntax_element->block != nullptr )
-					BuildFuncCode( function, class_type, *the_class.members, name );
-			}
-		}); // for functions
 }
 
 void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )

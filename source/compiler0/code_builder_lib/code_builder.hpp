@@ -1306,7 +1306,9 @@ private:
 	bool ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
-	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
+	void PrepareFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set );
+	void BuildFunctionsSetBodies( NamesScope& names_scope, OverloadedFunctionsSet& functions_set );
+	void PrepareFunctionsSetAndBuildConstexprBodies( NamesScope& names_scope, OverloadedFunctionsSet& functions_set );
 	void GlobalThingPrepareClassParentsList( ClassPtr class_type );
 	void GlobalThingBuildClass( ClassPtr class_type );
 	void GlobalThingBuildEnum( EnumPtr enum_ );

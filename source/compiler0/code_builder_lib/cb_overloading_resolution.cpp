@@ -768,7 +768,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 			const OverloadedFunctionsSetPtr operators_set= value_in_class.first->value.GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
-			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
+			PrepareFunctionsSetAndBuildConstexprBodies( *class_->members, *operators_set ); // Make sure functions set is complete.
 
 			const size_t prev_size= matched_functions.size();
 			FetchMatchedOverloadedFunctions( *operators_set, actual_args, false, names.GetErrors(), src_loc, true, matched_functions );
@@ -819,7 +819,12 @@ OverloadedFunctionsSetPtr CodeBuilder::GetConstructors(
 	if( constructors_value == nullptr )
 		return nullptr;
 
-	return constructors_value->value.GetFunctionsSet();
+	auto constructors= constructors_value->value.GetFunctionsSet();
+	if( constructors == nullptr )
+		return nullptr;
+
+	PrepareFunctionsSetAndBuildConstexprBodies( *class_type->members, *constructors );
+	return constructors;
 }
 
 const FunctionVariable* CodeBuilder::GetConversionConstructor(

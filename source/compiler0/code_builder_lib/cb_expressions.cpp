@@ -430,8 +430,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( names.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
 		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, class_type->members->GetThisNamespaceName() );
 
-	if( const OverloadedFunctionsSetConstPtr functions_set= class_member->value.GetFunctionsSet() )
+	if( const OverloadedFunctionsSetPtr functions_set= class_member->value.GetFunctionsSet() )
 	{
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_type->members, *functions_set );
+
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= functions_set;
