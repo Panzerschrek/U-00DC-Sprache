@@ -168,19 +168,16 @@ fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 	return true;
 }
 
-fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set_ptr, bool build_body )
+fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set_ptr )
 {
-	if( !build_body )
+	// First, lock as imut and check if complete.
+	with( &functions_set : functions_set_ptr.lock_imut().deref() )
 	{
-		{ // First, lock as imut and check if complete.
-			auto l= functions_set_ptr.lock_imut();
-			var FunctionsSet& functions_set= l.deref();
-			if( functions_set.syntax_elements.empty() &&
-				functions_set.out_of_line_syntax_elements.empty() &&
-				functions_set.function_templates_syntax_elements.empty() ) // Already complete
-			{
-				return;
-			}
+		if( functions_set.syntax_elements.empty() &&
+			functions_set.out_of_line_syntax_elements.empty() &&
+			functions_set.function_templates_syntax_elements.empty() ) // Already complete
+		{
+			return;
 		}
 	}
 
@@ -291,29 +288,32 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	// Update functions set after prepareation process.
 	with( mut lock : functions_set_ptr.lock_mut() )
 	{
-		lock.deref()= functions_set;
+		lock.deref()= move(functions_set);
 	}
+}
 
-	var bool is_class_method= !functions_set.class_.empty();
+fn CodeBuilder::BuildFunctionsSetBodies( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set_ptr )
+{
+	// Prepare functions before building.
+	PrepareFunctionsSet( names_scope_ptr, functions_set_ptr );
+
+	// Take copy, and make manipulations only with it. Update value inside shareed pointer in one operation.
+	var FunctionsSet mut functions_set= functions_set_ptr.lock_imut().deref();
+
 	foreach( &mut func_variable : functions_set.functions )
 	{
-		// Immediately build body of "constexpr" functions.
 		if( !func_variable.is_inherited )
 		{
-			if( build_body ||
-				( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
-			{
-				BuildFuncCode(
-					names_scope_ptr,
-					func_variable,
-					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
-					ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
-					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
-			}
+			BuildFuncCode(
+				names_scope_ptr,
+				func_variable,
+				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
+				ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 		}
 	}
 
-	// Update functions set again after body build process.
+	// Update functions set after body build process.
 	with( mut lock : functions_set_ptr.lock_mut() )
 	{
 		lock.deref()= move(functions_set);
@@ -949,31 +949,31 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			auto& name= member.key();
 
-			// We need to build special methods.
-			var bool mut need_to_build=
+			// We need to prepare special methods.
+			var bool mut need_to_prepare=
 				name == KeywordToString( Keyword::constructor_ ) ||
 				name == KeywordToString( Keyword::destructor_ ) ||
 				name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 				name == OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 
-			if( !need_to_build )
+			if( !need_to_prepare )
 			{
-				// Functions declared virtual requires building in order to build virtual table later.
+				// Functions declared virtual requires preparation in order to build virtual table later.
 				with( &functions_set : functions_set_ptr.try_lock_imut().deref() )
 				{
 					foreach( &function_variable : functions_set.functions )
 					{
-						need_to_build|=
+						need_to_prepare|=
 							!function_variable.prototype_syntax_element.empty() &&
 							function_variable.prototype_syntax_element.try_deref().virtual_kind != Synt::Function::VirtualKind::None;
 					}
 					foreach( &synt_function : functions_set.syntax_elements )
 					{
-						need_to_build|= synt_function.deref().virtual_kind != Synt::Function::VirtualKind::None;
+						need_to_prepare|= synt_function.deref().virtual_kind != Synt::Function::VirtualKind::None;
 					}
 				}
 			}
-			if( !need_to_build )
+			if( !need_to_prepare )
 			{
 				// Also we need to check parent for virtual functions.
 				foreach( &parent : class_type.lock_imut().deref().parents )
@@ -985,16 +985,16 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						{
 							foreach( &parent_function : parent_functions_set.try_lock_imut().deref().functions )
 							{
-								need_to_build|= parent_function.virtual_table_index != ~0u;
+								need_to_prepare|= parent_function.virtual_table_index != ~0u;
 							}
 						}
 					}
 				}
 			}
 
-			if( need_to_build )
+			if( need_to_prepare )
 			{
-				BuildFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable(), false );
+				PrepareFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable() );
 			}
 		}
 	}
@@ -1240,8 +1240,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 					auto src_functions_set_ptr= src_functions_set_nullable_ptr.try_to_non_nullable();
 
-					// Build source functions set before merging.
-					BuildFunctionsSet( parent_members, src_functions_set_ptr, false );
+					// Prepare source functions set before merging.
+					PrepareFunctionsSet( parent_members, src_functions_set_ptr );
 
 					auto src_functions_set_lock= src_functions_set_ptr.lock_imut();
 					auto& src_functions_set= src_functions_set_lock.deref();
@@ -1252,8 +1252,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						{
 							auto result_functions_set_ptr= result_functions_set_nullable_ptr.try_to_non_nullable();
 
-							// Build destination functions set before merging.
-							BuildFunctionsSet( class_members, result_functions_set_ptr, false );
+							// Prepare destination functions set before merging.
+							PrepareFunctionsSet( class_members, result_functions_set_ptr );
 
 							// Merge functions sets.
 							auto mut result_functions_set_lock= result_functions_set_ptr.lock_mut();
@@ -1392,49 +1392,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	CheckClassFieldsInitializers( class_type );
-
-	// Build constexpr methods after class completion.
-	foreach( &member : class_members.lock_imut().deref() )
-	{
-		auto functions_set_nullable_ptr= member.value().Get</ FunctionsSet />();
-		if( functions_set_nullable_ptr.empty() )
-		{
-			continue;
-		}
-		auto functions_set_ptr= functions_set_nullable_ptr.try_to_non_nullable();
-
-		var bool mut has_non_prepared_constexpr_functions= false;
-		with( &functions_set : functions_set_ptr.lock_imut().deref() )
-		{
-			foreach( &synt_function : functions_set.syntax_elements )
-			{
-				has_non_prepared_constexpr_functions|= synt_function.deref().constexpr_;
-			}
-		}
-
-		if( has_non_prepared_constexpr_functions )
-		{
-			BuildFunctionsSet( class_members, functions_set_ptr, false );
-		}
-
-		// Build body for copy, then update it. This needed to prevent function body build under lock.
-		auto mut functions_copy= functions_set_ptr.lock_imut().deref().functions;
-		foreach( &mut func_variable : functions_copy )
-		{
-			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				BuildFuncCode(
-					class_members,
-					func_variable,
-					ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
-					ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext />(),
-					ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
-			}
-		}
-
-		auto mut lock= functions_set_ptr.lock_mut();
-		lock.deref().functions= move(functions_copy);
-	}
 }
 
 fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )

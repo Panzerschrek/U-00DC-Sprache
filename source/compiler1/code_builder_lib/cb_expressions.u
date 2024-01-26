@@ -1741,7 +1741,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	if( !functions_set_ptr.empty() )
 	{
 		var FunctionsSetPtr functions_set_non_null= functions_set_ptr.try_to_non_nullable();
-		BuildFunctionsSet( class_member[2], functions_set_non_null, false );
+		PrepareFunctionsSet( class_member[2], functions_set_non_null );
 
 		if( !member_access_operator.template_args.empty() )
 		{

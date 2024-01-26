@@ -37,7 +37,7 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set )
 {
-	BuildFunctionsSet( names_scope_ptr, functions_set, true );
+	BuildFunctionsSetBodies( names_scope_ptr, functions_set );
 }
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type )
