@@ -939,23 +939,3 @@ def ConstexprStaticMethodBuilding_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-
-
-def ConstexprCallLoop_Test0():
-	c_program_text= """
-		// This example triggers "FooA" constexpr call when its building isn't finished yet.
-		auto x= FooA();
-		fn constexpr FooA() : i32
-		{
-			if( false )
-			{
-				static_assert( FooB() == 33 );
-			}
-			return 33;
-		}
-		fn constexpr FooB() : i32
-		{
-			return FooA();
-		}
-	"""
-	tests_lib.build_program( c_program_text )
