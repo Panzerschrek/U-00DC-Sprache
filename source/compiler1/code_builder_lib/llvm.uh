@@ -537,6 +537,8 @@ fn nomangle LLVMAddCallSiteAttribute(LLVMValueRef C, LLVMAttributeIndex Idx, LLV
 // Metadata
 
 fn nomangle LLVMSetMetadata(LLVMValueRef Val, u32 KindID, LLVMValueRef Node) unsafe;
+fn nomangle LLVMGlobalSetMetadata(LLVMValueRef Global, u32 Kind, LLVMMetadataRef Node) unsafe;
+fn nomangle LLVMGlobalEraseMetadata(LLVMValueRef Global, u32 Kind) unsafe;
 fn nomangle LLVMGetMDKindIDInContext(LLVMContextRef C, $(char8) Name, u32 SLen) unsafe : u32;
 fn nomangle LLVMMDStringInContext2(LLVMContextRef C, $(char8) Str, size_type SLen) unsafe : LLVMMetadataRef;
 fn nomangle LLVMMDNodeInContext2(LLVMContextRef C, $(LLVMMetadataRef) MDs, size_type Count) unsafe : LLVMMetadataRef;

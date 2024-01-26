@@ -1077,7 +1077,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	auto result_namespace_value= result_names_scope.lock_imut().deref().GetThisScopeValue( function_name ).try_deref();
 
 	auto result_functions_set_ptr= result_namespace_value.Get</FunctionsSet/>();
-	BuildFunctionsSet( result_names_scope, result_functions_set_ptr.try_to_non_nullable(), false );
+	PrepareFunctionsSet( result_names_scope, result_functions_set_ptr.try_to_non_nullable() );
 
 	if( result_functions_set_ptr.try_lock_imut().deref().functions.size() != 1s )
 	{

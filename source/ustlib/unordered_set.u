@@ -14,6 +14,23 @@ public:
 	static_assert( typeinfo</T/>.is_copy_constructible , "set type should be copyable" );
 	static_assert( typeinfo</T/>.is_copy_assignable , "set type should be copyable" );
 
+	// Factory method for creating unordered_set from given iterator.
+	template</type Iterator/>
+	fn from_iterator( Iterator mut it ) : auto
+	{
+		var this_type mut result;
+		loop
+		{
+			auto mut next_result= it.next();
+			if( next_result.empty() )
+			{
+				break;
+			}
+			result.insert( next_result.try_take() );
+		}
+		return move(result);
+	}
+
 public:
 	// Default constructor.
 	fn constructor() = default;

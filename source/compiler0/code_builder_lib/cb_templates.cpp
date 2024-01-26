@@ -1029,13 +1029,13 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_args_namespace, *function_template.syntax_element->function, function_template.base_class );
 	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name )->value.GetFunctionsSet();
-	GlobalThingBuildFunctionsSet( *template_args_namespace, result_functions_set, false );
+	PrepareFunctionsSet( *template_args_namespace, result_functions_set );
 
 	if( result_functions_set.functions.empty() )
 		return nullptr; // Function prepare failed
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
-	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
+	if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 	{
 		bool can_be_constexpr= true;
 		if( skip_building_generated_functions_ )

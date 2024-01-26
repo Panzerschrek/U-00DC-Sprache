@@ -1100,6 +1100,9 @@ fn CodeBuilder::BuildFuncCode(
 		return; // Body already exists
 	}
 
+	// Mark this function specially in order to prevent its execution in constexpr context during its building.
+	SetGlobalMetadata( llvm_function, "__U_incomplete_function_marker", unsafe( LLVMMDNodeInContext2( llvm_context_, ust::nullptr</LLVMMetadataRef/>(), 0s ) ) );
+
 	auto body_syntax_element_ptr= func_variable.body_syntax_element.try_to_non_nullable();
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
@@ -1655,6 +1658,9 @@ fn CodeBuilder::BuildFuncCode(
 	}
 
 	// Perform final steps for regular functions (if this is not some preprocessing).
+
+	// Clear incomplete function marker. Now it is safe to execute it in constexpr context.
+	EraseGlobalMetadata( llvm_function, "__U_incomplete_function_marker" );
 
 	unsafe( U1_TryToPerformReturnValueAllocationOptimization( llvm_function ) );
 
@@ -2418,6 +2424,22 @@ fn CodeBuilder::IsGlobalVariable( VariablePtr& variable ) : bool
 			v.llvm_value != LLVMValueRef::Null &&
 			unsafe( LLVMIsConstant( v.llvm_value ) ) == LLVMBool::True;
 	}
+}
+
+fn CodeBuilder::SetGlobalMetadata( this, LLVMValueRef global_value, ust::string_view8 name, LLVMMetadataRef metadata )
+{
+	unsafe( LLVMGlobalSetMetadata(
+		global_value,
+		LLVMGetMDKindIDInContext( llvm_context_, name.data(), u32( name.size() ) ),
+		metadata ) );
+}
+
+fn CodeBuilder::EraseGlobalMetadata( this, LLVMValueRef global_value, ust::string_view8 name )
+{
+	unsafe( LLVMGlobalEraseMetadata(
+		global_value,
+		LLVMGetMDKindIDInContext( llvm_context_, name.data(), u32( name.size() ) )
+		) );
 }
 
 fn CodeBuilder::MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata )

@@ -758,7 +758,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 			}
 			auto functions_set_ptr= functions_set_nullable_ptr.try_to_non_nullable();
 
-			BuildFunctionsSet( class_members_ptr, functions_set_ptr, false );
+			PrepareFunctionsSet( class_members_ptr, functions_set_ptr );
 
 			foreach( &function : functions_set_ptr.lock_imut().deref().functions )
 			{

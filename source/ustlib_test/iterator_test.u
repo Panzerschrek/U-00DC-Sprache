@@ -2,7 +2,9 @@
 import "../ustlib/optional.u"
 import "../ustlib/optional_ref.u"
 import "../ustlib/random_access_range.u"
+import "../ustlib/string.u"
 import "../ustlib/vector.u"
+import "../ustlib/unordered_set.u"
 
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
@@ -277,6 +279,48 @@ fn nomangle main() : i32
 			++num_iterations;
 		}
 		++num_iterations;
+	}
+	{ // Count for sequence of known length.
+		var [ i32, 42 ] arr= zero_init;
+		halt if( IntRangeImut(arr).iter().count() != 42s );
+	}
+	{ // Count for sequence of with possible dynamic length.
+		halt if( CSequenceIteratorCreator().iter().count() != 10s );
+	}
+	{ // Collect into vector.
+		var [ i32, 4 ] ints[ 88, 44, 22, 11 ];
+		var ust::vector</i32/> vec= IntRangeImut(ints).iter().collect</ ust::vector</i32/> />();
+		halt if( vec.size() != 4s );
+		halt if( vec[0s] != 88 );
+		halt if( vec[1s] != 44 );
+		halt if( vec[2s] != 22 );
+		halt if( vec[3s] != 11 );
+	}
+	{ // Collect into vector for empty sequence.
+		var [ i32, 0 ] ints[ ];
+		auto vec= IntRangeImut(ints).iter().collect</ ust::vector</i32/> />();
+		halt if( vec.size() != 0s );
+	}
+	{ // Collect into vector for noncopyable type.
+		var ust::vector</C/> vec= CSequenceIteratorCreator().iter().collect</ ust::vector</C/> />();
+		halt if( vec.size() != 10s );
+		for( auto mut i= 0s; i < 10s; ++i )
+		{
+			halt if( vec[i].x != i32(i) );
+		}
+	}
+	{ // Collect into unordered set. Result should be deduplicated.
+		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
+		auto ints_set= IntRangeImut(ints).iter().collect</ ust::unordered_set</i32/> />();
+		halt if( ints_set.size() != 4s );
+		halt if( !ints_set.exists( 15 ) );
+		halt if( !ints_set.exists( 23 ) );
+		halt if( !ints_set.exists( -5 ) );
+		halt if( !ints_set.exists( 125 ) );
+	}
+	{ // Collect into string.
+		auto str= ust::string_view8( "Gott muss ein Arschloch sein" ).iter().collect</ ust::string8 />();
+		halt if( str != "Gott muss ein Arschloch sein" );
 	}
 
 	return 0;

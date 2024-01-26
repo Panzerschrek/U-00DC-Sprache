@@ -840,8 +840,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const NamesScopeValue* constructor_value=
 			class_type.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
-		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->value.GetFunctionsSet();
+		const OverloadedFunctionsSetPtr constructors_set= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_type.members, *constructors_set );
 
 		const FunctionVariable* constructor= nullptr;;
 		for( const FunctionVariable& candidate_constructor : constructors_set->functions )
@@ -914,10 +915,11 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const NamesScopeValue* op_value=
 			class_type.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) );
 		U_ASSERT( op_value != nullptr );
-		const OverloadedFunctionsSetConstPtr operators_set= op_value->value.GetFunctionsSet();
+		const OverloadedFunctionsSetPtr operators_set= op_value->value.GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_type.members, *operators_set );
 
-		const FunctionVariable* op= nullptr;;
+		const FunctionVariable* op= nullptr;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
 			if( IsCopyAssignmentOperator( candidate_op.type, type ) )
@@ -1002,8 +1004,9 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		const NamesScopeValue* op_value=
 			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
 		U_ASSERT( op_value != nullptr );
-		const OverloadedFunctionsSetConstPtr operators_set= op_value->value.GetFunctionsSet();
+		const OverloadedFunctionsSetPtr operators_set= op_value->value.GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
+		PrepareFunctionsSetAndBuildConstexprBodies( *class_type->members, *operators_set );
 
 		const FunctionVariable* op= nullptr;
 		for( const FunctionVariable& candidate_op : operators_set->functions )

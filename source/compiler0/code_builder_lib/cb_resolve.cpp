@@ -270,7 +270,7 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 	// Classes building will be triggered later - during class usage or class name lookup (if it is necessary).
 
 	if( const OverloadedFunctionsSetPtr functions_set= value->value.GetFunctionsSet() )
-		GlobalThingBuildFunctionsSet( names_scope, *functions_set, false );
+		PrepareFunctionsSetAndBuildConstexprBodies( names_scope, *functions_set );
 	else if( TypeTemplatesSet* const type_templates_set= value->value.GetTypeTemplatesSet() )
 		GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
 	else if( value->value.GetTypeAlias() != nullptr )
@@ -436,7 +436,7 @@ std::pair<NamesScopeValue*, ClassMemberVisibility> CodeBuilder::ResolveClassValu
 				// Request class build in order to merge functions from parent classes into this functions set.
 				GlobalThingBuildClass( class_type ); // Functions set changed in this call.
 			}
-			GlobalThingBuildFunctionsSet( *class_type->members, *functions_set, false );
+			PrepareFunctionsSetAndBuildConstexprBodies( *class_type->members, *functions_set );
 		}
 		else if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 		{

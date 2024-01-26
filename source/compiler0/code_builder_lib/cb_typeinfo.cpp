@@ -689,7 +689,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 				return;
 
 			// Make sure functions list is prepared.
-			GlobalThingBuildFunctionsSet( *class_type->members, *functions_set, false );
+			PrepareFunctionsSet( *class_type->members, *functions_set );
 
 			for( const FunctionVariable& function : functions_set->functions )
 			{

@@ -34,6 +34,36 @@ public:
 		return impl_.next();
 	}
 
+	// Implement method "iter" for iterator itself.
+	// This is needed, sometimes,
+	// For example, if "foreach" is used not for a container, but for an iterator.
+	fn iter( byval mut this ) : auto
+	{
+		return move(this);
+	}
+
+	// Consume the iterator and count number of elements.
+	// This method may not finish for infinite iterators.
+	// Overflows are also possible.
+	// The complexity is linear, it's recommended to use proper container "size" methods if it is possible.
+	fn count( byval mut this ) : size_type
+	{
+		var size_type mut c= 0s;
+		while( !next().empty() )
+		{
+			++c;
+		}
+		return c;
+	}
+
+	// Collect elements into given container.
+	// This method is just a wrapper for a container-specific collection method.
+	template</type Container/>
+	fn collect( byval mut this ) : auto
+	{
+		return Container::from_iterator( move(this) );
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 

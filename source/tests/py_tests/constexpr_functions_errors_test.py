@@ -280,3 +280,28 @@ def ConstexprFunctionContainsUnallowedOperations_Test8():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
 	assert( errors_list[0].src_loc.line == 6 )
+
+
+def ConstexprCallLoop_Test0():
+	c_program_text= """
+		// This example triggers "FooA" constexpr call when its building isn't finished yet.
+		auto x= FooA();
+		fn constexpr FooA() : i32
+		{
+			if( false )
+			{
+				static_assert( FooB() == 33 );
+			}
+			return 33;
+		}
+		fn constexpr FooB() : i32
+		{
+			return FooA();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstexprFunctionEvaluationError", 8 ) )
+	for error in errors_list:
+		if error.error_code == "ConstexprFunctionEvaluationError":
+			assert( error.text.find( "executing incomplete function" ) != -1 )
