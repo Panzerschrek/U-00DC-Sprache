@@ -171,7 +171,14 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	return CallFunctionImpl( &*llvm_function.getBasicBlockList().front().begin(), stack_depth );
+	const auto& bb= llvm_function.getBasicBlockList().front();
+	if( bb.empty() )
+	{
+		errors_.push_back( "executing function \"" + std::string(llvm_function.getName()) + "\" with empty body" );
+		return llvm::GenericValue();
+	}
+
+	return CallFunctionImpl( &*bb.begin(), stack_depth );
 }
 
 llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction, const size_t stack_depth )
@@ -183,6 +190,12 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 	while( errors_.empty() )
 	{
+		if( instruction == nullptr )
+		{
+			errors_.push_back( "Reached null instruction!" );
+			break;
+		}
+
 		switch( instruction->getOpcode() )
 		{
 		case llvm::Instruction::Alloca:
@@ -214,7 +227,7 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 				const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand( val.IntVal.getBoolValue() ? 2u : 1u ));
 			}
-			instruction= &*current_basic_block->begin();
+			instruction= current_basic_block->empty() ? nullptr : &current_basic_block->front();
 			continue; // Continue loop without advancing instruction.
 
 		case llvm::Instruction::Switch:
@@ -230,7 +243,7 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 						break;
 					}
 				}
-				instruction= &*current_basic_block->begin();
+				instruction= current_basic_block->empty() ? nullptr : &current_basic_block->front();
 			}
 			continue; // Continue loop without advancing instruction.
 
