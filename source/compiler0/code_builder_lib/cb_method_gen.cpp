@@ -912,7 +912,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 
 		// Search copy-assignment aoperator.
 		const NamesScopeValue* op_value=
-			class_type.members->GetThisScopeValue( "=" );
+			class_type.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) );
 		U_ASSERT( op_value != nullptr );
 		const OverloadedFunctionsSetConstPtr operators_set= op_value->value.GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
