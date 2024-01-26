@@ -1433,6 +1433,9 @@ void CodeBuilder::BuildFuncCode(
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( func_variable );
 
+	// Mark this function specially in order to prevent its execution in constexpr context during its building.
+	llvm_function->setMetadata( "__U_incomplete_function_marker", llvm::MDNode::get( llvm_context_, {} ) );
+
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
@@ -1929,6 +1932,9 @@ void CodeBuilder::BuildFuncCode(
 	// Perform final steps for regular functions (if this is not some preprocessing).
 
 	CheckForUnusedLocalNames( function_names );
+
+	// Clear incomplete function marker. Now it is safe to execute it in constexpr context.
+	llvm_function->setMetadata( "__U_incomplete_function_marker", nullptr );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 }
