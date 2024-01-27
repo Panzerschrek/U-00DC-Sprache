@@ -1,3 +1,4 @@
+import "composite.u"
 import "reference_notation.u"
 
 namespace ust
@@ -121,6 +122,19 @@ public:
 		}
 	}
 
+public:
+	// Creates iterator which filters elements using given function.
+	// Elements for which the given function returns "false" are skipped.
+	template</type Func/>
+	fn filter( byval mut this, Func mut func ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::filter_raw_iterator</ this_type, Func />(
+					move(this),
+					move(func) ) );
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 
@@ -136,5 +150,108 @@ fn wrap_raw_iterator( T mut t ) : auto
 {
 	return iterator</T/>( move(t) );
 }
+
+namespace iterator_impl
+{
+
+template</type BaseIterator, type Func/>
+class filter_raw_iterator
+{
+public:
+	fn constructor( BaseIterator mut base_iterator, Func mut func ) @(c_constructor_pollution)
+		( base_iterator_( move(base_iterator) ), func_( move(func) ) )
+	{}
+
+	fn next( mut this ) : auto
+	{
+		loop
+		{
+			auto mut next_res= base_iterator_.next();
+			if( next_res.empty() )
+			{
+				return move(next_res);
+			}
+			if( func_( next_res.try_deref() ) )
+			{
+				return move(next_res);
+			}
+			// Func result is false - move to next element and perform check for it.
+		}
+	}
+
+private:
+	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
+	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
+
+	var size_type c_base_iterator_tags_offset= 0s;
+	var size_type c_func_tags_offset= c_base_iterator_num_tags;
+
+	auto base_iterator_tags= get_sequential_field_tags</ c_base_iterator_num_tags />( c_base_iterator_tags_offset );
+	auto func_tags= get_sequential_field_tags</ c_func_num_tags />( c_func_tags_offset );
+
+	auto c_pollution_base_iterator=
+		get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_base_iterator_tags_offset );
+
+	auto c_pollution_func=
+		get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_func_tags_offset );
+
+	auto c_constructor_pollution= reference_pollution_concat( c_pollution_base_iterator, c_pollution_func );
+
+private:
+	BaseIterator @(base_iterator_tags) base_iterator_;
+	Func @(func_tags) func_;
+}
+
+template</size_type S/>
+type field_tags= [ char8, S ];
+
+template</size_type S/>
+fn constexpr get_sequential_field_tags( size_type offset ) : field_tags</S/>
+{
+	var field_tags</S/> mut result= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		result[i]= char8( size_type("a"c8) + i + offset );
+	}
+	return move(result);
+}
+
+template</size_type S/>
+fn constexpr get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset( u8 arg_n, u8 arg_m, size_type dst_offset ) : reference_notation::pollution_list</S/>
+{
+	var reference_notation::pollution_list</S/> mut result= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		// dst
+		result[i][0][0] = char8( size_type("0"c8) + size_type(arg_n) );
+		result[i][0][1] = char8( size_type("a"c8) + dst_offset + i );
+
+		// src
+		result[i][1][0] = char8( size_type("0"c8) + size_type(arg_m) );
+		result[i][1][1] = char8( size_type("a"c8) + i );
+	}
+
+	return move(result);
+}
+
+template</size_type S0, size_type S1/>
+fn constexpr reference_pollution_concat(
+	[ reference_notation::pollution_element, S0 ]& a0,
+	[ reference_notation::pollution_element, S1 ]& a1 )
+	: [ reference_notation::pollution_element, S0 + S1 ]
+{
+	var [ reference_notation::pollution_element, S0 + S1 ] mut result= zero_init;
+	for( auto mut i= 0s; i < S0; ++i )
+	{
+		result[i]= a0[i];
+	}
+	for( auto mut i= 0s; i < S1; ++i )
+	{
+		result[ S0 + i ]= a1[i];
+	}
+	return move(result);
+}
+
+} // namespace iterator_impl
 
 } // namespace ust

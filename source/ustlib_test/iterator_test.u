@@ -1,10 +1,12 @@
 //##success_test
+import "../ustlib/math.u"
 import "../ustlib/optional.u"
 import "../ustlib/optional_ref.u"
 import "../ustlib/random_access_range.u"
 import "../ustlib/string.u"
 import "../ustlib/vector.u"
 import "../ustlib/unordered_set.u"
+
 
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
@@ -364,6 +366,32 @@ fn nomangle main() : i32
 	{ // "fold" for empty sequence returns initial value.
 		var i32 res= IntRangeImut().iter().fold( 1234, lambda( i32 x, i32 y ) : i32 { return x + y; } );
 		halt if( res != 1234 );
+	}
+	{ // "filter" method.
+		var [ i32, 5 ] ints[ 67, -1234, 5, 123, -11 ];
+		auto non_negative_ints=
+			IntRangeImut(ints)
+			.iter()
+			.filter( lambda( i32& x ) : bool { return x > 0; } )
+			.collect</ ust::vector</i32/> /> ();
+		halt if( non_negative_ints.size() != 3s );
+		halt if( non_negative_ints[0s] != 67 );
+		halt if( non_negative_ints[1s] != 5 );
+		halt if( non_negative_ints[2s] != 123 );
+	}
+	{ // "filter" method with capturing lambda insize.
+		var [ i32, 11 ] ints[ 5, 16, 99, 786, 100, 674, 105, 33, -55, -77, 91 ];
+		var i32 center= 100;
+		auto near_center=
+			IntRangeImut(ints)
+			.iter()
+			.filter( lambda[&]( i32& x ) : bool { return ust::abs( x - center ) < 10; } )
+			.collect</ ust::vector</i32/> /> ();
+		halt if( near_center.size() != 4s );
+		halt if( near_center[0s] != 99 );
+		halt if( near_center[1s] != 100 );
+		halt if( near_center[2s] != 105 );
+		halt if( near_center[3s] != 91 );
 	}
 
 	return 0;
