@@ -322,6 +322,18 @@ fn nomangle main() : i32
 		auto str= ust::string_view8( "Gott muss ein Arschloch sein" ).iter().collect</ ust::string8 />();
 		halt if( str != "Gott muss ein Arschloch sein" );
 	}
+	{ // "all" method.
+		var [ i32, 4 ] ints[ 5, -3, 77, 11 ];
+		var i32 zero= 0;
+		var bool all_positive= IntRangeImut(ints).iter().all( lambda[&]( i32 x ) : bool { return x > zero; } );
+		halt if( all_positive );
+		var bool all_odd= IntRangeImut(ints).iter().all( lambda[=]( i32& x ) : bool { return ( x & 1 ) != zero; } );
+		halt if( !all_odd );
+	}
+	{ // "all" method for empty sequence - should return "true".
+		var bool all_empty= IntRangeImut().iter().all( lambda( i32 x ) : bool { return false; } );
+		halt if( !all_empty );
+	}
 
 	return 0;
 }

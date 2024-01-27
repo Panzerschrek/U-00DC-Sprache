@@ -42,6 +42,26 @@ public:
 		return move(this);
 	}
 
+	// Consume the iterator and return "true" if result of the given predicate is true for all elements.
+	// Can't return if iterator is infinite.
+	// Returns "true" for empty iterator.
+	template</type Func/>
+	fn all( byval mut this, Func mut func ) : bool
+	{
+		loop
+		{
+			auto mut next_res= next();
+			if( next_res.empty() )
+			{
+				return true;
+			}
+			if( !func( next_res.try_take() ) )
+			{
+				return false;
+			}
+		}
+	}
+
 	// Consume the iterator and count number of elements.
 	// This method may not finish for infinite iterators.
 	// Overflows are also possible.
