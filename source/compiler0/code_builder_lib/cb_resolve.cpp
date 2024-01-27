@@ -324,7 +324,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 
 		return AccessClassField( names, function_context, function_context.this_, *field, "TODO - field name", src_loc );
 	}
-	else if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= value.GetFunctionsSet() )
+	else if( const OverloadedFunctionsSetPtr overloaded_functions_set= value.GetFunctionsSet() )
 	{
 		if( function_context.this_ != nullptr && !function_context.variables_state.NodeMoved( function_context.this_ ) )
 		{

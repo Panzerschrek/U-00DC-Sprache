@@ -35,6 +35,11 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 				// create function pointer for this function.
 				var FunctionVariable& function= functions_set.functions.front();
 
+				with( mut lock : function.llvm_function.lock_mut() )
+				{
+					lock.deref().referenced= true;
+				}
+
 				var FunctionPointerType mut fp
 				{
 					.function_type= function.t,

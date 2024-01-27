@@ -28,7 +28,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	if( result_variable != nullptr )
 		return result_variable;
 
-	OverloadedFunctionsSetConstPtr functions_set= result.GetFunctionsSet();
+	OverloadedFunctionsSetPtr functions_set= result.GetFunctionsSet();
 	if( const auto this_overloaded_methods_set= result.GetThisOverloadedMethodsSet() )
 		functions_set= this_overloaded_methods_set->overloaded_methods_set;
 
@@ -36,7 +36,8 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	{
 		// If an variable is expected but given value is a functions set with exactly one non-template function,
 		// create function pointer for this function.
-		const FunctionVariable& function= functions_set->functions.front();
+		FunctionVariable& function= functions_set->functions.front();
+		function.referenced= true;
 
 		FunctionPointerType fp;
 		fp.function_type= function.type;
