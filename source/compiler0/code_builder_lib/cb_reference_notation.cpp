@@ -253,7 +253,9 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression )
 {
 	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-	return BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
+	const auto result= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
+	global_function_context_->args_preevaluation_cache.clear();
+	return result;
 }
 
 CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references )

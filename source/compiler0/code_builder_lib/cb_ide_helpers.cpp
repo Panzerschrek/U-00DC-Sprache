@@ -268,24 +268,28 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		function_context.variables_state.RemoveNode( variable_for_initialization );
 		function_context.variables_state.RemoveNode( variable );
 	}
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration )
 {
 	// Complete names in auto-variable expression initializer.
 	BuildExpressionCode( auto_variable_declaration.initializer_expression, names_scope, *global_function_context_ );
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ )
 {
 	// Complete names in static assert expression.
 	BuildExpressionCode( static_assert_.expression, names_scope, *global_function_context_ );
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias )
 {
 	// Complete names in aliased type name.
 	PrepareType( type_alias.value, names_scope, *global_function_context_ );
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ )
@@ -428,6 +432,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	}
 
 	// Do not complete class members, since completion for class member should be triggered instead.
+
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
@@ -478,6 +484,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		BuildExpressionCode( class_field.reference_tag_expression, names_scope, *global_function_context_ );
 	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
 		BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, *global_function_context_ );
+
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )

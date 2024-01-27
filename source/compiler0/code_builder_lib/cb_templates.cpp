@@ -62,10 +62,12 @@ void CodeBuilder::PrepareTypeTemplate(
 		{
 			type_template->signature_params.push_back(
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags, signature_param.name ) );
+			global_function_context_->args_preevaluation_cache.clear();
 
 			if( std::get_if<Synt::EmptyVariant>( &signature_param.default_value ) == nullptr )
 			{
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags, signature_param.default_value );
+				global_function_context_->args_preevaluation_cache.clear();
 			}
 			else
 			{
@@ -134,6 +136,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 		{
 			function_template->signature_params.push_back(
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
+			global_function_context_->args_preevaluation_cache.clear();
 		}
 	}
 
@@ -190,6 +193,7 @@ void CodeBuilder::ProcessTemplateParams(
 				template_parameters,
 				template_parameters_usage_flags,
 				*params[i].param_type );
+		global_function_context_->args_preevaluation_cache.clear();
 
 		if( const auto type_param= template_parameters[i].type->GetType() )
 		{
@@ -405,6 +409,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	const Synt::TemplateParameterization& template_parameterization )
 {
 	const Value base_value= ResolveValue( names_scope, *global_function_context_, template_parameterization.base );
+	global_function_context_->args_preevaluation_cache.clear();
+
 	if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
 	{
 		TemplateSignatureParam::SpecializedTemplateParam specialized_template;
@@ -807,6 +813,8 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		{
 			const auto& expr= type_template.syntax_element->signature_params[i].default_value;
 			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, *global_function_context_ );
+			global_function_context_->args_preevaluation_cache.clear();
+
 			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 			if( template_arg_opt != std::nullopt )
 				out_signature_arg= std::move( *template_arg_opt );
@@ -869,6 +877,7 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )
 	{
 		const Type type= PrepareType( (*type_alias)->value, *template_args_namespace, *global_function_context_ );
+		global_function_context_->args_preevaluation_cache.clear();
 		template_args_namespace->AddName( Class::c_template_class_name, NamesScopeValue( type, src_loc /* TODO - check src_loc */ ) );
 		return type;
 	}
@@ -944,9 +953,13 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	} // for template function arguments
 
 	// Process "enable_if" here - fail template function preparation if condition is false.
-	if( std::get_if<Synt::EmptyVariant>( &function_declaration.condition ) == nullptr &&
-		!EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition ) )
-		return result;
+	if( std::get_if<Synt::EmptyVariant>( &function_declaration.condition ) == nullptr )
+	{
+		const bool res= EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition );
+		global_function_context_->args_preevaluation_cache.clear();
+		if( !res )
+			return result;
+	}
 
 	result.function_template= function_template_ptr;
 	return result;

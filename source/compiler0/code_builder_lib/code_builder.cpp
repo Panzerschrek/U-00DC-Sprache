@@ -1021,9 +1021,14 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr &&
-		!EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) )
-		return ~0u;
+	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr )
+	{
+		const bool res= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition );
+		global_function_context_->args_preevaluation_cache.clear();
+		if( !res )
+			return ~0u;
+	}
+
 
 	FunctionVariable func_variable;
 
@@ -1056,6 +1061,7 @@ size_t CodeBuilder::PrepareFunction(
 		}
 
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
+		global_function_context_->args_preevaluation_cache.clear();
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
@@ -1099,6 +1105,7 @@ size_t CodeBuilder::PrepareFunction(
 				function_type,
 				func_variable.kind,
 				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
+			global_function_context_->args_preevaluation_cache.clear();
 
 			// Disable auto-coroutines.
 			if( func.type.IsAutoReturn() )

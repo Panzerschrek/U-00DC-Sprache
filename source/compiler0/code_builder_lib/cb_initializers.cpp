@@ -1550,6 +1550,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}
+	global_function_context_->args_preevaluation_cache.clear();
 }
 
 } // namespace U
