@@ -104,6 +104,23 @@ public:
 		return Container::from_iterator( move(this) );
 	}
 
+	// Consume the iterator and fold the sequence using initial value and giving binary function.
+	// Can't return if iterator is infinite.
+	template</type T, type Func/>
+	fn fold( byval mut this, T mut init, Func mut func ) : T
+	{
+		var T mut v= move(init);
+		loop
+		{
+			auto mut next_res= next();
+			if( next_res.empty() )
+			{
+				return v;
+			}
+			v= func( v, next_res.try_take() );
+		}
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 

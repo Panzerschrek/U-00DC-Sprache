@@ -346,6 +346,25 @@ fn nomangle main() : i32
 		var bool any_empty= IntRangeImut().iter().any( lambda( i32& x ) : bool { return true; } );
 		halt if( any_empty );
 	}
+	{ // "fold" method.
+		var [ i32, 4 ] ints[ 67, 5, 123, -11 ];
+		var i32 sum= IntRangeImut(ints).iter().fold( 100, lambda( i32 x, i32 y ) : i32 { return x + y; } );
+		halt if( sum != 100 + 67 + 5 + 123 - 11 );
+	}
+	{ // "fold" method - calculate product.
+		var [ i32, 4 ] ints[ 13, 5, 20, 7 ];
+		var i32 product= IntRangeImut(ints).iter().fold( 3, lambda( i32 x, i32 y ) : i32 { return x * y; } );
+		halt if( product != 3 * 13 * 5 * 20 * 7 );
+	}
+	{ // "fold" method for non-commutative function.
+		var [ i32, 4 ] ints[ 67, 5, 123, -11 ];
+		var i32 diff= IntRangeImut(ints).iter().fold( 1000, lambda( i32& x, i32& y ) : i32 { return x - y; } );
+		halt if( diff != 1000 - 67 - 5 - 123 + 11 );
+	}
+	{ // "fold" for empty sequence returns initial value.
+		var i32 res= IntRangeImut().iter().fold( 1234, lambda( i32 x, i32 y ) : i32 { return x + y; } );
+		halt if( res != 1234 );
+	}
 
 	return 0;
 }
