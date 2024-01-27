@@ -4149,7 +4149,7 @@ fn CodeBuilder::DoCallFunction(
 					}
 
 					function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
-						src_inner_reference_nodes[ size_type( reference_pollution.dst.reference_index ) ],
+						src_inner_reference_nodes[ size_type( reference_pollution.src.reference_index ) ],
 						dst_inner_reference_node,
 						names_scope,
 						src_loc );
