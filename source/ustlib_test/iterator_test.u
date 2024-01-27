@@ -282,6 +282,13 @@ fn nomangle main() : i32
 		}
 		++num_iterations;
 	}
+	{ // "first" method.
+		var [ i32, 4 ] ints[ 88, 44, 22, 11 ];
+		halt if( IntRangeImut(ints).iter().first().try_deref() != 88 );
+	}
+	{ // "first" method for empty sequence - should return nothing.
+		halt if( !IntRangeImut().iter().first().empty() );
+	}
 	{ // Count for sequence of known length.
 		var [ i32, 42 ] arr= zero_init;
 		halt if( IntRangeImut(arr).iter().count() != 42s );
