@@ -43,7 +43,7 @@ public:
 	}
 
 	// Consume the iterator and return "true" if result of the given predicate is true for all elements.
-	// Can't return if iterator is infinite.
+	// May not return if iterator is infinite.
 	// Returns "true" for empty iterator.
 	template</type Func/>
 	fn all( byval mut this, Func mut func ) : bool
@@ -58,6 +58,26 @@ public:
 			if( !func( next_res.try_take() ) )
 			{
 				return false;
+			}
+		}
+	}
+
+	// Consume the iterator and return "true" if result of the given predicate is true for at leaso one element.
+	// May not return if iterator is infinite.
+	// Returns "false" for empty iterator.
+	template</type Func/>
+	fn any( byval mut this, Func mut func ) : bool
+	{
+		loop
+		{
+			auto mut next_res= next();
+			if( next_res.empty() )
+			{
+				return false;
+			}
+			if( func( next_res.try_take() ) )
+			{
+				return true;
 			}
 		}
 	}
