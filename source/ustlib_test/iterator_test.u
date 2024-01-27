@@ -82,6 +82,11 @@ class C
 	fn constructor( i32 in_x ) ( x= in_x ) {}
 }
 
+struct CWrapper
+{
+	C c;
+}
+
 class CSequenceIterator
 {
 public:
@@ -106,6 +111,22 @@ class CSequenceIteratorCreator
 	{
 		return ust::wrap_raw_iterator( CSequenceIterator() );
 	}
+}
+
+struct IVec2
+{
+	i32 x;
+	i32 y;
+
+	fn GetY( this ) : i32&
+	{
+		return y;
+	}
+}
+
+fn SquareInt( i32 x ) : i32
+{
+	return x * x;
 }
 
 fn nomangle main() : i32
@@ -406,6 +427,92 @@ fn nomangle main() : i32
 		halt if( near_center[1s] != 100 );
 		halt if( near_center[2s] != 105 );
 		halt if( near_center[3s] != 91 );
+	}
+	{ // "map" method for values.
+		var [ i32, 3 ] ints[ 7, 5, 3 ];
+		auto floats=
+			IntRangeImut(ints)
+			.iter()
+			.map( lambda( i32 x ) : f32 { return f32(x); } )
+			.collect</ ust::vector</f32/> />();
+		halt if( floats.size() != 3s );
+		halt if( floats[0s] != 7.0f );
+		halt if( floats[1s] != 5.0f );
+		halt if( floats[2s] != 3.0f );
+	}
+	{ // "map" for immutable reference mapping.
+		var[ IVec2, 3 ] vecs[ { .x=1, .y=2 }, { .x=3, .y=4 }, { .x=5, .y=6 } ];
+		var size_type mut i= 0s;
+		foreach( &y : ust::random_access_range_imut</IVec2/>(vecs).iter().map( lambda( IVec2& vec ) : i32& { return vec.y; } ) )
+		{
+			halt if( y != i32(i) * 2 + 2 );
+			++i;
+		}
+	}
+	{ // "map" for mutable reference mapping.
+		var[ IVec2, 5 ] mut vecs= zero_init;
+		{
+			var size_type mut i= 0s;
+			auto mut it= ust::random_access_range_mut</IVec2/>(vecs).iter().map( lambda( IVec2 &mut vec ) : i32 &mut { return vec.x; } );
+			loop
+			{
+				auto next_res= it.next();
+				if( next_res.empty() )
+				{
+					break;
+				}
+				next_res.try_deref()= i32(i) * 5;
+				++i;
+			}
+		}
+
+		halt if( vecs[0].x !=  0 );
+		halt if( vecs[1].x !=  5 );
+		halt if( vecs[2].x != 10 );
+		halt if( vecs[3].x != 15 );
+		halt if( vecs[4].x != 20 );
+	}
+	{ // "map" for source iterator producing move-only values.
+		auto wrappers=
+			CSequenceIteratorCreator()
+			.iter()
+			.map(
+				lambda( C mut c ) : CWrapper
+				{
+					var CWrapper mut wrapper{ .c= move(c) };
+					return move(wrapper);
+				} )
+			.collect</ ust::vector</ CWrapper /> />();
+
+		halt if( wrappers.size() != 10s );
+		auto mut i= 0;
+		foreach( &wrapper : wrappers )
+		{
+			halt if( wrapper.c.x != i );
+			++i;
+		}
+	}
+	{ // "map" method with function pointer.
+		var [ i32, 4 ] ints[ 5, 42, -11, 17 ];
+		auto squares=
+			IntRangeImut(ints)
+			.iter()
+			.map( SquareInt )
+			.collect</ ust::vector</i32/> />();
+		halt if( squares.size() != 4s );
+		halt if( squares[0s] != 25 );
+		halt if( squares[1s] != 1764 );
+		halt if( squares[2s] != 121 );
+		halt if( squares[3s] != 289 );
+	}
+	{ // "map" for immutable reference mapping using function pointer for member function.
+		var[ IVec2, 3 ] vecs[ { .x= 0, .y= 1 }, { .x= 0, .y= 4 }, { .x= 0, .y= 9 } ];
+		var i32 mut i= 0;
+		foreach( &y : ust::random_access_range_imut</IVec2/>(vecs).iter().map( IVec2::GetY ) )
+		{
+			halt if( y != (i + 1) * (i + 1) );
+			++i;
+		}
 	}
 
 	return 0;

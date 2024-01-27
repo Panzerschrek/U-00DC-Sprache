@@ -1,5 +1,8 @@
 import "composite.u"
+import "optional.u"
+import "optional_ref.u"
 import "reference_notation.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -157,6 +160,17 @@ public:
 					move(func) ) );
 	}
 
+	// Creates iterator which maps elements using given function.
+	template</type Func/>
+	fn map( byval mut this, Func mut func ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::map_raw_iterator</ this_type, Func />(
+					move(this),
+					move(func) ) );
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 
@@ -184,6 +198,13 @@ public:
 		( base_iterator_( move(base_iterator) ), func_( move(func) ) )
 	{}
 
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible && typeinfo</Func/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
 	fn next( mut this ) : auto
 	{
 		loop
@@ -200,6 +221,94 @@ public:
 			// Func result is false - move to next element and perform check for it.
 		}
 	}
+
+private:
+	type this_type= filter_raw_iterator</BaseIterator, Func/>;
+
+private:
+	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
+	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
+
+	var size_type c_base_iterator_tags_offset= 0s;
+	var size_type c_func_tags_offset= c_base_iterator_num_tags;
+
+	auto base_iterator_tags= get_sequential_field_tags</ c_base_iterator_num_tags />( c_base_iterator_tags_offset );
+	auto func_tags= get_sequential_field_tags</ c_func_num_tags />( c_func_tags_offset );
+
+	auto c_pollution_base_iterator=
+		get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_base_iterator_tags_offset );
+
+	auto c_pollution_func=
+		get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_func_tags_offset );
+
+	auto c_constructor_pollution= reference_pollution_concat( c_pollution_base_iterator, c_pollution_func );
+
+private:
+	BaseIterator @(base_iterator_tags) base_iterator_;
+	Func @(func_tags) func_;
+}
+
+template</type BaseIterator, type Func/>
+class map_raw_iterator
+{
+public:
+	fn constructor( BaseIterator mut base_iterator, Func mut func ) @(c_constructor_pollution)
+		( base_iterator_( move(base_iterator) ), func_( move(func) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible && typeinfo</Func/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	// The exact type of this method is determined via passed function.
+	// If it returns values - result container is "optional".
+	// If it returns immutable references - result container is "optional_ref_imut".
+	// If it returns mutable references - result container is "optional_ref_mut".
+	// Contained type is simpe type of function result.
+	fn next( mut this ) : auto
+	{
+		auto mut next_res= base_iterator_.next();
+
+		type FuncResT= typeof( func_( next_res.try_take() ) );
+
+		// Use helper functions which analyse typeinfo of given function.
+		// TODO - pass FuncResT in order to fetch correct overloaded function.
+		static_if( function_returns_value</Func/>() )
+		{
+			if( next_res.empty() )
+			{
+				return optional</FuncResT/>();
+			}
+			return optional</FuncResT/>( func_( next_res.try_take() ) );
+		}
+		else static_if( function_returns_immutable_reference</Func/>() )
+		{
+			if( next_res.empty() )
+			{
+				return optional_ref_imut</FuncResT/>();
+			}
+			return optional_ref_imut</FuncResT/>( func_( next_res.try_deref() ) );
+		}
+		else static_if( function_returns_mutable_reference</Func/>() )
+		{
+			if( next_res.empty() )
+			{
+				return optional_ref_mut</FuncResT/>();
+			}
+			return optional_ref_mut</FuncResT/>( func_( next_res.try_deref() ) );
+		}
+		else
+		{
+			static_assert( false, "Wrong function!" );
+			halt;
+		}
+	}
+
+private:
+	type this_type= map_raw_iterator</BaseIterator, Func/>;
 
 private:
 	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;

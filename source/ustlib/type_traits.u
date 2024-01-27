@@ -164,6 +164,93 @@ fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
 	return false;
 }
 
+// Assuming that passed type is function pointer or a funtional object (with single non-template op())
+// return whether this function result is value (not a reference).
+template</type Func/>
+fn function_returns_value() : bool
+{
+	auto& ti= typeinfo</Func/>;
+	static_if( ti.is_function_pointer )
+	{
+		return !ti.return_value_is_reference;
+	}
+	else static_if( ti.is_class )
+	{
+		for( &method : ti.functions_list )
+		{
+			// TODO - support multiple overloaded () operators.
+			if( type_traits_impl::string_equals( method.name, "()" ) )
+			{
+				return !method.type.return_value_is_reference;
+			}
+		}
+		halt; // Can't find proper () operator.
+	}
+	else
+	{
+		static_assert( false, "Expected functional type!" );
+		halt;
+	}
+}
+
+// Assuming that passed type is function pointer or a funtional object (with single non-template op())
+// return whether this function result is immutable reference.
+template</type Func/>
+fn function_returns_immutable_reference() : bool
+{
+	auto& ti= typeinfo</Func/>;
+	static_if( ti.is_function_pointer )
+	{
+		return ti.return_value_is_reference && !ti.return_value_is_mutable;
+	}
+	else static_if( ti.is_class )
+	{
+		for( &method : ti.functions_list )
+		{
+			// TODO - support multiple overloaded () operators.
+			if( type_traits_impl::string_equals( method.name, "()" ) )
+			{
+				return method.type.return_value_is_reference && !method.type.return_value_is_mutable;
+			}
+		}
+		halt; // Can't find proper () operator.
+	}
+	else
+	{
+		static_assert( false, "Expected functional type!" );
+		halt;
+	}
+}
+
+// Assuming that passed type is function pointer or a funtional object (with single non-template op())
+// return whether this function result is mutable reference.
+template</type Func/>
+fn function_returns_mutable_reference() : bool
+{
+	auto& ti= typeinfo</Func/>;
+	static_if( ti.is_function_pointer )
+	{
+		return ti.return_value_is_reference && ti.return_value_is_mutable;
+	}
+	else static_if( ti.is_class )
+	{
+		for( &method : ti.functions_list )
+		{
+			// TODO - support multiple overloaded () operators.
+			if( type_traits_impl::string_equals( method.name, "()" ) )
+			{
+				return method.type.return_value_is_reference && method.type.return_value_is_mutable;
+			}
+		}
+		halt; // Can't find proper () operator.
+	}
+	else
+	{
+		static_assert( false, "Expected functional type!" );
+		halt;
+	}
+}
+
 namespace type_traits_impl
 {
 
