@@ -319,6 +319,14 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 				}
 			}
 		}
+		if( function_context.destructor_end_block != nullptr )
+		{
+			// TODO - use separate error codes.
+			if( field->is_reference && field->is_mutable )
+				REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "mutable reference fields access in destructor" );
+			if( !field->is_reference && field->type.ContainsMutableReferences() )
+				REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "fields with mutable references access in destructor" );
+		}
 		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, Keyword( Keywords::this_ ) );
 
