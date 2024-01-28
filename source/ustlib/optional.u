@@ -48,7 +48,7 @@ public:
 	{
 		if( has_value_ )
 		{
-			unsafe( call_destructor( deref_unchecked() ) );
+			unsafe( call_destructor( cast_ref_unsafe</T/>(storage_) ) );
 		}
 	}
 
