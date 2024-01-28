@@ -466,24 +466,25 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 						REPORT_ERROR( UsingKeywordAsName, names_scope, lambda_.src_loc )
 					}
 
-					var ust::optional</VariablePtr/> mut expr_result_ptr;
-					{
-						var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-						auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+					auto expr_result_ptr= WithVariablesFrame(
+						function_context,
+						lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariablePtr
+						{
+							var bool prev_is_functionless_context= function_context.is_functionless_context;
+							function_context.is_functionless_context= true;
 
-						var bool prev_is_functionless_context= function_context.is_functionless_context;
-						function_context.is_functionless_context= true;
+							auto state= SaveFunctionContextState( function_context );
 
-						auto state= SaveFunctionContextState( function_context );
+							// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
+							auto mut result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
 
-						// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
-						expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
+							RestoreFunctionContextState( function_context, state );
+							function_context.is_functionless_context= prev_is_functionless_context;
 
-						RestoreFunctionContextState( function_context, state );
-						function_context.is_functionless_context= prev_is_functionless_context;
-					}
+							return move(result);
+						} );
 
-					with( &expr_result : expr_result_ptr.try_deref().lock_imut().deref() )
+					with( &expr_result : expr_result_ptr.lock_imut().deref() )
 					{
 						auto mut llvm_value= expr_result.llvm_value;
 						if( expr_result.location == Variable::Location::LLVMRegister || llvm_value == LLVMValueRef::Null )
@@ -503,7 +504,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 						var Variable mut capture_variable
 						{
-							.t= expr_result.t,							// Make immediate values in preprocessing constant.
+							.t= expr_result.t,
+							// Make immediate values in preprocessing constant.
 							.value_type = select( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 							.location= Variable::Location::Pointer,
 							.llvm_value= llvm_value,

@@ -118,26 +118,26 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, variable.t, expr_result.t, src_loc ) )
 		{
-			{
-				// Create temp variables storage for preventing of destruction of "expr".
-				var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			// Create temp variables storage for preventing of destruction of "expr".
+			WithVariablesFrame(
+				function_context,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					var LLVMValueRef llvm_function= self.EnsureLLVMFunctionCreated( conversion_constructor_ );
 
-				var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( conversion_constructor_ );
+					self.DoCallFunction(
+						names_scope,
+						function_context,
+						conversion_constructor_.t,
+						llvm_function,
+						false, // Non-constexpr call.
+						ust::make_array( variable_ptr, expr_result_ptr ),
+						ust::empty_range,
+						ArgsEvaluationOrder::Direct,
+						src_loc );
 
-				DoCallFunction(
-					names_scope,
-					function_context,
-					conversion_constructor_.t,
-					llvm_function,
-					false, // Non-constexpr call.
-					ust::make_array( variable_ptr, expr_result_ptr ),
-					ust::empty_range,
-					ArgsEvaluationOrder::Direct,
-					src_loc );
-
-				CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
-			}
+					self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+				} );
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			return LLVMValueRef::Null;
@@ -1068,21 +1068,23 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		var bool mut needs_move_construct = false;
 		if( args.size() == 1s )
 		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			WithVariablesFrame(
+				function_context,
+				lambda[args, &needs_move_construct, &variable, &names_scope]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					var bool prev_is_functionless_context= function_context.is_functionless_context;
+					function_context.is_functionless_context= true;
 
-			var bool prev_is_functionless_context= function_context.is_functionless_context;
-			function_context.is_functionless_context= true;
+					auto state= SaveFunctionContextState( function_context );
 
-			auto state= SaveFunctionContextState( function_context );
+					with(  &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
+					{
+						needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
+					}
 
-			with(  &arg : BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
-			{
-				needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
-			}
-
-			RestoreFunctionContextState( function_context, state );
-			function_context.is_functionless_context= prev_is_functionless_context;
+					RestoreFunctionContextState( function_context, state );
+					function_context.is_functionless_context= prev_is_functionless_context;
+				} );
 		}
 
 		if( needs_move_construct )

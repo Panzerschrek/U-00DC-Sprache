@@ -245,11 +245,12 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite
 {
 	auto mut function_context= CreateGlobalFunctionContext();
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-		return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
-	}
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
+		{
+			return self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+		} );
 }
 
 fn CodeBuilder::NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references )

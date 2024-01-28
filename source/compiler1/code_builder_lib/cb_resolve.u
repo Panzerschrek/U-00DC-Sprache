@@ -489,21 +489,21 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeof& typeof_ ) : ust::optional</NamesScopeValue/>
 {
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : ust::optional</NamesScopeValue/>
+		{
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
 
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
+			auto state= SaveFunctionContextState( function_context );
+			var Type mut t= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, typeof_.expr.deref() ).lock_imut().deref().t;
+			RestoreFunctionContextState( function_context, state );
 
-		auto state= SaveFunctionContextState( function_context );
-		var Type mut t= BuildExpressionCodeEnsureVariable( names_scope, function_context, typeof_.expr.deref() ).lock_imut().deref().t;
-		RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
 
-		function_context.is_functionless_context= prev_is_functionless_context;
-
-		return NamesScopeValue( move(t) );
-	}
+			return NamesScopeValue( move(t) );
+		} );
 }
 
 fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr& names_scope, NamesScopeValue& value )

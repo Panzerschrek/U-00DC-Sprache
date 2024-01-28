@@ -1138,18 +1138,16 @@ fn CodeBuilder::BuildFuncCode(
 
 	debug_info_builder_.try_deref().CreateFunctionInfo( func_variable );
 
-	var FunctionContext mut function_context_value(
+	var FunctionContext mut function_context(
 		llvm_context_,
 		llvm_function,
 		func_variable.t );
-	function_context_value.return_type_deduction_context= move(return_type_deduction_context);
-	function_context_value.reference_notation_deduction_context= move(reference_notation_deduction_context);
-	function_context_value.lambda_preprocessing_context= move(lambda_preprocessing_context);
+	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() ); // Frame for args.
+	function_context.return_type_deduction_context= move(return_type_deduction_context);
+	function_context.reference_notation_deduction_context= move(reference_notation_deduction_context);
+	function_context.lambda_preprocessing_context= move(lambda_preprocessing_context);
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
-
-	var VariablesFrameHolder args_variables_frame_hodler(function_context_value);
-	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// Ensure type completness even for reference args because of reference checking.
 	foreach( &param : cast_imut(func_variable).t.params )
