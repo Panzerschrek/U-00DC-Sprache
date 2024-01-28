@@ -7,52 +7,6 @@ import "mangling.uh"
 import "references_graph.uh"
 import "tbaa_metadata_builder.uh"
 
-// Macro for loops generation.
-// TODO - use Function instead.
-// Use "counter_value" in loop block
-?macro <? CB_GENERATE_LOOP:block( ?function_context:expr, ?iteration_count:expr, ?b:block )?>
-->
-<?
-	if( ?function_context.is_functionless_context )
-	{
-		auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
-		?b
-	}
-	else if( ?iteration_count != 0u64 )
-	{
-		unsafe
-		{
-			auto zero_value= LLVMConstNull( fundamental_llvm_types_.int_ptr );
-			auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
-			auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, ?iteration_count, LLVMBool::False );
-
-			auto block_before_loop= LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ;
-			auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-			auto block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-
-			LLVMBuildBr( ?function_context.llvm_ir_builder, loop_block );
-
-			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, loop_block );
-			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, loop_block );
-
-			auto counter_value= LLVMBuildPhi( ?function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, "\0"[0] );
-			auto counter_value_plus_one= LLVMBuildAdd( ?function_context.llvm_ir_builder, counter_value, one_value, "\0"[0] );
-
-			safe{ ?b }
-
-			auto counter_test= LLVMBuildICmp( ?function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, "\0"[0] );
-			LLVMBuildCondBr( ?function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
-
-			var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];
-			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ block_before_loop, LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ];
-			LLVMAddIncoming( counter_value, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
-
-			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, block_after_loop );
-			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, block_after_loop );
-		}
-	}
-?>
-
 namespace U1
 {
 
@@ -95,6 +49,54 @@ public:
 	}
 
 	fn BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult;
+
+private:
+	template</type Func/>
+	fn GenerateLoop( mut this, FunctionContext &mut function_context, u64 iteration_count, Func mut func )
+	{
+		if( function_context.is_functionless_context )
+		{
+			auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
+			move(func)( this, function_context, counter_value );
+		}
+		else if( iteration_count != 0u64 )
+		{
+			unsafe
+			{
+				auto zero_value= LLVMConstNull( fundamental_llvm_types_.int_ptr );
+				auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
+				auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, iteration_count, LLVMBool::False );
+
+				auto block_before_loop= LLVMGetInsertBlock( function_context.llvm_ir_builder ) ;
+				auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+				auto block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+				LLVMBuildBr( function_context.llvm_ir_builder, loop_block );
+
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
+
+				auto counter_value= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, g_null_string );
+				auto counter_value_plus_one= LLVMBuildAdd( function_context.llvm_ir_builder, counter_value, one_value, g_null_string );
+
+				safe( move(func)( this, function_context, counter_value ) );
+
+				auto counter_test= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, g_null_string );
+				LLVMBuildCondBr( function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
+
+				var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];
+				var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ block_before_loop, LLVMGetInsertBlock( function_context.llvm_ir_builder ) ];
+				LLVMAddIncoming( counter_value, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop );
+			}
+		}
+		else
+		{
+			move(func);
+		}
+	}
 
 private:
 	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
