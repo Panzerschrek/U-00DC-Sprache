@@ -147,17 +147,7 @@ public:
 		function_context_.variables_frames.push_back( FunctionContext::VariablesFrame() );
 	}
 
-	fn destructor()
-	{
-		// Ensure that all references graph nodes are deleted. Normally this is not needed, because nodes removed in destructors calls.
-		// But in case of errors destructors may not be called.
-		for( auto mut i= 0s; i < function_context_.variables_frames.back().size(); ++i )
-		{
-			var VariablePtr variable= function_context_.variables_frames.back()[i];
-			function_context_.references_graph.RemoveNode( variable );
-		}
-		function_context_.variables_frames.drop_back();
-	}
+	fn destructor();
 
 	fn GetFunctionContext( this ) : FunctionContext &mut @( ust::reference_notation::return_references::param0_inner_reference0 )
 	{

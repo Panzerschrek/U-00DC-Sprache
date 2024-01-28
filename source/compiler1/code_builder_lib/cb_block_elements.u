@@ -31,17 +31,23 @@ fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, Fun
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Block& block ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
+{
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildBlockImpl( names_scope, function_context, block );
+		} );
+}
+
+fn CodeBuilder::BuildBlockImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
 {
 	var NamesScopeMutPtr block_names_scope( NamesScope( "", names_scope ) );
-
-	var VariablesFrameHolder variables_frame_hodler(in_function_context);
-	auto& mut function_context= variables_frame_hodler.GetFunctionContext();
 
 	auto prev_debug_info_block= debug_info_builder_.try_deref().StartBlock( function_context, block.src_loc );
 
 	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements.range() );
-
 	if( !block_element_build_info.have_terminal_instruction_inside )
 	{
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, block.end_src_loc );
@@ -152,214 +158,230 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 	foreach( &variable_declaration : variables_declaration.variables )
 	{
-		if( IsKeyword( variable_declaration.name ) )
-		{
-			REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.src_loc )
-		}
-
-		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && !t.CanBeConstexpr() )
-		{
-			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.src_loc )
-		}
-
-		if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
-		}
-
-		var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
-
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var Variable mut variable_reference_variable
-		{
-			.t= t,
-			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			.location= Variable::Location::Pointer,
-			.name= variable_declaration.name,
-			.src_loc= variable_declaration.src_loc,
-			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
-		};
-		var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
-		// Do not forget to remove node in case of error-return!!!
-		function_context.references_graph.AddNode( variable_reference );
-
-		auto mut constexpr_value= LLVMValueRef::Null;
-		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
-		{
-			if( t.IsAbstract() )
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_declaration.src_loc, t )
-				function_context.references_graph.RemoveNode( variable_reference );
-				continue;
-			}
-
-			var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() ) );
-			CreateLifetimeStart( function_context, llvm_value );
-
-			var Variable mut variable
-			{
-				.t= t,
-				.value_type= ValueType::Value,
-				.location= Variable::Location::Pointer,
-				.llvm_value= llvm_value,
-				.name= variable_declaration.name,
-			};
-
-			debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_declaration.name, variable_declaration.src_loc );
-
-			var VariablePtr variable_ptr= move(variable).CreatePtr();
-			function_context.references_graph.AddNode( variable_ptr );
-			function_context.references_graph.AddLink( variable_ptr, variable_reference );
-
-			{
-				var Variable mut variable_for_initialization
-				{
-					.t= t,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= llvm_value,
-					.name= variable_declaration.name,
-				};
-
-				var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
-				function_context.references_graph.AddNode( variable_for_initialization_ptr );
-				function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
-				function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_for_initialization_ptr, names_scope, variable_declaration.src_loc );
-
-				if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
-				{
-					constexpr_value= BuildEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
-				}
-				else
-				{
-					constexpr_value= BuildInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.initializer );
-				}
-
-				function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
-			}
-
-			with( mut lock : variable_reference.lock_mut() )
-			{
-				lock.deref().llvm_value= llvm_value;
-			}
-
-			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, variable_declaration.src_loc );
-			RegisterFrameVariable( function_context, variable_ptr, 1s );
-		}
-		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
-		{
-			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
-			{
-				REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.src_loc, variable_declaration.name )
-				function_context.references_graph.RemoveNode( variable_reference );
-				continue;
-			}
-
-			var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
-			if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
-			{
-				initializer_expression.reset(expression_initializer);
-			}
-			if_var( &constructor_initializer : variable_declaration.initializer.get</Synt::ConstructorInitializer/>() )
-			{
-				if( constructor_initializer.args.size() != 1s )
-				{
-					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.src_loc )
-					function_context.references_graph.RemoveNode( variable_reference );
-					continue;
-				}
-
-				initializer_expression.reset( constructor_initializer.args.front().deref() );
-			}
-
-			if( initializer_expression.empty() )
-			{
-				REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.src_loc )
-				function_context.references_graph.RemoveNode( variable_reference );
-				continue;
-			}
-
-			var VariablePtr expression_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
-			auto expression_result_lock= expression_result_ptr.lock_imut();
-			var Variable& expression_result= expression_result_lock.deref();
-
-			if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
-			{
-				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
-				function_context.references_graph.RemoveNode( variable_reference );
-				continue;
-			}
-			if( expression_result.value_type == ValueType::Value )
-			{
-				REPORT_ERROR( ExpectedReferenceValue, names_scope, variable_declaration.src_loc )
-				function_context.references_graph.RemoveNode( variable_reference );
-				continue;
-			}
-			if( is_mutable && expression_result.value_type == ValueType::ReferenceImut )
-			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
-				function_context.references_graph.RemoveNode( variable_reference );
-				continue;
-			}
-
-			function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
-			function_context.references_graph.TryAddInnerLinks( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
-
-			with( mut lock : variable_reference.lock_mut() )
-			{
-				lock.deref().llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
-			}
-			constexpr_value= expression_result.constexpr_value;
-
-			debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_declaration.name, variable_declaration.src_loc );
-		}
-		else{ halt; }
-
-		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && constexpr_value == LLVMValueRef::Null )
-		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.src_loc )
-		}
-
-		if( !is_mutable )
-		{
-			// Set constexpr value only for immutable variables.
-			with( mut lock : variable_reference.lock_mut() )
-			{
-				lock.deref().constexpr_value= constexpr_value;
-			}
-		}
-
-		// Register variable for destruction and reference checking.
-		RegisterFrameVariable( function_context, variable_reference, 1s );
-
-		var bool mut insert_not_ok= false;
-		with( mut lock : names_scope.lock_mut() )
-		{
-			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) ).empty();
-		}
-		if( insert_not_ok )
-		{
-			REPORT_ERROR( Redefinition, names_scope, variable_declaration.src_loc, variable_declaration.name )
-		}
-
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, variable_declaration.src_loc );
+				self.BuildVariableDeclarationImpl( names_scope, function_context, variable_declaration, t );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, variable_declaration.src_loc );
+			} );
 	}
 
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut in_function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
+fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t )
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	if( IsKeyword( variable_declaration.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.src_loc )
+	}
 
+	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && !t.CanBeConstexpr() )
+	{
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.src_loc )
+	}
+
+	if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
+	{
+		function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+	}
+
+	var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var Variable mut variable_reference_variable
+	{
+		.t= t,
+		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+		.name= variable_declaration.name,
+		.src_loc= variable_declaration.src_loc,
+		.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
+	};
+	var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+	// Do not forget to remove node in case of error-return!!!
+	function_context.references_graph.AddNode( variable_reference );
+
+	auto mut constexpr_value= LLVMValueRef::Null;
+	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
+	{
+		if( t.IsAbstract() )
+		{
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_declaration.src_loc, t )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() ) );
+		CreateLifetimeStart( function_context, llvm_value );
+
+		var Variable mut variable
+		{
+			.t= t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= variable_declaration.name,
+		};
+
+		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_declaration.name, variable_declaration.src_loc );
+
+		var VariablePtr variable_ptr= move(variable).CreatePtr();
+		function_context.references_graph.AddNode( variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, variable_reference );
+
+		{
+			var Variable mut variable_for_initialization
+			{
+				.t= t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= llvm_value,
+				.name= variable_declaration.name,
+			};
+
+			var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
+			function_context.references_graph.AddNode( variable_for_initialization_ptr );
+			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
+			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_for_initialization_ptr, names_scope, variable_declaration.src_loc );
+
+			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+			{
+				constexpr_value= BuildEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
+			}
+			else
+			{
+				constexpr_value= BuildInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.initializer );
+			}
+
+			function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
+		}
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
+
+		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+		RegisterFrameVariable( function_context, variable_ptr, 1s );
+	}
+	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.src_loc, variable_declaration.name )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
+		if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
+		{
+			initializer_expression.reset(expression_initializer);
+		}
+		if_var( &constructor_initializer : variable_declaration.initializer.get</Synt::ConstructorInitializer/>() )
+		{
+			if( constructor_initializer.args.size() != 1s )
+			{
+				REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.src_loc )
+				function_context.references_graph.RemoveNode( variable_reference );
+				return;
+			}
+
+			initializer_expression.reset( constructor_initializer.args.front().deref() );
+		}
+
+		if( initializer_expression.empty() )
+		{
+			REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		var VariablePtr expression_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+		auto expression_result_lock= expression_result_ptr.lock_imut();
+		var Variable& expression_result= expression_result_lock.deref();
+
+		if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+		if( expression_result.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+		if( is_mutable && expression_result.value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+		function_context.references_graph.TryAddInnerLinks( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
+		}
+		constexpr_value= expression_result.constexpr_value;
+
+		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_declaration.name, variable_declaration.src_loc );
+	}
+	else{ halt; }
+
+	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.src_loc )
+	}
+
+	if( !is_mutable )
+	{
+		// Set constexpr value only for immutable variables.
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().constexpr_value= constexpr_value;
+		}
+	}
+
+	// Register variable for destruction and reference checking.
+	RegisterFrameVariable( function_context, variable_reference, 1s );
+
+	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
+	{
+		insert_not_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, variable_declaration.src_loc, variable_declaration.name )
+	}
+}
+
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAutoVariableDeclarationImpl( names_scope, function_context, auto_variable_declaration );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, auto_variable_declaration.src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )
+{
 	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
 	var VariableLite expr= expr_ptr.lock_imut().deref();
 	if( expr.t == invalid_type_ )
 	{
-		return BlockElementBuildInfo(); // Some error was generated before.
+		return; // Some error was generated before.
 	}
 
 	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && expr.constexpr_value == LLVMValueRef::Null )
@@ -389,13 +411,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.src_loc )
 			function_context.references_graph.RemoveNode( variable_reference );
-			return BlockElementBuildInfo();
+			return;
 		}
 		if( is_mutable && expr.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.src_loc )
 			function_context.references_graph.RemoveNode( variable_reference );
-			return BlockElementBuildInfo();
+			return;
 		}
 
 		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
@@ -414,7 +436,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.src_loc, expr.t )
 			function_context.references_graph.RemoveNode( variable_reference );
-			return BlockElementBuildInfo();
+			return;
 		}
 
 		if( !expr.t.CanBeConstexpr() )
@@ -485,7 +507,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			{
 				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, auto_variable_declaration.src_loc, expr.t )
 				function_context.references_graph.RemoveNode( variable_reference );
-				return BlockElementBuildInfo();
+				return;
 			}
 
 			if( expr.location == Variable::Location::Pointer )
@@ -522,10 +544,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	{
 		REPORT_ERROR( Redefinition, names_scope, auto_variable_declaration.src_loc, auto_variable_declaration.name )
 	}
-
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, auto_variable_declaration.src_loc );
-
-	return BlockElementBuildInfo();
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
@@ -930,13 +948,25 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
 {
-	BuildDeltaOneOperator( names_scope, function_context, increment_operator.expression, increment_operator.src_loc, +1 );
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildDeltaOneOperator( names_scope, function_context, increment_operator.expression, increment_operator.src_loc, +1 );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, increment_operator.src_loc );
+		} );
 	return BlockElementBuildInfo();
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo
 {
-	BuildDeltaOneOperator( names_scope, function_context, decrement_operator.expression, decrement_operator.src_loc, -1 );
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildDeltaOneOperator( names_scope, function_context, decrement_operator.expression, decrement_operator.src_loc, -1 );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, decrement_operator.src_loc );
+		} );
 	return BlockElementBuildInfo();
 }
 
@@ -2770,49 +2800,51 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-	var bool prev_is_functionless_context= function_context.is_functionless_context;
-	function_context.is_functionless_context= true;
-
-	auto state= SaveFunctionContextState( function_context );
-
-	with( &condition_variable: BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression ).lock_imut().deref() )
-	{
-		if( condition_variable.t == bool_type_ )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			if( condition_variable.constexpr_value != LLVMValueRef::Null )
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+
+			with( &condition_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression ).lock_imut().deref() )
 			{
-				if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
+				if( condition_variable.t == self.bool_type_ )
 				{
-					var CodeBuilderError mut error{ .code= CodeBuilderErrorCode::StaticAssertionFailed, .src_loc= static_assert_.src_loc };
-					if_var( &message : static_assert_.message )
+					if( condition_variable.constexpr_value != LLVMValueRef::Null )
 					{
-						error.text= "Static assertion failed: " + message + ".";
+						if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
+						{
+							var CodeBuilderError mut error{ .code= CodeBuilderErrorCode::StaticAssertionFailed, .src_loc= static_assert_.src_loc };
+							if_var( &message : static_assert_.message )
+							{
+								error.text= "Static assertion failed: " + message + ".";
+							}
+							else
+							{
+								error.text= "Static assertion failed.";
+							}
+							PutErrorIntoContainer( names_scope, move(error) );
+						}
 					}
 					else
 					{
-						error.text= "Static assertion failed.";
+						REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.src_loc )
 					}
-					PutErrorIntoContainer( names_scope, move(error) );
+				}
+				else
+				{
+					REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.src_loc )
 				}
 			}
-			else
-			{
-				REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.src_loc )
-			}
-		}
-		else
-		{
-			REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.src_loc )
-		}
-	}
 
-	RestoreFunctionContextState( function_context, state );
-	function_context.is_functionless_context= prev_is_functionless_context;
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
 
 	return BlockElementBuildInfo();
 }
@@ -2862,20 +2894,29 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	var LLVMValueRef mut condition_in_register= LLVMValueRef::Null;
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariableLite condition= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition ).lock_imut().deref();
+			if( condition.t != self.bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( halt_if.condition ), self.bool_type_, condition.t )
+			}
+			else
+			{
+				condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition, function_context );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, halt_if.src_loc );
+			}
+		} );
 
-	var VariableLite condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition ).lock_imut().deref();
-	if( condition.t != bool_type_ )
+	if( condition_in_register == LLVMValueRef::Null )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( halt_if.condition ), bool_type_, condition.t )
 		return BlockElementBuildInfo();
 	}
-
-	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, halt_if.src_loc );
 
 	unsafe
 	{
@@ -3014,11 +3055,8 @@ fn CodeBuilder::FetchLoopFrame(
 	return ~0s;
 }
 
-fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta )
+fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta )
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
 	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 	var VariableLite variable= variable_ptr.lock_imut().deref();
 
@@ -3062,7 +3100,6 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 				false, // non-constexpr call.
 				ust::empty_range,
 				src_loc );
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 			return;
 		}
 	}
@@ -3111,8 +3148,6 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
 		return;
 	}
-
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 }
 
 // Return true, if root of expression is useless in single expression block element.
