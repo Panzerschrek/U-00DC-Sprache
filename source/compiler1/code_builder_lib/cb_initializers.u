@@ -570,16 +570,17 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	}
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
-		CB_GENERATE_LOOP(
+		GenerateLoop(
 			function_context,
 			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
 				var Variable mut element_variable
 				{
 					.t= array_type.element_type,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
-					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+					.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
 					.name= variable_ptr.lock_imut().deref().name + "[]",
 				};
 				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
@@ -587,11 +588,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, zero_initializer.src_loc );
 
-				BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+				self.BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
 				function_context.references_graph.RemoveNode( element_variable_ptr );
-			}
-		)
+			} );
 
 		if( variable.t.CanBeConstexpr() )
 		{
@@ -712,16 +712,17 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	{
 		var LLVMValueRef mut constant_initializer = LLVMValueRef::Null;
 
-		CB_GENERATE_LOOP(
+		GenerateLoop(
 			function_context,
 			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
 				var Variable mut element_variable
 				{
 					.t= array_type.element_type,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
-					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+					.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
 					.name= variable_ptr.lock_imut().deref().name + "[]",
 				};
 				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
@@ -730,10 +731,10 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, src_loc );
 
-				constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+				constant_initializer= self.BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
 				function_context.references_graph.RemoveNode( element_variable_ptr );
-			} )
+			} );
 
 		if( constant_initializer != LLVMValueRef::Null )
 		{
