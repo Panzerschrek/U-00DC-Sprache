@@ -751,18 +751,17 @@ def Desturctors_ForInheritance_Test0():
 	c_program_text= """
 		class A polymorph
 		{
-			i32 &mut a;
-			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this, i32 & mut in_a ) @(pollution)
-			( a= in_a ){}
+			$(i32) a;
+			fn constructor( this, i32 &mut in_a )
+			( a= $<(in_a) ){}
 			fn destructor()
 			{
-				a= 0;
+				unsafe{  $>(a)= 0;  }
 			}
 		}
 		class B : A
 		{
-			fn constructor( this, i32 & mut in_a ) @(pollution)
+			fn constructor( this, i32 &mut in_a )
 			( base(in_a) ){}
 			// Must generate default destructor, which calls base destructor.
 		}
@@ -784,18 +783,17 @@ def Desturctors_ForInheritance_Test1():
 	c_program_text= """
 		class A polymorph
 		{
-			i32 &mut a;
-			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this, i32 & mut in_a ) @(pollution)
-			( a= in_a ){}
+			$(i32) a;
+			fn constructor( this, i32 & mut in_a )
+			( a= $<(in_a) ){}
 			fn destructor()
 			{
-				a= 0;
+				unsafe{  $>(a)= 0;  }
 			}
 		}
 		class B : A
 		{
-			fn constructor( this, i32 & mut in_a ) @(pollution)
+			fn constructor( this, i32 & mut in_a )
 			( base(in_a) ){}
 			fn destructor()
 			{

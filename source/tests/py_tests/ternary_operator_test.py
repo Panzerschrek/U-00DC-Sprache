@@ -167,13 +167,12 @@ def DestructorsCall_ForTernaryOperatorBranches_Test0():
 		struct S
 		{
 			i32 x;
-			i32 &mut r;
-			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "2_" ] ];
-			fn constructor( this, i32 in_x, i32 & mut in_r ) @(pollution)
-			( x(in_x), r(in_r) )
-			{ ++r; }
+			$(i32) r;
+			fn constructor( this, i32 in_x, i32 & mut in_r )
+			( x(in_x), r($<(in_r)) )
+			{ ++in_r; }
 
-			fn destructor() { --r; x= 0; }
+			fn destructor() { unsafe{  --$>(r);  } x= 0; }
 		}
 		fn Foo( bool b ) : i32
 		{
@@ -193,13 +192,12 @@ def DestructorsCall_ForTernaryOperatorResult_Test0():
 	c_program_text= """
 		struct S
 		{
-			i32 &mut x;
-			fn destructor() { ++x; }
+			$(i32) x;
+			fn destructor() { unsafe{  ++$>(x);  } }
 		}
-		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn GetS( i32 & mut x ) : S @(return_inner_references)
+		fn GetS( i32 & mut x ) : S
 		{
-			var S mut s{ .x= x };
+			var S mut s{ .x= $<(x) };
 			return move(s);
 		}
 		fn Foo( bool b ) : i32

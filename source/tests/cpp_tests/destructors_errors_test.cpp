@@ -243,7 +243,6 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test1 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
 }
 
-
 } // namespace
 
 } // namespace U
