@@ -321,11 +321,11 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		}
 		if( function_context.destructor_end_block != nullptr )
 		{
-			// TODO - use separate error codes.
+			// Forbid accessing mutable references in destructor in order to avoid possible invalidation of still alive derived references.
 			if( field->is_reference && field->is_mutable )
-				REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "mutable reference fields access in destructor" );
+				REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names.GetErrors(), src_loc );
 			if( !field->is_reference && field->type.ContainsMutableReferences() )
-				REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "fields with mutable references access in destructor" );
+				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names.GetErrors(), src_loc );
 		}
 		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, Keyword( Keywords::this_ ) );
