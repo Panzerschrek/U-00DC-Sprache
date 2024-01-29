@@ -204,7 +204,7 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test2 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
 }
 
-U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test0 )
+U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -223,7 +223,7 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test0 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 7u ) );
 }
 
-U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test1 )
+U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -243,7 +243,7 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test1 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
 }
 
-U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test2 )
+U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test2 )
 {
 	static const char c_program_text[]=
 	R"(

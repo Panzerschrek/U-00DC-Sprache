@@ -858,7 +858,7 @@ def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test1():
 	assert( HaveError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
 
 
-def ThisUnavailable_InDestructorOfStructWithReferencesInside_ForBase_Test0():
+def ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test0():
 	c_program_text= """
 		class A polymorph
 		{
@@ -877,7 +877,7 @@ def ThisUnavailable_InDestructorOfStructWithReferencesInside_ForBase_Test0():
 	assert( HaveError( errors_list, "ThisUnavailable", 10 ) )
 
 
-def BaseUnavailable_InDestructorOfStructWithReferencesInside_ForBase_Test1():
+def BaseUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test1():
 	c_program_text= """
 		class A polymorph
 		{

@@ -31,7 +31,6 @@ struct RImut
 	fn constructor( this, i32& mut in_r ) @(pollution) ( r= in_r ) {}
 }
 
-
 class NC // Non-copyable by-default.
 {
 }
