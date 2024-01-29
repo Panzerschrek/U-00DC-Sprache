@@ -118,6 +118,20 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				}
 			}
 		}
+		if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+		{
+			if( field.is_reference )
+			{
+				if( field.is_mutable )
+				{
+					REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names_scope, src_loc )
+				}
+			}
+			else if( field.t.ContainsMutableReferences() )
+			{
+				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names_scope, src_loc )
+			}
+		}
 
 		return AccessClassField( names_scope, function_context, this_ptr, field, field_name, src_loc );
 	}

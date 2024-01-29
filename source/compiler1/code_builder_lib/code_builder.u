@@ -1506,6 +1506,14 @@ fn CodeBuilder::BuildFuncCode(
 		if( is_destructor )
 		{
 			function_context.destructor_end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] ) );
+
+			if( !function_context.this_.empty() && function_context.this_.try_lock_imut().deref().t.ContainsMutableReferences() )
+			{
+				// Do not allow to access "this" in destructors of structs with mutable references inside.
+				// Allow only accessing separate fields.
+				// This is needed in order to prevent invalidation of possible derived references in destructor calls.
+				function_context.whole_this_is_unavailable= true;
+			}
 		}
 
 		if( is_constructor || is_destructor )

@@ -439,6 +439,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		auto this_lock= this_ptr.lock_imut();
 		var Variable& this_= this_lock.deref();
 
+		if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && this_.t.ContainsMutableReferences() )
+		{
+			// Forbid accessing "base" in destructors of types with mutable references inside, since it's possible to access such mutable fields via a virtual call.
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
+			return ErrorValue();
+		}
+
 		auto class_type= this_.t.GetClassType().try_deref();
 		auto base_class= class_type.lock_imut().deref().base_class;
 		if( base_class.empty() )
