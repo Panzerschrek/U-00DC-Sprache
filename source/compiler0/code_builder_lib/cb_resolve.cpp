@@ -77,6 +77,12 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 			REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), name_lookup.src_loc, Keyword( Keywords::base_ ) );
 			return ErrorValue();
 		}
+		if( function_context.destructor_end_block != nullptr && function_context.this_->type.ContainsMutableReferences() )
+		{
+			// Forbid accessing "base" in destructors of types with mutable references inside, since it's possible to access such mutable fields via a virtual call.
+			REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
+			return ErrorValue();
+		}
 		const Class& class_= *function_context.this_->type.GetClassType();
 		if( class_.base_class == nullptr )
 		{

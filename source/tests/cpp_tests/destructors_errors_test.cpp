@@ -243,6 +243,29 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test1 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
 }
 
+U_TEST( ThisUnavailable_InDestructorOfStructWithReferencesInside_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut x;
+		}
+		struct T
+		{
+			S s;
+			fn destructor()
+			{
+				auto& self= this; // "this" is unavailable, because this struct contains a field with mutable references inside.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 11u ) );
+}
+
 } // namespace
 
 } // namespace U

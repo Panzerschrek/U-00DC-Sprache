@@ -770,3 +770,127 @@ def FunctionDeclarationOutsideItsScope_ForInheritance_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Barv" )
 	assert( call_result == 678 )
+
+
+def MutableReferenceFieldAccessInDestructor_ForBaseField_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 &mut x;
+		}
+		class B : A
+		{
+			fn destructor()
+			{
+				auto& x_ref= x; // Accessing mutable reference field, which is not allowed.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
+
+
+def MutableReferenceFieldAccessInDestructor_ForBaseField_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 &mut x;
+		}
+		class B : A
+		{
+			fn destructor()
+			{
+				Foo(x); // Accessing mutable reference field, which is not allowed.
+			}
+		}
+		fn Foo( i32 &mut x );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
+
+
+def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+		}
+		class A polymorph
+		{
+			S s;
+		}
+		class B : A
+		{
+			fn destructor()
+			{
+				auto &mut s= s; // Accessing field with mutable references inside, which is not allowed.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
+
+
+def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+		}
+		class A polymorph
+		{
+			S s;
+		}
+		class B : A
+		{
+			fn destructor()
+			{
+				Foo(s); // Accessing field with mutable references inside, which is not allowed.
+			}
+		}
+		fn Foo( S s );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
+
+
+def ThisUnavailable_InDestructorOfStructWithReferencesInside_ForBase_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 &mut x;
+		}
+		class B : A
+		{
+			fn destructor()
+			{
+				auto& self= this; // Can't access "this", because this class contains mutable references inside.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisUnavailable", 10 ) )
+
+
+def BaseUnavailable_InDestructorOfStructWithReferencesInside_ForBase_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 &mut x;
+		}
+		class B : A
+		{
+			fn destructor()
+			{
+				auto& b= base; // Can't access "base", because it contains mutable references inside.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "BaseUnavailable", 10 ) )
