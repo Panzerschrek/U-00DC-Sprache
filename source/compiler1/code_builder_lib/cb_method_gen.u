@@ -131,7 +131,6 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	auto this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 
@@ -355,7 +354,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
@@ -539,7 +537,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
@@ -735,7 +732,6 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
 

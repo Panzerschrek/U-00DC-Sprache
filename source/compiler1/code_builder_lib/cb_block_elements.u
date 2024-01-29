@@ -838,11 +838,20 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAssignmentOperatorImpl( names_scope, function_context, assignment_operator );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, assignment_operator.src_loc );
+		} );
+		return BlockElementBuildInfo();
+}
 
+fn CodeBuilder::BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator )
+{
 	if( !TryCallOverloadedBinaryOperator(
 			names_scope,
 			function_context,
@@ -858,7 +867,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetRawPointerType().empty() && r.t.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.src_loc, r.t )
-			return BlockElementBuildInfo();
+			return;
 		}
 
 		auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
@@ -873,27 +882,34 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( r.t != l.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, assignment_operator.src_loc, l.t, r.t )
-			return BlockElementBuildInfo();
+			return;
 		}
 		if( l.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.src_loc )
-			return BlockElementBuildInfo();
+			return;
 		}
 		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_ptr, names_scope, assignment_operator.src_loc );
 
 		CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
 	}
+}
 
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, assignment_operator.src_loc );
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAdditiveAssignmentOperatorImpl( names_scope, function_context, additive_assignment_operator );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, additive_assignment_operator.src_loc );
+		} );
+
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildAdditiveAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator )
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
 	if( !TryCallOverloadedBinaryOperator(
 			names_scope,
 			function_context,
@@ -919,7 +935,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( l_var.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.src_loc )
-			return BlockElementBuildInfo();
+			return;
 		}
 		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, additive_assignment_operator.src_loc );
 
@@ -927,23 +943,20 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto op_result_variable_ptr_ref= op_result.get</VariablePtr/>();
 		if( op_result_variable_ptr_ref.empty() )
 		{
-			return BlockElementBuildInfo();
+			return;
 		}
 		with( &op_result_variable: op_result_variable_ptr_ref.try_deref().lock_imut().deref() )
 		{
 			if( op_result_variable.t != l_var.t )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable.t )
-				return BlockElementBuildInfo();
+				return;
 			}
 
 			auto val= CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context );
 			CreateTypedStore( function_context, l_var.t, val, l_var.llvm_value );
 		}
 	}
-
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, additive_assignment_operator.src_loc );
-	return BlockElementBuildInfo();
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
@@ -970,35 +983,38 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Expression& expression ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-	var Value value= BuildExpressionCode( names_scope, function_context, expression );
-
-	if_var( &variable_ptr : value.get</VariablePtr/>() )
-	{
-		if( SingleExpressionIsUseless( expression ) )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			with( & variable : variable_ptr.lock_imut().deref() )
+			var Value value= self.BuildExpressionCode( names_scope, function_context, expression );
+
+			if_var( &variable_ptr : value.get</VariablePtr/>() )
 			{
-				if( !( variable.t == void_type_ && variable.value_type == ValueType::Value ) )
+				if( SingleExpressionIsUseless( expression ) )
 				{
-					REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+					with( & variable : variable_ptr.lock_imut().deref() )
+					{
+						if( !( variable.t == self.void_type_ && variable.value_type == ValueType::Value ) )
+						{
+							REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+						}
+					}
 				}
 			}
-		}
-	}
-	if( !value.get</Type/>().empty() ||
-		!value.get</FunctionsSetPtr/>().empty() ||
-		!value.get</ThisMethodsSet/>().empty() ||
-		!value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
-	{
-		REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
-	}
+			if( !value.get</Type/>().empty() ||
+				!value.get</FunctionsSetPtr/>().empty() ||
+				!value.get</ThisMethodsSet/>().empty() ||
+				!value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
+			{
+				REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+			}
 
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(expression) );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(expression) );
+		} );
+
 	return BlockElementBuildInfo();
 }
 
@@ -1008,32 +1024,33 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var LLVMBasicBlockRef alternative_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
 	var ReferencesGraph mut references_graph_before_branching;
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		var VariableLite condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, if_operator.condition ).lock_imut().deref();
-		if( condition_expression.t != bool_type_ )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			REPORT_ERROR( TypesMismatch,
-				names_scope,
-				Synt::GetSrcLoc( if_operator.condition ),
-				bool_type_,
-				condition_expression.t )
+			var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, if_operator.condition ).lock_imut().deref();
+			if( condition_expression.t != self.bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch,
+					names_scope,
+					Synt::GetSrcLoc( if_operator.condition ),
+					self.bool_type_,
+					condition_expression.t )
 
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, if_block ) );
-		}
-		else
-		{
-			auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
+				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, if_block ) );
+			}
+			else
+			{
+				auto condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
 
-			unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, if_block, alternative_block ) );
-		}
+				unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, if_block, alternative_block ) );
+			}
 
-		references_graph_before_branching= function_context.references_graph;
-	}
+			references_graph_before_branching= function_context.references_graph;
+		} );
 
 	// If block.
 	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, if_block ) );
@@ -1107,17 +1124,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo
 {
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-		if( EvaluateBoolConstantExpression( names_scope, function_context, static_if_operator.condition ) )
+	var bool condition_res= WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : bool
 		{
-			return BuildBlock( names_scope, function_context, static_if_operator.block.deref() );
-		}
+			var bool res= self.EvaluateBoolConstantExpression( names_scope, function_context, static_if_operator.condition );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, static_if_operator.end_src_loc );
+			return res;
+		} );
 
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, static_if_operator.end_src_loc );
+	if( condition_res )
+	{
+		return BuildBlock( names_scope, function_context, static_if_operator.block.deref() );
 	}
-
 	if_var( &alternative : static_if_operator.alternative )
 	{
 		return BuildIfAlternative( names_scope, function_context, alternative );
@@ -1126,11 +1145,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildIfCoroAdvanceOperatorImpl( names_scope, function_context, if_coro_advance_operator );
+		} );
+}
 
+fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
+{
 	var VariablePtr coro_expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, if_coro_advance_operator.expression );
 	var VariableLite coro_expr= coro_expr_ptr.lock_imut().deref();
 
@@ -1500,43 +1526,48 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 {
 	var Type mut switch_type;
 	var LLVMValueRef mut switch_value= LLVMValueRef::Null;
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariableLite expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, switch_operator.value ).lock_imut().deref();
+			var bool mut type_ok= false;
+			if( !expression.t.GetEnumType().empty() )
+			{
+				type_ok= true;
+			}
+			else if_var( &fundamental_type : expression.t.GetFundamentalType() )
+			{
+				type_ok= IsInteger( fundamental_type.fundamental_type ) || IsChar( fundamental_type.fundamental_type );
+			}
+			else
+			{
+				type_ok= false;
+			}
+
+			var SrcLoc src_loc= Synt::GetSrcLoc( switch_operator.value );
+
+			if( !type_ok )
+			{
+				REPORT_ERROR(
+					TypesMismatch,
+					names_scope,
+					src_loc,
+					"Enum, integer or char type",
+					expression.t )
+				return;
+			}
+
+			switch_type= expression.t;
+			switch_value= self.CreateMoveToLLVMRegisterInstruction( expression, function_context );
+
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		} );
+
+	if( switch_value == LLVMValueRef::Null )
 	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var VariableLite expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, switch_operator.value ).lock_imut().deref();
-		var bool mut type_ok= false;
-		if( !expression.t.GetEnumType().empty() )
-		{
-			type_ok= true;
-		}
-		else if_var( &fundamental_type : expression.t.GetFundamentalType() )
-		{
-			type_ok= IsInteger( fundamental_type.fundamental_type ) || IsChar( fundamental_type.fundamental_type );
-		}
-		else
-		{
-			type_ok= false;
-		}
-
-		var SrcLoc src_loc= Synt::GetSrcLoc( switch_operator.value );
-
-		if( !type_ok )
-		{
-			REPORT_ERROR(
-				TypesMismatch,
-				names_scope,
-				src_loc,
-				"Enum, integer or char type",
-				expression.t )
-
-			return BlockElementBuildInfo();
-		}
-
-		switch_type= expression.t;
-		switch_value= CreateMoveToLLVMRegisterInstruction( expression, function_context );
-
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		return BlockElementBuildInfo();
 	}
 
 	// TODO - support 128bit values.
@@ -2042,11 +2073,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 {
 	auto mut references_graph_before_loop= function_context.references_graph;
 
-	var LLVMBasicBlockRef mut test_block= zero_init, mut while_block= zero_init, mut block_after_while= zero_init;
+	var LLVMBasicBlockRef test_block = unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef while_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef block_after_while= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 	unsafe
 	{
-		test_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-
 		// Break to test block. We must push terminal instruction at and of current block.
 		LLVMBuildBr( function_context.llvm_ir_builder, test_block );
 
@@ -2055,32 +2086,31 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	// Test block code.
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var VariableLite condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition ).lock_imut().deref();
-		var SrcLoc condition_src_loc= Synt::GetSrcLoc( while_operator.condition );
-		if( condition_expression.t != bool_type_ )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			REPORT_ERROR( TypesMismatch,
+			var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition ).lock_imut().deref();
+			var SrcLoc condition_src_loc= Synt::GetSrcLoc( while_operator.condition );
+			if( condition_expression.t != self.bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch,
 					names_scope,
 					condition_src_loc,
-					bool_type_,
+					self.bool_type_,
 					condition_expression.t )
-			return BlockElementBuildInfo();
-		}
 
-		auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
+				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, while_block ) );
+			}
+			else
+			{
+				auto condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
 
-		unsafe
-		{
-			while_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-			block_after_while= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-			LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while );
-		}
-	}
+				unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while ) );
+			}
+		} );
 
 	// While block code.
 	AddLoopFrame( names_scope, function_context, block_after_while, test_block, while_operator.label_ );
@@ -2174,12 +2204,24 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
+{
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			var BlockElementBuildInfo block_element_build_info= self.BuildRangeForOperatorImpl( names_scope, function_context, range_for_operator );
+			if( !block_element_build_info.have_terminal_instruction_inside )
+			{
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc );
+			}
+			return block_element_build_info;
+		} );
+}
+
+fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo mut block_element_build_info;
-
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	var VariablePtr sequence_expression_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, range_for_operator.sequence );
 	var VariableLite sequence_expression= sequence_expression_ptr.lock_imut().deref();
@@ -2427,18 +2469,23 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, sequence_expression.t )
 	}
 
-	if( !block_element_build_info.have_terminal_instruction_inside )
-	{
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc );
-	}
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, FunctionContext &mut in_function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
-{	
-	var VariablesFrameHolder loop_variables_frame_hodler(in_function_context);
-	auto& mut function_context= loop_variables_frame_hodler.GetFunctionContext();
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildCStyleForOperatorImpl( names_scope, function_context, c_style_for_operator );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, c_style_for_operator.src_loc );
+		} );
+	return BlockElementBuildInfo();
+}
 
+fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator )
+{
 	// Create separate names_scope for loop variables.
 	var NamesScopeMutPtr names_scope( NamesScope( "", in_names_scope ) );
 
@@ -2474,21 +2521,24 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, Func
 	}
 	else
 	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition ).lock_imut().deref();
+				var SrcLoc condition_src_loc= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
+				if( condition_expression.t != self.bool_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, condition_src_loc, self.bool_type_, condition_expression.t )
+				}
+				else
+				{
+					auto condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+					self.CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
 
-		var VariableLite condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition ).lock_imut().deref();
-		var SrcLoc condition_src_loc= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
-		if( condition_expression.t != bool_type_ )
-		{
-			REPORT_ERROR( TypesMismatch, names_scope, condition_src_loc, bool_type_, condition_expression.t )
-			return BlockElementBuildInfo();
-		}
-
-		auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
-
-		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop ) );
+					unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop ) );
+				}
+			} );
 	}
 
 	auto mut references_graph_after_test_block= function_context.references_graph;
@@ -2557,9 +2607,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, Func
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop );
 	}
-
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, c_style_for_operator.src_loc );
-	return BlockElementBuildInfo();
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
@@ -2610,11 +2657,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
 {
-	var VariablesFrameHolder variables_frame_hodler(in_function_context);
-	auto& mut function_context= variables_frame_hodler.GetFunctionContext();
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildWithOperatorImpl( names_scope, function_context, with_operator );
+		} );
+}
 
+fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
+{
 	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, with_operator.expression );
 	var VariableLite expr= expr_ptr.lock_imut().deref();
 	if( expr.t == invalid_type_ )

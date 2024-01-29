@@ -1378,12 +1378,23 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 fn CodeBuilder::BuildConstructorInitialization(
 	mut this,
 	NamesScopePtr& names_scope,
-	FunctionContext &mut in_function_context,
+	FunctionContext &mut function_context,
 	Synt::StructNamedInitializer& constructor_initialization_list )
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildConstructorInitializationImpl( names_scope, function_context, constructor_initialization_list );
+		} );
+}
 
+fn CodeBuilder::BuildConstructorInitializationImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::StructNamedInitializer& constructor_initialization_list )
+{
 	// Function context should contain "this" with class type
 	var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
 	auto class_type= this_ptr.lock_imut().deref().t.GetClassType().try_deref();
@@ -1621,9 +1632,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 {
 	auto class_members_ptr= class_type.lock_imut().deref().members;
 
-	auto mut global_function_context= CreateGlobalFunctionContext();
-	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
-	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+	auto mut function_context= CreateGlobalFunctionContext();
 
 	var Variable mut this_variable
 	{
