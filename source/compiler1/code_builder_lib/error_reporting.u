@@ -206,34 +206,37 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 
 fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 {
+	foreach( &mut e : errors )
+	{
+		if( !e.errors_context.empty() )
+		{
+			auto sub_errors_ptr= e.errors_context.try_lock_imut().deref().errors;
+			auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
+			SortErrorsAndRemoveDuplicates( sub_errors_lock.deref() );
+		}
+	}
+
+	if( errors.size() <= 1s )
+	{
+		return;
+	}
+
 	ust::sort( errors.range() );
 
 	// Leave only unique errors.
-	auto mut dst= 0s;
-	for( auto mut src= 0s; src < errors.size(); ++src )
+	var size_type mut dst(1), mut src(1), end= errors.size();
+	while( src < end )
 	{
-		if( dst != src && cast_imut(errors)[src] == cast_imut(errors)[dst] )
+		if( cast_imut(errors)[dst - 1s] != cast_imut(errors)[src] )
 		{
-			continue;
+			errors.swap( dst, src );
+			++dst;
 		}
-
-		{
-			var CodeBuilderError &mut src_error= errors[src];
-			if( !src_error.errors_context.empty() )
-			{
-				auto sub_errors_ptr= src_error.errors_context.try_lock_imut().deref().errors;
-				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
-				SortErrorsAndRemoveDuplicates( sub_errors_lock.deref() );
-			}
-		}
-
-		errors.swap( dst, src );
-		++dst;
+		++src;
 	}
-	while( dst < errors.size() )
-	{
-		errors.drop_back();
-	}
+
+	auto dummy= errors.front();
+	errors.resize( dst, dummy );
 }
 
 } // namespace U1
