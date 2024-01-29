@@ -138,24 +138,4 @@ public:
 	ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context;
 }
 
-class VariablesFrameHolder
-{
-public:
-	fn constructor( mut this, FunctionContext & mut function_context ) @( ust::reference_notation::pollution::param0_param_1_reference )
-	( function_context_= function_context )
-	{
-		function_context_.variables_frames.push_back( FunctionContext::VariablesFrame() );
-	}
-
-	fn destructor();
-
-	fn GetFunctionContext( this ) : FunctionContext &mut @( ust::reference_notation::return_references::param0_inner_reference0 )
-	{
-		return function_context_;
-	}
-
-private:
-	FunctionContext &mut function_context_;
-}
-
 } // namespace U1

@@ -360,6 +360,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
 	fn BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
+	fn BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
 	fn BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator );
@@ -970,7 +971,9 @@ private:
 	// This function should be called for coroutine function just after aruments preparation.
 	fn PrepareCoroutineBlocks( this, FunctionContext &mut function_context );
 	fn CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
+	fn CoroutineYieldImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
 	fn AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
+	fn AsyncReturnImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
 	fn BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc ) : Value;
 	fn CoroutineSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 	fn CoroutineFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
