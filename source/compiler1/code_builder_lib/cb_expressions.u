@@ -2997,11 +2997,6 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, binary_operator.src_loc );
 		} );
 
-	if( r_var_in_register == LLVMValueRef::Null )
-	{
-		return ErrorValue();
-	}
-
 	branches_references_graphs[1]= function_context.references_graph;
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs, names_scope, binary_operator.src_loc );
 

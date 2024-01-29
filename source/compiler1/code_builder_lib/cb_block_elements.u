@@ -2268,6 +2268,10 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge;
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
+			var bool is_last_iteration= i + 1s == tuple_type.element_types.size();
+
+			auto next_basic_block= select( is_last_iteration ? finish_basic_block : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
+
 			var ust::string8 variable_name= range_for_operator.loop_variable_name + ust::to_string8(i);
 
 			var Type& variable_type= tuple_type.element_types[i];
@@ -2275,130 +2279,117 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 			// Create separate names_scope for loop variable.
 			var NamesScopeMutPtr names_scope( NamesScope( "", names_scope ) );
 
-			var Variable mut variable_reference_variable
-			{
-				.t= variable_type,
-				.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.location= Variable::Location::Pointer,
-				.constexpr_value=
-					select(
-						is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
-							? LLVMValueRef::Null
-							: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
-				.name= range_for_operator.loop_variable_name,
-				.src_loc= range_for_operator.src_loc,
-				.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
-			};
-			var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
-			// Do not forget to remove node in case of error-return!!!
-			function_context.references_graph.AddNode( variable_reference );
-
-			auto src_element_llvm_value= CreateTupleElementGEP( function_context, sequence_expression, u32(i) );
-
-			if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
-			{
-				if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
-				{
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
-					function_context.references_graph.RemoveNode( variable_reference );
-					return BlockElementBuildInfo();
-				}
-
-				with( mut lock : variable_reference.lock_mut() )
-				{
-					lock.deref().llvm_value= src_element_llvm_value;
-				}
-
-				debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_name, range_for_operator.src_loc );
-
-				function_context.references_graph.TryAddLink( sequence_lock_node, variable_reference, names_scope, range_for_operator.src_loc );
-				function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_reference, i, names_scope, range_for_operator.src_loc );
-			}
-			else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
-			{
-				var Variable mut variable
-				{
-					.t= variable_type,
-					.value_type= ValueType::Value,
-					.location= Variable::Location::Pointer,
-					.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable_type.GetLLVMType(), (range_for_operator.loop_variable_name + "\0").front() ) ),
-					.name= range_for_operator.loop_variable_name,
-				};
-
-				CreateLifetimeStart( function_context, variable.llvm_value );
-				debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_name, range_for_operator.src_loc );
-
-				with( mut lock : variable_reference.lock_mut() )
-				{
-					lock.deref().llvm_value= variable.llvm_value;
-				}
-
-				if( !sequence_expression.t.IsCopyConstructible() )
-				{
-					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, range_for_operator.src_loc, variable.t )
-				}
-				else if( sequence_expression.t.IsAbstract() )
-				{
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, range_for_operator.src_loc, sequence_expression.t )
-				}
-				else
-				{
-					BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, src_element_llvm_value, variable.t, range_for_operator.src_loc );
-				}
-
-				var VariablePtr variable_ptr= move(variable).CreatePtr();
-				function_context.references_graph.AddNode( variable_ptr );
-				function_context.references_graph.AddLink( variable_ptr, variable_reference );
-				RegisterTopFrameVariable( function_context, variable_ptr );
-
-				function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, range_for_operator.src_loc );
-				function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_ptr, i, names_scope, range_for_operator.src_loc );
-			}
-			else{ halt; }
-
-			with( mut lock : names_scope.lock_mut() )
-			{
-				lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
-
-				// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
-				// TODO - maybe make this counter available for a programmer?
-				{
-					auto index_value= unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
-					var Variable mut tuple_for_index
-					{
-						.t= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ ),
-						.value_type= ValueType::Value,
-						.location= Variable::Location::LLVMRegister,
-						.llvm_value= index_value,
-						.constexpr_value= index_value,
-						.referenced= true,
-					};
-					lock.deref().AddName( " tuple for index", move(tuple_for_index).CreatePtr() ).empty();
-				}
-			}
-
-			var bool is_last_iteration= i + 1s == tuple_type.element_types.size();
-			auto mut next_basic_block= LLVMBasicBlockRef::Null;
-			if( is_last_iteration )
-			{
-				next_basic_block= finish_basic_block;
-			}
-			else
-			{
-				next_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
-			}
-
-			AddLoopFrame( names_scope, function_context, finish_basic_block, next_basic_block, range_for_operator.label_ );
-			function_context.loops_stack.back().variable_frames_stack_size= function_context.variables_frames.size() - 1s; // Extra 1 for loop variable destruction in 'break' or 'continue'.
-
-			// Reuse names scope of tuple element variable for the block.
 			WithVariablesFrame(
 				function_context,
 				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 				{
+					var Variable mut variable_reference_variable
+					{
+						.t= variable_type,
+						.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+						.location= Variable::Location::Pointer,
+						.constexpr_value=
+							select(
+								is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
+									? LLVMValueRef::Null
+									: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
+						.name= range_for_operator.loop_variable_name,
+						.src_loc= range_for_operator.src_loc,
+						.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
+					};
+					var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+					// Do not forget to remove node in case of error-return!!!
+					function_context.references_graph.AddNode( variable_reference );
+
+					auto src_element_llvm_value= self.CreateTupleElementGEP( function_context, sequence_expression, u32(i) );
+
+					if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
+					{
+						if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
+						{
+							REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
+						}
+
+						with( mut lock : variable_reference.lock_mut() )
+						{
+							lock.deref().llvm_value= src_element_llvm_value;
+						}
+
+						self.debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_name, range_for_operator.src_loc );
+
+						function_context.references_graph.TryAddLink( sequence_lock_node, variable_reference, names_scope, range_for_operator.src_loc );
+						function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_reference, i, names_scope, range_for_operator.src_loc );
+					}
+					else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
+					{
+						var Variable mut variable
+						{
+							.t= variable_type,
+							.value_type= ValueType::Value,
+							.location= Variable::Location::Pointer,
+							.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable_type.GetLLVMType(), (range_for_operator.loop_variable_name + "\0").front() ) ),
+							.name= range_for_operator.loop_variable_name,
+						};
+
+						self.CreateLifetimeStart( function_context, variable.llvm_value );
+						self.debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_name, range_for_operator.src_loc );
+
+						with( mut lock : variable_reference.lock_mut() )
+						{
+							lock.deref().llvm_value= variable.llvm_value;
+						}
+
+						if( !sequence_expression.t.IsCopyConstructible() )
+						{
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, range_for_operator.src_loc, variable.t )
+						}
+						else if( sequence_expression.t.IsAbstract() )
+						{
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, range_for_operator.src_loc, sequence_expression.t )
+						}
+						else
+						{
+							self.BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, src_element_llvm_value, variable.t, range_for_operator.src_loc );
+						}
+
+						var VariablePtr variable_ptr= move(variable).CreatePtr();
+						function_context.references_graph.AddNode( variable_ptr );
+						function_context.references_graph.AddLink( variable_ptr, variable_reference );
+						RegisterTopFrameVariable( function_context, variable_ptr );
+
+						function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, range_for_operator.src_loc );
+						function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_ptr, i, names_scope, range_for_operator.src_loc );
+					}
+					else{ halt; }
+
 					// Register variable for destruction and reference checking.
 					RegisterTopFrameVariable( function_context, variable_reference );
 
+					with( mut lock : names_scope.lock_mut() )
+					{
+						lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
+
+						// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+						// TODO - maybe make this counter available for a programmer?
+						{
+							auto index_value= unsafe( LLVMConstInt( self.fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
+							var Variable mut tuple_for_index
+							{
+								.t= FundamentalType( U_FundamentalType::u32_, self.fundamental_llvm_types_.u32_ ),
+								.value_type= ValueType::Value,
+								.location= Variable::Location::LLVMRegister,
+								.llvm_value= index_value,
+								.constexpr_value= index_value,
+								.referenced= true,
+							};
+							lock.deref().AddName( " tuple for index", move(tuple_for_index).CreatePtr() ).empty();
+						}
+					}
+
+					self.AddLoopFrame( names_scope, function_context, finish_basic_block, next_basic_block, range_for_operator.label_ );
+					function_context.loops_stack.back().variable_frames_stack_size= function_context.variables_frames.size() - 1s; // Extra 1 for loop variable destruction in 'break' or 'continue'.
+
+					// Reuse names scope of tuple element variable for the block.
 					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.deref().elements.range() );
 					if( !block_build_info.have_terminal_instruction_inside )
 					{

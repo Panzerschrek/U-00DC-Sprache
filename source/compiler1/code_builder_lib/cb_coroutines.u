@@ -423,16 +423,6 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 	}
 }
 
-fn CodeBuilder::CoroutineYieldImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
-{
-	WithVariablesFrame(
-		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
-		{
-			self.CoroutineYield( names_scope, function_context, expression, src_loc );
-		} );
-}
-
 fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
@@ -482,86 +472,91 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 	// Fill promise.
 	var LLVMValueRef promise= function_context.s_ret;
 
-	var VariablePtr mut expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
-	if( return_value_type == ValueType::Value )
-	{
-		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
-		if( expr_initial_type.ReferenceIsConvertibleTo( yield_type ) )
-		{}
-		else if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, yield_type, expr_initial_type, src_loc ) )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, yield_type, conversion_constructor_, src_loc );
-		}
-		else
-		{
-			REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr_initial_type )
-			return;
-		}
-
-		CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
-
-		var VariableLite expr= expr_ptr.lock_imut().deref();
-		if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
-		{
-			// Process composite value.
-			if( expr.value_type == ValueType::Value && expr.t == yield_type )
+			var VariablePtr mut expr_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+			if( return_value_type == ValueType::Value )
 			{
-				// Move.
-				function_context.references_graph.MoveNode( expr_ptr );
-
-				CopyBytes( promise, expr.llvm_value, yield_type, function_context );
-				CreateLifetimeEnd( function_context, expr.llvm_value );
-			}
-			else
-			{
-				// Copy.
-				if( !yield_type.IsCopyConstructible() )
+				var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
+				if( expr_initial_type.ReferenceIsConvertibleTo( yield_type ) )
+				{}
+				else if_var( &conversion_constructor_ : self.GetConversionConstructor( names_scope, yield_type, expr_initial_type, src_loc ) )
 				{
-					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, yield_type )
-				}
-				else if( yield_type.IsAbstract() )
-				{
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, yield_type )
+					expr_ptr= self.ConvertVariable( names_scope, function_context, expr_ptr, yield_type, conversion_constructor_, src_loc );
 				}
 				else
 				{
-					var LLVMValueRef expr_reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
-					BuildCopyConstructorPart( names_scope, function_context, promise, expr_reference_converted, yield_type, src_loc );
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr_initial_type )
+					return;
+				}
+
+				CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
+
+				var VariableLite expr= expr_ptr.lock_imut().deref();
+				if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
+				{
+					// Process composite value.
+					if( expr.value_type == ValueType::Value && expr.t == yield_type )
+					{
+						// Move.
+						function_context.references_graph.MoveNode( expr_ptr );
+
+						self.CopyBytes( promise, expr.llvm_value, yield_type, function_context );
+						self.CreateLifetimeEnd( function_context, expr.llvm_value );
+					}
+					else
+					{
+						// Copy.
+						if( !yield_type.IsCopyConstructible() )
+						{
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, yield_type )
+						}
+						else if( yield_type.IsAbstract() )
+						{
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, yield_type )
+						}
+						else
+						{
+							var LLVMValueRef expr_reference_converted= self.CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
+							self.BuildCopyConstructorPart( names_scope, function_context, promise, expr_reference_converted, yield_type, src_loc );
+						}
+					}
+				}
+				else
+				{
+					// Just copy simple scalar.
+					var LLVMValueRef val= self.CreateMoveToLLVMRegisterInstruction( expr, function_context );
+					self.CreateTypedStore( function_context, yield_type, val, promise );
 				}
 			}
-		}
-		else
-		{
-			// Just copy simple scalar.
-			var LLVMValueRef val= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			CreateTypedStore( function_context, yield_type, val, promise );
-		}
-	}
-	else
-	{
-		var VariableLite expr= expr_ptr.lock_imut().deref();
-		if(!expr.t.ReferenceIsConvertibleTo( yield_type ) )
-		{
-			REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr.t )
-			return;
-		}
-		if( expr.value_type == ValueType::Value )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
-			return;
-		}
-		if( return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
-		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
-		}
+			else
+			{
+				var VariableLite expr= expr_ptr.lock_imut().deref();
+				if(!expr.t.ReferenceIsConvertibleTo( yield_type ) )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr.t )
+					return;
+				}
+				if( expr.value_type == ValueType::Value )
+				{
+					REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+					return;
+				}
+				if( return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
+				{
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+				}
 
-		CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
+				CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
 
-		var LLVMValueRef ref_casted= CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
-		CreateTypedReferenceStore( function_context, yield_type, ref_casted, promise );
-	}
+				var LLVMValueRef ref_casted= self.CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
+				self.CreateTypedReferenceStore( function_context, yield_type, ref_casted, promise );
+			}
 
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		});
 
 	// Suspend generator. Now generator caller will recieve filled promise.
 	CoroutineSuspend( names_scope, function_context, src_loc );
