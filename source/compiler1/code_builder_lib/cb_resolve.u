@@ -505,7 +505,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 {
 	return WithVariablesFrame(
 		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : ust::optional</NamesScopeValue/>
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : NamesScopeValue
 		{
 			var bool prev_is_functionless_context= function_context.is_functionless_context;
 			function_context.is_functionless_context= true;
@@ -516,7 +516,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 			function_context.is_functionless_context= prev_is_functionless_context;
 
-			return NamesScopeValue( move(t) );
+			return move(t);
 		} );
 }
 

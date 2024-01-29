@@ -1017,19 +1017,19 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		function_context.references_graph= references_graph_before;
 
+		if( !function_context.is_functionless_context )
+		{
+			unsafe
+			{
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
+			}
+		}
+
 		WithVariablesFrame(
 			function_context,
 			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 			{
-				if( !function_context.is_functionless_context )
-				{
-					unsafe
-					{
-						LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
-						LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
-					}
-				}
-
 				var Synt::Expression& branch_expr= ternary_operator.branches[i].deref();
 				var VariablePtr branch_result_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, branch_expr );
 				var VariableLite branch_result= branch_result_ptr.lock_imut().deref();

@@ -564,16 +564,6 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 
 fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
 {
-	WithVariablesFrame(
-		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
-		{
-			self.AsyncReturnImpl( names_scope, function_context, expression, src_loc );
-		} );
-}
-
-fn CodeBuilder::AsyncReturnImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
-{
 	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
 	{
 		REPORT_ERROR( YieldOutsideCoroutine, names_scope, src_loc )

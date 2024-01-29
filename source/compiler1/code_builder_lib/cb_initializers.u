@@ -1077,7 +1077,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 
 					auto state= SaveFunctionContextState( function_context );
 
-					with(  &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
+					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
 					{
 						needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
 					}
@@ -1376,20 +1376,6 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 }
 
 fn CodeBuilder::BuildConstructorInitialization(
-	mut this,
-	NamesScopePtr& names_scope,
-	FunctionContext &mut function_context,
-	Synt::StructNamedInitializer& constructor_initialization_list )
-{
-	WithVariablesFrame(
-		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
-		{
-			self.BuildConstructorInitializationImpl( names_scope, function_context, constructor_initialization_list );
-		} );
-}
-
-fn CodeBuilder::BuildConstructorInitializationImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,

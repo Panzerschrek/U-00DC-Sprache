@@ -1272,16 +1272,16 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	var BlockElementBuildInfo mut if_block_build_info;
 
+	if( !result_type.CanBeConstexpr() )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
 	// TODO - try to avoid using so long lambda here.
 	WithVariablesFrame(
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			if( !result_type.CanBeConstexpr() )
-			{
-				function_context.have_non_constexpr_operations_inside= true;
-			}
-
 			var Variable mut variable_reference_variable
 			{
 				.t= result_type,
@@ -2223,12 +2223,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
 		{
-			var BlockElementBuildInfo block_element_build_info= self.BuildRangeForOperatorImpl( names_scope, function_context, range_for_operator );
-			if( !block_element_build_info.have_terminal_instruction_inside )
-			{
-				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc );
-			}
-			return block_element_build_info;
+			return self.BuildRangeForOperatorImpl( names_scope, function_context, range_for_operator );
 		} );
 }
 
@@ -2472,6 +2467,11 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 	{
 		// TODO - support array types.
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, sequence_expression.t )
+	}
+
+	if( !block_element_build_info.have_terminal_instruction_inside )
+	{
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc );
 	}
 
 	return block_element_build_info;

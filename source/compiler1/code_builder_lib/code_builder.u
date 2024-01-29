@@ -1487,21 +1487,26 @@ fn CodeBuilder::BuildFuncCode(
 		auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 		if( is_constructor )
 		{
-			if( !body_syntax_element.constructor_initializer_list.empty() )
-			{
-				BuildConstructorInitialization(
-					args_names_scope_ptr,
-					function_context,
-					body_syntax_element.constructor_initializer_list.try_deref() );
-			}
-			else
-			{
-				var Synt::StructNamedInitializer dummy_initializer{ .src_loc= block.src_loc };
-				BuildConstructorInitialization(
-					args_names_scope_ptr,
-					function_context,
-					dummy_initializer );
-			}
+			WithVariablesFrame(
+				function_context,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					if( !body_syntax_element.constructor_initializer_list.empty() )
+					{
+						self.BuildConstructorInitialization(
+							args_names_scope_ptr,
+							function_context,
+							body_syntax_element.constructor_initializer_list.try_deref() );
+					}
+					else
+					{
+						var Synt::StructNamedInitializer dummy_initializer{ .src_loc= block.src_loc };
+						self.BuildConstructorInitialization(
+							args_names_scope_ptr,
+							function_context,
+							dummy_initializer );
+					}
+				} );
 		}
 		if( is_destructor )
 		{
