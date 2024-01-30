@@ -26,6 +26,26 @@ type pollution_list= [ pollution_element, N ];
 template</ size_type N />
 type references_list= [ param_reference_description, N ];
 
+// Reference tags of a field.
+template</size_type S/>
+type field_tags_list= [ char8, S ];
+
+namespace field_tags
+{
+
+template</size_type S/>
+fn constexpr get_sequential_tags( size_type offset ) : field_tags_list</S/>
+{
+	var field_tags_list</S/> mut result= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		result[i]= char8( size_type("a"c8) + i + offset );
+	}
+	return move(result);
+}
+
+} // namespace field_tags
+
 namespace pollution
 {
 
@@ -57,6 +77,41 @@ fn constexpr param_n_param_m_all_inner_references( u8 n, u8 m ) : pollution_list
 		result[i][1][1]= char8( size_type("a"c8) + i );
 	}
 	return result;
+}
+
+// Create sequential pollution for param #n with inner tags of param #m using destination offset.
+template</size_type S/>
+fn constexpr param_n_with_sequential_tags_of_param_m_with_dst_offset( u8 n, u8 m, size_type dst_offset ) : pollution_list</S/>
+{
+	var pollution_list</S/> mut result= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		// dst
+		result[i][0][0] = char8( u32("0"c8) + u32(n) );
+		result[i][0][1] = char8( size_type("a"c8) + dst_offset + i );
+
+		// src
+		result[i][1][0] = char8( u32("0"c8) + u32(m) );
+		result[i][1][1] = char8( size_type("a"c8) + i );
+	}
+
+	return move(result);
+}
+
+// Concatenate pollition lists.
+template</size_type S0, size_type S1/>
+fn constexpr pollution_list_concat( [ pollution_element, S0 ]& a0, [ pollution_element, S1 ]& a1 ) : [ pollution_element, S0 + S1 ]
+{
+	var [ pollution_element, S0 + S1 ] mut result= zero_init;
+	for( auto mut i= 0s; i < S0; ++i )
+	{
+		result[i]= a0[i];
+	}
+	for( auto mut i= 0s; i < S1; ++i )
+	{
+		result[ S0 + i ]= a1[i];
+	}
+	return move(result);
 }
 
 } // namespace pollution
