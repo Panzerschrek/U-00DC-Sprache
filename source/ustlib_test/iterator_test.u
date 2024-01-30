@@ -545,6 +545,26 @@ fn nomangle main() : i32
 		var [ i32, 2 ] expected_result[ 34, 83 ];
 		halt if( non_negative_xs.range() != expected_result );
 	}
+	{ // "filter_map" for non-copyable value.
+		auto c_vec=
+			CSequenceIteratorCreator()
+			.iter()
+			.filter_map(
+				lambda( C mut c ) : ust::optional</CWrapper/>
+				{
+					if( (c.x & 1) != 0 ) { return ust::null_optional; }
+					var CWrapper mut wrapper{ .c= move(c) };
+					return move(wrapper);
+				})
+				.collect</ ust::vector</CWrapper/> />();
+			halt if( c_vec.size() != 5s );
+			auto mut i= 0;
+			foreach( &c_wrapper : c_vec )
+			{
+				halt if( c_wrapper.c.x != i * 2 );
+				++i;
+			}
+	}
 	{ // "chain" method.
 		var [ i32, 3 ] ints0[ 11, 22, 33 ];
 		var [ i32, 4 ] ints1[ 44, 55, 66, 77 ];
