@@ -130,6 +130,25 @@ public:
 		return Container::from_iterator( move(this) );
 	}
 
+	// Find first element using given function, which sould return bool.
+	// May return empty result if element isn't found.
+	template</type Func/>
+	fn find( byval mut this, Func mut func ) : auto
+	{
+		loop
+		{
+			auto mut next_res= next();
+			if( next_res.empty() )
+			{
+				return move(next_res);
+			}
+			if( func( next_res.try_deref() ) )
+			{
+				return move(next_res);
+			}
+		}
+	}
+
 	// Consume the iterator and fold the sequence using initial value and giving binary function.
 	// Can't return if iterator is infinite.
 	template</type T, type Func/>
@@ -147,7 +166,8 @@ public:
 		}
 	}
 
-public:
+public: // Methods returning iterators.
+
 	// Creates iterator that iterates first over first sequence, than over second sequence.
 	// Iterator return types must be the same.
 	template</type Iterator1/>

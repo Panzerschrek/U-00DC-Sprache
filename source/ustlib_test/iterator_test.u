@@ -591,6 +591,71 @@ fn nomangle main() : i32
 		halt if( ints1[2] != -132 );
 		halt if( ints1[3] != -154 );
 	}
+	{ // "find method"
+		var [ i32, 7 ] ints[ 3, 5, 124, 6, 7, 76, 11052 ];
+		auto threshold= 34;
+		auto val=
+			IntRangeImut(ints)
+			.iter()
+			.find(
+				lambda[&]( i32& x ) : bool
+				{
+					return x >= threshold;
+				}
+			);
+		halt if( val.empty() );
+		halt if( val.try_deref() != 124 );
+	}
+	{ // "find method" found nothing
+		var [ i32, 7 ] ints[ 3, 5, 124, 6, 7, 76, 11052 ];
+		auto threshold= -5544;
+		auto val=
+			IntRangeImut(ints)
+			.iter()
+			.find(
+				lambda[=]( i32& x ) : bool
+				{
+					return x <= threshold;
+				}
+			);
+		halt if( !val.empty() );
+	}
+	{ // "find method" for empty sequence
+		auto val=
+			IntRangeImut()
+			.iter()
+			.find(
+				lambda[=]( i32 x ) : bool
+				{
+					return x == 0;
+				}
+			);
+		halt if( !val.empty() );
+	}
+	{ // "find method" for mutable sequence.
+		var [ i32, 7 ] mut ints[ 3, 5, 124, 6, 7, 76, 11052 ];
+		{
+			auto threshold= 34;
+			auto val=
+				IntRangeMut(ints)
+				.iter()
+				.find(
+					lambda[&]( i32& x ) : bool
+					{
+						return x >= threshold;
+					}
+				);
+			halt if( val.empty() );
+			halt if( val.try_deref() != 124 );
+			val.try_deref() = 0;
+		}
+		halt if( ints[2] != 0 );
+	}
+	{ // "find method" for values sequence.
+		var ust::optional</C/> val= CSequenceIteratorCreator().iter().find( lambda( C& c ) : bool { return c.x == 4; } );
+		halt if( val.empty() );
+		halt if( val.try_deref().x != 4 );
+	}
 
 	return 0;
 }
