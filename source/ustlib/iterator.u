@@ -22,6 +22,8 @@ public:
 	fn enable_if( typeinfo</RawIterator/>.is_copy_constructible ) constructor( mut this, this_type& other )= default;
 	op enable_if( typeinfo</RawIterator/>.is_copy_assignable ) =( mut this, this_type& other )= default;
 
+public: // Main methods.
+
 	// Main method of iterator classes.
 	// Usually it returns something like "optional" and "optional_ref".
 	// If an iterator reaches its end, "next" returns empty result.
@@ -32,34 +34,6 @@ public:
 		return impl_.next();
 	}
 
-	// Consume this iterator and return first element (if it exists).
-	fn first( byval mut this ) : auto
-	{
-		return impl_.next();
-	}
-
-	// Consume this iterator and return last element (if it exists).
-	// Complexity is linear.
-	// This method may not finish it sequence is infinite.
-	template<//> // HACK - make lazy, because this method doesn't work properly for mutable references. TODO - fix it.
-	fn last( byval mut this ) : auto
-	{
-		auto mut last_candidate= impl_.next();
-		if( last_candidate.empty() )
-		{
-			return move(last_candidate);
-		}
-		loop
-		{
-			auto mut next_res= impl_.next();
-			if( next_res.empty() )
-			{
-				return move(last_candidate);
-			}
-			last_candidate= move(next_res);
-		}
-	}
-
 	// Implement method "iter" for iterator itself.
 	// This is needed, sometimes,
 	// For example, if "foreach" is used not for a container, but for an iterator.
@@ -67,6 +41,8 @@ public:
 	{
 		return move(this);
 	}
+
+public: // Helper methods.
 
 	// Consume the iterator and return "true" if result of the given predicate is true for all elements.
 	// May not return if iterator is infinite.
@@ -149,6 +125,12 @@ public:
 		}
 	}
 
+	// Consume this iterator and return first element (if it exists).
+	fn first( byval mut this ) : auto
+	{
+		return impl_.next();
+	}
+
 	// Consume the iterator and fold the sequence using initial value and giving binary function.
 	// Can't return if iterator is infinite.
 	template</type T, type Func/>
@@ -163,6 +145,28 @@ public:
 				return v;
 			}
 			v= func( v, next_res.try_take() );
+		}
+	}
+
+	// Consume this iterator and return last element (if it exists).
+	// Complexity is linear.
+	// This method may not finish it sequence is infinite.
+	template<//> // HACK - make lazy, because this method doesn't work properly for mutable references. TODO - fix it.
+	fn last( byval mut this ) : auto
+	{
+		auto mut last_candidate= impl_.next();
+		if( last_candidate.empty() )
+		{
+			return move(last_candidate);
+		}
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return move(last_candidate);
+			}
+			last_candidate= move(next_res);
 		}
 	}
 
