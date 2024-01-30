@@ -591,7 +591,7 @@ fn nomangle main() : i32
 		halt if( ints1[2] != -132 );
 		halt if( ints1[3] != -154 );
 	}
-	{ // "find method"
+	{ // "find" method
 		var [ i32, 7 ] ints[ 3, 5, 124, 6, 7, 76, 11052 ];
 		auto threshold= 34;
 		auto val=
@@ -606,7 +606,7 @@ fn nomangle main() : i32
 		halt if( val.empty() );
 		halt if( val.try_deref() != 124 );
 	}
-	{ // "find method" found nothing
+	{ // "find" method found nothing
 		var [ i32, 7 ] ints[ 3, 5, 124, 6, 7, 76, 11052 ];
 		auto threshold= -5544;
 		auto val=
@@ -620,7 +620,7 @@ fn nomangle main() : i32
 			);
 		halt if( !val.empty() );
 	}
-	{ // "find method" for empty sequence
+	{ // "find" method for empty sequence
 		auto val=
 			IntRangeImut()
 			.iter()
@@ -632,7 +632,7 @@ fn nomangle main() : i32
 			);
 		halt if( !val.empty() );
 	}
-	{ // "find method" for mutable sequence.
+	{ // "find" method for mutable sequence.
 		var [ i32, 7 ] mut ints[ 3, 5, 124, 6, 7, 76, 11052 ];
 		{
 			auto threshold= 34;
@@ -651,10 +651,51 @@ fn nomangle main() : i32
 		}
 		halt if( ints[2] != 0 );
 	}
-	{ // "find method" for values sequence.
+	{ // "find" method for values sequence.
 		var ust::optional</C/> val= CSequenceIteratorCreator().iter().find( lambda( C& c ) : bool { return c.x == 4; } );
 		halt if( val.empty() );
 		halt if( val.try_deref().x != 4 );
+	}
+	{ // "position" method
+		var [ i32, 7 ] ints[ 3, 5, 124, 6, 7, 76, 11052 ];
+		auto threshold= 34;
+		var ust::optional</size_type/> pos=
+			IntRangeImut(ints)
+			.iter()
+			.position(
+				lambda[&]( i32& x ) : bool
+				{
+					return x >= threshold;
+				}
+			);
+		halt if( pos.empty() );
+		halt if( pos.try_deref() != 2s );
+	}
+	{ // "position" method found nothing
+		var [ i32, 7 ] ints[ 3, 5, 124, 6, 7, 76, 11052 ];
+		auto threshold= -5544;
+		auto pos=
+			IntRangeImut(ints)
+			.iter()
+			.position(
+				lambda[=]( i32& x ) : bool
+				{
+					return x <= threshold;
+				}
+			);
+		halt if( !pos.empty() );
+	}
+	{ // "position" method for values sequence.
+		var ust::optional</size_type/> pos=
+			CSequenceIteratorCreator()
+			.iter()
+			.position(
+				lambda( C c ) : bool
+				{
+					return c.x == 7;
+				} );
+		halt if( pos.empty() );
+		halt if( pos != 7s );
 	}
 
 	return 0;

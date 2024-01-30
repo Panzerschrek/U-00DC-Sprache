@@ -166,6 +166,27 @@ public:
 		}
 	}
 
+	// Find first element using given function, which sould return bool.
+	// Return index of this element
+	template</type Func/>
+	fn position( byval mut this, Func mut func ) : ust::optional</size_type/>
+	{
+		var size_type mut p= 0s;
+		loop
+		{
+			auto mut next_res= next();
+			if( next_res.empty() )
+			{
+				return ust::null_optional;
+			}
+			if( func( next_res.try_take() ) )
+			{
+				return p;
+			}
+			++p;
+		}
+	}
+
 public: // Methods returning iterators.
 
 	// Creates iterator that iterates first over first sequence, than over second sequence.
