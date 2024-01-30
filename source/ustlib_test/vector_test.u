@@ -14,15 +14,21 @@ struct C // Default-constructible, non-empty
 	fn constructor() ( x= 666 ) {}
 }
 
-struct R // Have destructor with side-effects.
+struct RMut // Have destructor with side-effects.
 {
-	i32 &mut r;
-	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-	fn constructor( this, i32& mut in_r ) @(pollution) ( r= in_r ) {}
+	$(i32) r;
+	fn constructor( this, i32& mut in_r ) ( r= $<(in_r) ) {}
 	fn destructor()
 	{
-		++r;
+		++ unsafe( $>(r) );
 	}
+}
+
+struct RImut
+{
+	i32 & r;
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn constructor( this, i32& mut in_r ) @(pollution) ( r= in_r ) {}
 }
 
 class NC // Non-copyable by-default.
@@ -33,14 +39,15 @@ type I32Vec= ust::vector</i32/>;
 type AVec= ust::vector</A/>;
 type BVec= ust::vector</B/>;
 type CVec= ust::vector</C/>;
-type RVec= ust::vector</R/>;
+type RMutVec= ust::vector</RMut/>;
+type RImutVec= ust::vector</RImut/>;
 type NCVec= ust::vector</NC/>;
 
 static_assert( typeinfo</I32Vec/>.reference_tag_count == 0s );
 static_assert( typeinfo</AVec/>.reference_tag_count == 0s );
 static_assert( typeinfo</BVec/>.reference_tag_count == 0s );
 static_assert( typeinfo</CVec/>.reference_tag_count == 0s );
-static_assert( typeinfo</RVec/>.reference_tag_count == 1s );
+static_assert( typeinfo</RImutVec/>.reference_tag_count == 1s );
 static_assert( typeinfo</NCVec/>.reference_tag_count == 0s );
 
 template</ type T /> fn IsMutableReference( T & mut r ) : bool { ust::ignore_unused(r); return true ; }
@@ -79,30 +86,30 @@ fn nomangle main() : i32
 	}
 	{ // "drop_back" calls destructor.
 		var i32 mut x= 0;
-		var RVec mut v;
+		var RMutVec mut v;
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
 			var i32& x_ref_unsafe= $>($<(x));
-			v.push_back( R(x) );
+			v.push_back( RMut(x) );
 			v.drop_back();  halt if( x_ref_unsafe != 1 );
 		}
 	}
 	{ // Destructor calls destructors of elements.
 		var i32 mut x= 0;
 		{
-			var RVec mut v;
-			v.push_back( R(x) );
+			var RMutVec mut v;
+			v.push_back( RMut(x) );
 		} // call R::destructor here
 		halt if( x != 1 );
 	}
 	{ // Destructor calls destructors of all elements.
 		var i32 mut a= 0, mut b= 0, mut c= 0;
 		{
-			var RVec mut v;
-			v.push_back( R(a) );
-			v.push_back( R(b) );
-			v.push_back( R(c) );
+			var RMutVec mut v;
+			v.push_back( RMut(a) );
+			v.push_back( RMut(b) );
+			v.push_back( RMut(c) );
 		} // call R::destructor here for all elements.
 		halt if( a != 1 );
 		halt if( b != 1 );
@@ -110,14 +117,14 @@ fn nomangle main() : i32
 	}
 	{ // "clear" calls destructor.
 		var i32 mut x= 0, mut y= 0;
-		var RVec mut v;
+		var RMutVec mut v;
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
 			var i32& x_ref_unsafe= $>($<(x));
 			var i32& y_ref_unsafe= $>($<(y));
-			v.push_back( R(x) );
-			v.push_back( R(y) );
+			v.push_back( RMut(x) );
+			v.push_back( RMut(y) );
 			v.clear();
 			halt if( x_ref_unsafe != 1 );
 			halt if( y_ref_unsafe != 1 );
@@ -130,8 +137,8 @@ fn nomangle main() : i32
 		{
 			var i32& x_ref_unsafe= $>($<(x));
 
-			var RVec mut v;
-			v.push_back( R(x) );
+			var RMutVec mut v;
+			v.push_back( RMut(x) );
 
 			auto r= v.pop_back();
 			halt if( x_ref_unsafe != 0 ); // Move last value out of vector, destructor not called.
@@ -287,13 +294,13 @@ fn nomangle main() : i32
 	}
 	{ // Assignment of empty vector calls all destructors of destination vector.
 		var i32 mut x= 0;
-		var RVec mut v;
+		var RMutVec mut v;
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
 			var i32& x_ref_unsafe= $>($<(x));
-			v.push_back( R(x) );
-			v= RVec();
+			v.push_back( RMut(x) );
+			v= RMutVec();
 			halt if( x_ref_unsafe != 1 );
 		}
 	}

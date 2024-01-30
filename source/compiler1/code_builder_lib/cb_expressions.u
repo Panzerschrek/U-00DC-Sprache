@@ -439,6 +439,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		auto this_lock= this_ptr.lock_imut();
 		var Variable& this_= this_lock.deref();
 
+		if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && this_.t.ContainsMutableReferences() )
+		{
+			// Forbid accessing "base" in destructors of types with mutable references inside, since it's possible to access such mutable fields via a virtual call.
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
+			return ErrorValue();
+		}
+
 		auto class_type= this_.t.GetClassType().try_deref();
 		auto base_class= class_type.lock_imut().deref().base_class;
 		if( base_class.empty() )
@@ -920,23 +927,25 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var [ VariableTypeExtended, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
 	for( auto mut i= 0s; i < 2s; ++i )
 	{
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		auto state= SaveFunctionContextState( function_context );
-		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-			with( &branch_value: BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].deref() ).lock_imut().deref() )
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 			{
-				branches_types[i].t= branch_value.t;
-				branches_types[i].value_type= branch_value.value_type;
-			}
-			DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
-		}
-		RestoreFunctionContextState( function_context, state );
-		function_context.is_functionless_context= prev_is_functionless_context;
+				var bool prev_is_functionless_context= function_context.is_functionless_context;
+				function_context.is_functionless_context= true;
+
+				auto state= SaveFunctionContextState( function_context );
+
+				with( &branch_value : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].deref() ).lock_imut().deref() )
+				{
+					branches_types[i].t= branch_value.t;
+					branches_types[i].value_type= branch_value.value_type;
+				}
+				self.DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
+
+				self.RestoreFunctionContextState( function_context, state );
+				function_context.is_functionless_context= prev_is_functionless_context;
+			} );
 	}
 
 	auto& branches_types_imut = branches_types;
@@ -1007,73 +1016,74 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	for( auto mut i= 0s; i < 2s; ++i )
 	{
 		function_context.references_graph= references_graph_before;
+
+		if( !function_context.is_functionless_context )
 		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-			if( !function_context.is_functionless_context )
+			unsafe
 			{
-				unsafe
-				{
-					LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
-					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
-				}
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
 			}
-
-			var Synt::Expression& branch_expr= ternary_operator.branches[i].deref();
-			var VariablePtr branch_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch_expr );
-			var VariableLite branch_result= branch_result_ptr.lock_imut().deref();
-
-			branches_constexpr_values[i]= branch_result.constexpr_value;
-
-			function_context.references_graph.TryAddInnerLinks( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
-
-			if( value_type == ValueType::Value )
-			{
-				if( t != void_type_ )
-				{
-					if( branch_result.value_type == ValueType::Value )
-					{
-						function_context.references_graph.MoveNode( branch_result_ptr );
-
-						if( !function_context.is_functionless_context )
-						{
-							if( branch_result.location == Variable::Location::Pointer )
-							{
-								CopyBytes( llvm_value, branch_result.llvm_value, t, function_context );
-								CreateLifetimeEnd( function_context, branch_result.llvm_value );
-							}
-							else
-							{
-								CreateTypedStore( function_context, t, branch_result.llvm_value, llvm_value );
-							}
-						}
-					}
-					else
-					{
-						if( !t.IsCopyConstructible() )
-						{
-							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, ternary_operator.src_loc, t )
-						}
-						else if( t.IsAbstract() )
-						{
-							REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, ternary_operator.src_loc, t )
-						}
-						else if( !function_context.is_functionless_context )
-						{
-							BuildCopyConstructorPart( names_scope, function_context, llvm_value, branch_result.llvm_value, t, ternary_operator.src_loc );
-						}
-					}
-				}
-			}
-			else
-			{
-				branches_reference_values[i]= branch_result.llvm_value;
-				function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
-			}
-
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(branch_expr) );
 		}
+
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				var Synt::Expression& branch_expr= ternary_operator.branches[i].deref();
+				var VariablePtr branch_result_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, branch_expr );
+				var VariableLite branch_result= branch_result_ptr.lock_imut().deref();
+
+				branches_constexpr_values[i]= branch_result.constexpr_value;
+
+				function_context.references_graph.TryAddInnerLinks( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
+
+				if( value_type == ValueType::Value )
+				{
+					if( t != self.void_type_ )
+					{
+						if( branch_result.value_type == ValueType::Value )
+						{
+							function_context.references_graph.MoveNode( branch_result_ptr );
+
+							if( !function_context.is_functionless_context )
+							{
+								if( branch_result.location == Variable::Location::Pointer )
+								{
+									self.CopyBytes( llvm_value, branch_result.llvm_value, t, function_context );
+									self.CreateLifetimeEnd( function_context, branch_result.llvm_value );
+								}
+								else
+								{
+									self.CreateTypedStore( function_context, t, branch_result.llvm_value, llvm_value );
+								}
+							}
+						}
+						else
+						{
+							if( !t.IsCopyConstructible() )
+							{
+								REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, ternary_operator.src_loc, t )
+							}
+							else if( t.IsAbstract() )
+							{
+								REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, ternary_operator.src_loc, t )
+							}
+							else if( !function_context.is_functionless_context )
+							{
+								self.BuildCopyConstructorPart( names_scope, function_context, llvm_value, branch_result.llvm_value, t, ternary_operator.src_loc );
+							}
+						}
+					}
+				}
+				else
+				{
+					branches_reference_values[i]= branch_result.llvm_value;
+					function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
+				}
+
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(branch_expr) );
+			} );
 
 		if( !function_context.is_functionless_context )
 		{
@@ -1476,13 +1486,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	else if_var( &tuple_type : variable.t.GetTupleType() )
 	{
 		var ust::optional</VariableLite/> mut index_opt;
-		{ // Create new stack frame to prevent deletion of variable during index calculation.
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-			index_opt= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() ).lock_imut().deref();
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, indexation_operator.src_loc );
-		}
+		 // Create new stack frame to prevent deletion of variable during index calculation.
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				index_opt= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() ).lock_imut().deref();
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, indexation_operator.src_loc );
+			} );
 		var VariableLite& index= index_opt.try_deref();
 
 		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
@@ -2977,21 +2988,27 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	auto mut r_var_in_register= LLVMValueRef::Null;
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		with( &r_var: BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() ).lock_imut().deref() )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			if( r_var.t != bool_type_ )
+			with( &r_var : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() ).lock_imut().deref() )
 			{
-				REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, bool_type_, r_var.t )
-				return ErrorValue();
+				if( r_var.t != self.bool_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, self.bool_type_, r_var.t )
+				}
+				else
+				{
+					r_var_in_register= self.CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+				}
 			}
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, binary_operator.src_loc );
+		} );
 
-			r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-		}
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, binary_operator.src_loc );
+	if( !function_context.is_functionless_context && r_var_in_register == LLVMValueRef::Null )
+	{
+		return ErrorValue();
 	}
 
 	branches_references_graphs[1]= function_context.references_graph;
@@ -3062,32 +3079,32 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	var ust::vector</VariableTypeExtended/> mut args;
 
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		auto state= SaveFunctionContextState( function_context );
-
-		foreach( &in_arg : in_args )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
-			{
-				with( &arg: BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
-				{
-					var VariableTypeExtended mut f_arg{ .t(arg.t), .value_type= arg.value_type };
-					function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
-				}
-				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
-			}
-			args.push_back( function_context.args_preevaluation_cache[in_arg] );
-		}
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
 
-		RestoreFunctionContextState( function_context, state );
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
+			auto state= SaveFunctionContextState( function_context );
+
+			foreach( &in_arg : in_args )
+			{
+				if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
+				{
+					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
+					{
+						var VariableTypeExtended mut f_arg{ .t(arg.t), .value_type= arg.value_type };
+						function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
+					}
+					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+				}
+				args.push_back( function_context.args_preevaluation_cache[in_arg] );
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
 
 	auto& args_ref= args;
 
@@ -3444,28 +3461,28 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 	var VariableTypeExtended mut this_type{ .t(variable.t), .value_type= variable.value_type };
 	args.push_back( move(this_type) );
 
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		auto state= SaveFunctionContextState( function_context );
-
-		foreach( &in_arg : synt_args )
+	WithVariablesFrame(
+		function_context,
+		lambda[synt_args, &names_scope, &args, &src_loc]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			with( &arg: BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
-			{
-				var VariableTypeExtended mut type_extended{ .t(arg.t), .value_type= arg.value_type };
-				args.push_back( move(type_extended) );
-			}
-			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
-		}
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
 
-		RestoreFunctionContextState( function_context, state );
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
+			auto state= SaveFunctionContextState( function_context );
+
+			foreach( &in_arg : synt_args )
+			{
+				with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
+				{
+					var VariableTypeExtended mut type_extended{ .t(arg.t), .value_type= arg.value_type };
+					args.push_back( move(type_extended) );
+				}
+				self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
 	{
@@ -3506,41 +3523,41 @@ fn CodeBuilder::CallFunctionsSet(
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
 	var ust::vector</VariableTypeExtended/> mut args_evaluated;
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		auto state= SaveFunctionContextState( function_context );
-
-		if( !this_.empty() )
+	WithVariablesFrame(
+		function_context,
+		lambda[&this_, args, &names_scope, &args_evaluated, &src_loc]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			with( &thi : this_.try_lock_imut().deref() )
-			{
-				var VariableTypeExtended mut out_arg{ .t( thi.t ), .value_type= thi.value_type };
-				args_evaluated.push_back( move(out_arg) );
-			}
-		}
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
 
-		foreach( &arg : args )
-		{
-			if( function_context.args_preevaluation_cache.find( arg ).empty() )
+			auto state= SaveFunctionContextState( function_context );
+
+			if( !this_.empty() )
 			{
-				with( &arg_variable: BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
+				with( &thi : this_.try_lock_imut().deref() )
 				{
-					var VariableTypeExtended mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
-					function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
+					var VariableTypeExtended mut out_arg{ .t( thi.t ), .value_type= thi.value_type };
+					args_evaluated.push_back( move(out_arg) );
 				}
-				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
-			args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
-		}
 
-		RestoreFunctionContextState( function_context, state );
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
+			foreach( &arg : args )
+			{
+				if( function_context.args_preevaluation_cache.find( arg ).empty() )
+				{
+					with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
+					{
+						var VariableTypeExtended mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
+						function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
+					}
+					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+				}
+				args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
 
 	auto function_selected_opt=
 		GetOverloadedFunction(
@@ -4278,41 +4295,41 @@ fn CodeBuilder::ConvertVariable(
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
-	{
-		// Create temp variables storage for preventing of destruction of "arg".
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var Variable mut result_for_constructor_call
+	// Create temp variables storage for preventing of destruction of "arg".
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			.t= dst_type,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= llvm_value,
-			.name= "converted " + dst_type.ToString(),
-		};
-		var VariablePtr result_for_constructor_call_ptr= move(result_for_constructor_call).CreatePtr();
-		function_context.references_graph.AddNode( result_for_constructor_call_ptr );
-		function_context.references_graph.AddLink( result_ptr, result_for_constructor_call_ptr );
-		function_context.references_graph.TryAddInnerLinks( result_ptr, result_for_constructor_call_ptr, names_scope, src_loc );
+			var Variable mut result_for_constructor_call
+			{
+				.t= dst_type,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= llvm_value,
+				.name= "converted " + dst_type.ToString(),
+			};
+			var VariablePtr result_for_constructor_call_ptr= move(result_for_constructor_call).CreatePtr();
+			function_context.references_graph.AddNode( result_for_constructor_call_ptr );
+			function_context.references_graph.AddLink( result_ptr, result_for_constructor_call_ptr );
+			function_context.references_graph.TryAddInnerLinks( result_ptr, result_for_constructor_call_ptr, names_scope, src_loc );
 
-		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( conversion_constructor_ );
+			var LLVMValueRef llvm_function= self.EnsureLLVMFunctionCreated( conversion_constructor_ );
 
-		DoCallFunction(
-			names_scope,
-			function_context,
-			conversion_constructor_.t,
-			llvm_function,
-			false, // Can't call for now constructors as constexpr functions.
-			ust::make_array( result_for_constructor_call_ptr, src ),
-			ust::empty_range,
-			ArgsEvaluationOrder::Direct,
-			src_loc );
+			self.DoCallFunction(
+				names_scope,
+				function_context,
+				conversion_constructor_.t,
+				llvm_function,
+				false, // Can't call for now constructors as constexpr functions.
+				ust::make_array( result_for_constructor_call_ptr, src ),
+				ust::empty_range,
+				ArgsEvaluationOrder::Direct,
+				src_loc );
 
-		function_context.references_graph.RemoveNode( result_for_constructor_call_ptr );
+			function_context.references_graph.RemoveNode( result_for_constructor_call_ptr );
 
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
-	}
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		} );
 
 	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source, if needed.
 

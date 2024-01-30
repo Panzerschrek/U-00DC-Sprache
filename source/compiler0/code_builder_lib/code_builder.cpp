@@ -1805,6 +1805,15 @@ void CodeBuilder::BuildFuncCode(
 	{
 		SetupVirtualTablePointers( function_context.this_->llvm_value, *base_class, function_context );
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
+
+		// Do not allow to access "this" in destructors of structs with mutable references inside.
+		// Allow only accessing separate fields.
+		// This is needed in order to prevent invalidation of possible derived references in destructor calls.
+		if( function_context.this_ != nullptr && function_context.this_->type.ContainsMutableReferences() )
+		{
+			function_context.whole_this_is_unavailable= true;
+			function_context.base_initialized= true;
+		}
 	}
 
 	// Do not create separate namespace for function root block, reuse namespace of args.

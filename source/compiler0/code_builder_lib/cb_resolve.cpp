@@ -77,6 +77,12 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 			REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), name_lookup.src_loc, Keyword( Keywords::base_ ) );
 			return ErrorValue();
 		}
+		if( function_context.destructor_end_block != nullptr && function_context.this_->type.ContainsMutableReferences() )
+		{
+			// Forbid accessing "base" in destructors of types with mutable references inside, since it's possible to access such mutable fields via a virtual call.
+			REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
+			return ErrorValue();
+		}
 		const Class& class_= *function_context.this_->type.GetClassType();
 		if( class_.base_class == nullptr )
 		{
@@ -318,6 +324,14 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 					return ErrorValue();
 				}
 			}
+		}
+		if( function_context.destructor_end_block != nullptr )
+		{
+			// Forbid accessing mutable references in destructor in order to avoid possible invalidation of still alive derived references.
+			if( field->is_reference && field->is_mutable )
+				REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names.GetErrors(), src_loc );
+			if( !field->is_reference && field->type.ContainsMutableReferences() )
+				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names.GetErrors(), src_loc );
 		}
 		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, Keyword( Keywords::this_ ) );
