@@ -514,6 +514,37 @@ fn nomangle main() : i32
 			++i;
 		}
 	}
+	{ // "filter_map" method
+		var [ i32, 7 ] ints[ -3, 42, 87, -34, -76, 77, -11 ];
+		auto non_negative_floats=
+			IntRangeImut(ints)
+			.iter()
+			.filter_map(
+				lambda[]( i32& x ) : ust::optional</f32/>
+				{
+					if( x < 0 ) { return ust::null_optional; }
+					return f32(x);
+				} )
+			.collect</ ust::vector</f32/> />();
+		var [ f32, 3 ] expected_result[ 42.0f, 87.0f, 77.0f ];
+		halt if( non_negative_floats.range() != expected_result );
+	}
+	{ // "filter_map" method for references.
+		var[ IVec2, 4 ] vecs[ { .x= 34, .y= 0 }, { .x= -11, .y= 77 }, { .x= 83, .y= 9 }, { .x= -64, .y= -67 } ];
+		auto zero= 0;
+		auto non_negative_xs=
+			ust::random_access_range_imut</IVec2/>(vecs)
+			.iter()
+			.filter_map(
+				lambda[&zero]( IVec2& vec ) : ust::optional_ref_imut</i32/>
+				{
+					if( vec.x < zero ) { return ust::null_optional_ref; }
+					return ust::optional_ref_imut</i32/>(vec.x);
+				} )
+			.collect</ ust::vector</i32/> />();
+		var [ i32, 2 ] expected_result[ 34, 83 ];
+		halt if( non_negative_xs.range() != expected_result );
+	}
 
 	return 0;
 }
