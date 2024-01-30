@@ -249,20 +249,17 @@ private:
 	var size_type c_base_iterator0_tags_offset= 0s;
 	var size_type c_base_iterator1_tags_offset= c_base_iterator0_num_tags;
 
-	auto base0_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator0_num_tags />( c_base_iterator0_tags_offset );
-	auto base1_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator1_num_tags />( c_base_iterator1_tags_offset );
+	auto c_base0_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator0_num_tags />( c_base_iterator0_tags_offset );
+	auto c_base1_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator1_num_tags />( c_base_iterator1_tags_offset );
 
-	auto c_pollution_base_iterator0=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator0_num_tags />( 0u8, 1u8, c_base_iterator0_tags_offset );
-
-	auto c_pollution_base_iterator1=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator1_num_tags />( 0u8, 2u8, c_base_iterator1_tags_offset );
-
-	auto c_constructor_pollution= reference_notation::pollution::pollution_list_concat( c_pollution_base_iterator0, c_pollution_base_iterator1 );
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator0_num_tags />( 0u8, 1u8, c_base_iterator0_tags_offset ),
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator1_num_tags />( 0u8, 2u8, c_base_iterator1_tags_offset ) );
 
 private:
-	BaseIterator0 @(base0_iterator_tags) base_iterator0_;
-	BaseIterator1 @(base1_iterator_tags) base_iterator1_;
+	BaseIterator0 @(c_base0_iterator_tags) base_iterator0_;
+	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
 }
 
 template</type BaseIterator, type Func/>
@@ -304,23 +301,20 @@ private:
 	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
 	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
 
-	var size_type c_base_iterator_tags_offset= 0s;
-	var size_type c_func_tags_offset= c_base_iterator_num_tags;
+	var size_type c_c_base_iterator_tags_offset= 0s;
+	var size_type c_c_func_tags_offset= c_base_iterator_num_tags;
 
-	auto base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_base_iterator_tags_offset );
-	auto func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_func_tags_offset );
+	auto c_base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_c_base_iterator_tags_offset );
+	auto c_func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_c_func_tags_offset );
 
-	auto c_pollution_base_iterator=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_base_iterator_tags_offset );
-
-	auto c_pollution_func=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_func_tags_offset );
-
-	auto c_constructor_pollution= reference_notation::pollution::pollution_list_concat( c_pollution_base_iterator, c_pollution_func );
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_c_base_iterator_tags_offset ),
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_c_func_tags_offset ) );
 
 private:
-	BaseIterator @(base_iterator_tags) base_iterator_;
-	Func @(func_tags) func_;
+	BaseIterator @(c_base_iterator_tags) base_iterator_;
+	Func @(c_func_tags) func_;
 }
 
 template</type BaseIterator, type Func/>
@@ -366,23 +360,20 @@ private:
 	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
 	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
 
-	var size_type c_base_iterator_tags_offset= 0s;
-	var size_type c_func_tags_offset= c_base_iterator_num_tags;
+	var size_type c_c_base_iterator_tags_offset= 0s;
+	var size_type c_c_func_tags_offset= c_base_iterator_num_tags;
 
-	auto base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_base_iterator_tags_offset );
-	auto func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_func_tags_offset );
+	auto c_base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_c_base_iterator_tags_offset );
+	auto c_func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_c_func_tags_offset );
 
-	auto c_pollution_base_iterator=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_base_iterator_tags_offset );
-
-	auto c_pollution_func=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_func_tags_offset );
-
-	auto c_constructor_pollution= reference_notation::pollution::pollution_list_concat( c_pollution_base_iterator, c_pollution_func );
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_c_base_iterator_tags_offset ),
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_c_func_tags_offset ) );
 
 private:
-	BaseIterator @(base_iterator_tags) base_iterator_;
-	Func @(func_tags) func_;
+	BaseIterator @(c_base_iterator_tags) base_iterator_;
+	Func @(c_func_tags) func_;
 }
 
 template</type BaseIterator, type Func/>
@@ -451,23 +442,20 @@ private:
 	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
 	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
 
-	var size_type c_base_iterator_tags_offset= 0s;
-	var size_type c_func_tags_offset= c_base_iterator_num_tags;
+	var size_type c_c_base_iterator_tags_offset= 0s;
+	var size_type c_c_func_tags_offset= c_base_iterator_num_tags;
 
-	auto base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_base_iterator_tags_offset );
-	auto func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_func_tags_offset );
+	auto c_base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_c_base_iterator_tags_offset );
+	auto c_func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_c_func_tags_offset );
 
-	auto c_pollution_base_iterator=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_base_iterator_tags_offset );
-
-	auto c_pollution_func=
-		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_func_tags_offset );
-
-	auto c_constructor_pollution= reference_notation::pollution::pollution_list_concat( c_pollution_base_iterator, c_pollution_func );
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_c_base_iterator_tags_offset ),
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_c_func_tags_offset ) );
 
 private:
-	BaseIterator @(base_iterator_tags) base_iterator_;
-	Func @(func_tags) func_;
+	BaseIterator @(c_base_iterator_tags) base_iterator_;
+	Func @(c_func_tags) func_;
 }
 
 } // namespace iterator_impl
