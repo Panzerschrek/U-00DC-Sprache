@@ -545,6 +545,32 @@ fn nomangle main() : i32
 		var [ i32, 2 ] expected_result[ 34, 83 ];
 		halt if( non_negative_xs.range() != expected_result );
 	}
+	{ // "chain" method.
+		var [ i32, 3 ] ints0[ 11, 22, 33 ];
+		var [ i32, 4 ] ints1[ 44, 55, 66, 77 ];
+		auto ints_combined=
+			IntRangeImut(ints0)
+			.iter()
+			.chain( IntRangeImut(ints1).iter() )
+			.collect</ ust::vector</i32/> />();
+		var [ i32, 7 ] expected_result[ 11, 22, 33, 44, 55, 66, 77 ];
+		halt if( ints_combined.range() != expected_result );
+	}
+	{ // "chain" method for mutation.
+		var [ i32, 3 ] mut ints0[ 11, 22, 33 ];
+		var [ i32, 4 ] mut ints1[ 44, 55, 66, 77 ];
+		foreach ( &mut i : IntRangeMut(ints0).iter().chain( IntRangeMut(ints1).iter() ) )
+		{
+			i*= -2;
+		}
+		halt if( ints0[0] != -22 );
+		halt if( ints0[1] != -44 );
+		halt if( ints0[2] != -66 );
+		halt if( ints1[0] != -88 );
+		halt if( ints1[1] != -110 );
+		halt if( ints1[2] != -132 );
+		halt if( ints1[3] != -154 );
+	}
 
 	return 0;
 }

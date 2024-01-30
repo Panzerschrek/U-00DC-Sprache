@@ -148,6 +148,18 @@ public:
 	}
 
 public:
+	// Creates iterator that iterates first over first sequence, than over second sequence.
+	// Iterator return types must be the same.
+	template</type Iterator1/>
+	fn chain( byval mut this, Iterator1 mut iterator1 ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::chain_raw_iterator</ this_type, Iterator1 />(
+					move(this),
+					move(iterator1) ) );
+	}
+
 	// Creates iterator which filters elements using given function.
 	// Elements for which the given function returns "false" are skipped.
 	template</type Func/>
@@ -201,6 +213,57 @@ fn wrap_raw_iterator( T mut t ) : auto
 
 namespace iterator_impl
 {
+
+template</type BaseIterator0, type BaseIterator1/>
+class chain_raw_iterator
+{
+public:
+	fn constructor( BaseIterator0 mut base_iterator0, BaseIterator1 mut base_iterator1 ) @(c_constructor_pollution)
+		( base_iterator0_( move(base_iterator0) ), base_iterator1_( move(base_iterator1) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator0/>.is_copy_constructible && typeinfo</BaseIterator1/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator0/>.is_copy_assignable && typeinfo</BaseIterator1/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		auto mut next0= base_iterator0_.next();
+		if( !next0.empty() )
+		{
+			return move(next0);
+		}
+		return base_iterator1_.next();
+	}
+
+private:
+	type this_type= chain_raw_iterator</BaseIterator0, BaseIterator1/>;
+
+private:
+	var size_type c_base_iterator0_num_tags= typeinfo</BaseIterator0/>.reference_tag_count;
+	var size_type c_base_iterator1_num_tags= typeinfo</BaseIterator1/>.reference_tag_count;
+
+	var size_type c_base_iterator0_tags_offset= 0s;
+	var size_type c_base_iterator1_tags_offset= c_base_iterator0_num_tags;
+
+	auto base0_iterator_tags= get_sequential_field_tags</ c_base_iterator0_num_tags />( c_base_iterator0_tags_offset );
+	auto base1_iterator_tags= get_sequential_field_tags</ c_base_iterator1_num_tags />( c_base_iterator1_tags_offset );
+
+	auto c_pollution_base_iterator0=
+		get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset</ c_base_iterator0_num_tags />( 0u8, 1u8, c_base_iterator0_tags_offset );
+
+	auto c_pollution_base_iterator1=
+		get_pollution_of_arg_n_with_sequential_tags_of_arg_m_with_dst_offset</ c_base_iterator1_num_tags />( 0u8, 2u8, c_base_iterator1_tags_offset );
+
+	auto c_constructor_pollution= reference_pollution_concat( c_pollution_base_iterator0, c_pollution_base_iterator1 );
+
+private:
+	BaseIterator0 @(base0_iterator_tags) base_iterator0_;
+	BaseIterator1 @(base1_iterator_tags) base_iterator1_;
+}
 
 template</type BaseIterator, type Func/>
 class filter_raw_iterator
