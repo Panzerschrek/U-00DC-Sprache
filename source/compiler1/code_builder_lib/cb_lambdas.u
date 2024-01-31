@@ -1128,7 +1128,8 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 
 fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr
 {
-	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	auto lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
+	auto mut lock= lambda_preprocessing_context_ptr.try_lock_mut();
 	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
 
 	debug_assert( lambda_preprocessing_context.external_variables.exists( variable ) );
@@ -1221,10 +1222,20 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 
 	var LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
 
+	LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable );
+
+	return captured_variable.reference_node;
+}
+
+fn CodeBuilder::LambdaPreprocessingEnsureCapturedVariableRegistered(
+	FunctionContext &mut function_context,
+	LambdaPreprocessingContext::CapturedVariableData& captured_variable )
+{
 	function_context.references_graph.AddNodeIfNotExists( captured_variable.variable_node );
 	function_context.references_graph.AddNodeIfNotExists( captured_variable.reference_node );
 	function_context.references_graph.AddLink( captured_variable.variable_node, captured_variable.reference_node );
 
+	var size_type reference_tag_count( captured_variable.source_variable.lock_imut().deref().t.ReferenceTagCount() );
 	for( auto mut i= 0s; i < reference_tag_count; ++i )
 	{
 		function_context.references_graph.AddNodeIfNotExists( captured_variable.accessible_variables[i] );
@@ -1237,8 +1248,6 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 			captured_variable.variable_node.lock_imut().deref().inner_reference_nodes[i],
 			captured_variable.reference_node.lock_imut().deref().inner_reference_nodes[i] );
 	}
-
-	return captured_variable.reference_node;
 }
 
 fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(

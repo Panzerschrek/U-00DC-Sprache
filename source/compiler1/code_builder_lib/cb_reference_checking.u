@@ -372,12 +372,13 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::CollectReturnReferences( FunctionContext& function_context, VariablePtr& return_node )
+fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node )
 {
-	auto mut lock= function_context.reference_notation_deduction_context.try_lock_mut();
+	auto reference_notation_deduction_context_ptr= function_context.reference_notation_deduction_context;
+	auto mut lock= reference_notation_deduction_context_ptr.try_lock_mut();
 	var ReferenceNotationDeductionContext &mut reference_notation_deduction_context= lock.deref();
 
-	auto& lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
+	auto lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
 
 	foreach( &variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( return_node ) )
 	{
@@ -408,6 +409,7 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext& function_context, Vari
 			var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
 			foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 			{
+				LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable_pair.value() );
 				if( variable_node == captured_variable_pair.value().variable_node )
 				{
 					lambda_preprocessing_context.captured_variables_return_references.push_back( variable_node );
@@ -425,12 +427,13 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext& function_context, Vari
 	}
 }
 
-fn CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_context, VariablePtr& return_node )
+fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node )
 {
-	auto mut lock= function_context.reference_notation_deduction_context.try_lock_mut();
+	auto reference_notation_deduction_context_ptr= function_context.reference_notation_deduction_context;
+	auto mut lock= reference_notation_deduction_context_ptr.try_lock_mut();
 	var ReferenceNotationDeductionContext &mut reference_notation_deduction_context= lock.deref();
 
-	auto& lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
+	auto lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
 
 	with( &inner_reference_nodes : return_node.lock_imut().deref().inner_reference_nodes )
 	{
@@ -478,6 +481,7 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_context,
 
 					foreach( &captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 					{
+						LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable_pair.value() );
 						if( variable_node == captured_variable_pair.value().variable_node )
 						{
 							lambda_preprocessing_context.captured_variables_return_inner_references[i].push_back( variable_node );
@@ -497,14 +501,15 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_context,
 	}
 }
 
-fn CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
+fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context )
 {
-	auto mut lock= function_context.reference_notation_deduction_context.try_lock_mut();
+	auto reference_notation_deduction_context_ptr= function_context.reference_notation_deduction_context;
+	auto mut lock= reference_notation_deduction_context_ptr.try_lock_mut();
 	var ReferenceNotationDeductionContext &mut reference_notation_deduction_context= lock.deref();
 
-	auto& lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
+	auto lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
 
-	auto& function_type= function_context.function_type;
+	var FunctionType function_type= function_context.function_type;
 	auto& params= function_type.params;
 
 	// Process args destinations.
@@ -519,7 +524,7 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++tag_i )
 			{
 				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
-				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
+				foreach( &accessible_variable_node : cast_imut(function_context).references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
 					if( accessible_variable_node == function_context.args_inner_variable_nodes[param_i][tag_i] )
 					{
@@ -531,7 +536,7 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 					// Process args sources.
 					for( auto mut j= 0s; j < params.size(); ++j )
 					{
-						if( accessible_variable_node == function_context.args_nodes[j] )
+						if( accessible_variable_node == cast_imut(function_context).args_nodes[j] )
 						{
 							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 							src_param_reference= move(r);
@@ -604,12 +609,13 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 		return;
 	}
 
-	auto mut lambda_preprocessing_context_lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	auto mut lambda_preprocessing_context_lock= lambda_preprocessing_context_ptr.try_lock_mut();
 	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lambda_preprocessing_context_lock.deref();
 
 	// Process captured variables destinations.
 	foreach( &dst_captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
 	{
+		LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, dst_captured_variable_pair.value() );
 		var VariablePtr& captured_variable= dst_captured_variable_pair.value().reference_node;
 		with( &inner_reference_nodes : captured_variable.lock_imut().deref().inner_reference_nodes )
 		{
