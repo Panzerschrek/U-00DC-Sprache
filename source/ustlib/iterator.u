@@ -252,6 +252,15 @@ public: // Methods returning iterators.
 					move(func) ) );
 	}
 
+	// Skips first N elements (if has some) and returns remaining iterator.
+	// Complexity is linear.
+	fn skip( byval mut this, size_type n ) : auto
+	{
+		for( auto mut i= 0s; i < n && !impl_.next().empty(); ++i )
+		{}
+		return move(this);
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 
