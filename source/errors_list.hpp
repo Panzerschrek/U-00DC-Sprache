@@ -104,6 +104,8 @@ PROCESS_ERROR( FieldIsNotInitializedYet, "Field \"{0}\" is not initialized yet."
 
 // Destructors errors
 PROCESS_ERROR( ExplicitArgumentsInDestructor, "Explicit arguments in destructor." )
+PROCESS_ERROR( MutableReferenceFieldAccessInDestructor, "Accessing mutable reference field in destructor." )
+PROCESS_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, "Accessing field with mutable references inside in destructor." )
 
 // Methods errors.
 PROCESS_ERROR( ClassFieldAccessInStaticMethod, "Accessing field \"{0}\" in static method." )

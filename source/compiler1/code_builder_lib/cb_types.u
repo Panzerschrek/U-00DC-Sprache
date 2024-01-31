@@ -38,57 +38,58 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	var Type mut element_type= PrepareType( names_scope, function_context, array_type.element_type );
 
 	var u64 mut element_count(0);
-	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		auto state= SaveFunctionContextState( function_context );
-		with( &index_variable: BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count ).lock_imut().deref() )
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			if( index_variable.constexpr_value != LLVMValueRef::Null )
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+			with( &index_variable: self.BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count ).lock_imut().deref() )
 			{
+				if( index_variable.constexpr_value != LLVMValueRef::Null )
 				{
-					if_var( &fundamental_type : index_variable.t.GetFundamentalType() )
 					{
-						if( IsInteger( fundamental_type.fundamental_type ) )
+						if_var( &fundamental_type : index_variable.t.GetFundamentalType() )
 						{
-							if( IsSignedInteger( fundamental_type.fundamental_type ) )
+							if( IsInteger( fundamental_type.fundamental_type ) )
 							{
-								auto s= unsafe( LLVMConstIntGetSExtValue( index_variable.constexpr_value ) );
-								if( s >= 0i64 )
+								if( IsSignedInteger( fundamental_type.fundamental_type ) )
 								{
-									element_count= u64(s);
+									auto s= unsafe( LLVMConstIntGetSExtValue( index_variable.constexpr_value ) );
+									if( s >= 0i64 )
+									{
+										element_count= u64(s);
+									}
+									else
+									{
+										element_count= 0u64;
+										REPORT_ERROR( ArraySizeIsNegative, names_scope, array_type.src_loc  )
+									}
 								}
 								else
 								{
-									element_count= 0u64;
-									REPORT_ERROR( ArraySizeIsNegative, names_scope, array_type.src_loc  )
+									element_count= unsafe( LLVMConstIntGetZExtValue( index_variable.constexpr_value ) );
 								}
+								break label integer_check;
 							}
-							else
-							{
-								element_count= unsafe( LLVMConstIntGetZExtValue( index_variable.constexpr_value ) );
-							}
-							break label integer_check;
 						}
-					}
-					REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.src_loc )
+						REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.src_loc )
 
-				} label integer_check
+					} label integer_check
+				}
+				else
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.src_loc )
+				}
 			}
-			else
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.src_loc )
-			}
-		}
 
-		RestoreFunctionContextState( function_context, state );
+			RestoreFunctionContextState( function_context, state );
 
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
 
 	var ArrayType mut out_array_type
 	{

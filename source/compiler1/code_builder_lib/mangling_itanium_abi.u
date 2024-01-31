@@ -4,13 +4,16 @@ import "/string_conversions.u"
 import "/keywords.uh"
 import "mangling.uh"
 
+// Use this macro to add node into mangled name which is counted as substitution unit.
+// Termainal instructions in passed block are not allowed.
 ?macro <? ADD_NODE:block( ?mangler_state:ident ) ?b:block?>
 ->
 <?
 	{
-		var ManglerState::NodeHolder ??node( ?mangler_state );
-		auto &mut ?mangler_state= ??node.GetManglerState();
+		auto ??start= ?mangler_state.GetCurrentPos();
+		auto ??compressed_start= ?mangler_state.GetCurrentCompressedPos();
 		?b
+		?mangler_state.FinalizePart( ??start, ??compressed_start );
 	}
 ?>
 
@@ -178,30 +181,7 @@ public:
 	fn TakeResult( mut this ) : ust::string8;
 
 public:
-	class NodeHolder
-	{
-	public:
-		fn constructor( mut this, ManglerState & mut state ) @( ust::reference_notation::pollution::param0_param_1_reference )
-			( state_(state), start_= state_.GetCurrentPos(), compressed_start_= state_.GetCurrentCompressedPos() )
-		{}
-
-		fn destructor()
-		{
-			state_.FinalizePart( start_, compressed_start_ );
-		}
-
-		fn GetManglerState( this ) : ManglerState & mut @( ust::reference_notation::return_references::param0_inner_reference0 )
-		{
-			return state_;
-		}
-
-	private:
-		ManglerState &mut state_;
-		size_type imut start_;
-		size_type imut compressed_start_;
-	}
-
-private:
+	// For state management.
 	fn GetCurrentPos( this ) : size_type;
 	fn GetCurrentCompressedPos( this ) : size_type;
 	fn FinalizePart( mut this, size_type start, size_type compressed_start );
@@ -425,26 +405,30 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionT
 {
 	foreach( &param : params )
 	{
+		var bool mut is_void_param= false;
 		if( param.value_type == ValueType::Value )
 		{
 			if_var( &fundamental_type : param.t.GetFundamentalType() )
 			{
-				if( fundamental_type.fundamental_type == U_FundamentalType::void_ )
-				{
-					// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
-					// So, mark real "void: params with "const".
-					// Normaly we do not use "konst" prefix for value params, so, "void" type is single exception.
-					ADD_NODE( mangler_state )
-					{
-						mangler_state.Push( "K" );
-						EncodeTypeName( mangler_state, param.t );
-						continue;
-					}
-				}
+				is_void_param= fundamental_type.fundamental_type == U_FundamentalType::void_;
 			}
 		}
 
-		EncodeFunctionParam( mangler_state, param );
+		if( is_void_param )
+		{
+			// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
+			// So, mark real "void: params with "const".
+			// Normaly we do not use "konst" prefix for value params, so, "void" type is single exception.
+			ADD_NODE( mangler_state )
+			{
+				mangler_state.Push( "K" );
+				EncodeTypeName( mangler_state, param.t );
+			}
+		}
+		else
+		{
+			EncodeFunctionParam( mangler_state, param );
+		}
 	}
 
 	if( params.empty() )

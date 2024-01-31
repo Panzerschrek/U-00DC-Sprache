@@ -82,6 +82,16 @@ But if some unsafe code changes something, this code may work incorrectly.
 Correct immutability is also necessary for proper multithreaded functionality in order to guarantee that data, a mutable reference to which is passed into more than one thread, are not really changed - such change may break synchronization.
 
 
+Mutation of indirectly-accessible variables in destructors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In destructors of structs and classes, which contain mutable references inside, it isn't allowed to mutate source variables via these references.
+For safe code the compiler itself ensures this rule by forbidding mutable reference fields access in destructors.
+In unsafe code this rule must be also not violated, but the compiler can't check absence of such violation in all cases.
+
+Violation of the rule described above may lead to invalidation of references that are derived from the reference inside the struct/class, which may lead to undefined behavior.
+
+
 Thread-unsafe mutability
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

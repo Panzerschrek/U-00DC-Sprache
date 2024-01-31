@@ -131,7 +131,6 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	auto this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 
@@ -355,7 +354,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
@@ -539,7 +537,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
@@ -735,7 +732,6 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
 
@@ -914,15 +910,15 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	}
 	else if_var( &array_type : t.GetArrayType() )
 	{
-		CB_GENERATE_LOOP(
+		GenerateLoop(
 			function_context,
 			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
-				auto dst_element_value= CreateArrayElementGEP( function_context, array_type, dst, counter_value );
-				auto src_element_value= CreateArrayElementGEP( function_context, array_type, src, counter_value );
-				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
-			}
-		)
+				auto dst_element_value= self.CreateArrayElementGEP( function_context, array_type, dst, counter_value );
+				auto src_element_value= self.CreateArrayElementGEP( function_context, array_type, src, counter_value );
+				self.BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
+			} );
 	}
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
@@ -987,15 +983,15 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	}
 	else if_var( &array_type : t.GetArrayType() )
 	{
-		CB_GENERATE_LOOP(
+		GenerateLoop(
 			function_context,
 			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
-				auto dst_element_value= CreateArrayElementGEP( function_context, array_type, dst, counter_value );
-				auto src_element_value= CreateArrayElementGEP( function_context, array_type, src, counter_value );
-				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
-			}
-		)
+				auto dst_element_value= self.CreateArrayElementGEP( function_context, array_type, dst, counter_value );
+				auto src_element_value= self.CreateArrayElementGEP( function_context, array_type, src, counter_value );
+				self.BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
+			} );
 	}
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
@@ -1085,15 +1081,15 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 	}
 	else if_var( &array_type : t.GetArrayType() )
 	{
-		CB_GENERATE_LOOP(
+		GenerateLoop(
 			function_context,
 			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
-				auto l= CreateArrayElementGEP( function_context, array_type, l_address, counter_value );
-				auto r= CreateArrayElementGEP( function_context, array_type, r_address, counter_value );
-				BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, array_type.element_type, false_basic_block, src_loc );
-			}
-		)
+				auto l= self.CreateArrayElementGEP( function_context, array_type, l_address, counter_value );
+				auto r= self.CreateArrayElementGEP( function_context, array_type, r_address, counter_value );
+				self.BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, array_type.element_type, false_basic_block, src_loc );
+			} );
 	}
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
@@ -1158,14 +1154,14 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 {
 	if_var( &array_type : t.GetArrayType() )
 	{
-		CB_GENERATE_LOOP(
+		GenerateLoop(
 			function_context,
 			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
-				auto element_value= CreateArrayElementGEP( function_context, array_type, value, counter_value );
-				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
-			}
-		)
+				auto element_value= self.CreateArrayElementGEP( function_context, array_type, value, counter_value );
+				self.BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
+			} );
 	}
 	else if_var( &tuple_type : t.GetTupleType() )
 	{

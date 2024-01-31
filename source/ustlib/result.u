@@ -84,11 +84,11 @@ public:
 	{
 		if( is_ok_ )
 		{
-			unsafe( call_destructor( deref_unchecked() ) );
+			unsafe( call_destructor( cast_ref_unsafe</OkT/>( storage_ ) ) );
 		}
 		else
 		{
-			unsafe( call_destructor( deref_error_unchecked() ) );
+			unsafe( call_destructor( cast_ref_unsafe</ErrorT/>( storage_ ) ) );
 		}
 	}
 

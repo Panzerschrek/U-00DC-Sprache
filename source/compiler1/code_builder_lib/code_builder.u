@@ -1138,18 +1138,15 @@ fn CodeBuilder::BuildFuncCode(
 
 	debug_info_builder_.try_deref().CreateFunctionInfo( func_variable );
 
-	var FunctionContext mut function_context_value(
+	var FunctionContext mut function_context(
 		llvm_context_,
 		llvm_function,
 		func_variable.t );
-	function_context_value.return_type_deduction_context= move(return_type_deduction_context);
-	function_context_value.reference_notation_deduction_context= move(reference_notation_deduction_context);
-	function_context_value.lambda_preprocessing_context= move(lambda_preprocessing_context);
+	function_context.return_type_deduction_context= move(return_type_deduction_context);
+	function_context.reference_notation_deduction_context= move(reference_notation_deduction_context);
+	function_context.lambda_preprocessing_context= move(lambda_preprocessing_context);
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
-
-	var VariablesFrameHolder args_variables_frame_hodler(function_context_value);
-	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// Ensure type completness even for reference args because of reference checking.
 	foreach( &param : cast_imut(func_variable).t.params )
@@ -1490,25 +1487,38 @@ fn CodeBuilder::BuildFuncCode(
 		auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 		if( is_constructor )
 		{
-			if( !body_syntax_element.constructor_initializer_list.empty() )
-			{
-				BuildConstructorInitialization(
-					args_names_scope_ptr,
-					function_context,
-					body_syntax_element.constructor_initializer_list.try_deref() );
-			}
-			else
-			{
-				var Synt::StructNamedInitializer dummy_initializer{ .src_loc= block.src_loc };
-				BuildConstructorInitialization(
-					args_names_scope_ptr,
-					function_context,
-					dummy_initializer );
-			}
+			WithVariablesFrame(
+				function_context,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					if( !body_syntax_element.constructor_initializer_list.empty() )
+					{
+						self.BuildConstructorInitialization(
+							args_names_scope_ptr,
+							function_context,
+							body_syntax_element.constructor_initializer_list.try_deref() );
+					}
+					else
+					{
+						var Synt::StructNamedInitializer dummy_initializer{ .src_loc= block.src_loc };
+						self.BuildConstructorInitialization(
+							args_names_scope_ptr,
+							function_context,
+							dummy_initializer );
+					}
+				} );
 		}
 		if( is_destructor )
 		{
 			function_context.destructor_end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] ) );
+
+			if( !function_context.this_.empty() && function_context.this_.try_lock_imut().deref().t.ContainsMutableReferences() )
+			{
+				// Do not allow to access "this" in destructors of structs with mutable references inside.
+				// Allow only accessing separate fields.
+				// This is needed in order to prevent invalidation of possible derived references in destructor calls.
+				function_context.whole_this_is_unavailable= true;
+			}
 		}
 
 		if( is_constructor || is_destructor )
@@ -3164,7 +3174,6 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 
 	function_context.is_functionless_context= true;
 
-	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 	return move(function_context);
 }
 

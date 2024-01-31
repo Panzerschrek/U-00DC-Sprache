@@ -1266,6 +1266,18 @@ def UnusedFunction_Test13():
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
+def UnusedFunction_Test14():
+	c_program_text= """
+		fn Bar();
+		fn Baz( (fn()) ptr );
+		fn nomangle Foo()
+		{
+			Baz( Bar ); // Ok - explicitely convert function to pointer.
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
 def UnusedTypeTemplate_Test0():
 	c_program_text= """
 		template</type T/> type Vec3= [ T, 3 ];

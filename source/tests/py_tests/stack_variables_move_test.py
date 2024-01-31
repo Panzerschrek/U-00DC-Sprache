@@ -37,13 +37,12 @@ def MoveOperatorTest0():
 	c_program_text= """
 		struct S
 		{
-			i32 &mut r;
-			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this, i32 & mut in_r ) @(pollution)
-			( r= in_r ){}
+			$(i32) r;
+			fn constructor( this, i32 & mut in_r )
+			( r= $<(in_r) ){}
 			fn destructor()
 			{
-				r= 666;
+				unsafe{  $>(r)= 666;  }
 			}
 		}
 

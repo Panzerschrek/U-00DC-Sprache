@@ -211,7 +211,7 @@ using ClassFieldPtr= std::shared_ptr<ClassField>;
 struct ThisOverloadedMethodsSet final
 {
 	VariablePtr this_;
-	OverloadedFunctionsSetConstPtr overloaded_methods_set;
+	OverloadedFunctionsSetPtr overloaded_methods_set;
 };
 
 struct StaticAssert

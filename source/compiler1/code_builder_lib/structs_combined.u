@@ -703,6 +703,37 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	halt; // Unreachable.
 }
 
+fn Type::ContainsMutableReferences( this ) : bool
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.ContainsMutableReferences();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( element_type.ContainsMutableReferences() )
+			{
+				return true;
+			}
+		}
+
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		foreach( inner_reference_kind : class_type.lock_imut().deref().inner_references )
+		{
+			if( inner_reference_kind == InnerReferenceKind::Mut )
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 {
 	if( this == dst )

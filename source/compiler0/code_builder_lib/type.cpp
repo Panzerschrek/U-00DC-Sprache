@@ -404,6 +404,31 @@ InnerReferenceKind Type::GetInnerReferenceKind( const size_t index ) const
 	return InnerReferenceKind::Imut;
 }
 
+bool Type::ContainsMutableReferences() const
+{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
+		return false;
+	else if( const auto class_type= GetClassType() )
+	{
+		for( const InnerReferenceKind kind : class_type->inner_references )
+			if( kind == InnerReferenceKind::Mut )
+				return true;
+	}
+	else if( const auto array_type= GetArrayType() )
+		return array_type->element_type.ContainsMutableReferences();
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		for( const Type& element : tuple_type->element_types )
+			if( element.ContainsMutableReferences() )
+				return true;
+	} else U_ASSERT(false);
+
+	return false;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	return std::visit( []( const auto& el ){ return GetLLVMTypeImpl( el ); }, something_ );

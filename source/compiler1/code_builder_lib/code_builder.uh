@@ -7,52 +7,6 @@ import "mangling.uh"
 import "references_graph.uh"
 import "tbaa_metadata_builder.uh"
 
-// Macro for loops generation.
-// TODO - use Function instead.
-// Use "counter_value" in loop block
-?macro <? CB_GENERATE_LOOP:block( ?function_context:expr, ?iteration_count:expr, ?b:block )?>
-->
-<?
-	if( ?function_context.is_functionless_context )
-	{
-		auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
-		?b
-	}
-	else if( ?iteration_count != 0u64 )
-	{
-		unsafe
-		{
-			auto zero_value= LLVMConstNull( fundamental_llvm_types_.int_ptr );
-			auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
-			auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, ?iteration_count, LLVMBool::False );
-
-			auto block_before_loop= LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ;
-			auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-			auto block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-
-			LLVMBuildBr( ?function_context.llvm_ir_builder, loop_block );
-
-			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, loop_block );
-			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, loop_block );
-
-			auto counter_value= LLVMBuildPhi( ?function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, "\0"[0] );
-			auto counter_value_plus_one= LLVMBuildAdd( ?function_context.llvm_ir_builder, counter_value, one_value, "\0"[0] );
-
-			safe{ ?b }
-
-			auto counter_test= LLVMBuildICmp( ?function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, "\0"[0] );
-			LLVMBuildCondBr( ?function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
-
-			var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];
-			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ block_before_loop, LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ];
-			LLVMAddIncoming( counter_value, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
-
-			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, block_after_loop );
-			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, block_after_loop );
-		}
-	}
-?>
-
 namespace U1
 {
 
@@ -95,6 +49,71 @@ public:
 	}
 
 	fn BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult;
+
+private:
+	template</type Func/>
+	fn GenerateLoop( mut this, FunctionContext &mut function_context, u64 iteration_count, Func mut func )
+	{
+		if( function_context.is_functionless_context )
+		{
+			auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
+			move(func)( this, function_context, counter_value );
+		}
+		else if( iteration_count != 0u64 )
+		{
+			unsafe
+			{
+				auto zero_value= LLVMConstNull( fundamental_llvm_types_.int_ptr );
+				auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
+				auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, iteration_count, LLVMBool::False );
+
+				auto block_before_loop= LLVMGetInsertBlock( function_context.llvm_ir_builder ) ;
+				auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+				auto block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+				LLVMBuildBr( function_context.llvm_ir_builder, loop_block );
+
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
+
+				auto counter_value= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, g_null_string );
+				auto counter_value_plus_one= LLVMBuildAdd( function_context.llvm_ir_builder, counter_value, one_value, g_null_string );
+
+				safe( move(func)( this, function_context, counter_value ) );
+
+				auto counter_test= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, g_null_string );
+				LLVMBuildCondBr( function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
+
+				var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];
+				var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ block_before_loop, LLVMGetInsertBlock( function_context.llvm_ir_builder ) ];
+				LLVMAddIncoming( counter_value, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop );
+			}
+		}
+		else
+		{
+			move(func);
+		}
+	}
+
+	template</type Func/>
+	fn WithVariablesFrame( mut this, FunctionContext &mut function_context, Func mut func ) : auto
+	{
+		function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
+
+		auto mut result= move(func)( this, function_context );
+
+		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
+		{
+			var VariablePtr variable= function_context.variables_frames.back()[i];
+			function_context.references_graph.RemoveNode( variable );
+		}
+		function_context.variables_frames.drop_back();
+
+		return move(result);
+	}
 
 private:
 	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
@@ -323,6 +342,7 @@ private:
 
 	fn BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::array_view_imut</Synt::BlockElement/>& elements ) : BlockElementBuildInfo;
 	fn BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
+	fn BuildBlockImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
 
 	fn BuildIfAlternative( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfAlternative& if_alternative ) : BlockElementBuildInfo;
 
@@ -330,25 +350,34 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo;
+	fn BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t );
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
+	fn BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
+	fn BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
+	fn BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo;
+	fn BuildAdditiveAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo;
+	fn BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SwitchOperator& switch_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LoopOperator& loop_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
+	fn BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo;
+	fn BuildCStyleForOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator );
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo;
+	fn BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;

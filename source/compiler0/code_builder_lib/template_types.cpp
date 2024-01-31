@@ -1,6 +1,7 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/Hashing.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 
 #include "template_types.hpp"
 
@@ -14,11 +15,9 @@ size_t TemplateArgHashImpl( const TemplateVariableArg& template_variable_arg )
 {
 	size_t hash= template_variable_arg.type.Hash();
 
-	if( template_variable_arg.constexpr_value != nullptr )
-	{
-		// TODO - handle large constants. For now hash only lower bits of constants.
-		hash= llvm::hash_combine( hash, size_t( template_variable_arg.constexpr_value->getUniqueInteger().getLimitedValue() ) );
-	}
+	U_ASSERT( template_variable_arg.constexpr_value != nullptr );
+	// TODO - handle large constants. For now hash only lower bits of constants.
+	hash= llvm::hash_combine( hash, size_t( template_variable_arg.constexpr_value->getUniqueInteger().getLimitedValue() ) );
 
 	return hash;
 }
@@ -37,10 +36,11 @@ size_t TemplateArgHash( const TemplateArg& arg )
 
 bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 {
-	if( l.constexpr_value != nullptr && r.constexpr_value != nullptr )
-		return l.type == r.type && l.constexpr_value->getUniqueInteger() == r.constexpr_value->getUniqueInteger();
-	else
-		return l.type == r.type;
+	U_ASSERT( l.constexpr_value != nullptr );
+	U_ASSERT( r.constexpr_value != nullptr );
+	return
+		l.type == r.type &&
+		l.constexpr_value->getUniqueInteger() == r.constexpr_value->getUniqueInteger();
 }
 
 size_t TemplateKey::Hash() const
