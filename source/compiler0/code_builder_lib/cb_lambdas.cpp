@@ -307,6 +307,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	FunctionType::ReturnReferences return_references;
 	FunctionType::ReturnInnerReferences return_inner_references;
 	FunctionType::ReferencesPollution references_pollution;
+	std::optional<Type> return_type;
 
 	// Run preprocessing.
 	{
@@ -434,6 +435,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 		else U_ASSERT(false);
 
+		ReturnTypeDeductionContext return_type_deduction_context;
+
 		{
 			FunctionVariable op_variable;
 			op_variable.syntax_element= &lambda.function;
@@ -447,7 +450,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				class_,
 				custom_captures_names_scope,
 				call_op_name,
-				nullptr,
+				lambda.function.type.IsAutoReturn() ? &return_type_deduction_context : nullptr,
 				&reference_notation_deduction_context,
 				&lambda_preprocessing_context );
 
@@ -456,6 +459,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		}
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
+
+		if( lambda.function.type.IsAutoReturn() )
+			return_type= return_type_deduction_context.return_type.value_or( void_type_ );
 
 		// Check if explicitly specified captures are not used.
 		// It's important to produce such error, becase later unused captures will NOT be actually captured.
@@ -664,11 +670,16 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	// Create () operator.
 	{
 		FunctionVariable op_variable;
-		op_variable.syntax_element= &lambda.function;
+
 		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.type.references_pollution= std::move(references_pollution);
+
+		if( return_type != std::nullopt )
+			op_variable.type.return_type= *return_type;
+
+		op_variable.syntax_element= &lambda.function;
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
 		op_variable.prototype_src_loc= op_variable.body_src_loc= lambda.function.src_loc;
@@ -776,6 +787,8 @@ FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
 	FunctionType function_type;
 
 	if( lambda_function_type.return_type == nullptr )
+		function_type.return_type= void_type_;
+	else if( lambda_function_type.IsAutoReturn() )
 		function_type.return_type= void_type_;
 	else
 		function_type.return_type= PrepareType( *lambda_function_type.return_type, names, function_context );

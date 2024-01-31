@@ -2401,3 +2401,72 @@ def ByValLambdaMove_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+
+			auto f=
+				lambda[=] () : auto // Deduced to "u32"
+				{
+					return 45u;
+				};
+			var u32 res= f();
+			halt if( res != 45u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambda_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 0;
+			fn constructor()= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		fn Foo()
+		{
+
+			auto f=
+				lambda[]( bool return_default ) : auto // Deduced to "S"
+				{
+					if( return_default ) { return S(); }
+					return S( 66 );
+				};
+			halt if( f( true ).x != 0 );
+			halt if( f( false ).x != 66 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambda_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 0;
+			fn constructor()= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		fn Foo()
+		{
+			auto def= 34;
+			auto f=
+				lambda[&]( i32& x ) : auto& // Deduced to "i32"
+				{
+					if( x <= 0 ) { return def; }
+					return x;
+				};
+			halt if( f( 55 ) != 55 );
+			halt if( f( -6 ) != 34 );
+			halt if( f( 13 ) != 13 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
