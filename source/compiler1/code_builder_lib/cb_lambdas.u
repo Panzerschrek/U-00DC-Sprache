@@ -388,6 +388,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	var FunctionType::ParamReferences mut return_references;
 	var FunctionType::ReturnInnerReferences mut return_inner_references;
 	var FunctionType::ReferencesPollution mut references_pollution;
+	var ust::optional</Type/> mut return_type;
 
 	// Run preprocessing.
 	{
@@ -535,6 +536,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		auto lambda_preprocessing_context_ptr= ust::make_shared_ptr( move(lambda_preprocessing_context) );
 		auto reference_notation_deduction_context_ptr= ust::make_shared_ptr( ReferenceNotationDeductionContext() );
 
+		var ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> mut return_type_deduction_context_ptr;
+		if( lambda_.function.deref().function_type.IsAutoReturn() )
+		{
+			return_type_deduction_context_ptr.reset( ReturnTypeDeductionContext() );
+		}
+
 		{
 			auto lambda_preprocessing_dummy_class= GetLambdaPreprocessingDummyClass( names_scope );
 
@@ -550,12 +557,17 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			BuildFuncCode(
 				custom_captures_names_scope,
 				function_variable,
-				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				return_type_deduction_context_ptr,
 				reference_notation_deduction_context_ptr,
 				lambda_preprocessing_context_ptr );
 
 			// Remove temp function.
 			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
+		}
+
+		if( !return_type_deduction_context_ptr.empty() )
+		{
+			return_type= return_type_deduction_context_ptr.try_lock_imut().deref().return_type;
 		}
 
 		with( mut lock : reference_notation_deduction_context_ptr.lock_mut() )
@@ -828,6 +840,11 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		function_type.return_inner_references= move(return_inner_references);
 		function_type.references_pollution= move(references_pollution);
 
+		if( !return_type.empty() )
+		{
+			function_type.return_type= return_type.try_take();
+		}
+
 		var FunctionVariable mut function_variable
 		{
 			.body_syntax_element= lambda_.function,
@@ -978,7 +995,7 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	{
 		.return_type(
 			select(
-				lambda_function_type.return_type.empty()
+				lambda_function_type.return_type.empty() || lambda_function_type.IsAutoReturn()
 					? Type( void_type_ )
 					: PrepareType( names_scope, function_context, lambda_function_type.return_type.try_deref() ) ) ),
 		.return_value_type= ValueType::Value,
