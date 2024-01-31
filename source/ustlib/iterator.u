@@ -465,7 +465,7 @@ class limit_raw_iterator
 	public:
 	fn constructor( mut this, BaseIterator mut base_iterator, size_type limit )
 		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
-		( base_iterator_= move(base_iterator), limit_(limit), counter_(0) )
+		( base_iterator_= move(base_iterator), limit_(limit) )
 	{}
 
 	// Iterator is copyable if base is copyable.
@@ -474,7 +474,7 @@ class limit_raw_iterator
 
 	fn next( mut this ) : auto
 	{
-		if( counter_ >= limit_ )
+		if( limit_ == 0s )
 		{
 			type ResT= typeof( base_iterator_.next() );
 			return ResT();
@@ -482,8 +482,7 @@ class limit_raw_iterator
 		auto mut next_res= base_iterator_.next();
 		if( !next_res.empty() )
 		{
-			++counter_;
-
+			--limit_;
 		}
 		return move(next_res);
 	}
@@ -496,7 +495,6 @@ private:
 private:
 	BaseIterator base_iterator_;
 	size_type limit_;
-	size_type counter_;
 }
 
 template</type BaseIterator, type Func/>
