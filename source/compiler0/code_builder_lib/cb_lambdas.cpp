@@ -301,6 +301,16 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	class_->generated_class_data= LambdaClassData{ {}, std::move(template_args) };
 	class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_ ) );
 
+	// Perform some checks.
+
+	// Do not allow to specify reference notation - reference affects are calculated automatically during lambda preprocessing.
+	if( lambda.function.type.references_pollution_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.references_pollution_expression ) );
+	if( lambda.function.type.return_value_reference_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_reference_expression ) );
+	if( lambda.function.type.return_value_inner_references_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_inner_references_expression ) );
+
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
 	bool has_preprocessing_errors= false;
@@ -441,7 +451,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			FunctionVariable op_variable;
 			op_variable.syntax_element= &lambda.function;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
-			op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names ) );
+			op_variable.type= PrepareFunctionType( names, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names ) );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
 			op_variable.is_this_call= true;
 
@@ -671,7 +681,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		FunctionVariable op_variable;
 
-		op_variable.type= PrepareLambdaCallOperatorType( names, function_context, lambda.function.type, class_ );
+		op_variable.type= PrepareFunctionType( names, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.type.references_pollution= std::move(references_pollution);
@@ -776,82 +786,6 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const ll
 	}
 
 	return name;
-}
-
-FunctionType CodeBuilder::PrepareLambdaCallOperatorType(
-	NamesScope& names,
-	FunctionContext& function_context,
-	const Synt::FunctionType& lambda_function_type,
-	const ClassPtr lambda_class_type )
-{
-	FunctionType function_type;
-
-	if( lambda_function_type.return_type == nullptr )
-		function_type.return_type= void_type_;
-	else if( lambda_function_type.IsAutoReturn() )
-		function_type.return_type= void_type_;
-	else
-		function_type.return_type= PrepareType( *lambda_function_type.return_type, names, function_context );
-
-	if( lambda_function_type.return_value_reference_modifier == ReferenceModifier::None )
-		function_type.return_value_type= ValueType::Value;
-	else
-		function_type.return_value_type= lambda_function_type.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-
-	const llvm::ArrayRef<Synt::FunctionParam> synt_params= lambda_function_type.params;
-	function_type.params.reserve( synt_params.size() );
-
-	// First param is always "this" of the lambda type.
-	U_ASSERT( !synt_params.empty() );
-	{
-		const Synt::FunctionParam& in_this_param= synt_params.front();
-		U_ASSERT( in_this_param.name == Keywords::this_ );
-
-		FunctionType::Param this_param;
-		this_param.type= lambda_class_type;
-
-		if( in_this_param.reference_modifier == Synt::ReferenceModifier::None )
-			this_param.value_type= ValueType::Value;
-		else if( in_this_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
-			this_param.value_type= ValueType::ReferenceMut;
-		else
-			this_param.value_type= ValueType::ReferenceImut;
-
-		function_type.params.push_back( std::move( this_param ) );
-	}
-
-	// Iterate over params skipping first "this".
-	for( const Synt::FunctionParam& in_param : synt_params.drop_front() )
-	{
-		if( IsKeyword( in_param.name ) )
-			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), in_param.src_loc );
-
-		FunctionType::Param out_param;
-		out_param.type= PrepareType( in_param.type, names, function_context );
-
-		if( in_param.reference_modifier == Synt::ReferenceModifier::None )
-			out_param.value_type= ValueType::Value;
-		else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
-			out_param.value_type= ValueType::ReferenceMut;
-		else
-			out_param.value_type= ValueType::ReferenceImut;
-
-
-		function_type.params.push_back( std::move(out_param) );
-	}
-
-	function_type.unsafe= lambda_function_type.unsafe;
-	function_type.calling_convention= GetLLVMCallingConvention( lambda_function_type.calling_convention, lambda_function_type.src_loc, names.GetErrors() );
-
-	// Do not allow to specify reference notation - reference affects are calculated automatically during lambda preprocessing.
-	if( lambda_function_type.references_pollution_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda_function_type.references_pollution_expression ) );
-	if( lambda_function_type.return_value_reference_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda_function_type.return_value_reference_expression ) );
-	if( lambda_function_type.return_value_inner_references_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda_function_type.return_value_inner_references_expression ) );
-
-	return function_type;
 }
 
 std::unordered_set<VariablePtr> CodeBuilder::CollectCurrentFunctionVariables( FunctionContext& function_context )
