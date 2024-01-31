@@ -800,6 +800,37 @@ fn nomangle main() : i32
 			halt if( c_objects[ size_type(i) ].x != 5 + i );
 		}
 	}
+	{ // "nth" method.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto el= IntRangeImut(ints).iter().nth(2s);
+		halt if( el.empty() );
+		halt if( el.try_deref() != 22 );
+	}
+	{ // "nth" method for zero inidex.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto el= IntRangeImut(ints).iter().nth(0s);
+		halt if( el.empty() );
+		halt if( el.try_deref() != 44 );
+	}
+	{ // "nth" method - found nothing.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto el= IntRangeImut(ints).iter().nth(200s);
+		halt if( !el.empty() );
+	}
+	{ // "nth" method - modify sequence.
+		var [ i32, 4 ] mut ints[ 5, 10, 15, 20 ];
+		IntRangeMut(ints).iter().nth(1s).try_deref()= 0;
+		halt if( ints[1] != 0 );
+	}
+	{ // "nth" method for values sequence.
+		auto el= CSequenceIteratorCreator().iter().nth(6s);
+		halt if( el.empty() );
+		halt if( el.try_deref().x != 6 );
+	}
+	{ // "nth" method for values sequence - out of range.
+		auto el= CSequenceIteratorCreator().iter().nth(100500s);
+		halt if( !el.empty() );
+	}
 
 	return 0;
 }

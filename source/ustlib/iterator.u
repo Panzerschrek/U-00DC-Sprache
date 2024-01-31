@@ -170,6 +170,23 @@ public: // Helper methods.
 		}
 	}
 
+	// Returns element with index "n" or nothing.
+	// Complexity is linear.
+	fn nth( byval mut this, size_type n ) : auto
+	{
+		// Skip first n - 1 elements, or return earlier, if iterator finishes.
+		for( auto mut i= 0s; i < n; ++i )
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return move(next_res);
+			}
+		}
+		// Return nth element (may be empty).
+		return impl_.next();
+	}
+
 	// Find first element using given function, which sould return bool.
 	// Return index of this element
 	template</type Func/>
