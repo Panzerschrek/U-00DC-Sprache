@@ -221,9 +221,9 @@ public:
 		return res;
 	}
 
-	fn iter( this ) : auto
+	fn iter( byval mut this ) : auto
 	{
-		return wrap_raw_iterator( raw_iterator(this) );
+		return wrap_raw_iterator( raw_iterator( move(this) ) );
 	}
 
 	// Access raw data.

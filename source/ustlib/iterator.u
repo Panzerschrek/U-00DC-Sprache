@@ -1,4 +1,8 @@
+import "composite.u"
+import "optional.u"
+import "optional_ref.u"
 import "reference_notation.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -18,18 +22,14 @@ public:
 	fn enable_if( typeinfo</RawIterator/>.is_copy_constructible ) constructor( mut this, this_type& other )= default;
 	op enable_if( typeinfo</RawIterator/>.is_copy_assignable ) =( mut this, this_type& other )= default;
 
+public: // Main methods.
+
 	// Main method of iterator classes.
 	// Usually it returns something like "optional" and "optional_ref".
 	// If an iterator reaches its end, "next" returns empty result.
 	// Some iterators may not have end at all.
 	// It should be safe to call this method if previous "next" call already returned empty result.
 	fn next( mut this ) : auto
-	{
-		return impl_.next();
-	}
-
-	// Consume this iterator and return first element (if it exists).
-	fn first( byval mut this ) : auto
 	{
 		return impl_.next();
 	}
@@ -42,6 +42,48 @@ public:
 		return move(this);
 	}
 
+public: // Helper methods.
+
+	// Consume the iterator and return "true" if result of the given predicate is true for all elements.
+	// May not return if iterator is infinite.
+	// Returns "true" for empty iterator.
+	template</type Func/>
+	fn all( byval mut this, Func mut func ) : bool
+	{
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return true;
+			}
+			if( !func( next_res.try_take() ) )
+			{
+				return false;
+			}
+		}
+	}
+
+	// Consume the iterator and return "true" if result of the given predicate is true for at leaso one element.
+	// May not return if iterator is infinite.
+	// Returns "false" for empty iterator.
+	template</type Func/>
+	fn any( byval mut this, Func mut func ) : bool
+	{
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return false;
+			}
+			if( func( next_res.try_take() ) )
+			{
+				return true;
+			}
+		}
+	}
+
 	// Consume the iterator and count number of elements.
 	// This method may not finish for infinite iterators.
 	// Overflows are also possible.
@@ -49,7 +91,7 @@ public:
 	fn count( byval mut this ) : size_type
 	{
 		var size_type mut c= 0s;
-		while( !next().empty() )
+		while( !impl_.next().empty() )
 		{
 			++c;
 		}
@@ -62,6 +104,178 @@ public:
 	fn collect( byval mut this ) : auto
 	{
 		return Container::from_iterator( move(this) );
+	}
+
+	// Find first element using given function, which sould return bool.
+	// May return empty result if element isn't found.
+	template</type Func/>
+	fn find( byval mut this, Func mut func ) : auto
+	{
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return move(next_res);
+			}
+			if( func( next_res.try_deref() ) )
+			{
+				return move(next_res);
+			}
+		}
+	}
+
+	// Consume this iterator and return first element (if it exists).
+	fn first( byval mut this ) : auto
+	{
+		return impl_.next();
+	}
+
+	// Consume the iterator and fold the sequence using initial value and giving binary function.
+	// Can't return if iterator is infinite.
+	template</type T, type Func/>
+	fn fold( byval mut this, T mut init, Func mut func ) : T
+	{
+		var T mut v= move(init);
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return v;
+			}
+			v= func( v, next_res.try_take() );
+		}
+	}
+
+	// Consume this iterator and return last element (if it exists).
+	// Complexity is linear.
+	// This method may not finish it sequence is infinite.
+	template<//> // HACK - make lazy, because this method doesn't work properly for mutable references. TODO - fix it.
+	fn last( byval mut this ) : auto
+	{
+		auto mut last_candidate= impl_.next();
+		if( last_candidate.empty() )
+		{
+			return move(last_candidate);
+		}
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return move(last_candidate);
+			}
+			last_candidate= move(next_res);
+		}
+	}
+
+	// Returns element with index "n" or nothing.
+	// Complexity is linear.
+	fn nth( byval mut this, size_type n ) : auto
+	{
+		// Skip first n - 1 elements, or return earlier, if iterator finishes.
+		for( auto mut i= 0s; i < n; ++i )
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return move(next_res);
+			}
+		}
+		// Return nth element (may be empty).
+		return impl_.next();
+	}
+
+	// Find first element using given function, which sould return bool.
+	// Return index of this element
+	template</type Func/>
+	fn position( byval mut this, Func mut func ) : ust::optional</size_type/>
+	{
+		var size_type mut p= 0s;
+		loop
+		{
+			auto mut next_res= impl_.next();
+			if( next_res.empty() )
+			{
+				return ust::null_optional;
+			}
+			if( func( next_res.try_take() ) )
+			{
+				return p;
+			}
+			++p;
+		}
+	}
+
+public: // Methods returning iterators.
+
+	// Creates iterator that iterates first over first sequence, than over second sequence.
+	// Iterator return types must be the same.
+	template</type Iterator1/>
+	fn chain( byval mut this, Iterator1 mut iterator1 ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::chain_raw_iterator</ this_type, Iterator1 />(
+					move(this),
+					move(iterator1) ) );
+	}
+
+	// Creates iterator which filters elements using given function.
+	// Elements for which the given function returns "false" are skipped.
+	template</type Func/>
+	fn filter( byval mut this, Func mut func ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::filter_raw_iterator</ this_type, Func />(
+					move(this),
+					move(func) ) );
+	}
+
+	// Creates iterator which both filters and maps.
+	// The given function must return "optional" or "optional_ref".
+	template</type Func/>
+	fn filter_map( byval mut this, Func mut func ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::filter_map_raw_iterator</ this_type, Func />(
+					move(this),
+					move(func) ) );
+	}
+
+	// Creates iterator which limits this iterator by given length.
+	// This method is lazy in order to avoid infinite template instantiations chain.
+	template<//>
+	fn limit( byval mut this, size_type l ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::limit_raw_iterator</ this_type />(
+					move(this),
+					l ) );
+	}
+
+	// Creates iterator which maps elements using given function.
+	template</type Func/>
+	fn map( byval mut this, Func mut func ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::map_raw_iterator</ this_type, Func />(
+					move(this),
+					move(func) ) );
+	}
+
+	// Skips first N elements (if has some) and returns remaining iterator.
+	// Complexity is linear.
+	fn skip( byval mut this, size_type n ) : auto
+	{
+		for( auto mut i= 0s; i < n && !impl_.next().empty(); ++i )
+		{}
+		return move(this);
 	}
 
 private:
@@ -79,5 +293,292 @@ fn wrap_raw_iterator( T mut t ) : auto
 {
 	return iterator</T/>( move(t) );
 }
+
+namespace iterator_impl
+{
+
+template</type BaseIterator0, type BaseIterator1/>
+class chain_raw_iterator
+{
+public:
+	fn constructor( BaseIterator0 mut base_iterator0, BaseIterator1 mut base_iterator1 ) @(c_constructor_pollution)
+		( base_iterator0_( move(base_iterator0) ), base_iterator1_( move(base_iterator1) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator0/>.is_copy_constructible && typeinfo</BaseIterator1/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator0/>.is_copy_assignable && typeinfo</BaseIterator1/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		auto mut next0= base_iterator0_.next();
+		if( !next0.empty() )
+		{
+			return move(next0);
+		}
+		return base_iterator1_.next();
+	}
+
+private:
+	type this_type= chain_raw_iterator</BaseIterator0, BaseIterator1/>;
+
+private:
+	var size_type c_base_iterator0_num_tags= typeinfo</BaseIterator0/>.reference_tag_count;
+	var size_type c_base_iterator1_num_tags= typeinfo</BaseIterator1/>.reference_tag_count;
+
+	var size_type c_base_iterator0_tags_offset= 0s;
+	var size_type c_base_iterator1_tags_offset= c_base_iterator0_num_tags;
+
+	auto c_base0_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator0_num_tags />( c_base_iterator0_tags_offset );
+	auto c_base1_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator1_num_tags />( c_base_iterator1_tags_offset );
+
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator0_num_tags />( 0u8, 1u8, c_base_iterator0_tags_offset ),
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator1_num_tags />( 0u8, 2u8, c_base_iterator1_tags_offset ) );
+
+private:
+	BaseIterator0 @(c_base0_iterator_tags) base_iterator0_;
+	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
+}
+
+template</type BaseIterator, type Func/>
+class filter_raw_iterator
+{
+public:
+	fn constructor( BaseIterator mut base_iterator, Func mut func ) @(c_constructor_pollution)
+		( base_iterator_( move(base_iterator) ), func_( move(func) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible && typeinfo</Func/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		loop
+		{
+			auto mut next_res= base_iterator_.next();
+			if( next_res.empty() )
+			{
+				return move(next_res);
+			}
+			if( func_( next_res.try_deref() ) )
+			{
+				return move(next_res);
+			}
+			// Func result is false - move to next element and perform check for it.
+		}
+	}
+
+private:
+	type this_type= filter_raw_iterator</BaseIterator, Func/>;
+
+private:
+	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
+	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
+
+	var size_type c_c_base_iterator_tags_offset= 0s;
+	var size_type c_c_func_tags_offset= c_base_iterator_num_tags;
+
+	auto c_base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_c_base_iterator_tags_offset );
+	auto c_func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_c_func_tags_offset );
+
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_c_base_iterator_tags_offset ),
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_c_func_tags_offset ) );
+
+private:
+	BaseIterator @(c_base_iterator_tags) base_iterator_;
+	Func @(c_func_tags) func_;
+}
+
+template</type BaseIterator, type Func/>
+class filter_map_raw_iterator
+{
+public:
+	fn constructor( BaseIterator mut base_iterator, Func mut func ) @(c_constructor_pollution)
+		( base_iterator_( move(base_iterator) ), func_( move(func) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible && typeinfo</Func/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		loop
+		{
+			auto mut next_res= base_iterator_.next();
+
+			type FuncResT= typeof( func_( next_res.try_take() ) );
+
+			if( next_res.empty() )
+			{
+				return FuncResT(); // If base iterator returns nothing, return nothing on form of "func_" type - empty "optional" or "optional_ref".
+			}
+
+			auto mut filter_map_result= func_( next_res.try_take() );
+			if( !filter_map_result.empty() )
+			{
+				return move(filter_map_result);
+			}
+		}
+	}
+
+private:
+	type this_type= filter_map_raw_iterator</BaseIterator, Func/>;
+
+private:
+	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
+	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
+
+	var size_type c_c_base_iterator_tags_offset= 0s;
+	var size_type c_c_func_tags_offset= c_base_iterator_num_tags;
+
+	auto c_base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_c_base_iterator_tags_offset );
+	auto c_func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_c_func_tags_offset );
+
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_c_base_iterator_tags_offset ),
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_c_func_tags_offset ) );
+
+private:
+	BaseIterator @(c_base_iterator_tags) base_iterator_;
+	Func @(c_func_tags) func_;
+}
+
+template</type BaseIterator/>
+class limit_raw_iterator
+{
+	public:
+	fn constructor( mut this, BaseIterator mut base_iterator, size_type limit )
+		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
+		( base_iterator_= move(base_iterator), limit_(limit) )
+	{}
+
+	// Iterator is copyable if base is copyable.
+	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible ) constructor( mut this, this_type& other )= default;
+	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable ) =( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		if( limit_ == 0s )
+		{
+			type ResT= typeof( base_iterator_.next() );
+			return ResT();
+		}
+		auto mut next_res= base_iterator_.next();
+		if( !next_res.empty() )
+		{
+			--limit_;
+		}
+		return move(next_res);
+	}
+
+private:
+	auto c_reference_tag_count= typeinfo</BaseIterator/>.reference_tag_count;
+
+	type this_type= limit_raw_iterator</BaseIterator/>;
+
+private:
+	BaseIterator base_iterator_;
+	size_type limit_;
+}
+
+template</type BaseIterator, type Func/>
+class map_raw_iterator
+{
+public:
+	fn constructor( BaseIterator mut base_iterator, Func mut func ) @(c_constructor_pollution)
+		( base_iterator_( move(base_iterator) ), func_( move(func) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible && typeinfo</Func/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	// The exact type of this method is determined via passed function.
+	// If it returns values - result container is "optional".
+	// If it returns immutable references - result container is "optional_ref_imut".
+	// If it returns mutable references - result container is "optional_ref_mut".
+	// Contained type is simpe type of function result.
+	fn next( mut this ) : auto
+	{
+		auto mut next_res= base_iterator_.next();
+
+		type FuncResT= typeof( func_( next_res.try_take() ) );
+
+		// Use helper functions which analyse typeinfo of given function.
+		// TODO - pass FuncResT in order to fetch correct overloaded function.
+		static_if( function_returns_value</Func/>() )
+		{
+			if( next_res.empty() )
+			{
+				return optional</FuncResT/>();
+			}
+			return optional</FuncResT/>( func_( next_res.try_take() ) );
+		}
+		else static_if( function_returns_immutable_reference</Func/>() )
+		{
+			if( next_res.empty() )
+			{
+				return optional_ref_imut</FuncResT/>();
+			}
+			return optional_ref_imut</FuncResT/>( func_( next_res.try_deref() ) );
+		}
+		else static_if( function_returns_mutable_reference</Func/>() )
+		{
+			if( next_res.empty() )
+			{
+				return optional_ref_mut</FuncResT/>();
+			}
+			return optional_ref_mut</FuncResT/>( func_( next_res.try_deref() ) );
+		}
+		else
+		{
+			static_assert( false, "Wrong function!" );
+			halt;
+		}
+	}
+
+private:
+	type this_type= map_raw_iterator</BaseIterator, Func/>;
+
+private:
+	var size_type c_base_iterator_num_tags= typeinfo</BaseIterator/>.reference_tag_count;
+	var size_type c_func_num_tags= typeinfo</Func/>.reference_tag_count;
+
+	var size_type c_c_base_iterator_tags_offset= 0s;
+	var size_type c_c_func_tags_offset= c_base_iterator_num_tags;
+
+	auto c_base_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator_num_tags />( c_c_base_iterator_tags_offset );
+	auto c_func_tags= reference_notation::field_tags::get_sequential_tags</ c_func_num_tags />( c_c_func_tags_offset );
+
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator_num_tags />( 0u8, 1u8, c_c_base_iterator_tags_offset ),
+			reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_func_num_tags />( 0u8, 2u8, c_c_func_tags_offset ) );
+
+private:
+	BaseIterator @(c_base_iterator_tags) base_iterator_;
+	Func @(c_func_tags) func_;
+}
+
+} // namespace iterator_impl
 
 } // namespace ust
