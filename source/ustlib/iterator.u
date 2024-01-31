@@ -52,7 +52,7 @@ public: // Helper methods.
 	{
 		loop
 		{
-			auto mut next_res= next();
+			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
 				return true;
@@ -72,7 +72,7 @@ public: // Helper methods.
 	{
 		loop
 		{
-			auto mut next_res= next();
+			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
 				return false;
@@ -91,7 +91,7 @@ public: // Helper methods.
 	fn count( byval mut this ) : size_type
 	{
 		var size_type mut c= 0s;
-		while( !next().empty() )
+		while( !impl_.next().empty() )
 		{
 			++c;
 		}
@@ -113,7 +113,7 @@ public: // Helper methods.
 	{
 		loop
 		{
-			auto mut next_res= next();
+			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
 				return move(next_res);
@@ -139,7 +139,7 @@ public: // Helper methods.
 		var T mut v= move(init);
 		loop
 		{
-			auto mut next_res= next();
+			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
 				return v;
@@ -195,7 +195,7 @@ public: // Helper methods.
 		var size_type mut p= 0s;
 		loop
 		{
-			auto mut next_res= next();
+			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
 				return ust::null_optional;
