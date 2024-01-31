@@ -856,7 +856,7 @@ def LambdaTypeinfo_Test4():
 	tests_lib.build_program( c_program_text )
 
 
-def LambdaReferencePoillution_Test0():
+def LambdaReferencePollution_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -874,7 +874,7 @@ def LambdaReferencePoillution_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def LambdaReferencePoillution_Test1():
+def LambdaReferencePollution_Test1():
 	c_program_text= """
 		struct R{ i32& x; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -892,7 +892,7 @@ def LambdaReferencePoillution_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def LambdaReferencePoillution_Test2():
+def LambdaReferencePollution_Test2():
 	c_program_text= """
 		struct R{ i32& x; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -910,7 +910,7 @@ def LambdaReferencePoillution_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def LambdaReferencePoillution_Test3():
+def LambdaReferencePollution_Test3():
 	c_program_text= """
 		struct R{ i32& x; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -2466,6 +2466,132 @@ def AutoReturnTypeLambda_Test2():
 			halt if( f( 55 ) != 55 );
 			halt if( f( -6 ) != 34 );
 			halt if( f( 13 ) != 13 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambda_Test3():
+	c_program_text= """
+		struct R
+		{
+			f32 &mut r;
+		}
+		fn Foo()
+		{
+			var f32 mut x= 0.0f;
+			var R mut r{ .r= x };
+			// Should deduce return references properly.
+			auto f=
+				lambda[r= move(r)]( f32 &mut arg ) : auto &mut // Deduced to "f32"
+				{
+					if( arg <= 0.0f ) { return r.r; }
+					return arg;
+				};
+			var f32 mut y= 7.0f;
+			f( y )= 34.0f;
+			halt if( y != 34.0f );
+			y= -1.0f;
+			f( y ) = 77.1f;
+			halt if( x != 77.1f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambda_Test4():
+	c_program_text= """
+		struct R
+		{
+			i32& r;
+		}
+		fn Foo()
+		{
+			var i32 x= 34;
+			// Should deduce return inner references properly.
+			auto f=
+				lambda[&]( i32& arg ) : auto // Deduced to "R"
+				{
+					var R mut r { .r= select( arg >= 0 ? arg : x ) };
+					return move(r);
+				};
+			halt if( f( 77 ).r != 77 );
+			halt if( f( -13 ).r != 34 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambdaReferencePollution_Test0():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			var R mut r{ .x= x };
+			// Should allow performing reference pollution for lambda params.
+			auto f= lambda( R &mut r, i32& arg ) : auto { MakePollution( r, arg ); };
+			var void v= f( r, y );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambdaReferencePollution_Test1():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 13, y= 0;
+			// Should allow performing reference pollution for lambda param by captured by value variable.
+			auto f= lambda[=]( R &mut r ) : auto& { MakePollution( r, y );  return r; };
+			var R mut r{ .x= x };
+			halt if( f(r).x != 13 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambdaReferencePollution_Test2():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0, y= 0;
+			// Should allow performing reference pollution for lambda param by captured by reference variable.
+			auto f= lambda[&]( R &mut r ) : auto { MakePollution( r, y ); return true; };
+			var R mut r{ .x= x };
+			halt if( !f(r) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReturnTypeLambdaReferencePollution_Test3():
+	c_program_text= """
+		struct R{ i32& x; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( R &mut r, i32& x ) @(pollution) {}
+		fn Foo()
+		{
+			var i32 x= 0, y= 0, z= 0;
+			var R r0{ .x= z };
+			// Should allow performing reference pollution for lambda param by inner reference of captured by value variable.
+			auto f= lambda[=]( R &mut r ) : auto { MakePollution( r, r0.x ); return 12345; };
+			var R mut r{ .x= x };
+			halt if( f(r) != 12345 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

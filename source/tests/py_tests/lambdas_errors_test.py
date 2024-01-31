@@ -1522,3 +1522,51 @@ def LambdaCapturedVariableMoveErrors_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 7 ) )
+
+
+def TypesMismtach_ForAutoReturnLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda( bool b ) : auto
+			{
+				if( b ) { return 17; }
+				return 13u; // Expected "i32", got "u32"
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
+
+
+def TypesMismtach_ForAutoReturnLambda_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 4 ] arr= zero_init;
+			lambda[&]( [ i32, 5 ]& arg ) : auto&
+			{
+				if( arg[0] == 0 ) { return arg; }
+				return arr; // Expected [ i32, 5 ], got [ i32, 4 ].
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 8 ) )
+
+
+def ExpectedReferenceValue_ForAutoReturnLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			lambda( ) : auto&
+			{
+				return false;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 6 ) )
