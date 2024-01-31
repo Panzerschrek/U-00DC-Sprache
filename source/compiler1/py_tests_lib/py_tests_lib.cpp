@@ -4,7 +4,6 @@
 #include <Python.h>
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/Support/Signals.h>
 #include <llvm/Support/ManagedStatic.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -471,6 +470,5 @@ struct PyModuleDef g_module=
 
 extern "C" U_EXTERN_VISIBILITY PyObject* PyInit_sprache_compiler_tests_py_lib()
 {
-	llvm::sys::PrintStackTraceOnErrorSignal("");
 	return PyModule_Create( &U::g_module );
 }

@@ -3,10 +3,6 @@
 
 #include <Python.h>
 
-#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/Support/Signals.h>
-#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
-
 #include "../code_builder_lib/code_builder.hpp"
 #include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
@@ -506,6 +502,5 @@ struct PyModuleDef g_module=
 
 extern "C" U_EXTERN_VISIBILITY PyObject* PyInit_sprache_compiler_tests_py_lib()
 {
-	llvm::sys::PrintStackTraceOnErrorSignal("");
 	return PyModule_Create( &U::g_module );
 }
