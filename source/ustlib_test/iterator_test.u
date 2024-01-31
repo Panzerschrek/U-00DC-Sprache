@@ -697,6 +697,58 @@ fn nomangle main() : i32
 		halt if( pos.empty() );
 		halt if( pos != 7s );
 	}
+	{ // "limit" method - limit is less than sequence size.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto limit_result=
+			IntRangeImut(ints)
+			.iter()
+			.limit(2s)
+			.collect</ ust::vector</i32/> />();
+		var [ i32, 2 ] expected_result[ 44, 33 ];
+		halt if( limit_result.range() != expected_result );
+	}
+	{ // "limit" method - limit is greater than sequence size.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto limit_result=
+			IntRangeImut(ints)
+			.iter()
+			.limit(200s)
+			.collect</ ust::vector</i32/> />();
+		var [ i32, 4 ] expected_result[ 44, 33, 22, 11 ];
+		halt if( limit_result.range() != expected_result );
+	}
+	{ // "limit" method - limit is zero.
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto limit_result=
+			IntRangeImut(ints)
+			.iter()
+			.limit(0s)
+			.collect</ ust::vector</i32/> />();
+		halt if( !limit_result.empty() );
+	}
+	{ // "limit" method - modify sequence.
+		var [ i32, 4 ] mut ints[ 5, 25, 125, 625 ];
+		foreach( &mut i : IntRangeMut(ints).iter().limit(3s) )
+		{
+			i*= -1;
+		}
+		halt if( ints[0] != -5 );
+		halt if( ints[1] != -25 );
+		halt if( ints[2] != -125 );
+		halt if( ints[3] != 625 );
+	}
+	{ // "limit" vector for values sequence.
+		auto c_objects=
+			CSequenceIteratorCreator()
+			.iter()
+			.limit(7s)
+			.collect</ ust::vector</C/> />();
+		halt if( c_objects.size() != 7s );
+		for( auto mut i= 0; i < 7; ++i )
+		{
+			halt if( c_objects[ size_type(i) ].x != i );
+		}
+	}
 
 	return 0;
 }
