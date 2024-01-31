@@ -7,7 +7,6 @@ import "../ustlib/string.u"
 import "../ustlib/vector.u"
 import "../ustlib/unordered_set.u"
 
-
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
 
@@ -314,7 +313,7 @@ fn nomangle main() : i32
 		var [ i32, 4 ] ints[ 88, 44, 22, 11 ];
 		halt if( IntRangeImut(ints).iter().last().try_deref() != 11 );
 	}
-	{ // ";ast" method for empty sequence - should return nothing.
+	{ // "last" method for empty sequence - should return nothing.
 		halt if( !IntRangeImut().iter().last().empty() );
 	}
 	{ // Count for sequence of known length.
@@ -514,7 +513,7 @@ fn nomangle main() : i32
 			++i;
 		}
 	}
-	{ // "filter_map" method
+	{ // "filter_map" method.
 		var [ i32, 7 ] ints[ -3, 42, 87, -34, -76, 77, -11 ];
 		auto non_negative_floats=
 			IntRangeImut(ints)
