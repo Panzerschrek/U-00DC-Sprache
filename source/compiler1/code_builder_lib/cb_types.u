@@ -110,13 +110,12 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 {
 	var TupleType mut out_tuple_type;
 
-	var ust::vector</ LLVMTypeRef /> mut element_llvm_types;
 	foreach( & element : tuple_type.elements )
 	{
-		var Type mut t= PrepareType( names_scope, function_context, element );
-		element_llvm_types.push_back( t.GetLLVMType() );
-		out_tuple_type.element_types.push_back( move(t) );
+		out_tuple_type.element_types.push_back( PrepareType( names_scope, function_context, element ) );
 	}
+
+	auto mut element_llvm_types= out_tuple_type.element_types.iter().map( Type::GetLLVMType ).collect</ ust::vector</ LLVMTypeRef /> />();
 
 	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 

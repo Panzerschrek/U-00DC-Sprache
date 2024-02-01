@@ -2401,10 +2401,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.deref().end_src_loc );
 			}
 
-			foreach( &mut break_refences_graph : function_context.loops_stack.back().break_references_graphs )
-			{
-				references_graphs_for_merge.push_back( take(break_refences_graph) );
-			}
+			references_graphs_for_merge.append( function_context.loops_stack.back().break_references_graphs );
 
 			function_context.loops_stack.pop_back();
 
