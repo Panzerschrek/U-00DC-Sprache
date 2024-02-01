@@ -7,6 +7,18 @@ namespace U
 namespace
 {
 
+// Special test for debugging.
+// Insert here some temporary test code in order to perform its debugging.
+U_TEST( BlaBlaTest )
+{
+	static const char c_program_text[]=
+	u8R"(
+
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( EmptyProgramTest0 )
 {
 	// Empty string is valid program.
