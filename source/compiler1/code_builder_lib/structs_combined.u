@@ -458,14 +458,7 @@ fn Type::IsDefaultConstructible( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsDefaultConstructible() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsDefaultConstructible );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -489,14 +482,7 @@ fn Type::IsCopyConstructible( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsCopyConstructible() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsCopyConstructible );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -520,14 +506,7 @@ fn Type::IsCopyAssignable( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsCopyAssignable() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsCopyAssignable );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -551,14 +530,7 @@ fn Type::IsEqualityComparable( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsEqualityComparable() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsEqualityComparable );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -580,14 +552,7 @@ fn Type::HaveDestructor( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( element_type.HaveDestructor() )
-			{
-				return true;
-			}
-		}
-		return false;
+		return tuple_type.element_types.iter().any( HaveDestructor );
 	}
 
 	return false;
@@ -608,14 +573,7 @@ fn Type::CanBeConstexpr( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.CanBeConstexpr() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( CanBeConstexpr );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -633,14 +591,7 @@ fn Type::IsAbstract( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( element_type.IsAbstract() )
-			{
-				return true;
-			}
-		}
-		return false;
+		return tuple_type.element_types.iter().any( IsAbstract );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -711,14 +662,7 @@ fn Type::ContainsMutableReferences( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( element_type.ContainsMutableReferences() )
-			{
-				return true;
-			}
-		}
-
+		return tuple_type.element_types.iter().any( ContainsMutableReferences );
 	}
 	if_var( &class_type : GetClassType() )
 	{
