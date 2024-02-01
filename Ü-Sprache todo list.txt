@@ -31,7 +31,6 @@ Templates:
 	such arguments.
 
 Lambdas:
-*) "auto" for return type
 *) Coroutine lambdas (async, generators)
 *) Lambas (or something similar) which create a coroutine object (async function, generator) directly
 *) Conversion of lambdas with zero captures into function pointers

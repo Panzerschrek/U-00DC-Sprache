@@ -134,7 +134,7 @@ def ReferenceNotationForAutoFunction_Test1():
 	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
 
 
-def ReferenceNotationForAutoFunction_Test1():
+def ReferenceNotationForAutoFunction_Test2():
 	c_program_text= """
 		struct S{ i32& r; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];

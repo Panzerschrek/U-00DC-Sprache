@@ -388,6 +388,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	var FunctionType::ParamReferences mut return_references;
 	var FunctionType::ReturnInnerReferences mut return_inner_references;
 	var FunctionType::ReferencesPollution mut references_pollution;
+	var ust::optional</Type/> mut return_type;
 
 	// Run preprocessing.
 	{
@@ -535,6 +536,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		auto lambda_preprocessing_context_ptr= ust::make_shared_ptr( move(lambda_preprocessing_context) );
 		auto reference_notation_deduction_context_ptr= ust::make_shared_ptr( ReferenceNotationDeductionContext() );
 
+		var ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> mut return_type_deduction_context_ptr;
+		if( lambda_.function.deref().function_type.IsAutoReturn() )
+		{
+			return_type_deduction_context_ptr.reset( ReturnTypeDeductionContext() );
+		}
+
 		{
 			auto lambda_preprocessing_dummy_class= GetLambdaPreprocessingDummyClass( names_scope );
 
@@ -550,12 +557,17 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			BuildFuncCode(
 				custom_captures_names_scope,
 				function_variable,
-				ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext />(),
+				return_type_deduction_context_ptr,
 				reference_notation_deduction_context_ptr,
 				lambda_preprocessing_context_ptr );
 
 			// Remove temp function.
 			unsafe( LLVMDeleteFunction( function_variable.llvm_function.lock_imut().deref().function ) );
+		}
+
+		if( !return_type_deduction_context_ptr.empty() )
+		{
+			return_type= return_type_deduction_context_ptr.try_lock_imut().deref().return_type;
 		}
 
 		with( mut lock : reference_notation_deduction_context_ptr.lock_mut() )
@@ -828,6 +840,11 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		function_type.return_inner_references= move(return_inner_references);
 		function_type.references_pollution= move(references_pollution);
 
+		if( !return_type.empty() )
+		{
+			function_type.return_type= return_type.try_take();
+		}
+
 		var FunctionVariable mut function_variable
 		{
 			.body_syntax_element= lambda_.function,
@@ -978,7 +995,7 @@ fn CodeBuilder::PrepareLambdaCallOperatorType(
 	{
 		.return_type(
 			select(
-				lambda_function_type.return_type.empty()
+				lambda_function_type.return_type.empty() || lambda_function_type.IsAutoReturn()
 					? Type( void_type_ )
 					: PrepareType( names_scope, function_context, lambda_function_type.return_type.try_deref() ) ) ),
 		.return_value_type= ValueType::Value,
@@ -1111,7 +1128,8 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 
 fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr
 {
-	auto mut lock= function_context.lambda_preprocessing_context.try_lock_mut();
+	auto lambda_preprocessing_context_ptr= function_context.lambda_preprocessing_context;
+	auto mut lock= lambda_preprocessing_context_ptr.try_lock_mut();
 	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lock.deref();
 
 	debug_assert( lambda_preprocessing_context.external_variables.exists( variable ) );
@@ -1204,10 +1222,20 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 
 	var LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
 
+	LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable );
+
+	return captured_variable.reference_node;
+}
+
+fn CodeBuilder::LambdaPreprocessingEnsureCapturedVariableRegistered(
+	FunctionContext &mut function_context,
+	LambdaPreprocessingContext::CapturedVariableData& captured_variable )
+{
 	function_context.references_graph.AddNodeIfNotExists( captured_variable.variable_node );
 	function_context.references_graph.AddNodeIfNotExists( captured_variable.reference_node );
 	function_context.references_graph.AddLink( captured_variable.variable_node, captured_variable.reference_node );
 
+	var size_type reference_tag_count( captured_variable.source_variable.lock_imut().deref().t.ReferenceTagCount() );
 	for( auto mut i= 0s; i < reference_tag_count; ++i )
 	{
 		function_context.references_graph.AddNodeIfNotExists( captured_variable.accessible_variables[i] );
@@ -1220,8 +1248,6 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 			captured_variable.variable_node.lock_imut().deref().inner_reference_nodes[i],
 			captured_variable.reference_node.lock_imut().deref().inner_reference_nodes[i] );
 	}
-
-	return captured_variable.reference_node;
 }
 
 fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
