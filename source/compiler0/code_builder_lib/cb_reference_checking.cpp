@@ -448,6 +448,8 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 		{
 			for( const auto& captured_variable_pair : lambda_preprocessing_context->captured_external_variables )
 			{
+				LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable_pair.second );
+
 				if( var_node == captured_variable_pair.second.variable_node )
 					lambda_preprocessing_context->captured_variables_return_references.insert( var_node );
 
@@ -501,6 +503,8 @@ void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_contex
 			{
 				for( const auto& captured_variable_pair : lambda_preprocessing_context->captured_external_variables )
 				{
+					LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable_pair.second );
+
 					if( var_node == captured_variable_pair.second.variable_node )
 						lambda_preprocessing_context->captured_variables_return_inner_references[i].insert( var_node );
 
@@ -556,6 +560,8 @@ void CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 				{
 					for( const auto& captured_variable_pair : lambda_preprocessing_context->captured_external_variables )
 					{
+						LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable_pair.second );
+
 						if( accesible_variable == captured_variable_pair.second.variable_node )
 							src_reference= accesible_variable;
 
@@ -591,6 +597,8 @@ void CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 	// Process captured variables destinations.
 	for( const auto& dst_captured_variable_pair : lambda_preprocessing_context->captured_external_variables )
 	{
+		LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, dst_captured_variable_pair.second );
+
 		const VariablePtr& captured_variable= dst_captured_variable_pair.second.reference_node;
 		for( size_t dst_tag= 0; dst_tag < captured_variable->inner_reference_nodes.size(); ++dst_tag )
 		{

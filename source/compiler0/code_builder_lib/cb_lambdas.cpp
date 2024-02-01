@@ -904,18 +904,26 @@ VariablePtr CodeBuilder::LambdaPreprocessingAccessExternalVariable(
 		}
 	}
 
+	LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, captured_variable );
+
+	return captured_variable.reference_node;
+}
+
+void CodeBuilder::LambdaPreprocessingEnsureCapturedVariableRegistered(
+	FunctionContext& function_context,
+	const LambdaPreprocessingContext::CapturedVariableData& captured_variable )
+{
 	function_context.variables_state.AddNodeIfNotExists( captured_variable.variable_node );
 	function_context.variables_state.AddNodeIfNotExists( captured_variable.reference_node );
 	function_context.variables_state.AddLink( captured_variable.variable_node, captured_variable.reference_node );
 
+	const auto reference_tag_count= captured_variable.source_variable->type.ReferenceTagCount();
 	for( size_t i= 0; i < reference_tag_count; ++i )
 	{
 		function_context.variables_state.AddNodeIfNotExists( captured_variable.accessible_variables[i] );
 		function_context.variables_state.AddLink( captured_variable.accessible_variables[i], captured_variable.variable_node->inner_reference_nodes[i] );
 		function_context.variables_state.AddLink( captured_variable.variable_node->inner_reference_nodes[i], captured_variable.reference_node->inner_reference_nodes[i] );
 	}
-
-	return captured_variable.reference_node;
 }
 
 Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
