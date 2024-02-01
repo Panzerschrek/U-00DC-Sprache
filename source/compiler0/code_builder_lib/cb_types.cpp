@@ -196,9 +196,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	const size_t num_params= 1;
 	if( coroutine_type_name.return_value_reference_expression != nullptr )
-		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, *coroutine_type_name.return_value_reference_expression, num_params );
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, function_context, *coroutine_type_name.return_value_reference_expression, num_params );
 	if( coroutine_type_name.return_value_inner_references_expression != nullptr )
-		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *coroutine_type_name.return_value_inner_references_expression, num_params );
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, function_context, *coroutine_type_name.return_value_inner_references_expression, num_params );
 
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
@@ -272,11 +272,11 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 
 	const size_t num_params= function_type.params.size();
 	if( function_type_name.references_pollution_expression != nullptr )
-		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, *function_type_name.references_pollution_expression, num_params );
+		function_type.references_pollution= EvaluateFunctionReferencePollution( names_scope, function_context, *function_type_name.references_pollution_expression, num_params );
 	if( function_type_name.return_value_reference_expression != nullptr )
-		function_type.return_references= EvaluateFunctionReturnReferences( names_scope, *function_type_name.return_value_reference_expression, num_params );
+		function_type.return_references= EvaluateFunctionReturnReferences( names_scope, function_context, *function_type_name.return_value_reference_expression, num_params );
 	if( function_type_name.return_value_inner_references_expression != nullptr )
-		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *function_type_name.return_value_inner_references_expression, num_params );
+		function_type.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, function_context, *function_type_name.return_value_inner_references_expression, num_params );
 
 	// Generate mapping of input references to output references if return reference notation is not specified.
 	// Assume that immutable return reference may point to any reference param and mutable return reference only to mutable reference params.

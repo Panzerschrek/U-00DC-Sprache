@@ -532,3 +532,41 @@ def ReferenceNotationViolatesImmutability_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 5 ) )
+
+
+def ReferenceNotationInLocalScope_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn Foo()
+		{
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			type fn_ptr= fn( S &mut s, i32& x ) @(pollution);
+			static_assert( typeinfo</fn_ptr/>.references_pollution == pollution );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceNotationInLocalScope_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+			type fn_ptr= fn( i32& x ) : i32 & @(return_references);
+			static_assert( typeinfo</fn_ptr/>.return_references == return_references );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceNotationInLocalScope_Test2():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn Foo()
+		{
+			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+			type fn_ptr= fn( i32& x ) : S @(return_inner_references);
+			static_assert( typeinfo</fn_ptr/>.return_inner_references == return_inner_references );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

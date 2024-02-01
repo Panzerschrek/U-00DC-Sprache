@@ -1237,10 +1237,10 @@ private:
 
 	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
 	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
-	FunctionType::ReferencesPollution EvaluateFunctionReferencePollution( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
-	FunctionType::ReturnReferences EvaluateFunctionReturnReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
-	FunctionType::ReturnInnerReferences EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, const Synt::Expression& expression, size_t num_params );
-	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression );
+	FunctionType::ReferencesPollution EvaluateFunctionReferencePollution( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, size_t num_params );
+	FunctionType::ReturnReferences EvaluateFunctionReturnReferences( NamesScope& names_scope,FunctionContext& function_context,  const Synt::Expression& expression, size_t num_params );
+	FunctionType::ReturnInnerReferences EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, size_t num_params );
+	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression );
 
 	using ReferenceNotationConstant= std::pair<Type, llvm::Constant*>;
 	ReferenceNotationConstant GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references );

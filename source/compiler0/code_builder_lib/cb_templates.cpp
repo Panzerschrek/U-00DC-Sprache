@@ -373,9 +373,9 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 	const size_t num_params= 1;
 	if( coroutine_type_name.return_value_reference_expression != nullptr )
-		coroutine_param.return_references= EvaluateFunctionReturnReferences( names_scope, *coroutine_type_name.return_value_reference_expression, num_params );
+		coroutine_param.return_references= EvaluateFunctionReturnReferences( names_scope, function_context, *coroutine_type_name.return_value_reference_expression, num_params );
 	if( coroutine_type_name.return_value_inner_references_expression != nullptr )
-		coroutine_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, *coroutine_type_name.return_value_inner_references_expression, num_params );
+		coroutine_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, function_context, *coroutine_type_name.return_value_inner_references_expression, num_params );
 
 	return coroutine_param;
 }

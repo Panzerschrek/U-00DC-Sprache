@@ -939,10 +939,10 @@ private:
 
 	fn EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>;
 	fn EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>;
-	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ReferencesPollution;
-	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
-	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, Synt::Expression& expression, size_type num_params ) : FunctionType::ReturnInnerReferences;
-	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : VariableLite;
+	fn EvaluateFunctionReferencePollution( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, size_type num_params ) : FunctionType::ReferencesPollution;
+	fn EvaluateFunctionReturnReferences( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, size_type num_params ) : FunctionType::ParamReferences;
+	fn EvaluateFunctionReturnInnerReferences( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, size_type num_params ) : FunctionType::ReturnInnerReferences;
+	fn EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariableLite;
 	fn NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references );
 	fn NormalizeReferencesPollution( FunctionType::ReferencesPollution &mut references_pollution );
 

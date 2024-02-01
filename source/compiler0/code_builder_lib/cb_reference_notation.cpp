@@ -46,7 +46,8 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 
 std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
 {
-	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
+	global_function_context_->args_preevaluation_cache.clear();
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const Type expected_type= FundamentalType( U_FundamentalType::char8_ );
@@ -73,7 +74,8 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 
 std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression )
 {
-	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
+	global_function_context_->args_preevaluation_cache.clear();
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
@@ -112,12 +114,13 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 
 FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollution(
 	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::Expression& expression,
 	const size_t num_params )
 {
 	FunctionType::ReferencesPollution result;
 
-	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
@@ -168,12 +171,13 @@ FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollutio
 
 FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::Expression& expression,
 	const size_t num_params )
 {
 	FunctionType::ReturnReferences result;
 
-	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
@@ -204,12 +208,13 @@ FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 
 FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::Expression& expression,
 	const size_t num_params )
 {
 	FunctionType::ReturnInnerReferences result;
 
-	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, expression );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const auto tuple_type= variable->type.GetTupleType();
@@ -250,12 +255,10 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 	return result;
 }
 
-VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, const Synt::Expression& expression )
+VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
 {
-	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-	const auto result= BuildExpressionCodeEnsureVariable( expression, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
-	return result;
+	const StackVariablesStorage dummy_stack_variables_storage( function_context );
+	return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 }
 
 CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references )
