@@ -5,9 +5,8 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</u8/>
+fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : ust::optional</u8/>
 {
-	auto mut function_context= CreateGlobalFunctionContext();
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
@@ -35,9 +34,8 @@ fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope,
 	}
 }
 
-fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>
+fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : ust::optional</ust::vector</u8/>/>
 {
-	auto mut function_context= CreateGlobalFunctionContext();
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
 	if_var( &array_type : variable.t.GetArrayType() )

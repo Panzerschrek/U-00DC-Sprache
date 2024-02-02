@@ -101,7 +101,6 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
 	{
-		auto mut global_function_context= CreateGlobalFunctionContext();
 
 		if( syntax_element.is_short_form )
 		{
@@ -114,6 +113,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		}
 		else
 		{
+			auto mut global_function_context= CreateGlobalFunctionContext();
 			foreach( &signature_param : syntax_element.signature_params )
 			{
 				signature_params.push_back(

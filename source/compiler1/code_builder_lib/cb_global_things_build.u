@@ -378,7 +378,7 @@ fn CodeBuilder::PrepareClassParentsList( mut this, ClassTypePtr& class_type )
 	var ust::vector</ClassType::Parent/> mut parents;
 
 	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
-	if( !syntax_element_ptr.empty() )
+	if( !syntax_element_ptr.empty() && !syntax_element_ptr.try_deref().parents.empty() )
 	{
 		auto& syntax_element= syntax_element_ptr.try_deref();
 
@@ -786,7 +786,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			if( field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty() )
 			{
-				if_var( &reference_tags : EvaluateReferenceFieldInnerTags( class_members, field.syntax_element.deref().inner_reference_tags_expression ) )
+				if_var( &reference_tags : EvaluateReferenceFieldInnerTags( class_members, global_function_context, field.syntax_element.deref().inner_reference_tags_expression ) )
 				{
 					if( !reference_tags.empty() )
 					{
@@ -843,7 +843,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				var ust::optional</u8/> mut reference_tag;
 				if( field.syntax_element.deref().reference_tag_expression.get</Synt::EmptyVariant/>().empty() )
 				{
-					reference_tag= EvaluateReferenceFieldTag( class_members, field.syntax_element.deref().reference_tag_expression );
+					reference_tag= EvaluateReferenceFieldTag( class_members, global_function_context, field.syntax_element.deref().reference_tag_expression );
 				}
 				else
 				{
@@ -884,7 +884,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				var ust::optional</ust::vector</u8/>/> mut reference_tags;
 				if( field.syntax_element.deref().inner_reference_tags_expression.get</Synt::EmptyVariant/>().empty() )
 				{
-					reference_tags= EvaluateReferenceFieldInnerTags( class_members, field.syntax_element.deref().inner_reference_tags_expression );
+					reference_tags= EvaluateReferenceFieldInnerTags( class_members, global_function_context, field.syntax_element.deref().inner_reference_tags_expression );
 				}
 				else
 				{
