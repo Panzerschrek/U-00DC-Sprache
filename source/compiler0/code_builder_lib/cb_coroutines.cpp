@@ -398,11 +398,11 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
-void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == nullptr )
 	{
-		REPORT_ERROR( YieldOutsideCoroutine, names.GetErrors(), src_loc );
+		REPORT_ERROR( YieldOutsideCoroutine, names_scope.GetErrors(), src_loc );
 		return;
 	}
 
@@ -415,9 +415,9 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 	{
 		// Allow empty "yield" for async functions.
 		if( std::get_if<Synt::EmptyVariant>(&expression) == nullptr )
-			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names.GetErrors(), src_loc );
+			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names_scope.GetErrors(), src_loc );
 
-		CoroutineSuspend( names, function_context, src_loc );
+		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
 
@@ -429,9 +429,9 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 	{
 		// Allow empty expression "yield" for void-return generators.
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, void_type_ );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, yield_type, void_type_ );
 
-		CoroutineSuspend( names, function_context, src_loc );
+		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
 
@@ -442,20 +442,20 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 		if( coroutine_type_description->return_value_type == ValueType::Value )
 		{
 			if( expression_result->type.ReferenceIsConvertibleTo( yield_type ) )
 			{}
-			else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names.GetErrors(), src_loc ) )
-				expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names, function_context, src_loc );
+			else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names_scope.GetErrors(), src_loc ) )
+				expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names_scope, function_context, src_loc );
 			else
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, expression_result->type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, yield_type, expression_result->type );
 				return;
 			}
 
-			CheckAsyncReturnInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+			CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -477,9 +477,9 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 			else // Copy composite value.
 			{
 				if( !expression_result->type.IsCopyConstructible() )
-					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, expression_result->type );
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), src_loc, expression_result->type );
 				else if( yield_type.IsAbstract() )
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, yield_type );
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), src_loc, yield_type );
 				else
 				{
 					BuildCopyConstructorPart(
@@ -492,23 +492,23 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 		}
 		else
 		{
-			if( !ReferenceIsConvertible( expression_result->type, yield_type, names.GetErrors(), src_loc ) )
+			if( !ReferenceIsConvertible( expression_result->type, yield_type, names_scope.GetErrors(), src_loc ) )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, expression_result->type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, yield_type, expression_result->type );
 				return;
 			}
 
 			if( expression_result->value_type == ValueType::Value )
 			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 				return;
 			}
 			if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
 			}
 
-			CheckAsyncReturnReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+			CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, *coroutine_type_description, expression_result, src_loc );
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 
@@ -517,14 +517,14 @@ void CodeBuilder::CoroutineYield( NamesScope& names, FunctionContext& function_c
 		}
 
 		// Destroy temporaries of expression evaluation frame.
-		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+		CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 	}
 
 	// Suspend generator. Now generator caller will receive filled promise.
-	CoroutineSuspend( names, function_context, src_loc );
+	CoroutineSuspend( names_scope, function_context, src_loc );
 }
 
-void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
@@ -539,7 +539,7 @@ void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_cont
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( expression_result->type == invalid_type_ )
 		return;
 
@@ -555,17 +555,17 @@ void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_cont
 	{
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
-		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names.GetErrors(), src_loc ) )
-			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names, function_context, src_loc );
+		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names_scope.GetErrors(), src_loc ) )
+			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names_scope, function_context, src_loc );
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return;
 		}
 
-		CheckAsyncReturnInnerReferencesAreAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
-		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
+		CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, *coroutine_type_description, expression_result, src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names_scope.GetErrors(), src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
 			expression_result->type.GetEnumType() != nullptr ||
@@ -587,9 +587,9 @@ void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_cont
 		else // Copy composite value.
 		{
 			if( !expression_result->type.IsCopyConstructible() )
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, expression_result->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), src_loc, expression_result->type );
 			else if( return_type.IsAbstract() )
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, return_type );
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), src_loc, return_type );
 			else
 			{
 				BuildCopyConstructorPart(
@@ -602,70 +602,70 @@ void CodeBuilder::AsyncReturn( NamesScope& names, FunctionContext& function_cont
 	}
 	else
 	{
-		if( !ReferenceIsConvertible( expression_result->type, return_type, names.GetErrors(), src_loc ) )
+		if( !ReferenceIsConvertible( expression_result->type, return_type, names_scope.GetErrors(), src_loc ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return;
 		}
 
 		if( expression_result->value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return;
 		}
 		if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
 		}
 
-		CheckAsyncReturnReferenceIsAllowed( names, function_context, *coroutine_type_description, expression_result, src_loc );
+		CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, *coroutine_type_description, expression_result, src_loc );
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
-		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), src_loc );
-		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddLink( expression_result, return_value_node, names_scope.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names_scope.GetErrors(), src_loc );
 
 		llvm::Value* const ref_casted= CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context );
 		CreateTypedReferenceStore( function_context, return_type, ref_casted, promise );
 	}
 
-	CallDestructorsBeforeReturn( names, function_context, src_loc );
-	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), src_loc );
 	function_context.variables_state.RemoveNode( return_value_node );
 
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
 }
 
-Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
-	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( async_func_variable->type == invalid_type_ )
 		return ErrorValue();
 
 	if( async_func_variable->value_type != ValueType::Value )
 	{
-		REPORT_ERROR( ImmediateValueExpectedInAwaitOperator, names.GetErrors(), src_loc );
+		REPORT_ERROR( ImmediateValueExpectedInAwaitOperator, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 
 	const Class* const class_type= async_func_variable->type.GetClassType();
 	if( class_type == nullptr )
 	{
-		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names.GetErrors(), src_loc );
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data );
 	if( coroutine_type_description == nullptr || coroutine_type_description->kind != CoroutineKind::AsyncFunc )
 	{
-		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names.GetErrors(), src_loc );
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 
 	if( function_context.coro_suspend_bb == nullptr )
 	{
-		REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+		REPORT_ERROR( AwaitOutsideAsyncFunction, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 	if( const auto function_class_type= function_context.function_type.return_type.GetClassType() )
@@ -675,7 +675,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 			if( function_coroutine_type_description->kind != CoroutineKind::AsyncFunc )
 			{
 				// Prevent usage of "await" in generators.
-				REPORT_ERROR( AwaitOutsideAsyncFunction, names.GetErrors(), src_loc );
+				REPORT_ERROR( AwaitOutsideAsyncFunction, names_scope.GetErrors(), src_loc );
 				return ErrorValue();
 			}
 		}
@@ -740,7 +740,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 		function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
 
 		// TODO - perform context save independent on suspend?
-		CoroutineSuspend( names, function_context, src_loc );
+		CoroutineSuspend( names_scope, function_context, src_loc );
 		function_context.llvm_ir_builder.CreateBr( loop_block ); // Continue to check if the coroutine is done.
 
 		// Done block.
@@ -784,7 +784,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 					function_context.variables_state.TryAddLink(
 						async_func_variable->inner_reference_nodes[param_reference.second],
 						result->inner_reference_nodes[i],
-						names.GetErrors(),
+						names_scope.GetErrors(),
 						src_loc );
 			}
 		}
@@ -796,7 +796,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names, FunctionContext& function_cont
 			U_ASSERT( param_reference.first == 0u );
 			U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
 			if( param_reference.second < async_func_variable->inner_reference_nodes.size() )
-				function_context.variables_state.TryAddLink( async_func_variable->inner_reference_nodes[param_reference.second], result, names.GetErrors(), src_loc );
+				function_context.variables_state.TryAddLink( async_func_variable->inner_reference_nodes[param_reference.second], result, names_scope.GetErrors(), src_loc );
 		}
 	}
 

@@ -248,11 +248,11 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	return std::move(res.first);
 }
 
-void CodeBuilder::CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
+void CodeBuilder::CheckReturnedReferenceIsAllowed( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
 {
 	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )
 		if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
 }
 
 bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node )
@@ -273,12 +273,12 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 	return false;
 }
 
-void CodeBuilder::CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
+void CodeBuilder::CheckReturnedInnerReferenceIsAllowed( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc )
 {
 	for( size_t i= 0; i < return_reference_node->inner_reference_nodes.size(); ++i )
 		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node->inner_reference_nodes[i] ) )
 			if( !IsReferenceAllowedForInnerReturn( function_context, var_node, i ) )
-				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
 }
 
 bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, const size_t index )
@@ -303,7 +303,7 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 }
 
 void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
 	const VariablePtr& node,
@@ -315,12 +315,12 @@ void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 
 		if( coroutine_inner_reference == std::nullopt ||
 			coroutine_type_description.return_references.count( *coroutine_inner_reference ) == 0 )
-			REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
 	}
 }
 
 void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
 	const VariablePtr& node,
@@ -335,7 +335,7 @@ void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 			if( coroutine_inner_reference == std::nullopt ||
 				i >= coroutine_type_description.return_inner_references.size() ||
 				coroutine_type_description.return_inner_references[i].count( *coroutine_inner_reference ) == 0 )
-				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
 		}
 	}
 }

@@ -189,14 +189,14 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 	return false;
 }
 
-bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
+bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
 {
 	if( std::get_if<Synt::NonSyncTagNone>( &non_sync_tag ) != nullptr )
 		return false;
 	if( std::get_if<Synt::NonSyncTagTrue>( &non_sync_tag ) != nullptr )
 		return true;
 	if( const auto expression_ptr= std::get_if< std::unique_ptr<const Synt::Expression> >( &non_sync_tag ) )
-		return EvaluateBoolConstantExpression( names, function_context, **expression_ptr );
+		return EvaluateBoolConstantExpression( names_scope, function_context, **expression_ptr );
 	U_ASSERT(false); // Unhandled non_sync tag kind.
 	return false;
 }

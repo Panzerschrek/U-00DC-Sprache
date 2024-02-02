@@ -218,8 +218,8 @@ private:
 	void EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
 	void EncodeFunctionParams( ManglerState& mangler_state, llvm::ArrayRef<FunctionType::Param> params ) const;
 	void EncodeTemplateArgs( ManglerState& mangler_state, llvm::ArrayRef<TemplateArg> template_args ) const;
-	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
-	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const;
+	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& names_scope ) const;
+	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& names_scope ) const;
 	void EncodeTemplateClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
 	void EncodeLambdaClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
 	void EncodeCoroutineClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
@@ -592,20 +592,20 @@ void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const llvm::A
 	mangler_state.PushElement( g_terminator );
 }
 
-void ManglerMSVC::EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const
+void ManglerMSVC::EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& names_scope ) const
 {
 	mangler_state.EncodeName( name );
-	EncodeNamespacePostfix_r( mangler_state, scope );
+	EncodeNamespacePostfix_r( mangler_state, names_scope );
 	// Finish list of name components.
 	mangler_state.PushElement(g_terminator );
 }
 
-void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const
+void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& names_scope ) const
 {
-	if( scope.GetParent() == nullptr ) // Root namespace.
+	if( names_scope.GetParent() == nullptr ) // Root namespace.
 		return;
 
-	if( const ClassPtr the_class= scope.GetClass() )
+	if( const ClassPtr the_class= names_scope.GetClass() )
 	{
 		if( std::get_if<Class::BaseTemplate>( &the_class->generated_class_data ) != nullptr )
 		{
@@ -624,9 +624,9 @@ void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const N
 		}
 	}
 
-	mangler_state.EncodeName( scope.GetThisNamespaceName() );
+	mangler_state.EncodeName( names_scope.GetThisNamespaceName() );
 
-	EncodeNamespacePostfix_r( mangler_state, *scope.GetParent() );
+	EncodeNamespacePostfix_r( mangler_state, *names_scope.GetParent() );
 }
 
 void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr the_class ) const

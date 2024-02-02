@@ -730,7 +730,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const OverloadedOperator op,
-	NamesScope& names,
+	NamesScope& names_scope,
 	const SrcLoc& src_loc )
 {
 	const std::string_view op_name= OverloadedOperatorToString( op );
@@ -747,7 +747,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		{
 			if( !EnsureTypeComplete( arg.type ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, arg.type );
+				REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), src_loc, arg.type );
 				return nullptr;
 			}
 
@@ -774,7 +774,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			PrepareFunctionsSetAndBuildConstexprBodies( *class_->members, *operators_set ); // Make sure functions set is complete.
 
 			const size_t prev_size= matched_functions.size();
-			FetchMatchedOverloadedFunctions( *operators_set, actual_args, false, names.GetErrors(), src_loc, true, matched_functions );
+			FetchMatchedOverloadedFunctions( *operators_set, actual_args, false, names_scope.GetErrors(), src_loc, true, matched_functions );
 			const size_t new_size= matched_functions.size();
 
 			for( size_t i= prev_size; i < new_size; ++i )
@@ -786,16 +786,16 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 	if( !matched_functions.empty() )
 	{
-		if( const auto item= SelectOverloadedFunction( actual_args, false, names.GetErrors(), src_loc, matched_functions ) )
+		if( const auto item= SelectOverloadedFunction( actual_args, false, names_scope.GetErrors(), src_loc, matched_functions ) )
 		{
-			const FunctionVariable* const func= FinalizeSelectedFunction( *item, names.GetErrors(), src_loc );
+			const FunctionVariable* const func= FinalizeSelectedFunction( *item, names_scope.GetErrors(), src_loc );
 			if( func != nullptr )
 			{
 				// Check access rights after function selection.
 				const auto& visibility= classes_visibility[ size_t( item - matched_functions.data() ) ];
 				const ClassPtr class_= visibility.first;
-				if( names.GetAccessFor( class_ ) < visibility.second )
-					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
+				if( names_scope.GetAccessFor( class_ ) < visibility.second )
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
 				return func;
 			}
 		}

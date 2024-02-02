@@ -6,9 +6,9 @@
 namespace U
 {
 
-Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
+Value CodeBuilder::BuildLambda( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
-	const ClassPtr lambda_class= PrepareLambdaClass( names, function_context, lambda );
+	const ClassPtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda );
 
 	const VariableMutPtr result=
 		Variable::Create(
@@ -46,15 +46,15 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 					if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 					{
 						// Simple capture - lookup variable for it by name.
-						if( const auto lookup_value= LookupName( names, capture.name, lambda.src_loc ).value )
+						if( const auto lookup_value= LookupName( names_scope, capture.name, lambda.src_loc ).value )
 							if( const auto variable= lookup_value->value.GetVariable() )
-								init_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+								init_value= InitializeLambdaField( names_scope, function_context, *field, variable, result, lambda.src_loc );
 					}
 					else
 					{
 						// Capture with expression specified.
-						const VariablePtr variable= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
-						init_value= InitializeLambdaField( names, function_context, *field, variable, result, lambda.src_loc );
+						const VariablePtr variable= BuildExpressionCodeEnsureVariable( capture.expression, names_scope, function_context );
+						init_value= InitializeLambdaField( names_scope, function_context, *field, variable, result, lambda.src_loc );
 					}
 
 					if( lambda_class->can_be_constexpr && init_value.second != nullptr )
@@ -93,11 +93,11 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 		// Initialize lambda fields in natural order.
 		for( const LambdaClassData::Capture& capture : lambda_class_data->captures )
 		{
-			if( const auto lookup_value= LookupName( names, capture.captured_variable_name, lambda.src_loc ).value )
+			if( const auto lookup_value= LookupName( names_scope, capture.captured_variable_name, lambda.src_loc ).value )
 			{
 				if( const auto variable= lookup_value->value.GetVariable() )
 				{
-					const auto constexpr_value= InitializeLambdaField( names, function_context, *capture.field, variable, result, lambda.src_loc ).second;
+					const auto constexpr_value= InitializeLambdaField( names_scope, function_context, *capture.field, variable, result, lambda.src_loc ).second;
 					if( lambda_class->can_be_constexpr && constexpr_value != nullptr )
 					{
 						constexpr_initializers[ capture.field->index ]= constexpr_value;
@@ -114,7 +114,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 	if( std::holds_alternative<Synt::Lambda::CaptureList>( lambda.capture ) )
 	{
 		// Destroy temporaries in lambda captures initializers.
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), lambda.src_loc );
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), lambda.src_loc );
 	}
 
 	RegisterTemporaryVariable( function_context, result );
@@ -122,7 +122,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names, FunctionContext& function_con
 }
 
 std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const ClassField& field,
 	const VariablePtr& variable,
@@ -137,18 +137,18 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 	{
 		if( variable->value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 			return std::make_pair( field_address, nullptr );
 		}
 		if( field.is_mutable && variable->value_type == ValueType::ReferenceImut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
 			return std::make_pair( field_address, nullptr );
 		}
 
 		// Link references.
 		U_ASSERT( field.reference_tag < result->inner_reference_nodes.size() );
-		function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ field.reference_tag ], names.GetErrors(), src_loc );
+		function_context.variables_state.TryAddLink( variable, result->inner_reference_nodes[ field.reference_tag ], names_scope.GetErrors(), src_loc );
 
 		CreateTypedReferenceStore( function_context, variable->type, variable->llvm_value, field_address );
 
@@ -173,7 +173,7 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 		{
 			const size_t dst_node_index= field.inner_reference_tags[i];
 			U_ASSERT( dst_node_index < result->inner_reference_nodes.size() );
-			function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names.GetErrors(), src_loc );
+			function_context.variables_state.TryAddLink( variable->inner_reference_nodes[i], result->inner_reference_nodes[ dst_node_index ], names_scope.GetErrors(), src_loc );
 		}
 
 		if( variable->type.GetFundamentalType() != nullptr||
@@ -199,7 +199,7 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 				}
 			}
 			else if( !variable->type.IsCopyConstructible() )
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), src_loc, variable->type );
 			else if( !function_context.is_functionless_context )
 				BuildCopyConstructorPart( field_address, variable->llvm_value, variable->type, function_context );
 		}
@@ -208,12 +208,12 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 	}
 }
 
-ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda )
+ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
 	// Use first named namespace as lambda class parent.
 	// We can't use namespace of function variables here, because it will be destroyed later.
 	// Usually this is a closest global scope that contains this function - some namespace, struct, class or a template args namespace.
-	NamesScope* const lambda_class_parent_scope= names.GetClosestNamedSpaceOrRoot();
+	NamesScope* const lambda_class_parent_scope= names_scope.GetClosestNamedSpaceOrRoot();
 
 	LambdaKey key;
 	key.parent_scope= lambda_class_parent_scope;
@@ -221,7 +221,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Extract tuple-for indices.
 	{
-		NamesScope* current= &names;
+		NamesScope* current= &names_scope;
 		while( current != nullptr )
 		{
 			if( const auto tuple_for_index= current->GetThisScopeValue( " tuple for index" ) )
@@ -305,11 +305,11 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Do not allow to specify reference notation - reference affects are calculated automatically during lambda preprocessing.
 	if( lambda.function.type.references_pollution_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.references_pollution_expression ) );
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.references_pollution_expression ) );
 	if( lambda.function.type.return_value_reference_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_reference_expression ) );
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_reference_expression ) );
 	if( lambda.function.type.return_value_inner_references_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_inner_references_expression ) );
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_inner_references_expression ) );
 
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
@@ -321,7 +321,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 
 	// Run preprocessing.
 	{
-		NamesScope custom_captures_names_scope( "", &names );
+		NamesScope custom_captures_names_scope( "", &names_scope );
 
 		ReferenceNotationDeductionContext reference_notation_deduction_context;
 
@@ -349,7 +349,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 			{
 				if( capture.completion_requested )
-					NameLookupCompleteImpl( names, capture.name );
+					NameLookupCompleteImpl( names_scope, capture.name );
 
 				if( std::holds_alternative<Synt::EmptyVariant>( capture.expression ) )
 				{
@@ -357,22 +357,22 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 					if( capture.name == Keywords::this_ || capture.name == Keywords::base_ )
 					{
 						if( function_context.this_ == nullptr )
-							REPORT_ERROR( ThisUnavailable, names.GetErrors(), capture.src_loc );
+							REPORT_ERROR( ThisUnavailable, names_scope.GetErrors(), capture.src_loc );
 						else
 						{
 							// Do not allow to capture "this" even via capture list.
-							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, capture.name );
+							REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), capture.src_loc, capture.name );
 						}
 					}
-					else if( const auto value= LookupName( names, capture.name, capture.src_loc ).value )
+					else if( const auto value= LookupName( names_scope, capture.name, capture.src_loc ).value )
 					{
 						CollectDefinition( *value, capture.src_loc );
 						if( const VariablePtr variable= value->value.GetVariable() )
 						{
 							if( explicit_captures.count( variable ) > 0 )
-								REPORT_ERROR( DuplicatedCapture, names.GetErrors(), capture.src_loc, capture.name );
+								REPORT_ERROR( DuplicatedCapture, names_scope.GetErrors(), capture.src_loc, capture.name );
 							else if( lambda_preprocessing_context.external_variables.count( variable ) == 0 )
-								REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, "non-local variable" );
+								REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), capture.src_loc, "non-local variable" );
 							else
 							{
 								LambdaPreprocessingContext::ExplicitCapture explicit_capture;
@@ -381,7 +381,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 							}
 						}
 						else
-							REPORT_ERROR( ExpectedVariable, names.GetErrors(), capture.src_loc, value->value.GetKindName() );
+							REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), capture.src_loc, value->value.GetKindName() );
 					}
 				}
 				else
@@ -389,7 +389,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 					// Capture with initializer expression.
 
 					if( IsKeyword( capture.name ) )
-						REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), lambda.src_loc );
+						REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), lambda.src_loc );
 
 					VariablePtr expr_result;
 					{
@@ -400,7 +400,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 							const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
 							// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
-							expr_result= BuildExpressionCodeEnsureVariable( capture.expression, names, function_context );
+							expr_result= BuildExpressionCodeEnsureVariable( capture.expression, names_scope, function_context );
 						}
 
 						RestoreFunctionContextState( function_context, state );
@@ -451,7 +451,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			FunctionVariable op_variable;
 			op_variable.syntax_element= &lambda.function;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
-			op_variable.type= PrepareFunctionType( names, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names ) );
+			op_variable.type= PrepareFunctionType( names_scope, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names_scope ) );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
 			op_variable.is_this_call= true;
 
@@ -480,7 +480,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 			for( const Synt::Lambda::CaptureListElement& capture : *capture_list )
 			{
 				if( lambda_preprocessing_context.captured_external_variables.count( capture.name ) == 0 )
-					REPORT_ERROR( UnusedCapture, names.GetErrors(), capture.src_loc, capture.name );
+					REPORT_ERROR( UnusedCapture, names_scope.GetErrors(), capture.src_loc, capture.name );
 			}
 		}
 
@@ -556,7 +556,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 				class_->inner_references.push_back( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 
 				if( reference_tag_cout > 0 )
-					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names.GetErrors(), lambda.src_loc, captured_variable.name );
+					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope.GetErrors(), lambda.src_loc, captured_variable.name );
 
 				// Captured by reference variable points to one of the inner reference tags of lambda this.
 				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, field->reference_tag );
@@ -681,7 +681,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	{
 		FunctionVariable op_variable;
 
-		op_variable.type= PrepareFunctionType( names, function_context, lambda.function.type, class_ );
+		op_variable.type= PrepareFunctionType( names_scope, function_context, lambda.function.type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.type.references_pollution= std::move(references_pollution);
@@ -698,7 +698,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 		op_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
 		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.
-			BuildFuncCode( op_variable, class_, names, call_op_name );
+			BuildFuncCode( op_variable, class_, names_scope, call_op_name );
 
 		auto functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( op_variable );
@@ -712,12 +712,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names, FunctionContext& fu
 	return class_;
 }
 
-ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names )
+ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names_scope )
 {
 	if( lambda_preprocessing_dummy_class_ != nullptr )
 		return lambda_preprocessing_dummy_class_.get();
 
-	auto class_ptr= std::make_unique<Class>( "_lambda_preprocessing_dummy", names.GetRoot() );
+	auto class_ptr= std::make_unique<Class>( "_lambda_preprocessing_dummy", names_scope.GetRoot() );
 	Class* const class_= class_ptr.get();
 	lambda_preprocessing_dummy_class_= std::move(class_ptr);
 
@@ -801,7 +801,7 @@ std::unordered_set<VariablePtr> CodeBuilder::CollectCurrentFunctionVariables( Fu
 }
 
 void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const VariablePtr& variable,
 	const std::string& name,
@@ -814,7 +814,7 @@ void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 		lambda_preprocessing_context.explicit_captures != std::nullopt &&
 		lambda_preprocessing_context.explicit_captures->count( variable ) == 0 )
 	{
-		REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
+		REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope.GetErrors(), src_loc, name );
 		lambda_preprocessing_context.has_preprocessing_errors= true;
 	}
 
@@ -824,7 +824,7 @@ void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	{
 		if( current_context->external_variables.count( variable ) > 0 )
 		{
-			REPORT_ERROR( VariableIsNotCapturedByLambda, names.GetErrors(), src_loc, name );
+			REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope.GetErrors(), src_loc, name );
 			function_context.variables_state.AddNode( variable ); // Prevent further errors.
 			lambda_preprocessing_context.has_preprocessing_errors= true;
 		}
@@ -927,7 +927,7 @@ void CodeBuilder::LambdaPreprocessingEnsureCapturedVariableRegistered(
 }
 
 Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const VariablePtr& variable,
 	const std::string& name,
@@ -940,17 +940,17 @@ Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 
 	if( resolved_variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.HaveOutgoingLinks( resolved_variable ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), src_loc, resolved_variable->name );
+		REPORT_ERROR( MovedVariableHaveReferences, names_scope.GetErrors(), src_loc, resolved_variable->name );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.NodeMoved( resolved_variable ) )
 	{
-		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, resolved_variable->name );
+		REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), src_loc, resolved_variable->name );
 		return ErrorValue();
 	}
 
@@ -964,7 +964,7 @@ Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 			resolved_variable->constexpr_value );
 	function_context.variables_state.AddNode( result );
 
-	function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names.GetErrors(), src_loc );
+	function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names_scope.GetErrors(), src_loc );
 
 	function_context.variables_state.MoveNode( resolved_variable );
 

@@ -1064,7 +1064,8 @@ void CodeBuilder::CopyBytes(
 llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	llvm::Constant* const l,
 	llvm::Constant* const r,
-	const Type& type, NamesScope& names,
+	const Type& type,
+	NamesScope& names_scope,
 	const SrcLoc& src_loc )
 {
 	llvm::Type* const llvm_type= type.GetLLVMType();
@@ -1089,7 +1090,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 						l->getAggregateElement( uint32_t(i) ),
 						r->getAggregateElement( uint32_t(i) ),
 						array_type->element_type,
-						names,
+						names_scope,
 						src_loc ) );
 
 		return res;
@@ -1108,7 +1109,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 						l->getAggregateElement( uint32_t(i) ),
 						r->getAggregateElement( uint32_t(i) ),
 						element_type,
-						names,
+						names_scope,
 						src_loc ) );
 		}
 
@@ -1143,7 +1144,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 			error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
 			error.src_loc= src_loc;
 			error.text= error_text;
-			names.GetErrors().push_back( std::move(error) );
+			names_scope.GetErrors().push_back( std::move(error) );
 		}
 		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			return evaluation_result.result_constant;

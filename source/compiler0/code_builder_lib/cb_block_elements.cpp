@@ -89,7 +89,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 } // namespace
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::IfAlternative& if_alterntative )
 {
@@ -98,21 +98,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 			[&]( const auto& t )
 			{
 				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				return BuildBlockElementImpl( names, function_context, t );
+				return BuildBlockElementImpl( names_scope, function_context, t );
 			},
 			if_alterntative );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Block& block )
 {
-	return BuildBlock( names, function_context, block );
+	return BuildBlock( names_scope, function_context, block );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ScopeBlock& block )
 {
@@ -132,10 +132,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( block.label != std::nullopt )
 	{
 		break_block= llvm::BasicBlock::Create( llvm_context_ );
-		AddLoopFrame( names, function_context, break_block, nullptr, block.label );
+		AddLoopFrame( names_scope, function_context, break_block, nullptr, block.label );
 	}
 
-	BlockBuildInfo block_build_info= BuildBlock( names, function_context, block );
+	BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, block );
 
 	if( break_block != nullptr )
 	{
@@ -143,7 +143,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !block_build_info.have_terminal_instruction_inside )
 			variables_state_for_merge.push_back( function_context.variables_state );
 
-		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), block.end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), block.end_src_loc );
 
 		function_context.loops_stack.pop_back();
 
@@ -172,36 +172,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::VariablesDeclaration& variables_declaration )
 {
-	const Type type= PrepareType( variables_declaration.type, names, function_context );
+	const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		// Full completeness required for both values and references..
 		if( !EnsureTypeComplete( type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), variables_declaration.src_loc, type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variables_declaration.src_loc, type );
 			continue;
 		}
 
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsAbstract() )
-			REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), variables_declaration.src_loc, type );
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), variables_declaration.src_loc, type );
 
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
-			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), variables_declaration.src_loc );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variables_declaration.src_loc );
 			continue;
 		}
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !type.CanBeConstexpr() )
 		{
-			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names.GetErrors(), variables_declaration.src_loc );
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variables_declaration.src_loc );
 			continue;
 		}
 
@@ -244,12 +244,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
-				function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names.GetErrors(), variable_declaration.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names_scope.GetErrors(), variable_declaration.src_loc );
 
 				variable->constexpr_value=
 					variable_declaration.initializer == nullptr
-						? ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names, function_context )
-						: ApplyInitializer( variable_for_initialization, names, function_context, *variable_declaration.initializer );
+						? ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names_scope, function_context )
+						: ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_declaration.initializer );
 
 				function_context.variables_state.RemoveNode( variable_for_initialization );
 			}
@@ -259,13 +259,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			prev_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
-			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), variable_declaration.src_loc );
+			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), variable_declaration.src_loc );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			if( variable_declaration.initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), variables_declaration.src_loc, variable_declaration.name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), variables_declaration.src_loc, variable_declaration.name );
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
@@ -277,7 +277,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				if( constructor_initializer->arguments.size() != 1u )
 				{
-					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc );
+					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->src_loc );
 					function_context.variables_state.RemoveNode( variable_reference );
 					continue;
 				}
@@ -285,28 +285,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 			else
 			{
-				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), variable_declaration.src_loc );
+				REPORT_ERROR( UnsupportedInitializerForReference, names_scope.GetErrors(), variable_declaration.src_loc );
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
-			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names, function_context );
-			if( !ReferenceIsConvertible( expression_result->type, variable_reference->type, names.GetErrors(), variables_declaration.src_loc ) )
+			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
+			if( !ReferenceIsConvertible( expression_result->type, variable_reference->type, names_scope.GetErrors(), variables_declaration.src_loc ) )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc, variable_reference->type, expression_result->type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variables_declaration.src_loc, variable_reference->type, expression_result->type );
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			if( expression_result->value_type == ValueType::Value )
 			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), variables_declaration.src_loc );
+				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variables_declaration.src_loc );
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 			if( expression_result->value_type == ValueType::ReferenceImut && variable_reference->value_type == ValueType::ReferenceMut )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), variable_declaration.src_loc );
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
@@ -318,8 +318,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			function_context.variables_state.TryAddLink( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
-			function_context.variables_state.TryAddInnerLinks( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
+			function_context.variables_state.TryAddLink( expression_result, variable_reference, names_scope.GetErrors(), variable_declaration.src_loc );
+			function_context.variables_state.TryAddInnerLinks( expression_result, variable_reference, names_scope.GetErrors(), variable_declaration.src_loc );
 		}
 		else U_ASSERT(false);
 
@@ -328,7 +328,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable_reference->constexpr_value == nullptr )
 		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), variable_declaration.src_loc );
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), variable_declaration.src_loc );
 			continue;
 		}
 
@@ -339,33 +339,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const bool force_referenced= variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
 
 		const NamesScopeValue* const inserted_value=
-			names.AddName( variable_declaration.name, NamesScopeValue( variable_reference, variable_declaration.src_loc, force_referenced ) );
+			names_scope.AddName( variable_declaration.name, NamesScopeValue( variable_reference, variable_declaration.src_loc, force_referenced ) );
 		if( inserted_value == nullptr )
 		{
-			REPORT_ERROR( Redefinition, names.GetErrors(), variables_declaration.src_loc, variable_declaration.name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variables_declaration.src_loc, variable_declaration.name );
 			continue;
 		}
 
 		// After lock of references we can call destructors.
-		CallDestructors( temp_variables_storage, names, function_context, variable_declaration.src_loc );
+		CallDestructors( temp_variables_storage, names_scope, function_context, variable_declaration.src_loc );
 	} // for variables
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::AutoVariableDeclaration& auto_variable_declaration )
 {
 	if( IsKeyword( auto_variable_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), auto_variable_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 
 	// Destruction frame for temporary variables of initializer expression.
 	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names, function_context );
+	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names_scope, function_context );
 	if( initializer_experrsion->type == invalid_type_ )
 		return BlockBuildInfo(); // Some error was generated before.
 
@@ -375,16 +375,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Full completeness required for value-variables and any constexpr variable.
 		if( !EnsureTypeComplete( initializer_experrsion->type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc, initializer_experrsion->type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration.src_loc, initializer_experrsion->type );
 			return BlockBuildInfo();
 		}
 	}
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference && initializer_experrsion->type.IsAbstract() )
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), auto_variable_declaration.src_loc, initializer_experrsion->type );
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), auto_variable_declaration.src_loc, initializer_experrsion->type );
 
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !initializer_experrsion->type.CanBeConstexpr() )
 	{
-		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names.GetErrors(), auto_variable_declaration.src_loc );
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 		return BlockBuildInfo();
 	}
 
@@ -402,13 +402,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
@@ -417,8 +417,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
-		function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
-		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference, names_scope.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable_reference, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -453,8 +453,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateVariableInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc, function_context );
 
-		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc );
-		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable, names.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), auto_variable_declaration.src_loc );
+		function_context.variables_state.TryAddInnerLinks( initializer_experrsion, variable, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
@@ -474,7 +474,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			if( !variable->type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), auto_variable_declaration.src_loc, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), auto_variable_declaration.src_loc, variable->type );
 				function_context.variables_state.RemoveNode(variable);
 				return BlockBuildInfo();
 			}
@@ -497,7 +497,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable_reference->constexpr_value == nullptr )
 	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), auto_variable_declaration.src_loc );
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 		return BlockBuildInfo();
 	}
 
@@ -508,18 +508,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const bool force_referenced= auto_variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
 
 	const NamesScopeValue* const inserted_value=
-		names.AddName( auto_variable_declaration.name, NamesScopeValue( variable_reference, auto_variable_declaration.src_loc, force_referenced ) );
+		names_scope.AddName( auto_variable_declaration.name, NamesScopeValue( variable_reference, auto_variable_declaration.src_loc, force_referenced ) );
 	if( inserted_value == nullptr )
-		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.src_loc, auto_variable_declaration.name );
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), auto_variable_declaration.src_loc, auto_variable_declaration.name );
 
 	// After lock of references we can call destructors.
-	CallDestructors( temp_variables_storage, names, function_context, auto_variable_declaration.src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, auto_variable_declaration.src_loc );
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ReturnOperator& return_operator )
 {
@@ -538,15 +538,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					{
 					case CoroutineKind::Generator:
 						// For generators enter into final suspend state in case of manual "return".
-						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+						CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
 						break;
 
 					case CoroutineKind::AsyncFunc:
 						// For void-return async functions do not evaluate result - just return.
 						if( !( coroutine_type_description->return_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
-							REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, void_type_, coroutine_type_description->return_type );
+							REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), return_operator.src_loc, void_type_, coroutine_type_description->return_type );
 
-						CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+						CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
 						break;
 					}
 				}
@@ -557,14 +557,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			if( function_context.function_type.return_value_type != ValueType::Value )
 			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc );
+				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), return_operator.src_loc );
 				return block_info;
 			}
 
 			if( function_context.return_type_deduction_context->return_type == std::nullopt )
 				function_context.return_type_deduction_context->return_type = void_type_;
 			else if( *function_context.return_type_deduction_context->return_type != void_type_ )
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, void_type_ );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, void_type_ );
 
 			if( function_context.reference_notation_deduction_context != nullptr )
 				CollectReferencePollution( function_context );
@@ -572,7 +572,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		BuildEmptyReturn( names, function_context, return_operator.src_loc );
+		BuildEmptyReturn( names_scope, function_context, return_operator.src_loc );
 
 		return block_info;
 	}
@@ -587,12 +587,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 				case CoroutineKind::Generator:
 					// For generators process "return" with value as combination "yield" and empty "return".
-					CoroutineYield( names, function_context, return_operator.expression, return_operator.src_loc );
-					CoroutineFinalSuspend( names, function_context, return_operator.src_loc );
+					CoroutineYield( names_scope, function_context, return_operator.expression, return_operator.src_loc );
+					CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
 					return block_info;
 
 				case CoroutineKind::AsyncFunc:
-					AsyncReturn( names, function_context, return_operator.expression, return_operator.src_loc );
+					AsyncReturn( names_scope, function_context, return_operator.expression, return_operator.src_loc );
 					return block_info;
 				}
 				U_ASSERT(false);
@@ -603,7 +603,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression, names, function_context );
+	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression, names_scope, function_context );
 	if( expression_result->type == invalid_type_ )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
@@ -620,7 +620,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( function_context.return_type_deduction_context->return_type == std::nullopt )
 			function_context.return_type_deduction_context->return_type = expression_result->type;
 		else if( *function_context.return_type_deduction_context->return_type != expression_result->type )
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, expression_result->type );
 
 		if( function_context.reference_notation_deduction_context != nullptr )
 		{
@@ -650,11 +650,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
-		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names.GetErrors(), return_operator.src_loc ) )
-			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names, function_context, return_operator.src_loc );
+		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names_scope.GetErrors(), return_operator.src_loc ) )
+			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names_scope, function_context, return_operator.src_loc );
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), return_operator.src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return block_info;
 		}
@@ -662,9 +662,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( function_context.reference_notation_deduction_context != nullptr )
 			CollectReturnInnerReferences( function_context, expression_result );
 		else
-			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expression_result, return_operator.src_loc );
 
-		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names_scope.GetErrors(), return_operator.src_loc );
 
 		if( expression_result->type.GetFundamentalType() != nullptr||
 			expression_result->type.GetEnumType() != nullptr ||
@@ -696,13 +696,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			if( !return_type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), return_operator.src_loc, return_type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), return_operator.src_loc, return_type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
 			if( return_type.IsAbstract() )
 			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), return_operator.src_loc, return_type );
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), return_operator.src_loc, return_type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
@@ -738,22 +738,22 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 	else
 	{
-		if( !ReferenceIsConvertible( expression_result->type, return_type, names.GetErrors(), return_operator.src_loc ) )
+		if( !ReferenceIsConvertible( expression_result->type, return_type, names_scope.GetErrors(), return_operator.src_loc ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc, return_type, expression_result->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), return_operator.src_loc, return_type, expression_result->type );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return block_info;
 		}
 
 		if( expression_result->value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), return_operator.src_loc );
 			function_context.variables_state.RemoveNode( return_value_node );
 			return block_info;
 		}
 		if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), return_operator.src_loc );
 		}
 
 		if( function_context.reference_notation_deduction_context != nullptr )
@@ -763,23 +763,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
-			CheckReturnedReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
-			CheckReturnedInnerReferenceIsAllowed( names, function_context, expression_result, return_operator.src_loc );
+			CheckReturnedReferenceIsAllowed( names_scope, function_context, expression_result, return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expression_result, return_operator.src_loc );
 		}
 
 		// Add link to return value in order to catch error, when reference to local variable is returned.
-		function_context.variables_state.TryAddLink( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
-		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names.GetErrors(), return_operator.src_loc );
+		function_context.variables_state.TryAddLink( expression_result, return_value_node, names_scope.GetErrors(), return_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expression_result, return_value_node, names_scope.GetErrors(), return_operator.src_loc );
 
 		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context );
 	}
 
-	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc );
+	CallDestructorsBeforeReturn( names_scope, function_context, return_operator.src_loc );
 
 	if( function_context.reference_notation_deduction_context != nullptr )
 		CollectReferencePollution( function_context );
 	else
-		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc );
+		CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), return_operator.src_loc );
 
 	function_context.variables_state.RemoveNode( return_value_node );
 
@@ -803,24 +803,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::YieldOperator& yield_operator )
 {
 	// "Yield" is not a terminal operator. Execution (logically) continues after it.
-	CoroutineYield( names, function_context, yield_operator.expression, yield_operator.src_loc );
+	CoroutineYield( names_scope, function_context, yield_operator.expression, yield_operator.src_loc );
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::RangeForOperator& range_for_operator )
 {
 	BlockBuildInfo block_build_info;
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence, names, function_context );
+	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence, names_scope, function_context );
 
 	const VariablePtr sequence_lock=
 		Variable::Create(
@@ -830,8 +830,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			sequence_expression->name + " sequence lock" );
 
 	function_context.variables_state.AddNode( sequence_lock );
-	function_context.variables_state.TryAddLink( sequence_expression, sequence_lock,  names.GetErrors(), range_for_operator.src_loc );
-	function_context.variables_state.TryAddInnerLinks( sequence_expression, sequence_lock, names.GetErrors(), range_for_operator.src_loc );
+	function_context.variables_state.TryAddLink( sequence_expression, sequence_lock,  names_scope.GetErrors(), range_for_operator.src_loc );
+	function_context.variables_state.TryAddInnerLinks( sequence_expression, sequence_lock, names_scope.GetErrors(), range_for_operator.src_loc );
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
@@ -847,7 +847,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->element_types.data() );
 			const std::string variable_name= range_for_operator.loop_variable_name + std::to_string(element_index);
-			NamesScope loop_names( "", &names );
+			NamesScope loop_names( "", &names_scope );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
 			const VariableMutPtr variable_reference=
@@ -867,14 +867,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( range_for_operator.reference_modifier == ReferenceModifier::Reference )
 			{
 				if( range_for_operator.mutability_modifier == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), range_for_operator.src_loc );
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), range_for_operator.src_loc );
 
 				variable_reference->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc, function_context );
 
-				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc );
-				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable_reference, element_index, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names_scope.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable_reference, element_index, names_scope.GetErrors(), range_for_operator.src_loc );
 			}
 			else
 			{
@@ -894,15 +894,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				CreateLifetimeStart( function_context, variable->llvm_value );
 				debug_info_builder_->CreateVariableInfo( *variable, variable_name, range_for_operator.src_loc, function_context );
 
-				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), range_for_operator.src_loc );
-				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable, element_index, names.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), range_for_operator.src_loc );
+				function_context.variables_state.TryAddInnerLinksForTupleElement( sequence_lock, variable, element_index, names_scope.GetErrors(), range_for_operator.src_loc );
 
 				if( !EnsureTypeComplete( element_type ) )
-					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), range_for_operator.src_loc, element_type );
+					REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), range_for_operator.src_loc, element_type );
 				else if( !element_type.IsCopyConstructible() )
-					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), range_for_operator.src_loc, element_type );
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), range_for_operator.src_loc, element_type );
 				else if( element_type.IsAbstract() )
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), range_for_operator.src_loc, element_type );
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), range_for_operator.src_loc, element_type );
 				else
 					BuildCopyConstructorPart(
 						variable->llvm_value,
@@ -951,7 +951,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block.elements );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
-				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc );
+				CallDestructors( element_pass_variables_storage, names_scope, function_context, range_for_operator.src_loc );
 				function_context.llvm_ir_builder.CreateBr( next_basic_block );
 				function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 			}
@@ -959,7 +959,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
 			const bool continue_branches_is_empty= function_context.loops_stack.back().continue_variables_states.empty();
 			if( !continue_branches_is_empty )
-				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), range_for_operator.block.end_src_loc );
+				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names_scope.GetErrors(), range_for_operator.block.end_src_loc );
 
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
 				break_variables_states.push_back( std::move(variables_state) );
@@ -1001,30 +1001,30 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{} // Just keep variables state.
 		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
 		else if( !break_variables_states.empty() )
-			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), range_for_operator.block.end_src_loc );
+			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names_scope.GetErrors(), range_for_operator.block.end_src_loc );
 		else
 			block_build_info.have_terminal_instruction_inside= true;
 	}
 	else
 	{
 		// TODO - support array types.
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), range_for_operator.src_loc, sequence_expression->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), range_for_operator.src_loc, sequence_expression->type );
 		return BlockBuildInfo();
 	}
 
 	if( !block_build_info.have_terminal_instruction_inside )
-		CallDestructors( temp_variables_storage, names, function_context, range_for_operator.src_loc );
+		CallDestructors( temp_variables_storage, names_scope, function_context, range_for_operator.src_loc );
 
 	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CStyleForOperator& c_style_for_operator )
 {
 	const StackVariablesStorage loop_variables_storage( function_context );
-	NamesScope loop_names_scope("", &names);
+	NamesScope loop_names_scope("", &names_scope);
 
 	// Variables declaration part.
 	if( c_style_for_operator.variable_declaration_part != nullptr )
@@ -1060,7 +1060,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( condition_expression->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
-					names.GetErrors(),
+					names_scope.GetErrors(),
 					condition_src_loc,
 					bool_type_,
 					condition_expression->type );
@@ -1069,7 +1069,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
-			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
+			CallDestructors( temp_variables_storage, names_scope, function_context, condition_src_loc );
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
 		}
 	}
@@ -1077,7 +1077,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	ReferencesGraph variables_state_after_test_block= function_context.variables_state;
 
 	// Loop block code.
-	AddLoopFrame( names, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label );
+	AddLoopFrame( names_scope, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label );
 
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
@@ -1093,7 +1093,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
 	if( loop_iteration_block_is_reachable )
-		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names_scope.GetErrors(), c_style_for_operator.block.end_src_loc );
 	else
 	{
 		// Loop iteration block is unreachable.
@@ -1123,10 +1123,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		// Disallow outer variables state change in loop iteration part and its predecessors.
 		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block.end_src_loc );
-		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+		names_scope.GetErrors().insert( names_scope.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block.end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
@@ -1138,7 +1138,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::WhileOperator& while_operator )
 {
@@ -1157,12 +1157,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
-		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition, names, function_context );
+		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition, names_scope, function_context );
 
 		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( while_operator.condition );
 		if( condition_expression->type != bool_type_ )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), condition_src_loc, bool_type_, condition_expression->type );
 
 			// Create instruction even in case of error, because we needs to store basic blocs somewhere.
 			function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), while_block, block_after_while );
@@ -1170,7 +1170,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
-			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
+			CallDestructors( temp_variables_storage, names_scope, function_context, condition_src_loc );
 
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 		}
@@ -1178,12 +1178,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// While block code.
 
-	AddLoopFrame( names, function_context, block_after_while, test_block, while_operator.label );
+	AddLoopFrame( names_scope, function_context, block_after_while, test_block, while_operator.label );
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, while_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names_scope, function_context, while_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
@@ -1198,7 +1198,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
 		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, variables_state, while_operator.block.end_src_loc );
-		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+		names_scope.GetErrors().insert( names_scope.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
@@ -1207,13 +1207,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Result variables state is combination of variables state before loop and variables state of all branches terminated with "break".
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block.end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), while_operator.block.end_src_loc );
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::LoopOperator& loop_operator )
 {
@@ -1225,12 +1225,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Break to loop block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( loop_block );
 
-	AddLoopFrame( names, function_context, block_after_loop, loop_block, loop_operator.label );
+	AddLoopFrame( names_scope, function_context, block_after_loop, loop_block, loop_operator.label );
 
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, loop_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names_scope, function_context, loop_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_block );
@@ -1241,7 +1241,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
 		const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, variables_state, loop_operator.block.end_src_loc );
-		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+		names_scope.GetErrors().insert( names_scope.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
@@ -1249,7 +1249,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Result variables state is combination of variables state of all branches terminated with "break".
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), loop_operator.block.end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), loop_operator.block.end_src_loc );
 
 	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
 	// Any code, that follows infinite loop without "break" inside is unreachable.
@@ -1269,23 +1269,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::BreakOperator& break_operator )
 {
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 
-	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, break_operator.label );
+	LoopFrame* const loop_frame= FetchLoopFrame( names_scope, function_context, break_operator.label );
 	if( loop_frame == nullptr )
 	{
-		REPORT_ERROR( BreakOutsideLoop, names.GetErrors(), break_operator.src_loc );
+		REPORT_ERROR( BreakOutsideLoop, names_scope.GetErrors(), break_operator.src_loc );
 		return block_info;
 	}
 
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
-	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, break_operator.src_loc );
+	CallDestructorsForLoopInnerVariables( names_scope, function_context, loop_frame->stack_variables_stack_size, break_operator.src_loc );
 	loop_frame->break_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_break );
 
@@ -1293,28 +1293,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ContinueOperator& continue_operator )
 {
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 
-	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, continue_operator.label );
+	LoopFrame* const loop_frame= FetchLoopFrame( names_scope, function_context, continue_operator.label );
 	if( loop_frame == nullptr )
 	{
-		REPORT_ERROR( ContinueOutsideLoop, names.GetErrors(), continue_operator.src_loc );
+		REPORT_ERROR( ContinueOutsideLoop, names_scope.GetErrors(), continue_operator.src_loc );
 		return block_info;
 	}
 
 	if( loop_frame->block_for_continue == nullptr )
 	{
 		// This is non-loop frame.
-		REPORT_ERROR( ContinueForBlock, names.GetErrors(), continue_operator.src_loc );
+		REPORT_ERROR( ContinueForBlock, names_scope.GetErrors(), continue_operator.src_loc );
 		return block_info;
 	}
 
-	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc );
+	CallDestructorsForLoopInnerVariables( names_scope, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc );
 	loop_frame->continue_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_continue );
 
@@ -1322,13 +1322,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::WithOperator& with_operator )
 {
 	StackVariablesStorage variables_storage( function_context );
 
-	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression, names, function_context );
+	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression, names_scope, function_context );
 
 	const VariableMutPtr variable_reference=
 		Variable::Create(
@@ -1344,13 +1344,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( with_operator.reference_modifier != ReferenceModifier::Reference &&
 		!EnsureTypeComplete( variable_reference->type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc, variable_reference->type );
+		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), with_operator.src_loc, variable_reference->type );
 		function_context.variables_state.RemoveNode( variable_reference );
 		return BlockBuildInfo();
 	}
 	if( with_operator.reference_modifier != ReferenceModifier::Reference && variable_reference->type.IsAbstract() )
 	{
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc, variable_reference->type );
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), with_operator.src_loc, variable_reference->type );
 		function_context.variables_state.RemoveNode( variable_reference );
 		return BlockBuildInfo();
 	}
@@ -1359,7 +1359,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( expr->value_type == ValueType::ReferenceImut && variable_reference->value_type != ValueType::ReferenceImut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.src_loc );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), with_operator.src_loc );
 			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
@@ -1376,8 +1376,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, with_operator.variable_name, with_operator.src_loc, function_context );
 
-		function_context.variables_state.TryAddLink( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
-		function_context.variables_state.TryAddInnerLinks( expr, variable_reference, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddLink( expr, variable_reference, names_scope.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expr, variable_reference, names_scope.GetErrors(), with_operator.src_loc );
 	}
 	else if( with_operator.reference_modifier == ReferenceModifier::None )
 	{
@@ -1411,8 +1411,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateVariableInfo( *variable, with_operator.variable_name, with_operator.src_loc, function_context );
 
-		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), with_operator.src_loc );
-		function_context.variables_state.TryAddInnerLinks( expr, variable, names.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), with_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( expr, variable, names_scope.GetErrors(), with_operator.src_loc );
 
 		if( expr->value_type == ValueType::Value )
 		{
@@ -1432,7 +1432,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			if( !variable->type.IsCopyConstructible() )
-				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), with_operator.src_loc, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), with_operator.src_loc, variable->type );
 			else
 				BuildCopyConstructorPart(
 					variable->llvm_value, expr->llvm_value,
@@ -1453,16 +1453,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variable_reference->constexpr_value= nullptr;
 
 	if( IsKeyword( with_operator.variable_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), with_operator.src_loc );
 
 	// Destroy temporary variables of initializer expression. Do it before registretion of variable to prevent its destruction.
-	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc );
+	DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), with_operator.src_loc );
 	variables_storage.RegisterVariable( variable_reference );
 
 	const bool force_referenced= with_operator.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
 
 	// Create separate namespace for variable. Redefinition here is not possible.
-	NamesScope variable_names_scope( "", &names );
+	NamesScope variable_names_scope( "", &names_scope );
 	variable_names_scope.AddName( with_operator.variable_name, NamesScopeValue( variable_reference, with_operator.src_loc, force_referenced ) );
 
 	// Build block. Do not create names scope, reuce names scope of "with" variable.
@@ -1480,7 +1480,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::IfOperator& if_operator )
 {
@@ -1491,11 +1491,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
-		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( if_operator.condition, names, function_context );
+		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( if_operator.condition, names_scope, function_context );
 		if( condition_expression->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
-				names.GetErrors(),
+				names_scope.GetErrors(),
 				Synt::GetExpressionSrcLoc( if_operator.condition ),
 				bool_type_,
 				condition_expression->type );
@@ -1506,7 +1506,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
-			CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( if_operator.condition ) );
+			CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetExpressionSrcLoc( if_operator.condition ) );
 
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, if_block, alternative_block );
 		}
@@ -1517,7 +1517,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// If block.
 	function_context.function->getBasicBlockList().push_back( if_block );
 	function_context.llvm_ir_builder.SetInsertPoint( if_block );
-	const BlockBuildInfo if_block_build_info= BuildBlock( names, function_context, if_operator.block );
+	const BlockBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block );
 
 	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
 
@@ -1553,7 +1553,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
 		function_context.variables_state= std::move( variables_state_before_branching );
-		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names, function_context, *if_operator.alternative );
+		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, *if_operator.alternative );
 
 		if( !alternative_block_build_info.have_terminal_instruction_inside )
 		{
@@ -1573,55 +1573,55 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			delete block_after_if;
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names.GetErrors(), if_operator.end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_operator.end_src_loc );
 
 	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::StaticIfOperator& static_if_operator )
 {
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
-		if( EvaluateBoolConstantExpression( names, function_context, static_if_operator.condition ) )
-			return BuildBlock( names, function_context, static_if_operator.block ); // Ok, this static if produdes block.
+		if( EvaluateBoolConstantExpression( names_scope, function_context, static_if_operator.condition ) )
+			return BuildBlock( names_scope, function_context, static_if_operator.block ); // Ok, this static if produdes block.
 
-		CallDestructors( temp_variables_storage, names, function_context, static_if_operator.src_loc );
+		CallDestructors( temp_variables_storage, names_scope, function_context, static_if_operator.src_loc );
 	}
 
 	if( static_if_operator.alternative != nullptr )
-		return BuildIfAlternative( names, function_context, *static_if_operator.alternative );
+		return BuildIfAlternative( names_scope, function_context, *static_if_operator.alternative );
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::IfCoroAdvanceOperator& if_coro_advance )
 {
 	StackVariablesStorage variables_storage( function_context );
 
-	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names, function_context );
+	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names_scope, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
 	if( coro_class_type == nullptr )
 	{
-		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names_scope.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
 		return BlockBuildInfo();
 	}
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coro_class_type->generated_class_data );
 	if( coroutine_type_description == nullptr)
 	{
-		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names_scope.GetErrors(), if_coro_advance.src_loc, coro_expr->type );
 		return BlockBuildInfo();
 	}
 
 	if( coro_expr->value_type == ValueType::ReferenceImut )
 	{
-		REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), if_coro_advance.src_loc );
+		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), if_coro_advance.src_loc );
 		return BlockBuildInfo();
 	}
 
@@ -1633,8 +1633,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			Variable::Location::Pointer,
 			coro_expr->name + "lock" );
 	function_context.variables_state.AddNode( coro_expr_lock );
-	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
-	function_context.variables_state.TryAddInnerLinks( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc );
+	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names_scope.GetErrors(), if_coro_advance.src_loc );
+	function_context.variables_state.TryAddInnerLinks( coro_expr, coro_expr_lock, names_scope.GetErrors(), if_coro_advance.src_loc );
 
 	variables_storage.RegisterVariable( coro_expr_lock );
 
@@ -1762,7 +1762,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			coro_result_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
 
-			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+			function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
 			for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
 			{
 				for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
@@ -1773,7 +1773,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						function_context.variables_state.TryAddLink(
 							coro_expr_lock->inner_reference_nodes[param_reference.second],
 							variable->inner_reference_nodes[i],
-							names.GetErrors(),
+							names_scope.GetErrors(),
 							if_coro_advance.src_loc );
 				}
 			}
@@ -1789,7 +1789,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				is_variable= true;
 
 				if( result_type.IsAbstract() )
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), if_coro_advance.src_loc, result_type );
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), if_coro_advance.src_loc, result_type );
 
 				const VariableMutPtr variable=
 					Variable::Create(
@@ -1807,7 +1807,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 				if( !result_type.IsCopyConstructible() )
-					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), if_coro_advance.src_loc, result_type );
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), if_coro_advance.src_loc, result_type );
 				else
 					BuildCopyConstructorPart(
 						variable->llvm_value, coroutine_reference_result,
@@ -1819,7 +1819,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				coro_result_variables_storage.RegisterVariable( variable );
 				function_context.variables_state.AddLink( variable, variable_reference );
 
-				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
 				for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
 				{
 					for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
@@ -1830,7 +1830,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 							function_context.variables_state.TryAddLink(
 								coro_expr_lock->inner_reference_nodes[param_reference.second],
 								variable->inner_reference_nodes[i],
-								names.GetErrors(),
+								names_scope.GetErrors(),
 								if_coro_advance.src_loc );
 					}
 				}
@@ -1842,7 +1842,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				// Create reference to reference result of coroutine.
 
 				if( result_value_type == ValueType::ReferenceImut && variable_reference->value_type != ValueType::ReferenceImut )
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), if_coro_advance.src_loc );
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), if_coro_advance.src_loc );
 
 				variable_reference->llvm_value= coroutine_reference_result;
 
@@ -1851,19 +1851,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					U_ASSERT( param_reference.first == 0u );
 					U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
 					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
-						function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_nodes[param_reference.second], variable_reference, names.GetErrors(), if_coro_advance.src_loc );
+						function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_nodes[param_reference.second], variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
 				}
 			}
 		}
 
 		if( IsKeyword( if_coro_advance.variable_name ) )
-			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), if_coro_advance.src_loc );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), if_coro_advance.src_loc );
 
 		coro_result_variables_storage.RegisterVariable( variable_reference );
 
 		const bool force_referenced= is_variable && VariableExistanceMayHaveSideEffects(variable_reference->type);
 
-		NamesScope variable_names_scope( "", &names );
+		NamesScope variable_names_scope( "", &names_scope );
 		variable_names_scope.AddName( if_coro_advance.variable_name, NamesScopeValue( variable_reference, if_coro_advance.src_loc, force_referenced ) );
 
 		// Reuse variable names scope for block.
@@ -1896,7 +1896,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
 		// Destroy temporarie in coroutine expression.
-		CallDestructors( variables_storage, names, function_context, if_coro_advance.end_src_loc );
+		CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 	}
 	else
 	{
@@ -1906,7 +1906,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !if_block_build_info.have_terminal_instruction_inside )
 		{
 			// Destroy temporarie in coroutine expression.
-			CallDestructors( variables_storage, names, function_context, if_coro_advance.end_src_loc );
+			CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
 			branches_variable_states.push_back( function_context.variables_state );
@@ -1919,9 +1919,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state= std::move( variables_state_before_branching );
 
 		// Destroy temporarie in coroutine expression.
-		CallDestructors( variables_storage, names, function_context, if_coro_advance.end_src_loc );
+		CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 
-		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names, function_context, *if_coro_advance.alternative );
+		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, *if_coro_advance.alternative );
 
 		if( !alternative_block_build_info.have_terminal_instruction_inside )
 		{
@@ -1941,13 +1941,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			delete block_after_if;
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names.GetErrors(), if_coro_advance.end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
 
 	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::SwitchOperator& switch_operator )
 {
@@ -1955,7 +1955,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::Value* switch_value= nullptr;
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
-		const VariablePtr expression= BuildExpressionCodeEnsureVariable( switch_operator.value, names, function_context );
+		const VariablePtr expression= BuildExpressionCodeEnsureVariable( switch_operator.value, names_scope, function_context );
 
 		bool type_ok= false;
 		if( expression->type.GetEnumType() != nullptr )
@@ -1971,7 +1971,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			REPORT_ERROR(
 				TypesMismatch,
-				names.GetErrors(),
+				names_scope.GetErrors(),
 				src_loc,
 				"Enum, integer or char type",
 				expression->type );
@@ -1981,7 +1981,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		switch_type= expression->type;
 		switch_value= CreateMoveToLLVMRegisterInstruction( *expression, function_context );
 
-		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+		CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 	}
 
 	llvm::APInt type_low, type_high;
@@ -2036,13 +2036,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 					if( const auto single_value= std::get_if<Synt::Expression>( &value ) )
 					{
-						const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( *single_value, names, function_context );
+						const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( *single_value, names_scope, function_context );
 						const auto src_loc= Synt::GetExpressionSrcLoc( *single_value );
 						if( expression_variable->type != switch_type )
 						{
 							REPORT_ERROR(
 								TypesMismatch,
-								names.GetErrors(),
+								names_scope.GetErrors(),
 								src_loc,
 								switch_type,
 								expression_variable->type );
@@ -2051,7 +2051,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						}
 						if( expression_variable->constexpr_value == nullptr )
 						{
-							REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), src_loc );
+							REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), src_loc );
 							all_cases_are_ok= false;
 							continue;
 						}
@@ -2067,12 +2067,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 							if( std::get_if<Synt::EmptyVariant>( &expression ) != nullptr )
 								continue;
 
-							const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+							const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 							if( expression_variable->type != switch_type )
 							{
 								REPORT_ERROR(
 									TypesMismatch,
-									names.GetErrors(),
+									names_scope.GetErrors(),
 									Synt::GetExpressionSrcLoc( expression ),
 									switch_type,
 									expression_variable->type );
@@ -2081,7 +2081,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 							}
 							if( expression_variable->constexpr_value == nullptr )
 							{
-								REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+								REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
 								all_cases_are_ok= false;
 								continue;
 							}
@@ -2093,7 +2093,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						{
 							REPORT_ERROR(
 								SwitchInvalidRange,
-								names.GetErrors(),
+								names_scope.GetErrors(),
 								src_loc,
 								range_constants[0].getLimitedValue(),
 								range_constants[1].getLimitedValue() );
@@ -2112,7 +2112,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 					REPORT_ERROR(
 						SwitchDuplicatedDefaultLabel,
-						names.GetErrors(),
+						names_scope.GetErrors(),
 						case_.block.src_loc ); // TODO - use proper src_loc
 					all_cases_are_ok= false;
 				}
@@ -2123,7 +2123,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			branches_ranges.push_back( std::move(case_values) );
 		}
-		CallDestructors( temp_variables_storage, names, function_context, switch_operator.src_loc );
+		CallDestructors( temp_variables_storage, names_scope, function_context, switch_operator.src_loc );
 	}
 
 	if( !all_cases_are_ok || branches_ranges.size() != switch_operator.cases.size() )
@@ -2169,13 +2169,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						if( gap_size.isOne() )
 							REPORT_ERROR(
 								SwitchUndhandledValue,
-								names.GetErrors(),
+								names_scope.GetErrors(),
 								std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
 								(current_high + 1).getLimitedValue() );
 						else
 							REPORT_ERROR(
 								SwitchUndhandledRange,
-								names.GetErrors(),
+								names_scope.GetErrors(),
 								std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
 								(current_high + 1).getLimitedValue(),
 								(next_low - 1).getLimitedValue() );
@@ -2185,7 +2185,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 				REPORT_ERROR(
 					SwitchRangesOverlapping,
-					names.GetErrors(),
+					names_scope.GetErrors(),
 					std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
 					current_range.low .getLimitedValue(),
 					current_range.high.getLimitedValue(),
@@ -2206,13 +2206,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					if( begin_gap_size.isOne() )
 						REPORT_ERROR(
 							SwitchUndhandledValue,
-							names.GetErrors(),
+							names_scope.GetErrors(),
 							all_ranges.front().src_loc,
 							type_low.getLimitedValue() );
 					else
 						REPORT_ERROR(
 							SwitchUndhandledRange,
-							names.GetErrors(),
+							names_scope.GetErrors(),
 							all_ranges.front().src_loc,
 							type_low.getLimitedValue(),
 							(first_range_low - 1).getLimitedValue() );
@@ -2229,13 +2229,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					if( end_gap_size.isOne() )
 						REPORT_ERROR(
 							SwitchUndhandledValue,
-							names.GetErrors(),
+							names_scope.GetErrors(),
 							all_ranges.back().src_loc,
 							type_high.getLimitedValue() );
 					else
 						REPORT_ERROR(
 							SwitchUndhandledRange,
-							names.GetErrors(),
+							names_scope.GetErrors(),
 							all_ranges.back().src_loc,
 							(last_range_high + 1).getLimitedValue(),
 							type_high.getLimitedValue() );
@@ -2251,13 +2251,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( type_high == type_low )
 					REPORT_ERROR(
 						SwitchUndhandledValue,
-						names.GetErrors(),
+						names_scope.GetErrors(),
 						switch_operator.src_loc,
 						type_high.getLimitedValue() );
 				else
 					REPORT_ERROR(
 						SwitchUndhandledRange,
-						names.GetErrors(),
+						names_scope.GetErrors(),
 						switch_operator.src_loc,
 						type_low.getLimitedValue(),
 						type_high.getLimitedValue() );
@@ -2267,7 +2267,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( default_branch_synt_block != nullptr && !has_gaps )
 			REPORT_ERROR(
 				SwithcUnreachableDefaultBranch,
-				names.GetErrors(),
+				names_scope.GetErrors(),
 				default_branch_synt_block->src_loc );
 	}
 
@@ -2332,7 +2332,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( case_handle_block );
 
 		function_context.variables_state= variables_state_before_branching;
-		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, case_.block );
+		const BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
@@ -2361,7 +2361,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( default_branch );
 
 		function_context.variables_state= variables_state_before_branching;
-		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, *default_branch_synt_block );
+		const BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, *default_branch_synt_block );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
@@ -2405,26 +2405,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		function_context.function->getBasicBlockList().push_back( block_after_switch );
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
-		function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names.GetErrors(), switch_operator.end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names_scope.GetErrors(), switch_operator.end_src_loc );
 	}
 
 	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::SingleExpressionOperator& single_expression_operator )
 {
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const Value value= BuildExpressionCode( single_expression_operator.expression, names, function_context );
-	CallDestructors( temp_variables_storage, names, function_context, single_expression_operator.src_loc );
+	const Value value= BuildExpressionCode( single_expression_operator.expression, names_scope, function_context );
+	CallDestructors( temp_variables_storage, names_scope, function_context, single_expression_operator.src_loc );
 
 	if( const auto variable_ptr= value.GetVariable() )
 	{
 		if( SingleExpressionIsUseless( single_expression_operator.expression ) &&
 			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
-			REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression ) );
+			REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression ) );
 	}
 	else if(
 		value.GetFunctionsSet() != nullptr ||
@@ -2433,13 +2433,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		value.GetThisOverloadedMethodsSet() != nullptr ||
 		value.GetNamespace() != nullptr ||
 		value.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression ) );
+		REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression ) );
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::AssignmentOperator& assignment_operator	)
 {
@@ -2453,36 +2453,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			assignment_operator.r_value,
 			true, // evaluate args in reverse order
 			assignment_operator.src_loc,
-			names,
+			names_scope,
 			function_context ) == std::nullopt )
 	{ // Here process default assignment operator for fundamental types.
 		// Evaluate right part
-		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value, names, function_context );
+		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value, names_scope, function_context );
 
 		const auto r_var_in_register= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
 
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), assignment_operator.src_loc ); // Destroy temporaries of right expression.
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), assignment_operator.src_loc ); // Destroy temporaries of right expression.
 
 		// Evaluate left part.
-		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( assignment_operator.l_value, names, function_context );
+		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( assignment_operator.l_value, names_scope, function_context );
 
 		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
 			return BlockBuildInfo();
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 		if( l_var->type != r_var->type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), assignment_operator.src_loc, l_var->type, r_var->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), assignment_operator.src_loc, l_var->type, r_var->type );
 			return BlockBuildInfo();
 		}
 
 		// Check references of destination.
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), assignment_operator.src_loc, l_var->name );
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), assignment_operator.src_loc, l_var->name );
 
 		if( l_var->type.GetFundamentalType() != nullptr ||
 			l_var->type.GetEnumType() != nullptr ||
@@ -2498,18 +2498,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), assignment_operator.src_loc, l_var->type );
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), assignment_operator.src_loc, l_var->type );
 			return BlockBuildInfo();
 		}
 	}
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( temp_variables_storage, names, function_context, assignment_operator.src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, assignment_operator.src_loc );
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
 {
@@ -2523,13 +2523,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			additive_assignment_operator.r_value,
 			true, // evaluate args in reverse order
 			additive_assignment_operator.src_loc,
-			names,
+			names_scope,
 			function_context ) == std::nullopt )
 	{ // Here process default additive assignment operators for fundamental types or raw pointers.
 		VariablePtr r_var=
 			BuildExpressionCodeEnsureVariable(
 				additive_assignment_operator.r_value,
-				names,
+				names_scope,
 				function_context );
 
 		if( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetRawPointerType() != nullptr )
@@ -2546,12 +2546,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						: CreateMoveToLLVMRegisterInstruction( *r_var, function_context ),
 					r_var->constexpr_value );
 		}
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), additive_assignment_operator.src_loc ); // Destroy temporaries of right expression.
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), additive_assignment_operator.src_loc ); // Destroy temporaries of right expression.
 
 		const VariablePtr l_var=
 			BuildExpressionCodeEnsureVariable(
 				additive_assignment_operator.l_value,
-				names,
+				names_scope,
 				function_context );
 
 		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
@@ -2559,18 +2559,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), additive_assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), additive_assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 
 		// Check references of destination.
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), additive_assignment_operator.src_loc, l_var->name );
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->name );
 
 		// Allow additive assignment operators only for fundamentals and raw pointers.
 		if( !( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetRawPointerType() != nullptr ) )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), additive_assignment_operator.src_loc, l_var->type );
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->type );
 			return BlockBuildInfo();
 		}
 
@@ -2580,7 +2580,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				*l_var, *r_var,
 				additive_assignment_operator.additive_operation,
 				additive_assignment_operator.src_loc,
-				names,
+				names_scope,
 				function_context );
 		if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error.
 			return BlockBuildInfo();
@@ -2589,7 +2589,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( operation_result.type != l_var->type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), additive_assignment_operator.src_loc, l_var->type, operation_result.type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->type, operation_result.type );
 			return BlockBuildInfo();
 		}
 
@@ -2598,13 +2598,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		CreateTypedStore( function_context, r_var->type, value_in_register, l_var->llvm_value );
 	}
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( temp_variables_storage, names, function_context, additive_assignment_operator.src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, additive_assignment_operator.src_loc );
 
 	return  BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::IncrementOperator& increment_operator )
 {
@@ -2612,14 +2612,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		increment_operator.expression,
 		increment_operator.src_loc,
 		true,
-		names,
+		names_scope,
 		function_context );
 
 	return BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::DecrementOperator& decrement_operator )
 {
@@ -2627,14 +2627,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		decrement_operator.expression,
 		decrement_operator.src_loc,
 		false,
-		names,
+		names_scope,
 		function_context );
 
 	return  BlockBuildInfo();
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::StaticAssert& static_assert_ )
 {
@@ -2643,20 +2643,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Destruction frame for temporary variables of static assert expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( static_assert_.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( static_assert_.expression, names_scope, function_context );
 
 	// Destruct temporary variables of right and left expressions.
 	// In non-error case, this call produces no code.
-	CallDestructors( temp_variables_storage, names, function_context, static_assert_.src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, static_assert_.src_loc );
 
 	if( variable->type != bool_type_ )
 	{
-		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names.GetErrors(), static_assert_.src_loc );
+		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope.GetErrors(), static_assert_.src_loc );
 		return block_info;
 	}
 	if( variable->constexpr_value == nullptr )
 	{
-		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names.GetErrors(), static_assert_.src_loc );
+		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope.GetErrors(), static_assert_.src_loc );
 		return block_info;
 	}
 
@@ -2669,25 +2669,25 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				? "Static assertion failed."
 				: ("Static assertion failed: " + *static_assert_.message + "." );
 
-		names.GetErrors().push_back( std::move(error) );
+		names_scope.GetErrors().push_back( std::move(error) );
 	}
 
 	return block_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TypeAlias& type_alias )
 {
 	BlockBuildInfo block_info;
 
 	if( IsKeyword( type_alias.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), type_alias.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_alias.src_loc );
 
-	Type type= PrepareType( type_alias.value, names, function_context );
-	if( names.AddName( type_alias.name, NamesScopeValue( std::move(type), type_alias.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names.GetErrors(), type_alias.src_loc, type_alias.name );
+	Type type= PrepareType( type_alias.value, names_scope, function_context );
+	if( names_scope.AddName( type_alias.name, NamesScopeValue( std::move(type), type_alias.src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias.src_loc, type_alias.name );
 
 	return block_info;
 }
@@ -2708,7 +2708,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::HaltIf& halt_if	)
 {
@@ -2718,12 +2718,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::BasicBlock* const false_block= llvm::BasicBlock::Create( llvm_context_ );
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names, function_context );
+	const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names_scope, function_context );
 	const SrcLoc condition_expression_src_loc= Synt::GetExpressionSrcLoc( halt_if.condition );
 	if( condition_expression->type!= bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch,
-			names.GetErrors(),
+			names_scope.GetErrors(),
 			condition_expression_src_loc,
 			bool_type_,
 			condition_expression->type );
@@ -2731,7 +2731,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
-	CallDestructors( temp_variables_storage, names, function_context, condition_expression_src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, condition_expression_src_loc );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
 
@@ -2750,13 +2750,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Block& block )
 {
 	debug_info_builder_->StartBlock( block.src_loc, function_context );
 
-	NamesScope block_names( "", &names );
+	NamesScope block_names( "", &names_scope );
 	const StackVariablesStorage block_variables_storage( function_context );
 
 	const BlockBuildInfo block_build_info= BuildBlockElements( block_names, function_context, block.elements );
@@ -2776,17 +2776,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
-	NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements )
+	NamesScope& names_scope, FunctionContext& function_context, const Synt::BlockElementsList& block_elements )
 {
 	BlockBuildInfo block_build_info;
 	block_elements.Iter(
 		[&]( const auto& el )
 		{
 			if( block_build_info.have_terminal_instruction_inside )
-				REPORT_ERROR( UnreachableCode, names.GetErrors(), el.src_loc );
+				REPORT_ERROR( UnreachableCode, names_scope.GetErrors(), el.src_loc );
 
 			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
-			const BlockBuildInfo info= BuildBlockElementImpl( names, function_context, el );
+			const BlockBuildInfo info= BuildBlockElementImpl( names_scope, function_context, el );
 			if( info.have_terminal_instruction_inside )
 				block_build_info.have_terminal_instruction_inside= true;
 		} );
@@ -2794,20 +2794,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 	return block_build_info;
 }
 
-void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::BuildEmptyReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	if( !( function_context.function_type.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
 	{
-		REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, void_type_, function_context.function_type.return_type );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, void_type_, function_context.function_type.return_type );
 		return;
 	}
 
-	CallDestructorsBeforeReturn( names, function_context, src_loc );
+	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
 
 	if( function_context.reference_notation_deduction_context != nullptr )
 		CollectReferencePollution( function_context );
 	else
-		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+		CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), src_loc );
 
 	if( function_context.destructor_end_block == nullptr )
 		function_context.llvm_ir_builder.CreateRetVoid();
@@ -2819,7 +2819,7 @@ void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function
 }
 
 void CodeBuilder::AddLoopFrame(
-	NamesScope& names,
+	NamesScope& names_scope,
 	FunctionContext& function_context,
 	llvm::BasicBlock* const break_block,
 	llvm::BasicBlock* const continue_block,
@@ -2835,11 +2835,11 @@ void CodeBuilder::AddLoopFrame(
 		const std::string& label_name= label->name;
 
 		if( IsKeyword( label_name ) )
-			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), label->src_loc );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), label->src_loc );
 
 		for( const LoopFrame& prev_frame : function_context.loops_stack )
 			if( prev_frame.name == label_name )
-				REPORT_ERROR( Redefinition, names.GetErrors(), label->src_loc, label_name );
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), label->src_loc, label_name );
 
 		loop_frame.name= label_name;
 
@@ -2853,7 +2853,7 @@ void CodeBuilder::AddLoopFrame(
 	function_context.loops_stack.push_back( std::move(loop_frame) );
 }
 
-LoopFrame* CodeBuilder::FetchLoopFrame( NamesScope& names, FunctionContext& function_context, const std::optional<Synt::Label>& label )
+LoopFrame* CodeBuilder::FetchLoopFrame( NamesScope& names_scope, FunctionContext& function_context, const std::optional<Synt::Label>& label )
 {
 	if( label != std::nullopt )
 	{
@@ -2866,7 +2866,7 @@ LoopFrame* CodeBuilder::FetchLoopFrame( NamesScope& names, FunctionContext& func
 			}
 
 		if( loop_frame == nullptr )
-			REPORT_ERROR( NameNotFound, names.GetErrors(), label->src_loc, label->name );
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), label->src_loc, label->name );
 
 		return loop_frame;
 	}
@@ -2887,34 +2887,34 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Synt::Expression& expression,
 	const SrcLoc& src_loc,
 	bool positive, // true - increment, false - decrement
-	NamesScope& block_names,
+	NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Value value= BuildExpressionCode( expression, block_names, function_context );
+	const Value value= BuildExpressionCode( expression, names_scope, function_context );
 	const VariablePtr variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		REPORT_ERROR( ExpectedVariable, block_names.GetErrors(), src_loc, value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), src_loc, value.GetKindName() );
 		return;
 	}
 
 	if( variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
+		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 		return;
 	}
 
 	if( function_context.variables_state.HaveOutgoingLinks( variable ) )
-		REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->name );
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, variable->name );
 
 	FunctionType::Param args[1];
 	args[0].type= variable->type;
 	args[0].value_type= variable->value_type;
 	const FunctionVariable* const overloaded_operator=
-		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names, src_loc );
+		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, names_scope, src_loc );
 	if( overloaded_operator != nullptr )
 	{
 		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
@@ -2922,14 +2922,14 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 		overloaded_operator->referenced= true;
 
-		const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, block_names.GetErrors(), src_loc );
-		DoCallFunction( fetch_result.second, overloaded_operator->type, src_loc, fetch_result.first, {}, false, block_names, function_context );
+		const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names_scope.GetErrors(), src_loc );
+		DoCallFunction( fetch_result.second, overloaded_operator->type, src_loc, fetch_result.first, {}, false, names_scope, function_context );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{
 		if( !IsInteger( fundamental_type->fundamental_type ) )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, variable->type );
 			return;
 		}
 
@@ -2951,7 +2951,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	{
 		if( !EnsureTypeComplete( raw_poiter_type->element_type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, block_names.GetErrors(), src_loc, raw_poiter_type->element_type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), src_loc, raw_poiter_type->element_type );
 			return;
 		}
 
@@ -2964,11 +2964,11 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 	else
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, variable->type );
 		return;
 	}
 
-	CallDestructors( temp_variables_storage, block_names, function_context, src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 }
 
 } // namespace U

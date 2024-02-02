@@ -348,7 +348,7 @@ private:
 
 	bool GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
 	bool GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
-	bool ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag );
+	bool ImmediateEvaluateNonSyncTag( NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag );
 	void CheckClassNonSyncTagExpression( ClassPtr class_type );
 	void CheckClassNonSyncTagInheritance( ClassPtr class_type );
 
@@ -636,7 +636,7 @@ private:
 		llvm::Constant* l,
 		llvm::Constant* r,
 		const Type& type,
-		NamesScope& names,
+		NamesScope& names_scope,
 		const SrcLoc& src_loc );
 
 	void MoveConstantToMemory(
@@ -724,65 +724,65 @@ private:
 	// Expressions.
 	VariablePtr BuildExpressionCodeEnsureVariable(
 		const Synt::Expression& expression,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
-	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context );
 
 	template<typename T>
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<T>& el )
 	{
-		return BuildExpressionCodeImpl( names, function_context, *el );
+		return BuildExpressionCodeImpl( names_scope, function_context, *el );
 	}
 
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperatorSignatureHelp& call_operator_signature_help );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::AwaitOperator& await_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NumericConstant& numeric_constant );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperatorCompletion& move_operator_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TakeOperator& move_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastMut& cast_mut );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastImut& cast_imut );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRef& cast_ref );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRefUnsafe& cast_ref_unsafe );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeInfo& typeinfo );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::SameType& same_type );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncExpression& non_sync_expression );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::SafeExpression& safe_expression );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnsafeExpression& unsafe_expression );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CoroutineType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& expression );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CallOperator& call_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CallOperatorSignatureHelp& call_operator_signature_help );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AwaitOperator& await_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NumericConstant& numeric_constant );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MoveOperatorCompletion& move_operator_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TakeOperator& move_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastMut& cast_mut );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastImut& cast_imut );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastRef& cast_ref );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastRefUnsafe& cast_ref_unsafe );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeInfo& typeinfo );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SameType& same_type );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncExpression& non_sync_expression );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SafeExpression& safe_expression );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::UnsafeExpression& unsafe_expression );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& type_name );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const VariablePtr& variable,
 		const ClassField& field,
@@ -798,7 +798,7 @@ private:
 		const Synt::Expression& right_expr,
 		bool evaluate_args_in_reverse_order,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	Value CallBinaryOperatorForArrayOrTuple(
@@ -806,14 +806,14 @@ private:
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedUnaryOperator(
 		const VariablePtr& variable,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
@@ -821,7 +821,7 @@ private:
 		llvm::ArrayRef<Synt::Expression> synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	Value BuildBinaryOperator(
@@ -829,7 +829,7 @@ private:
 		const Variable& r_var,
 		BinaryOperatorType binary_operator,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	Value BuildBinaryArithmeticOperatorForRawPointers(
@@ -837,7 +837,7 @@ private:
 		const Variable& r_var,
 		BinaryOperatorType binary_operator,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 		
 	Value BuildLazyBinaryOperator(
@@ -845,7 +845,7 @@ private:
 		const Synt::Expression& r_expression,
 		const Synt::BinaryOperator& binary_operator,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	Value DoReferenceCast(
@@ -853,7 +853,7 @@ private:
 		const Synt::TypeName& type_name,
 		const Synt::Expression& expression,
 		bool enable_unsafe,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	// Call something (function, pointer) or even perform temp variable construction.
@@ -862,7 +862,7 @@ private:
 		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& call_src_loc,
 		const std::optional<SrcLoc>& function_value_src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	// Perform specific call.
@@ -873,7 +873,7 @@ private:
 		const VariablePtr& this_, // optional
 		llvm::ArrayRef<const Synt::Expression*> args,
 		bool evaluate_args_in_reverse_order,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		bool func_is_constexpr= false );
 
@@ -884,7 +884,7 @@ private:
 		llvm::ArrayRef<VariablePtr> preevaluated_args,
 		llvm::ArrayRef<const Synt::Expression*> args,
 		bool evaluate_args_in_reverse_order,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		bool func_is_constexpr= false );
 
@@ -892,22 +892,22 @@ private:
 		const Type& type,
 		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& src_loc,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	VariablePtr ConvertVariable(
 		VariablePtr variable,
 		const Type& dst_type,
 		const FunctionVariable& conversion_constructor,
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
 
-	bool EvaluateBoolConstantExpression( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression );
+	bool EvaluateBoolConstantExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression );
 
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
-	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context );
 	FunctionType::Param GetArgExtendedType( const Variable& variable );
 
 	// Typeinfo
@@ -935,59 +935,59 @@ private:
 	VariablePtr BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
-	BlockBuildInfo BuildIfAlternative( NamesScope& names, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ScopeBlock& block );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReturnOperator& return_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::YieldOperator& yield_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::RangeForOperator& range_for_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::CStyleForOperator& c_style_for_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::WhileOperator& while_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::LoopOperator& loop_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::BreakOperator& break_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ContinueOperator& continue_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::WithOperator& with_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::IfOperator& if_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::StaticIfOperator& static_if_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::IfCoroAdvanceOperator& if_coro_advance );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::SwitchOperator& switch_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::SingleExpressionOperator& single_expression_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AssignmentOperator& assignment_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AdditiveAssignmentOperator& additive_assignment_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::IncrementOperator& increment_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::DecrementOperator& decrement_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::StaticAssert& static_assert_ );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeAlias& type_alias );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::Halt& halt );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::HaltIf& halt_if );
+	BlockBuildInfo BuildIfAlternative( NamesScope& names_scope, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Block& block );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ScopeBlock& block );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ReturnOperator& return_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::YieldOperator& yield_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RangeForOperator& range_for_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CStyleForOperator& c_style_for_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::WhileOperator& while_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::LoopOperator& loop_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BreakOperator& break_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ContinueOperator& continue_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::WithOperator& with_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::IfOperator& if_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::StaticIfOperator& static_if_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::IfCoroAdvanceOperator& if_coro_advance );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SwitchOperator& switch_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SingleExpressionOperator& single_expression_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AssignmentOperator& assignment_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AdditiveAssignmentOperator& additive_assignment_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::IncrementOperator& increment_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::DecrementOperator& decrement_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::StaticAssert& static_assert_ );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeAlias& type_alias );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Halt& halt );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::HaltIf& halt_if );
 
-	BlockBuildInfo BuildBlock( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
+	BlockBuildInfo BuildBlock( NamesScope& names_scope, FunctionContext& function_context, const Synt::Block& block );
 	// Build elements, withut creating separate names scope.
-	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements );
+	BlockBuildInfo BuildBlockElements( NamesScope& names_scope, FunctionContext& function_context, const Synt::BlockElementsList& block_elements );
 
-	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
+	void BuildEmptyReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 
 	void AddLoopFrame(
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::BasicBlock* break_block,
 		llvm::BasicBlock* continue_block,
 		const std::optional<Synt::Label>& label );
 
 	// Returns nullptr if not found.
-	LoopFrame* FetchLoopFrame( NamesScope& names, FunctionContext& function_context, const std::optional<Synt::Label>& label );
+	LoopFrame* FetchLoopFrame( NamesScope& names_scope, FunctionContext& function_context, const std::optional<Synt::Label>& label );
 
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
 		const Synt::Expression& expression,
 		const SrcLoc& src_loc,
 		bool positive, // true - increment, false - decrement
-		NamesScope& block_names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
-	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
+	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names_scope, FunctionContext& function_context );
 
 	//
 	// Name resolving.
@@ -1011,7 +1011,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
-	Value ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
+	Value ContextualizeValueInResolve( NamesScope& names_scope, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
 
 	struct NameLookupResult
 	{
@@ -1089,7 +1089,7 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		llvm::ArrayRef<FunctionType::Param> actual_args,
 		OverloadedOperator op,
-		NamesScope& names,
+		NamesScope& names_scope,
 		const SrcLoc& src_loc );
 
 	// Returns non-null, if type is class and has constructors.
@@ -1118,28 +1118,28 @@ private:
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.
-	llvm::Constant* ApplyInitializer( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializerSignatureHelp& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
+	llvm::Constant* ApplyInitializer( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::Initializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::ConstructorInitializerSignatureHelp& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names_scope, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
 	llvm::Constant* ApplyEmptyInitializer(
 		std::string_view variable_name,
 		const SrcLoc& src_loc,
 		VariablePtr variable,
-		NamesScope& block_names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const VariablePtr& variable,
 		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& src_loc,
-		NamesScope& block_names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	void BuildConstructorInitialization(
@@ -1153,13 +1153,13 @@ private:
 		const VariablePtr& variable,
 		const ClassField& field,
 		const Synt::Initializer& initializer,
-		NamesScope& block_names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeFunctionPointer(
 		const VariablePtr& variable,
 		const Synt::Expression& initializer_expression,
-		NamesScope& block_names,
+		NamesScope& names_scope,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeClassFieldWithInClassIninitalizer(
@@ -1201,21 +1201,21 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	void CheckReturnedReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
+	void CheckReturnedReferenceIsAllowed( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
 	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node );
 
-	void CheckReturnedInnerReferenceIsAllowed( NamesScope& names, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
+	void CheckReturnedInnerReferenceIsAllowed( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& return_reference_node, const SrcLoc& src_loc );
 	bool IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, size_t index );
 
 	void CheckAsyncReturnReferenceIsAllowed(
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const CoroutineTypeDescription& coroutine_type_description,
 		const VariablePtr& node,
 		const SrcLoc& src_loc );
 
 	void CheckAsyncReturnInnerReferencesAreAllowed(
-		NamesScope& names,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const CoroutineTypeDescription& coroutine_type_description,
 		const VariablePtr& node,
@@ -1261,24 +1261,24 @@ private:
 	// This function should be called for coroutine function just after aruments preparation.
 	void PrepareCoroutineBlocks( FunctionContext& function_context );
 
-	void CoroutineYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
-	void AsyncReturn( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
-	Value BuildAwait( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	void CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	void AsyncReturn( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	Value BuildAwait( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 
 	// Lambdas
 
-	Value BuildLambda( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
-	std::pair<llvm::Value*, llvm::Constant*> InitializeLambdaField( NamesScope& names, FunctionContext& function_context, const ClassField& field, const VariablePtr& variable, const VariablePtr& result, const SrcLoc& src_loc );
-	ClassPtr PrepareLambdaClass( NamesScope& names, FunctionContext& function_context, const Synt::Lambda& lambda );
+	Value BuildLambda( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda );
+	std::pair<llvm::Value*, llvm::Constant*> InitializeLambdaField( NamesScope& names_scope, FunctionContext& function_context, const ClassField& field, const VariablePtr& variable, const VariablePtr& result, const SrcLoc& src_loc );
+	ClassPtr PrepareLambdaClass( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda );
 	ClassPtr GetLambdaPreprocessingDummyClass( NamesScope& names );
 	std::string GetLambdaBaseName( const Synt::Lambda& lambda, llvm::ArrayRef<uint32_t> tuple_for_indices );
 	std::unordered_set<VariablePtr> CollectCurrentFunctionVariables( FunctionContext& function_context );
-	void LambdaPreprocessingCheckVariableUsage( NamesScope& names, FunctionContext& function_context, const VariablePtr& variable, const std::string& name, const SrcLoc& src_loc );
+	void LambdaPreprocessingCheckVariableUsage( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& variable, const std::string& name, const SrcLoc& src_loc );
 	VariablePtr LambdaPreprocessingAccessExternalVariable( FunctionContext& function_context, const VariablePtr& variable, const std::string& name );
 	void LambdaPreprocessingEnsureCapturedVariableRegistered( FunctionContext& function_context, const LambdaPreprocessingContext::CapturedVariableData& captured_variable );
-	Value LambdaPreprocessingHandleCapturedVariableMove( NamesScope& names, FunctionContext& function_context, const VariablePtr& variable,  const std::string& name, const SrcLoc& src_loc );
+	Value LambdaPreprocessingHandleCapturedVariableMove( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& variable,  const std::string& name, const SrcLoc& src_loc );
 
 	// NamesScope fill
 

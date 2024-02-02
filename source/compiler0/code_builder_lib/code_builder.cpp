@@ -1956,12 +1956,12 @@ void CodeBuilder::BuildFuncCode(
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 }
 
-void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )
+void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names_scope, FunctionContext& function_context )
 {
 	if( static_assert_.syntax_element == nullptr )
 		return;
 
-	BuildBlockElementImpl( names, function_context, *static_assert_.syntax_element );
+	BuildBlockElementImpl( names_scope, function_context, *static_assert_.syntax_element );
 	static_assert_.syntax_element= nullptr;
 }
 
