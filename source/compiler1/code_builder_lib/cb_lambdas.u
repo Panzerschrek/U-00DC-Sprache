@@ -384,6 +384,24 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 	}
 
+	// Perform some checks.
+
+	with( &ft : lambda_.function.deref().function_type )
+	{
+		if( !ft.return_value_reference_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( ft.return_value_reference_expression.try_deref() ) )
+		}
+		if( !ft.return_value_inner_references_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( ft.return_value_inner_references_expression.try_deref() ) )
+		}
+		if( !ft.references_pollution_expression.empty() )
+		{
+			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( ft.references_pollution_expression.try_deref() ) )
+		}
+	}
+
 	var bool mut has_preprocessing_errors= false;
 	var FunctionType::ParamReferences mut return_references;
 	var FunctionType::ReturnInnerReferences mut return_inner_references;
@@ -549,8 +567,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			{
 				.body_syntax_element= lambda_.function,
 				.llvm_function( LazyLLVMFunction( "\0" /* The name of temporary function is irrelevant. */ ) ),
-				// It's fine to use incomplete lambda class here, since this class can't be accessed.
-				.t= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, lambda_preprocessing_dummy_class ),
+				.t= PrepareFunctionType( names_scope, function_context, lambda_.function.deref().function_type, lambda_preprocessing_dummy_class ),
 				.is_this_call= true,
 			};
 
@@ -834,7 +851,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	{
 		var ust::string_view8 call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
-		auto mut function_type= PrepareLambdaCallOperatorType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr );
+		auto mut function_type= PrepareFunctionType( names_scope, function_context, lambda_.function.deref().function_type, class_type_ptr );
 		function_type.return_references= move(return_references);
 		function_type.return_inner_references= move(return_inner_references);
 		function_type.references_pollution= move(references_pollution);
@@ -981,98 +998,6 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 	}
 
 	return name;
-}
-
-fn CodeBuilder::PrepareLambdaCallOperatorType(
-	mut this,
-	NamesScopePtr& names_scope,
-	FunctionContext &mut function_context,
-	Synt::FunctionType& lambda_function_type,
-	ClassTypePtr& lambda_class_type ) : FunctionType
-{
-	var FunctionType mut res
-	{
-		.return_type(
-			select(
-				lambda_function_type.return_type.empty() || lambda_function_type.IsAutoReturn()
-					? Type( void_type_ )
-					: PrepareType( names_scope, function_context, lambda_function_type.return_type.try_deref() ) ) ),
-		.return_value_type= ValueType::Value,
-		.is_unsafe= lambda_function_type.is_unsafe,
-		.calling_convention= GetLLVMCallingConvention( lambda_function_type.calling_convention, names_scope, lambda_function_type.src_loc ),
-	};
-
-	if( lambda_function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
-	{
-		res.return_value_type= select( lambda_function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-	}
-
-	// First param is always "this" of the lambda type.
-	{
-		debug_assert( !lambda_function_type.params.empty() );
-		var Synt::FunctionType::Param& in_this_param= lambda_function_type.params.front();
-
-		var FunctionType::Param mut this_param
-		{
-			.t= lambda_class_type,
-			.value_type= ValueType::ReferenceImut,
-		};
-
-		if( in_this_param.reference_modifier == Synt::ReferenceModifier::None )
-		{
-			this_param.value_type= ValueType::Value;
-		}
-		else if( in_this_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
-		{
-			this_param.value_type= ValueType::ReferenceMut;
-		}
-		else
-		{
-			this_param.value_type= ValueType::ReferenceImut;
-		}
-
-		res.params.push_back( move(this_param) );
-	}
-
-	auto mut params_except_first= lambda_function_type.params.range();
-	params_except_first.drop_front();
-
-	// Iterate over params skipping first "this".
-	foreach( &param : params_except_first )
-	{
-		if( IsKeyword( param.name ) )
-		{
-			REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
-		}
-
-		var FunctionType::Param mut out_param
-		{
-			.t= PrepareType( names_scope, function_context, param.t ),
-			.value_type= ValueType::Value,
-		};
-
-		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
-		{
-			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-		}
-
-		res.params.push_back( move(out_param) );
-	}
-
-	if( !lambda_function_type.return_value_reference_expression.empty() )
-	{
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.return_value_reference_expression.try_deref() ) )
-	}
-	if( !lambda_function_type.return_value_inner_references_expression.empty() )
-	{
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.return_value_inner_references_expression.try_deref() ) )
-	}
-	if( !lambda_function_type.references_pollution_expression.empty() )
-	{
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( lambda_function_type.references_pollution_expression.try_deref() ) )
-	}
-
-	return move(res);
 }
 
 fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
