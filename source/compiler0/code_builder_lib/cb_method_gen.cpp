@@ -1065,7 +1065,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	llvm::Constant* const l,
 	llvm::Constant* const r,
 	const Type& type,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	const SrcLoc& src_loc )
 {
 	llvm::Type* const llvm_type= type.GetLLVMType();

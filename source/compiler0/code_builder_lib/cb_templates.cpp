@@ -747,7 +747,7 @@ std::optional<Type> CodeBuilder::GenTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatesSet& type_templates_set,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
-	NamesScope& arguments_names_scope,
+	const NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
 	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
@@ -831,7 +831,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 	const SrcLoc& src_loc,
-	NamesScope& arguments_names_scope,
+	const NamesScope& arguments_names_scope,
 	const TemplateTypePreparationResult& template_type_preparation_result )
 {
 	const TypeTemplatePtr& type_template_ptr= template_type_preparation_result.type_template;
@@ -1096,7 +1096,7 @@ OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 	const SrcLoc& src_loc,
 	const OverloadedFunctionsSetConstPtr& functions_set_ptr,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
-	NamesScope& arguments_names_scope,
+	const NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
 	const std::vector<FunctionTemplatePtr>& function_templates= functions_set_ptr->template_functions;
@@ -1162,7 +1162,7 @@ OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 void CodeBuilder::EvaluateTemplateArgs(
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
 	const SrcLoc& src_loc,
-	NamesScope& arguments_names_scope,
+	const NamesScope& arguments_names_scope,
 	FunctionContext& function_context,
 	llvm::SmallVectorImpl<TemplateArg>& out_args )
 {

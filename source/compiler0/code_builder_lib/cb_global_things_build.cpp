@@ -381,7 +381,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 
 	// Perform only steps necessary to build parents list.
 	// Do not even require completeness of parent class.
-	NamesScope& class_parent_namespace= *class_type->members->GetParent();
+	const NamesScope& class_parent_namespace= *class_type->members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents )
 	{
 		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
@@ -442,7 +442,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.src_loc );
 
-	NamesScope& class_parent_namespace= *the_class.members->GetParent();
+	const NamesScope& class_parent_namespace= *the_class.members->GetParent();
 	// Perform remaining check of parents.
 	for( Class::Parent& parent : the_class.parents )
 	{
@@ -1159,7 +1159,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->src_loc );
 
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
-	NamesScope& names_scope= *enum_->members.GetParent();
+	const NamesScope& names_scope= *enum_->members.GetParent();
 
 	// Default underlying type is mostyl u8, but can be large for enums with a lot of values.
 	if( enum_decl.members.size() <= (1 << 8) )

@@ -13,7 +13,7 @@ using Synt::ClassMemberVisibility;
 class NamesScope final
 {
 public:
-	NamesScope( std::string name, NamesScope* parent );
+	NamesScope( std::string name, const NamesScope* parent );
 
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
@@ -30,12 +30,10 @@ public:
 	NamesScopeValue* GetThisScopeValue( std::string_view name );
 	const NamesScopeValue* GetThisScopeValue( std::string_view name ) const;
 
-	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
-	NamesScope* GetRoot();
 	const NamesScope* GetRoot() const;
 
-	NamesScope* GetClosestNamedSpaceOrRoot();
+	const NamesScope* GetClosestNamedSpaceOrRoot() const;
 
 	// Store class for namespaces of classes.
 	void SetClass( ClassPtr in_class );
@@ -89,7 +87,7 @@ public:
 
 private:
 	const std::string name_;
-	NamesScope* const parent_;
+	const NamesScope* const parent_;
 
 	ClassPtr class_= nullptr;
 

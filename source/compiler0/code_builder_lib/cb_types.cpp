@@ -17,7 +17,7 @@ namespace U
 
 Type CodeBuilder::PrepareType(
 	const Synt::TypeName& type_name,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	return
@@ -29,48 +29,48 @@ Type CodeBuilder::PrepareType(
 		type_name);
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::EmptyVariant& )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope&, FunctionContext&, const Synt::EmptyVariant& )
 {
 	U_ASSERT(false);
 	return invalid_type_;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, root_namespace_lookup ), root_namespace_lookup.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, root_namespace_lookup_completion ), root_namespace_lookup_completion.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup ), name_lookup.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup_completion ), name_lookup_completion.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch ), names_scope_name_fetch->src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch_completion ), names_scope_name_fetch_completion->src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParameterization>& template_parameterization )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParameterization>& template_parameterization )
 {
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parameterization ), template_parameterization->src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
 	ArrayType array_type;
 	array_type.element_type= PrepareType( array_type_name.element_type, names_scope, function_context );
@@ -110,7 +110,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return std::move(array_type);
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
 {
 	Type result;
 
@@ -130,7 +130,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return result;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name )
 {
 	if( function_type_name.IsAutoReturn() )
 		REPORT_ERROR( AutoForFunctionTypeReturnType, names_scope.GetErrors(), function_type_name.src_loc );
@@ -138,7 +138,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return FunctionTypeToPointer( PrepareFunctionType( names_scope, function_context, function_type_name ) );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
 {
 	TupleType tuple;
 	tuple.element_types.reserve( tuple_type_name.element_types.size() );
@@ -161,7 +161,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return std::move(tuple);
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
 {
 	RawPointerType raw_pointer;
 	raw_pointer.element_type= PrepareType( raw_pointer_type_name.element_type, names_scope, function_context );
@@ -170,7 +170,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name )
+Type CodeBuilder::PrepareTypeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name )
 {
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.kind= coroutine_type_name.kind;
@@ -203,7 +203,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
 
-Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
+Type CodeBuilder::ValueToType( const NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
 {
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
@@ -213,7 +213,7 @@ Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, cons
 	return invalid_type_;
 }
 
-FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, const ClassPtr class_ )
+FunctionType CodeBuilder::PrepareFunctionType( const NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, const ClassPtr class_ )
 {
 	FunctionType function_type;
 

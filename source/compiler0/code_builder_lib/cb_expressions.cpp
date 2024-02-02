@@ -19,7 +19,7 @@ namespace U
 
 VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	const Synt::Expression& expression,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	Value result= BuildExpressionCode( expression, names_scope, function_context );
@@ -78,7 +78,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 
 Value CodeBuilder::BuildExpressionCode(
 	const Synt::Expression& expression,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	return
@@ -91,7 +91,7 @@ Value CodeBuilder::BuildExpressionCode(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext&,
 	const Synt::EmptyVariant& )
 {
@@ -102,7 +102,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CallOperator& call_operator )
 {
@@ -126,7 +126,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
@@ -135,7 +135,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::IndexationOperator& indexation_operator )
 {
@@ -354,7 +354,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::MemberAccessOperator& member_access_operator )
 {
@@ -474,20 +474,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	return ErrorValue();
 }
 
-Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
+Value CodeBuilder::BuildExpressionCodeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( member_access_operator_completion.expression, names_scope, function_context );
 	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name );
 	return ErrorValue();
 }
 
-Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AwaitOperator& await_operator )
+Value CodeBuilder::BuildExpressionCodeImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::AwaitOperator& await_operator )
 {
 	return BuildAwait( names_scope, function_context, await_operator.expression, await_operator.src_loc );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::UnaryMinus& unary_minus )
 {
@@ -534,7 +534,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::UnaryPlus& unary_plus )
 {
@@ -543,7 +543,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::LogicalNot& logical_not )
 {
@@ -578,7 +578,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::BitwiseNot& bitwise_not )
 {
@@ -619,7 +619,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::BinaryOperator& binary_operator	)
 {
@@ -749,7 +749,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TernaryOperator& ternary_operator )
 {
@@ -935,7 +935,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator )
 {
@@ -976,7 +976,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator )
 {
@@ -1036,7 +1036,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::NumericConstant& numeric_constant )
 {
@@ -1095,7 +1095,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::BooleanConstant& boolean_constant )
 {
@@ -1117,7 +1117,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::StringLiteral& string_literal )
 {
@@ -1244,7 +1244,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
@@ -1262,7 +1262,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		NamesScopeValue* const resolved_value_ptr= LookupName( names_scope, move_operator.var_name, move_operator.src_loc ).value;
+		const NamesScopeValue* const resolved_value_ptr= LookupName( names_scope, move_operator.var_name, move_operator.src_loc ).value;
 		if( resolved_value_ptr == nullptr )
 			return ErrorValue();
 
@@ -1361,7 +1361,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::MoveOperatorCompletion& move_operator_completion )
 {
@@ -1371,7 +1371,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TakeOperator& take_operator	)
 {
@@ -1437,7 +1437,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Lambda& lambda )
 {
@@ -1445,7 +1445,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CastMut& cast_mut )
 {
@@ -1482,7 +1482,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CastImut& cast_imut	)
 {
@@ -1517,7 +1517,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CastRef& cast_ref )
 {
@@ -1525,7 +1525,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CastRefUnsafe& cast_ref_unsafe )
 {
@@ -1536,7 +1536,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TypeInfo& typeinfo )
 {
@@ -1550,7 +1550,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	NamesScope& root_namespace= *names_scope.GetRoot();
+	const NamesScope& root_namespace= *names_scope.GetRoot();
 	BuildTypeInfo( type, *names_scope.GetRoot() );
 
 	const VariableMutPtr& var_ptr= typeinfo_cache_[type].variable;
@@ -1562,7 +1562,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::SameType& same_type )
 {
@@ -1587,7 +1587,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::NonSyncExpression& non_sync_expression )
 {
@@ -1610,7 +1610,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::SafeExpression& safe_expression )
 {
@@ -1622,7 +1622,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::UnsafeExpression& unsafe_expression )
 {
@@ -1671,7 +1671,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::RootNamespaceNameLookup& root_namespace_lookup )
 {
@@ -1679,7 +1679,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
 {
@@ -1687,7 +1687,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::NameLookup& name_lookup )
 {
@@ -1695,7 +1695,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::NameLookupCompletion& name_lookup_completion )
 {
@@ -1703,7 +1703,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TypeofTypeName& typeof_type_name )
 {
@@ -1711,7 +1711,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
@@ -1719,7 +1719,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion )
 {
@@ -1727,7 +1727,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TemplateParameterization& template_parameterization )
 {
@@ -1735,7 +1735,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
@@ -1743,7 +1743,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::FunctionType& type_name )
 {
@@ -1751,7 +1751,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::TupleType& type_name )
 {
@@ -1759,7 +1759,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::RawPointerType& type_name )
 {
@@ -1767,7 +1767,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::CoroutineType& type_name )
 {
@@ -1810,7 +1810,7 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 }
 
 Value CodeBuilder::AccessClassField(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const VariablePtr& variable,
 	const ClassField& field,
@@ -1953,7 +1953,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const Synt::Expression& right_expr,
 	const bool evaluate_args_in_reverse_order,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	// Know args types.
@@ -2064,7 +2064,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	const Synt::Expression&  left_expr,
 	const Synt::Expression& right_expr,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	if( op == OverloadedOperator::Assign )
@@ -2226,7 +2226,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	const VariablePtr& variable,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	if( variable->type.GetClassType() == nullptr )
@@ -2265,7 +2265,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	llvm::SmallVector<FunctionType::Param, 16> actual_args;
@@ -2319,7 +2319,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	const Variable& r_var,
 	const BinaryOperatorType binary_operator,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	using BinaryOperatorType= BinaryOperatorType;
@@ -2761,7 +2761,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	const Variable& r_var,
 	BinaryOperatorType binary_operator,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	U_ASSERT( l_var.type.GetRawPointerType() != nullptr || r_var.type.GetRawPointerType() != nullptr );
@@ -2930,7 +2930,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	const Synt::Expression& r_expression,
 	const Synt::BinaryOperator& binary_operator,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	// TODO - maybe create separate variables stack frame for right expression evaluation and call destructors?
@@ -3034,7 +3034,7 @@ Value CodeBuilder::DoReferenceCast(
 	const Synt::TypeName& type_name,
 	const Synt::Expression& expression,
 	bool enable_unsafe,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	const Type type= PrepareType( type_name, names_scope, function_context );
@@ -3109,7 +3109,7 @@ Value CodeBuilder::CallFunctionValue(
 	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& call_src_loc,
 	const std::optional<SrcLoc>& function_value_src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(function_value);
@@ -3265,7 +3265,7 @@ Value CodeBuilder::DoCallFunction(
 	const VariablePtr& this_, // optional
 	const llvm::ArrayRef<const Synt::Expression*> args,
 	const bool evaluate_args_in_reverse_order,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const bool func_is_constexpr )
 {
@@ -3288,7 +3288,7 @@ Value CodeBuilder::DoCallFunction(
 	const llvm::ArrayRef<VariablePtr> preevaluated_args,
 	const llvm::ArrayRef<const Synt::Expression*> args,
 	const bool evaluate_args_in_reverse_order,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const bool func_is_constexpr )
 {
@@ -3742,7 +3742,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	const Type& type,
 	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	if( !EnsureTypeComplete( type ) )
@@ -3792,7 +3792,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 	const VariablePtr variable,
 	const Type& dst_type,
 	const FunctionVariable& conversion_constructor,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const SrcLoc& src_loc )
 {
@@ -3854,7 +3854,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 	return result;
 }
 
-bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
+bool CodeBuilder::EvaluateBoolConstantExpression( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
 {
 	const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( v->type != bool_type_ )
@@ -3873,7 +3873,7 @@ bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names_scope, Funct
 	return v->constexpr_value->isAllOnesValue();
 }
 
-FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
+FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, const NamesScope& names, FunctionContext& function_context )
 {
 	if( function_context.args_preevaluation_cache.count(&expression) == 0 )
 	{

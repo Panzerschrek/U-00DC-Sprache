@@ -16,7 +16,7 @@ namespace U
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Initializer& initializer )
 {
@@ -31,7 +31,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr&,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext&,
 	const Synt::EmptyVariant& )
 {
@@ -41,7 +41,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::SequenceInitializer& initializer )
 {
@@ -195,7 +195,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& initializer )
 {
@@ -366,7 +366,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ConstructorInitializer& initializer )
 {
@@ -375,7 +375,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ConstructorInitializerSignatureHelp& initializer )
 {
@@ -390,7 +390,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Expression& initializer )
 {
@@ -517,7 +517,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ZeroInitializer& initializer )
 {
@@ -636,7 +636,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr&,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::UninitializedInitializer& initializer )
 {
@@ -650,7 +650,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	const std::string_view variable_name,
 	const SrcLoc& src_loc,
 	const VariablePtr variable,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	if( !variable->type.IsDefaultConstructible() )
@@ -764,7 +764,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const VariablePtr& variable,
 	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& src_loc,
-	NamesScope& names_scope,
+const 	NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const dst_type= variable->type.GetFundamentalType() )
@@ -1055,7 +1055,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 void CodeBuilder::BuildConstructorInitialization(
 	const VariablePtr& this_,
 	const Class& base_class,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& constructor_initialization_list )
 {
@@ -1262,7 +1262,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const VariablePtr& variable,
 	const ClassField& field,
 	const Synt::Initializer& initializer,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	U_ASSERT( variable->type.GetClassType() != nullptr );
@@ -1339,7 +1339,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	const VariablePtr& variable,
 	const Synt::Expression& initializer_expression,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context )
 {
 	U_ASSERT( variable->type.GetFunctionPointerType() != nullptr );

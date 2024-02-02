@@ -309,7 +309,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	if( name.size() > 1 )
 	{
 		// Out of line definition - fetch proper namespace.
-		NamesScopeValue* value= nullptr;
+		const NamesScopeValue* value= nullptr;
 		size_t component_index= 0u;
 		if( name.front().name.empty() )
 		{

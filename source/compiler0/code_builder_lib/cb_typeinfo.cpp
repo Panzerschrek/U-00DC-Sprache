@@ -25,7 +25,7 @@ const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
 } // namespace
 
-VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_namespace )
 {
 	if( const auto it= typeinfo_cache_.find( type ); it != typeinfo_cache_.end() )
 		return it->second.variable;
@@ -35,7 +35,7 @@ VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_names
 	return result;
 }
 
-ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
+ClassPtr CodeBuilder::CreateTypeinfoClass( const NamesScope& root_namespace, const Type& src_type, std::string name )
 {
 	// Currently, give "random" names for typeinfo classes.
 	// There is no reason to give meaningfull names to LLVM types, since these names are insignificant.
@@ -54,7 +54,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	return typeinfo_class;
 }
 
-VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
+VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace )
 {
 	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
 	const VariableMutPtr result=
@@ -76,7 +76,7 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 	return result;
 }
 
-void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace )
+void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, const NamesScope& root_namespace )
 {
 	if( !EnsureTypeComplete( type ) )
 	{
@@ -321,7 +321,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 	// Take copy of cache element, in order to avoid reference invalidation in possible recursive calls.
 	TypeinfoCacheElement cache_element= typeinfo_table_it->second;
 
-	NamesScope& root_namespace= *typeinfo_class_type->members->GetRoot();
+	const NamesScope& root_namespace= *typeinfo_class_type->members->GetRoot();
 
 	if( source_type.GetFundamentalType() != nullptr ||
 		source_type.GetArrayType() != nullptr ||
@@ -454,7 +454,7 @@ VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<Typei
 	return result;
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, const NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 	list_elements.reserve( enum_type->element_count );
@@ -544,7 +544,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type, const NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -631,7 +631,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type
 	return CreateTypeinfoListVariable( list_elements );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type, const NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -677,7 +677,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type,
 	return CreateTypeinfoListVariable( list_elements );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_type, const NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -752,7 +752,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 	return CreateTypeinfoListVariable( list_elements );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_type, const NamesScope& root_namespace )
 {
 	const Class& class_= *class_type;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
@@ -791,7 +791,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_typ
 	return CreateTypeinfoListVariable( list_elements );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoFunctionParams( const FunctionType& function_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoFunctionParams( const FunctionType& function_type, const NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -836,7 +836,7 @@ VariablePtr CodeBuilder::BuildTypeinfoFunctionParams( const FunctionType& functi
 	return CreateTypeinfoListVariable( list_elements );
 }
 
-VariablePtr CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, const NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 	list_elements.reserve( tuple_type.element_types.size() );

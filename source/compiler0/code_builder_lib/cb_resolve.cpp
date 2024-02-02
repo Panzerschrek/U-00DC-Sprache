@@ -8,23 +8,23 @@ namespace U
 {
 
 Value CodeBuilder::ResolveValue(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ComplexName& complex_name )
 {
 	return std::visit( [&]( const auto& el ) { return ResolveValueImpl( names_scope, function_context, el ); }, complex_name );
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
 {
 	return PrepareTypeImpl( names_scope, function_context, typeof_type_name );
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )
 {
 	(void)function_context;
 
-	NamesScope* const root_namespace= names_scope.GetRoot();
+	const NamesScope* const root_namespace= names_scope.GetRoot();
 	U_ASSERT( root_namespace != nullptr );
 	NamesScopeValue* const value= root_namespace->GetThisScopeValue( root_namespace_lookup.name );
 	if( value == nullptr )
@@ -41,14 +41,14 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return ContextualizeValueInResolve( names_scope, function_context, value->value, root_namespace_lookup.src_loc );
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
 {
 	(void)function_context;
 	RootNamespaseLookupCompleteImpl( names_scope, root_namespace_lookup_completion.name );
 	return ErrorValue();
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
 {
 	// Process specially this/base name.
 	if( name_lookup.name == Keywords::this_ )
@@ -140,14 +140,14 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return ContextualizeValueInResolve( names_scope, function_context, result.value->value, name_lookup.src_loc );
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
 {
 	(void)function_context;
 	NameLookupCompleteImpl( names_scope, name_lookup_completion.name );
 	return ErrorValue();
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
 	const Value base= ResolveValue( names_scope, function_context, names_scope_fetch.base );
 
@@ -201,7 +201,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return ErrorValue();
 }
 
-Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization )
+Value CodeBuilder::ResolveValueImpl( const NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization )
 {
 	const Value base= ResolveValue( names_scope, function_context, template_parameterization.base );
 
@@ -290,7 +290,7 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 	}
 }
 
-Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc )
+Value CodeBuilder::ContextualizeValueInResolve( const NamesScope& names_scope, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc )
 {
 	if( const ClassFieldPtr field= value.GetClassField() )
 	{
@@ -298,7 +298,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 
 		if( function_context.this_ == nullptr )
 		{
-			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->GetName() );
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope.GetErrors(), src_loc, field->GetName() );
 			return ErrorValue();
 		}
 
@@ -312,7 +312,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 				if( field->index < function_context.initialized_this_fields.size() &&
 					!function_context.initialized_this_fields[ field->index ] )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->GetName() );
+					REPORT_ERROR( FieldIsNotInitializedYet, names_scope.GetErrors(), src_loc, field->GetName() );
 					return ErrorValue();
 				}
 			}
@@ -320,7 +320,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 			{
 				if(!function_context.base_initialized )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, Keyword( Keywords::base_ ) );
+					REPORT_ERROR( FieldIsNotInitializedYet, names_scope.GetErrors(), src_loc, Keyword( Keywords::base_ ) );
 					return ErrorValue();
 				}
 			}
@@ -329,14 +329,14 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		{
 			// Forbid accessing mutable references in destructor in order to avoid possible invalidation of still alive derived references.
 			if( field->is_reference && field->is_mutable )
-				REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names.GetErrors(), src_loc );
+				REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names_scope.GetErrors(), src_loc );
 			if( !field->is_reference && field->type.ContainsMutableReferences() )
-				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names.GetErrors(), src_loc );
+				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names_scope.GetErrors(), src_loc );
 		}
 		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
-			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, Keyword( Keywords::this_ ) );
+			REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), src_loc, Keyword( Keywords::this_ ) );
 
-		return AccessClassField( names, function_context, function_context.this_, *field, "TODO - field name", src_loc );
+		return AccessClassField( names_scope, function_context, function_context.this_, *field, "TODO - field name", src_loc );
 	}
 	else if( const OverloadedFunctionsSetPtr overloaded_functions_set= value.GetFunctionsSet() )
 	{
@@ -357,7 +357,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 	else if( const VariablePtr variable= value.GetVariable() )
 	{
 		if( function_context.variables_state.NodeMoved( variable ) )
-			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
+			REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), src_loc, variable->name );
 
 		// Forbid mutable global variables access outside unsafe block.
 		// Detect global variable by checking dynamic type of variable's LLVM value.
@@ -365,7 +365,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		if( variable->value_type == ValueType::ReferenceMut &&
 			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
 			!function_context.is_in_unsafe_block )
-			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), src_loc );
+			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
 
 		if( IsGlobalVariable(variable) )
 		{
@@ -377,10 +377,10 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 	return value;
 }
 
-CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, const std::string_view name, const SrcLoc& src_loc )
+CodeBuilder::NameLookupResult CodeBuilder::LookupName( const NamesScope& names_scope, const std::string_view name, const SrcLoc& src_loc )
 {
-	NamesScope* last_space= &names_scope;
-	NamesScopeValue* value= nullptr;
+	const NamesScope* last_space= &names_scope;
+	const NamesScopeValue* value= nullptr;
 
 	do
 	{

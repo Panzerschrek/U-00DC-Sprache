@@ -6,7 +6,7 @@
 namespace U
 {
 
-Value CodeBuilder::BuildLambda( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
+Value CodeBuilder::BuildLambda( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
 	const ClassPtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda );
 
@@ -122,7 +122,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names_scope, FunctionContext& functi
 }
 
 std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const ClassField& field,
 	const VariablePtr& variable,
@@ -208,12 +208,12 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 	}
 }
 
-ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
+ClassPtr CodeBuilder::PrepareLambdaClass( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
 	// Use first named namespace as lambda class parent.
 	// We can't use namespace of function variables here, because it will be destroyed later.
 	// Usually this is a closest global scope that contains this function - some namespace, struct, class or a template args namespace.
-	NamesScope* const lambda_class_parent_scope= names_scope.GetClosestNamedSpaceOrRoot();
+	const NamesScope* const lambda_class_parent_scope= names_scope.GetClosestNamedSpaceOrRoot();
 
 	LambdaKey key;
 	key.parent_scope= lambda_class_parent_scope;
@@ -221,7 +221,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 	// Extract tuple-for indices.
 	{
-		NamesScope* current= &names_scope;
+		const NamesScope* current= &names_scope;
 		while( current != nullptr )
 		{
 			if( const auto tuple_for_index= current->GetThisScopeValue( " tuple for index" ) )
@@ -712,7 +712,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 	return class_;
 }
 
-ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names_scope )
+ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( const NamesScope& names_scope )
 {
 	if( lambda_preprocessing_dummy_class_ != nullptr )
 		return lambda_preprocessing_dummy_class_.get();
@@ -801,7 +801,7 @@ std::unordered_set<VariablePtr> CodeBuilder::CollectCurrentFunctionVariables( Fu
 }
 
 void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const VariablePtr& variable,
 	const std::string& name,
@@ -927,7 +927,7 @@ void CodeBuilder::LambdaPreprocessingEnsureCapturedVariableRegistered(
 }
 
 Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const VariablePtr& variable,
 	const std::string& name,

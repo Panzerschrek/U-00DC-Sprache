@@ -10,7 +10,7 @@ namespace U
 struct LambdaKey
 {
 	// Store here scope in order to distinguish lambdas in different template instantiations.
-	NamesScope* parent_scope= nullptr;
+	const NamesScope* parent_scope= nullptr;
 	// SrcLoc of lambda syntax element.
 	SrcLoc src_loc;
 

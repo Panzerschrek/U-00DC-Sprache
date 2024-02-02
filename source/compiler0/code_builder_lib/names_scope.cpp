@@ -8,7 +8,7 @@
 namespace U
 {
 
-NamesScope::NamesScope( std::string name, NamesScope* const parent )
+NamesScope::NamesScope( std::string name, const NamesScope* const parent )
 	: name_(std::move(name) )
 	, parent_(parent)
 {}
@@ -51,22 +51,9 @@ const NamesScopeValue* NamesScope::GetThisScopeValue( const std::string_view nam
 	return const_cast<NamesScope*>(this)->GetThisScopeValue( name );
 }
 
-NamesScope* NamesScope::GetParent()
-{
-	return parent_;
-}
-
 const NamesScope* NamesScope::GetParent() const
 {
 	return parent_;
-}
-
-NamesScope* NamesScope::GetRoot()
-{
-	NamesScope* root= this;
-	while( root->parent_ != nullptr )
-		root= root->parent_;
-	return root;
 }
 
 const NamesScope* NamesScope::GetRoot() const
@@ -77,7 +64,7 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
-NamesScope* NamesScope::GetClosestNamedSpaceOrRoot()
+const NamesScope* NamesScope::GetClosestNamedSpaceOrRoot() const
 {
 	NamesScope* current= this;
 	while( current->name_.empty() )

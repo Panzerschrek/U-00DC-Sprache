@@ -7,7 +7,7 @@
 namespace U
 {
 
-bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
+bool CodeBuilder::GetTypeNonSync( const Type& type, const NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	size_t loop_start= non_sync_expression_stack_.size();
 	for( const Type& prev_type : non_sync_expression_stack_ )
@@ -52,7 +52,7 @@ bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, con
 }
 
 // TODO - cache results.
-bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
+bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_stack, const Type& type, const NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	// Simple non-recursive types without "non_sync" tag.
 	if( type.GetFundamentalType() != nullptr ||
@@ -108,7 +108,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				const Synt::Expression& expression= **expression_ptr;
 
 				// Evaluate non_sync condition using initial class members parent scope.
-				NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
+				const NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
 				if( const auto non_sync_expression_ptr= std::get_if< std::unique_ptr<const Synt::NonSyncExpression> >( &expression ) )
 				{
 					// Process "non_sync</T/>" expression specially to handle cases with recursive dependencies.
@@ -189,7 +189,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 	return false;
 }
 
-bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
+bool CodeBuilder::ImmediateEvaluateNonSyncTag( const NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
 {
 	if( std::get_if<Synt::NonSyncTagNone>( &non_sync_tag ) != nullptr )
 		return false;
@@ -206,7 +206,7 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 	if( class_type->syntax_element != nullptr )
 	{
 		// Evaluate non_sync condition using initial class members parent scope.
-		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
+		ImmediateEvaluateNonSyncTag( *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
 		global_function_context_->args_preevaluation_cache.clear();
 	}
 }

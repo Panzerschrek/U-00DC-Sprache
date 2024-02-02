@@ -712,7 +712,7 @@ void CodeBuilder::CallDestructorsImpl(
 
 void CodeBuilder::CallDestructors(
 	const StackVariablesStorage& stack_variables_storage,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const SrcLoc& src_loc )
 {
@@ -771,7 +771,7 @@ void CodeBuilder::CallDestructor(
 	else U_ASSERT(false);
 }
 
-void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const size_t stack_variables_stack_size, const SrcLoc& src_loc )
+void CodeBuilder::CallDestructorsForLoopInnerVariables( const NamesScope& names_scope, FunctionContext& function_context, const size_t stack_variables_stack_size, const SrcLoc& src_loc )
 {
 	U_ASSERT( !function_context.loops_stack.empty() );
 
@@ -787,7 +787,7 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope,
 	}
 }
 
-void CodeBuilder::CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CallDestructorsBeforeReturn( const NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
@@ -1420,7 +1420,7 @@ void CodeBuilder::CheckOverloadedOperator(
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassPtr base_class,
-	NamesScope& parent_names_scope,
+	const NamesScope& parent_names_scope,
 	const std::string_view func_name,
 	ReturnTypeDeductionContext* const return_type_deduction_context,
 	ReferenceNotationDeductionContext* const reference_notation_deduction_context,

@@ -303,7 +303,7 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 }
 
 void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
 	const VariablePtr& node,
@@ -320,7 +320,7 @@ void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 }
 
 void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const CoroutineTypeDescription& coroutine_type_description,
 	const VariablePtr& node,

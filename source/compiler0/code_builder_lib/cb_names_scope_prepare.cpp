@@ -340,7 +340,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const
 	if( function.name.size() <= 1u )
 		return;
 
-	NamesScopeValue* value= nullptr;
+	const NamesScopeValue* value= nullptr;
 	size_t component_index= 0u;
 	if( function.name.front().name.empty() )
 	{

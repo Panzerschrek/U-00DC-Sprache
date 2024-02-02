@@ -7,7 +7,7 @@ namespace U
 
 const std::string_view Class::c_template_class_name= "_";
 
-Class::Class( std::string in_name, NamesScope* const parent_scope )
+Class::Class( std::string in_name, const NamesScope* const parent_scope )
 	: members( std::make_shared<NamesScope>( std::move(in_name), parent_scope ) )
 	, members_initial(members)
 {}

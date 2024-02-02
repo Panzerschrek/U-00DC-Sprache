@@ -12,7 +12,7 @@ namespace
 std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 	const llvm::Constant* const constant,
 	const size_t num_params,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	const SrcLoc& src_loc )
 {
 	const uint64_t param= constant->getAggregateElement( uint32_t(0) )->getUniqueInteger().getLimitedValue();
@@ -44,7 +44,7 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 
 } // namespace
 
-std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
+std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( const NamesScope& names_scope, const Synt::Expression& expression )
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
 	global_function_context_->args_preevaluation_cache.clear();
@@ -72,7 +72,7 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 	}
 }
 
-std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression )
+std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFieldInnerTags( const NamesScope& names_scope, const Synt::Expression& expression )
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
 	global_function_context_->args_preevaluation_cache.clear();
@@ -113,7 +113,7 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 }
 
 FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollution(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Expression& expression,
 	const size_t num_params )
@@ -170,7 +170,7 @@ FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollutio
 }
 
 FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Expression& expression,
 	const size_t num_params )
@@ -207,7 +207,7 @@ FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 }
 
 FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerReferences(
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::Expression& expression,
 	const size_t num_params )
@@ -255,7 +255,7 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 	return result;
 }
 
-VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
+VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
 {
 	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );

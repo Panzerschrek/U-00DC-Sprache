@@ -730,7 +730,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const OverloadedOperator op,
-	NamesScope& names_scope,
+	const NamesScope& names_scope,
 	const SrcLoc& src_loc )
 {
 	const std::string_view op_name= OverloadedOperatorToString( op );

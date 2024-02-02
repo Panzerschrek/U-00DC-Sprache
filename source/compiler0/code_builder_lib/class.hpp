@@ -14,7 +14,7 @@ public:
 	static const std::string_view c_template_class_name; // Each template class have same name.
 
 public:
-	Class( std::string name, NamesScope* parent_scope );
+	Class( std::string name, const NamesScope* parent_scope );
 
 	ClassMemberVisibility GetMemberVisibility( std::string_view member_name ) const;
 	void SetMemberVisibility( std::string_view member_name, ClassMemberVisibility visibility );

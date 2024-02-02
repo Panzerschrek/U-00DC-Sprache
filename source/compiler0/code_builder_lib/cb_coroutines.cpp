@@ -134,7 +134,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	coroutine_function_type.return_references.clear();
 }
 
-ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
+ClassPtr CodeBuilder::GetCoroutineType( const NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
 {
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
 		return it->second.get();
@@ -398,7 +398,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
-void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineYield( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == nullptr )
 	{
@@ -524,7 +524,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 	CoroutineSuspend( names_scope, function_context, src_loc );
 }
 
-void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+void CodeBuilder::AsyncReturn( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
@@ -637,7 +637,7 @@ void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& functio
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
 }
 
-Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+Value CodeBuilder::BuildAwait( const NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( async_func_variable->type == invalid_type_ )
@@ -828,7 +828,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 }
 
 // Perform initial suspend or suspend in "yield".
-void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineSuspend( const NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
@@ -855,7 +855,7 @@ void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& fu
 	function_context.llvm_ir_builder.SetInsertPoint( next_block );
 }
 
-void CodeBuilder::CoroutineFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CoroutineFinalSuspend( const NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	// We can destroy all local variables right now. Leave only coroutine cleanup code in destroy block.
 	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
