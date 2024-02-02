@@ -71,7 +71,7 @@ fn ManglerMSVC::MangleFunction(
 	ust::string_view8 name,
 	FunctionType& function_type ) : ust::string8
 {
-	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>() );
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::null_optional_ref );
 }
 
 fn ManglerMSVC::MangleFunction(
