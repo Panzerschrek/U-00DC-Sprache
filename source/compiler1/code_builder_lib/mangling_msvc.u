@@ -434,7 +434,7 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust
 
 fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, TemplateArgsFinished& template_args )
 {
-	foreach( template_arg : template_args )
+	foreach( &template_arg : template_args )
 	{
 		if_var( &t : template_arg.get</Type/>() )
 		{

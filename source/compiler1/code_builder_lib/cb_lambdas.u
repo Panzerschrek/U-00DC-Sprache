@@ -817,18 +817,17 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		class_type.kind= ClassType::Kind::NonPolymorph;
 
 		// Calculate constexpr property.
-		class_type.can_be_constexpr= true;
-		foreach( &field_pair : class_type.fields_order )
-		{
-			with( &field : field_pair[1].lock_imut().deref() )
-			{
-				if( !field.t.CanBeConstexpr() || ( field.is_reference && field.is_mutable ) )
+		class_type.can_be_constexpr=
+			class_type.fields_order.
+			iter()
+			.all(
+				lambda( tup[ust::string8, ClassFieldPtr]& field_pair ) : bool
 				{
-					class_type.can_be_constexpr= false;
-					break;
-				}
-			}
-		}
+					with( &field : field_pair[1].lock_imut().deref() )
+					{
+						return field.t.CanBeConstexpr() && !( field.is_reference && field.is_mutable );
+					}
+				} );
 	}
 
 	// Create () operator.

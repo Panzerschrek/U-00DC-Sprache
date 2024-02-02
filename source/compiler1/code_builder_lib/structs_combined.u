@@ -458,14 +458,7 @@ fn Type::IsDefaultConstructible( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsDefaultConstructible() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsDefaultConstructible );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -489,14 +482,7 @@ fn Type::IsCopyConstructible( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsCopyConstructible() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsCopyConstructible );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -520,14 +506,7 @@ fn Type::IsCopyAssignable( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsCopyAssignable() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsCopyAssignable );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -551,14 +530,7 @@ fn Type::IsEqualityComparable( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.IsEqualityComparable() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( IsEqualityComparable );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -580,14 +552,7 @@ fn Type::HaveDestructor( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( element_type.HaveDestructor() )
-			{
-				return true;
-			}
-		}
-		return false;
+		return tuple_type.element_types.iter().any( HaveDestructor );
 	}
 
 	return false;
@@ -608,14 +573,7 @@ fn Type::CanBeConstexpr( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( !element_type.CanBeConstexpr() )
-			{
-				return false;
-			}
-		}
-		return true;
+		return tuple_type.element_types.iter().all( CanBeConstexpr );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -633,14 +591,7 @@ fn Type::IsAbstract( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( element_type.IsAbstract() )
-			{
-				return true;
-			}
-		}
-		return false;
+		return tuple_type.element_types.iter().any( IsAbstract );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -711,14 +662,7 @@ fn Type::ContainsMutableReferences( this ) : bool
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		foreach( &element_type : tuple_type.element_types )
-		{
-			if( element_type.ContainsMutableReferences() )
-			{
-				return true;
-			}
-		}
-
+		return tuple_type.element_types.iter().any( ContainsMutableReferences );
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -844,13 +788,7 @@ fn TypeHasher::hash( ArrayType& t ) : size_type
 
 fn TypeHasher::hash( TupleType& t ) : size_type
 {
-	auto mut res= 0s;
-	foreach( &element_type : t.element_types )
-	{
-		res= hash_combine( res, hash(element_type) );
-	}
-
-	return res;
+	return t.element_types.iter().map( (fn (Type& t) : size_type )(hash) ).fold( 0s, hash_combine );
 }
 
 fn TypeHasher::hash( RawPointerType& t ) : size_type
@@ -1453,30 +1391,32 @@ fn TemplateArgEquals( TemplateArgFinished& l, TemplateArgFinished& r ) : bool
 	return false;
 }
 
-fn HashTemplateArgs( TemplateArgsFinished& args ) : size_type
+fn HashTemplateArg( TemplateArgFinished& arg ) : size_type
 {
-	var size_type mut hash= 0s;
-
-	foreach( &arg : args )
+	if_var( &t : arg.get</Type/>() )
 	{
-		if_var( &t : arg.get</Type/>() )
+		return TypeHasher::hash( t );
+	}
+	else if_var( &varible_ptr : arg.get</VariablePtr/>() )
+	{
+		with( & variable : varible_ptr.lock_imut().deref() )
 		{
-			hash= TypeHasher::hash_combine( hash, TypeHasher::hash( t ) );
-		}
-		else if_var( &varible_ptr : arg.get</VariablePtr/>() )
-		{
-			with( & variable : varible_ptr.lock_imut().deref() )
+			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
-				if( variable.constexpr_value != LLVMValueRef::Null )
-				{
-					hash= TypeHasher::hash_combine( hash, size_type( unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) ) ) );
-				}
+				return size_type( unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) ) );
 			}
 		}
-		else{ halt; }
+		return 0s;
 	}
+	else{ halt; }
+}
 
-	return hash;
+fn HashTemplateArgs( TemplateArgsFinished& args ) : size_type
+{
+	return args
+		.iter()
+		.map( HashTemplateArg )
+		.fold( 0s, TypeHasher::hash_combine );
 }
 
 //

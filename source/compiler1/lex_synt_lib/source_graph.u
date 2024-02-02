@@ -128,10 +128,8 @@ fn LoadSourceGraph_r(
 	source_graph.nodes.push_back( move(stub_node) );
 
 	auto mut lex_result= LexicalAnalysis( file_content_view );
-	foreach( &error : lex_result.errors )
-	{
-		source_graph.errors.push_back( error );
-	}
+
+	source_graph.errors.append( lex_result.errors );
 
 	foreach( &mut lexem : lex_result.lexems )
 	{
@@ -169,7 +167,6 @@ fn LoadSourceGraph_r(
 
 	// Merge macroses
 	var Synt::MacrosByContextMap mut macros= built_in_macros;
-	var LexSyntErrors mut macro_errors;
 	foreach( &child_index : node.children )
 	{
 		var SourceGraph::Node& src_node= source_graph.nodes[child_index];
@@ -190,16 +187,12 @@ fn LoadSourceGraph_r(
 				}
 				else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
 				{
-					macro_errors.push_back( LexSyntError(
+					source_graph.errors.push_back( LexSyntError(
 						macro.value().deref().src_loc ,
 						"Macro \"" + macro.key() + "\" redefinition." ) );
 				}
 			}
 		}
-	}
-	foreach( &mut macro_error : macro_errors )
-	{
-		source_graph.errors.push_back( take(macro_error) );
 	}
 
 	auto mut synt_result=
