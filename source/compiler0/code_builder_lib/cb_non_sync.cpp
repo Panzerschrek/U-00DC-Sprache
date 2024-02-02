@@ -199,7 +199,8 @@ bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names_scope, Function
 
 void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
-	if( class_type->syntax_element != nullptr )
+	if( class_type->syntax_element != nullptr &&
+		std::holds_alternative< std::unique_ptr<const Synt::Expression> >( class_type->syntax_element->non_sync_tag ) )
 	{
 		// Evaluate non_sync condition using initial class members parent scope.
 		WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { ImmediateEvaluateNonSyncTag( *class_type->members_initial->GetParent(), function_context, class_type->syntax_element->non_sync_tag ); } );

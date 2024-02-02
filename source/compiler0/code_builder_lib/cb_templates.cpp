@@ -129,20 +129,18 @@ void CodeBuilder::PrepareFunctionTemplate(
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
-	{
-		if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
-			function_template->signature_params.push_back( TemplateSignatureParam::TypeParam{ Type(base_class) } );
-		else
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
 		{
-			function_template->signature_params.push_back(
-				WithGlobalFunctionContext(
-					[&]( FunctionContext& function_context )
-					{
-						return CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type );
-					} ) );
-		}
-	}
+			for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
+			{
+				if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
+					function_template->signature_params.push_back( TemplateSignatureParam::TypeParam{ Type(base_class) } );
+				else
+					function_template->signature_params.push_back(
+						CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
+			}
+		} );
 
 	// Do not report about unused template parameters because they may not be used in function signature or even in function type but used only inside body.
 	// For example:
@@ -185,32 +183,32 @@ void CodeBuilder::ProcessTemplateParams(
 
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
 
-	for( size_t i= 0u; i < template_parameters.size(); ++i )
-	{
-		if( params[i].param_type == std::nullopt )
-			continue;
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			for( size_t i= 0u; i < template_parameters.size(); ++i )
+			{
+				if( params[i].param_type == std::nullopt )
+					continue;
 
-		template_parameters[i].type=
-			WithGlobalFunctionContext(
-				[&]( FunctionContext& function_context )
-				{
-					return CreateTemplateSignatureParameter(
+				template_parameters[i].type=
+					CreateTemplateSignatureParameter(
 						names_scope,
 						function_context,
 						template_parameters,
 						template_parameters_usage_flags,
 						*params[i].param_type );
-				} );
 
-		if( const auto type_param= template_parameters[i].type->GetType() )
-		{
-			if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), template_parameters[i].src_loc, type_param->t );
-		}
-		else if( template_parameters[i].type->IsTemplateParam() ) {}
-		else
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
-	}
+				if( const auto type_param= template_parameters[i].type->GetType() )
+				{
+					if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
+						REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), template_parameters[i].src_loc, type_param->t );
+				}
+				else if( template_parameters[i].type->IsTemplateParam() ) {}
+				else
+					REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
+			}
+		} );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
