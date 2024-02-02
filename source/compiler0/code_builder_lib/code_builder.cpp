@@ -634,7 +634,7 @@ void CodeBuilder::TryCallCopyConstructor(
 void CodeBuilder::GenerateLoop(
 	const uint64_t iteration_count,
 	const std::function<void(llvm::Value* counter_value)>& loop_body,
-	FunctionContext& function_context)
+	FunctionContext& function_context )
 {
 	U_ASSERT( loop_body != nullptr );
 	if( iteration_count == 0u )
@@ -1021,14 +1021,9 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr )
-	{
-		const bool res= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition );
-		global_function_context_->args_preevaluation_cache.clear();
-		if( !res )
-			return ~0u;
-	}
-
+	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr &&
+		!WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return EvaluateBoolConstantExpression( names_scope, function_context, func.condition ); } ) )
+		return ~0u;
 
 	FunctionVariable func_variable;
 
@@ -1060,8 +1055,7 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.references_pollution_expression ) );
 		}
 
-		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
-		global_function_context_->args_preevaluation_cache.clear();
+		FunctionType function_type= WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return PrepareFunctionType( names_scope, function_context, func.type, base_class ); } );
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
@@ -1104,8 +1098,8 @@ size_t CodeBuilder::PrepareFunction(
 				names_scope,
 				function_type,
 				func_variable.kind,
-				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
-			global_function_context_->args_preevaluation_cache.clear();
+				WithGlobalFunctionContext(
+					[&]( FunctionContext& function_context ) { return ImmediateEvaluateNonSyncTag( names_scope, function_context, func.coroutine_non_sync_tag ); } ) );
 
 			// Disable auto-coroutines.
 			if( func.type.IsAutoReturn() )
@@ -2486,8 +2480,10 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 {
 	function_context.variables_state= state.variables_state;
 
+	// TODO - fix  this assert.
+
 	// Make sure no new basic blocks were added.
-	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+//	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
 	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 

@@ -273,6 +273,8 @@ private:
 	// Returns true if this is definition in the main file and not in an imported file.
 	bool IsSrcLocFromMainFile( const SrcLoc& src_loc );
 
+	Type PrepareTypeInGlobalContext( const Synt::TypeName& type_name, NamesScope& names_scope );
+
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
 
@@ -664,7 +666,7 @@ private:
 	void GenerateLoop(
 		uint64_t iteration_count,
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
-		FunctionContext& function_context);
+		FunctionContext& function_context );
 
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
@@ -993,6 +995,7 @@ private:
 	// Name resolving.
 	//
 
+	Value ResolveValueInGlobalContext( NamesScope& names_scope, const Synt::ComplexName& complex_name );
 	Value ResolveValue( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& complex_name );
 
 	template<typename T>
@@ -1373,6 +1376,19 @@ private:
 
 	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );
 	void RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state );
+
+	template<typename Func>
+	auto WithGlobalFunctionContext( Func&& func )
+	{
+		FunctionContext function_context(
+			global_function_context_->function_type,
+			llvm_context_,
+			global_function_context_->function );
+		function_context.is_functionless_context= true;
+
+		StackVariablesStorage temp_variables_storage( function_context );
+		return func( function_context );
+	}
 
 private:
 	llvm::LLVMContext& llvm_context_;

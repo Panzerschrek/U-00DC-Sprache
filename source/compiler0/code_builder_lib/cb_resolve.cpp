@@ -7,6 +7,11 @@
 namespace U
 {
 
+Value CodeBuilder::ResolveValueInGlobalContext( NamesScope& names_scope, const Synt::ComplexName& complex_name )
+{
+	return WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return ResolveValue( names_scope, function_context, complex_name ); } );
+}
+
 Value CodeBuilder::ResolveValue(
 	NamesScope& names_scope,
 	FunctionContext& function_context,

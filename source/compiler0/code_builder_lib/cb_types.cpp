@@ -15,6 +15,11 @@
 namespace U
 {
 
+Type CodeBuilder::PrepareTypeInGlobalContext( const Synt::TypeName& type_name, NamesScope& names_scope )
+{
+	return WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { return PrepareType( type_name, names_scope, function_context ); } );
+}
+
 Type CodeBuilder::PrepareType(
 	const Synt::TypeName& type_name,
 	NamesScope& names_scope,

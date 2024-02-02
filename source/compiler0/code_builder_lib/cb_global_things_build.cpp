@@ -226,10 +226,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( value.GetVariable() != nullptr ){}
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= value.GetStaticAssert() )
-			{
-				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
-				global_function_context_->args_preevaluation_cache.clear();
-			}
+				WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { BuildStaticAssert( *static_assert_, names_scope, function_context ); } );
 			else if( value.GetTypeAlias() != nullptr )
 				GlobalThingBuildTypeAlias( names_scope, value );
 			else if( value.GetIncompleteGlobalVariable() != nullptr )
@@ -384,8 +381,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 	NamesScope& class_parent_namespace= *class_type->members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents )
 	{
-		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
-		global_function_context_->args_preevaluation_cache.clear();
+		const Value parent_value= ResolveValueInGlobalContext( class_parent_namespace, parent );
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
@@ -494,8 +490,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			class_field->class_= class_type;
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, *global_function_context_ );
-			global_function_context_->args_preevaluation_cache.clear();
+			class_field->type= PrepareTypeInGlobalContext( class_field->syntax_element->type, *the_class.members );
 
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
@@ -1172,8 +1167,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	// Process custom underlying type.
 	if( enum_decl.underlying_type_name != std::nullopt )
 	{
-		const Value type_value= ResolveValue( names_scope, *global_function_context_, *enum_decl.underlying_type_name );
-		global_function_context_->args_preevaluation_cache.clear();
+		const Value type_value= ResolveValueInGlobalContext( names_scope, *enum_decl.underlying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc, *enum_decl.underlying_type_name );
@@ -1254,8 +1248,7 @@ void CodeBuilder::GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& typ
 	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc );
 
 	// Replace value in names map, when type alias is comlete.
-	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
+	type_alias_value= PrepareTypeInGlobalContext( syntax_element.value, names_scope );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -1280,8 +1273,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	DETECT_GLOBALS_LOOP( &global_variable_value, std::string(name), src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
-	FunctionContext& function_context= *global_function_context_;
-	const StackVariablesStorage dummy_stack( function_context );
+	FunctionContext function_context(
+		global_function_context_->function_type,
+		llvm_context_,
+		global_function_context_->function );
+	function_context.is_functionless_context= true;
 
 	if( const auto variables_declaration= incomplete_global_variable.variables_declaration )
 	{
@@ -1506,8 +1502,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		global_variable_value= variable_reference;
 	}
 	else U_ASSERT(false);
-
-	global_function_context_->args_preevaluation_cache.clear();
 
 	#undef FAIL_RETURN
 }
