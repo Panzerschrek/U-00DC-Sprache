@@ -130,24 +130,16 @@ bool FindAndChangeLexem( Lexems& lexems, const SrcLoc& src_loc, const Lexem::Typ
 
 Synt::MacrosByContextMap TakeMacrosFromImports( const SourceGraph& source_graph )
 {
+	// Merge macroses of imported modules in order to parse document text properly.
 	Synt::MacrosByContextMap merged_macroses;
-	{
-		const auto& child_nodes_indeces= source_graph.nodes_storage.front().child_nodes_indeces;
-		if( child_nodes_indeces.empty() )
-		{
-			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
-			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
-		}
 
-		// Merge macroses of imported modules in order to parse document text properly.
-		for( const size_t child_node_index : child_nodes_indeces )
+	for( const size_t child_node_index : source_graph.nodes_storage.front().child_nodes_indeces )
+	{
+		for( const auto& context_macro_map_pair : *source_graph.nodes_storage[child_node_index].ast.macros )
 		{
-			for( const auto& context_macro_map_pair : *source_graph.nodes_storage[child_node_index].ast.macros )
-			{
-				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
-				for( const auto& macro_map_pair : context_macro_map_pair.second )
-					dst_map[macro_map_pair.first]= macro_map_pair.second;
-			}
+			Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
+			for( const auto& macro_map_pair : context_macro_map_pair.second )
+				dst_map[macro_map_pair.first]= macro_map_pair.second;
 		}
 	}
 

@@ -1,3 +1,10 @@
+//
+// This file contains some macros which are widely used with ustlib containers.
+//
+
+//
+// "if_var" - use to unwrap "optional" or "optional_ref".
+//
 ?macro <? if_var:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?alternative:opt<? else ?a:if_alternative ?> ?>
 ->
 <?
@@ -21,6 +28,9 @@
 	}
 ?>
 
+//
+// "foreach" - used for iteration over containers, iterators,arrays, tuples.
+//
 ?macro <? foreach:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?l:opt<? label ?l:expr ?> ?b:block ?>
 ->
 <?

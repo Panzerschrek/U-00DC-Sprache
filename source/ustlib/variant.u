@@ -2,6 +2,7 @@ import "aligned_storage.u"
 import "container_utils.u"
 import "minmax.u"
 import "optional_ref.u"
+import "ustlib_macros.u"
 
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->

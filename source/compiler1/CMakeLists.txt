@@ -109,16 +109,10 @@ string(
 
 configure_file( lex_synt_lib/keywords.uh.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
 
-string( LENGTH ${BUILT_IN_MACROS_FILE_CONTENT} BUILT_IN_MACROS_UH_FILE_SIZE )
-string( REGEX REPLACE "([a-fA-F0-9])([a-fA-F0-9])" "char8(0x\\1\\2),\n" HEX_LIST ${BUILT_IN_MACROS_FILE_CONTENT} )
-set( BUILT_IN_MACROS_UH_FILE_CONTENT "var[ char8, ${BUILT_IN_MACROS_UH_FILE_SIZE} / 2 ] c_built_in_macros[\n${HEX_LIST}]\;" )
-file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/built_in_macros.uh CONTENT ${BUILT_IN_MACROS_UH_FILE_CONTENT} )
-
 file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.uh" )
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.u" )
 set( LEX_SYNT_LIB_SOURCES_GENERATED
 	${CMAKE_CURRENT_BINARY_DIR}/keywords.uh
-	${CMAKE_CURRENT_BINARY_DIR}/built_in_macros.uh
 	)
 CompileUSources( LEX_SYNT_LIB_SOURCES LEX_SYNT_LIB_OBJECTS )
 

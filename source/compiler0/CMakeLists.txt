@@ -19,16 +19,11 @@ string(
 configure_file( lex_synt_lib/keywords.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.hpp )
 configure_file( lex_synt_lib/keywords.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp )
 
-string( REGEX REPLACE "([a-fA-F0-9])([a-fA-F0-9])" "0x\\1\\2,\n" HEX_LIST ${BUILT_IN_MACROS_FILE_CONTENT} )
-set( BUILT_IN_MACROS_HPP_FILE_CONTENT "static const char c_built_in_macros[]={\n${HEX_LIST}0x00,\n}\;" )
-file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/built_in_macros.hpp CONTENT ${BUILT_IN_MACROS_HPP_FILE_CONTENT} )
-
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.cpp" )
 file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.hpp" )
 set( LEX_SYNT_LIB_SOURCES_GENERATED
 	${CMAKE_CURRENT_BINARY_DIR}/keywords.hpp
 	${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp
-	${CMAKE_CURRENT_BINARY_DIR}/built_in_macros.hpp
 	)
 add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_HEADERS} ${LEX_SYNT_LIB_SOURCES_GENERATED} )
 target_link_libraries( LexSyntLib LexSyntLibCommon )

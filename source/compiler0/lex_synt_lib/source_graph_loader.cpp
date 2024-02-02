@@ -13,7 +13,6 @@ namespace
 size_t LoadNode_r(
 	IVfs& vfs,
 	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
-	const Synt::MacrosByContextMap& built_in_macros,
 	const IVfs::Path& file_path,
 	const IVfs::Path& parent_file_path,
 	std::vector<std::string>& processed_files_stack,
@@ -82,7 +81,6 @@ size_t LoadNode_r(
 			LoadNode_r(
 				vfs,
 				source_file_contents_hashing_function,
-				built_in_macros,
 				import.import_name,
 				full_file_path,
 				processed_files_stack,
@@ -98,7 +96,7 @@ size_t LoadNode_r(
 	processed_files_stack.pop_back();
 
 	// Merge macroses
-	Synt::MacrosByContextMap merged_macroses= built_in_macros;
+	Synt::MacrosByContextMap merged_macroses;
 	for( const Synt::MacrosPtr& macros : imported_macroses )
 	{
 		for( const auto& context_macro_map_pair : *macros )
@@ -147,13 +145,10 @@ SourceGraph LoadSourceGraph(
 	SourceGraph result;
 	result.macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
 
-	const auto built_in_macros= PrepareBuiltInMacros( source_file_contents_hashing_function );
-
 	std::vector<std::string> processed_files_stack;
 	LoadNode_r(
 		vfs,
 		source_file_contents_hashing_function,
-		*built_in_macros,
 		root_file_path,
 		"",
 		processed_files_stack,
@@ -176,10 +171,10 @@ SourceGraph LoadSourceGraph(
 
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			*built_in_macros,
-			result.macro_expansion_contexts,
-			source_file_contents_hashing_function( prelude_code ) );
+				lex_result.lexems,
+				Synt::MacrosByContextMap(),
+				result.macro_expansion_contexts,
+				source_file_contents_hashing_function( prelude_code ) );
 
 		result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
@@ -196,23 +191,6 @@ SourceGraph LoadSourceGraph(
 	}
 
 	return result;
-}
-
-Synt::MacrosPtr PrepareBuiltInMacros( const SourceFileContentsHashigFunction source_file_contents_hashing_function )
-{
-	#include "built_in_macros.hpp"
-	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
-	U_ASSERT( lex_result.errors.empty() );
-
-	const Synt::SyntaxAnalysisResult synt_result=
-		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			Synt::MacrosByContextMap(),
-			std::make_shared<Synt::MacroExpansionContexts>(),
-			source_file_contents_hashing_function( c_built_in_macros ) );
-	U_ASSERT( synt_result.error_messages.empty() );
-
-	return synt_result.macros;
 }
 
 } // namespace U

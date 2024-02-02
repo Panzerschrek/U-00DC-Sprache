@@ -1,5 +1,4 @@
 import "/assert.u"
-import "/built_in_macros.uh"
 import "source_graph.uh"
 
 namespace U1
@@ -13,12 +12,8 @@ fn LoadSourceGraph(
 {
 	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
 
-	var Synt::MacrosByContextMap built_in_macros=
-		PrepareBuiltInMacros( source_file_contents_hashing_function, source_graph.macro_expansion_contexts );
-
 	var ust::vector</ust::string8/> mut imports_stack;
 	LoadSourceGraph_r(
-		built_in_macros,
 		vfs,
 		source_file_contents_hashing_function,
 		root_file_path,
@@ -71,7 +66,6 @@ fn LoadSourceGraph(
 
 // Returns node index or ~0 in case of error.
 fn LoadSourceGraph_r(
-	Synt::MacrosByContextMap& built_in_macros,
 	IVfs &mut vfs,
 	SourceFileContentsHashigFunction source_file_contents_hashing_function,
 	ust::string8& file_path,
@@ -150,7 +144,6 @@ fn LoadSourceGraph_r(
 	{
 		auto child=
 			LoadSourceGraph_r(
-				built_in_macros,
 				vfs,
 				source_file_contents_hashing_function,
 				import_.name,
@@ -166,7 +159,7 @@ fn LoadSourceGraph_r(
 	imports_stack.pop_back();
 
 	// Merge macroses
-	var Synt::MacrosByContextMap mut macros= built_in_macros;
+	var Synt::MacrosByContextMap mut macros;
 	foreach( &child_index : node.children )
 	{
 		var SourceGraph::Node& src_node= source_graph.nodes[child_index];
@@ -210,25 +203,6 @@ fn LoadSourceGraph_r(
 
 	source_graph.nodes[node_index]= move(node);
 	return node_index;
-}
-
-fn PrepareBuiltInMacros(
-	SourceFileContentsHashigFunction source_file_contents_hashing_function,
-	Synt::MacroExpansionContextsPtr mut macro_expansion_contexts ) : Synt::MacrosByContextMap
-{
-	var LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
-	halt if( !lex_result.errors.empty() );
-
-	var Synt::SyntaxAnalysisResult mut synt_result=
-		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			Synt::MacrosByContextMap(),
-			move(macro_expansion_contexts),
-			source_file_contents_hashing_function( c_built_in_macros ) );
-
-	halt if( !synt_result.errors.empty() );
-
-	return take( synt_result.macros );
 }
 
 } // namespace U1

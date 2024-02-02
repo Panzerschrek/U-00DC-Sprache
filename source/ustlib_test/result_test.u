@@ -1,6 +1,7 @@
 //##success_test
 import "../ustlib/result.u"
 import "../ustlib/shared_ptr.u"
+import "../ustlib/ustlib_macros.u"
 
 struct SomeNonSync non_sync{}
 static_assert( non_sync</SomeNonSync/> );

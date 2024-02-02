@@ -1,4 +1,5 @@
 //##success_test
+import "../ustlib/ustlib_macros.u"
 
 fn nomangle main() : i32
 {
