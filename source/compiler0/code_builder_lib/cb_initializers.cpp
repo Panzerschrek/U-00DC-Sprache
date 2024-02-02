@@ -1505,7 +1505,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	return result;
 }
 
-void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
+void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type, FunctionContext& function_context )
 {
 	// Run code generation for initializers.
 	// We must check it, becauseinitializers may not be executed later.
@@ -1513,44 +1513,40 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 	const Class& class_= *class_type;
 	U_ASSERT( class_.is_complete );
 
-	WithGlobalFunctionContext(
-		[&]( FunctionContext& function_context )
+	for( const ClassFieldPtr& field : class_.fields_order )
+	{
+		if( field == nullptr )
+			continue;
+
+		if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
+			continue;
+
+		if( field->is_reference )
 		{
-			for( const ClassFieldPtr& field : class_.fields_order )
-			{
-				if( field == nullptr )
-					continue;
+			const VariablePtr this_variable=
+				Variable::Create(
+					class_type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					field->GetName() );
+			function_context.variables_state.AddNode( this_variable );
 
-				if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
-					continue;
-
-				if( field->is_reference )
-				{
-					const VariablePtr this_variable=
-						Variable::Create(
-							class_type,
-							ValueType::ReferenceMut,
-							Variable::Location::Pointer,
-							field->GetName() );
-					function_context.variables_state.AddNode( this_variable );
-
-					InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
-					function_context.variables_state.RemoveNode( this_variable );
-				}
-				else
-				{
-					const VariablePtr field_variable=
-						Variable::Create(
-							field->type,
-							ValueType::ReferenceMut,
-							Variable::Location::Pointer,
-							field->GetName() );
-					function_context.variables_state.AddNode( field_variable );
-					InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
-					function_context.variables_state.RemoveNode( field_variable );
-				}
-			}
-		} );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
+			function_context.variables_state.RemoveNode( this_variable );
+		}
+		else
+		{
+			const VariablePtr field_variable=
+				Variable::Create(
+					field->type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					field->GetName() );
+			function_context.variables_state.AddNode( field_variable );
+			InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
+			function_context.variables_state.RemoveNode( field_variable );
+		}
+	}
 }
 
 } // namespace U

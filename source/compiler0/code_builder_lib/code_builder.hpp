@@ -1175,7 +1175,7 @@ private:
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
-	void CheckClassFieldsInitializers( ClassPtr class_type );
+	void CheckClassFieldsInitializers( ClassPtr class_type, FunctionContext& function_context );
 
 	// Reference-checking.
 
@@ -1238,8 +1238,8 @@ private:
 
 	// Reference notation.
 
-	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression );
-	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression );
+	std::optional<uint8_t> EvaluateReferenceFieldTag( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression );
+	std::optional< llvm::SmallVector<uint8_t, 4> > EvaluateReferenceFieldInnerTags( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression );
 	FunctionType::ReferencesPollution EvaluateFunctionReferencePollution( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, size_t num_params );
 	FunctionType::ReturnReferences EvaluateFunctionReturnReferences( NamesScope& names_scope,FunctionContext& function_context,  const Synt::Expression& expression, size_t num_params );
 	FunctionType::ReturnInnerReferences EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, size_t num_params );
@@ -1314,6 +1314,7 @@ private:
 	void PrepareFunctionsSetAndBuildConstexprBodies( NamesScope& names_scope, OverloadedFunctionsSet& functions_set );
 	void GlobalThingPrepareClassParentsList( ClassPtr class_type );
 	void GlobalThingBuildClass( ClassPtr class_type );
+	void GlobalThingBuildClassImpl( ClassPtr class_type, FunctionContext& function_context );
 	void GlobalThingBuildEnum( EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& type_alias_value );

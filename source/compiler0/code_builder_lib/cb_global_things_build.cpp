@@ -419,17 +419,22 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 
 void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 {
-	Class& the_class= *class_type;
-
-	if( the_class.is_complete )
+	if( class_type->is_complete )
 		return;
 
 	if( const auto typeinfo_class_description= std::get_if<TypeinfoClassDescription>( &class_type->generated_class_data ) )
 	{
 		const Type& type= typeinfo_class_description->source_type;
-		BuildFullTypeinfo( type, typeinfo_cache_[type].variable, *the_class.members->GetRoot() );
+		BuildFullTypeinfo( type, typeinfo_cache_[type].variable, *class_type->members->GetRoot() );
 		return;
 	}
+
+	WithGlobalFunctionContext( [&]( FunctionContext& function_context ) { GlobalThingBuildClassImpl( class_type, function_context ); } );
+}
+
+void CodeBuilder::GlobalThingBuildClassImpl( const ClassPtr class_type, FunctionContext& function_context )
+{
+	Class& the_class= *class_type;
 
 	GlobalThingPrepareClassParentsList( class_type );
 
@@ -490,7 +495,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			class_field->class_= class_type;
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-			class_field->type= PrepareTypeInGlobalContext( class_field->syntax_element->type, *the_class.members );
+			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, function_context );
 
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
@@ -562,7 +567,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				{
 					if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
 					{
-						if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+						if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, function_context, field->syntax_element->inner_reference_tags_expression ) )
 						{
 							if( reference_tags->size() != 0 )
 								REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
@@ -609,7 +614,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			{
 				std::optional<uint8_t> reference_tag;
 				if( !std::holds_alternative< Synt::EmptyVariant >( reference_field->syntax_element->reference_tag_expression ) )
-					reference_tag= EvaluateReferenceFieldTag( *the_class.members, reference_field->syntax_element->reference_tag_expression );
+					reference_tag= EvaluateReferenceFieldTag( *the_class.members, function_context, reference_field->syntax_element->reference_tag_expression );
 				else
 					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), reference_field->syntax_element->src_loc, reference_field->syntax_element->name );
 
@@ -636,7 +641,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			{
 				std::optional< llvm::SmallVector<uint8_t, 4> > reference_tags;
 				if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
-					reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression );
+					reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, function_context, field->syntax_element->inner_reference_tags_expression );
 				else
 					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
 
@@ -1143,7 +1148,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	TryGenerateCopyAssignmentOperator( class_type );
 	TryGenerateEqualityCompareOperator( class_type );
 
-	CheckClassFieldsInitializers( class_type );
+	CheckClassFieldsInitializers( class_type, function_context );
 }
 
 void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )

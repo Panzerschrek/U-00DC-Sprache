@@ -44,9 +44,9 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 
 } // namespace
 
-std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
+std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
 {
-	const VariablePtr variable= WithGlobalFunctionContext( [&]( FunctionContext& function_context) { return EvaluateReferenceNotationExpression( names_scope, function_context, expression ); } );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const Type expected_type= FundamentalType( U_FundamentalType::char8_ );
@@ -71,9 +71,9 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 	}
 }
 
-std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFieldInnerTags( NamesScope& names_scope, const Synt::Expression& expression )
+std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFieldInnerTags( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
 {
-	const VariablePtr variable= WithGlobalFunctionContext( [&]( FunctionContext& function_context) { return EvaluateReferenceNotationExpression( names_scope, function_context, expression ); } );
+	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
