@@ -15,11 +15,23 @@ fn CreateTemplateErrorsContext(
 {
 	var ust::shared_ptr_mut</ErrorsContainer/> errors_container( ErrorsContainer() );
 
+	var ust::string8 mut context_name;
+	auto parent_names_scope= template_.parent_names_scope.lock();
+	if( !parent_names_scope.empty() )
+	{
+		context_name= parent_names_scope.try_lock_imut().deref().ToString();
+		if( !context_name.empty() )
+		{
+			context_name+= "::";
+		}
+	}
+	context_name+= template_.syntax_element.deref().name;
+
 	var TemplateErrorsContext mut result
 	{
 		.errors= errors_container,
 		.context_declaration_src_loc= instantiation_src_loc,
-		.context_name= template_.syntax_element.deref().name,
+		.context_name= move(context_name),
 	};
 
 	{
