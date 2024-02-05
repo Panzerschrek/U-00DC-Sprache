@@ -18,6 +18,7 @@ General:
 *) "nodiscard" for types (and/or) functions
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
+*) Variable templates
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -43,10 +44,11 @@ Standart library:
 *) Associative containers - map, set, string_map
 *) More algorithms
 *) More iterator class methods - "zip", "enumerate" and other
+*) Vector drain iterator
+*) Reverse iterators for random_access_range, unordered_map, etc.
 *) Time library - get time functions, timers
 *) File library
 *) Console input/output library
-*) Print fail message in asserts
 *) Formatting library
 *) More type traits
 *) More math functions
