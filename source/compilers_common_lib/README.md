@@ -65,7 +65,7 @@ Compiler test.u -o test.bc --lto-mode=prelink
 Compiler test.bc --input-filetype=bc -o test.o --lto-mode=link --internalize --internalize-preserve=main
 ```
 
-If the compiler was built with internal LLD it's possible to output a native executable file:
+If the compiler was built with internal LLD, it's possible to output a native executable file:
 
 ```
 Compiler test.u -o test.exe --filetype=exe
@@ -89,11 +89,11 @@ There are a lot of internal LLVM options, including options for target-specific 
 
 ### Internal LLD
 
-If the compiler was built with LLD libraries this internal LLD may be used for producing executable and shared library files.
+If the compiler was built with LLD libraries, this internal LLD may be used for producing executable and shared library files.
 
 When building the project form the LLVM sources, in order to build the compiler with LLD you need to specify path to LLD sources via LLVM_EXTERNAL_LLD_SOURCE_DIR cmake option.
 LLD libraries build must be also enabled via LLVM_TOOL_LLD_BUILD cmake option.
-Also libunwind sources (a part of the LLVM project) must exist near LLVM source directory.
+Also *libunwind* sources (a part of the LLVM project) must exist near LLVM source directory.
 
 When building with prebuilt LLVM, LLD will be included in the compiler, if this prebuilt LLVM libraries contain LLD libraries.
 
@@ -103,7 +103,7 @@ It's possible to specify some linker options manually, but it's not possible to 
 Thus this internal LLD can't be used as general linker for producing arbitrary executables from arbitrary input object files.
 A proper external linker should be used instead (ld, link.exe, etc).
 
-Generally if an Ü program uses some parts written in C or C++ it's recommended to use a C++ linker to produce result executable file, rather than using the Ü compiler as linker.
+Generally if an Ü program uses some parts written in C or C++ it's recommended to use a C++ compiler/linker to produce result executable file, rather than using the Ü compiler as linker.
 
 
 ### Embedded ustlib implementation functions

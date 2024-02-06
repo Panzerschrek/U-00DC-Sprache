@@ -31,6 +31,7 @@ Other functionality:
 * Coroutines helpers (coro.u)
 * Hashing functions (hash.u)
 * Various helpers (helpers.u)
+* Iterator class template (iterator.u)
 * Math functions (math.u)
 * Memory helpers (memory.u)
 * Minimum/maximum functions (minmax.u)
@@ -53,7 +54,8 @@ These *ll* files are compiled during Ü Compiler compilation and embedded in it.
 So, in order to change these implementations, you need to recompile compiler itself.
 
 But it is still possible to change some built-in functionality.
-Ü Compiler has an option to disable built-in allocation functionality. Thus you can use this option and provide your own allocation/deallocation functions implementations.
+Ü Compiler has an option to disable built-in allocation functionality.
+Thus you can use this option and provide your own allocation/deallocation functions implementations.
 
 List of built-in functionality:
 
@@ -64,7 +66,7 @@ List of built-in functionality:
 * Halt handlers (halt_abort.ll, halt_configurable.ll, halt_trap.ll, halt_unreachable.ll)
 * Math functions (math.ll)
 * Memory helpers (memory_32.ll, memory_64.ll)
-* Stdout print implementations (stdout ll files)
+* Stdout print implementations (stdout *ll* files)
 
 Some built-ins are implemented via C standard library functions, like malloc/free, stdout print or some math functions.
 Thus you need to link against C standard library in order to use them.

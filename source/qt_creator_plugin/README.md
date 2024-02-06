@@ -1,15 +1,15 @@
 ### About
 
-This directory contains sources of QtCreator plugin.
+This directory contains sources of the QtCreator plugin.
 
-The plugin targets QtCreater version 4.13. It is pretty outdated.
+The plugin targets QtCreator version 4.13. It is pretty outdated.
 
 Early this plugin had a handful of features, including indenting, document symbols tree displaying and syntax highlighting.
 But later this was changed.
 
 Indenting was removed, since it was not worked in QtCreator 4.13.
 
-Since Ü language server was implemented, symbols tree construction was removed from the plugin, because language server now constructs document symbols.
+Since Ü language server was implemented, symbols tree construction was removed from the plugin, because the language server now constructs document symbols.
 
 Syntax highlighting code was removed in favor of generic syntax highlighter with custom config for Ü.
 See _u_kde_syntax_highlighting.xml_ file.

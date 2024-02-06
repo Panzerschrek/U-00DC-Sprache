@@ -1,6 +1,6 @@
 ### About
 
-This directory contains syntax highlighting rule files for some IDEs/text editors.
+This directory contains syntax highlighting rule files for some IDEs and text editors.
 
 Read manual of your IDE/text editor in order to know, how to install/setup custom syntax highlighter.
 

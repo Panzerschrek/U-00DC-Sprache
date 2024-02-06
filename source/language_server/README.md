@@ -24,9 +24,9 @@ Additionally it is possible to specify include directories and log file location
 
 #### Limitations
 * There is only limited possibility to specify include directories - via LSP executable options. Thus there is no way to use different directories for different files.
-* There is no way to specify target architecture (for now) and any other code generation option.
+* Target arhitecture specification is pretty limited.
 * References search and replace can't find symbols outside hierarchy of current document.
-* References search, replace, highlighting, completion doesn't work for templates and non-compiled code, like disabled `enable_if` functions or false `static_if` branches.
+* References search, replace, highlighting, doesn't work sometimes for templates and non-compiled code, like disabled `enable_if` functions or false `static_if` branches.
 
 
 #### Known issues
