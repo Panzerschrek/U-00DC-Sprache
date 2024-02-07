@@ -109,7 +109,7 @@ PROCESS_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, "Accessing
 
 // Methods errors.
 PROCESS_ERROR( ClassFieldAccessInStaticMethod, "Accessing field \"{0}\" in static method." )
-PROCESS_ERROR( ThisInNonclassFunction, "This in non-class function \"{0}\"." )
+PROCESS_ERROR( ThisInNonclassFunction, "This in non-class function." )
 PROCESS_ERROR( ThiscallMismatch, "Thiscall for function \"{0}\" does not match to thiscall in prototype." )
 PROCESS_ERROR( AccessOfNonThisClassField, "Access field \"{0}\" of non-this class." )
 PROCESS_ERROR( ThisUnavailable, "\"this\" unavailable." )

@@ -1160,6 +1160,8 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 	auto functions_set_lock= functions_set_ptr.lock_imut();
 	var FunctionsSet& functions_set= functions_set_lock.deref();
 
+	debug_assert( !functions_set.function_templates.empty(), "Expected set with at least one function template" );
+
 	var FunctionsSet mut result_functions_set;
 	result_functions_set.class_= functions_set.class_;
 	foreach( &function_template_ptr : functions_set.function_templates )
@@ -1216,7 +1218,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 
 	if( result_functions_set.parameterized_function_templates.empty() )
 	{
-		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, ust::string8("TODO - name") )
+		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, functions_set.function_templates.front().lock_imut().deref().syntax_element.deref().name )
 		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
