@@ -599,6 +599,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
 					0u, // address space
 					ust::nullptr</char8/>(), 0s ) );
+				llvm_element_type= pointer_llvm_type;
 			}
 
 			elements.push_back(
