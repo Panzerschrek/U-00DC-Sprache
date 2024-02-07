@@ -656,7 +656,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// "unsafe" expression usage should prevent function to be "constexpr".
-	function_context.have_non_constexpr_operations_inside= true;
+	function_context.has_non_constexpr_operations_inside= true;
 
 	auto prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= true;
@@ -766,9 +766,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( AccessingMovedVariable, names_scope, move_operator.src_loc, reference.name )
 		return ErrorValue();
 	}
-	if( function_context.references_graph.HaveOutgoingLinks( variable_reference_ptr ) )
+	if( function_context.references_graph.HasOutgoingLinks( variable_reference_ptr ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope, move_operator.src_loc, reference.name )
+		REPORT_ERROR( MovedVariableHasReferences, names_scope, move_operator.src_loc, reference.name )
 		return ErrorValue();
 	}
 
@@ -842,9 +842,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, take_operator.src_loc )
 		return ErrorValue();
 	}
-	if( function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
+	if( function_context.references_graph.HasOutgoingLinks( variable_ptr ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope, take_operator.src_loc, variable_lock.deref().name )
+		REPORT_ERROR( MovedVariableHasReferences, names_scope, take_operator.src_loc, variable_lock.deref().name )
 		return ErrorValue();
 	}
 	if( t.IsAbstract() )
@@ -1159,7 +1159,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return $<(x) - $<(y);
 		}
 	*/
-	function_context.have_non_constexpr_operations_inside= true;
+	function_context.has_non_constexpr_operations_inside= true;
 
 	var RawPointerType mut t
 	{
@@ -1617,7 +1617,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			var LLVMValueRef function_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 
-			function_context.have_non_constexpr_operations_inside= true; // Call via pointer is not constexpr.
+			function_context.has_non_constexpr_operations_inside= true; // Call via pointer is not constexpr.
 
 			return DoCallFunction(
 				names_scope,
@@ -3153,7 +3153,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		function_context.references_graph.MoveNode( r_var_lock_node );
 
-		if( l_var.t.HaveDestructor() )
+		if( l_var.t.HasDestructor() )
 		{
 			BuildDestructorPart( names_scope, function_context, l_var.llvm_value, l_var.t, src_loc );
 		}
@@ -3183,7 +3183,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		{
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 		}
 
 		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
@@ -3245,7 +3245,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
 
-		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
 
 		function_context.references_graph.MoveNode( r_var_lock_node );
 
@@ -3302,7 +3302,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 		var VariableLite r_var= r_var_ptr.lock_imut().deref();
 
-		function_context.references_graph.EnsureHaveNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
 
 		function_context.references_graph.MoveNode( l_var_lock_node );
 
@@ -3423,7 +3423,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		{
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 		}
 
 		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
@@ -3490,7 +3490,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		{
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 		}
 
 		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
@@ -3585,7 +3585,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 	{
-		function_context.have_non_constexpr_operations_inside= true;
+		function_context.has_non_constexpr_operations_inside= true;
 	}
 
 	with( mut lock : function_selected.llvm_function.lock_mut() )

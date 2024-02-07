@@ -114,7 +114,7 @@ U_TEST( ExpectedVariable_InStructReferenceInitialization )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 6u ) );
 }
 
 U_TEST( ExpectedReferenceValue_InStructReferenceInitialization )
@@ -203,7 +203,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
 }
 
 U_TEST( CaputuringThisReferenceInConstructor_Test1 )
@@ -225,7 +225,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
 }
 
 U_TEST( CaputuringThisReferenceInConstructor_Test2 )
@@ -244,7 +244,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test2 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
 }
 
 U_TEST( CaputuringThisReferenceInConstructor_Test3 )
@@ -263,7 +263,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test3 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 8u ) );
 }
 
 U_TEST( CaputuringThisReferenceInConstructor_Test4 )
@@ -284,7 +284,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test4 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnallowedReferencePollution, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnallowedReferencePollution, 10u ) );
 }
 
 U_TEST( CaputuringThisReferenceInConstructor_Test5 )
@@ -305,7 +305,7 @@ U_TEST( CaputuringThisReferenceInConstructor_Test5 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnallowedReferencePollution, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnallowedReferencePollution, 10u ) );
 }
 
 } // namespace

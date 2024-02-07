@@ -7,7 +7,7 @@ def ReferencePollution_TypesMismatch_Test0():
 		fn DoPollution( R& mut r, i32& r ) @( 42 ); // Expected array, got integer.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ReferencePollution_TypesMismatch_Test1():
@@ -17,7 +17,7 @@ def ReferencePollution_TypesMismatch_Test1():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Expected array, got tuple.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReferencePollution_TypesMismatch_Test2():
@@ -27,7 +27,7 @@ def ReferencePollution_TypesMismatch_Test2():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Expected array of pairs, got array of ints.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReferencePollution_TypesMismatch_Test3():
@@ -37,7 +37,7 @@ def ReferencePollution_TypesMismatch_Test3():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Expected array of pairs, got array of tuples.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReferencePollution_TypesMismatch_Test4():
@@ -47,7 +47,7 @@ def ReferencePollution_TypesMismatch_Test4():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Expected pair of chars, got 3 chars.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReferencePollution_TypesMismatch_Test5():
@@ -57,7 +57,7 @@ def ReferencePollution_TypesMismatch_Test5():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Expected char8, got char16.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReturnReferences_TypesMismatch_Test0():
@@ -65,7 +65,7 @@ def ReturnReferences_TypesMismatch_Test0():
 		fn Foo( i32& x ) : i32 & @( 66.6f ); // Expected array, got f32.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+	assert( HasError( errors_list, "TypesMismatch", 2 ) )
 
 
 def ReturnReferences_TypesMismatch_Test1():
@@ -74,7 +74,7 @@ def ReturnReferences_TypesMismatch_Test1():
 		fn Foo( i32& x ) : i32 & @( return_references ); // Expected array, got tuple.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ReturnReferences_TypesMismatch_Test2():
@@ -83,7 +83,7 @@ def ReturnReferences_TypesMismatch_Test2():
 		fn Foo( i32& x ) : i32 & @( return_references ); // Expected array of char pairs, got array of bools
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ReturnReferences_TypesMismatch_Test3():
@@ -92,7 +92,7 @@ def ReturnReferences_TypesMismatch_Test3():
 		fn Foo( i32& x ) : i32 & @( return_references ); // Expected array of size 2, not 3.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ReturnReferences_TypesMismatch_Test4():
@@ -101,7 +101,7 @@ def ReturnReferences_TypesMismatch_Test4():
 		fn Foo( i32& x ) : i32 & @( return_references ); // Expected array of char8, got array of i32.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ReturnReInnerferences_TypesMismatch_Test0():
@@ -110,7 +110,7 @@ def ReturnReInnerferences_TypesMismatch_Test0():
 		fn Foo( i32& x ) : S @( true ); // Expected tuple, got bool.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ReturnReInnerferences_TypesMismatch_Test1():
@@ -120,7 +120,7 @@ def ReturnReInnerferences_TypesMismatch_Test1():
 		fn Foo( i32& x ) : S @( return_inner_references ); // Expected array, got f32
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReturnReInnerferences_TypesMismatch_Test2():
@@ -130,7 +130,7 @@ def ReturnReInnerferences_TypesMismatch_Test2():
 		fn Foo( i32& x ) : S @( return_inner_references ); // Expected pair of char8, got single char32.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReturnReInnerferences_TypesMismatch_Test3():
@@ -140,7 +140,7 @@ def ReturnReInnerferences_TypesMismatch_Test3():
 		fn Foo( i32& x ) : S @( return_inner_references ); // Expected pair of char8, got single char32.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ReturnReInnerferences_TypesMismatch_Test4():
@@ -150,7 +150,7 @@ def ReturnReInnerferences_TypesMismatch_Test4():
 		fn Foo( i32& x ) : S @( return_inner_references ); // Got char8 array of size 3 for second tuple element, expected size 2.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def InvalidInnerReferenceTagName_ForFunctionReferenceNotation_Test0():
@@ -160,7 +160,7 @@ def InvalidInnerReferenceTagName_ForFunctionReferenceNotation_Test0():
 		fn DoPollution( R& mut r, i32& r ) @( pollution );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
+	assert( HasError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
 
 
 def InvalidInnerReferenceTagName_ForFunctionReferenceNotation_Test1():
@@ -170,7 +170,7 @@ def InvalidInnerReferenceTagName_ForFunctionReferenceNotation_Test1():
 		fn Foo( i32 & x ) : i32 & @( return_references );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
+	assert( HasError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
 
 
 def InvalidInnerReferenceTagName_ForFunctionReferenceNotation_Test2():
@@ -180,7 +180,7 @@ def InvalidInnerReferenceTagName_ForFunctionReferenceNotation_Test2():
 		fn Foo( i32& x ) : S @( return_inner_references );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
+	assert( HasError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
 
 
 def InvalidParamNumber_Test0():
@@ -190,7 +190,7 @@ def InvalidParamNumber_Test0():
 		fn DoPollution( R& mut r, i32& r ) @( pollution );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidParamNumber", 4 ) )
+	assert( HasError( errors_list, "InvalidParamNumber", 4 ) )
 
 
 def InvalidParamNumber_Test1():
@@ -200,7 +200,7 @@ def InvalidParamNumber_Test1():
 		fn Foo( i32 & x ) : i32 & @( return_references );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidParamNumber", 4 ) )
+	assert( HasError( errors_list, "InvalidParamNumber", 4 ) )
 
 
 def InvalidParamNumber_Test2():
@@ -210,7 +210,7 @@ def InvalidParamNumber_Test2():
 		fn Foo( i32& x ) : S @( return_inner_references );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidParamNumber", 4 ) )
+	assert( HasError( errors_list, "InvalidParamNumber", 4 ) )
 
 
 def ParamNumberOutOfRange_Test0():
@@ -220,7 +220,7 @@ def ParamNumberOutOfRange_Test0():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ); // Param number is 2, but function contains only 2 params.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ParamNumberOutOfRange", 4 ) )
+	assert( HasError( errors_list, "ParamNumberOutOfRange", 4 ) )
 
 
 def ParamNumberOutOfRange_Test1():
@@ -229,7 +229,7 @@ def ParamNumberOutOfRange_Test1():
 		fn Foo( i32 & x ) : i32 & @( return_references ); // Param number is 3, but function contains only 1 param.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ParamNumberOutOfRange", 3 ) )
+	assert( HasError( errors_list, "ParamNumberOutOfRange", 3 ) )
 
 
 def ParamNumberOutOfRange_Test2():
@@ -239,7 +239,7 @@ def ParamNumberOutOfRange_Test2():
 		fn Foo( i32& x ) : S @( return_inner_references ); // Param number is 4, but function contains only 1 param.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ParamNumberOutOfRange", 4 ) )
+	assert( HasError( errors_list, "ParamNumberOutOfRange", 4 ) )
 
 
 def ReferenceTagOutOfRange_Test0():
@@ -249,7 +249,7 @@ def ReferenceTagOutOfRange_Test0():
 		fn DoPollution( R& mut r, i32& r ) @( pollution ) {} // Tag number is 1, but type contains only 1 inner reference tag.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 4 ) )
+	assert( HasError( errors_list, "ReferenceTagOutOfRange", 4 ) )
 
 
 def ReferenceTagOutOfRange_Test1():
@@ -259,7 +259,7 @@ def ReferenceTagOutOfRange_Test1():
 		fn Foo( R & r ) : i32 & @( return_references ) { halt; } // Tag number is 2, but type contains only 1 inner reference tag.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 4 ) )
+	assert( HasError( errors_list, "ReferenceTagOutOfRange", 4 ) )
 
 
 def ReferenceTagOutOfRange_Test2():
@@ -270,7 +270,7 @@ def ReferenceTagOutOfRange_Test2():
 		fn Foo( R & r ) : R @( return_inner_references ) { halt; } // Tag number is 25, but type contains only 2 inner reference tag.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceTagOutOfRange", 5 ) )
+	assert( HasError( errors_list, "ReferenceTagOutOfRange", 5 ) )
 
 
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test0():
@@ -280,7 +280,7 @@ def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test0():
 		fn Foo( i32& x ) : R @( return_inner_references ) { halt; } // Expected 1 tag, got 2 tags.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
 
 
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test1():
@@ -290,7 +290,7 @@ def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test1():
 		fn Foo( i32& x, i32 &mut y ) : R @( return_inner_references ) { halt; } // Expected 2 tags, got 1 tag.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
 
 
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test2():
@@ -299,7 +299,7 @@ def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test2():
 		fn generator Foo( i32& x ) : R { halt; } // Expected 1 tags, got 0 tag.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 3 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 3 ) )
 
 
 def FunctionReferenceNotationIsNormalized_Test0():
@@ -401,7 +401,7 @@ def ExpectedConstantExpression_ForReferenceNotation_Test0():
 		fn Foo(i32& x ) : i32 & @( GetReturnReferences() );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )
 
 
 def ExpectedConstantExpression_ForReferenceNotation_Test1():
@@ -410,7 +410,7 @@ def ExpectedConstantExpression_ForReferenceNotation_Test1():
 		fn Foo(i32& x ) : i32 @( GetReturnInnerReferences() );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )
 
 
 def ExpectedConstantExpression_ForReferenceNotation_Test2():
@@ -419,7 +419,7 @@ def ExpectedConstantExpression_ForReferenceNotation_Test2():
 		fn Foo() @( GetReferencePollution() );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test0():
@@ -432,7 +432,7 @@ def ReferenceNotationViolatesImmutability_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 3 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 3 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test1():
@@ -445,7 +445,7 @@ def ReferenceNotationViolatesImmutability_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 3 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 3 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test2():
@@ -459,7 +459,7 @@ def ReferenceNotationViolatesImmutability_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test3():
@@ -473,7 +473,7 @@ def ReferenceNotationViolatesImmutability_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test4():
@@ -487,7 +487,7 @@ def ReferenceNotationViolatesImmutability_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test5():
@@ -502,7 +502,7 @@ def ReferenceNotationViolatesImmutability_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 5 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 5 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test6():
@@ -516,7 +516,7 @@ def ReferenceNotationViolatesImmutability_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 4 ) )
 
 
 def ReferenceNotationViolatesImmutability_Test7():
@@ -531,7 +531,7 @@ def ReferenceNotationViolatesImmutability_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationViolatesImmutability", 5 ) )
+	assert( HasError( errors_list, "ReferenceNotationViolatesImmutability", 5 ) )
 
 
 def ReferenceNotationInLocalScope_Test0():

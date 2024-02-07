@@ -103,7 +103,7 @@ def ConstexprFunctionContainsUnallowedOperations_ForAutoReturnFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
 
 
 def ReferenceNotationForAutoFunction_Test0():
@@ -116,7 +116,7 @@ def ReferenceNotationForAutoFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 3 ) )
+	assert( HasError( errors_list, "ReferenceNotationForAutoFunction", 3 ) )
 
 
 def ReferenceNotationForAutoFunction_Test1():
@@ -131,7 +131,7 @@ def ReferenceNotationForAutoFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
+	assert( HasError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
 
 
 def ReferenceNotationForAutoFunction_Test2():
@@ -144,7 +144,7 @@ def ReferenceNotationForAutoFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
+	assert( HasError( errors_list, "ReferenceNotationForAutoFunction", 4 ) )
 
 
 def AutoForFunctionTypeReturnType_Test0():
@@ -153,7 +153,7 @@ def AutoForFunctionTypeReturnType_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForFunctionTypeReturnType", 2 ) )
+	assert( HasError( errors_list, "AutoForFunctionTypeReturnType", 2 ) )
 
 
 def AutoForFunctionTypeReturnType_Test1():
@@ -162,7 +162,7 @@ def AutoForFunctionTypeReturnType_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForFunctionTypeReturnType", 2 ) )
+	assert( HasError( errors_list, "AutoForFunctionTypeReturnType", 2 ) )
 
 
 def AutoForFunctionTypeReturnType_Test2():
@@ -171,7 +171,7 @@ def AutoForFunctionTypeReturnType_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 2 ) )
+	assert( HasError( errors_list, "NameNotFound", 2 ) )
 
 
 def AutoForSpecialMethod_Test0():
@@ -184,7 +184,7 @@ def AutoForSpecialMethod_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForSpecialMethod_Test1():
@@ -197,7 +197,7 @@ def AutoForSpecialMethod_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForSpecialMethod_Test2():
@@ -210,7 +210,7 @@ def AutoForSpecialMethod_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForSpecialMethod_Test3():
@@ -223,7 +223,7 @@ def AutoForSpecialMethod_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForSpecialMethod_Test4():
@@ -236,7 +236,7 @@ def AutoForSpecialMethod_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForSpecialMethod_Test5():
@@ -249,7 +249,7 @@ def AutoForSpecialMethod_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForSpecialMethod_Test6():
@@ -262,7 +262,7 @@ def AutoForSpecialMethod_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForSpecialMethod", 4 ) )
 
 
 def AutoForVirtualMethod_Test0():
@@ -275,7 +275,7 @@ def AutoForVirtualMethod_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForVirtualMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForVirtualMethod", 4 ) )
 
 
 def AutoForVirtualMethod_Test1():
@@ -288,4 +288,4 @@ def AutoForVirtualMethod_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoForVirtualMethod", 4 ) )
+	assert( HasError( errors_list, "AutoForVirtualMethod", 4 ) )

@@ -96,12 +96,12 @@ U_TEST( UsingKeywordAsName_ForNamespaces_Test0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( build_result.errors.size() >= 6 );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2 ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 3 ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4 ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 5 ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 6 ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 7 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 3 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 5 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 6 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 7 ) );
 }
 
 } // namespace

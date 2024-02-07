@@ -477,11 +477,11 @@ void CodeBuilder::MergeNameScopes(
 							continue;
 						}
 
-						if( !same_dst_func->have_body &&  src_func.have_body )
-							*same_dst_func= src_func; // Take this function - it have body.
-						if(  same_dst_func->have_body && !src_func.have_body )
+						if( !same_dst_func->has_body &&  src_func.has_body )
+							*same_dst_func= src_func; // Take this function - it has body.
+						if(  same_dst_func->has_body && !src_func.has_body )
 						{} // Ok, prototype imported later.
-						if(  same_dst_func->have_body &&  src_func.have_body &&
+						if(  same_dst_func->has_body &&  src_func.has_body &&
 							same_dst_func->body_src_loc != src_func.body_src_loc )
 							REPORT_ERROR( FunctionBodyDuplication, dst.GetErrors(), src_func.body_src_loc, src_name );
 					}
@@ -624,7 +624,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	U_ASSERT(constructor != nullptr);
 
 	if( !( constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
-		function_context.have_non_constexpr_operations_inside= true;
+		function_context.has_non_constexpr_operations_inside= true;
 
 	// Call it
 	if( !function_context.is_functionless_context )
@@ -692,12 +692,12 @@ void CodeBuilder::CallDestructorsImpl(
 		{
 			if( !function_context.variables_state.NodeMoved( stored_variable ) )
 			{
-				if( function_context.variables_state.HaveOutgoingLinks( stored_variable ) )
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable->name );
+				if( function_context.variables_state.HasOutgoingLinks( stored_variable ) )
+					REPORT_ERROR( DestroyedVariableStillHasReferences, errors_container, src_loc, stored_variable->name );
 
 				if( !function_context.is_functionless_context )
 				{
-					if( stored_variable->type.HaveDestructor() )
+					if( stored_variable->type.HasDestructor() )
 						CallDestructor( stored_variable->llvm_value, stored_variable->type, function_context, errors_container, src_loc );
 
 					// Avoid calling "lifetime.end" for variables without address.
@@ -726,7 +726,7 @@ void CodeBuilder::CallDestructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	U_ASSERT( type.HaveDestructor() );
+	U_ASSERT( type.HasDestructor() );
 
 	if( const Class* const class_= type.GetClassType() )
 	{
@@ -759,7 +759,7 @@ void CodeBuilder::CallDestructor(
 	{
 		for( const Type& element_type : tuple_type->element_types )
 		{
-			if( element_type.HaveDestructor() )
+			if( element_type.HasDestructor() )
 				CallDestructor(
 					CreateTupleElementGEP( function_context, *tuple_type, ptr, size_t(&element_type - tuple_type->element_types.data()) ),
 					element_type,
@@ -802,7 +802,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 
 	for( size_t i= 0u; i < class_->parents.size(); ++i )
 	{
-		U_ASSERT( class_->parents[i].class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
+		U_ASSERT( class_->parents[i].class_->has_destructor ); // Parents are polymorph, polymorph classes always have destructors.
 		CallDestructor(
 			CreateClassFieldGEP( function_context, *function_context.this_, class_->parents[i].field_number ),
 			class_->parents[i].class_,
@@ -816,7 +816,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 		if( field == nullptr )
 			continue;
 
-		if( !field->type.HaveDestructor() || field->is_reference )
+		if( !field->type.HasDestructor() || field->is_reference )
 			continue;
 
 		CallDestructor(
@@ -864,7 +864,7 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 								is_special_method= true;
 						}
 
-						// Report about unused function, only if it is defined in main file, have no prototype in one of imported files, is not "nomangle" and (obviously) not referenced.
+						// Report about unused function, only if it is defined in main file, has no prototype in one of imported files, is not "nomangle" and (obviously) not referenced.
 						// Ignore special methods.
 						if( !is_special_method )
 							REPORT_ERROR( UnusedName, names_scope.GetErrors(), function.body_src_loc, name );
@@ -1268,7 +1268,7 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc );
 			return ~0u;
 		}
-		if( functions_set.have_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
+		if( functions_set.has_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
 		{
 			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc );
 			return ~0u;
@@ -1279,7 +1279,7 @@ size_t CodeBuilder::PrepareFunction(
 			return ~0u;
 
 		if( func_variable.no_mangle )
-			functions_set.have_nomangle_function= true;
+			functions_set.has_nomangle_function= true;
 
 		FunctionVariable& inserted_func_variable= functions_set.functions.back();
 		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func.src_loc;
@@ -1426,8 +1426,8 @@ void CodeBuilder::BuildFuncCode(
 	ReferenceNotationDeductionContext* const reference_notation_deduction_context,
 	LambdaPreprocessingContext* const lambda_preprocessing_context )
 {
-	U_ASSERT( !func_variable.have_body );
-	func_variable.have_body= true;
+	U_ASSERT( !func_variable.has_body );
+	func_variable.has_body= true;
 
 	const FunctionType& function_type= func_variable.type;
 
@@ -1863,7 +1863,7 @@ void CodeBuilder::BuildFuncCode(
 
 		if( auto_contexpr )
 		{
-			if( can_be_constexpr && !function_context.have_non_constexpr_operations_inside )
+			if( can_be_constexpr && !function_context.has_non_constexpr_operations_inside )
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
 			else
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
@@ -1875,7 +1875,7 @@ void CodeBuilder::BuildFuncCode(
 				REPORT_ERROR( InvalidTypeForConstexprFunction, function_names.GetErrors(), func_variable.body_src_loc );
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 			}
-			else if( function_context.have_non_constexpr_operations_inside )
+			else if( function_context.has_non_constexpr_operations_inside )
 			{
 				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, function_names.GetErrors(), func_variable.body_src_loc );
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
@@ -1887,7 +1887,7 @@ void CodeBuilder::BuildFuncCode(
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( !block_build_info.has_terminal_instruction_inside )
 	{
 		if( func_variable.kind == FunctionVariable::Kind::Generator )
 		{

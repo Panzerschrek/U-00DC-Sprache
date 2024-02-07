@@ -957,11 +957,11 @@ def TypeinfoForTypeinfo_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 5 )
-	assert( HaveError( errors_list, "ExpectedInitializer", 6 ) )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+	assert( HasError( errors_list, "ExpectedInitializer", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 10 ) )
 
 
 def Typeinfo_SrcType_Test0():
@@ -1086,7 +1086,7 @@ def TypeinfoListsAreLazy_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def TypeinfoListsAreLazy_Test2():
@@ -1113,7 +1113,7 @@ def TypeinfoClassHasNoDestructor_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 4 ) )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
 
 
 def TypeinfoClassHasNoDestructor_Test1():
@@ -1125,7 +1125,7 @@ def TypeinfoClassHasNoDestructor_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 4 ) )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
 
 
 def TypeinfoClassHasNoDestructor_Test2():

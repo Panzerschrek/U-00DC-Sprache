@@ -19,7 +19,7 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidValueAsTemplateArgument, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidValueAsTemplateArgument, 6u ) );
 }
 
 U_TEST( InvalidValueAsTemplateArgumentTest1 )
@@ -50,7 +50,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 5u ) );
 }
 
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest1 )
@@ -61,7 +61,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
 }
 
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest2 )
@@ -72,7 +72,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest2 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
 }
 
 U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
@@ -83,7 +83,7 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
 }
 
 U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
@@ -95,7 +95,7 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
 }
 
 U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
@@ -106,7 +106,7 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
 }
 
 U_TEST( ValueIsNotTemplateTest0 )
@@ -122,7 +122,7 @@ U_TEST( ValueIsNotTemplateTest0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ValueIsNotTemplate, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ValueIsNotTemplate, 5u ) );
 }
 
 U_TEST( TemplateInstantiationRequiredTest0 )
@@ -139,7 +139,7 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 6u ) );
 }
 
 U_TEST( TemplateInstantiationRequiredTest1 )
@@ -152,7 +152,7 @@ U_TEST( TemplateInstantiationRequiredTest1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 3u ) );
 }
 
 U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
@@ -250,7 +250,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet , 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet , 3u ) );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
@@ -268,7 +268,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
 		}
 	)";
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet, 5u ) );
 }
 
 U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
@@ -297,7 +297,7 @@ U_TEST( TemplateParametersDeductionFailed_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test1 )
@@ -315,7 +315,7 @@ U_TEST( TemplateParametersDeductionFailed_Test1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test2 )
@@ -333,7 +333,7 @@ U_TEST( TemplateParametersDeductionFailed_Test2 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 9u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test3 )
@@ -350,7 +350,7 @@ U_TEST( TemplateParametersDeductionFailed_Test3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test4 )
@@ -367,7 +367,7 @@ U_TEST( TemplateParametersDeductionFailed_Test4 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test5 )
@@ -383,7 +383,7 @@ U_TEST( TemplateParametersDeductionFailed_Test5 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test6 )
@@ -399,7 +399,7 @@ U_TEST( TemplateParametersDeductionFailed_Test6 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test7 )
@@ -413,7 +413,7 @@ U_TEST( TemplateParametersDeductionFailed_Test7 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 5u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test8 )
@@ -429,7 +429,7 @@ U_TEST( TemplateParametersDeductionFailed_Test8 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test9 )
@@ -448,7 +448,7 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 10u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test10 )
@@ -465,7 +465,7 @@ U_TEST( TemplateParametersDeductionFailed_Test10 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test11 )
@@ -493,7 +493,7 @@ U_TEST( TemplateParametersDeductionFailed_Test11 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 18u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 18u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test12 )
@@ -506,7 +506,7 @@ U_TEST( TemplateParametersDeductionFailed_Test12 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test13 )
@@ -519,7 +519,7 @@ U_TEST( TemplateParametersDeductionFailed_Test13 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test14 )
@@ -532,7 +532,7 @@ U_TEST( TemplateParametersDeductionFailed_Test14 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test15 )
@@ -545,7 +545,7 @@ U_TEST( TemplateParametersDeductionFailed_Test15 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test16 )
@@ -558,7 +558,7 @@ U_TEST( TemplateParametersDeductionFailed_Test16 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
@@ -593,7 +593,7 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) );
 }
 
 U_TEST( UsingKeywordAsName_ForTypeTemplate_Test0 )
@@ -604,7 +604,7 @@ U_TEST( UsingKeywordAsName_ForTypeTemplate_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2u ) );
 }
 
 U_TEST( UsingKeywordAsName_ForTypeTemplate_Test1 )
@@ -618,7 +618,7 @@ U_TEST( UsingKeywordAsName_ForTypeTemplate_Test1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4u ) );
 }
 
 } // namespace

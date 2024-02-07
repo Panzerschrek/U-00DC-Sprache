@@ -192,7 +192,7 @@ def DisableCopyAssignmentOperator_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "AccessingDeletedMethod", 9 ) )
+	assert( HasError( errors_list, "AccessingDeletedMethod", 9 ) )
 
 
 def BodyForGeneratedFunction_Test0():

@@ -344,7 +344,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		{
 			// Trying add "this" to functions set, but only if whole "this" is available.
 			if( ( function_context.this_->type.GetClassType() == overloaded_functions_set->base_class ||
-				  function_context.this_->type.GetClassType()->HaveAncestor( overloaded_functions_set->base_class ) ) &&
+				  function_context.this_->type.GetClassType()->HasAncestor( overloaded_functions_set->base_class ) ) &&
 				!function_context.whole_this_is_unavailable )
 			{
 				ThisOverloadedMethodsSet this_overloaded_methods_set;

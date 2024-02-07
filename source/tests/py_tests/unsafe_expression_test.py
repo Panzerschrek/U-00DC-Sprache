@@ -53,8 +53,8 @@ def UnsafeExpression_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 6 ) )
-	assert( HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 7 ) )
+	assert( not HasError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 6 ) )
+	assert( HasError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 7 ) )
 
 
 def UnsafeExpression_Test3():
@@ -78,7 +78,7 @@ def UnsafeExpression_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
 
 
 def UnsafeExpression_Test5():
@@ -91,7 +91,7 @@ def UnsafeExpression_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
 
 
 def UnsafeExpression_Test6():
@@ -126,7 +126,7 @@ def UnsafeExpressionInGlobalContext_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
 
 
 def UnsafeExpressionInGlobalContext_Test1():
@@ -136,7 +136,7 @@ def UnsafeExpressionInGlobalContext_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
 
 
 def UnsafeExpressionInGlobalContext_Test2():
@@ -146,7 +146,7 @@ def UnsafeExpressionInGlobalContext_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
 
 
 def UnsafeExpressionInGlobalContext_Test3():
@@ -157,7 +157,7 @@ def UnsafeExpressionInGlobalContext_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
 
 
 def UnsafeExpressionInGlobalContext_Test4():
@@ -167,7 +167,7 @@ def UnsafeExpressionInGlobalContext_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
 
 
 def UnsafeExpressionInGlobalContext_Test5():
@@ -181,8 +181,8 @@ def UnsafeExpressionInGlobalContext_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 5 ) )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 6 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 5 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 6 ) )
 
 
 def UnsafeExpressionInGlobalContext_Test6():
@@ -192,7 +192,7 @@ def UnsafeExpressionInGlobalContext_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+	assert( HasError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
 
 
 def UnsafeExpressionIsNotConstexpr_Test0():
@@ -204,7 +204,7 @@ def UnsafeExpressionIsNotConstexpr_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
 
 
 def UnsafeExpressionIsNotConstexpr_Test1():
@@ -216,7 +216,7 @@ def UnsafeExpressionIsNotConstexpr_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
 
 
 
@@ -229,7 +229,7 @@ def UnsafeExpressionIsNotConstexpr_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
 
 
 def ConstexprFunctionContainsUnallowedOperations_ForUnsafeExpression_Test0():
@@ -242,7 +242,7 @@ def ConstexprFunctionContainsUnallowedOperations_ForUnsafeExpression_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
 
 
 def ConstexprFunctionContainsUnallowedOperations_ForUnsafeExpression_Test1():
@@ -258,4 +258,4 @@ def ConstexprFunctionContainsUnallowedOperations_ForUnsafeExpression_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 6 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 6 ) )

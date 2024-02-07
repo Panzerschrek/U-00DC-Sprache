@@ -386,7 +386,7 @@ def ThisMethodCanNotBeUnsafe_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test1():
@@ -397,7 +397,7 @@ def ThisMethodCanNotBeUnsafe_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test2():
@@ -408,7 +408,7 @@ def ThisMethodCanNotBeUnsafe_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test3():
@@ -419,7 +419,7 @@ def ThisMethodCanNotBeUnsafe_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test4():
@@ -454,7 +454,7 @@ def ThisMethodCanNotBeUnsafe_Test6():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test7():
@@ -475,7 +475,7 @@ def ThisMethodCanNotBeUnsafe_Test8():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test9():
@@ -486,7 +486,7 @@ def ThisMethodCanNotBeUnsafe_Test9():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test10():
@@ -497,7 +497,7 @@ def ThisMethodCanNotBeUnsafe_Test10():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test11():
@@ -508,7 +508,7 @@ def ThisMethodCanNotBeUnsafe_Test11():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+	assert( HasError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
 
 
 def ThisMethodCanNotBeUnsafe_Test12():

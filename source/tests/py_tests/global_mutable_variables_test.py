@@ -124,7 +124,7 @@ def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
 
 
 def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test1():
@@ -136,7 +136,7 @@ def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
 
 
 def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test2():
@@ -147,8 +147,8 @@ def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test2():
 		auto mut b_copy= b;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
 
 
 def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test0():
@@ -157,7 +157,7 @@ def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test0():
 		fn Foo() : u32;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 2 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 2 ) )
 
 
 def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test1():
@@ -166,7 +166,7 @@ def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test1():
 		var i32 mut y= x; // Global mutable variable 'x' became non-constexpr after initialization. So, it's not possible to use it for initializer of another global mutable variable.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 3 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 3 ) )
 
 
 def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test2():
@@ -178,7 +178,7 @@ def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
 
 
 def GlobalMutableVariableIsNotConstexpr_Test0():
@@ -190,7 +190,7 @@ def GlobalMutableVariableIsNotConstexpr_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
 
 
 def GlobalMutableVariableIsNotConstexpr_Test1():
@@ -199,7 +199,7 @@ def GlobalMutableVariableIsNotConstexpr_Test1():
 		type IVec= [ i32, s ];
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )
 
 
 def GlobalMutableVariableIsNotConstexpr_Test2():
@@ -211,7 +211,7 @@ def GlobalMutableVariableIsNotConstexpr_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 5 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 5 ) )
 
 
 def GobalMutableVariableShoudHaveContexprType_Test0():
@@ -223,7 +223,7 @@ def GobalMutableVariableShoudHaveContexprType_Test0():
 		var S mut s= zero_init; // Type with explicit destructor declaration is not "contexpr"
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
 
 
 def GobalMutableVariableShoudHaveContexprType_Test1():
@@ -232,7 +232,7 @@ def GobalMutableVariableShoudHaveContexprType_Test1():
 		var C mut c; // Class is not "contexpr".
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
 
 
 def GobalMutableVariableShoudHaveContexprType_Test2():
@@ -242,7 +242,7 @@ def GobalMutableVariableShoudHaveContexprType_Test2():
 		var $(i32) mut ptr= zero_init;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
 
 
 def MutableGlobalReferencesAreNotAllowed_Test0():
@@ -251,7 +251,7 @@ def MutableGlobalReferencesAreNotAllowed_Test0():
 		var i32 &mut x_ref= x;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )
+	assert( HasError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )
 
 
 def MutableGlobalReferencesAreNotAllowed_Test1():
@@ -260,4 +260,4 @@ def MutableGlobalReferencesAreNotAllowed_Test1():
 		auto &mut x_ref= x;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )
+	assert( HasError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )

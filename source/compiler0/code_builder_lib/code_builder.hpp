@@ -172,7 +172,7 @@ private:
 
 	struct BlockBuildInfo
 	{
-		bool have_terminal_instruction_inside= false;
+		bool has_terminal_instruction_inside= false;
 	};
 
 	struct TemplateTypePreparationResult

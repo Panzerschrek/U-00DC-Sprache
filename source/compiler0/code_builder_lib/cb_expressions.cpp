@@ -955,7 +955,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	U_ASSERT( v->location == Variable::Location::Pointer );
 
 	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
-	function_context.have_non_constexpr_operations_inside= true;
+	function_context.has_non_constexpr_operations_inside= true;
 
 	RawPointerType raw_pointer_type;
 	raw_pointer_type.element_type= v->type;
@@ -1154,7 +1154,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		array_size= str.size();
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
-	// If string literal have char suffix, process it as single char literal.
+	// If string literal has char suffix, process it as single char literal.
 	else if( type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
 	{
 		if( string_literal.value.size() == 1u )
@@ -1294,9 +1294,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	if( function_context.variables_state.HaveOutgoingLinks( resolved_variable ) )
+	if( function_context.variables_state.HasOutgoingLinks( resolved_variable ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope.GetErrors(), move_operator.src_loc, resolved_variable->name );
+		REPORT_ERROR( MovedVariableHasReferences, names_scope.GetErrors(), move_operator.src_loc, resolved_variable->name );
 		return ErrorValue();
 	}
 
@@ -1384,9 +1384,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), take_operator.src_loc );
 		return ErrorValue();
 	}
-	if( function_context.variables_state.HaveOutgoingLinks( expression_result ) )
+	if( function_context.variables_state.HasOutgoingLinks( expression_result ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope.GetErrors(), take_operator.src_loc, expression_result->name );
+		REPORT_ERROR( MovedVariableHasReferences, names_scope.GetErrors(), take_operator.src_loc, expression_result->name );
 		return ErrorValue();
 	}
 	if( expression_result->type.IsAbstract() )
@@ -1630,7 +1630,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( UnsafeExpressionInGlobalContext, names_scope.GetErrors(), unsafe_expression.src_loc );
 
 	// "unsafe" expression usage should prevent function to be "constexpr".
-	function_context.have_non_constexpr_operations_inside= true;
+	function_context.has_non_constexpr_operations_inside= true;
 
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= true;
@@ -2015,7 +2015,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		if( !function_context.is_functionless_context )
 		{
-			if( l_var_real->type.HaveDestructor() )
+			if( l_var_real->type.HasDestructor() )
 				CallDestructor( l_var_real->llvm_value, l_var_real->type, function_context, names_scope.GetErrors(), src_loc );
 
 			U_ASSERT( r_var_real->location == Variable::Location::Pointer );
@@ -2033,7 +2033,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( overloaded_operator->is_deleted )
 			REPORT_ERROR( AccessingDeletedMethod, names_scope.GetErrors(), src_loc );
 		if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			function_context.has_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 		if( overloaded_operator->virtual_table_index != ~0u )
 		{
@@ -2089,7 +2089,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names_scope, function_context );
 
-		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
+		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var->name );
 
 		function_context.variables_state.MoveNode( r_var_lock );
@@ -2140,7 +2140,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		RegisterTemporaryVariable( function_context, l_var_lock );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names_scope, function_context );
-		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )
+		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, r_var->name );
 
 		function_context.variables_state.MoveNode( l_var_lock );
@@ -2243,7 +2243,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	overloaded_operator->referenced= true;
 
 	if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+		function_context.has_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 	const std::pair<VariablePtr, llvm::Value*> fetch_result=
 		TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names_scope.GetErrors(), src_loc );
@@ -2291,7 +2291,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 		return std::nullopt;
 
 	if( !( function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+		function_context.has_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 	function->referenced= true;
 
@@ -3132,7 +3132,7 @@ Value CodeBuilder::CallFunctionValue(
 	{
 		if( const FunctionPointerType* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
-			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
+			function_context.has_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
 			// Call function pointer directly.
 			if( function_pointer->function_type.params.size() != synt_args.size() )
@@ -3233,7 +3233,7 @@ Value CodeBuilder::CallFunctionValue(
 		REPORT_ERROR( AccessingDeletedMethod, names_scope.GetErrors(), call_src_loc );
 
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+		function_context.has_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 	llvm::SmallVector<const Synt::Expression*, 16> synt_args_ptrs;
 	synt_args_ptrs.reserve( synt_args.size() );

@@ -19,7 +19,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesOnStack )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_MutableReferenceAfterImmutableReferenceOnStack )
@@ -56,7 +56,7 @@ U_TEST( ReferenceCheckTest_ImmutableReferenceAfterMutableReferenceOnStack )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_MultipleImmutableReferencesShouldBeOk )
@@ -87,7 +87,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesPassedToFunction )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_MutableAndImmutableReferencesPassedToFunction )
@@ -163,7 +163,7 @@ U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVari
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_0 )
@@ -180,7 +180,7 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_1 )
@@ -202,7 +202,7 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
 }
 
 U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_0 )
@@ -218,7 +218,7 @@ U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_1 )
@@ -276,7 +276,7 @@ U_TEST( ReferenceCheckTest_ReferenceInInnerScopeInteractsWithReferenceInOuterSco
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 8u ) );
 }
 
 U_TEST( ReferenceCheckTest_ReferenceCanReferToMultipleVariables )
@@ -388,7 +388,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
@@ -410,7 +410,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
@@ -438,7 +438,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
@@ -478,7 +478,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_4 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHasReferences, 11u ) );
 }
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )
@@ -496,7 +496,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
@@ -516,7 +516,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
@@ -536,7 +536,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
@@ -557,7 +557,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
@@ -577,7 +577,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
@@ -593,7 +593,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHasReferences, 5u ) );
 }
 
 U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
@@ -610,7 +610,7 @@ U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_0 )
@@ -726,7 +726,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_5 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_6 )
@@ -742,7 +742,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_6 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_Increment_0 )
@@ -821,7 +821,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
@@ -910,7 +910,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_1 )
@@ -949,7 +949,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_2 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_0 )
@@ -1135,7 +1135,7 @@ U_TEST( ReferenceCheckTest_BinaryOperatorsModifyValue )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 13u ) );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentOperatorsModifyValue )

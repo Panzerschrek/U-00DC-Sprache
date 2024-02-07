@@ -295,18 +295,18 @@ bool Type::IsEqualityComparable() const
 	return false;
 }
 
-bool Type::HaveDestructor() const
+bool Type::HasDestructor() const
 {
 	if( const auto class_type= GetClassType() )
-		return class_type->have_destructor;
+		return class_type->has_destructor;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->element_type.HaveDestructor();
+		return array_type->element_type.HasDestructor();
 	else if( const auto tuple_type= GetTupleType() )
 	{
-		bool have_destructor= false;
+		bool has_destructor= false;
 		for( const Type& element : tuple_type->element_types )
-			have_destructor= have_destructor || element.HaveDestructor();
-		return have_destructor;
+			has_destructor= has_destructor || element.HasDestructor();
+		return has_destructor;
 	}
 
 	return false;

@@ -14,7 +14,7 @@ def TypesMismatch_ForSwitchOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
+	assert( HasError( errors_list, "TypesMismatch", 6 ) )
 
 
 def TypesMismatch_ForSwitchOperator_Test1():
@@ -30,7 +30,7 @@ def TypesMismatch_ForSwitchOperator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
+	assert( HasError( errors_list, "TypesMismatch", 6 ) )
 
 
 def TypesMismatch_ForSwitchOperator_Test2():
@@ -47,7 +47,7 @@ def TypesMismatch_ForSwitchOperator_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
+	assert( HasError( errors_list, "TypesMismatch", 7 ) )
 
 
 def TypesMismatch_ForSwitchOperator_Test3():
@@ -61,7 +61,7 @@ def TypesMismatch_ForSwitchOperator_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ExpectedConstantExpression_ForSwitchOperator_Test0():
@@ -78,7 +78,7 @@ def ExpectedConstantExpression_ForSwitchOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 6 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 6 ) )
 
 
 def ExpectedConstantExpression_ForSwitchOperator_Test1():
@@ -96,8 +96,8 @@ def ExpectedConstantExpression_ForSwitchOperator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 6 ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 7 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 6 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 7 ) )
 
 
 def SwitchDuplicatedDefaultLabel_Test0():
@@ -113,7 +113,7 @@ def SwitchDuplicatedDefaultLabel_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchDuplicatedDefaultLabel", 7 ) )
+	assert( HasError( errors_list, "SwitchDuplicatedDefaultLabel", 7 ) )
 
 
 def SwitchDuplicatedDefaultLabel_Test1():
@@ -131,7 +131,7 @@ def SwitchDuplicatedDefaultLabel_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchDuplicatedDefaultLabel", 9 ) )
+	assert( HasError( errors_list, "SwitchDuplicatedDefaultLabel", 9 ) )
 
 
 def SwitchDuplicatedDefaultLabel_Test2():
@@ -151,8 +151,8 @@ def SwitchDuplicatedDefaultLabel_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchDuplicatedDefaultLabel",  9 ) )
-	assert( HaveError( errors_list, "SwitchDuplicatedDefaultLabel", 11 ) )
+	assert( HasError( errors_list, "SwitchDuplicatedDefaultLabel",  9 ) )
+	assert( HasError( errors_list, "SwitchDuplicatedDefaultLabel", 11 ) )
 
 
 def SwitchInvalidRange_Test0():
@@ -167,7 +167,7 @@ def SwitchInvalidRange_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchInvalidRange", 6 ) )
+	assert( HasError( errors_list, "SwitchInvalidRange", 6 ) )
 
 
 def SwitchInvalidRange_Test1():
@@ -182,7 +182,7 @@ def SwitchInvalidRange_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchInvalidRange", 6 ) )
+	assert( HasError( errors_list, "SwitchInvalidRange", 6 ) )
 
 
 def SwitchInvalidRange_Test2():
@@ -212,8 +212,8 @@ def SwitchInvalidRange_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "SwitchInvalidRange", 6 ) )
-	assert( HaveError( errors_list, "SwitchInvalidRange", 7 ) )
+	assert( HasError( errors_list, "SwitchInvalidRange", 6 ) )
+	assert( HasError( errors_list, "SwitchInvalidRange", 7 ) )
 
 
 def SwitchInvalidRange_Test4():
@@ -228,7 +228,7 @@ def SwitchInvalidRange_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchInvalidRange", 6 ) )
+	assert( HasError( errors_list, "SwitchInvalidRange", 6 ) )
 
 
 def SwitchInvalidRange_Test5():
@@ -244,7 +244,7 @@ def SwitchInvalidRange_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchInvalidRange", 7 ) )
+	assert( HasError( errors_list, "SwitchInvalidRange", 7 ) )
 
 
 def SwitchRangesOverlapping_Test0():
@@ -260,7 +260,7 @@ def SwitchRangesOverlapping_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+	assert( HasError( errors_list, "SwitchRangesOverlapping", 7 ) )
 
 
 def SwitchRangesOverlapping_Test1():
@@ -275,7 +275,7 @@ def SwitchRangesOverlapping_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchRangesOverlapping", 6 ) )
+	assert( HasError( errors_list, "SwitchRangesOverlapping", 6 ) )
 
 
 def SwitchRangesOverlapping_Test2():
@@ -291,7 +291,7 @@ def SwitchRangesOverlapping_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+	assert( HasError( errors_list, "SwitchRangesOverlapping", 7 ) )
 
 
 def SwitchRangesOverlapping_Test3():
@@ -307,7 +307,7 @@ def SwitchRangesOverlapping_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+	assert( HasError( errors_list, "SwitchRangesOverlapping", 7 ) )
 
 
 def SwitchRangesOverlapping_Test4():
@@ -324,7 +324,7 @@ def SwitchRangesOverlapping_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchRangesOverlapping", 8 ) )
+	assert( HasError( errors_list, "SwitchRangesOverlapping", 8 ) )
 
 
 def SwitchRangesOverlapping_Test5():
@@ -340,7 +340,7 @@ def SwitchRangesOverlapping_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+	assert( HasError( errors_list, "SwitchRangesOverlapping", 7 ) )
 
 
 def SwitchUndhandledValue_Test0():
@@ -357,7 +357,7 @@ def SwitchUndhandledValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledValue", 8 ) )
+	assert( HasError( errors_list, "SwitchUndhandledValue", 8 ) )
 	assert( errors_list[0].text.find("42") != -1 )
 
 
@@ -376,7 +376,7 @@ def SwitchUndhandledValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledValue", 8 ) )
+	assert( HasError( errors_list, "SwitchUndhandledValue", 8 ) )
 
 
 def SwitchUndhandledValue_Test2():
@@ -394,7 +394,7 @@ def SwitchUndhandledValue_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledValue", 8 ) )
+	assert( HasError( errors_list, "SwitchUndhandledValue", 8 ) )
 
 
 def SwitchUndhandledValue_Test3():
@@ -412,7 +412,7 @@ def SwitchUndhandledValue_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledValue", 7 ) )
+	assert( HasError( errors_list, "SwitchUndhandledValue", 7 ) )
 
 
 def SwitchUndhandledValue_Test4():
@@ -428,7 +428,7 @@ def SwitchUndhandledValue_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledValue", 5 ) )
+	assert( HasError( errors_list, "SwitchUndhandledValue", 5 ) )
 
 
 def SwitchUndhandledRange_Test0():
@@ -445,7 +445,7 @@ def SwitchUndhandledRange_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledRange", 8 ) )
+	assert( HasError( errors_list, "SwitchUndhandledRange", 8 ) )
 
 
 def SwitchUndhandledRange_Test1():
@@ -463,7 +463,7 @@ def SwitchUndhandledRange_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledRange", 8 ) )
+	assert( HasError( errors_list, "SwitchUndhandledRange", 8 ) )
 
 
 def SwitchUndhandledRange_Test2():
@@ -481,7 +481,7 @@ def SwitchUndhandledRange_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledRange", 8 ) )
+	assert( HasError( errors_list, "SwitchUndhandledRange", 8 ) )
 
 
 def SwitchUndhandledRange_Test3():
@@ -499,7 +499,7 @@ def SwitchUndhandledRange_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledRange", 7 ) )
+	assert( HasError( errors_list, "SwitchUndhandledRange", 7 ) )
 
 
 def SwitchUndhandledRange_Test4():
@@ -515,7 +515,7 @@ def SwitchUndhandledRange_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwitchUndhandledRange", 5 ) )
+	assert( HasError( errors_list, "SwitchUndhandledRange", 5 ) )
 
 
 def SwithcUnreachableDefaultBranch_Test0():
@@ -533,7 +533,7 @@ def SwithcUnreachableDefaultBranch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwithcUnreachableDefaultBranch", 9 ) )
+	assert( HasError( errors_list, "SwithcUnreachableDefaultBranch", 9 ) )
 
 
 def SwithcUnreachableDefaultBranch_Test1():
@@ -551,7 +551,7 @@ def SwithcUnreachableDefaultBranch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwithcUnreachableDefaultBranch", 6 ) )
+	assert( HasError( errors_list, "SwithcUnreachableDefaultBranch", 6 ) )
 
 
 def SwithcUnreachableDefaultBranch_Test2():
@@ -567,4 +567,4 @@ def SwithcUnreachableDefaultBranch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "SwithcUnreachableDefaultBranch", 7 ) )
+	assert( HasError( errors_list, "SwithcUnreachableDefaultBranch", 7 ) )

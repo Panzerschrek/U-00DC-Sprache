@@ -187,7 +187,7 @@ def TakenVariableHaveReferences_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].error_code == "MovedVariableHasReferences" )
 	assert( errors_list[0].src_loc.line == 15 )
 
 
@@ -211,7 +211,7 @@ def TakenVariableHaveReferences_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].error_code == "MovedVariableHasReferences" )
 	assert( errors_list[0].src_loc.line == 15 )
 
 
@@ -235,7 +235,7 @@ def TakenVariableHaveReferences_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].error_code == "MovedVariableHasReferences" )
 	assert( errors_list[0].src_loc.line == 15 )
 
 
@@ -256,7 +256,7 @@ def TakenVariableHaveReferences_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 13 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 13 ) )
 
 
 def InnereReferenceTransferedInTakeOperator_Test0():

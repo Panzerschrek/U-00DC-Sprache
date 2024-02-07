@@ -50,21 +50,21 @@ fn nomangle main() : i32
 		var IntPtrMut mut ptr_mut(0);
 		auto mut lock= ptr_mut.lock_imut();
 		auto &ref= lock.deref();
-		move(lock); //##expect_error MovedVariableHaveReferences
+		move(lock); //##expect_error MovedVariableHasReferences
 	}
 	{ // Reference can not outlive lock.
 		var IntPtrImut ptr_imut(0);
-		auto &imut ref= ptr_imut.lock_imut().deref(); //##expect_error DestroyedVariableStillHaveReferences
+		auto &imut ref= ptr_imut.lock_imut().deref(); //##expect_error DestroyedVariableStillHasReferences
 	}
 	{ // Can't modify source ptr when lock exists.
 		var IntPtrImut mut ptr(0);
 		auto l= ptr.lock_imut();
-		move(ptr); //##expect_error MovedVariableHaveReferences
+		move(ptr); //##expect_error MovedVariableHasReferences
 	}
 	{ // Can't modify source ptr when lock exists.
 		var IntPtrMut mut ptr(0);
 		auto l= ptr.lock_mut();
-		move(ptr); //##expect_error MovedVariableHaveReferences
+		move(ptr); //##expect_error MovedVariableHasReferences
 	}
 	{ // Can't modify source ptr when lock exists.
 		var IntPtrNullableImut mut ptr(0);

@@ -92,7 +92,7 @@ U_TEST( MutableReferenceFieldAccessInDestructor_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
 }
 
 U_TEST( MutableReferenceFieldAccessInDestructor_Test1 )
@@ -111,7 +111,7 @@ U_TEST( MutableReferenceFieldAccessInDestructor_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
 }
 
 U_TEST( MutableReferenceFieldAccessInDestructor_Test2 )
@@ -131,7 +131,7 @@ U_TEST( MutableReferenceFieldAccessInDestructor_Test2 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
 }
 
 U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test0 )
@@ -154,7 +154,7 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
 }
 
 U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test1 )
@@ -177,7 +177,7 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
 }
 
 U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test2 )
@@ -201,7 +201,7 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test2 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
 }
 
 U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test0 )
@@ -220,7 +220,7 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 7u ) );
 }
 
 U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test1 )
@@ -240,7 +240,7 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
 }
 
 U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test2 )
@@ -263,7 +263,7 @@ U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test2 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 11u ) );
 }
 
 } // namespace

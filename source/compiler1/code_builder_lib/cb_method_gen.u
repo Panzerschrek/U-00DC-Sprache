@@ -13,7 +13,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto& class_members= class_members_lock.deref();
 
 	// Search for explicit default constructor.
-	auto mut have_explicit_noncopy_constructors= false;
+	auto mut has_explicit_noncopy_constructors= false;
 
 	// Constructors value should always exists and should always be FunctionsSet.
 	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
@@ -42,12 +42,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		else if( IsCopyConstructor( constructor_, class_type ) ) {}
 		else
 		{
-			// Generation of default constructor disabled because class have explicit noncopy constructors.
-			have_explicit_noncopy_constructors= true;
+			// Generation of default constructor disabled because class has explicit noncopy constructors.
+			has_explicit_noncopy_constructors= true;
 		}
 	}
 
-	if( have_explicit_noncopy_constructors && constructor_index == ~0s )
+	if( has_explicit_noncopy_constructors && constructor_index == ~0s )
 	{
 		return;
 	}
@@ -876,7 +876,7 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 
 fn CodeBuilder::ProcessGeneratedMethodConstexprFlag( ClassTypePtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable &mut method )
 {
-	var bool is_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context_after_body_generation.have_non_constexpr_operations_inside;
+	var bool is_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context_after_body_generation.has_non_constexpr_operations_inside;
 	method.constexpr_kind= select( is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	if( !is_constexpr )
@@ -949,7 +949,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 			{
 				if( !( constructor_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || constructor_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 				{
-					function_context.have_non_constexpr_operations_inside= true;
+					function_context.has_non_constexpr_operations_inside= true;
 				}
 
 				// Call it.
@@ -1022,7 +1022,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			{
 				if( !( operator_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || operator_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 				{
-					function_context.have_non_constexpr_operations_inside= true;
+					function_context.has_non_constexpr_operations_inside= true;
 				}
 
 				// Call it.
@@ -1122,7 +1122,7 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			// Found proper "==" operator.
 			if( !( op_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || op_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 			{
-				function_context.have_non_constexpr_operations_inside= true;
+				function_context.has_non_constexpr_operations_inside= true;
 			}
 
 			unsafe
@@ -1212,7 +1212,7 @@ fn CodeBuilder::BuildMembersDestructors( mut this, FunctionContext &mut function
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 		if( class_field.is_reference ) { continue; }
-		if( !class_field.t.HaveDestructor() ) { continue; }
+		if( !class_field.t.HasDestructor() ) { continue; }
 
 		auto field_llvm_value= CreateClassFieldGEP( function_context, class_type, value, class_field );
 

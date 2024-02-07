@@ -8,7 +8,7 @@ def FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0():
 		fn NS::Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 4 ) )
+	assert( HasError( errors_list, "FunctionDeclarationOutsideItsScope", 4 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test0():
@@ -21,7 +21,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ValueIsNotTemplate", 5 ) )
+	assert( HasError( errors_list, "ValueIsNotTemplate", 5 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test1():
@@ -39,7 +39,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ValueIsNotTemplate", 10 ) )
+	assert( HasError( errors_list, "ValueIsNotTemplate", 10 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test2():
@@ -57,7 +57,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ValueIsNotTemplate", 10 ) )
+	assert( HasError( errors_list, "ValueIsNotTemplate", 10 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test3():
@@ -73,7 +73,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ValueIsNotTemplate", 7 ) )
+	assert( HasError( errors_list, "ValueIsNotTemplate", 7 ) )
 
 
 def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
@@ -104,7 +104,7 @@ def NameNotFound_ForFunctionTemplateParameter():
 		fn Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NameNotFound", 2 ) )
+	assert( HasError( errors_list, "NameNotFound", 2 ) )
 
 
 def NameIsNotTypeName_ForFunctionTemplateParameter():
@@ -114,7 +114,7 @@ def NameIsNotTypeName_ForFunctionTemplateParameter():
 		fn Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeOfTemplateVariableArgument", 3 ) or HaveError( errors_list, "InvalidValueAsTemplateArgument", 3 ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 3 ) or HasError( errors_list, "InvalidValueAsTemplateArgument", 3 ) )
 
 
 def InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter():
@@ -155,7 +155,7 @@ def TemplateParametersDeductionFailed_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 11 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 11 ) )
 
 
 def TemplateParametersDeductionFailed_Test1():
@@ -169,7 +169,7 @@ def TemplateParametersDeductionFailed_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
 
 
 def TemplateParametersDeductionFailed_Test2():
@@ -382,7 +382,7 @@ def TemplateFunctionGenerationFailed_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
+	assert( HasError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
 
 
 def TemplateFunctionGenerationFailed_Test1():
@@ -396,7 +396,7 @@ def TemplateFunctionGenerationFailed_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
+	assert( HasError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
 
 
 def TemplateFunctionGenerationFailed_Test2():
@@ -411,7 +411,7 @@ def TemplateFunctionGenerationFailed_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 8 ) )
+	assert( HasError( errors_list, "TemplateFunctionGenerationFailed", 8 ) )
 
 
 def TemplateFunctionGenerationFailed_Test3():
@@ -426,7 +426,7 @@ def TemplateFunctionGenerationFailed_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 8 ) )
+	assert( HasError( errors_list, "TemplateFunctionGenerationFailed", 8 ) )
 
 
 def TemplateFunctionGenerationFailed_Test5():
@@ -440,7 +440,7 @@ def TemplateFunctionGenerationFailed_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
+	assert( HasError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
 
 
 def UsingKeywordAsName_ForTemplateFunction_Test0():
@@ -448,4 +448,4 @@ def UsingKeywordAsName_ForTemplateFunction_Test0():
 		template</type T/> fn public() {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 2 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 2 ) )

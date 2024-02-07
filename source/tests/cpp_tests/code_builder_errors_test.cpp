@@ -38,7 +38,7 @@ U_TEST(NameNotFoundTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 4u ) );
 }
 
 U_TEST(NameNotFoundTest1)
@@ -77,7 +77,7 @@ U_TEST(NameNotFoundTest2)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 6u ) );
 }
 
 U_TEST(NameNotFoundTest3)
@@ -90,7 +90,7 @@ U_TEST(NameNotFoundTest3)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
 }
 
 U_TEST(UsingKeywordAsName0)
@@ -380,7 +380,7 @@ U_TEST( Redefinition6 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::Redefinition, 4u ) );
 }
 
 U_TEST( Redefinition7 )
@@ -415,7 +415,7 @@ U_TEST( Redefinition8 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::Redefinition, 7u ) );
 }
 
 U_TEST( Redefinition9 )
@@ -454,7 +454,7 @@ U_TEST( Redefinition10 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::Redefinition, 8u ) );
 }
 
 U_TEST( Redefinition11 )
@@ -493,7 +493,7 @@ U_TEST( Redefinition12 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::Redefinition, 6u ) );
 }
 
 U_TEST( Redefinition13 )
@@ -613,7 +613,7 @@ U_TEST(UnknownNumericConstantTypeTest0)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownNumericConstantType, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnknownNumericConstantType, 4u ) );
 }
 
 U_TEST(UnknownNumericConstantTypeTest1)
@@ -628,7 +628,7 @@ U_TEST(UnknownNumericConstantTypeTest1)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownNumericConstantType, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnknownNumericConstantType, 4u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest0)
@@ -709,8 +709,8 @@ U_TEST(OperationNotSupportedForThisTypeTest2)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 8u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest3)
@@ -733,10 +733,10 @@ U_TEST(OperationNotSupportedForThisTypeTest3)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest4)
@@ -758,11 +758,11 @@ U_TEST(OperationNotSupportedForThisTypeTest4)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest5)
@@ -786,13 +786,13 @@ U_TEST(OperationNotSupportedForThisTypeTest5)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 12u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest6)
@@ -817,14 +817,14 @@ U_TEST(OperationNotSupportedForThisTypeTest6)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 12u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 13u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest7)
@@ -847,12 +847,12 @@ U_TEST(OperationNotSupportedForThisTypeTest7)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
 }
 
 U_TEST(TypesMismatchTest0)
@@ -1127,11 +1127,11 @@ U_TEST(TypesMismatchTest12)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 11u ) );
 }
 
 U_TEST(TypesMismatchTest13)
@@ -1152,12 +1152,12 @@ U_TEST(TypesMismatchTest13)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  5u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 10u ) );
 }
 
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
@@ -1299,7 +1299,7 @@ U_TEST( ExpectedVariableInArraySizeTest0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 4u ) );
 }
 
 U_TEST(BreakOutsideLoopTest)
@@ -1378,7 +1378,7 @@ U_TEST(UnreachableCodeTest0)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnreachableCode, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnreachableCode, 5u ) );
 }
 
 U_TEST(UnreachableCodeTest1)
@@ -1880,11 +1880,11 @@ U_TEST(ExpectedVariableInAssignmentTest0)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
 }
 
 U_TEST(ExpectedVariableInBinaryOperatorTest0)
@@ -1907,11 +1907,11 @@ U_TEST(ExpectedVariableInBinaryOperatorTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
 }
 
 U_TEST(ExpectedVariableAsArgumentTest0)
@@ -1930,8 +1930,8 @@ U_TEST(ExpectedVariableAsArgumentTest0)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 }
 
 U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
@@ -1954,11 +1954,11 @@ U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 12u ) );
 }
 
 U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
@@ -1980,10 +1980,10 @@ U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 11u ) );
 }
 
 U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
@@ -2002,8 +2002,8 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 5 ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 6 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 5 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 6 ) );
 }
 
 U_TEST(CouldNotOverloadFunctionTest1)
@@ -2263,7 +2263,7 @@ U_TEST(LineCounting_Test0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) )
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) )
 }
 
 U_TEST(LineCounting_Test1)
@@ -2273,7 +2273,7 @@ U_TEST(LineCounting_Test1)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) )
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) )
 }
 
 U_TEST(LineCounting_Test2)
@@ -2283,7 +2283,7 @@ U_TEST(LineCounting_Test2)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 4u ) )
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 4u ) )
 }
 
 } // namespace

@@ -91,7 +91,7 @@ PROCESS_ERROR( StructInitializerForNonStruct, "Structure-initializer for non-str
 PROCESS_ERROR( InitializerForNonfieldStructMember, "Initializer for member \"{0}\", which is not a field." )
 PROCESS_ERROR( InitializerForBaseClassField, "Initializer for class member \"{0}\", which is not this class field." )
 PROCESS_ERROR( DuplicatedStructMemberInitializer, "Duplicated initializer for field \"{0}\"." )
-PROCESS_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, "This kind of initializer disabled for this class, because it have explicit noncopy constructor(s)." )
+PROCESS_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, "This kind of initializer disabled for this class, because it has explicit noncopy constructor(s)." )
 
 // Constructors errors
 PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor outside class." )
@@ -99,7 +99,7 @@ PROCESS_ERROR( ConstructorAndDestructorMustReturnVoid, "Constructors and destruc
 PROCESS_ERROR( ByvalThisForConstructorOrDestructor, "\"byval\" \"this\" for constructor or destructor. Mutable reference should be used for \"this\" instead." )
 PROCESS_ERROR( ConversionConstructorMustHaveOneArgument, "Conversion constructor must have exactly 1 argument (except \"this\" )." )
 PROCESS_ERROR( InitializationListInNonConstructor, "Initialization list for non-constructor function ." )
-PROCESS_ERROR( ClassHaveNoConstructors, "Class have no constructors." )
+PROCESS_ERROR( ClassHasNoConstructors, "Class has no constructors." )
 PROCESS_ERROR( FieldIsNotInitializedYet, "Field \"{0}\" is not initialized yet." )
 
 // Destructors errors
@@ -134,7 +134,7 @@ PROCESS_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, "Could not select more
 
 // Reference checking
 PROCESS_ERROR( ReferenceProtectionError, "Reference protection check for variable \"{0}\" failed." )
-PROCESS_ERROR( DestroyedVariableStillHaveReferences, "Destroyed variable \"{0}\" still have reference(s)." )
+PROCESS_ERROR( DestroyedVariableStillHasReferences, "Destroyed variable \"{0}\" still has reference(s)." )
 PROCESS_ERROR( AccessingMovedVariable, "Accessing moved variable \"{0}\"." )
 PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference." )
 PROCESS_ERROR( SelfReferencePollution, "Reference self-pollution." )
@@ -143,12 +143,12 @@ PROCESS_ERROR( ConstructorThisReferencePollution, "Capturing \"this\" reference 
 PROCESS_ERROR( ReferencePollutionOfOuterLoopVariable, "Reference pollution for outer variables inside loop. \"{0}\" polluted by \"{1}\"." )
 PROCESS_ERROR( OuterVariableMoveInsideLoop, "Outer loop variable \"{0}\" move inside loop." )
 PROCESS_ERROR( ConditionalMove, "Variable \"{0}\" moved not in all if-else bracnes." )
-PROCESS_ERROR( MovedVariableHaveReferences, "Moved variable \"{0}\" have reference(s)." )
+PROCESS_ERROR( MovedVariableHasReferences, "Moved variable \"{0}\" has reference(s)." )
 PROCESS_ERROR( UnallowedReferencePollution, "Unallowed reference pollution." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyConstructor, "Explicit reference pollution for copy constructor. Reference pollution for copy constructors generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, "Explicit reference pollution for equality compare operator. Reference pollution for such operators is not allowed." )
-PROCESS_ERROR( ReferenceFieldOfTypeWithReferencesInside, "Reference field \"{0}\" have type, with other references inside." )
+PROCESS_ERROR( ReferenceFieldOfTypeWithReferencesInside, "Reference field \"{0}\" has type, with other references inside." )
 PROCESS_ERROR( ExpectedReferenceNotation, "Expected reference notation for field \"{0}\"." )
 PROCESS_ERROR( InnerReferenceTagCountMismatch, "Mismatch in count of inner reference tags. Expected {0}, got {1}. " )
 PROCESS_ERROR( InvalidInnerReferenceTagName, "Invalid inner reference tag name \"{0}\". Expected letters in range a-z." )
@@ -172,7 +172,7 @@ PROCESS_ERROR( UnderlyingTypeForEnumIsTooSmall, "Underlying type for enum is too
 // Inheritance errors
 PROCESS_ERROR( CanNotDeriveFromThisType, "Can not derive from \"{0}\"." )
 PROCESS_ERROR( DuplicatedParentClass, "Parent class \"{0}\" is duplicated." )
-PROCESS_ERROR( DuplicatedBaseClass, "Can not inherit from \"{0}\" because class already have base." )
+PROCESS_ERROR( DuplicatedBaseClass, "Can not inherit from \"{0}\" because class already has base." )
 PROCESS_ERROR( FieldsForInterfacesNotAllowed, "Fields for interfaces are not allowed." )
 PROCESS_ERROR( BaseClassForInterface, "Base class for interface." )
 PROCESS_ERROR( ConstructorForInterface, "Constructor for interface." )

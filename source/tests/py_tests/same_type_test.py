@@ -167,7 +167,7 @@ def SameTypeResult_IsValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )
 
 
 def SameTypeResult_IsValue_Test1():
@@ -179,7 +179,7 @@ def SameTypeResult_IsValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )
 
 
 def SameTypeResult_IsValue_Test2():
@@ -191,4 +191,4 @@ def SameTypeResult_IsValue_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )

@@ -66,7 +66,7 @@ def StructFieldChildNodes_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test3():
@@ -85,7 +85,7 @@ def StructFieldChildNodes_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test4():
@@ -104,7 +104,7 @@ def StructFieldChildNodes_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test5():
@@ -123,7 +123,7 @@ def StructFieldChildNodes_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test6():
@@ -142,7 +142,7 @@ def StructFieldChildNodes_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test7():
@@ -212,7 +212,7 @@ def StructFieldChildNodes_Test10():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test11():
@@ -231,7 +231,7 @@ def StructFieldChildNodes_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test12():
@@ -250,7 +250,7 @@ def StructFieldChildNodes_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test13():
@@ -269,7 +269,7 @@ def StructFieldChildNodes_Test13():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test14():
@@ -288,7 +288,7 @@ def StructFieldChildNodes_Test14():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def StructFieldChildNodes_Test15():
@@ -424,7 +424,7 @@ def StructFieldChildNodes_Test21():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test22():
@@ -441,7 +441,7 @@ def StructFieldChildNodes_Test22():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test23():
@@ -457,7 +457,7 @@ def StructFieldChildNodes_Test23():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test24():
@@ -507,7 +507,7 @@ def StructFieldChildNodes_Test26():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test27():
@@ -525,7 +525,7 @@ def StructFieldChildNodes_Test27():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test28():
@@ -543,7 +543,7 @@ def StructFieldChildNodes_Test28():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test29():
@@ -561,7 +561,7 @@ def StructFieldChildNodes_Test29():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test30():
@@ -627,7 +627,7 @@ def StructFieldChildNodes_Test33():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test34():
@@ -645,7 +645,7 @@ def StructFieldChildNodes_Test34():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test35():
@@ -663,7 +663,7 @@ def StructFieldChildNodes_Test35():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test36():
@@ -693,7 +693,7 @@ def StructFieldChildNodes_Test37():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def StructFieldChildNodes_Test38():
@@ -708,7 +708,7 @@ def StructFieldChildNodes_Test38():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def StructFieldChildNodes_Test39():
@@ -735,8 +735,8 @@ def StructFieldChildNodes_Test40():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def StructFieldChildNodes_Test41():
@@ -750,7 +750,7 @@ def StructFieldChildNodes_Test41():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def StructFieldChildNodes_Test42():
@@ -775,7 +775,7 @@ def StructFieldChildNodes_Test42():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
 
 
 def StructFieldChildNodes_Test43():
@@ -794,7 +794,7 @@ def StructFieldChildNodes_Test43():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
 def StructFieldChildNodes_Test44():
@@ -813,7 +813,7 @@ def StructFieldChildNodes_Test44():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
 def StructFieldChildNodes_Test45():
@@ -852,7 +852,7 @@ def StructFieldChildNodes_Test46():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def StructFieldChildNodes_Test47():
@@ -870,7 +870,7 @@ def StructFieldChildNodes_Test47():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def StructFieldChildNodes_Test48():
@@ -889,7 +889,7 @@ def StructFieldChildNodes_Test48():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def StructFieldChildNodes_Test49():
@@ -1016,7 +1016,7 @@ def TupleElementNodes_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test3():
@@ -1030,7 +1030,7 @@ def TupleElementNodes_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test4():
@@ -1044,7 +1044,7 @@ def TupleElementNodes_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test5():
@@ -1058,7 +1058,7 @@ def TupleElementNodes_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test6():
@@ -1072,7 +1072,7 @@ def TupleElementNodes_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test7():
@@ -1122,7 +1122,7 @@ def TupleElementNodes_Test10():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test11():
@@ -1136,7 +1136,7 @@ def TupleElementNodes_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test12():
@@ -1150,7 +1150,7 @@ def TupleElementNodes_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test13():
@@ -1164,7 +1164,7 @@ def TupleElementNodes_Test13():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test14():
@@ -1178,7 +1178,7 @@ def TupleElementNodes_Test14():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test15():
@@ -1287,7 +1287,7 @@ def TupleElementNodes_Test21():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test22():
@@ -1302,7 +1302,7 @@ def TupleElementNodes_Test22():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test23():
@@ -1316,7 +1316,7 @@ def TupleElementNodes_Test23():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test24():
@@ -1357,7 +1357,7 @@ def TupleElementNodes_Test26():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def TupleElementNodes_Test27():
@@ -1371,7 +1371,7 @@ def TupleElementNodes_Test27():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test28():
@@ -1396,8 +1396,8 @@ def TupleElementNodes_Test29():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def TupleElementNodes_Test30():
@@ -1410,4 +1410,4 @@ def TupleElementNodes_Test30():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )

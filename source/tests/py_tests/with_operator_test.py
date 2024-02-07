@@ -386,7 +386,7 @@ def WithOperatorForConstexprValue_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
 
 
 def WithOperatorForConstexprValue_Test5():
@@ -402,7 +402,7 @@ def WithOperatorForConstexprValue_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 7 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 7 ) )
 
 
 def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
@@ -529,4 +529,4 @@ def WithOperator_ForAbstractValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )

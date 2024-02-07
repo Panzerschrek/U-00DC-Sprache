@@ -268,7 +268,7 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 		FunctionVariable& function_variable= functions_set.functions[function_index];
 
 		// Immediately build functions with auto return type.
-		if( function->type.IsAutoReturn() && !function_variable.have_body && function->block != nullptr )
+		if( function->type.IsAutoReturn() && !function_variable.has_body && function->block != nullptr )
 		{
 			// Preprocess function in order to deduce return type and reference notation.
 			ReturnTypeDeductionContext return_type_deduction_context;
@@ -291,7 +291,7 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 			function_variable.type.return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
 			function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
 
-			function_variable.have_body= false;
+			function_variable.has_body= false;
 			// Remove old LLVM function and create new one (with name based on exact deduced function type).
 			function_variable.llvm_function->function->eraseFromParent();
 			function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name.back().name : mangler_->MangleFunction( names_scope, function->name.back().name, function_variable.type ) );
@@ -332,7 +332,7 @@ void CodeBuilder::BuildFunctionsSetBodies( NamesScope& names_scope, OverloadedFu
 
 		if( function_variable.syntax_element != nullptr &&
 			function_variable.syntax_element->block != nullptr &&
-			!function_variable.have_body &&
+			!function_variable.has_body &&
 			!function_variable.syntax_element->type.IsAutoReturn() &&
 			!function_variable.is_inherited )
 		{
@@ -358,7 +358,7 @@ void CodeBuilder::PrepareFunctionsSetAndBuildConstexprBodies( NamesScope& names_
 		{
 			if( function_variable.syntax_element != nullptr &&
 				function_variable.syntax_element->block != nullptr &&
-				!function_variable.have_body &&
+				!function_variable.has_body &&
 				function_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 			{
 				BuildFuncCode(
@@ -757,8 +757,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		fields_llvm_types.emplace_back( parent.class_->llvm_type );
 	}
 
-	// Allocate virtual table pointer, if class have no parents.
-	// If class have at least one parent, reuse it's virtual table pointer.
+	// Allocate virtual table pointer, if class has no parents.
+	// If class has at least one parent, reuse it's virtual table pointer.
 	bool allocate_virtual_table_pointer= false;
 	if( the_class.parents.empty() && (
 		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
@@ -879,11 +879,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		{
 			if( !IsCopyConstructor( constructor.type, class_type ) )
 			{
-				the_class.have_explicit_noncopy_constructors= true;
+				the_class.has_explicit_noncopy_constructors= true;
 				break;
 			}
 		};
-		the_class.have_explicit_noncopy_constructors |= !constructors->template_functions.empty();
+		the_class.has_explicit_noncopy_constructors |= !constructors->template_functions.empty();
 	}
 
 	// Disable constexpr possibility for structs with:
@@ -1052,7 +1052,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members->GetErrors(), src_loc, name );
 							}
 
-							// Merge function sets, if result class have functions set with given name.
+							// Merge function sets, if result class has functions set with given name.
 							for( const FunctionVariable& parent_function : functions->functions )
 							{
 								bool overrides= false;
@@ -1422,7 +1422,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		if( is_mutable )
 			variable_reference->constexpr_value = nullptr;
 
-		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type have trivial destructor.
+		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type has trivial destructor.
 
 		global_variable_value= variable_reference;
 	}
@@ -1501,7 +1501,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		if( is_mutable )
 			variable_reference->constexpr_value = nullptr;
 
-		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
+		// Do not call destructors, because global variables can be only constexpr and any constexpr type has trivial destructor.
 
 		global_variable_value= variable_reference;
 	}

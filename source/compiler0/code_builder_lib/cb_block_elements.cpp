@@ -120,7 +120,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	if( block.safety == Synt::ScopeBlock::Safety::Unsafe )
 	{
-		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+		function_context.has_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 		function_context.is_in_unsafe_block= true;
 	}
 	else if( block.safety == Synt::ScopeBlock::Safety::Safe )
@@ -140,19 +140,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( break_block != nullptr )
 	{
 		std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 			variables_state_for_merge.push_back( function_context.variables_state );
 
 		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), block.end_src_loc );
 
 		function_context.loops_stack.pop_back();
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 			function_context.llvm_ir_builder.CreateBr( break_block );
 
-		block_build_info.have_terminal_instruction_inside= variables_state_for_merge.empty();
+		block_build_info.has_terminal_instruction_inside= variables_state_for_merge.empty();
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.function->getBasicBlockList().push_back( break_block );
 			function_context.llvm_ir_builder.SetInsertPoint( break_block );
@@ -191,7 +191,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), variables_declaration.src_loc, type );
 
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
-			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
@@ -423,7 +423,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
 		if( !initializer_experrsion->type.CanBeConstexpr() )
-			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		const VariableMutPtr variable=
 			Variable::Create(
@@ -524,7 +524,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::ReturnOperator& return_operator )
 {
 	BlockBuildInfo block_info;
-	block_info.have_terminal_instruction_inside= true;
+	block_info.has_terminal_instruction_inside= true;
 
 	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression) != nullptr )
 	{
@@ -949,7 +949,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// TODO - create template errors context.
 			// Build block without creating inner namespace - reuse namespace of tuple-for variable.
 			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block.elements );
-			if( !inner_block_build_info.have_terminal_instruction_inside )
+			if( !inner_block_build_info.has_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names_scope, function_context, range_for_operator.src_loc );
 				function_context.llvm_ir_builder.CreateBr( next_basic_block );
@@ -981,7 +981,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 			else
 			{
-				// Finish building tuple-for if current iteration have no "continue" branches.
+				// Finish building tuple-for if current iteration has no "continue" branches.
 				if( !is_last_iteration )
 					delete next_basic_block;
 
@@ -1003,7 +1003,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else if( !break_variables_states.empty() )
 			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names_scope.GetErrors(), range_for_operator.block.end_src_loc );
 		else
-			block_build_info.have_terminal_instruction_inside= true;
+			block_build_info.has_terminal_instruction_inside= true;
 	}
 	else
 	{
@@ -1012,7 +1012,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( !block_build_info.has_terminal_instruction_inside )
 		CallDestructors( temp_variables_storage, names_scope, function_context, range_for_operator.src_loc );
 
 	return block_build_info;
@@ -1083,7 +1083,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, c_style_for_operator.block );
-	if( !loop_body_block_info.have_terminal_instruction_inside )
+	if( !loop_body_block_info.has_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
@@ -1184,7 +1184,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( names_scope, function_context, while_operator.block );
-	if( !loop_body_block_info.have_terminal_instruction_inside )
+	if( !loop_body_block_info.has_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
@@ -1231,7 +1231,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( names_scope, function_context, loop_operator.block );
-	if( !loop_body_block_info.have_terminal_instruction_inside )
+	if( !loop_body_block_info.has_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_block );
 		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
@@ -1254,9 +1254,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
 	// Any code, that follows infinite loop without "break" inside is unreachable.
 	BlockBuildInfo block_build_info;
-	block_build_info.have_terminal_instruction_inside= variables_state_for_merge.empty();
+	block_build_info.has_terminal_instruction_inside= variables_state_for_merge.empty();
 
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( !block_build_info.has_terminal_instruction_inside )
 	{
 		// Block after loop code.
 		function_context.function->getBasicBlockList().push_back( block_after_loop );
@@ -1274,7 +1274,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::BreakOperator& break_operator )
 {
 	BlockBuildInfo block_info;
-	block_info.have_terminal_instruction_inside= true;
+	block_info.has_terminal_instruction_inside= true;
 
 	LoopFrame* const loop_frame= FetchLoopFrame( names_scope, function_context, break_operator.label );
 	if( loop_frame == nullptr )
@@ -1298,7 +1298,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::ContinueOperator& continue_operator )
 {
 	BlockBuildInfo block_info;
-	block_info.have_terminal_instruction_inside= true;
+	block_info.has_terminal_instruction_inside= true;
 
 	LoopFrame* const loop_frame= FetchLoopFrame( names_scope, function_context, continue_operator.label );
 	if( loop_frame == nullptr )
@@ -1392,7 +1392,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state.AddNode( variable );
 
 		if( !variable->type.CanBeConstexpr() )
-			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( expr->value_type == ValueType::Value &&
 			expr->location == Variable::Location::Pointer &&
@@ -1468,7 +1468,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Build block. Do not create names scope, reuce names scope of "with" variable.
 	const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.elements );
 
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( !block_build_info.has_terminal_instruction_inside )
 	{
 		// Destroy all temporaries.
 		CallDestructors( variables_storage, variable_names_scope, function_context, with_operator.src_loc );
@@ -1525,7 +1525,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( if_operator.alternative == nullptr )
 	{
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( alternative_block );
 			branches_variable_states.push_back( function_context.variables_state );
@@ -1533,7 +1533,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		branches_variable_states.push_back( std::move( variables_state_before_branching ) );
 
-		block_build_info.have_terminal_instruction_inside= false;
+		block_build_info.has_terminal_instruction_inside= false;
 
 		function_context.function->getBasicBlockList().push_back( alternative_block );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
@@ -1542,7 +1542,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
 
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
 			branches_variable_states.push_back( function_context.variables_state );
@@ -1555,16 +1555,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state= std::move( variables_state_before_branching );
 		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, *if_operator.alternative );
 
-		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
 			branches_variable_states.push_back( function_context.variables_state );
 		}
 
-		block_build_info.have_terminal_instruction_inside=
-			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
+		block_build_info.has_terminal_instruction_inside=
+			if_block_build_info.has_terminal_instruction_inside && alternative_block_build_info.has_terminal_instruction_inside;
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.function->getBasicBlockList().push_back( block_after_if );
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
@@ -1755,7 +1755,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name, if_coro_advance.src_loc, function_context );
 
 			if( !variable->type.CanBeConstexpr() )
-				function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+				function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 			variable_reference->llvm_value= variable->llvm_value;
 
@@ -1804,7 +1804,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name, if_coro_advance.src_loc, function_context );
 
 				if( !result_type.CanBeConstexpr() )
-					function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+					function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 				if( !result_type.IsCopyConstructible() )
 					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope.GetErrors(), if_coro_advance.src_loc, result_type );
@@ -1868,7 +1868,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		// Reuse variable names scope for block.
 		if_block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements );
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			// Destroy coro result variable.
 			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc );
@@ -1883,14 +1883,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( if_coro_advance.alternative == nullptr )
 	{
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( alternative_block );
 			branches_variable_states.push_back( function_context.variables_state );
 		}
 		branches_variable_states.push_back( std::move( variables_state_before_branching ) );
 
-		block_build_info.have_terminal_instruction_inside= false;
+		block_build_info.has_terminal_instruction_inside= false;
 
 		function_context.function->getBasicBlockList().push_back( alternative_block );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
@@ -1903,7 +1903,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		alternative_block->setName( "if_coro_advance_else" );
 		llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_, "after_if_coro_advance" );
 
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			// Destroy temporarie in coroutine expression.
 			CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
@@ -1923,16 +1923,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, *if_coro_advance.alternative );
 
-		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
 			branches_variable_states.push_back( function_context.variables_state );
 		}
 
-		block_build_info.have_terminal_instruction_inside=
-			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
+		block_build_info.has_terminal_instruction_inside=
+			if_block_build_info.has_terminal_instruction_inside && alternative_block_build_info.has_terminal_instruction_inside;
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.function->getBasicBlockList().push_back( block_after_if );
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
@@ -2334,7 +2334,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state= variables_state_before_branching;
 		const BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block );
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_switch );
 			breances_states_after_case.push_back( function_context.variables_state );
@@ -2363,7 +2363,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state= variables_state_before_branching;
 		const BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, *default_branch_synt_block );
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_switch );
 			breances_states_after_case.push_back( function_context.variables_state );
@@ -2388,7 +2388,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( all_branches_are_terminal )
 	{
-		block_build_info.have_terminal_instruction_inside= true;
+		block_build_info.has_terminal_instruction_inside= true;
 		// There is no reason to merge variables state here.
 
 		// Hack - preserve LLVM basic blocks structure in case of impossible jump to block after swith.
@@ -2481,7 +2481,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Check references of destination.
-		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
+		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), assignment_operator.src_loc, l_var->name );
 
 		if( l_var->type.GetFundamentalType() != nullptr ||
@@ -2564,7 +2564,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Check references of destination.
-		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
+		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->name );
 
 		// Allow additive assignment operators only for fundamentals and raw pointers.
@@ -2703,7 +2703,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateUnreachable();
 
 	BlockBuildInfo block_info;
-	block_info.have_terminal_instruction_inside= true;
+	block_info.has_terminal_instruction_inside= true;
 	return block_info;
 }
 
@@ -2765,7 +2765,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( !block_build_info.has_terminal_instruction_inside )
 		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc );
 
 	debug_info_builder_->EndBlock( function_context );
@@ -2782,13 +2782,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 	block_elements.Iter(
 		[&]( const auto& el )
 		{
-			if( block_build_info.have_terminal_instruction_inside )
+			if( block_build_info.has_terminal_instruction_inside )
 				REPORT_ERROR( UnreachableCode, names_scope.GetErrors(), el.src_loc );
 
 			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
 			const BlockBuildInfo info= BuildBlockElementImpl( names_scope, function_context, el );
-			if( info.have_terminal_instruction_inside )
-				block_build_info.have_terminal_instruction_inside= true;
+			if( info.has_terminal_instruction_inside )
+				block_build_info.has_terminal_instruction_inside= true;
 		} );
 
 	return block_build_info;
@@ -2907,7 +2907,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
-	if( function_context.variables_state.HaveOutgoingLinks( variable ) )
+	if( function_context.variables_state.HasOutgoingLinks( variable ) )
 		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, variable->name );
 
 	FunctionType::Param args[1];
@@ -2918,7 +2918,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	if( overloaded_operator != nullptr )
 	{
 		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 
 		overloaded_operator->referenced= true;
 

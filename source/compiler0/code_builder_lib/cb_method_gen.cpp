@@ -29,7 +29,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 			{
 				if( constructor.is_generated )
 				{
-					U_ASSERT(!constructor.have_body);
+					U_ASSERT(!constructor.has_body);
 					constructor_variable= &constructor;
 				}
 				else
@@ -42,8 +42,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		};
 	}
 
-	// Generating of default constructor disabled, if class have other explicit constructors, except copy constructors.
-	if( the_class.have_explicit_noncopy_constructors && constructor_variable == nullptr )
+	// Generating of default constructor disabled, if class has other explicit constructors, except copy constructors.
+	if( the_class.has_explicit_noncopy_constructors && constructor_variable == nullptr )
 		return;
 
 	// Generate default constructor, if all fields is default constructible.
@@ -100,7 +100,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		}
 	}
 
-	constructor_variable->have_body= true;
+	constructor_variable->has_body= true;
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
@@ -207,7 +207,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 			{
 				if( constructor.is_generated )
 				{
-					U_ASSERT(!constructor.have_body);
+					U_ASSERT(!constructor.has_body);
 					constructor_variable= &constructor;
 				}
 				else
@@ -288,7 +288,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		}
 	}
 
-	constructor_variable->have_body= true;
+	constructor_variable->has_body= true;
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
@@ -367,14 +367,14 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 	destructor_function.type= destructor_type;
 	destructor_function.is_generated= true;
 	destructor_function.is_this_call= true;
-	destructor_function.have_body= false;
+	destructor_function.has_body= false;
 
 	return destructor_function;
 }
 
 void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVariable& destructor_function )
 {
-	destructor_function.have_body= true;
+	destructor_function.has_body= true;
 
 	if( skip_building_generated_functions_ && !class_type->can_be_constexpr )
 	{
@@ -423,10 +423,10 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 			return; // destructors may be invalid in case of error.
 
 		FunctionVariable& destructor_function= destructors->functions.front();
-		if( destructor_function.is_generated && !destructor_function.have_body )
+		if( destructor_function.is_generated && !destructor_function.has_body )
 			GenerateDestructorBody( class_type, destructor_function ); // Finish generating pre-generated destructor.
 
-		the_class.have_destructor= true;
+		the_class.has_destructor= true;
 		return;
 	}
 
@@ -438,7 +438,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 	FunctionVariable destructor_variable= GenerateDestructorPrototype( class_type );
 	GenerateDestructorBody( class_type, destructor_variable );
 
-	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
+	// TODO - destructor has no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
 	OverloadedFunctionsSetPtr destructors= std::make_shared<OverloadedFunctionsSet>();
 	destructors->functions.push_back( std::move( destructor_variable ) );
 	destructors->base_class= class_type;
@@ -446,7 +446,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 	the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move( destructors ), SrcLoc() ) );
 
 	// Say "we have destructor".
-	the_class.have_destructor= true;
+	the_class.has_destructor= true;
 }
 
 void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
@@ -466,7 +466,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 			{
 				if( op.is_generated )
 				{
-					U_ASSERT( !op.have_body );
+					U_ASSERT( !op.has_body );
 					operator_variable= &op;
 				}
 				else
@@ -548,7 +548,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		}
 	}
 
-	operator_variable->have_body= true;
+	operator_variable->has_body= true;
 	operator_variable->is_this_call= true;
 	operator_variable->is_generated= true;
 
@@ -619,7 +619,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 			{
 				if( op.is_generated )
 				{
-					U_ASSERT( !op.have_body );
+					U_ASSERT( !op.has_body );
 					operator_variable= &op;
 				}
 				else
@@ -702,7 +702,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 		}
 	}
 
-	operator_variable->have_body= true;
+	operator_variable->has_body= true;
 	operator_variable->is_this_call= false; // TODO - is there any reason to set this flag?
 	operator_variable->is_generated= true;
 
@@ -780,7 +780,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 void CodeBuilder::ProcessGeneratedMethodConstexprFlag( const ClassPtr class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method )
 {
-	const bool is_constexpr= class_type->can_be_constexpr && !function_context_after_body_generation.have_non_constexpr_operations_inside;
+	const bool is_constexpr= class_type->can_be_constexpr && !function_context_after_body_generation.has_non_constexpr_operations_inside;
 	method.constexpr_kind= is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	if( !is_constexpr && method.syntax_element != nullptr && method.syntax_element->constexpr_ )
@@ -856,7 +856,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		U_ASSERT( constructor != nullptr );
 
 		if( !( constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 
 		// Call it.
 		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated(*constructor), { dst, src } );
@@ -931,7 +931,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT( op != nullptr );
 
 		if( !( op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 
 		// Call it.
 		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { dst, src } );
@@ -1020,7 +1020,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		U_ASSERT( op != nullptr );
 
 		if( !( op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
-			function_context.have_non_constexpr_operations_inside= true;
+			function_context.has_non_constexpr_operations_inside= true;
 
 		// Call it.
 		const auto eq= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { l_address, r_address } );

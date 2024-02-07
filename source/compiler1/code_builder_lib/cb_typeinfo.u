@@ -725,7 +725,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		ADD_TYPEINFO_FIELD( "type", field.t )
 		ADD_TYPEINFO_FIELD( "class_type", field.source_class )
 
-		// Base class always have zero offset, so, we can just use offset of class field in its own class.
+		// Base class always has zero offset, so, we can just use offset of class field in its own class.
 		auto field_source_class_llvm_type= field.source_class.lock_imut().deref().llvm_type;
 		ADD_SIZE_FIELD( "offset", unsafe( LLVMOffsetOfElement( data_layout_, field_source_class_llvm_type, u32(field.index) ) ) )
 

@@ -79,7 +79,7 @@ U_TEST( ClassFieldAccessInStaticMethodTest0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ClassFieldAccessInStaticMethod, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ClassFieldAccessInStaticMethod, 7u ) );
 }
 
 U_TEST(FunctionBodyDuplication_ForMethods_Test0)

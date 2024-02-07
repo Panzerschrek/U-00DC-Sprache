@@ -91,8 +91,8 @@ fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )
 
 fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	if( ( to.lock_imut().deref().value_type == ValueType::ReferenceMut && HaveOutgoingLinks( from ) ) ||
-		HaveOutgoingMutableNodes( from ) )
+	if( ( to.lock_imut().deref().value_type == ValueType::ReferenceMut && HasOutgoingLinks( from ) ) ||
+		HasOutgoingMutableNodes( from ) )
 	{
 		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, from.lock_imut().deref().name )
 		return;
@@ -212,14 +212,14 @@ fn ReferencesGraph::NodeIsMoved( this, VariablePtr& node ) : bool
 	return nodes_[node].moved;
 }
 
-fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr& from ) : bool
+fn ReferencesGraph::HasOutgoingLinks( this, VariablePtr& from ) : bool
 {
 	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
 
-	// Check if any parent have links and any child (including children of children) have links.
+	// Check if any parent has links and any child (including children of children) has links.
 	// Doesn't count sibling nodes and other indirect relatives.
 
-	if( HaveOutgoingLinksIncludingChildrenLinks_r( from ) )
+	if( HasOutgoingLinksIncludingChildrenLinks_r( from ) )
 	{
 		return true;
 	}
@@ -228,7 +228,7 @@ fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr& from ) : bool
 	while( !parent.empty() )
 	{
 		var VariablePtr parent_non_null= parent.try_to_non_nullable();
-		if( HaveDirectOutgoingLinks( parent_non_null ) )
+		if( HasDirectOutgoingLinks( parent_non_null ) )
 		{
 			return true;
 		}
@@ -238,14 +238,14 @@ fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr& from ) : bool
 	return false;
 }
 
-fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool
+fn ReferencesGraph::HasOutgoingMutableNodes( this, VariablePtr& from ) : bool
 {
 	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
 
-	// Check if any parent have mutable links and any child (including children of children) have mutable links.
+	// Check if any parent has mutable links and any child (including children of children) has mutable links.
 	// Doesn't count sibling nodes and other indirect relatives.
 
-	if( HaveOutgoingMutableNodesIncludingChildrenNodes_r( from ) )
+	if( HasOutgoingMutableNodesIncludingChildrenNodes_r( from ) )
 	{
 		return true;
 	}
@@ -254,7 +254,7 @@ fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool
 	while( !parent.empty() )
 	{
 		var VariablePtr parent_non_null= parent.try_to_non_nullable();
-		if( HaveDirectOutgoingMutableNodes( parent_non_null ) )
+		if( HasDirectOutgoingMutableNodes( parent_non_null ) )
 		{
 			return true;
 		}
@@ -264,17 +264,17 @@ fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool
 	return false;
 }
 
-fn ReferencesGraph::EnsureHaveNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc )
+fn ReferencesGraph::EnsureHasNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	if( HaveOutgoingLinks( from ) )
+	if( HasOutgoingLinks( from ) )
 	{
 		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, from.lock_imut().deref().name )
 	}
 }
 
-fn ReferencesGraph::EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc )
+fn ReferencesGraph::EnsureHasNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	if( HaveOutgoingMutableNodes( from ) )
+	if( HasOutgoingMutableNodes( from ) )
 	{
 		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, from.lock_imut().deref().name )
 	}
@@ -431,7 +431,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, No
 	// Children nodes can't have input links. So, ignore them.
 }
 
-fn ReferencesGraph::HaveDirectOutgoingLinks( this, VariablePtr& from ) : bool
+fn ReferencesGraph::HasDirectOutgoingLinks( this, VariablePtr& from ) : bool
 {
 	foreach( &link : links_ )
 	{
@@ -444,9 +444,9 @@ fn ReferencesGraph::HaveDirectOutgoingLinks( this, VariablePtr& from ) : bool
 	return false;
 }
 
-fn ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool
+fn ReferencesGraph::HasOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool
 {
-	if( HaveDirectOutgoingLinks( from ) )
+	if( HasDirectOutgoingLinks( from ) )
 	{
 		return true;
 	}
@@ -457,7 +457,7 @@ fn ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr
 		{
 			var VariablePtr child_non_null= child.try_to_non_nullable();
 			if( !nodes_.find( child_non_null ).empty() && // Children nodes are lazily-added.
-				HaveOutgoingLinksIncludingChildrenLinks_r( child_non_null ) )
+				HasOutgoingLinksIncludingChildrenLinks_r( child_non_null ) )
 			{
 				return true;
 			}
@@ -467,7 +467,7 @@ fn ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr
 	return false;
 }
 
-fn ReferencesGraph::HaveDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool
+fn ReferencesGraph::HasDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool
 {
 	foreach( &link : links_ )
 	{
@@ -480,9 +480,9 @@ fn ReferencesGraph::HaveDirectOutgoingMutableNodes( this, VariablePtr& from ) : 
 	return false;
 }
 
-fn ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool
+fn ReferencesGraph::HasOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool
 {
-	if( HaveDirectOutgoingMutableNodes( from ) )
+	if( HasDirectOutgoingMutableNodes( from ) )
 	{
 		return true;
 	}
@@ -493,7 +493,7 @@ fn ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( this, Vari
 		{
 			var VariablePtr child_non_null= child.try_to_non_nullable();
 			if( !nodes_.find( child_non_null ).empty() && // Children nodes are lazily-added.
-				HaveOutgoingMutableNodesIncludingChildrenNodes_r( child_non_null ) )
+				HasOutgoingMutableNodesIncludingChildrenNodes_r( child_non_null ) )
 			{
 				return true;
 			}

@@ -220,7 +220,7 @@ def BreakOutiseLoop_FroBlock_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BreakOutsideLoop", 5 ) )
+	assert( HasError( errors_list, "BreakOutsideLoop", 5 ) )
 
 
 def BreakOutiseLoop_FroBlock_Test1():
@@ -234,7 +234,7 @@ def BreakOutiseLoop_FroBlock_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BreakOutsideLoop", 5 ) )
+	assert( HasError( errors_list, "BreakOutsideLoop", 5 ) )
 
 
 def ContinueOutiseLoop_FroBlock_Test0():
@@ -248,7 +248,7 @@ def ContinueOutiseLoop_FroBlock_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ContinueOutsideLoop", 5 ) )
+	assert( HasError( errors_list, "ContinueOutsideLoop", 5 ) )
 
 
 def ContinueOutiseLoop_FroBlock_Test1():
@@ -262,7 +262,7 @@ def ContinueOutiseLoop_FroBlock_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ContinueOutsideLoop", 5 ) )
+	assert( HasError( errors_list, "ContinueOutsideLoop", 5 ) )
 
 
 def ContinueForBlock_Test0():
@@ -276,7 +276,7 @@ def ContinueForBlock_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ContinueForBlock", 5 ) )
+	assert( HasError( errors_list, "ContinueForBlock", 5 ) )
 
 
 def UnreachableCode_ForBreakFromBlock_Test0():
@@ -291,7 +291,7 @@ def UnreachableCode_ForBreakFromBlock_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnreachableCode", 6 ) )
+	assert( HasError( errors_list, "UnreachableCode", 6 ) )
 
 
 def UnreachableCode_ForBreakFromBlock_Test1():
@@ -308,7 +308,7 @@ def UnreachableCode_ForBreakFromBlock_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnreachableCode", 8 ) )
+	assert( HasError( errors_list, "UnreachableCode", 8 ) )
 
 
 def UnreachableCode_ForBreakFromBlock_Test2():
@@ -323,7 +323,7 @@ def UnreachableCode_ForBreakFromBlock_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnreachableCode", 7 ) )
+	assert( HasError( errors_list, "UnreachableCode", 7 ) )
 
 
 def BreakFromBlock_VariablesStateMerge_Test0():
@@ -342,7 +342,7 @@ def BreakFromBlock_VariablesStateMerge_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 11 ) )
+	assert( HasError( errors_list, "ConditionalMove", 11 ) )
 
 
 def BreakFromBlock_VariablesStateMerge_Test1():
@@ -361,7 +361,7 @@ def BreakFromBlock_VariablesStateMerge_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 11 ) )
+	assert( HasError( errors_list, "ConditionalMove", 11 ) )
 
 
 def BreakFromBlock_VariablesStateMerge_Test2():
@@ -424,8 +424,8 @@ def BreakFromBlock_VariablesStateMerge_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "AccessingMovedVariable", 11 ) )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 14 ) )
+	assert( not HasError( errors_list, "AccessingMovedVariable", 11 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 14 ) )
 
 
 def BreakFromBlock_VariablesStateMerge_Test5():
@@ -453,5 +453,5 @@ def BreakFromBlock_VariablesStateMerge_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 17 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 19 ) )

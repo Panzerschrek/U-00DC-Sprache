@@ -476,7 +476,7 @@ def VariablesStateMerge_ForSwitchOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 9 ) )
+	assert( HasError( errors_list, "ConditionalMove", 9 ) )
 
 
 def VariablesStateMerge_ForSwitchOperator_Test1():
@@ -493,7 +493,7 @@ def VariablesStateMerge_ForSwitchOperator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 9 ) )
+	assert( HasError( errors_list, "ConditionalMove", 9 ) )
 
 
 
@@ -562,4 +562,4 @@ def VariablesStateMerge_ForSwitchOperator_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 14 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )

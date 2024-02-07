@@ -8,7 +8,7 @@ def CoroutineMismatch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 2 ) or HasError( errors_list, "CoroutineMismatch", 3 ) )
 
 
 def CoroutineMismatch_Test1():
@@ -18,7 +18,7 @@ def CoroutineMismatch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 2 ) or HasError( errors_list, "CoroutineMismatch", 3 ) )
 
 
 def CoroutineMismatch_Test2():
@@ -32,7 +32,7 @@ def CoroutineMismatch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 4 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 4 ) or HasError( errors_list, "CoroutineMismatch", 7 ) )
 
 
 def CoroutineMismatch_Test3():
@@ -46,7 +46,7 @@ def CoroutineMismatch_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 5 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 5 ) or HasError( errors_list, "CoroutineMismatch", 7 ) )
 
 
 def NonDefaultCallingConventionForCoroutine_Test0():
@@ -55,7 +55,7 @@ def NonDefaultCallingConventionForCoroutine_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
+	assert( HasError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
 def NonDefaultCallingConventionForCoroutine_Test1():
@@ -64,7 +64,7 @@ def NonDefaultCallingConventionForCoroutine_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
+	assert( HasError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
 def NonDefaultCallingConventionForCoroutine_Test2():
@@ -90,7 +90,7 @@ def YieldOutsideCoroutine_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "YieldOutsideCoroutine", 4 ) )
+	assert( HasError( errors_list, "YieldOutsideCoroutine", 4 ) )
 
 
 def YieldOutsideCoroutine_Test1():
@@ -105,7 +105,7 @@ def YieldOutsideCoroutine_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "YieldOutsideCoroutine", 6 ) )
+	assert( HasError( errors_list, "YieldOutsideCoroutine", 6 ) )
 
 
 def Yield_TypesMismatch_Test0():
@@ -117,7 +117,7 @@ def Yield_TypesMismatch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def Yield_TypesMismatch_Test1():
@@ -131,7 +131,7 @@ def Yield_TypesMismatch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
+	assert( HasError( errors_list, "TypesMismatch", 6 ) )
 
 
 def Yield_TypesMismatch_Test2():
@@ -143,7 +143,7 @@ def Yield_TypesMismatch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def Yield_TypesMismatch_Test3():
@@ -155,7 +155,7 @@ def Yield_TypesMismatch_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def Yield_ForNonCopyableValue_Test0():
@@ -173,7 +173,7 @@ def Yield_ForNonCopyableValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
 def Yield_ForNonCopyableValue_Test1():
@@ -201,7 +201,7 @@ def Yield_BindingConstReferenceToNonconstReference_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
 
 
 def Yield_ExpectedReferenceValue_Test0():
@@ -213,7 +213,7 @@ def Yield_ExpectedReferenceValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )
 
 
 def Yield_ForAbstractClass_Test0():
@@ -229,7 +229,7 @@ def Yield_ForAbstractClass_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
 
 
 def Yield_ForAbstractClass_Test1():
@@ -245,7 +245,7 @@ def Yield_ForAbstractClass_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
 
 
 def IfCoroAdvanceForNonCoroutineValue_Test0():
@@ -257,7 +257,7 @@ def IfCoroAdvanceForNonCoroutineValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
+	assert( HasError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
 
 
 def IfCoroAdvanceForNonCoroutineValue_Test1():
@@ -269,7 +269,7 @@ def IfCoroAdvanceForNonCoroutineValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
+	assert( HasError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
 
 
 def IfCoroAdvanceForNonCoroutineValue_Test2():
@@ -283,7 +283,7 @@ def IfCoroAdvanceForNonCoroutineValue_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
+	assert( HasError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
 
 
 def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test0():
@@ -297,7 +297,7 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
 
 
 def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test1():
@@ -334,7 +334,7 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test0():
@@ -348,7 +348,7 @@ def GeneratorIsNonCopyable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test1():
@@ -362,7 +362,7 @@ def GeneratorIsNonCopyable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test2():
@@ -376,7 +376,7 @@ def GeneratorIsNonCopyable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ClassHaveNoConstructors", 6 ) or HaveError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
+	assert( HasError( errors_list, "ClassHasNoConstructors", 6 ) or HasError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test3():
@@ -391,7 +391,7 @@ def GeneratorIsNonCopyable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 
 
 def GeneratorIsNonCopyable_Test4():
@@ -405,7 +405,7 @@ def GeneratorIsNonCopyable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test5():
@@ -420,7 +420,7 @@ def GeneratorIsNonCopyable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
 
 
 def GeneratorIsNonCopyable_Test6():
@@ -434,7 +434,7 @@ def GeneratorIsNonCopyable_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test7():
@@ -449,7 +449,7 @@ def GeneratorIsNonCopyable_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 
 
 def GeneratorIsNonCopyable_Test8():
@@ -470,7 +470,7 @@ def GeneratorIsNonDefaultConstructible_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedInitializer", 4 ) )
+	assert( HasError( errors_list, "ExpectedInitializer", 4 ) )
 
 
 def GeneratorIsNonDefaultConstructible_Test1():
@@ -483,7 +483,7 @@ def GeneratorIsNonDefaultConstructible_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedInitializer", 5 ) )
+	assert( HasError( errors_list, "ExpectedInitializer", 5 ) )
 
 
 def GeneratorIsNonDefaultConstructible_Test2():
@@ -496,7 +496,7 @@ def GeneratorIsNonDefaultConstructible_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedInitializer", 5 ) )
+	assert( HasError( errors_list, "ExpectedInitializer", 5 ) )
 
 
 def GeneratorIsNonDefaultConstructible_Test3():
@@ -508,7 +508,7 @@ def GeneratorIsNonDefaultConstructible_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedInitializer", 4 ) )
+	assert( HasError( errors_list, "ExpectedInitializer", 4 ) )
 
 
 def UsingKeywordAsName_For_IfCoroAdvance_Test0():
@@ -522,7 +522,7 @@ def UsingKeywordAsName_For_IfCoroAdvance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 6 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 6 ) )
 
 
 def IfCoroAdvance_ForNonCopyableValue_Test0():
@@ -541,7 +541,7 @@ def IfCoroAdvance_ForNonCopyableValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
 
 
 def IfCoroAdvance_UseAbstractType_Test0():
@@ -565,7 +565,7 @@ def IfCoroAdvance_UseAbstractType_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 15 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 15 ) )
 
 
 def IfCoroAdvance_UseAbstractType_Test1():
@@ -582,7 +582,7 @@ def IfCoroAdvance_UseAbstractType_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
 
 
 def ReferencesPollution_ForGenerator_Test0():
@@ -593,7 +593,7 @@ def ReferencesPollution_ForGenerator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 4 ) )
+	assert( HasError( errors_list, "NotImplemented", 4 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():
@@ -603,7 +603,7 @@ def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
+	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test1():
@@ -613,7 +613,7 @@ def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
+	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test2():
@@ -649,7 +649,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test2():
@@ -665,7 +665,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test3():
@@ -692,7 +692,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 19 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test4():
@@ -711,7 +711,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test5():
@@ -729,7 +729,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test6():
@@ -782,7 +782,7 @@ def AccessingVariable_LinkedToGeneratorArgument_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 17 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test9():
@@ -822,7 +822,7 @@ def AccessingGenerator_InsideIfCoroAdvance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def AccessingGenerator_InsideIfCoroAdvance_Test1():
@@ -841,7 +841,7 @@ def AccessingGenerator_InsideIfCoroAdvance_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def AccessingGenerator_InsideIfCoroAdvance_Test2():
@@ -858,7 +858,7 @@ def AccessingGenerator_InsideIfCoroAdvance_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 8 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 8 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test0():
@@ -871,7 +871,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 5 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test1():
@@ -883,7 +883,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 4 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 4 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test2():
@@ -917,7 +917,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 5 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test5():
@@ -942,7 +942,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test7():
@@ -970,7 +970,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test9():
@@ -985,7 +985,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 7 ) )
 
 
 def ReturningUnallowedReference_ForGeneratorYield_Test10():
@@ -1027,7 +1027,7 @@ def UnallowedReferencePollution_ForGenerator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 6 ) )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 6 ) )
 
 
 def UnallowedReferencePollution_ForGenerator_Test1():
@@ -1043,7 +1043,7 @@ def UnallowedReferencePollution_ForGenerator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 6 ) )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 6 ) )
 
 
 def GeneratorsCanNotBeConstexpr_Test0():
@@ -1052,7 +1052,7 @@ def GeneratorsCanNotBeConstexpr_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
 
 
 def GeneratorsCanNotBeConstexpr_Test1():
@@ -1061,7 +1061,7 @@ def GeneratorsCanNotBeConstexpr_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
 
 
 def GeneratorsCanNotBeConstexpr_Test2():
@@ -1070,7 +1070,7 @@ def GeneratorsCanNotBeConstexpr_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
 
 
 def GeneratorsCanNotBeConstexpr_Test3():
@@ -1083,7 +1083,7 @@ def GeneratorsCanNotBeConstexpr_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 3 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 3 ) )
 
 
 def GeneratorsCanNotBeConstexpr_Test4():
@@ -1093,7 +1093,7 @@ def GeneratorsCanNotBeConstexpr_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
 
 
 def VirtualGenerator_Test0():
@@ -1105,7 +1105,7 @@ def VirtualGenerator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VirtualCoroutine", 4 ) )
+	assert( HasError( errors_list, "VirtualCoroutine", 4 ) )
 
 
 def VirtualGenerator_Test1():
@@ -1121,8 +1121,8 @@ def VirtualGenerator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "VirtualCoroutine", 4 ) )
-	assert( HaveError( errors_list, "VirtualCoroutine", 8 ) )
+	assert( not HasError( errors_list, "VirtualCoroutine", 4 ) )
+	assert( HasError( errors_list, "VirtualCoroutine", 8 ) )
 
 
 def VirtualGenerator_Test2():
@@ -1145,8 +1145,8 @@ def CoroutineSpecialMethod_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineSpecialMethod", 4 ) )
-	assert( HaveError( errors_list, "CoroutineSpecialMethod", 5 ) )
+	assert( HasError( errors_list, "CoroutineSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "CoroutineSpecialMethod", 5 ) )
 
 
 def CoroutineSpecialMethod_Test1():
@@ -1158,7 +1158,7 @@ def CoroutineSpecialMethod_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "CoroutineSpecialMethod", 4 ) )
 
 
 def InvalidReturnTypeForOperator_ForGeneratorOperator_Test0():
@@ -1170,7 +1170,7 @@ def InvalidReturnTypeForOperator_ForGeneratorOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
 
 
 def InvalidReturnTypeForOperator_ForGeneratorOperator_Test1():
@@ -1182,7 +1182,7 @@ def InvalidReturnTypeForOperator_ForGeneratorOperator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
 
 
 def InvalidReturnTypeForOperator_ForGeneratorOperator_Test2():
@@ -1194,7 +1194,7 @@ def InvalidReturnTypeForOperator_ForGeneratorOperator_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
 
 
 def InvalidReturnTypeForOperator_ForGeneratorOperator_Test3():
@@ -1206,7 +1206,7 @@ def InvalidReturnTypeForOperator_ForGeneratorOperator_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
 
 
 def InvalidReturnTypeForOperator_ForGeneratorOperator_Test4():
@@ -1218,7 +1218,7 @@ def InvalidReturnTypeForOperator_ForGeneratorOperator_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
 
 
 def AutoReturnCoroutine_Test0():
@@ -1227,7 +1227,7 @@ def AutoReturnCoroutine_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoReturnCoroutine", 2 ) )
+	assert( HasError( errors_list, "AutoReturnCoroutine", 2 ) )
 
 
 def GlobalsLoopDetected_ForGenerators_Test0():
@@ -1259,7 +1259,7 @@ def CoroutineNonSyncRequired_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_Test1():
@@ -1269,7 +1269,7 @@ def CoroutineNonSyncRequired_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_Test2():
@@ -1279,7 +1279,7 @@ def CoroutineNonSyncRequired_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_Test3():
@@ -1289,7 +1289,7 @@ def CoroutineNonSyncRequired_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_Test4():
@@ -1312,7 +1312,7 @@ def CoroutineNonSyncRequired_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test0():
@@ -1330,7 +1330,7 @@ def IfCoroAdvance_VariablesStateMerge_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 10 ) )
+	assert( HasError( errors_list, "ConditionalMove", 10 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test1():
@@ -1353,7 +1353,7 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test2():
@@ -1374,7 +1374,7 @@ def IfCoroAdvance_VariablesStateMerge_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 13 ) )
+	assert( HasError( errors_list, "ConditionalMove", 13 ) )
 
 
 def IfCoroAdvance_VariablesStateMerge_Test3():
@@ -1417,7 +1417,7 @@ def IfCoroAdvance_VariablesStateMerge_Test4():
 	tests_lib.build_program( c_program_text )
 
 
-def DestroyedVariableStillHaveReferences_ForGenerator_Test0():
+def DestroyedVariableStillHasReferences_ForGenerator_Test0():
 	c_program_text= """
 		fn generator SomeGen( i32& x );
 		fn Foo()
@@ -1427,10 +1427,10 @@ def DestroyedVariableStillHaveReferences_ForGenerator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 5 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForGenerator_Test1():
+def DestroyedVariableStillHasReferences_ForGenerator_Test1():
 	c_program_text= """
 		fn generator SomeGen( f32& x );
 		fn Bar() : f32;
@@ -1441,10 +1441,10 @@ def DestroyedVariableStillHaveReferences_ForGenerator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 6 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForGenerator_Test2():
+def DestroyedVariableStillHasReferences_ForGenerator_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		fn generator SomeGen( S s );
@@ -1457,10 +1457,10 @@ def DestroyedVariableStillHaveReferences_ForGenerator_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForGenerator_Test3():
+def DestroyedVariableStillHasReferences_ForGenerator_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
 		fn generator SomeGen( S s );

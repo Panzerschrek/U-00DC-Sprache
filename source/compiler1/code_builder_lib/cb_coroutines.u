@@ -178,7 +178,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		.is_copy_constructible= false,
 		.is_copy_assignable= false,
 		.is_equality_comparable= true,
-		.have_explicit_noncopy_constructors= false,
+		.has_explicit_noncopy_constructors= false,
 		// This class allocates heep memory and because of that can't be constexpr.
 		.can_be_constexpr= false,
 		.parents_list_prepared= true,
@@ -879,7 +879,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 
 	if( !function_context.is_functionless_context )
 	{
-		debug_assert( async_func_variable.t.HaveDestructor() );
+		debug_assert( async_func_variable.t.HasDestructor() );
 
 		with( &destructor_ :
 			class_type.lock_imut().deref().

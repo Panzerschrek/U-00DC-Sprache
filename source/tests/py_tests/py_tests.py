@@ -14,7 +14,7 @@ def GetTestsList( tests_modules_list ):
 		importlib.import_module( module_name )
 
 		for name, obj in inspect.getmembers(sys.modules[module_name]):
-			if inspect.isfunction(obj) and obj != ConvertErrors and obj != HaveError:
+			if inspect.isfunction(obj) and obj != ConvertErrors and obj != HasError:
 				result.append((name, obj))
 
 	return result

@@ -120,7 +120,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	function_template->parent_namespace= &names_scope;
 	function_template->base_class= base_class;
 
-	llvm::SmallVector<bool, 32> template_parameters_usage_flags; // Currently unused, because function template have no signature.
+	llvm::SmallVector<bool, 32> template_parameters_usage_flags; // Currently unused, because function template has no signature.
 
 	ProcessTemplateParams(
 		function_template_declaration.params,
@@ -1082,7 +1082,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	// Generate function body after insertion of prototype.
 	// if function is constexpr, body may be already generated.
 	// Skip building body if generated functions building is disabled and if this function can't be constexpr.
-	if( !function_variable.have_body &&
+	if( !function_variable.has_body &&
 		!( skip_building_generated_functions_ && function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr ) &&
 		function_declaration.block != nullptr )
 		BuildFuncCode( function_variable, function_template.base_class, *template_args_namespace, func_name );

@@ -116,15 +116,15 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  4u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  5u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 10u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 12u ) );
 }
 
 U_TEST( InvalidFirstParamValueTypeForAssignmentLikeOperator_Test )
@@ -142,10 +142,10 @@ U_TEST( InvalidFirstParamValueTypeForAssignmentLikeOperator_Test )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 4u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 5u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidFirstParamValueTypeForAssignmentLikeOperator, 7u ) );
 }
 
 U_TEST( InvalidReturnTypeForOperator_Test )
@@ -168,14 +168,14 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 4u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 5u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 8u ) );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 11u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 13u ) );
 }
 
 U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
@@ -220,7 +220,7 @@ U_TEST( CanNotSelectOverloadedOperator )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors,  CodeBuilderErrorCode::TooManySuitableOverloadedFunctions, 14 ) );
+	U_TEST_ASSERT( HasError( build_result.errors,  CodeBuilderErrorCode::TooManySuitableOverloadedFunctions, 14 ) );
 }
 
 } // namespace

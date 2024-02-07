@@ -31,7 +31,7 @@ def BaseUnavailable_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "BaseUnavailable", 10 ) )
+	assert( HasError( errors_list, "BaseUnavailable", 10 ) )
 
 
 def BaseUnavailable_Test2():
@@ -82,7 +82,7 @@ def FieldIsNotInitializedYet_ForBase_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
+	assert( HasError( errors_list, "FieldIsNotInitializedYet", 10 ) )
 
 
 def FieldIsNotInitializedYet_ForBase_Test1():
@@ -99,7 +99,7 @@ def FieldIsNotInitializedYet_ForBase_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
+	assert( HasError( errors_list, "FieldIsNotInitializedYet", 10 ) )
 
 
 def FieldIsNotInitializedYet_ForBase_Test2():
@@ -116,7 +116,7 @@ def FieldIsNotInitializedYet_ForBase_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
+	assert( HasError( errors_list, "FieldIsNotInitializedYet", 10 ) )
 
 
 def FieldIsNotInitializedYet_ForBase_Test3():
@@ -134,7 +134,7 @@ def FieldIsNotInitializedYet_ForBase_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 9 ) )
+	assert( HasError( errors_list, "FieldIsNotInitializedYet", 9 ) )
 
 
 def CanNotDeriveFromThisType_Test0():
@@ -144,7 +144,7 @@ def CanNotDeriveFromThisType_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 3 ) )
+	assert( HasError( errors_list, "CanNotDeriveFromThisType", 3 ) )
 
 
 def CanNotDeriveFromThisType_Test1():
@@ -155,7 +155,7 @@ def CanNotDeriveFromThisType_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 4 ) )
+	assert( HasError( errors_list, "CanNotDeriveFromThisType", 4 ) )
 
 
 def CanNotDeriveFromThisType_Test2():
@@ -200,7 +200,7 @@ def DuplicatedBaseClass_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DuplicatedBaseClass", 4 ) )
+	assert( HasError( errors_list, "DuplicatedBaseClass", 4 ) )
 
 
 def FieldsForInterfacesNotAllowed_Test0():
@@ -264,7 +264,7 @@ def ConstructingAbstractClassOrInterface_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )
 
 
 def ConstructingAbstractClassOrInterface_Test2():
@@ -277,7 +277,7 @@ def ConstructingAbstractClassOrInterface_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )
 
 
 def ConstructingAbstractClassOrInterface_Test3():
@@ -526,7 +526,7 @@ def ConstructingAbstractClassOrInterface_Test17():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
 
 
 def ConstructingAbstractClassOrInterface_Test18():
@@ -542,7 +542,7 @@ def ConstructingAbstractClassOrInterface_Test18():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
 
 
 def MoveAssignForNonFinalPolymorphClass_Test0():
@@ -646,7 +646,7 @@ def EqualityCompareOperatorIsNotInherited_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
 
 
 def EqualityCompareOperatorIsNotInherited_Test1():
@@ -662,7 +662,7 @@ def EqualityCompareOperatorIsNotInherited_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
 
 
 def EqualityCompareOperatorIsNotInherited_Test2():
@@ -696,7 +696,7 @@ def OrderCompareOperatorIsNotInherited_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
 
 
 def OrderCompareOperatorIsNotInherited_Test1():
@@ -712,7 +712,7 @@ def OrderCompareOperatorIsNotInherited_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
 
 
 def OrderCompareOperatorIsNotInherited_Test2():
@@ -743,7 +743,7 @@ def FunctionDeclarationOutsideItsScope_ForInheritance_Test0():
 		fn B::Foo() {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 7 ) or HaveError( errors_list, "NameNotFound", 7 ) )
+	assert( HasError( errors_list, "FunctionDeclarationOutsideItsScope", 7 ) or HasError( errors_list, "NameNotFound", 7 ) )
 
 
 def FunctionDeclarationOutsideItsScope_ForInheritance_Test1():
@@ -788,7 +788,7 @@ def MutableReferenceFieldAccessInDestructor_ForBaseField_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
+	assert( HasError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
 
 
 def MutableReferenceFieldAccessInDestructor_ForBaseField_Test1():
@@ -808,7 +808,7 @@ def MutableReferenceFieldAccessInDestructor_ForBaseField_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
+	assert( HasError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
 
 
 def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test0():
@@ -831,7 +831,7 @@ def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
+	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
 
 
 def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test1():
@@ -855,7 +855,7 @@ def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
+	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
 
 
 def ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test0():
@@ -874,7 +874,7 @@ def ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisUnavailable", 10 ) )
+	assert( HasError( errors_list, "ThisUnavailable", 10 ) )
 
 
 def BaseUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test1():
@@ -893,4 +893,4 @@ def BaseUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BaseUnavailable", 10 ) )
+	assert( HasError( errors_list, "BaseUnavailable", 10 ) )

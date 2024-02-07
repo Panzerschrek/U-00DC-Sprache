@@ -86,7 +86,7 @@ def TupleMultipleInnerReferenceTags_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 17 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test4():
@@ -110,7 +110,7 @@ def TupleMultipleInnerReferenceTags_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 17 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test5():
@@ -136,7 +136,7 @@ def TupleMultipleInnerReferenceTags_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 19 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 19 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test6():
@@ -226,7 +226,7 @@ def TupleMultipleInnerReferenceTags_Test9():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 18 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 18 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test10():
@@ -255,7 +255,7 @@ def TupleMultipleInnerReferenceTags_Test11():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test12():
@@ -270,7 +270,7 @@ def TupleMultipleInnerReferenceTags_Test12():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 9 ) )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test13():
@@ -285,4 +285,4 @@ def TupleMultipleInnerReferenceTags_Test13():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 9 ) )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )

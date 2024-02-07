@@ -10,7 +10,7 @@ def UnusedLocalTypeAlias_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalTypeAlias_Test1():
@@ -23,7 +23,7 @@ def UnusedLocalTypeAlias_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalTypeAlias_Test2():
@@ -36,7 +36,7 @@ def UnusedLocalTypeAlias_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalTypeAlias_Test3():
@@ -49,7 +49,7 @@ def UnusedLocalTypeAlias_Test3():
 		}	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalTypeAlias_Test4():
@@ -64,7 +64,7 @@ def UnusedLocalTypeAlias_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 6 ) )
+	assert( HasError( errors_list, "UnusedName", 6 ) )
 
 
 def UnusedLocalTypeAlias_Test5():
@@ -80,7 +80,7 @@ def UnusedLocalTypeAlias_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 6 ) )
+	assert( HasError( errors_list, "UnusedName", 6 ) )
 
 
 def UnusedValueArgument_Test0():
@@ -90,7 +90,7 @@ def UnusedValueArgument_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test1():
@@ -100,7 +100,7 @@ def UnusedValueArgument_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test2():
@@ -110,7 +110,7 @@ def UnusedValueArgument_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test3():
@@ -121,7 +121,7 @@ def UnusedValueArgument_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test4():
@@ -131,7 +131,7 @@ def UnusedValueArgument_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test5():
@@ -141,7 +141,7 @@ def UnusedValueArgument_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test6():
@@ -151,7 +151,7 @@ def UnusedValueArgument_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test7():
@@ -161,7 +161,7 @@ def UnusedValueArgument_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test8():
@@ -172,7 +172,7 @@ def UnusedValueArgument_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test9():
@@ -183,7 +183,7 @@ def UnusedValueArgument_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedValueArgument_Test10():
@@ -229,7 +229,7 @@ def UnusedReferenceArgument_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test1():
@@ -239,7 +239,7 @@ def UnusedReferenceArgument_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test2():
@@ -249,7 +249,7 @@ def UnusedReferenceArgument_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test3():
@@ -260,7 +260,7 @@ def UnusedReferenceArgument_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test4():
@@ -270,7 +270,7 @@ def UnusedReferenceArgument_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test5():
@@ -280,7 +280,7 @@ def UnusedReferenceArgument_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test6():
@@ -290,7 +290,7 @@ def UnusedReferenceArgument_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test7():
@@ -300,7 +300,7 @@ def UnusedReferenceArgument_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test8():
@@ -311,7 +311,7 @@ def UnusedReferenceArgument_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test9():
@@ -322,7 +322,7 @@ def UnusedReferenceArgument_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test10():
@@ -333,7 +333,7 @@ def UnusedReferenceArgument_Test10():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test11():
@@ -344,7 +344,7 @@ def UnusedReferenceArgument_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test12():
@@ -355,7 +355,7 @@ def UnusedReferenceArgument_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedReferenceArgument_Test13():
@@ -366,7 +366,7 @@ def UnusedReferenceArgument_Test13():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedLocalVariable_Test0():
@@ -378,7 +378,7 @@ def UnusedLocalVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test1():
@@ -390,7 +390,7 @@ def UnusedLocalVariable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test2():
@@ -402,7 +402,7 @@ def UnusedLocalVariable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test3():
@@ -414,7 +414,7 @@ def UnusedLocalVariable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test4():
@@ -426,7 +426,7 @@ def UnusedLocalVariable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test5():
@@ -439,7 +439,7 @@ def UnusedLocalVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test6():
@@ -452,7 +452,7 @@ def UnusedLocalVariable_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test7():
@@ -488,7 +488,7 @@ def UnusedLocalVariable_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalVariable_Test10():
@@ -504,7 +504,7 @@ def UnusedLocalVariable_Test10():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 6 ) )
+	assert( HasError( errors_list, "UnusedName", 6 ) )
 
 
 def UnusedLocalVariable_Test11():
@@ -520,7 +520,7 @@ def UnusedLocalVariable_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 7 ) )
+	assert( HasError( errors_list, "UnusedName", 7 ) )
 
 
 def UnusedLocalVariable_Test12():
@@ -534,7 +534,7 @@ def UnusedLocalVariable_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalVariable_Test13():
@@ -547,7 +547,7 @@ def UnusedLocalVariable_Test13():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalVariable_Test14():
@@ -562,7 +562,7 @@ def UnusedLocalVariable_Test14():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalVariable_Test15():
@@ -578,7 +578,7 @@ def UnusedLocalVariable_Test15():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 6 ) )
+	assert( HasError( errors_list, "UnusedName", 6 ) )
 
 
 def UnusedLocalReference_Test0():
@@ -590,7 +590,7 @@ def UnusedLocalReference_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalReference_Test1():
@@ -602,7 +602,7 @@ def UnusedLocalReference_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalReference_Test2():
@@ -615,7 +615,7 @@ def UnusedLocalReference_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalReference_Test3():
@@ -629,7 +629,7 @@ def UnusedLocalReference_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalReference_Test4():
@@ -643,7 +643,7 @@ def UnusedLocalReference_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalReference_Test5():
@@ -658,7 +658,7 @@ def UnusedLocalReference_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 6 ) )
+	assert( HasError( errors_list, "UnusedName", 6 ) )
 
 
 def UnusedLocalReference_Test6():
@@ -672,7 +672,7 @@ def UnusedLocalReference_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedLocalReference_Test7():
@@ -686,7 +686,7 @@ def UnusedLocalReference_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedLocalReference_Test8():
@@ -701,7 +701,7 @@ def UnusedLocalReference_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def VariableUsage_Test0():
@@ -809,7 +809,7 @@ def UnusedGlobalVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test1():
@@ -819,7 +819,7 @@ def UnusedGlobalVariable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test2():
@@ -828,7 +828,7 @@ def UnusedGlobalVariable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test3():
@@ -838,7 +838,7 @@ def UnusedGlobalVariable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test4():
@@ -847,7 +847,7 @@ def UnusedGlobalVariable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test5():
@@ -856,7 +856,7 @@ def UnusedGlobalVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test6():
@@ -865,7 +865,7 @@ def UnusedGlobalVariable_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test7():
@@ -875,7 +875,7 @@ def UnusedGlobalVariable_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test8():
@@ -884,7 +884,7 @@ def UnusedGlobalVariable_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobalVariable_Test9():
@@ -896,7 +896,7 @@ def UnusedGlobalVariable_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedGlobalReference_Test0():
@@ -906,7 +906,7 @@ def UnusedGlobalReference_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedGlobalReference_Test1():
@@ -916,7 +916,7 @@ def UnusedGlobalReference_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedGlobalReference_Test2():
@@ -927,7 +927,7 @@ def UnusedGlobalReference_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedGlobalReference_Test3():
@@ -937,7 +937,7 @@ def UnusedGlobalReference_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedGlobalReference_Test4():
@@ -947,7 +947,7 @@ def UnusedGlobalReference_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedGlobalReference_Test5():
@@ -960,7 +960,7 @@ def UnusedGlobalReference_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedGlobaTypeAlias_Test0():
@@ -969,7 +969,7 @@ def UnusedGlobaTypeAlias_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobaTypeAlias_Test1():
@@ -979,7 +979,7 @@ def UnusedGlobaTypeAlias_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobaTypeAlias_Test2():
@@ -991,7 +991,7 @@ def UnusedGlobaTypeAlias_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedGlobaTypeAlias_Test3():
@@ -1001,7 +1001,7 @@ def UnusedGlobaTypeAlias_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedGlobaTypeAlias_Test4():
@@ -1027,7 +1027,7 @@ def UnusedClass_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedClass_Test1():
@@ -1036,7 +1036,7 @@ def UnusedClass_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedClass_Test2():
@@ -1045,7 +1045,7 @@ def UnusedClass_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedClass_Test3():
@@ -1054,7 +1054,7 @@ def UnusedClass_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedClass_Test4():
@@ -1066,7 +1066,7 @@ def UnusedClass_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClass_Test5():
@@ -1075,7 +1075,7 @@ def UnusedClass_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedEnum_Test0():
@@ -1084,7 +1084,7 @@ def UnusedEnum_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedEnum_Test1():
@@ -1096,7 +1096,7 @@ def UnusedEnum_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedEnum_Test2():
@@ -1116,7 +1116,7 @@ def UnusedFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedFunction_Test1():
@@ -1125,7 +1125,7 @@ def UnusedFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedFunction_Test2():
@@ -1134,7 +1134,7 @@ def UnusedFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedFunction_Test3():
@@ -1149,7 +1149,7 @@ def UnusedFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedFunction_Test4():
@@ -1164,7 +1164,7 @@ def UnusedFunction_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedFunction_Test5():
@@ -1179,7 +1179,7 @@ def UnusedFunction_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedFunction_Test6():
@@ -1194,7 +1194,7 @@ def UnusedFunction_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedFunction_Test7():
@@ -1206,7 +1206,7 @@ def UnusedFunction_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedFunction_Test8():
@@ -1223,7 +1223,7 @@ def UnusedFunction_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedFunction_Test10():
@@ -1284,7 +1284,7 @@ def UnusedTypeTemplate_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedTypeTemplate_Test1():
@@ -1293,7 +1293,7 @@ def UnusedTypeTemplate_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedTypeTemplate_Test1():
@@ -1302,7 +1302,7 @@ def UnusedTypeTemplate_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
 
 
 def UnusedTypeTemplate_Test2():
@@ -1314,8 +1314,8 @@ def UnusedTypeTemplate_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 2 ) )
-	assert( not HaveError( errors_list, "UnusedName", 3 ) )
+	assert( HasError( errors_list, "UnusedName", 2 ) )
+	assert( not HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedTypeTemplate_Test3():
@@ -1327,8 +1327,8 @@ def UnusedTypeTemplate_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "UnusedName", 2 ) )
-	assert( HaveError( errors_list, "UnusedName", 3 ) )
+	assert( not HasError( errors_list, "UnusedName", 2 ) )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
 
 
 def UnusedTypeTemplate_Test4():
@@ -1365,7 +1365,7 @@ def UnusedClassVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassVariable_Test1():
@@ -1377,7 +1377,7 @@ def UnusedClassVariable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassVariable_Test2():
@@ -1390,7 +1390,7 @@ def UnusedClassVariable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassTypeAlias_Test0():
@@ -1402,7 +1402,7 @@ def UnusedClassTypeAlias_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassTypeAlias_Test1():
@@ -1414,7 +1414,7 @@ def UnusedClassTypeAlias_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassTypeAlias_Test2():
@@ -1426,7 +1426,7 @@ def UnusedClassTypeAlias_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassInternalClass_Test0():
@@ -1438,7 +1438,7 @@ def UnusedClassInternalClass_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassInternalClass_Test1():
@@ -1450,7 +1450,7 @@ def UnusedClassInternalClass_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test0():
@@ -1505,7 +1505,7 @@ def UnusedClassFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test4():
@@ -1518,7 +1518,7 @@ def UnusedClassFunction_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test5():
@@ -1531,7 +1531,7 @@ def UnusedClassFunction_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test6():
@@ -1549,7 +1549,7 @@ def UnusedClassFunction_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test7():
@@ -1567,7 +1567,7 @@ def UnusedClassFunction_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 5 ) )
+	assert( HasError( errors_list, "UnusedName", 5 ) )
 
 
 def UnusedClassFunction_Test8():
@@ -1636,7 +1636,7 @@ def UnusedClassFunction_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test12():
@@ -1653,7 +1653,7 @@ def UnusedClassFunction_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test14():
@@ -1670,7 +1670,7 @@ def UnusedClassFunction_Test14():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test15():
@@ -1707,7 +1707,7 @@ def UnusedClassField_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassField_Test1():
@@ -1724,7 +1724,7 @@ def UnusedClassField_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassField_Test2():
@@ -1742,7 +1742,7 @@ def UnusedClassField_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedName", 4 ) )
+	assert( HasError( errors_list, "UnusedName", 4 ) )
 
 
 def UnusedClassFunction_Test3():

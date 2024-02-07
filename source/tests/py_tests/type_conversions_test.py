@@ -182,7 +182,7 @@ def TypeConversion_InFunctionCall_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 12 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 12 ) )
 
 
 def TypeConversion_InFunctionCall_Test4():

@@ -52,7 +52,7 @@ public:
 	FunctionType type;
 
 	uint32_t virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
-	bool have_body= false;
+	bool has_body= false;
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
@@ -92,7 +92,7 @@ struct OverloadedFunctionsSet
 
 	ClassPtr base_class= nullptr;
 
-	bool have_nomangle_function= false;
+	bool has_nomangle_function= false;
 	bool has_unbuilt_constexpr_functions= false;
 };
 

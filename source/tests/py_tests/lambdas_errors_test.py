@@ -14,7 +14,7 @@ def AccessingThisInLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisUnavailable", 7 ) )
+	assert( HasError( errors_list, "ThisUnavailable", 7 ) )
 
 
 def AccessingThisInLambda_Test1():
@@ -34,7 +34,7 @@ def AccessingThisInLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisUnavailable", 9 ) )
+	assert( HasError( errors_list, "ThisUnavailable", 9 ) )
 
 
 def AccessingThisInLambda_Test2():
@@ -54,7 +54,7 @@ def AccessingThisInLambda_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisUnavailable", 9 ) )
+	assert( HasError( errors_list, "ThisUnavailable", 9 ) )
 
 
 def AccessingThisInLambda_Test3():
@@ -74,7 +74,7 @@ def AccessingThisInLambda_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 9 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 9 ) )
 
 
 def AccessingThisInLambda_Test4():
@@ -94,7 +94,7 @@ def AccessingThisInLambda_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BaseUnavailable", 10 ) )
+	assert( HasError( errors_list, "BaseUnavailable", 10 ) )
 
 
 def AccessingThisInLambda_Test5():
@@ -114,7 +114,7 @@ def AccessingThisInLambda_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 10 ) )
+	assert( HasError( errors_list, "ClassFieldAccessInStaticMethod", 10 ) )
 
 
 def AccessingThisInLambda_Test6():
@@ -137,7 +137,7 @@ def AccessingThisInLambda_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 13 ) )
+	assert( HasError( errors_list, "ClassFieldAccessInStaticMethod", 13 ) )
 
 
 def AccessingThisInLambda_Test7():
@@ -157,7 +157,7 @@ def AccessingThisInLambda_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 10 ) )
+	assert( HasError( errors_list, "ClassFieldAccessInStaticMethod", 10 ) )
 
 
 def AccessingThisInLambda_Test8():
@@ -176,7 +176,7 @@ def AccessingThisInLambda_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisUnavailable", 9 ) )
+	assert( HasError( errors_list, "ThisUnavailable", 9 ) )
 
 
 def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test0():
@@ -197,7 +197,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
 def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test1():
@@ -218,7 +218,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
 def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test2():
@@ -239,7 +239,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
 def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test3():
@@ -261,7 +261,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
 
 
 def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test4():
@@ -283,7 +283,7 @@ def CopyConstructValueOfNoncopyableType_ForCapturedLambdaValue_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
 
 
 def CopyAssign_ForLambdaWithReferencesInside_Test0():
@@ -299,7 +299,7 @@ def CopyAssign_ForLambdaWithReferencesInside_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
 
 
 def CopyAssign_ForLambdaWithReferencesInside_Test1():
@@ -314,7 +314,7 @@ def CopyAssign_ForLambdaWithReferencesInside_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
 
 
 def StructNamedInitializerForLambda_Test0():
@@ -327,7 +327,7 @@ def StructNamedInitializerForLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StructInitializerForNonStruct", 5 ) )
+	assert( HasError( errors_list, "StructInitializerForNonStruct", 5 ) )
 
 
 def StructNamedInitializerForLambda_Test1():
@@ -341,7 +341,7 @@ def StructNamedInitializerForLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StructInitializerForNonStruct", 6 ) )
+	assert( HasError( errors_list, "StructInitializerForNonStruct", 6 ) )
 
 
 def ZeroInitializer_ForLambda_Test0():
@@ -354,7 +354,7 @@ def ZeroInitializer_ForLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ZeroInitializerForClass", 5 ) )
+	assert( HasError( errors_list, "ZeroInitializerForClass", 5 ) )
 
 
 def ZeroInitializer_ForLambda_Test1():
@@ -368,7 +368,7 @@ def ZeroInitializer_ForLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ZeroInitializerForClass", 6 ) )
+	assert( HasError( errors_list, "ZeroInitializerForClass", 6 ) )
 
 
 def ZeroInitializer_ForLambda_Test2():
@@ -382,7 +382,7 @@ def ZeroInitializer_ForLambda_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ZeroInitializerForClass", 6 ) )
+	assert( HasError( errors_list, "ZeroInitializerForClass", 6 ) )
 
 
 def ReturnedFromLambdaReferenceIsLinkedToLambdaArg_Test0():
@@ -405,7 +405,7 @@ def ReturnedFromLambdaReferenceIsLinkedToLambdaArg_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
 
 
 def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test0():
@@ -420,7 +420,7 @@ def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 7 ) )
 
 
 def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test1():
@@ -441,7 +441,7 @@ def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 13 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 13 ) )
 
 
 def ReturnedFromLambdaReferenceIsLinkedToCapturedVariableInnerReference_Test0():
@@ -461,7 +461,7 @@ def ReturnedFromLambdaReferenceIsLinkedToCapturedVariableInnerReference_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
 
 
 def LambdaCapturesReferences_Test0():
@@ -475,7 +475,7 @@ def LambdaCapturesReferences_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
 def LambdaCapturesReferences_Test1():
@@ -503,7 +503,7 @@ def LambdaCapturesReferences_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def LambdaModifyCapturedVariable_Test0():
@@ -520,7 +520,7 @@ def LambdaModifyCapturedVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def LambdaModifyCapturedVariable_Test1():
@@ -538,7 +538,7 @@ def LambdaModifyCapturedVariable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test2():
@@ -556,7 +556,7 @@ def LambdaModifyCapturedVariable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test3():
@@ -574,7 +574,7 @@ def LambdaModifyCapturedVariable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test4():
@@ -592,7 +592,7 @@ def LambdaModifyCapturedVariable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test5():
@@ -611,7 +611,7 @@ def LambdaModifyCapturedVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 10 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 10 ) )
 
 
 def LambdaModifyCapturedVariable_Test5():
@@ -628,7 +628,7 @@ def LambdaModifyCapturedVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test0():
@@ -645,7 +645,7 @@ def LambdaMoveCapturedVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) or HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) or HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test1():
@@ -662,7 +662,7 @@ def LambdaMoveCapturedVariable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test2():
@@ -679,7 +679,7 @@ def LambdaMoveCapturedVariable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test3():
@@ -696,7 +696,7 @@ def LambdaMoveCapturedVariable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) or HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) or HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test4():
@@ -713,7 +713,7 @@ def LambdaMoveCapturedVariable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
@@ -729,7 +729,7 @@ def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 8 ) )
+	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 8 ) )
 
 
 def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test1():
@@ -744,7 +744,7 @@ def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 7 ) )
+	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 7 ) )
 
 
 def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
@@ -758,7 +758,7 @@ def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingNonpublicClassMember", 6 ) )
+	assert( HasError( errors_list, "AccessingNonpublicClassMember", 6 ) )
 
 
 def AccessingLambdaCapturedValueIsNotAllowed_Tes1():
@@ -772,7 +772,7 @@ def AccessingLambdaCapturedValueIsNotAllowed_Tes1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingNonpublicClassMember", 6 ) )
+	assert( HasError( errors_list, "AccessingNonpublicClassMember", 6 ) )
 
 
 def LambdaIsNotEqualityComparable_Test0():
@@ -785,7 +785,7 @@ def LambdaIsNotEqualityComparable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def LambdaIsNotEqualityComparable_Test1():
@@ -799,7 +799,7 @@ def LambdaIsNotEqualityComparable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 6 ) )
 
 
 def LambdaIsNotEqualityComparable_Test2():
@@ -813,7 +813,7 @@ def LambdaIsNotEqualityComparable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 6 ) )
 
 
 def ReferenceNotationForLambda_Test0():
@@ -826,7 +826,7 @@ def ReferenceNotationForLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationForLambda", 5 ) )
+	assert( HasError( errors_list, "ReferenceNotationForLambda", 5 ) )
 
 
 def ReferenceNotationForLambda_Test1():
@@ -840,7 +840,7 @@ def ReferenceNotationForLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationForLambda", 6 ) )
+	assert( HasError( errors_list, "ReferenceNotationForLambda", 6 ) )
 
 
 def ReferenceNotationForLambda_Test2():
@@ -854,7 +854,7 @@ def ReferenceNotationForLambda_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceNotationForLambda", 6 ) )
+	assert( HasError( errors_list, "ReferenceNotationForLambda", 6 ) )
 
 
 def VariableIsNotCapturedByLambda_Test0():
@@ -868,7 +868,7 @@ def VariableIsNotCapturedByLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+	assert( HasError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
 
 
 def VariableIsNotCapturedByLambda_Test1():
@@ -881,7 +881,7 @@ def VariableIsNotCapturedByLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 5 ) )
+	assert( HasError( errors_list, "VariableIsNotCapturedByLambda", 5 ) )
 
 
 def VariableIsNotCapturedByLambda_Test2():
@@ -905,7 +905,7 @@ def VariableIsNotCapturedByLambda_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 13 ) )
+	assert( HasError( errors_list, "VariableIsNotCapturedByLambda", 13 ) )
 
 
 def VariableIsNotCapturedByLambda_Test3():
@@ -934,7 +934,7 @@ def VariableIsNotCapturedByLambda_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 16 ) )
+	assert( HasError( errors_list, "VariableIsNotCapturedByLambda", 16 ) )
 
 
 def VariableIsNotCapturedByLambda_Test4():
@@ -948,7 +948,7 @@ def VariableIsNotCapturedByLambda_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+	assert( HasError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
 
 
 def VariableIsNotCapturedByLambda_Test5():
@@ -962,7 +962,7 @@ def VariableIsNotCapturedByLambda_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
+	assert( HasError( errors_list, "VariableIsNotCapturedByLambda", 6 ) )
 
 
 def LambaCaptureIsNotConstexpr_Test0():
@@ -980,7 +980,7 @@ def LambaCaptureIsNotConstexpr_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
 
 
 def LambaCaptureIsNotConstexpr_Test1():
@@ -998,7 +998,7 @@ def LambaCaptureIsNotConstexpr_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
 
 
 def LambaCaptureIsNotConstexpr_Test2():
@@ -1031,7 +1031,7 @@ def LambaCaptureIsNotConstexpr_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
 
 
 def DeriveFromLambda_Test0():
@@ -1042,7 +1042,7 @@ def DeriveFromLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 4 ) )
+	assert( HasError( errors_list, "CanNotDeriveFromThisType", 4 ) )
 
 
 def GlobalsLoopForLambda_Test0():
@@ -1051,7 +1051,7 @@ def GlobalsLoopForLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def GlobalsLoopForLambda_Test1():
@@ -1061,7 +1061,7 @@ def GlobalsLoopForLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def LambdaReferencePollutionForThis_Test0():
@@ -1085,7 +1085,7 @@ def LambdaReferencePollutionForThis_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 16 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 16 ) )
 
 
 def LambdaReferencePollutionForThis_Test1():
@@ -1111,7 +1111,7 @@ def LambdaReferencePollutionForThis_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 18 ) )
 
 
 def ExplicitCaptureListErrors_Test0():
@@ -1124,7 +1124,7 @@ def ExplicitCaptureListErrors_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 5 ) )
+	assert( HasError( errors_list, "NameNotFound", 5 ) )
 
 
 def ExplicitCaptureListErrors_Test1():
@@ -1137,7 +1137,7 @@ def ExplicitCaptureListErrors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 5 ) )
 
 
 def ExplicitCaptureListErrors_Test2():
@@ -1154,7 +1154,7 @@ def ExplicitCaptureListErrors_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) )
 
 
 def ExplicitCaptureListErrors_Test3():
@@ -1167,7 +1167,7 @@ def ExplicitCaptureListErrors_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 5 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 5 ) )
 
 
 def ExplicitCaptureListErrors_Test4():
@@ -1179,7 +1179,7 @@ def ExplicitCaptureListErrors_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisUnavailable", 4 ) )
+	assert( HasError( errors_list, "ThisUnavailable", 4 ) )
 
 
 def ExplicitCaptureListErrors_Test5():
@@ -1195,7 +1195,7 @@ def ExplicitCaptureListErrors_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 7 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 7 ) )
 
 
 def ExplicitCaptureListErrors_Test6():
@@ -1219,7 +1219,7 @@ def ExplicitCaptureListErrors_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 11 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 11 ) )
 
 
 def DuplicatedCapture_Test0():
@@ -1232,7 +1232,7 @@ def DuplicatedCapture_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
+	assert( HasError( errors_list, "DuplicatedCapture", 5 ) )
 
 
 def DuplicatedCapture_Test1():
@@ -1245,7 +1245,7 @@ def DuplicatedCapture_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DuplicatedCapture", 5 ) )
+	assert( HasError( errors_list, "DuplicatedCapture", 5 ) )
 
 
 def UnusedCapture_Test0():
@@ -1258,7 +1258,7 @@ def UnusedCapture_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedCapture", 5 ) )
+	assert( HasError( errors_list, "UnusedCapture", 5 ) )
 
 
 def UnusedCapture_Test1():
@@ -1277,7 +1277,7 @@ def UnusedCapture_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnusedCapture", 5 ) )
+	assert( HasError( errors_list, "UnusedCapture", 5 ) )
 
 
 def ExpectedReferenceValue_ForCaptureListExpression_Test0():
@@ -1290,7 +1290,7 @@ def ExpectedReferenceValue_ForCaptureListExpression_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def ExpectedReferenceValue_ForCaptureListExpression_Test1():
@@ -1304,7 +1304,7 @@ def ExpectedReferenceValue_ForCaptureListExpression_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def ExpectedReferenceValue_ForCaptureListExpression_Test2():
@@ -1317,7 +1317,7 @@ def ExpectedReferenceValue_ForCaptureListExpression_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def ExpectedReferenceValue_ForCaptureListExpression_Test3():
@@ -1335,7 +1335,7 @@ def ExpectedReferenceValue_ForCaptureListExpression_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def UsingKeywordAsName_ForLambdaCaptureList_Test0():
@@ -1347,7 +1347,7 @@ def UsingKeywordAsName_ForLambdaCaptureList_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
 def UsingKeywordAsName_ForLambdaCaptureList_Test1():
@@ -1359,7 +1359,7 @@ def UsingKeywordAsName_ForLambdaCaptureList_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
 def UsingKeywordAsName_ForLambdaCaptureList_Test2():
@@ -1371,10 +1371,10 @@ def UsingKeywordAsName_ForLambdaCaptureList_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test0():
+def DestroyedVariableStillHasReferences_ForLambdaCaptureListExpression_Test0():
 	c_program_text= """
 		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
 		struct S
@@ -1391,10 +1391,10 @@ def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 12 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 12 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test1():
+def DestroyedVariableStillHasReferences_ForLambdaCaptureListExpression_Test1():
 	c_program_text= """
 		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
 		struct S
@@ -1412,10 +1412,10 @@ def DestroyedVariableStillHaveReferences_ForLambdaCaptureListExpression_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 12 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 12 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForByvalLambda_Test0():
+def DestroyedVariableStillHasReferences_ForByvalLambda_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1432,10 +1432,10 @@ def DestroyedVariableStillHaveReferences_ForByvalLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 11 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForByvalLambda_Test1():
+def DestroyedVariableStillHasReferences_ForByvalLambda_Test1():
 	c_program_text= """
 		struct R{ i32& x; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -1454,7 +1454,7 @@ def DestroyedVariableStillHaveReferences_ForByvalLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 14 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 14 ) )
 
 
 def AccessingMovedVariable_ForByvalMutLambda_Test0():
@@ -1471,7 +1471,7 @@ def AccessingMovedVariable_ForByvalMutLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 8 ) )
 
 
 def AccessingMovedVariable_ForByvalMutLambda_Test1():
@@ -1488,7 +1488,7 @@ def AccessingMovedVariable_ForByvalMutLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 8 ) )
 
 
 def LambdaCapturedVariableMoveErrors_Test0():
@@ -1505,7 +1505,7 @@ def LambdaCapturedVariableMoveErrors_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 8 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 8 ) )
 
 
 def LambdaCapturedVariableMoveErrors_Test1():
@@ -1521,7 +1521,7 @@ def LambdaCapturedVariableMoveErrors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
 def TypesMismtach_ForAutoReturnLambda_Test0():
@@ -1537,7 +1537,7 @@ def TypesMismtach_ForAutoReturnLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
+	assert( HasError( errors_list, "TypesMismatch", 7 ) )
 
 
 def TypesMismtach_ForAutoReturnLambda_Test1():
@@ -1554,7 +1554,7 @@ def TypesMismtach_ForAutoReturnLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 8 ) )
+	assert( HasError( errors_list, "TypesMismatch", 8 ) )
 
 
 def ExpectedReferenceValue_ForAutoReturnLambda_Test0():
@@ -1569,4 +1569,4 @@ def ExpectedReferenceValue_ForAutoReturnLambda_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )

@@ -14,7 +14,7 @@ U_TEST( UsingKeywordAsName_ForEnum_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 2u ) );
 }
 
 U_TEST( UsingKeywordAsName_ForEnum_Test1 )
@@ -33,11 +33,11 @@ U_TEST( UsingKeywordAsName_ForEnum_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 5u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UsingKeywordAsName, 8u ) );
 }
 
 U_TEST( Redefinition_ForEnums )
@@ -123,7 +123,7 @@ U_TEST( NameNotFound_ForUnderlyingEnumType_Test )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
 }
 
 U_TEST( NameNotFound_ForEnumElement )
@@ -136,7 +136,7 @@ U_TEST( NameNotFound_ForEnumElement )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
 
 U_TEST( NameIsNotTypeName_ForUnderlyingEnumType_Test )
@@ -152,7 +152,7 @@ U_TEST( NameIsNotTypeName_ForUnderlyingEnumType_Test )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 3u ) );
 }
 
 U_TEST( TypesMismatch_ForUnderlyingEnumType_Test0 )

@@ -157,7 +157,7 @@ def UnreachableCode_ForUnconditionalLoop_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnreachableCode", 5 ) )
+	assert( HasError( errors_list, "UnreachableCode", 5 ) )
 
 
 def UnreachableCode_ForUnconditionalLoop_Test1():
@@ -174,7 +174,7 @@ def UnreachableCode_ForUnconditionalLoop_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnreachableCode", 8 ) )
+	assert( HasError( errors_list, "UnreachableCode", 8 ) )
 
 
 def UnreachableCode_ForUnconditionalLoop_Test2():
@@ -194,7 +194,7 @@ def UnreachableCode_ForUnconditionalLoop_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnreachableCode", 10 ) )
+	assert( HasError( errors_list, "UnreachableCode", 10 ) )
 
 
 def VariablesStateMerge_ForUnconditionalLoop_Test0():
@@ -219,7 +219,7 @@ def VariablesStateMerge_ForUnconditionalLoop_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 16 ) )
+	assert( HasError( errors_list, "ConditionalMove", 16 ) )
 
 
 def VariablesStateMerge_ForUnconditionalLoop_Test1():
@@ -241,8 +241,8 @@ def VariablesStateMerge_ForUnconditionalLoop_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "ConditionalMove", 12 ) )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 13 ) )
+	assert( not HasError( errors_list, "ConditionalMove", 12 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 13 ) )
 
 
 def VariablesStateMerge_ForUnconditionalLoop_Test2():
@@ -326,7 +326,7 @@ def VariablesStateMerge_ForUnconditionalLoop_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 20 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 20 ) )
 
 
 def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test0():
@@ -342,7 +342,7 @@ def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OuterVariableMoveInsideLoop", 8 ) )
+	assert( HasError( errors_list, "OuterVariableMoveInsideLoop", 8 ) )
 
 
 def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test1():
@@ -365,7 +365,7 @@ def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OuterVariableMoveInsideLoop", 14 ) )
+	assert( HasError( errors_list, "OuterVariableMoveInsideLoop", 14 ) )
 
 
 def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test2():
@@ -389,7 +389,7 @@ def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OuterVariableMoveInsideLoop", 15 ) )
+	assert( HasError( errors_list, "OuterVariableMoveInsideLoop", 15 ) )
 
 
 def OuterVariableMoveInsideLoop_ForUnconditionalLoop_Test3():

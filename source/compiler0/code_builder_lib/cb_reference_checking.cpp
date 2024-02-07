@@ -216,12 +216,12 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 					}
 					return false;
 				}
-				else if( ( variable->value_type != ValueType::Value || !function_context.variables_state.HaveOutgoingLinks( variable ) ) )
+				else if( ( variable->value_type != ValueType::Value || !function_context.variables_state.HasOutgoingLinks( variable ) ) )
 				{
 					// Emit destructions call code only if it is a non-moved variable.
 					if( variable->value_type == ValueType::Value && !function_context.is_functionless_context && !function_context.variables_state.NodeMoved( variable ) )
 					{
-						if( variable->type.HaveDestructor() )
+						if( variable->type.HasDestructor() )
 							CallDestructor( variable->llvm_value, variable->type, function_context, errors_container, src_loc );
 						if( variable->location == Variable::Location::Pointer )
 							CreateLifetimeEnd( function_context, variable->llvm_value );

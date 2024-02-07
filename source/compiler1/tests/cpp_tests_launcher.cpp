@@ -230,7 +230,7 @@ std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const c
 	return module;
 }
 
-bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )
+bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )
 {
 	for( const CodeBuilderError& error : errors )
 	{

@@ -138,7 +138,7 @@ def DisabledTemplateFunction_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def DisabledTemplateFunction_Test1():
@@ -152,7 +152,7 @@ def DisabledTemplateFunction_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def DisabledTemplateFunction_Test2():
@@ -166,7 +166,7 @@ def DisabledTemplateFunction_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def DisabledTemplateFunction_Test3():
@@ -180,7 +180,7 @@ def DisabledTemplateFunction_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def DisabledTemplateFunction_Test4():

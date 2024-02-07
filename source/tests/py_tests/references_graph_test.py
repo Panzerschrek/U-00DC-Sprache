@@ -717,7 +717,7 @@ def ReferenceInnerReferenceNode_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def ReferenceInnerReferenceNode_Test1():
@@ -732,8 +732,8 @@ def ReferenceInnerReferenceNode_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def ReferenceInnerReferenceNode_Test2():
@@ -749,8 +749,8 @@ def ReferenceInnerReferenceNode_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def ReferenceInnerReferenceNode_Test3():
@@ -765,8 +765,8 @@ def ReferenceInnerReferenceNode_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def ReferenceInnerReferenceNode_Test4():
@@ -781,8 +781,8 @@ def ReferenceInnerReferenceNode_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 7 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def ReferenceInnerReferenceNode_Test5():
@@ -799,8 +799,8 @@ def ReferenceInnerReferenceNode_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 9 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
 def ReferenceInnerReferenceNode_Test6():
@@ -816,8 +816,8 @@ def ReferenceInnerReferenceNode_Test6():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def ReferenceInnerReferenceNode_Test7():
@@ -833,8 +833,8 @@ def ReferenceInnerReferenceNode_Test7():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def ReferenceInnerReferenceNode_Test8():
@@ -850,8 +850,8 @@ def ReferenceInnerReferenceNode_Test8():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 8 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def ReferenceInnerReferenceNode_Test9():
@@ -869,8 +869,8 @@ def ReferenceInnerReferenceNode_Test9():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
 
 
 def OperatorsWithNodeLock_Test0():
@@ -886,7 +886,7 @@ def OperatorsWithNodeLock_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 7 ) )
 
 
 def OperatorsWithNodeLock_Test1():
@@ -902,7 +902,7 @@ def OperatorsWithNodeLock_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 7 ) )
 
 
 def OperatorsWithNodeLock_Test2():
@@ -915,7 +915,7 @@ def OperatorsWithNodeLock_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 5 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 5 ) )
 
 
 def OperatorsWithNodeLock_Test3():
@@ -928,7 +928,7 @@ def OperatorsWithNodeLock_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 5 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 5 ) )
 
 
 def OperatorsWithNodeLock_Test4():
@@ -941,7 +941,7 @@ def OperatorsWithNodeLock_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 5 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 5 ) )
 
 
 def OperatorsWithNodeLock_Test5():
@@ -954,7 +954,7 @@ def OperatorsWithNodeLock_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
 
 
 def OperatorsWithNodeLock_Test6():
@@ -967,4 +967,4 @@ def OperatorsWithNodeLock_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 5 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 5 ) )

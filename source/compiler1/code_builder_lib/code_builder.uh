@@ -337,7 +337,7 @@ private:
 
 	struct BlockElementBuildInfo
 	{
-		bool have_terminal_instruction_inside= false;
+		bool has_terminal_instruction_inside= false;
 	}
 
 	fn BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::array_view_imut</Synt::BlockElement/>& elements ) : BlockElementBuildInfo;

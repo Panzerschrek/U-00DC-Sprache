@@ -25,8 +25,8 @@ namespace U1
 
 enum InnerReferenceKind
 {
-	Imut, // Type have immutable inner reference
-	Mut, // Type have mutable inner reference
+	Imut, // Type has immutable inner reference
+	Mut, // Type has mutable inner reference
 }
 
 struct FundamentalType
@@ -235,7 +235,7 @@ struct ClassType
 	bool is_copy_constructible= false;
 	bool is_copy_assignable= false;
 	bool is_equality_comparable= false;
-	bool have_explicit_noncopy_constructors= false;
+	bool has_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
 
 	ust::vector</InnerReferenceKind/> inner_references;
@@ -290,7 +290,7 @@ public:
 	fn IsCopyConstructible( this ) : bool;
 	fn IsCopyAssignable( this ) : bool;
 	fn IsEqualityComparable( this ) : bool;
-	fn HaveDestructor( this ) : bool;
+	fn HasDestructor( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
 

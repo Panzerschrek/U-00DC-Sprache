@@ -75,8 +75,8 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 {
 	U_ASSERT( from != nullptr );
 	U_ASSERT( to != nullptr );
-	if( (to->value_type == ValueType::ReferenceMut && HaveOutgoingLinks( from ) ) ||
-		HaveOutgoingMutableNodes( from ) )
+	if( (to->value_type == ValueType::ReferenceMut && HasOutgoingLinks( from ) ) ||
+		HasOutgoingMutableNodes( from ) )
 	{
 		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, from->name );
 	}
@@ -132,18 +132,18 @@ void ReferencesGraph::TryAddInnerLinksForClassField( const VariablePtr& from, co
 	}
 }
 
-bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
+bool ReferencesGraph::HasOutgoingLinks( const VariablePtr& from ) const
 {
-	// Check if any parent have links and any child (including children of children) have links.
+	// Check if any parent has links and any child (including children of children) has links.
 	// Doesn't count sibling nodes and other indirect relatives.
 
-	if( HaveOutgoingLinksIncludingChildrenLinks_r( from ) )
+	if( HasOutgoingLinksIncludingChildrenLinks_r( from ) )
 		return true;
 
 	VariablePtr parent= from->parent.lock();
 	while( parent != nullptr )
 	{
-		if( HaveDirectOutgoingLinks( parent ) )
+		if( HasDirectOutgoingLinks( parent ) )
 			return true;
 		parent= parent->parent.lock();
 	}
@@ -151,18 +151,18 @@ bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 	return false;
 }
 
-bool ReferencesGraph::HaveOutgoingMutableNodes( const VariablePtr& from ) const
+bool ReferencesGraph::HasOutgoingMutableNodes( const VariablePtr& from ) const
 {
-	// Check if any parent have mutable links and any child (including children of children) have mutable links.
+	// Check if any parent has mutable links and any child (including children of children) has mutable links.
 	// Doesn't count sibling nodes and other indirect relatives.
 
-	if( HaveOutgoingMutableNodesIncludingChildrenNodes_r( from ) )
+	if( HasOutgoingMutableNodesIncludingChildrenNodes_r( from ) )
 		return true;
 
 	VariablePtr parent= from->parent.lock();
 	while( parent != nullptr )
 	{
-		if( HaveDirectOutgoingMutableNodes( parent ) )
+		if( HasDirectOutgoingMutableNodes( parent ) )
 			return true;
 		parent= parent->parent.lock();
 	}
@@ -339,7 +339,7 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckVariablesStateAfterLoop( con
 	return errors;
 }
 
-bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const
+bool ReferencesGraph::HasDirectOutgoingLinks( const VariablePtr& from ) const
 {
 	for( const auto& link : links_ )
 		if( link.src == from )
@@ -348,21 +348,21 @@ bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const
 	return false;
 }
 
-bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const
+bool ReferencesGraph::HasOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const
 {
-	if( HaveDirectOutgoingLinks( from ) )
+	if( HasDirectOutgoingLinks( from ) )
 			return true;
 
 	for( const VariablePtr& child : from->children )
 		if( child != nullptr &&
 			nodes_.count(child) != 0 && // Children nodes are lazily-added.
-			HaveOutgoingLinksIncludingChildrenLinks_r( child ) )
+			HasOutgoingLinksIncludingChildrenLinks_r( child ) )
 			return true;
 
 	return false;
 }
 
-bool ReferencesGraph::HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const
+bool ReferencesGraph::HasDirectOutgoingMutableNodes( const VariablePtr& from ) const
 {
 	for( const auto& link : links_ )
 		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
@@ -371,15 +371,15 @@ bool ReferencesGraph::HaveDirectOutgoingMutableNodes( const VariablePtr& from ) 
 	return false;
 }
 
-bool ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const
+bool ReferencesGraph::HasOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const
 {
-	if( HaveDirectOutgoingMutableNodes( from ) )
+	if( HasDirectOutgoingMutableNodes( from ) )
 		return true;
 
 	for( const VariablePtr& child : from->children )
 		if( child != nullptr &&
 			nodes_.count(child) != 0 && // Children nodes are lazily-added.
-			HaveOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
+			HasOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
 			return true;
 
 	return false;

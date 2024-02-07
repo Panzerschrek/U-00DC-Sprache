@@ -241,7 +241,7 @@ fn CodeBuilder::NamesScopeMergeValues(
 						}
 						else if( function.body_syntax_element.empty() && !prev_function.body_syntax_element.empty() )
 						{
-							// Ok - prev function have body and new function have no body.
+							// Ok - prev function has body and new function has no body.
 						}
 						else if( !function.body_syntax_element.empty() && prev_function.body_syntax_element.empty() )
 						{

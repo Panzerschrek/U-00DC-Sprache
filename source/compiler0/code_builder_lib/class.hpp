@@ -11,7 +11,7 @@ namespace U
 class Class final
 {
 public:
-	static const std::string_view c_template_class_name; // Each template class have same name.
+	static const std::string_view c_template_class_name; // Each template class has the same name.
 
 public:
 	Class( std::string name, NamesScope* parent_scope );
@@ -19,7 +19,7 @@ public:
 	ClassMemberVisibility GetMemberVisibility( std::string_view member_name ) const;
 	void SetMemberVisibility( std::string_view member_name, ClassMemberVisibility visibility );
 
-	bool HaveAncestor( ClassPtr class_ ) const;
+	bool HasAncestor( ClassPtr class_ ) const;
 
 public:
 	enum class Kind : uint8_t
@@ -68,7 +68,7 @@ public:
 	// This does not changes in import.
 	NamesScopePtr members_initial;
 
-	// have no visibility for member, means it is public.
+	// Has no visibility for member, means it is public.
 	llvm::StringMap< ClassMemberVisibility > members_visibility;
 
 	const Synt::Class* syntax_element= nullptr;
@@ -80,10 +80,10 @@ public:
 
 	bool parents_list_prepared= false;
 	bool is_complete= false;
-	bool have_explicit_noncopy_constructors= false;
+	bool has_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
-	bool have_destructor= false;
+	bool has_destructor= false;
 	bool is_copy_assignable= false;
 	bool is_equality_comparable= false;
 	bool can_be_constexpr= false;

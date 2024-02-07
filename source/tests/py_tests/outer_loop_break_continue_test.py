@@ -220,7 +220,7 @@ def NameNotFound_ForLabel_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 6 ) )
+	assert( HasError( errors_list, "NameNotFound", 6 ) )
 
 
 def NameNotFound_ForLabel_Test1():
@@ -238,7 +238,7 @@ def NameNotFound_ForLabel_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 9 ) )
+	assert( HasError( errors_list, "NameNotFound", 9 ) )
 
 
 def NameNotFound_ForLabel_Test2():
@@ -253,7 +253,7 @@ def NameNotFound_ForLabel_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NameNotFound", 6 ) )
+	assert( HasError( errors_list, "NameNotFound", 6 ) )
 
 
 def Redefinition_ForLabels_Test0():
@@ -269,7 +269,7 @@ def Redefinition_ForLabels_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "Redefinition", 6 ) )
+	assert( HasError( errors_list, "Redefinition", 6 ) )
 
 
 def Redefinition_ForLabels_Test1():
@@ -288,7 +288,7 @@ def Redefinition_ForLabels_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "Redefinition", 8 ) )
+	assert( HasError( errors_list, "Redefinition", 8 ) )
 
 
 def Redefinition_ForLabels_Test2():
@@ -315,7 +315,7 @@ def UsingKeywordAsName_ForLabel_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
 def UsingKeywordAsName_ForLabel_Test1():
@@ -327,7 +327,7 @@ def UsingKeywordAsName_ForLabel_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
 def UsingKeywordAsName_ForLabel_Test2():
@@ -339,7 +339,7 @@ def UsingKeywordAsName_ForLabel_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UsingKeywordAsName", 4 ) )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test0():
@@ -363,7 +363,7 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 15 ) )
+	assert( HasError( errors_list, "ConditionalMove", 15 ) )
 
 
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test1():
@@ -393,9 +393,9 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 21 ) )
-	assert( not HaveError( errors_list, "ReferenceProtectionError", 19 ) )
-	assert( not HaveError( errors_list, "ReferencePollutionOfOuterLoopVariable", 20 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 21 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( not HasError( errors_list, "ReferencePollutionOfOuterLoopVariable", 20 ) )
 
 
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test2():
@@ -423,7 +423,7 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferencePollutionOfOuterLoopVariable", 19 ) )
+	assert( HasError( errors_list, "ReferencePollutionOfOuterLoopVariable", 19 ) )
 
 
 def VariablesStateMerge_ForBreakContinueToOuterLoop_Test3():

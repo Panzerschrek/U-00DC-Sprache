@@ -20,7 +20,7 @@ const std::string& NamesScope::GetThisNamespaceName() const
 
 std::string NamesScope::ToString() const
 {
-	if( parent_ == nullptr ) // Global namespace have no name.
+	if( parent_ == nullptr ) // Global namespace has no name.
 		return "";
 	if( parent_->parent_ == nullptr )
 		return name_;

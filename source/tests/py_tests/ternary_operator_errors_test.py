@@ -119,8 +119,8 @@ def TernaryOperator_TemporariesAreDestroyed_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 10 ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 10 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 11 ) )
 
 
 def TernaryOperator_TemporariesAreDestroyed_Test1():
@@ -135,7 +135,7 @@ def TernaryOperator_TemporariesAreDestroyed_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 1 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 6 ) )
 
 
 def TernaryOperator_TemporariesAreDestroyed_Test2():
@@ -150,7 +150,7 @@ def TernaryOperator_TemporariesAreDestroyed_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 1 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 7 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 7 ) )
 
 
 def TernaryOperator_TemporariesAreDestroyed_Test3():
@@ -166,8 +166,8 @@ def TernaryOperator_TemporariesAreDestroyed_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 7 ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 7 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test0():

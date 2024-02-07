@@ -9,7 +9,7 @@ def UselessExpressionRoot_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test1():
@@ -21,7 +21,7 @@ def UselessExpressionRoot_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test2():
@@ -33,7 +33,7 @@ def UselessExpressionRoot_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test3():
@@ -46,7 +46,7 @@ def UselessExpressionRoot_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 5 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 5 ) )
 
 
 def UselessExpressionRoot_Test4():
@@ -58,7 +58,7 @@ def UselessExpressionRoot_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test5():
@@ -71,7 +71,7 @@ def UselessExpressionRoot_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 5 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 5 ) )
 
 
 def UselessExpressionRoot_Test6():
@@ -83,7 +83,7 @@ def UselessExpressionRoot_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test7():
@@ -96,7 +96,7 @@ def UselessExpressionRoot_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 5 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 5 ) )
 
 
 def UselessExpressionRoot_Test8():
@@ -109,7 +109,7 @@ def UselessExpressionRoot_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test9():
@@ -121,7 +121,7 @@ def UselessExpressionRoot_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test10():
@@ -133,7 +133,7 @@ def UselessExpressionRoot_Test10():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test11():
@@ -146,7 +146,7 @@ def UselessExpressionRoot_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test12():
@@ -159,7 +159,7 @@ def UselessExpressionRoot_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test13():
@@ -172,7 +172,7 @@ def UselessExpressionRoot_Test13():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test14():
@@ -184,7 +184,7 @@ def UselessExpressionRoot_Test14():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test15():
@@ -196,7 +196,7 @@ def UselessExpressionRoot_Test15():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test16():
@@ -208,7 +208,7 @@ def UselessExpressionRoot_Test16():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test17():
@@ -220,7 +220,7 @@ def UselessExpressionRoot_Test17():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test18():
@@ -253,7 +253,7 @@ def UselessExpressionRoot_Test20():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test21():
@@ -265,7 +265,7 @@ def UselessExpressionRoot_Test21():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test22():
@@ -279,7 +279,7 @@ def UselessExpressionRoot_Test22():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test23():
@@ -291,7 +291,7 @@ def UselessExpressionRoot_Test23():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test24():
@@ -303,7 +303,7 @@ def UselessExpressionRoot_Test24():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test25():
@@ -315,7 +315,7 @@ def UselessExpressionRoot_Test25():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test26():
@@ -327,7 +327,7 @@ def UselessExpressionRoot_Test26():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test27():
@@ -340,7 +340,7 @@ def UselessExpressionRoot_Test27():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 5 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 5 ) )
 
 
 def UselessExpressionRoot_Test28():
@@ -396,7 +396,7 @@ def UselessExpressionRoot_Test32():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test33():
@@ -409,7 +409,7 @@ def UselessExpressionRoot_Test33():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test34():
@@ -422,7 +422,7 @@ def UselessExpressionRoot_Test34():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test35():
@@ -435,7 +435,7 @@ def UselessExpressionRoot_Test35():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test36():
@@ -448,7 +448,7 @@ def UselessExpressionRoot_Test36():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test37():
@@ -464,7 +464,7 @@ def UselessExpressionRoot_Test37():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 6 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 6 ) )
 
 
 def UselessExpressionRoot_Test38():
@@ -480,7 +480,7 @@ def UselessExpressionRoot_Test38():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 6 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 6 ) )
 
 
 def UselessExpressionRoot_Test39():
@@ -494,7 +494,7 @@ def UselessExpressionRoot_Test39():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test40():
@@ -507,7 +507,7 @@ def UselessExpressionRoot_Test40():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test41():
@@ -554,7 +554,7 @@ def UselessExpressionRoot_Test44():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test45():
@@ -568,7 +568,7 @@ def UselessExpressionRoot_Test45():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test46():
@@ -581,7 +581,7 @@ def UselessExpressionRoot_Test46():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test47():
@@ -593,7 +593,7 @@ def UselessExpressionRoot_Test47():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
 def UselessExpressionRoot_Test48():
@@ -606,7 +606,7 @@ def UselessExpressionRoot_Test48():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 5 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 5 ) )
 
 
 def UselessExpressionRoot_Test49():
@@ -622,4 +622,4 @@ def UselessExpressionRoot_Test49():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UselessExpressionRoot", 7 ) )
+	assert( HasError( errors_list, "UselessExpressionRoot", 7 ) )

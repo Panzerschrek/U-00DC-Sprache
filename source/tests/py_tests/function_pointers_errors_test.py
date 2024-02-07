@@ -291,7 +291,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test1():
@@ -304,7 +304,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test2():
@@ -317,7 +317,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test3():
@@ -330,7 +330,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test4():
@@ -343,7 +343,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test5():
@@ -356,7 +356,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test6():
@@ -369,7 +369,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test7():
@@ -382,7 +382,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test8():
@@ -395,7 +395,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test9():
@@ -408,7 +408,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test10():
@@ -421,7 +421,7 @@ def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_T
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 6 ) )
 
 
 def ImplicitFunctionsSetToPointerConversionErrors_Test0():
@@ -437,7 +437,7 @@ def ImplicitFunctionsSetToPointerConversionErrors_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 9 ) )
 
 
 def ImplicitFunctionsSetToPointerConversionErrors_Test1():
@@ -452,7 +452,7 @@ def ImplicitFunctionsSetToPointerConversionErrors_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedVariable", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) )
 
 
 def ImplicitFunctionsSetToPointerConversionErrors_Test2():
@@ -466,7 +466,7 @@ def ImplicitFunctionsSetToPointerConversionErrors_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedVariable", 7 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 7 ) )
 
 
 def ImplicitFunctionsSetToPointerConversionErrors_Test3():
@@ -480,4 +480,4 @@ def ImplicitFunctionsSetToPointerConversionErrors_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )

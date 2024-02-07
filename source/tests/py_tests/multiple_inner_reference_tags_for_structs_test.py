@@ -63,8 +63,8 @@ def ExpectedReferenceNotation_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 4 ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 5 ) )
 
 
 def ExpectedReferenceNotation_Test1():
@@ -77,7 +77,7 @@ def ExpectedReferenceNotation_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 4 ) )
 
 
 def ExpectedReferenceNotation_Test2():
@@ -91,8 +91,8 @@ def ExpectedReferenceNotation_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 4 ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 6 ) )
 
 
 def ExpectedReferenceNotation_Test3():
@@ -106,8 +106,8 @@ def ExpectedReferenceNotation_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 5 ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 6 ) )
 
 
 def ExpectedReferenceNotation_Test4():
@@ -121,7 +121,7 @@ def ExpectedReferenceNotation_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 6 ) )
 
 
 def ExpectedReferenceNotation_Test5():
@@ -135,8 +135,8 @@ def ExpectedReferenceNotation_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 5 ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 6 ) )
 
 
 def ExpectedReferenceNotation_Test6():
@@ -150,7 +150,7 @@ def ExpectedReferenceNotation_Test6():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 5 ) )
 
 
 def ExpectedReferenceNotation_Test7():
@@ -164,7 +164,7 @@ def ExpectedReferenceNotation_Test7():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 6 ) )
 
 
 def ExpectedReferenceNotation_Test8():
@@ -174,7 +174,7 @@ def ExpectedReferenceNotation_Test8():
 		class B : A { i32 & y; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 3 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 3 ) )
 
 
 def ExpectedReferenceNotation_Test9():
@@ -185,7 +185,7 @@ def ExpectedReferenceNotation_Test9():
 		class B : A { S s; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceNotation", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceNotation", 4 ) )
 
 
 def InvalidInnerReferenceTagName_Test0():
@@ -196,7 +196,7 @@ def InvalidInnerReferenceTagName_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
+	assert( HasError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
 
 
 def InvalidInnerReferenceTagName_Test1():
@@ -207,7 +207,7 @@ def InvalidInnerReferenceTagName_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
+	assert( HasError( errors_list, "InvalidInnerReferenceTagName", 4 ) )
 
 
 def InvalidInnerReferenceTagName_Test2():
@@ -219,7 +219,7 @@ def InvalidInnerReferenceTagName_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidInnerReferenceTagName", 5 ) )
+	assert( HasError( errors_list, "InvalidInnerReferenceTagName", 5 ) )
 
 
 def InnerReferenceTagCountMismatch_Test0():
@@ -231,7 +231,7 @@ def InnerReferenceTagCountMismatch_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
 
 
 def InnerReferenceTagCountMismatch_Test1():
@@ -243,7 +243,7 @@ def InnerReferenceTagCountMismatch_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
 
 
 def InnerReferenceTagCountMismatch_Test2():
@@ -259,7 +259,7 @@ def InnerReferenceTagCountMismatch_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 9 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 9 ) )
 
 
 def InnerReferenceTagCountMismatch_Test3():
@@ -271,7 +271,7 @@ def InnerReferenceTagCountMismatch_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 5 ) )
 
 
 def AutoReferenceNotationCalculation_Test0():
@@ -404,7 +404,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 2 ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 2 ) )
 
 
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test1():
@@ -418,7 +418,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
 
 
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test2():
@@ -433,7 +433,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
 
 
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test3():
@@ -446,7 +446,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
 
 
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
@@ -460,7 +460,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
 
 
 def StructMultipleInnerReferenceTags_Test0():
@@ -559,7 +559,7 @@ def StructMultipleInnerReferenceTags_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 18 ) )
 
 
 def StructMultipleInnerReferenceTags_Test4():
@@ -584,7 +584,7 @@ def StructMultipleInnerReferenceTags_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 18 ) )
 
 
 def StructMultipleInnerReferenceTags_Test5():
@@ -611,7 +611,7 @@ def StructMultipleInnerReferenceTags_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 20 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 20 ) )
 
 
 def StructMultipleInnerReferenceTags_Test6():
@@ -705,7 +705,7 @@ def StructMultipleInnerReferenceTags_Test9():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 19 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 19 ) )
 
 
 def StructMultipleInnerReferenceTags_Test10():
@@ -736,7 +736,7 @@ def StructMultipleInnerReferenceTags_Test11():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 9 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 9 ) )
 
 
 def StructMultipleInnerReferenceTags_Test12():
@@ -752,7 +752,7 @@ def StructMultipleInnerReferenceTags_Test12():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 10 ) )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 10 ) )
 
 
 def TupleMultipleInnerReferenceTags_Test13():
@@ -768,7 +768,7 @@ def TupleMultipleInnerReferenceTags_Test13():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UnallowedReferencePollution", 10 ) )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 10 ) )
 
 
 def StructMultipleInnerReferenceTags_Test14():
@@ -845,7 +845,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test0():
 		struct S{ i32 & @(42) x; } // Expected char8, given int.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+	assert( HasError( errors_list, "TypesMismatch", 2 ) )
 
 
 def TypesMismatch_ForFieldReferenceNotation_Test1():
@@ -853,7 +853,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test1():
 		struct S{ i32 & @("a") x; } // Expected char8, given array of char8.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+	assert( HasError( errors_list, "TypesMismatch", 2 ) )
 
 
 def TypesMismatch_ForFieldReferenceNotation_Test2():
@@ -861,7 +861,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test2():
 		struct S{ i32 & @("a"c16) x; } // Expected char8, given char16.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+	assert( HasError( errors_list, "TypesMismatch", 2 ) )
 
 
 def TypesMismatch_ForFieldReferenceNotation_Test3():
@@ -870,7 +870,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test3():
 		struct T{ S @(0.5f) s; } // Expected array of char8, given f32.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def TypesMismatch_ForFieldReferenceNotation_Test4():
@@ -879,7 +879,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test4():
 		struct T{ S @("a"c8) s; }  // Expected array of char8, given char8.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def TypesMismatch_ForFieldReferenceNotation_Test5():
@@ -888,7 +888,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test5():
 		struct T{ S @("a"u32) s; }  // Expected array of char8, given array of char32.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 3 ) )
+	assert( HasError( errors_list, "TypesMismatch", 3 ) )
 
 
 def ExpectedConstantExpression_ForFieldReferenceNotation_Test0():
@@ -897,7 +897,7 @@ def ExpectedConstantExpression_ForFieldReferenceNotation_Test0():
 		fn Foo() : char8;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 2 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 2 ) )
 
 
 def ExpectedConstantExpression_ForFieldReferenceNotation_Test1():
@@ -907,4 +907,4 @@ def ExpectedConstantExpression_ForFieldReferenceNotation_Test1():
 		fn Foo() : [ char8, 1 ];
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedConstantExpression", 3 ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )

@@ -342,7 +342,7 @@ def MethodsCompletenessForClass_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def MethodsCompletenessForClass_Test4():
@@ -355,7 +355,7 @@ def MethodsCompletenessForClass_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def MethodsCompletenessForClass_Test5():
@@ -368,7 +368,7 @@ def MethodsCompletenessForClass_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def MethodsCompletenessForClass_Test6():
@@ -381,7 +381,7 @@ def MethodsCompletenessForClass_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def MethodsCompletenessForClass_Test7():
@@ -394,7 +394,7 @@ def MethodsCompletenessForClass_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def MethodsCompletenessForClass_Test8():
@@ -408,7 +408,7 @@ def MethodsCompletenessForClass_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 6 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 6 ) )
 
 
 def TypesCompletenessForClass_Test0():
@@ -435,4 +435,4 @@ def TypesCompletenessForClass_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 5 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 5 ) )

@@ -406,7 +406,7 @@ def ConditionalMove_ForLazyLogicalOperators_Test2():
 	assert( errors_list[0].src_loc.line == 5 )
 
 
-def MovedVariableHaveReferences_Test0():
+def MovedVariableHasReferences_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -417,11 +417,11 @@ def MovedVariableHaveReferences_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].error_code == "MovedVariableHasReferences" )
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def MovedVariableHaveReferences_Test1():
+def MovedVariableHasReferences_Test1():
 	c_program_text= """
 		fn Foo( i16 mut short )
 		{
@@ -431,11 +431,11 @@ def MovedVariableHaveReferences_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].error_code == "MovedVariableHasReferences" )
 	assert( errors_list[0].src_loc.line == 5 )
 
 
-def MovedVariableHaveReferences_Test2():
+def MovedVariableHasReferences_Test2():
 	c_program_text= """
 		struct S
 		{
@@ -450,11 +450,11 @@ def MovedVariableHaveReferences_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].error_code == "MovedVariableHasReferences" )
 	assert( errors_list[0].src_loc.line == 10 )
 
 
-def MovedVariableHaveReferences_Test3():
+def MovedVariableHasReferences_Test3():
 	c_program_text= """
 		struct S
 		{
@@ -471,4 +471,4 @@ def MovedVariableHaveReferences_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 13 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 13 ) )

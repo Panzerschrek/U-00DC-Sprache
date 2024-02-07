@@ -168,7 +168,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto mut is_constant= variable.t.CanBeConstexpr();
 		var ust::vector</ LLVMValueRef /> mut elements_constants;
 
-		var bool requires_destruction= array_type.element_type.HaveDestructor();
+		var bool requires_destruction= array_type.element_type.HasDestructor();
 		var ust::vector</VariablePtr/> mut temp_initialized_variables;
 
 		auto mut i= 0s;
@@ -291,7 +291,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				}
 			}
 
-			if( element_type.HaveDestructor() )
+			if( element_type.HasDestructor() )
 			{
 				var Variable mut temp_initialized_variable
 				{
@@ -343,9 +343,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	auto members_lock= class_type.members.lock_imut();
 	var NamesScope& class_members= members_lock.deref();
 
-	if( class_type.have_explicit_noncopy_constructors )
+	if( class_type.has_explicit_noncopy_constructors )
 	{
-		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope, struct_named_initializer.src_loc )
+		REPORT_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, names_scope, struct_named_initializer.src_loc )
 	}
 	if( class_type.kind != ClassType::Kind::Struct )
 	{
@@ -444,7 +444,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				constant_initializers[ size_type(class_field.index) ]= initializer;
 			}
 
-			if( class_field.t.HaveDestructor() )
+			if( class_field.t.HasDestructor() )
 			{
 				var Variable mut temp_initialized_variable
 				{
@@ -560,7 +560,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		!variable.t.GetRawPointerType().empty() ||
 		!variable.t.GetFunctionPointerType().empty() )
 	{
-		// Currently, first element of enum have zero value.
+		// Currently, first element of enum has zero value.
 		unsafe
 		{
 			auto zero_value= LLVMConstNull( variable.t.GetLLVMType() );
@@ -632,9 +632,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto class_type_lock= class_type_ptr.lock_imut();
 		var ClassType& class_type= class_type_lock.deref();
 
-		if( class_type.have_explicit_noncopy_constructors )
+		if( class_type.has_explicit_noncopy_constructors )
 		{
-			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope, zero_initializer.src_loc )
+			REPORT_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, names_scope, zero_initializer.src_loc )
 		}
 		if( class_type.kind != ClassType::Kind::Struct )
 		{
@@ -1108,7 +1108,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		auto member= members_lock.deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
 		if( member.empty() )
 		{
-			REPORT_ERROR( ClassHaveNoConstructors, names_scope, src_loc )
+			REPORT_ERROR( ClassHasNoConstructors, names_scope, src_loc )
 			return LLVMValueRef::Null;
 		}
 
@@ -1393,7 +1393,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	var ust::vector</bool/> mut initialized_fields;
 	initialized_fields.resize( size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ), false );
 
-	auto mut have_fields_errors= false;
+	auto mut has_fields_errors= false;
 	auto mut base_initialized= false;
 	foreach( &member_initializer : constructor_initialization_list.members_initializers )
 	{
@@ -1401,13 +1401,13 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			if( base_class.empty() )
 			{
-				have_fields_errors= true;
+				has_fields_errors= true;
 				REPORT_ERROR( BaseUnavailable, names_scope, constructor_initialization_list.src_loc )
 				continue;
 			}
 			if( base_initialized )
 			{
-				have_fields_errors= true;
+				has_fields_errors= true;
 				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, constructor_initialization_list.src_loc, member_initializer.name )
 				continue;
 			}
@@ -1418,14 +1418,14 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto member= class_members.GetThisScopeValue( member_initializer.name );
 		if( member.empty() )
 		{
-			have_fields_errors= true;
+			has_fields_errors= true;
 			REPORT_ERROR( NameNotFound, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
 		auto class_field_ptr= member.try_deref().Get</ClassField/>();
 		if( class_field_ptr.empty() )
 		{
-			have_fields_errors= true;
+			has_fields_errors= true;
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
@@ -1433,7 +1433,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			if( class_field.source_class != class_type )
 			{
-				have_fields_errors= true;
+				has_fields_errors= true;
 				REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
 				continue;
 			}
@@ -1443,7 +1443,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			{
 				if( initialized_fields[ field_index ] )
 				{
-					have_fields_errors= true;
+					has_fields_errors= true;
 					REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
 					continue;
 				}
@@ -1452,7 +1452,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 	}
 
-	if( have_fields_errors )
+	if( has_fields_errors )
 	{
 		return;
 	}

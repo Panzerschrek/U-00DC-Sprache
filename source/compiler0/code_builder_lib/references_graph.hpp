@@ -36,9 +36,9 @@ public:
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
-	bool HaveOutgoingLinks( const VariablePtr& from ) const;
+	bool HasOutgoingLinks( const VariablePtr& from ) const;
 
-	bool HaveOutgoingMutableNodes( const VariablePtr& from ) const;
+	bool HasOutgoingMutableNodes( const VariablePtr& from ) const;
 
 	void MoveNode( const VariablePtr& node );
 	bool NodeMoved( const VariablePtr& node ) const;
@@ -70,11 +70,11 @@ private:
 	};
 
 private:
-	bool HaveDirectOutgoingLinks( const VariablePtr& from ) const;
-	bool HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const;
+	bool HasDirectOutgoingLinks( const VariablePtr& from ) const;
+	bool HasOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const;
 
-	bool HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const;
-	bool HaveOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const;
+	bool HasDirectOutgoingMutableNodes( const VariablePtr& from ) const;
+	bool HasOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const;
 
 	void RemoveNodeLinks( const VariablePtr& node );
 	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;

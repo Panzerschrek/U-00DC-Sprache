@@ -115,7 +115,7 @@ public:
 
 	bool base_initialized= false;
 	bool whole_this_is_unavailable= false; // May be true in constructor initializer list, in body of constructors and destructors of abstract classes.
-	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
+	bool has_non_constexpr_operations_inside= false; // While building code, may set to "true".
 	bool is_in_unsafe_block= false;
 	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
 };

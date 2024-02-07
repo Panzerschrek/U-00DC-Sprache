@@ -72,7 +72,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		llvm::SmallVector<llvm::Constant*, 16> members_constants;
 
-		const bool requires_destruction= array_type->element_type.HaveDestructor();
+		const bool requires_destruction= array_type->element_type.HasDestructor();
 		llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
 
 		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
@@ -158,7 +158,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.RemoveNode( tuple_element );
 
-			if( element_type.HaveDestructor() )
+			if( element_type.HasDestructor() )
 			{
 				// Create temp variable for initialized member in order to call destructor in case of return or await during further tuple elements initialization.
 				const VariableMutPtr temp_initialized_variable=
@@ -206,8 +206,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		return nullptr;
 	}
 
-	if( class_type->have_explicit_noncopy_constructors )
-		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope.GetErrors(), initializer.src_loc );
+	if( class_type->has_explicit_noncopy_constructors )
+		REPORT_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, names_scope.GetErrors(), initializer.src_loc );
 
 	ClassFieldsVector<bool> initialized_fields;
 	initialized_fields.resize( class_type->llvm_type->getNumElements(), false );
@@ -283,7 +283,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			function_context.variables_state.RemoveNode( struct_member );
 
-			if( field->type.HaveDestructor() )
+			if( field->type.HasDestructor() )
 			{
 				// Create temp variable for initialized member in order to call destructor in case of return or await during further struct elements initialization.
 				const VariableMutPtr temp_initialized_variable=
@@ -589,8 +589,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else if( const Class* const class_type= variable->type.GetClassType() )
 	{
-		if( class_type->have_explicit_noncopy_constructors )
-			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope.GetErrors(), initializer.src_loc );
+		if( class_type->has_explicit_noncopy_constructors )
+			REPORT_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, names_scope.GetErrors(), initializer.src_loc );
 		if( class_type->kind != Class::Kind::Struct )
 			REPORT_ERROR( ZeroInitializerForClass, names_scope.GetErrors(), initializer.src_loc );
 
@@ -892,7 +892,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				{
 					if( dst_type->fundamental_type == U_FundamentalType::bool_ )
 					{
-						// TODO - error, bool have no constructors from other types
+						// TODO - error, bool has no constructors from other types
 					}
 					REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, src_var->type );
 					return nullptr;
@@ -1033,7 +1033,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		if( constructor_value == nullptr )
 		{
-			REPORT_ERROR( ClassHaveNoConstructors, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( ClassHasNoConstructors, names_scope.GetErrors(), src_loc );
 			return nullptr;
 		}
 
@@ -1063,7 +1063,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	initialized_fields.resize( base_class.llvm_type->getNumElements(), false );
 
 	// Check for errors, build list of initialized fields.
-	bool have_fields_errors= false;
+	bool has_fields_errors= false;
 	bool base_initialized= false;
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
@@ -1074,13 +1074,13 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( base_class.base_class == nullptr )
 			{
-				have_fields_errors= true;
+				has_fields_errors= true;
 				REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 				continue;
 			}
 			if( base_initialized )
 			{
-				have_fields_errors= true;
+				has_fields_errors= true;
 				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 				continue;
 			}
@@ -1092,7 +1092,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		const NamesScopeValue* const class_member= base_class.members->GetThisScopeValue( field_initializer.name );
 		if( class_member == nullptr )
 		{
-			have_fields_errors= true;
+			has_fields_errors= true;
 			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 			continue;
 		}
@@ -1101,13 +1101,13 @@ void CodeBuilder::BuildConstructorInitialization(
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
-			have_fields_errors= true;
+			has_fields_errors= true;
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 			continue;
 		}
 		if( field->class_ != &base_class )
 		{
-			have_fields_errors= true;
+			has_fields_errors= true;
 			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 			continue;
 		}
@@ -1116,7 +1116,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( initialized_fields[ field->index ] )
 			{
-				have_fields_errors= true;
+				has_fields_errors= true;
 				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 				continue;
 			}
@@ -1125,7 +1125,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 	} // for fields initializers
 
-	if( have_fields_errors )
+	if( has_fields_errors )
 		return;
 
 	const StackVariablesStorage temp_variables_storage( function_context );

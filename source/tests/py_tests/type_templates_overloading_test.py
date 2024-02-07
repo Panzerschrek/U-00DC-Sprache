@@ -167,7 +167,7 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 		fn Foo( S</ i32, i32 /> & s );  // Error, different best-specialized templates for first and second template arguments.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 5 ) )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 5 ) )
 
 
 def LessSpecializedTemplateTypesNotGenerated_Test0():
@@ -206,7 +206,7 @@ def TypeTemplateRedefinition_Test0():
 		template</ type T /> struct S{ T x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test1():
@@ -216,7 +216,7 @@ def TypeTemplateRedefinition_Test1():
 		template</ type V /> struct S{ V x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test2():
@@ -226,7 +226,7 @@ def TypeTemplateRedefinition_Test2():
 		template</ type V /> struct S</V/>{ V x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test3():
@@ -236,7 +236,7 @@ def TypeTemplateRedefinition_Test3():
 		template</ type V /> struct S{ V x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test4():
@@ -247,7 +247,7 @@ def TypeTemplateRedefinition_Test4():
 
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test5():
@@ -266,7 +266,7 @@ def TypeTemplateRedefinition_Test6():
 		template</ type X, type Y /> struct S</ tup[ X, Y ] />{ X x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test7():
@@ -285,7 +285,7 @@ def TypeTemplateRedefinition_Test8():
 		template</ type X, type Y /> struct S</ fn(X x) : Y />{ X x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test9():
@@ -323,7 +323,7 @@ def TypeTemplateRedefinition_Test12():
 		template</ type V /> struct S</ V, Int />{ V x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 4 ) or HaveError( errors_list, "TypeTemplateRedefinition", 5 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 4 ) or HasError( errors_list, "TypeTemplateRedefinition", 5 ) )
 
 
 def TypeTemplateRedefinition_Test13():
@@ -334,7 +334,7 @@ def TypeTemplateRedefinition_Test13():
 		template</ type V /> struct S</ Box</V/> />{ V x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 4 ) or HaveError( errors_list, "TypeTemplateRedefinition", 5 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 4 ) or HasError( errors_list, "TypeTemplateRedefinition", 5 ) )
 
 
 def TypeTemplateRedefinition_Test14():
@@ -367,7 +367,7 @@ def TypeTemplateRedefinition_Test16():
 		template</ type X, type Y /> struct S</ X, Y= u64 />{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test17():
@@ -377,7 +377,7 @@ def TypeTemplateRedefinition_Test17():
 		template<//> struct S</ 66u />{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test18():
@@ -396,7 +396,7 @@ def TypeTemplateRedefinition_Test19():
 		template</type V/> type S= [ V, 4 ];
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )
 
 
 def TypeTemplateRedefinition_Test20():
@@ -406,4 +406,4 @@ def TypeTemplateRedefinition_Test20():
 		template</type T/> struct S{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+	assert( HasError( errors_list, "TypeTemplateRedefinition", 3 ) or HasError( errors_list, "TypeTemplateRedefinition", 4 ) )

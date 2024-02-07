@@ -451,7 +451,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 
 	NumberLexemData result;
 
-	// For double calculate only powers > 0, because pow( base, positive ) is always integer and have exact double representation.
+	// For double calculate only powers > 0, because pow( base, positive ) is always integer and has exact double representation.
 	// pow( base, negative ) may have not exact double representation (1/10 for example).
 	// Example:
 	// 3 / 10 - right

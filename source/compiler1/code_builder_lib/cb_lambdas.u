@@ -81,7 +81,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 							if( !field.is_reference && // No need to destruct reference fields.
 								ust::ref_cmp_ne( capture, capture_list.back() ) && // No need to register last one.
-								field.t.HaveDestructor() && // No need to call destructors.
+								field.t.HasDestructor() && // No need to call destructors.
 								init_value[0] != LLVMValueRef::Null )
 							{
 								// Temportary register field value for destruction,
@@ -350,7 +350,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		.members_initial= class_members,
 		.kind= ClassType::Kind::Struct, // Set temporary to struct in order to allow generation of some methods.
 		.parents_list_prepared= true,
-		.have_explicit_noncopy_constructors= false,
+		.has_explicit_noncopy_constructors= false,
 		.is_default_constructible= false,
 		.can_be_constexpr= true, // Set later.
 		.generated_class_data= move(lambda_class_data)
@@ -907,7 +907,7 @@ fn CodeBuilder::GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names
 		.members_initial= class_members,
 		.kind= ClassType::Kind::Struct,
 		.parents_list_prepared= true,
-		.have_explicit_noncopy_constructors= false,
+		.has_explicit_noncopy_constructors= false,
 		.is_default_constructible= false,
 		.can_be_constexpr= true,
 		.is_complete= true,
@@ -1198,9 +1198,9 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 		REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, resolved_variable.name )
 		return ErrorValue();
 	}
-	if( function_context.references_graph.HaveOutgoingLinks( resolved_variable_ptr ) )
+	if( function_context.references_graph.HasOutgoingLinks( resolved_variable_ptr ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope, src_loc, resolved_variable.name )
+		REPORT_ERROR( MovedVariableHasReferences, names_scope, src_loc, resolved_variable.name )
 		return ErrorValue();
 	}
 

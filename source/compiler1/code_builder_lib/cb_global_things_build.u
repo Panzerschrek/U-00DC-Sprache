@@ -553,8 +553,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Allocate virtual table pointer, if class have no parents.
-	// If class have at least one parent, reuse it's virtual table pointer.
+	// Allocate virtual table pointer, if class has no parents.
+	// If class has at least one parent, reuse it's virtual table pointer.
 	auto allocate_virtual_table_pointer= syntax_element.parents.empty() && (
 		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
 		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
@@ -1087,14 +1087,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			class_contains_pure_virtual_functions|= virtual_table_entry.is_pure;
 		}
 
-		auto have_parents= class_.parents.empty();
+		auto has_parents= class_.parents.empty();
 		if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Struct )
 		{
 			class_.kind= ClassType::Kind::Struct;
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Class )
 		{
-			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
+			class_.kind= select( has_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
 			if( class_contains_pure_virtual_functions )
 			{
 				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
@@ -1103,7 +1103,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Final )
 		{
-			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
+			class_.kind= select( has_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
 			if( class_contains_pure_virtual_functions )
 			{
 				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
@@ -1240,15 +1240,15 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				if( IsDefaultConstructor( function_variable, class_type ) )
 				{
-					class_.have_explicit_noncopy_constructors= true;
+					class_.has_explicit_noncopy_constructors= true;
 				}
 				else if( IsCopyConstructor( function_variable, class_type ) ) {}
 				else
 				{
-					class_.have_explicit_noncopy_constructors= true;
+					class_.has_explicit_noncopy_constructors= true;
 				}
 			}
-			class_.have_explicit_noncopy_constructors |= !functions_set.function_templates.empty();
+			class_.has_explicit_noncopy_constructors |= !functions_set.function_templates.empty();
 		}
 	}
 

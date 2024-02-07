@@ -927,7 +927,7 @@ def RawPointerTypeTemplateSpecialization_Test5():
 		type WTF= RemovePointer</ bool />;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 8 ) )
+	assert( HasError( errors_list, "TemplateParametersDeductionFailed", 8 ) )
 
 
 def RawPointerTemplateFunctionSpecialization_Test0():

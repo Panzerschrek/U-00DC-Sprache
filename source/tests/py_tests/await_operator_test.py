@@ -534,7 +534,7 @@ def ImmediateValueExpectedInAwaitOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
 
 
 def ImmediateValueExpectedInAwaitOperator_Test1():
@@ -548,7 +548,7 @@ def ImmediateValueExpectedInAwaitOperator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInAwaitOperator", 6 ) )
 
 
 def ImmediateValueExpectedInAwaitOperator_Test3():
@@ -573,7 +573,7 @@ def AwaitForNonAsyncFunctionValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
+	assert( HasError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
 
 
 def AwaitForNonAsyncFunctionValue_Test1():
@@ -586,7 +586,7 @@ def AwaitForNonAsyncFunctionValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
+	assert( HasError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
 
 
 def AwaitForNonAsyncFunctionValue_Test2():
@@ -600,7 +600,7 @@ def AwaitForNonAsyncFunctionValue_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 6 ) )
+	assert( HasError( errors_list, "AwaitForNonAsyncFunctionValue", 6 ) )
 
 
 def AwaitForNonAsyncFunctionValue_Test3():
@@ -613,7 +613,7 @@ def AwaitForNonAsyncFunctionValue_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
+	assert( HasError( errors_list, "AwaitForNonAsyncFunctionValue", 5 ) )
 
 
 def AwaitForNonAsyncFunctionValue_Test4():
@@ -625,7 +625,7 @@ def AwaitForNonAsyncFunctionValue_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitForNonAsyncFunctionValue", 4 ) )
+	assert( HasError( errors_list, "AwaitForNonAsyncFunctionValue", 4 ) )
 
 
 def AwaitOutsideAsyncFunction_Test0():
@@ -638,7 +638,7 @@ def AwaitOutsideAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
 
 
 def AwaitOutsideAsyncFunction_Test1():
@@ -651,7 +651,7 @@ def AwaitOutsideAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
 
 
 def AwaitOutsideAsyncFunction_Test2():
@@ -667,7 +667,7 @@ def AwaitOutsideAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 7 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 7 ) )
 
 
 def AwaitOutsideAsyncFunction_Test3():
@@ -680,7 +680,7 @@ def AwaitOutsideAsyncFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 5 ) )
 
 
 def AwaitOutsideAsyncFunction_Test4():
@@ -691,7 +691,7 @@ def AwaitOutsideAsyncFunction_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
 
 
 def AwaitOutsideAsyncFunction_Test5():
@@ -701,7 +701,7 @@ def AwaitOutsideAsyncFunction_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
 
 
 def AwaitOutsideAsyncFunction_Test6():
@@ -711,7 +711,7 @@ def AwaitOutsideAsyncFunction_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
+	assert( HasError( errors_list, "AwaitOutsideAsyncFunction", 3 ) )
 
 
 def AwaitOperatorResultReferences_Test0():
@@ -726,7 +726,7 @@ def AwaitOperatorResultReferences_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
 def AwaitOperatorResultReferences_Test1():
@@ -740,7 +740,7 @@ def AwaitOperatorResultReferences_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
 
 
 def AwaitOperatorResultReferences_Test2():
@@ -757,7 +757,7 @@ def AwaitOperatorResultReferences_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
 def AwaitOperatorResultReferences_Test3():
@@ -773,11 +773,11 @@ def AwaitOperatorResultReferences_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
 
-def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test0():
+def DestroyedVariableStillHasReferences_ForAwaitOperator_Test0():
 	c_program_text= """
 		fn async Pass( i32& x ) : i32&;
 		fn async Foo()
@@ -787,10 +787,10 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 5 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test1():
+def DestroyedVariableStillHasReferences_ForAwaitOperator_Test1():
 	c_program_text= """
 		fn async Pass( f32& x ) : f32&;
 		fn Bar() : f32;
@@ -801,10 +801,10 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 6 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test2():
+def DestroyedVariableStillHasReferences_ForAwaitOperator_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] pass_return_inner_references[ [ "0a" ] ];
@@ -818,10 +818,10 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 9 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 9 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test3():
+def DestroyedVariableStillHasReferences_ForAwaitOperator_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] pass_return_inner_references[ [ "0a" ] ];
@@ -837,7 +837,7 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test3():
 	tests_lib.build_program( c_program_text )
 
 
-def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test4():
+def DestroyedVariableStillHasReferences_ForAwaitOperator_Test4():
 	c_program_text= """
 		struct S
 		{
@@ -847,7 +847,7 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test4():
 		fn async Bar() : i32;
 		fn async Foo()
 		{
-			// For now this code produces "DestroyedVariableStillHaveReferences" error for "x".
+			// For now this code produces "DestroyedVariableStillHasReferences" error for "x".
 			// This is due to a limitation of internal compiler structures.
 			// "await" triggers destructors call as "return", since an async function may not be resumed after "await"
 			// and thus all alive variables must be destroyed.
@@ -857,7 +857,7 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test4():
 			// which leads to an existence of a variable that has reference(s) to another variable(s),
 			// before this not-fully-initialuized varaible is regestered for destruction.
 			// Now if a destruction is triggered between pollution and initialization finish (like with "await"),
-			// the compiler can't remove links from this variable to destination variable and produces "DestroyedVariableStillHaveReferences" error.
+			// the compiler can't remove links from this variable to destination variable and produces "DestroyedVariableStillHasReferences" error.
 
 			var i32 x= 0;
 			var S s{ .x= x, .y= Bar().await };
@@ -865,4 +865,4 @@ def DestroyedVariableStillHaveReferences_ForAwaitOperator_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 23 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 23 ) )

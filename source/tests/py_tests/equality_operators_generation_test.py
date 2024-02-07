@@ -385,7 +385,7 @@ def EqualityOperatorIsNotGenerated_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
 
 
 def EqualityOperatorIsNotGenerated_Test1():
@@ -400,7 +400,7 @@ def EqualityOperatorIsNotGenerated_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
 
 
 def EqualityOperatorIsNotGenerated_Test2():
@@ -422,7 +422,7 @@ def EqualityOperatorIsNotGenerated_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 15 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 15 ) )
 
 
 def EqualityOperatorIsNotGenerated_Test3():
@@ -438,7 +438,7 @@ def EqualityOperatorIsNotGenerated_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "AccessingDeletedMethod", 9 ) )
+	assert( HasError( errors_list, "AccessingDeletedMethod", 9 ) )
 
 
 def EqualityOperatorIsNotGenerated_Test4():
@@ -454,7 +454,7 @@ def EqualityOperatorIsNotGenerated_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "AccessingDeletedMethod", 9 ) )
+	assert( HasError( errors_list, "AccessingDeletedMethod", 9 ) )
 
 
 def EqualityOperatorIsNotGenerated_Test5():
@@ -494,7 +494,7 @@ def EqualityOperatorIsNotGenerated_Test7():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "MethodBodyGenerationFailed", 5 ) )
+	assert( HasError( errors_list, "MethodBodyGenerationFailed", 5 ) )
 
 
 def EqualityOperatorForCompositeValue_Test0():

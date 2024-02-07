@@ -65,7 +65,7 @@ Value CodeBuilder::BuildLambda( NamesScope& names_scope, FunctionContext& functi
 
 					if( !field->is_reference && // No need to destruct reference fields.
 						&capture != &capture_list->back() && // No need to register last one.
-						field->type.HaveDestructor() && // No need to call destructors.
+						field->type.HasDestructor() && // No need to call destructors.
 						init_value.first != nullptr )
 					{
 						// Temportary register field value for destruction,
@@ -295,7 +295,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 	class_->src_loc= lambda.src_loc;
 	class_->kind= Class::Kind::Struct; // Set temporary to struct in order to allow generation of some methods.
 	class_->parents_list_prepared= true;
-	class_->have_explicit_noncopy_constructors= false;
+	class_->has_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
 	class_->can_be_constexpr= false; // Set later.
 	class_->generated_class_data= LambdaClassData{ {}, std::move(template_args) };
@@ -724,7 +724,7 @@ ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names_scope 
 	class_->members->SetClass( class_ );
 	class_->kind= Class::Kind::Struct;
 	class_->parents_list_prepared= true;
-	class_->have_explicit_noncopy_constructors= false;
+	class_->has_explicit_noncopy_constructors= false;
 	class_->is_default_constructible= false;
 	class_->can_be_constexpr= true;
 	class_->generated_class_data= LambdaClassData{};
@@ -943,9 +943,9 @@ Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
-	if( function_context.variables_state.HaveOutgoingLinks( resolved_variable ) )
+	if( function_context.variables_state.HasOutgoingLinks( resolved_variable ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope.GetErrors(), src_loc, resolved_variable->name );
+		REPORT_ERROR( MovedVariableHasReferences, names_scope.GetErrors(), src_loc, resolved_variable->name );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.NodeMoved( resolved_variable ) )

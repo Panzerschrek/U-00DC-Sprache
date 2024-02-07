@@ -962,7 +962,7 @@ def UnsafeLambda_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 5 ) )
 
 
 def LambdaConstexpr_Test0():
@@ -1061,7 +1061,7 @@ def LambdaConstexpr_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
 
 
 def LambdaConstexpr_Test7():
@@ -1075,7 +1075,7 @@ def LambdaConstexpr_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
 
 
 def LambdaConstexpr_Test8():
@@ -1090,7 +1090,7 @@ def LambdaConstexpr_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 7 ) or HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 7 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 7 ) or HasError( errors_list, "VariableInitializerIsNotConstantExpression", 7 ) )
 
 
 def LambdaConstexpr_Test9():
@@ -1104,7 +1104,7 @@ def LambdaConstexpr_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) or HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) or HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
 
 
 def LambdaConstexpr_Test10():
@@ -1460,7 +1460,7 @@ def LambdaMutableThis_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def LambdaMutableThis_Test1():
@@ -1608,7 +1608,7 @@ def LambdaMutableThis_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 11 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 11 ) )
 
 
 def LambdaMutableThis_Test8():
@@ -1634,7 +1634,7 @@ def LambdaMutableThis_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 9 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 9 ) )
 
 
 def LambdaCaptureList_Test0():

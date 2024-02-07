@@ -138,7 +138,7 @@ fn CompareConversions(
 	TemplateSignatureParam& template_param_l,
 	TemplateSignatureParam& template_param_r ) : ConversionsCompareResult
 {
-	// conversions result have more preority. Compare template specialization only if conversions comare results are same.
+	// Conversion result has greater preority. Compare template specialization only if conversions comare results are same.
 
 	auto conversions_compare= CompareConversions( src, dst_left, dst_right );
 	auto template_specialization_compare= CompareTemplateSpecialization( template_param_l, template_param_r );

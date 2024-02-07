@@ -696,7 +696,7 @@ def PrivateMembersNotInherited_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NameNotFound", 11 ) )
+	assert( HasError( errors_list, "NameNotFound", 11 ) )
 
 
 def PrivateMembersNotInherited_Test1():
@@ -736,7 +736,7 @@ def PrivateMembersNotInherited_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NameNotFound", 11 ) )
+	assert( HasError( errors_list, "NameNotFound", 11 ) )
 
 
 def PrivateMembersNotInherited_Test3():
@@ -756,7 +756,7 @@ def PrivateMembersNotInherited_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NameNotFound", 12 ) )
+	assert( HasError( errors_list, "NameNotFound", 12 ) )
 
 
 def PrivateMembersNotInherited_Test4():
@@ -872,7 +872,7 @@ def ThisMethodMustBePublic_ForConstructors_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test1():
@@ -885,7 +885,7 @@ def ThisMethodMustBePublic_ForConstructors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test2():
@@ -898,7 +898,7 @@ def ThisMethodMustBePublic_ForConstructors_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test3():
@@ -911,7 +911,7 @@ def ThisMethodMustBePublic_ForConstructors_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test4():
@@ -924,7 +924,7 @@ def ThisMethodMustBePublic_ForConstructors_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test5():
@@ -937,7 +937,7 @@ def ThisMethodMustBePublic_ForConstructors_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test6():
@@ -950,7 +950,7 @@ def ThisMethodMustBePublic_ForConstructors_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForConstructors_Test7():
@@ -963,7 +963,7 @@ def ThisMethodMustBePublic_ForConstructors_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForDestructors_Test0():
@@ -976,7 +976,7 @@ def ThisMethodMustBePublic_ForDestructors_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForDestructors_Test1():
@@ -989,7 +989,7 @@ def ThisMethodMustBePublic_ForDestructors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForAssignmentOperators_Test0():
@@ -1002,7 +1002,7 @@ def ThisMethodMustBePublic_ForAssignmentOperators_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForAssignmentOperators_Test1():
@@ -1015,7 +1015,7 @@ def ThisMethodMustBePublic_ForAssignmentOperators_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForAssignmentOperators_Test2():
@@ -1028,7 +1028,7 @@ def ThisMethodMustBePublic_ForAssignmentOperators_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForAssignmentOperators_Test3():
@@ -1041,7 +1041,7 @@ def ThisMethodMustBePublic_ForAssignmentOperators_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForEqualityCompareOperators_Test0():
@@ -1054,7 +1054,7 @@ def ThisMethodMustBePublic_ForEqualityCompareOperators_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForEqualityCompareOperators_Test1():
@@ -1067,7 +1067,7 @@ def ThisMethodMustBePublic_ForEqualityCompareOperators_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForEqualityCompareOperators_Test2():
@@ -1080,7 +1080,7 @@ def ThisMethodMustBePublic_ForEqualityCompareOperators_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForEqualityCompareOperators_Test3():
@@ -1093,7 +1093,7 @@ def ThisMethodMustBePublic_ForEqualityCompareOperators_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForOrderCompareOperators_Test0():
@@ -1106,7 +1106,7 @@ def ThisMethodMustBePublic_ForOrderCompareOperators_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForOrderCompareOperators_Test1():
@@ -1119,7 +1119,7 @@ def ThisMethodMustBePublic_ForOrderCompareOperators_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+	assert( HasError( errors_list, "ThisMethodMustBePublic", 5 ) )
 
 
 def ThisMethodMustBePublic_ForOrderCompareOperators_Test2():
@@ -1134,7 +1134,7 @@ def ThisMethodMustBePublic_ForOrderCompareOperators_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TemplateContext", 8 ) )
+	assert( HasError( errors_list, "TemplateContext", 8 ) )
 
 
 def ThisMethodMustBePublic_ForOtherMethods_Test0():

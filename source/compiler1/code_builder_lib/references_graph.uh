@@ -35,11 +35,11 @@ public:
 	fn MoveNode( mut this, VariablePtr& node );
 	fn NodeIsMoved( this, VariablePtr& node ) : bool;
 
-	fn HaveOutgoingLinks( this, VariablePtr& from ) : bool;
-	fn HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool;
+	fn HasOutgoingLinks( this, VariablePtr& from ) : bool;
+	fn HasOutgoingMutableNodes( this, VariablePtr& from ) : bool;
 
-	fn EnsureHaveNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
-	fn EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn EnsureHasNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn EnsureHasNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	type NodesSet= ust::unordered_set</VariablePtr/>;
 	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
@@ -55,11 +55,11 @@ public:
 private:
 	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes );
 
-	fn HaveDirectOutgoingLinks( this, VariablePtr& from ) : bool;
-	fn HaveOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool;
+	fn HasDirectOutgoingLinks( this, VariablePtr& from ) : bool;
+	fn HasOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool;
 
-	fn HaveDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
-	fn HaveOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
+	fn HasDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
+	fn HasOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
 
 	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 

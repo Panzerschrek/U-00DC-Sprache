@@ -343,7 +343,7 @@ size_t Interpreter::MoveConstantToStack( const llvm::Constant& constant )
 	llvm::Type* const constant_type= constant.getType();
 
 	if( !constant_type->isSized() )
-		return 0u; // Constant have incomplete type.
+		return 0u; // Constant has incomplete type.
 
 	// Use separate stack for constants, because we can push constants to it in any time.
 

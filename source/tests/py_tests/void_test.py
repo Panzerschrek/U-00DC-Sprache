@@ -228,7 +228,7 @@ def VoidTypeIsConstexpr_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
 
 
 def VoidTypeIsConstexpr_Test56():
@@ -329,8 +329,8 @@ def VoidEqualityCompare_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
 
 
 def VoidOrderCompare_Test0():
@@ -342,7 +342,7 @@ def VoidOrderCompare_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def VoidOrderCompare_Test1():
@@ -354,7 +354,7 @@ def VoidOrderCompare_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def ArithmeticOperatorForVoid_Test0():
@@ -366,7 +366,7 @@ def ArithmeticOperatorForVoid_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def ArithmeticOperatorForVoid_Test1():
@@ -378,7 +378,7 @@ def ArithmeticOperatorForVoid_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def ArithmeticOperatorForVoid_Test2():
@@ -390,7 +390,7 @@ def ArithmeticOperatorForVoid_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def BitwiseOperatorForVoid_Test0():
@@ -402,7 +402,7 @@ def BitwiseOperatorForVoid_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def BitwiseOperatorForVoid_Test1():
@@ -414,4 +414,4 @@ def BitwiseOperatorForVoid_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )

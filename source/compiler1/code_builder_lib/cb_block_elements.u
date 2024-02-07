@@ -14,7 +14,7 @@ fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, Fun
 	var BlockElementBuildInfo mut block_element_build_info;
 	foreach( &block_element : elements )
 	{
-		if( block_element_build_info.have_terminal_instruction_inside )
+		if( block_element_build_info.has_terminal_instruction_inside )
 		{
 			REPORT_ERROR( UnreachableCode, names_scope, Synt::GetSrcLoc(block_element) )
 		}
@@ -24,7 +24,7 @@ fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, Fun
 		variant_visit( &el : block_element )
 		{
 			auto info = BuildBlockElement( names_scope, function_context, el );
-			block_element_build_info.have_terminal_instruction_inside |= info.have_terminal_instruction_inside;
+			block_element_build_info.has_terminal_instruction_inside |= info.has_terminal_instruction_inside;
 		}
 	}
 
@@ -48,7 +48,7 @@ fn CodeBuilder::BuildBlockImpl( mut this, NamesScopePtr& names_scope, FunctionCo
 	auto prev_debug_info_block= debug_info_builder_.try_deref().StartBlock( function_context, block.src_loc );
 
 	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements.range() );
-	if( !block_element_build_info.have_terminal_instruction_inside )
+	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, block.end_src_loc );
 	}
@@ -97,7 +97,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	else if( scope_block.safety == Synt::ScopeBlock::Safety::Unsafe )
 	{
 		function_context.is_in_unsafe_block=  true;
-		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+		function_context.has_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 	}
 
 	var LLVMBasicBlockRef mut break_block= LLVMBasicBlockRef::Null;
@@ -112,7 +112,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( break_block != LLVMBasicBlockRef::Null )
 	{
 		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
-		if( !block_element_build_info.have_terminal_instruction_inside )
+		if( !block_element_build_info.has_terminal_instruction_inside )
 		{
 			references_graphs_for_merge.push_back( function_context.references_graph );
 		}
@@ -121,14 +121,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		function_context.loops_stack.pop_back();
 
-		if( !block_element_build_info.have_terminal_instruction_inside )
+		if( !block_element_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, break_block ) );
 		}
 
-		block_element_build_info.have_terminal_instruction_inside= references_graphs_for_merge.empty();
+		block_element_build_info.has_terminal_instruction_inside= references_graphs_for_merge.empty();
 
-		if( !block_element_build_info.have_terminal_instruction_inside )
+		if( !block_element_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, break_block ) );
 			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, break_block ) );
@@ -184,7 +184,7 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 
 	if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
 	{
-		function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+		function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 	}
 
 	var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
@@ -441,7 +441,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 
 		if( !expr.t.CanBeConstexpr() )
 		{
-			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 		}
 
 		auto mut llvm_value= LLVMValueRef::Null;
@@ -554,7 +554,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			self.BuildReturnOperatorImpl( names_scope, function_context, return_operator );
 		} );
-	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 	return block_element_build_info;
 }
 
@@ -892,7 +892,7 @@ fn CodeBuilder::BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scop
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.src_loc )
 			return;
 		}
-		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_ptr, names_scope, assignment_operator.src_loc );
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_ptr, names_scope, assignment_operator.src_loc );
 
 		CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
 	}
@@ -940,7 +940,7 @@ fn CodeBuilder::BuildAdditiveAssignmentOperatorImpl( mut this, NamesScopePtr& na
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.src_loc )
 			return;
 		}
-		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, additive_assignment_operator.src_loc );
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, additive_assignment_operator.src_loc );
 
 		auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, additive_assignment_operator.operator, additive_assignment_operator.src_loc );
 		auto op_result_variable_ptr_ref= op_result.get</VariablePtr/>();
@@ -1066,7 +1066,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( if_operator.alternative.empty() )
 	{
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
 			references_graphs.push_back( function_context.references_graph );
@@ -1074,7 +1074,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		references_graphs.push_back( move(references_graph_before_branching) );
 
-		block_element_build_info.have_terminal_instruction_inside= false;
+		block_element_build_info.has_terminal_instruction_inside= false;
 
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
@@ -1083,7 +1083,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
 			references_graphs.push_back( function_context.references_graph );
@@ -1096,16 +1096,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.references_graph= move(references_graph_before_branching);
 		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_operator.alternative.try_deref() );
 
-		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
 			references_graphs.push_back( function_context.references_graph );
 		}
 
-		block_element_build_info.have_terminal_instruction_inside=
-			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
+		block_element_build_info.has_terminal_instruction_inside=
+			if_block_build_info.has_terminal_instruction_inside && alternative_block_build_info.has_terminal_instruction_inside;
 
-		if( !block_element_build_info.have_terminal_instruction_inside )
+		if( !block_element_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
 			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if ) );
@@ -1274,7 +1274,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	if( !result_type.CanBeConstexpr() )
 	{
-		function_context.have_non_constexpr_operations_inside= true;
+		function_context.has_non_constexpr_operations_inside= true;
 	}
 
 	// TODO - try to avoid using so long lambda here.
@@ -1443,7 +1443,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 			// Reuse names scope of the variable for the block.
 			if_block_build_info= self.BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.deref().elements.range() );
-			if( !if_block_build_info.have_terminal_instruction_inside )
+			if( !if_block_build_info.has_terminal_instruction_inside )
 			{
 				// Destroy coro result variable.
 				self.CallDestructorsForTopVariablesFrame( variable_names_scope, function_context, if_coro_advance_operator.src_loc );
@@ -1458,7 +1458,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	if( if_coro_advance_operator.alternative.empty() )
 	{
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
 			references_graphs.push_back( function_context.references_graph );
@@ -1466,7 +1466,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 		references_graphs.push_back( move(references_graph_before_branching) );
 
-		block_element_build_info.have_terminal_instruction_inside= false;
+		block_element_build_info.has_terminal_instruction_inside= false;
 
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
@@ -1478,7 +1478,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "after_if_coro_advance\0"[0] ) );
 
-		if( !if_block_build_info.have_terminal_instruction_inside )
+		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
 			// Destroy temporarie in coroutine expression.
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
@@ -1498,16 +1498,16 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_coro_advance_operator.alternative.try_deref() );
 
-		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
 			references_graphs.push_back( function_context.references_graph );
 		}
 
-		block_element_build_info.have_terminal_instruction_inside=
-			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
+		block_element_build_info.has_terminal_instruction_inside=
+			if_block_build_info.has_terminal_instruction_inside && alternative_block_build_info.has_terminal_instruction_inside;
 
-		if( !block_element_build_info.have_terminal_instruction_inside )
+		if( !block_element_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
 			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if ) );
@@ -2008,7 +2008,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.references_graph= references_graph_before_branching;
 		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block.deref() );
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
 			breances_states_after_case.push_back( function_context.references_graph );
@@ -2039,7 +2039,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.references_graph= references_graph_before_branching;
 		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, default_branch_synt_block.try_deref() );
 
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
 			breances_states_after_case.push_back( function_context.references_graph );
@@ -2069,7 +2069,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( all_branches_are_terminal )
 	{
-		block_build_info.have_terminal_instruction_inside= true;
+		block_build_info.has_terminal_instruction_inside= true;
 		// There is no reason to merge variables state here.
 
 		unsafe( LLVMBuildUnreachable( function_context.llvm_ir_builder ) );
@@ -2135,7 +2135,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	auto info= BuildBlock( names_scope, function_context, while_operator.block.deref() );
-	if( !info.have_terminal_instruction_inside )
+	if( !info.has_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
 		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
@@ -2181,7 +2181,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block ) );
 
 	auto loop_info= BuildBlock( names_scope, function_context, loop_operator.block.deref() );
-	if( !loop_info.have_terminal_instruction_inside )
+	if( !loop_info.has_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
 		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
@@ -2201,8 +2201,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
 	// Any code, that follows infinite loop without "break" inside is unreachable.
-	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= references_graphs_for_merge.empty() };
-	if( !block_element_build_info.have_terminal_instruction_inside )
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= references_graphs_for_merge.empty() };
+	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
 		// Block after loop code.
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop ) );
@@ -2386,7 +2386,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 					// Reuse names scope of tuple element variable for the block.
 					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.deref().elements.range() );
-					if( !block_build_info.have_terminal_instruction_inside )
+					if( !block_build_info.has_terminal_instruction_inside )
 					{
 						self.CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc ); // destroy loop variable
 						function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
@@ -2457,7 +2457,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 		}
 		else
 		{
-			block_element_build_info.have_terminal_instruction_inside= true;
+			block_element_build_info.has_terminal_instruction_inside= true;
 		}
 	}
 	else
@@ -2466,7 +2466,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, sequence_expression.t )
 	}
 
-	if( !block_element_build_info.have_terminal_instruction_inside )
+	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc );
 	}
@@ -2555,7 +2555,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	}
 
 	auto info= BuildBlock( names_scope, function_context, c_style_for_operator.block.deref() );
-	if( !info.have_terminal_instruction_inside )
+	if( !info.has_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block ) );
 		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
@@ -2613,7 +2613,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
 {
-	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 
 	var size_type frame_index= FetchLoopFrame( names_scope, function_context, break_operator.label_ );
 	if( frame_index >= function_context.loops_stack.size() )
@@ -2634,7 +2634,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
 {
-	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 
 	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
 	if( frame_index >= function_context.loops_stack.size() )
@@ -2741,7 +2741,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 
 		if( !expr.t.CanBeConstexpr() )
 		{
-			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 		}
 
 		auto mut llvm_value= LLVMValueRef::Null;
@@ -2845,7 +2845,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	// Build block. Reuse scope of with variable for this block.
 	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.deref().elements.range() );
 
-	if( !block_element_build_info.have_terminal_instruction_inside )
+	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
 		// Destroy "with" variable and linked temporaries.
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, with_operator.src_loc );
@@ -2939,7 +2939,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	ust::ignore_unused( names_scope );
 	ust::ignore_unused( halt_ );
 
-	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 
 	unsafe
 	{
@@ -3121,7 +3121,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
 		return;
 	}
-	function_context.references_graph.EnsureHaveNoOutgoingLinks( variable_ptr, names_scope, src_loc );
+	function_context.references_graph.EnsureHasNoOutgoingLinks( variable_ptr, names_scope, src_loc );
 
 	// Try process overloaded operator.
 	if( ! variable.t.GetClassType().empty() )
@@ -3139,7 +3139,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 
 			if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 			{
-				function_context.have_non_constexpr_operations_inside= true;
+				function_context.has_non_constexpr_operations_inside= true;
 			}
 
 			with( mut lock : overloaded_operator.llvm_function.lock_mut() )

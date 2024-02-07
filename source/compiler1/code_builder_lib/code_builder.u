@@ -1540,7 +1540,7 @@ fn CodeBuilder::BuildFuncCode(
 
 		// Reuse names scope of args for root function block.
 		auto block_build_info= BuildBlockElements( args_names_scope_ptr, function_context, block.elements.range() );
-		if( !block_build_info.have_terminal_instruction_inside )
+		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			if( func_variable.kind == FunctionVariable::Kind::Generator )
 			{
@@ -1641,7 +1641,7 @@ fn CodeBuilder::BuildFuncCode(
 			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
-		else if( function_context.have_non_constexpr_operations_inside )
+		else if( function_context.has_non_constexpr_operations_inside )
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
 			{
@@ -1939,13 +1939,13 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 		// Call destructors for variables, but not for references.
 		if( variable.value_type == ValueType::Value )
 		{
-			if( function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
+			if( function_context.references_graph.HasOutgoingLinks( variable_ptr ) )
 			{
-				REPORT_ERROR( DestroyedVariableStillHaveReferences, names_scope, src_loc, variable.name )
+				REPORT_ERROR( DestroyedVariableStillHasReferences, names_scope, src_loc, variable.name )
 			}
 			if( !function_context.references_graph.NodeIsMoved( variable_ptr ) )
 			{
-				if( variable.t.HaveDestructor() )
+				if( variable.t.HasDestructor() )
 				{
 					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 				}
@@ -2015,12 +2015,12 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 					++i_dst;
 				}
 			}
-			else if( variable.value_type != ValueType::Value || !function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
+			else if( variable.value_type != ValueType::Value || !function_context.references_graph.HasOutgoingLinks( variable_ptr ) )
 			{
 				// Emit destructions call code only if it is a non-moved variable.
 				if( variable.value_type == ValueType::Value && !function_context.is_functionless_context && !function_context.references_graph.NodeIsMoved( variable_ptr ) )
 				{
-					if( variable.llvm_value != LLVMValueRef::Null && variable.t.HaveDestructor() )
+					if( variable.llvm_value != LLVMValueRef::Null && variable.t.HasDestructor() )
 					{
 						BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 					}

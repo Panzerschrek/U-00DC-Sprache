@@ -10,7 +10,7 @@ def InClassFieldInitializerCheck_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NameNotFound", 4 ) )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
 
 
 def InClassFieldInitializerCheck_Test1():
@@ -99,7 +99,7 @@ def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test0():
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 5 ) )
+	assert( HasError( errors_list, "ClassFieldAccessInStaticMethod", 5 ) )
 
 
 def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test1():
@@ -111,4 +111,4 @@ def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test1():
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ClassFieldAccessInStaticMethod", 4 ) )
+	assert( HasError( errors_list, "ClassFieldAccessInStaticMethod", 4 ) )

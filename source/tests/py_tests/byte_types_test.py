@@ -106,10 +106,10 @@ def ByteTypesConstruction_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 5 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 8 ) )
+	assert( HasError( errors_list, "TypesMismatch", 5 ) )
+	assert( HasError( errors_list, "TypesMismatch", 6 ) )
+	assert( HasError( errors_list, "TypesMismatch", 7 ) )
+	assert( HasError( errors_list, "TypesMismatch", 8 ) )
 
 
 def ByteTypesBitCast_Test0():
@@ -150,12 +150,12 @@ def ByteTypesNonexistentOperations_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 12 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 11 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 12 ) )
 
 
 def ByteTypesNonexistentOperations_Test1():
@@ -174,12 +174,12 @@ def ByteTypesNonexistentOperations_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 12 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 11 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 12 ) )
 
 
 def ByteTypesNonexistentOperations_Test2():
@@ -199,13 +199,13 @@ def ByteTypesNonexistentOperations_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 12 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 13 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 11 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 12 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 13 ) )
 
 
 def ByteTypesNonexistentOperations_Test3():
@@ -219,8 +219,8 @@ def ByteTypesNonexistentOperations_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ArraySizeIsNotInteger", 2 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
+	assert( HasError( errors_list, "ArraySizeIsNotInteger", 2 ) )
+	assert( HasError( errors_list, "TypesMismatch", 7 ) )
 
 
 def ByteTypesNonexistentOperations_Test3():
@@ -238,11 +238,11 @@ def ByteTypesNonexistentOperations_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 11 ) )
 
 
 def ByteTypesNonexistentOperations_Test4():
@@ -260,10 +260,10 @@ def ByteTypesNonexistentOperations_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 5 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 10 ) )
-	assert( HaveError( errors_list, "TypesMismatch", 11 ) )
+	assert( HasError( errors_list, "TypesMismatch", 5 ) )
+	assert( HasError( errors_list, "TypesMismatch", 7 ) )
+	assert( HasError( errors_list, "TypesMismatch", 10 ) )
+	assert( HasError( errors_list, "TypesMismatch", 11 ) )
 
 
 def ByteTypesEqualityCompare_Test0():
@@ -409,7 +409,7 @@ def ByteTypesFields_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedInitializer", 10 ) )
+	assert( HasError( errors_list, "ExpectedInitializer", 10 ) )
 
 
 def ByteTypesTypeinfo_Test0():
@@ -527,4 +527,4 @@ def ByteTypeCanNotBeEnumUnderlyingType_Test0():
 		enum E : byte32 { A, B, C }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
+	assert( HasError( errors_list, "TypesMismatch", 2 ) )

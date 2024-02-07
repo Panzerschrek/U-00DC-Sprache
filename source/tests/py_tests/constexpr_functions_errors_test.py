@@ -81,7 +81,7 @@ def ConstexprFunctionCanNotBeVirtual_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstexprFunctionCanNotBeVirtual", 4 ) )
+	assert( HasError( errors_list, "ConstexprFunctionCanNotBeVirtual", 4 ) )
 
 
 def ConstexprFunctionCanNotBeVirtual_Test1():
@@ -92,7 +92,7 @@ def ConstexprFunctionCanNotBeVirtual_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstexprFunctionCanNotBeVirtual", 4 ) )
+	assert( HasError( errors_list, "ConstexprFunctionCanNotBeVirtual", 4 ) )
 
 
 def InvalidTypeForConstexprFunction_Test1():
@@ -301,7 +301,7 @@ def ConstexprCallLoop_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstexprFunctionEvaluationError", 8 ) )
+	assert( HasError( errors_list, "ConstexprFunctionEvaluationError", 8 ) )
 	for error in errors_list:
 		if error.error_code == "ConstexprFunctionEvaluationError":
 			assert( error.text.find( "executing incomplete function" ) != -1 )

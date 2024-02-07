@@ -146,7 +146,7 @@ U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable, 5u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable, 5u ) );
 }
 
 U_TEST( ConstantExpressionResultIsUndefinedTest0 )
@@ -349,11 +349,11 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 5u );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  6u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  7u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  9u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  9u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds, 10u ) );
 }
 
 } // namespace

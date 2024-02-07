@@ -239,7 +239,7 @@ U_TEST( NameNotFound_ForTypeAliasTemplate_Test1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
 
 U_TEST( TemplateArgumentNotUsedInSignature_ForTypeAliasTemplate_Test0 )

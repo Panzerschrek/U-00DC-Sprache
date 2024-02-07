@@ -72,4 +72,4 @@ def AutoConstexprFunctionTemplate_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 13 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 13 ) )

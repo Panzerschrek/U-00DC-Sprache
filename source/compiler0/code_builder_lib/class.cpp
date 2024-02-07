@@ -27,13 +27,13 @@ void Class::SetMemberVisibility( const std::string_view member_name, const Class
 	members_visibility[ StringViewToStringRef(member_name) ]= visibility;
 }
 
-bool Class::HaveAncestor( const ClassPtr class_ ) const
+bool Class::HasAncestor( const ClassPtr class_ ) const
 {
 	for( const auto& parent : parents )
 	{
 		if( parent.class_ == class_ )
 			return true;
-		if( parent.class_->HaveAncestor( class_ ) )
+		if( parent.class_->HasAncestor( class_ ) )
 			return true;
 	}
 	return false;

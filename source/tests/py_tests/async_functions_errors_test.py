@@ -11,7 +11,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
 
 
 def ReturningUnallowedReference_ForAsyncReturn_Test1():
@@ -25,7 +25,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
 
 
 def ReturningUnallowedReference_ForAsyncReturn_Test2():
@@ -38,8 +38,8 @@ def ReturningUnallowedReference_ForAsyncReturn_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 5 ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 5 ) )
 
 
 def ReturningUnallowedReference_ForAsyncReturn_Test3():
@@ -55,7 +55,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 8 ) )
 
 
 def ReturningUnallowedReference_ForAsyncReturn_Test4():
@@ -71,8 +71,8 @@ def ReturningUnallowedReference_ForAsyncReturn_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReturningUnallowedReference", 8 ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 8 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():
@@ -83,7 +83,7 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
+	assert( HasError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test1():
@@ -95,7 +95,7 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
+	assert( HasError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test2():
@@ -106,7 +106,7 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
+	assert( HasError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test3():
@@ -117,7 +117,7 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
+	assert( HasError( errors_list, "NoReturnInFunctionReturningNonVoid", 4 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test4():
@@ -129,7 +129,7 @@ def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
+	assert( HasError( errors_list, "NoReturnInFunctionReturningNonVoid", 5 ) )
 
 
 def TypesMismatch_ForAsyncFunctionReturn_Test0():
@@ -141,7 +141,7 @@ def TypesMismatch_ForAsyncFunctionReturn_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def TypesMismatch_ForAsyncFunctionReturn_Test1():
@@ -153,7 +153,7 @@ def TypesMismatch_ForAsyncFunctionReturn_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def TypesMismatch_ForAsyncFunctionReturn_Test2():
@@ -165,7 +165,7 @@ def TypesMismatch_ForAsyncFunctionReturn_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def TypesMismatch_ForAsyncFunctionReturn_Test3():
@@ -177,7 +177,7 @@ def TypesMismatch_ForAsyncFunctionReturn_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def ExpectedReferenceValue_ForAsyncFunctionReturn_Test0():
@@ -189,7 +189,7 @@ def ExpectedReferenceValue_ForAsyncFunctionReturn_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )
 
 
 def BindingConstReferenceToNonconstReference_ForAsyncFunctionReturn_Test0():
@@ -201,7 +201,7 @@ def BindingConstReferenceToNonconstReference_ForAsyncFunctionReturn_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
 
 
 def NonEmptyYieldInAsyncFunction_Test0():
@@ -214,7 +214,7 @@ def NonEmptyYieldInAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonEmptyYieldInAsyncFunction", 4 ) )
+	assert( HasError( errors_list, "NonEmptyYieldInAsyncFunction", 4 ) )
 
 
 def NonEmptyYieldInAsyncFunction_Test1():
@@ -227,7 +227,7 @@ def NonEmptyYieldInAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonEmptyYieldInAsyncFunction", 4 ) )
+	assert( HasError( errors_list, "NonEmptyYieldInAsyncFunction", 4 ) )
 
 
 def NonEmptyYieldInAsyncFunction_Test2():
@@ -241,7 +241,7 @@ def NonEmptyYieldInAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonEmptyYieldInAsyncFunction", 5 ) )
+	assert( HasError( errors_list, "NonEmptyYieldInAsyncFunction", 5 ) )
 
 
 def AutoReturnCoroutine_ForAsyncFunction_Test0():
@@ -250,7 +250,7 @@ def AutoReturnCoroutine_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AutoReturnCoroutine", 2 ) )
+	assert( HasError( errors_list, "AutoReturnCoroutine", 2 ) )
 
 
 def CoroutineSpecialMethod_ForAsyncFunction_Test0():
@@ -263,8 +263,8 @@ def CoroutineSpecialMethod_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineSpecialMethod", 4 ) )
-	assert( HaveError( errors_list, "CoroutineSpecialMethod", 5 ) )
+	assert( HasError( errors_list, "CoroutineSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "CoroutineSpecialMethod", 5 ) )
 
 
 def CoroutineSpecialMethod_ForAsyncFunction_Test1():
@@ -276,7 +276,7 @@ def CoroutineSpecialMethod_ForAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineSpecialMethod", 4 ) )
+	assert( HasError( errors_list, "CoroutineSpecialMethod", 4 ) )
 
 
 def ReferencesPollution_ForAsyncFunction_Test2():
@@ -287,7 +287,7 @@ def ReferencesPollution_ForAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NotImplemented", 4 ) )
+	assert( HasError( errors_list, "NotImplemented", 4 ) )
 
 
 def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test0():
@@ -296,7 +296,7 @@ def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
+	assert( HasError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
 def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test1():
@@ -305,7 +305,7 @@ def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
+	assert( HasError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
 def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test2():
@@ -331,7 +331,7 @@ def VirtualAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VirtualCoroutine", 4 ) )
+	assert( HasError( errors_list, "VirtualCoroutine", 4 ) )
 
 
 def CoroutineNonSyncRequired_ForAsyncFunction_Test0():
@@ -341,7 +341,7 @@ def CoroutineNonSyncRequired_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_ForAsyncFunction_Test1():
@@ -351,7 +351,7 @@ def CoroutineNonSyncRequired_ForAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_ForAsyncFunction_Test2():
@@ -361,7 +361,7 @@ def CoroutineNonSyncRequired_ForAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_ForAsyncFunction_Test3():
@@ -371,7 +371,7 @@ def CoroutineNonSyncRequired_ForAsyncFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
 
 
 def CoroutineNonSyncRequired_ForAsyncFunction_Test4():
@@ -393,7 +393,7 @@ def CoroutineMismatch_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 2 ) or HasError( errors_list, "CoroutineMismatch", 3 ) )
 
 
 def CoroutineMismatch_ForAsyncFunction_Test1():
@@ -403,7 +403,7 @@ def CoroutineMismatch_ForAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 2 ) or HaveError( errors_list, "CoroutineMismatch", 3 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 2 ) or HasError( errors_list, "CoroutineMismatch", 3 ) )
 
 
 def CoroutineMismatch_ForAsyncFunction_Test2():
@@ -417,7 +417,7 @@ def CoroutineMismatch_ForAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 4 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 4 ) or HasError( errors_list, "CoroutineMismatch", 7 ) )
 
 
 def CoroutineMismatch_ForAsyncFunction_Test3():
@@ -431,7 +431,7 @@ def CoroutineMismatch_ForAsyncFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CoroutineMismatch", 5 ) or HaveError( errors_list, "CoroutineMismatch", 7 ) )
+	assert( HasError( errors_list, "CoroutineMismatch", 5 ) or HasError( errors_list, "CoroutineMismatch", 7 ) )
 
 
 def AsyncReturn_ForNonCopyableValue_Test0():
@@ -449,7 +449,7 @@ def AsyncReturn_ForNonCopyableValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
 def AsyncReturn_ForAbstractValue_Test0():
@@ -465,7 +465,7 @@ def AsyncReturn_ForAbstractValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+	assert( HasError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test0():
@@ -479,7 +479,7 @@ def AsyncFunctionIsNonCopyable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test1():
@@ -493,7 +493,7 @@ def AsyncFunctionIsNonCopyable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test2():
@@ -507,7 +507,7 @@ def AsyncFunctionIsNonCopyable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ClassHaveNoConstructors", 6 ) or HaveError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
+	assert( HasError( errors_list, "ClassHasNoConstructors", 6 ) or HasError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test3():
@@ -522,7 +522,7 @@ def AsyncFunctionIsNonCopyable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test4():
@@ -536,7 +536,7 @@ def AsyncFunctionIsNonCopyable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test5():
@@ -551,7 +551,7 @@ def AsyncFunctionIsNonCopyable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test6():
@@ -565,7 +565,7 @@ def AsyncFunctionIsNonCopyable_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test7():
@@ -580,7 +580,7 @@ def AsyncFunctionIsNonCopyable_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 
 
 def AsyncFunctionIsNonCopyable_Test8():
@@ -592,7 +592,7 @@ def AsyncFunctionIsNonCopyable_Test8():
 	tests_lib.build_program( c_program_text )
 
 
-def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test0():
+def DestroyedVariableStillHasReferences_ForAsyncFunction_Test0():
 	c_program_text= """
 		fn async SomeFunc( i32& x );
 		fn Foo()
@@ -602,10 +602,10 @@ def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 5 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test1():
+def DestroyedVariableStillHasReferences_ForAsyncFunction_Test1():
 	c_program_text= """
 		fn async SomeFunc( f32& x );
 		fn Bar() : f32;
@@ -616,10 +616,10 @@ def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 6 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test2():
+def DestroyedVariableStillHasReferences_ForAsyncFunction_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		fn async SomeFunc( S s );
@@ -632,10 +632,10 @@ def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
-def DestroyedVariableStillHaveReferences_ForAsyncFunction_Test3():
+def DestroyedVariableStillHasReferences_ForAsyncFunction_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
 		fn async SomeFunc( S s );

@@ -32,8 +32,8 @@ class Type;
 
 enum class InnerReferenceKind : uint8_t
 {
-	Imut, // Type have immutable inner reference
-	Mut, // Type have mutable inner reference
+	Imut, // Type has immutable inner reference
+	Mut, // Type has mutable inner reference
 };
 
 // Observer pointer to class.
@@ -99,7 +99,7 @@ public:
 	bool IsCopyConstructible() const;
 	bool IsCopyAssignable() const;
 	bool IsEqualityComparable() const;
-	bool HaveDestructor() const;
+	bool HasDestructor() const;
 	bool CanBeConstexpr() const;
 	bool IsAbstract() const;
 

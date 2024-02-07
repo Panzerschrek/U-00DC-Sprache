@@ -136,7 +136,7 @@ U_TEST(FieldIsNotInitializedYetTest0)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FieldIsNotInitializedYet, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::FieldIsNotInitializedYet, 7u ) );
 }
 
 U_TEST(FieldIsNotInitializedYetTest1)
@@ -154,7 +154,7 @@ U_TEST(FieldIsNotInitializedYetTest1)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FieldIsNotInitializedYet, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::FieldIsNotInitializedYet, 6u ) );
 }
 
 U_TEST(FieldIsNotInitializedYetTest2)
@@ -175,7 +175,7 @@ U_TEST(FieldIsNotInitializedYetTest2)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FieldIsNotInitializedYet, 10u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::FieldIsNotInitializedYet, 10u ) );
 }
 
 U_TEST(MethodsCallInConstructorInitializerListIsForbiddenTest0)
@@ -194,7 +194,7 @@ U_TEST(MethodsCallInConstructorInitializerListIsForbiddenTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 7u ) );
 }
 
 U_TEST( ThisUnavailable_InConstructors_Test0 )
@@ -213,7 +213,7 @@ U_TEST( ThisUnavailable_InConstructors_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 6u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 6u ) );
 }
 
 U_TEST( ThisUnavailable_InConstructors_Test1 )
@@ -233,7 +233,7 @@ U_TEST( ThisUnavailable_InConstructors_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ThisUnavailable, 7u ) );
 }
 
 U_TEST( ExpectedInitializer_InConstructors_Test0 )

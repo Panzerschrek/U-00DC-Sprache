@@ -20,7 +20,7 @@ U_TEST( BasicReferenceInVariableCheck )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( DestructionOfVariableWithReferenceDestroysReference )
@@ -321,8 +321,8 @@ U_TEST( ReturnReferenceToLocalVariableInsideStruct )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 8u ) );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 8u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHasReferences, 8u ) );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
@@ -411,7 +411,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 16u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 16u ) );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
@@ -480,7 +480,7 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
 }
 
 U_TEST( TwoLevelsOfIndirection_Test1 )
@@ -494,7 +494,7 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
 }
 
 U_TEST( ReferencePollutionTest0 )
@@ -802,7 +802,7 @@ U_TEST( CopyAssignmentOperator_PollutionTest )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
@@ -836,7 +836,7 @@ U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArgReferencePollution, 4u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArgReferencePollution, 4u ) );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
@@ -884,7 +884,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
@@ -1029,7 +1029,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
@@ -1058,7 +1058,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
@@ -1090,7 +1090,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
@@ -1116,7 +1116,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
@@ -1143,7 +1143,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
@@ -1169,7 +1169,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHasReferences );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 

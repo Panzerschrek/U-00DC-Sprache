@@ -497,7 +497,7 @@ U_TEST(DuplicatedStructMemberInitializerTest1)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
-U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0)
+U_TEST(InitializerDisabledBecauseClassHasExplicitNoncopyConstructorsTest0)
 {
 	// Struct named initializer for struct with constructor.
 	static const char c_program_text[]=
@@ -518,11 +518,11 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHasExplicitNoncopyConstructors );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
-U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
+U_TEST(InitializerDisabledBecauseClassHasExplicitNoncopyConstructorsTest1)
 {
 	// Zero-initializer for struct with copy-constructor.
 	static const char c_program_text[]=
@@ -543,11 +543,11 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHasExplicitNoncopyConstructors );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
-U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest2)
+U_TEST(InitializerDisabledBecauseClassHasExplicitNoncopyConstructorsTest2)
 {
 	static const char c_program_text[]=
 	R"(
@@ -568,7 +568,7 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHasExplicitNoncopyConstructors );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
@@ -839,7 +839,7 @@ U_TEST(TuplesInitializersErrors_Test2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHasExplicitNoncopyConstructors );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 

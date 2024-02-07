@@ -197,7 +197,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 					REPORT_ERROR( BodyForPureVirtualFunction, errors_container, src_loc, function_name );
 				if( function_name == Keyword( Keywords::destructor_ ) )
 					REPORT_ERROR( PureDestructor, errors_container, src_loc, the_class.members->GetThisNamespaceName() );
-				function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
+				function.has_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
 				function.virtual_table_index= uint32_t(the_class.virtual_table.size());
 

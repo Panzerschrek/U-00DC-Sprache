@@ -82,7 +82,7 @@ U_TEST( IfMergeTest2_MutablePollutionSelectedAsResult )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
 }
 
 U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
@@ -274,7 +274,7 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
 }
 
 U_TEST( IfMergeTest10_TerminalBranchesAreIgnored0 )
@@ -381,7 +381,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop1 )
@@ -404,7 +404,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop2 )
@@ -444,7 +444,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 11u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop4 )
@@ -465,7 +465,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop4 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 11u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop5 )
@@ -557,7 +557,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop7 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop8 )
@@ -585,7 +585,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop8 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop9 )
@@ -614,7 +614,7 @@ U_TEST( WhileMergeTest_PollutionInsideLoop9 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
 }
 
 U_TEST( WhileMergeTest_PollutionInsideLoop10 )
@@ -672,8 +672,8 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 14u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 17u ) );
+		HasError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 14u ) ||
+		HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 17u ) );
 }
 
 U_TEST( WhileMergeTest_TryMutateVariable )
@@ -701,8 +701,8 @@ U_TEST( WhileMergeTest_TryMutateVariable )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 13u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 16u ));
+		HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 13u ) ||
+		HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 16u ));
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
@@ -725,7 +725,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop1 )
@@ -748,7 +748,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop2 )
@@ -790,7 +790,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
@@ -813,7 +813,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop4 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
@@ -835,7 +835,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop5 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
@@ -857,7 +857,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop6 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 12u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop7 )
@@ -950,7 +950,7 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop9 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop10 )
@@ -1024,7 +1024,7 @@ U_TEST( TupleForMegeTest0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
 }
 
 U_TEST( TupleForMegeTest1 )
@@ -1097,7 +1097,7 @@ U_TEST( TupleForMegeTest3 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
 }
 
 U_TEST( TupleForMegeTest4 )

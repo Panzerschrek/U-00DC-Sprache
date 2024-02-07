@@ -46,7 +46,7 @@ def NonSyncTagDependencyLoop_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) or HaveError( errors_list, "GlobalsLoopDetected", 3 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) or HasError( errors_list, "GlobalsLoopDetected", 3 ) )
 
 
 def NonSyncTagDependencyLoop_Test1():
@@ -55,7 +55,7 @@ def NonSyncTagDependencyLoop_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
 
 
 def NonSyncTagDependencyLoop_Test2():
@@ -65,7 +65,7 @@ def NonSyncTagDependencyLoop_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "GlobalsLoopDetected", 3 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 3 ) )
 
 
 def NonSyncTagAdditionInInheritance_Test0():

@@ -539,7 +539,7 @@ fn Type::IsEqualityComparable( this ) : bool
 	return false;
 }
 
-fn Type::HaveDestructor( this ) : bool
+fn Type::HasDestructor( this ) : bool
 {
 	if_var( &class_type_ptr : GetClassType() )
 	{
@@ -548,11 +548,11 @@ fn Type::HaveDestructor( this ) : bool
 	}
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_type.HaveDestructor();
+		return array_type.element_type.HasDestructor();
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		return tuple_type.element_types.iter().any( HaveDestructor );
+		return tuple_type.element_types.iter().any( HasDestructor );
 	}
 
 	return false;

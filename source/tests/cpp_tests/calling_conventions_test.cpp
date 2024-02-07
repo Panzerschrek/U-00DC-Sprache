@@ -215,7 +215,7 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test0)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 3 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 3 ) );
 }
 
 U_TEST(CallingConventionMakesFunctionTypeDifferent_Test1)
@@ -230,7 +230,7 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test1)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 4 ) );
 }
 
 U_TEST(CallingConventionMakesFunctionTypeDifferent_Test2)
@@ -245,8 +245,8 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test2)
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 2 ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 3 ) );
+		HasError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 2 ) ||
+		HasError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 3 ) );
 }
 
 U_TEST(CallingConventionMakesFunctionTypeDifferent_Test3)
@@ -260,7 +260,7 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test3)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 3 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 3 ) );
 }
 
 U_TEST(CallingConventionMakesFunctionTypeDifferent_Test4)
@@ -274,7 +274,7 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test4)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 3 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 3 ) );
 }
 
 U_TEST(CallingConventionMakesFunctionTypeDifferent_Test5)
@@ -314,7 +314,7 @@ U_TEST(UnknownCallingConvention_Test0)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
 }
 
 U_TEST(UnknownCallingConvention_Test1)
@@ -327,7 +327,7 @@ U_TEST(UnknownCallingConvention_Test1)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
 }
 
 
@@ -341,7 +341,7 @@ U_TEST(UnknownCallingConvention_Test2)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
 }
 
 U_TEST(UnknownCallingConvention_Test3)
@@ -354,7 +354,7 @@ U_TEST(UnknownCallingConvention_Test3)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test0)
@@ -370,7 +370,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test0)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test1)
@@ -386,7 +386,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test1)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test2)
@@ -402,7 +402,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test2)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test3)
@@ -418,7 +418,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test3)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test4)
@@ -434,7 +434,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test4)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test5)
@@ -450,7 +450,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test5)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test6)
@@ -466,7 +466,7 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test6)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
 }
 
 U_TEST(NonDefaultCallingConventionForClassMethod_Test7)

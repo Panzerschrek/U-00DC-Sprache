@@ -56,7 +56,7 @@ def CastRef_Test0_ShouldNotCastToVoid():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
 
 
 def CastRef_Test1_ShouldCastChildToParent():
@@ -136,7 +136,7 @@ def CastRef_Test9_ShouldPreserveReferencedVariables():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "DestroyedVariableStillHaveReferences" )
+	assert( errors_list[0].error_code == "DestroyedVariableStillHasReferences" )
 	assert( errors_list[0].src_loc.line == 5 )
 
 

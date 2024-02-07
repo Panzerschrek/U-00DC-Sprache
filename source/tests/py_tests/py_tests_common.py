@@ -47,7 +47,7 @@ def ConvertErrors( errors_list ):
 
 	return result
 
-def HaveError( errors_list, code, line ):
+def HasError( errors_list, code, line ):
 	for err in errors_list:
 		if( err.error_code == code and err.src_loc.line == line ):
 			return True

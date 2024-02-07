@@ -160,7 +160,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	coroutine_class->parents_list_prepared= true;
 	coroutine_class->is_default_constructible= false;
 	coroutine_class->is_copy_constructible= false;
-	coroutine_class->have_destructor= true;
+	coroutine_class->has_destructor= true;
 	coroutine_class->is_copy_assignable= false;
 	coroutine_class->is_equality_comparable= true;
 
@@ -182,7 +182,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	// Generate destructor.
 	{
 		FunctionVariable destructor_variable= GenerateDestructorPrototype( coroutine_class.get() );
-		destructor_variable.have_body= true;
+		destructor_variable.has_body= true;
 		{
 			llvm::Function* const destructor_function= EnsureLLVMFunctionCreated( destructor_variable );
 			llvm::IRBuilder ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function ) );
@@ -221,7 +221,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 		op_variable.type= std::move( op_type );
 		op_variable.is_generated= true;
 		op_variable.is_this_call= false;
-		op_variable.have_body= true;
+		op_variable.has_body= true;
 
 		{ // Generate code.
 			llvm::Function* const op_llvm_function= EnsureLLVMFunctionCreated( op_variable );
@@ -807,7 +807,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 
 	if( !function_context.is_functionless_context )
 	{
-		U_ASSERT( async_func_variable->type.HaveDestructor() );
+		U_ASSERT( async_func_variable->type.HasDestructor() );
 
 		const NamesScopeValue* const destructor_value= class_type->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_value != nullptr );

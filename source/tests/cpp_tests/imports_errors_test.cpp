@@ -548,7 +548,7 @@ U_TEST( TypeTemplateRedefinition_ForImports_Test0 )
 			},
 			"root" );
 
-	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::TypeTemplateRedefinition, 2u ) );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypeTemplateRedefinition, 2u ) );
 }
 
 U_TEST( TypeTemplateRedefinition_ForImports_Test1 )
@@ -642,7 +642,7 @@ U_TEST( DefineBodyForFunction_UsingChildClassName_Test0 )
 			},
 			"root" );
 
-	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::NameNotFound, 6u ) );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::NameNotFound, 6u ) );
 }
 
 U_TEST( DefineBodyForFunction_UsingChildClassName_Test1 )
@@ -681,7 +681,7 @@ U_TEST( DefineBodyForFunction_UsingChildClassName_Test1 )
 			"root" );
 
 	U_TEST_ASSERT( !result.errors.empty() );
-	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 4u ) );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 4u ) );
 }
 
 } // namespace

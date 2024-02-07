@@ -8,7 +8,7 @@ def ValueIsNotReference_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotReference", 4 ) )
+	assert( HasError( errors_list, "ValueIsNotReference", 4 ) )
 
 
 def ValueIsNotReference_Test1():
@@ -20,7 +20,7 @@ def ValueIsNotReference_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotReference", 5 ) )
+	assert( HasError( errors_list, "ValueIsNotReference", 5 ) )
 
 
 def ValueIsNotReference_Test2():
@@ -32,7 +32,7 @@ def ValueIsNotReference_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotReference", 5 ) )
+	assert( HasError( errors_list, "ValueIsNotReference", 5 ) )
 
 
 def ValueIsNotReference_Test3():
@@ -48,7 +48,7 @@ def ValueIsNotReference_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotReference", 9 ) )
+	assert( HasError( errors_list, "ValueIsNotReference", 9 ) )
 
 
 def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test0():
@@ -60,7 +60,7 @@ def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test1():
@@ -72,7 +72,7 @@ def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test2():
@@ -85,7 +85,7 @@ def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
 
 
 def RawPointerToReferenceConversionOutsideUnsafeBlock_Test0():
@@ -98,7 +98,7 @@ def RawPointerToReferenceConversionOutsideUnsafeBlock_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "RawPointerToReferenceConversionOutsideUnsafeBlock", 6 ) )
+	assert( HasError( errors_list, "RawPointerToReferenceConversionOutsideUnsafeBlock", 6 ) )
 
 
 def RawPointerToReferenceConversionOutsideUnsafeBlock_Test1():
@@ -117,7 +117,7 @@ def RawPointerToReferenceConversionOutsideUnsafeBlock_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "RawPointerToReferenceConversionOutsideUnsafeBlock", 10 ) )
+	assert( HasError( errors_list, "RawPointerToReferenceConversionOutsideUnsafeBlock", 10 ) )
 
 
 def ValueIsNotPointer_Test0():
@@ -128,7 +128,7 @@ def ValueIsNotPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotPointer", 4 ) )
+	assert( HasError( errors_list, "ValueIsNotPointer", 4 ) )
 
 
 def ValueIsNotPointer_Test1():
@@ -140,7 +140,7 @@ def ValueIsNotPointer_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotPointer", 5 ) )
+	assert( HasError( errors_list, "ValueIsNotPointer", 5 ) )
 
 
 def ValueIsNotPointer_Test2():
@@ -153,7 +153,7 @@ def ValueIsNotPointer_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotPointer", 6 ) )
+	assert( HasError( errors_list, "ValueIsNotPointer", 6 ) )
 
 
 def ValueIsNotPointer_Test3():
@@ -165,7 +165,7 @@ def ValueIsNotPointer_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ValueIsNotPointer", 5 ) )
+	assert( HasError( errors_list, "ValueIsNotPointer", 5 ) )
 
 
 def AddTooLargeIntegerToRawPointer_Test0():
@@ -177,7 +177,7 @@ def AddTooLargeIntegerToRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def AddTooLargeIntegerToRawPointer_Test1():
@@ -189,7 +189,7 @@ def AddTooLargeIntegerToRawPointer_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def AddFloatToRawPointer_Test0():
@@ -201,7 +201,7 @@ def AddFloatToRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def AddRawPointerToRawPointer_Test0():
@@ -213,7 +213,7 @@ def AddRawPointerToRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def AddStructToRawPointer_Test0():
@@ -227,7 +227,7 @@ def AddStructToRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
 
 
 def SubtractTooLargeIntegerFromRawPointer_Test0():
@@ -239,7 +239,7 @@ def SubtractTooLargeIntegerFromRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def SubtractFloatFromRawPointer_Test0():
@@ -251,7 +251,7 @@ def SubtractFloatFromRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def SubtructStructFromRawPointer_Test0():
@@ -265,7 +265,7 @@ def SubtructStructFromRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 7 ) )
 
 
 def SubtractRawPointer_Test0():
@@ -277,7 +277,7 @@ def SubtractRawPointer_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
 
 
 def SubtractRawPointer_Test1():
@@ -290,7 +290,7 @@ def SubtractRawPointer_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
 
 
 def DifferenceBetweenRawPointersWithDifferentTypes_Test0():
@@ -304,7 +304,7 @@ def DifferenceBetweenRawPointersWithDifferentTypes_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 7 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 7 ) )
 
 
 def DifferenceBetweenRawPointersWithDifferentTypes_Test1():
@@ -317,7 +317,7 @@ def DifferenceBetweenRawPointersWithDifferentTypes_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
 
 
 def DifferenceBetweenRawPointersWithZeroElementSize_Test0():
@@ -329,7 +329,7 @@ def DifferenceBetweenRawPointersWithZeroElementSize_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
+	assert( HasError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
 
 
 def DifferenceBetweenRawPointersWithZeroElementSize_Test1():
@@ -342,7 +342,7 @@ def DifferenceBetweenRawPointersWithZeroElementSize_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 6 ) )
+	assert( HasError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 6 ) )
 
 
 def DifferenceBetweenRawPointersWithZeroElementSize_Test2():
@@ -354,7 +354,7 @@ def DifferenceBetweenRawPointersWithZeroElementSize_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
+	assert( HasError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
 
 
 def DifferenceBetweenRawPointersWithZeroElementSize_Test3():
@@ -366,7 +366,7 @@ def DifferenceBetweenRawPointersWithZeroElementSize_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
+	assert( HasError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
 
 
 def AdditiveAssignmentErrors_ForRawPointers_Test0():
@@ -378,7 +378,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
 def AdditiveAssignmentErrors_ForRawPointers_Test1():
@@ -390,7 +390,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
 def AdditiveAssignmentErrors_ForRawPointers_Test2():
@@ -402,7 +402,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
 
 
 def AdditiveAssignmentErrors_ForRawPointers_Test3():
@@ -417,7 +417,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 8 ) )
+	assert( HasError( errors_list, "TypesMismatch", 8 ) )
 
 
 def AdditiveAssignmentErrors_ForRawPointers_Test4():
@@ -429,7 +429,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypesMismatch", 5 ) )
+	assert( HasError( errors_list, "TypesMismatch", 5 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test0():
@@ -440,7 +440,7 @@ def RawPointerTypeIsNotConstexpr_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test1():
@@ -452,7 +452,7 @@ def RawPointerTypeIsNotConstexpr_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test2():
@@ -464,7 +464,7 @@ def RawPointerTypeIsNotConstexpr_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test3():
@@ -472,7 +472,7 @@ def RawPointerTypeIsNotConstexpr_Test3():
 		fn constexpr Foo( $(i32) ptr ){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test4():
@@ -481,7 +481,7 @@ def RawPointerTypeIsNotConstexpr_Test4():
 		fn constexpr Foo( S s ){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test5():
@@ -492,7 +492,7 @@ def RawPointerTypeIsNotConstexpr_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
 
 
 def RawPointerTypeIsNotConstexpr_Test6():
@@ -504,7 +504,7 @@ def RawPointerTypeIsNotConstexpr_Test6():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) or HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 5 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) or HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 5 ) )
 
 
 def PointerDifferenceForUnrelatedTypes_Test0():
@@ -515,7 +515,7 @@ def PointerDifferenceForUnrelatedTypes_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )
 
 
 def PointerDifferenceForUnrelatedTypes_Test1():
@@ -526,4 +526,4 @@ def PointerDifferenceForUnrelatedTypes_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )
+	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )

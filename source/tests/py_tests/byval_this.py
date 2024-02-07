@@ -104,7 +104,7 @@ def ByValThis_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 12 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 12 ) )
 
 
 def ByValThis_Test4():
@@ -349,7 +349,7 @@ def ByValThisErrors_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
 def ByValThisErrors_Test1():
@@ -365,7 +365,7 @@ def ByValThisErrors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
 def ByValThisErrors_Test2():
@@ -382,7 +382,7 @@ def ByValThisErrors_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def ByValThisErrors_Test3():
@@ -399,7 +399,7 @@ def ByValThisErrors_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def ByValThisErrors_Test4():
@@ -418,7 +418,7 @@ def ByValThisErrors_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
 
 
 def ByValThisErrors_Test5():
@@ -438,7 +438,7 @@ def ByValThisErrors_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ThisInNonclassFunction", 2 ) )
+	assert( HasError( errors_list, "ThisInNonclassFunction", 2 ) )
 
 
 def ByValThisErrors_Test7():
@@ -452,7 +452,7 @@ def ByValThisErrors_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "FunctionPrototypeDuplication", 5 ) or HaveError( errors_list, "FunctionPrototypeDuplication", 6 ) )
+	assert( HasError( errors_list, "FunctionPrototypeDuplication", 5 ) or HasError( errors_list, "FunctionPrototypeDuplication", 6 ) )
 
 
 def ByValThisErrors_Test8():
@@ -468,7 +468,7 @@ def ByValThisErrors_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "MovedVariableHaveReferences", 7 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 7 ) )
 
 
 def ByValThisErrors_Test9():
@@ -483,7 +483,7 @@ def ByValThisErrors_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ConditionalMove", 6 ) )
+	assert( HasError( errors_list, "ConditionalMove", 6 ) )
 
 
 def ByValThisErrors_Test10():
@@ -498,7 +498,7 @@ def ByValThisErrors_Test10():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedVariable", 6 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 6 ) )
 
 
 def ByValThisErrors_Test11():
@@ -513,7 +513,7 @@ def ByValThisErrors_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
 
 
 def ByvalThisForConstructorOrDestructor_Test0():
@@ -525,7 +525,7 @@ def ByvalThisForConstructorOrDestructor_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
+	assert( HasError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
 
 
 def ByvalThisForConstructorOrDestructor_Test1():
@@ -537,7 +537,7 @@ def ByvalThisForConstructorOrDestructor_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
+	assert( HasError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
 
 
 def ByvalThisForConstructorOrDestructor_Test2():
@@ -549,7 +549,7 @@ def ByvalThisForConstructorOrDestructor_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
+	assert( HasError( errors_list, "ByvalThisForConstructorOrDestructor", 4 ) )
 
 
 def VirtualForByvalThisFunction_Test0():
@@ -561,7 +561,7 @@ def VirtualForByvalThisFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )
+	assert( HasError( errors_list, "VirtualForByvalThisFunction", 4 ) )
 
 
 def VirtualForByvalThisFunction_Test1():
@@ -573,7 +573,7 @@ def VirtualForByvalThisFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )
+	assert( HasError( errors_list, "VirtualForByvalThisFunction", 4 ) )
 
 
 def VirtualForByvalThisFunction_Test2():
@@ -585,7 +585,7 @@ def VirtualForByvalThisFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "VirtualForByvalThisFunction", 4 ) )
+	assert( HasError( errors_list, "VirtualForByvalThisFunction", 4 ) )
 
 
 def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test0():
@@ -597,7 +597,7 @@ def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
 
 
 def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test1():
@@ -609,7 +609,7 @@ def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
 
 
 def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test2():
@@ -621,7 +621,7 @@ def InvalidFirstParamValueTypeForAssignmentLikeOperator_ForByvalThis_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
+	assert( HasError( errors_list, "InvalidFirstParamValueTypeForAssignmentLikeOperator", 4 ) )
 
 
 def AccessingMovedByvalThis_Test0():
@@ -637,7 +637,7 @@ def AccessingMovedByvalThis_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 7 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 7 ) )
 
 
 def AccessingMovedByvalThis_Test1():
@@ -653,7 +653,7 @@ def AccessingMovedByvalThis_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 7 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 7 ) )
 
 
 def AccessingMovedByvalThis_Test2():
@@ -670,7 +670,7 @@ def AccessingMovedByvalThis_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 8 ) )
 
 
 def AccessingMovedByvalThis_Test3():
@@ -687,7 +687,7 @@ def AccessingMovedByvalThis_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def AccessingMovedByvalThis_Test4():
@@ -704,7 +704,7 @@ def AccessingMovedByvalThis_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
 
 
 def AccessingMovedByvalThis_Test5():
@@ -736,4 +736,4 @@ def AccessingMovedByvalThis_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "AccessingMovedVariable", 8 ) )
+	assert( HasError( errors_list, "AccessingMovedVariable", 8 ) )
