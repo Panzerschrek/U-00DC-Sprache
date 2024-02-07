@@ -242,7 +242,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		{
 			if( class_ == nullptr )
 			{
-				REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc, "TODO - func name" );
+				REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc );
 				out_param.type= invalid_type_;
 			}
 			else
