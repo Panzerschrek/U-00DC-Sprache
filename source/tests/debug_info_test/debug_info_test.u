@@ -348,6 +348,18 @@ fn GeneratorsTest()
 	}
 }
 
+fn LambdasTest()
+{
+	var i32 mut x= 0;
+	var f32 y= 475.3f;
+	auto f =
+		lambda[&x, y]( u32 arg )
+		{
+			x= i32(y) + i32(arg);
+		};
+	f(5u);
+}
+
 fn nomangle main() : i32
 {
 	FundamentalTypesTest();
@@ -373,5 +385,6 @@ fn nomangle main() : i32
 	TupleForTest();
 	WithOperatorTest();
 	GeneratorsTest();
+	LambdasTest();
 	return 0;
 }
