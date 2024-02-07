@@ -23,7 +23,8 @@ add_custom_command(
 		${BC_FILES} -o ${BC_OBJECT_COMBINED} --input-filetype=bc --verify-module
 	)
 
-add_executable( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${SOURCES} ${BC_OBJECT_COMBINED} )
+add_executable( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION}  ${SOURCES} ${BC_OBJECT_COMBINED} )
+target_link_libraries( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 add_dependencies( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 set(LL_FILES)
@@ -50,5 +51,6 @@ add_custom_command(
 		${LL_FILES} -o ${LL_OBJECT_COMBINED} --input-filetype=ll --verify-module
 	)
 
-add_executable( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${SOURCES} ${LL_OBJECT_COMBINED} )
+add_executable( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} ${SOURCES} ${LL_OBJECT_COMBINED} )
+target_link_libraries( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 add_dependencies( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )

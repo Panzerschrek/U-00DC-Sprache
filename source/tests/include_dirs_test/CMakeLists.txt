@@ -10,5 +10,6 @@ add_custom_command(
 		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/b
 		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/c )
 
-add_executable( IncludeDirsTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${CMAKE_CURRENT_SOURCE_DIR}/root.u ${CMAKE_CURRENT_BINARY_DIR}/include_dirs_test.o )
+add_executable( IncludeDirsTest${CURRENT_COMPILER_GENERATION} ${CMAKE_CURRENT_SOURCE_DIR}/root.u ${CMAKE_CURRENT_BINARY_DIR}/include_dirs_test.o )
+target_link_libraries( IncludeDirsTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 add_dependencies( IncludeDirsTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )

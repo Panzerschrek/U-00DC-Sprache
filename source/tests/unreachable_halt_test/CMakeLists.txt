@@ -14,7 +14,8 @@ foreach( SOURCE ${UNREACHABLE_HALT_SOURCES} )
 	list( APPEND UNREACHABLE_HALT_OBJECTS ${OBJECT_FILE} )
 endforeach()
 
-add_executable( UnreachableHaltTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${UNREACHABLE_HALT_SOURCES} ${UNREACHABLE_HALT_OBJECTS} )
+add_executable( UnreachableHaltTest${CURRENT_COMPILER_GENERATION} ${UNREACHABLE_HALT_SOURCES} ${UNREACHABLE_HALT_OBJECTS} )
+target_link_libraries( UnreachableHaltTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 add_dependencies( UnreachableHaltTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 # Run unreachable halt test. Should run fine.

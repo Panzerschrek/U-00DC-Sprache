@@ -12,7 +12,8 @@ add_custom_command(
 	)
 
 
-add_executable( AsyncCallsInliningTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${TEST_FILE} ${TEST_FILE_OUT} )
+add_executable( AsyncCallsInliningTest${CURRENT_COMPILER_GENERATION} ${TEST_FILE} ${TEST_FILE_OUT} )
+target_link_libraries( AsyncCallsInliningTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 add_dependencies( AsyncCallsInliningTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 # Run the test
 add_custom_command( TARGET AsyncCallsInliningTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND AsyncCallsInliningTest${CURRENT_COMPILER_GENERATION} )

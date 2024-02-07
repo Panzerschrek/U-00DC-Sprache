@@ -183,6 +183,9 @@ add_subdirectory( compilers_support_lib )
 add_subdirectory( compilers_common_lib )
 add_subdirectory( tests/tests_lib )
 
+# Special dummy C++ library - it is used in tests to tell CMake that C++ linker should be used for Ü targets.
+add_library( CPPDummy tests/dummy.cpp )
+
 add_subdirectory( tests/cpp_tests )
 # Hack! Force use static variables with initializers with tests registration
 set( CPP_TESTS_LIB_WRAPPED CppTestsLib )

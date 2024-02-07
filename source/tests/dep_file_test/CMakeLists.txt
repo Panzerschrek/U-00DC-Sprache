@@ -17,10 +17,10 @@ if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
 
 	add_executable(
 		DepFileTest${CURRENT_COMPILER_GENERATION}
-			../dummy.cpp
 			${CMAKE_CURRENT_BINARY_DIR}/dep_main.o
 			${CMAKE_CURRENT_SOURCE_DIR}/dep_main.u
 		)
+	target_link_libraries( DepFileTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 	add_dependencies( DepFileTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 else()

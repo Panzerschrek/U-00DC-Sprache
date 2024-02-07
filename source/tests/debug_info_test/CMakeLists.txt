@@ -13,5 +13,6 @@ add_custom_command(
 		--verify-module
 	)
 
-add_executable( DebugInfoTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
+add_executable( DebugInfoTest${CURRENT_COMPILER_GENERATION} ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
+target_link_libraries( DebugInfoTest${CURRENT_COMPILER_GENERATION} PRIVATE CPPDummy )
 add_dependencies( DebugInfoTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
