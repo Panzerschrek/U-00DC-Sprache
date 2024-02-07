@@ -1691,7 +1691,10 @@ fn CodeBuilder::TryCallCopyConstructor(
 		return;
 	}
 
-	// TODO - what if copy constructor is unsafe?
+	if( !class_type.lock_imut().deref().can_be_constexpr )
+	{
+		function_context.has_non_constexpr_operations_inside= true;
+	}
 
 	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, src_loc );
 }
