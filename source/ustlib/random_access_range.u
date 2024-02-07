@@ -31,28 +31,19 @@ public:
 	template</ size_type size />
 	fn enable_if( is_mutable )
 	conversion_constructor( mut this, [ T, size ] & mut arr ) @( reference_notation::pollution::param0_param_1_reference )
-		( size_(size) )
-	{
-		unsafe{  begin_= $<( cast_ref_unsafe</T/>(arr) );  }
-	}
+		( begin_= unsafe( $<( cast_ref_unsafe</T/>(arr) ) ) , size_= size )
+	{}
 
 	template</ size_type size />
 	fn enable_if( !is_mutable )
 	conversion_constructor( mut this, [ T, size ] &imut arr ) @( reference_notation::pollution::param0_param_1_reference )
-		( size_(size) )
-	{
-		unsafe{  begin_= $<( cast_mut( cast_ref_unsafe</T/>(arr) ) );  }
-	}
+		( begin_= unsafe( $<( cast_mut( cast_ref_unsafe</T/>(arr) ) ) ), size_= size )
+	{}
 
 	fn enable_if( !is_mutable )
 	conversion_constructor( mut this, random_access_range</ T, true />& src_range ) @( reference_notation::pollution::param0_param_1_inner_reference )
-	{
-		unsafe
-		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.
-			static_assert( typeinfo</typeof(this)/>.size_of == typeinfo</typeof(src_range)/>.size_of );
-			memory_copy_aligned( typeinfo</typeof(this)/>.align_of, cast_ref_unsafe</byte8/>( this ), cast_ref_unsafe</byte8/>( src_range ), typeinfo</typeof(this)/>.size_of );
-		}
-	}
+		( begin_= unsafe( src_range.data() ), size_= src_range.size() )
+	{}
 
 	// Construct from raw parts.
 	fn constructor( $(T) begin, size_type size ) unsafe
