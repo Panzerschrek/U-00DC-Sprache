@@ -540,7 +540,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 			const auto index= uint32_t( class_->fields_order.size() );
 
-			auto field= std::make_shared<ClassField>( class_, type, index, true, false );
+			auto field= std::make_shared<ClassField>( captured_variable.name, class_, type, index, true, false );
 			class_->fields_order.push_back( field );
 
 			const auto reference_tag_cout= type.ReferenceTagCount();

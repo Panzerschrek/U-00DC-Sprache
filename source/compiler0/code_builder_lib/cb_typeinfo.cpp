@@ -98,7 +98,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		typeinfo_class->members->AddName(
 			name,
-			NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( std::string(name), typeinfo_class, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, uint64_t(value) ) ) );
 	};
@@ -108,7 +108,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		typeinfo_class->members->AddName(
 			name,
-			NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( std::string(name), typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back(
 			llvm::Constant::getIntegerValue(
@@ -123,7 +123,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 		typeinfo_class->members->AddName(
 			name,
-			NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( std::string(name), typeinfo_class, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 	};
@@ -133,7 +133,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		typeinfo_class->members->AddName(
 			name,
-			NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, reference_notation.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( std::string(name), typeinfo_class, reference_notation.first, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( reference_notation.first.GetLLVMType() );
 		fields_initializers.push_back( reference_notation.second );
 	};
@@ -215,7 +215,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 			U_ASSERT( class_type->polymorph_type_id_table != nullptr );
 			typeinfo_class->members->AddName(
 				"type_id",
-				NamesScopeValue( std::make_shared<ClassField>( typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+				NamesScopeValue( std::make_shared<ClassField>( "type_id", typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
 
 			// Take address of fist member of first element of typeinfo table, which is offset of type "int_ptr".
@@ -476,7 +476,7 @@ VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type,
 
 			node_type_class.members->AddName(
 				"value",
-				NamesScopeValue( std::make_shared<ClassField>( node_type, enum_type->underlying_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				NamesScopeValue( std::make_shared<ClassField>( "value", node_type, enum_type->underlying_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( enum_type->underlying_type.llvm_type );
 			fields_initializers.push_back( enum_member_value );
 
@@ -486,7 +486,7 @@ VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type,
 				name_type.element_count= name.size();
 				name_type.llvm_type= llvm::ArrayType::get( name_type.element_type.GetLLVMType(), name_type.element_count );
 
-				node_type_class.members->AddName( g_name_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				node_type_class.members->AddName( g_name_field_name, NamesScopeValue( std::make_shared<ClassField>( g_name_field_name, node_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( name_type.llvm_type );
 				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, StringViewToStringRef(name), false /* not null terminated */ ) );
 			}
@@ -518,7 +518,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 		node_class.members->AddName(
 			g_name_field_name,
-			NamesScopeValue( std::make_shared<ClassField>( node_class_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( g_name_field_name, node_class_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( name_type.llvm_type );
 		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, StringViewToStringRef(member_name), false /* not null terminated */ ) );
 	}
@@ -527,19 +527,19 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 	node_class.members->AddName(
 		"is_public",
-		NamesScopeValue( std::make_shared<ClassField>( node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		NamesScopeValue( std::make_shared<ClassField>( "is_public", node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Public    ) ) );
 
 	node_class.members->AddName(
 		"is_protected",
-		NamesScopeValue( std::make_shared<ClassField>( node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		NamesScopeValue( std::make_shared<ClassField>( "is_protected", node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Protected ) ) );
 
 	node_class.members->AddName(
 		"is_private",
-		NamesScopeValue( std::make_shared<ClassField>( node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		NamesScopeValue( std::make_shared<ClassField>( "is_private", node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
@@ -566,14 +566,14 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type
 			{
 				const VariablePtr field_type_typeinfo= BuildTypeInfo( class_field->type, root_namespace );
 
-				node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, field_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+				node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( g_type_field_name, node_type, field_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( field_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( field_type_typeinfo->llvm_value ) );
 			}
 			{
 				const VariablePtr fields_class_type_typeinfo= BuildTypeInfo( class_field->class_, root_namespace );
 
-				node_type_class.members->AddName( "class_type", NamesScopeValue( std::make_shared<ClassField>( node_type, fields_class_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+				node_type_class.members->AddName( "class_type", NamesScopeValue( std::make_shared<ClassField>( "class_type", node_type, fields_class_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fields_class_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( fields_class_type_typeinfo->llvm_value ) );
 			}
@@ -598,20 +598,20 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type
 
 				node_type_class.members->AddName(
 					"offset",
-					NamesScopeValue( std::make_shared<ClassField>( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					NamesScopeValue( std::make_shared<ClassField>( "offset", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( size_type_.GetLLVMType() );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 			}
 
 			node_type_class.members->AddName(
 				"is_reference",
-				NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				NamesScopeValue( std::make_shared<ClassField>( "is_reference", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_reference ) ) );
 
 			node_type_class.members->AddName(
 				"is_mutable",
-				NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				NamesScopeValue( std::make_shared<ClassField>( "is_mutable", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
 
@@ -656,7 +656,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type,
 			{
 				const VariablePtr dependent_type_typeinfo= BuildTypeInfo( *class_inner_type, root_namespace );
 
-				node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+				node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( g_type_field_name, node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 			}
@@ -706,32 +706,32 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 				{
 					const VariablePtr dependent_type_typeinfo= BuildTypeInfo( FunctionTypeToPointer( function.type ), root_namespace );
 
-					node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+					node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( g_type_field_name, node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 					fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 					fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 				}
 
 				node_type_class.members->AddName(
 					"is_this_call",
-					NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					NamesScopeValue( std::make_shared<ClassField>( "is_this_call", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_this_call ) ) );
 
 				node_type_class.members->AddName(
 					"is_generated",
-					NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					NamesScopeValue( std::make_shared<ClassField>( "is_generated", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_generated ) ) );
 
 				node_type_class.members->AddName(
 					"is_deleted",
-					NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					NamesScopeValue( std::make_shared<ClassField>( "is_deleted", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_deleted ) ) );
 
 				node_type_class.members->AddName(
 					"is_virtual",
-					NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					NamesScopeValue( std::make_shared<ClassField>( "is_virtual", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
 
@@ -771,7 +771,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_typ
 		{
 			const VariablePtr parent_type_typeinfo= BuildTypeInfo( class_.parents[i].class_, root_namespace );
 
-			node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, parent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+			node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( g_type_field_name, node_type, parent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( parent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( parent_type_typeinfo->llvm_value ) );
 		}
@@ -779,7 +779,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_typ
 		const uint64_t parent_field_offset= struct_layout->getElementOffset( class_.parents[i].field_number );
 		node_type_class.members->AddName(
 			"offset",
-			NamesScopeValue( std::make_shared<ClassField>( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( "offset", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), parent_field_offset ) ) );
 
@@ -809,20 +809,20 @@ VariablePtr CodeBuilder::BuildTypeinfoFunctionParams( const FunctionType& functi
 		{
 			const VariablePtr dependent_type_typeinfo= BuildTypeInfo( param.type, root_namespace );
 
-			node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+			node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( g_type_field_name, node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 		}
 
 		node_type_class.members->AddName(
 			"is_reference",
-			NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( "is_reference", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.value_type != ValueType::Value ) ) );
 
 		node_type_class.members->AddName(
 			"is_mutable",
-			NamesScopeValue( std::make_shared<ClassField>( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			NamesScopeValue( std::make_shared<ClassField>( "is_mutable", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.value_type == ValueType::ReferenceMut ) ) );
 
@@ -856,14 +856,14 @@ VariablePtr CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type
 		{
 			const VariablePtr dependent_type_typeinfo= BuildTypeInfo( element_type, root_namespace );
 
-			node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+			node_type_class.members->AddName( g_type_field_name, NamesScopeValue( std::make_shared<ClassField>( g_type_field_name, node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 		}
 		{
 			node_type_class.members->AddName(
 				"index",
-				NamesScopeValue( std::make_shared<ClassField>( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				NamesScopeValue( std::make_shared<ClassField>( "index", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), element_index ) ) );
 		}
@@ -871,7 +871,7 @@ VariablePtr CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type
 			const auto offset= struct_layout->getElementOffset( uint32_t(element_index) );
 			node_type_class.members->AddName(
 				"offset",
-				NamesScopeValue( std::make_shared<ClassField>( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				NamesScopeValue( std::make_shared<ClassField>( "offset", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 		}

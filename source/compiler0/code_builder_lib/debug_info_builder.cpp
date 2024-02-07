@@ -467,7 +467,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 			const auto member =
 				builder_->createMemberType(
 					di_file,
-					class_field->GetName(),
+					class_field->name,
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),

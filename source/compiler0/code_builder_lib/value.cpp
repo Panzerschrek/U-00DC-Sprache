@@ -216,11 +216,9 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 // ClassField
 //
 
-ClassField::ClassField( const ClassPtr in_class, Type in_type, const uint32_t in_index, const bool in_is_mutable, const bool in_is_reference )
-	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
+ClassField::ClassField( std::string in_name, const ClassPtr in_class, Type in_type, const uint32_t in_index, const bool in_is_mutable, const bool in_is_reference )
+	: type(std::move(in_type)), class_(in_class), name(std::move(in_name)), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
 {}
-
-const std::string ClassField::c_generated_field_name= "_generated";
 
 //
 // Value

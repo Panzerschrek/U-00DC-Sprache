@@ -197,6 +197,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 			ClassField class_field;
 			class_field.syntax_element= &in_class_field;
 			class_field.original_index= field_number;
+			class_field.name= in_class_field.name;
 
 			if( IsKeyword( in_class_field.name ) )
 				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field.src_loc );

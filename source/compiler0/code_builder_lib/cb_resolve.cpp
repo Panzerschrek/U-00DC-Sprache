@@ -298,7 +298,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 
 		if( function_context.this_ == nullptr )
 		{
-			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->GetName() );
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->name );
 			return ErrorValue();
 		}
 
@@ -312,7 +312,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 				if( field->index < function_context.initialized_this_fields.size() &&
 					!function_context.initialized_this_fields[ field->index ] )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->GetName() );
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->name );
 					return ErrorValue();
 				}
 			}

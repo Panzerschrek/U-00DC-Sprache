@@ -154,7 +154,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field->GetName(),
+					field->name,
 					this_llvm_value );
 			function_context.variables_state.AddNode( this_variable );
 
@@ -169,7 +169,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field->GetName(),
+					field->name,
 					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
@@ -177,7 +177,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 			if( field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field->GetName(), SrcLoc()/*TODO*/, field_variable, *the_class.members, function_context );
+				ApplyEmptyInitializer( field->name, class_type->src_loc, field_variable, *the_class.members, function_context );
 
 			function_context.variables_state.RemoveNode( field_variable );
 		}
