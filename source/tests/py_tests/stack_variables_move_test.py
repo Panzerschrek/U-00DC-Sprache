@@ -429,3 +429,26 @@ def ReturnAutoMove_Tes3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMove_Tes4():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+			fn PassThis( byval this ) : S
+			{
+				return this; // Move value argument "this".
+			}
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn Foo()
+		{
+			var S mut s{ .x= 1241 };
+			auto s_moved= move(s).PassThis();
+			halt if( s_moved.x != 1241 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

@@ -747,3 +747,71 @@ def ReturnAutoMoveIsDisabled_Test12():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test13():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo(S& s) : S
+		{
+			return s; // Auto-move for "return" isn't possible - given name is reference arg.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 9 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test14():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo(S &mut s) : S
+		{
+			return s; // Auto-move for "return" isn't possible - given name is mutable reference arg.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 9 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test15():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+			fn Foo(this) : S
+			{
+				return this; // Auto-move for "return" isn't possible - given name is reference arg "this".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 8 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test16():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+			fn Foo(mut this) : S
+			{
+				return this; // Auto-move for "return" isn't possible - given name is mutable reference arg "this".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 8 ) )
