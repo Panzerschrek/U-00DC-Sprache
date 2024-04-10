@@ -404,6 +404,9 @@ private:
 
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
 
+	// May move local variables.
+	fn BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
+
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;

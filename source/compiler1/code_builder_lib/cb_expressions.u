@@ -79,6 +79,112 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 	return move(dummy_ptr);
 }
 
+fn CodeBuilder::BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr
+{
+	// Try to automatically move local variable in return.
+	if_var( &complex_name : expression.get</Synt::ComplexName/>() )
+	{
+		if_var( &name_lookup : complex_name.get</Synt::NameLookup/>() )
+		{
+			var ust::shared_ptr_nullable_mut</Variable/> mut variable_opt;
+			if( name_lookup.name == KeywordToString( Keyword::this_ ) )
+			{
+				if( !function_context.this_.empty() && !function_context.whole_this_is_unavailable )
+				{
+					variable_opt= function_context.this_;
+				}
+			}
+			else
+			{
+				auto name_lookup_result= LookupName( names_scope, function_context, name_lookup.name, name_lookup.src_loc );
+				if( !name_lookup_result.empty() )
+				{
+					variable_opt= name_lookup_result.try_deref()[1].Get</Variable/>();
+
+					if( !variable_opt.empty() && !function_context.lambda_preprocessing_context.empty() )
+					{
+						var VariablePtr variable= variable_opt.try_to_non_nullable();
+						LambdaPreprocessingCheckVariableUsage( names_scope, function_context, variable, name_lookup.name, name_lookup.src_loc );
+						if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
+						{
+							// Do not try to auto-move lambda external variables.
+							return LambdaPreprocessingAccessExternalVariable( function_context, variable, name_lookup.name );
+						}
+					}
+				}
+			}
+
+			if( !variable_opt.empty() )
+			{
+				var VariablePtr variable_reference_ptr= variable_opt.try_to_non_nullable();
+
+				with( mut lock : variable_reference_ptr.lock_mut() )
+				{
+					lock.deref().referenced= true;
+				}
+
+				if( !IsGlobalVariable( variable_reference_ptr ) &&
+					!function_context.references_graph.NodeIsMoved( variable_reference_ptr ) &&
+					!function_context.references_graph.HasOutgoingLinks( variable_reference_ptr ) )
+				{
+					auto variable_reference_lock= variable_reference_ptr.lock_imut();
+					var Variable& reference= variable_reference_lock.deref();
+
+					// Enable auto-move in "return" for immutable local variables too.
+					if( ( reference.value_type == ValueType::ReferenceMut || reference.value_type == ValueType::ReferenceImut ) )
+					{
+						var ReferencesGraph::NodesSet input_nodes= function_context.references_graph.GetNodeInputLinks( variable_reference_ptr );
+						if( input_nodes.size() == 1s )
+						{
+							var VariablePtr& variable_for_move= input_nodes.iter().first().try_deref();
+							if( variable_for_move.lock_imut().deref().value_type == ValueType::Value )
+							{
+								auto mut found_in_variables= false;
+								foreach( & frame : function_context.variables_frames ) label variable_frames_loop
+								{
+									foreach( &frame_variable : frame )
+									{
+										if( frame_variable == variable_for_move )
+										{
+											found_in_variables= true;
+											break label variable_frames_loop;
+										}
+									}
+								}
+
+								if( found_in_variables )
+								{
+									var Variable mut result
+									{
+										.t= reference.t,
+										.value_type= ValueType::Value,
+										.location= reference.location,
+										.llvm_value= reference.llvm_value,
+										.name= "moved " + reference.name,
+									};
+									var VariablePtr mut result_ptr= move(result).CreatePtr();
+
+									function_context.references_graph.AddNode( result_ptr );
+
+									function_context.references_graph.TryAddInnerLinks( variable_reference_ptr, result_ptr, names_scope, name_lookup.src_loc );
+
+									function_context.references_graph.MoveNode( variable_reference_ptr );
+									function_context.references_graph.MoveNode( variable_for_move );
+
+									RegisterTemporaryVariable( function_context, result_ptr );
+									return move(result_ptr);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
 {
 	variant_visit( &el : expression )

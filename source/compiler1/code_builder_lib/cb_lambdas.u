@@ -1041,7 +1041,7 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 			if( current.external_variables.exists( variable ) )
 			{
 				REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
-				function_context.references_graph.AddNode( variable ); // Prevent further errors.
+				function_context.references_graph.AddNodeIfNotExists( variable ); // Prevent further errors.
 				lambda_preprocessing_context.has_preprocessing_errors= true;
 			}
 			next= current.parent.lock();

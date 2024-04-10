@@ -636,7 +636,10 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 	auto mut ret= LLVMValueRef::Null;
 
-	var VariablePtr mut expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
+	var VariablePtr mut expr_ptr=
+		select( function_context.function_type.return_value_type == ValueType::Value
+			? BuildExpressionCodeForValueReturn( names_scope, function_context, return_operator.expr )
+			: BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr ) );
 
 	if( !function_context.return_type_deduction_context.empty() )
 	{
