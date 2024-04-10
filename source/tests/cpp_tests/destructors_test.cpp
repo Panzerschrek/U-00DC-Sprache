@@ -1274,6 +1274,72 @@ U_TEST(DestructorsTest31_DestructorNotCalledForReferenceField)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 5555 } ) );
 }
 
+U_TEST(DestructorsTest32_LocalVariableAutoMoveInReturn)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+		fn Bar( i32 x ) : S
+		{
+			var S mut s( x * 2 );
+			return s; // Move here "s", not copy it.
+		}
+		fn Foo()
+		{
+			auto s= Bar( 76 );
+			halt if( s.x != 152 );
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 152 } ) );
+}
+
+U_TEST(DestructorsTest33_LocalVariableAutoMoveInReturn)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+		fn PassS( S mut s ) : S
+		{
+			return s; // Move here "s", not copy it.
+		}
+		fn Foo()
+		{
+			var S mut s_initial( 33 );
+			auto s= PassS( move(s_initial) );
+			halt if( s.x != 33 );
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 33 } ) );
+}
+
 U_TEST(EarlyTempVariablesDestruction_Test0)
 {
 	static const char c_program_text[]=
