@@ -560,7 +560,7 @@ def AsyncFunctionIsNonCopyable_Test6():
 		fn Foo() : (async : i32)
 		{
 			auto f= SomeFunc();
-			return f; // Try to call copy constructor for return value.
+			return safe(f); // Try to call copy constructor for return value.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

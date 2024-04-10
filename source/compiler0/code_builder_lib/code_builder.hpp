@@ -728,7 +728,7 @@ private:
 		FunctionContext& function_context );
 
 	// May move local variables.
-	VariablePtr BuildExpressionCodeForReturn(
+	VariablePtr BuildExpressionCodeForValueReturn(
 		const Synt::Expression& expression,
 		NamesScope& names_scope,
 		FunctionContext& function_context );

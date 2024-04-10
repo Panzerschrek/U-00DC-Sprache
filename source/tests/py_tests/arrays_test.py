@@ -222,7 +222,7 @@ def ArrayAsReturnValue_Test1():
 		fn GetArr() : [ S, 8 ]
 		{
 			var [ S, 8 ] a;
-			return a; // Error, array is noncopyable
+			return safe(a); // Error, array is noncopyable
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

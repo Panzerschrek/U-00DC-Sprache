@@ -22,7 +22,7 @@ def ClassHaveNoCopyConstructorByDefault_Test1():
 		fn CreateA() : A
 		{
 			var A a;
-			return a; // Create copy of class in return
+			return safe(a); // Create copy of class in return
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

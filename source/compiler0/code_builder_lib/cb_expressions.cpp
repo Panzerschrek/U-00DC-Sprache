@@ -76,7 +76,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	return dummy_result;
 }
 
-VariablePtr CodeBuilder::BuildExpressionCodeForReturn(
+VariablePtr CodeBuilder::BuildExpressionCodeForValueReturn(
 	const Synt::Expression& expression,
 	NamesScope& names_scope,
 	FunctionContext& function_context )
