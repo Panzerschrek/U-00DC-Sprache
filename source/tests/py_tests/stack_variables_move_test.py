@@ -337,3 +337,47 @@ def Move_InLazyLogicalOperator_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReturnAutoMove_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn GetS() : S
+		{
+			var S mut s{ .x= 67 };
+			return s; // Should automatically move local variable "s" in "return" statement.
+		}
+		fn Foo()
+		{
+			auto s= GetS();
+			halt if( s.x != 67 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturnAutoMove_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn PassS( S mut s ) : S
+		{
+			return s; // Should automatically move argument "s" in "return" statement.
+		}
+		fn Foo()
+		{
+			var S mut s_initial{ .x= 765 };
+			auto s= PassS( move(s_initial) );
+			halt if( s.x != 765 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
