@@ -101,7 +101,15 @@ VariablePtr CodeBuilder::BuildExpressionCodeForValueReturn(
 				const Value& resolved_value= resolved_value_ptr->value;
 				resolved_variable= resolved_value.GetVariable();
 
-				// TODO - handle lambda preprocessing context properly.
+				if( resolved_variable != nullptr && function_context.lambda_preprocessing_context != nullptr )
+				{
+					LambdaPreprocessingCheckVariableUsage( names_scope, function_context, resolved_variable, name_lookup->name, name_lookup->src_loc );
+					if( function_context.lambda_preprocessing_context->external_variables.count( resolved_variable ) > 0 )
+					{
+						// Do not try to auto-move lambda external variables.
+						return LambdaPreprocessingAccessExternalVariable( function_context, resolved_variable, name_lookup->name );
+					}
+				}
 			}
 		}
 
