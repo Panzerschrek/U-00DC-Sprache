@@ -370,6 +370,29 @@ def ReturnAutoMove_Test1():
 			i32 x;
 		}
 		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn GetS() : S
+		{
+			var S s{ .x= 987 };
+			return s; // Should automatically move local immutable variable "s" in "return" statement.
+		}
+		fn Foo()
+		{
+			auto s= GetS();
+			halt if( s.x != 987 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMove_Tes2():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
 		fn PassS( S mut s ) : S
 		{
 			return s; // Should automatically move argument "s" in "return" statement.
@@ -379,6 +402,29 @@ def ReturnAutoMove_Test1():
 			var S mut s_initial{ .x= 765 };
 			auto s= PassS( move(s_initial) );
 			halt if( s.x != 765 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMove_Tes3():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn PassS( S s ) : S
+		{
+			return s; // Should automatically move immutable argument "s" in "return" statement.
+		}
+		fn Foo()
+		{
+			var S mut s_initial{ .x= 1287 };
+			auto s= PassS( move(s_initial) );
+			halt if( s.x != 1287 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

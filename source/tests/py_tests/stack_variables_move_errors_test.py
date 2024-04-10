@@ -728,3 +728,22 @@ def ReturnAutoMoveIsDisabled_Test11():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test12():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S s= zero_init;
+			auto& s_ref= s;
+			return s; // Auto-move for "return" isn't possible - returned variable still has local reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )

@@ -107,7 +107,8 @@ VariablePtr CodeBuilder::BuildExpressionCodeForReturn(
 
 		if( resolved_variable != nullptr &&
 			!IsGlobalVariable( resolved_variable ) &&
-			resolved_variable->value_type == ValueType::ReferenceMut &&
+			// Enable auto-move in "return" for immutable local variables too.
+			(resolved_variable->value_type == ValueType::ReferenceMut || resolved_variable->value_type == ValueType::ReferenceImut)&&
 			!function_context.variables_state.HasOutgoingLinks( resolved_variable ) &&
 			!function_context.variables_state.NodeMoved( resolved_variable ) )
 		{
