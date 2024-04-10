@@ -603,7 +603,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression, names_scope, function_context );
+	VariablePtr expression_result= BuildExpressionCodeForReturn( return_operator.expression, names_scope, function_context );
 	if( expression_result->type == invalid_type_ )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
