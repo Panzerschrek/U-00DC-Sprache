@@ -637,3 +637,94 @@ def ReturnAutoMoveIsDisabled_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMoveIsDisabled_Test7():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			unsafe{  return cast_mut(s);  } // Auto-move for "return" isn't possible - returning "cast_mut" result instead of bare variable name.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test8():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			return cast_imut(s); // Auto-move for "return" isn't possible - returning "cast_imut" result instead of bare variable name.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test9():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			return safe(s); // Auto-move for "return" isn't possible - returning "safe" expression result instead of bare variable name.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test10():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			return unsafe(s); // Auto-move for "return" isn't possible - returning "unsafe" expression result instead of bare variable name.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test11():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			return PassS(s); // Auto-move for "return" isn't possible - returning not a variable itself, but using it in a function call.
+		}
+		fn PassS(S mut s) : S;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
