@@ -40,7 +40,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 										.this_= this_non_null,
 										.functions_set= f_ptr_non_null,
 									};
-									return move(this_methods_set);
+									return this_methods_set;
 								}
 							}
 						}
@@ -70,7 +70,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, var_ptr_non_null.lock_imut().deref().name )
 		}
 
-		return move(var_ptr_non_null);
+		return var_ptr_non_null;
 	}
 
 	auto class_field_ptr= names_scope_value.Get</ClassField/>();
@@ -194,7 +194,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
 
-			return move(v_ptr_non_null);
+			return v_ptr_non_null;
 		}
 	}
 
@@ -218,7 +218,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
 
-			return move(v_ptr_non_null);
+			return v_ptr_non_null;
 		}
 	}
 
@@ -516,7 +516,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 			function_context.is_functionless_context= prev_is_functionless_context;
 
-			return move(t);
+			return t;
 		} );
 }
 

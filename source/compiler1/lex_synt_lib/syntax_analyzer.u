@@ -159,7 +159,7 @@ private:
 				break; // No more binary operators with current priority.
 			}
 
-			return move(expr);
+			return expr;
 		}
 	}
 
@@ -285,7 +285,7 @@ private:
 		else{ static_assert(false); }
 
 		errors_.append( syntax_analyzer.errors_ );
-		return move(result);
+		return result;
 	}
 
 	fn ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_unique_identifiers_base_name ) : Lexems;
@@ -366,7 +366,7 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 		res.macros= take(lock.deref());
 	}
 
-	return move(res);
+	return res;
 }
 
 fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
@@ -390,7 +390,7 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 		NextLexem();
 	}
 
-	return move(imports_list);
+	return imports_list;
 }
 
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
@@ -455,7 +455,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 	}
 
-	return move(namespace_elements);
+	return namespace_elements;
 }
 
 fn SyntaxAnalyzer::ParseNamespace( mut this ) : Namespace
@@ -514,7 +514,7 @@ fn SyntaxAnalyzer::ParseTemplateArgs( mut this ) : TemplateArgs
 		}
 	}
 
-	return move(template_args);
+	return template_args;
 }
 
 fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
@@ -567,7 +567,7 @@ fn SyntaxAnalyzer::ParseComplexNameTail( mut this, ComplexName mut base_ ) : Com
 {
 	if( it_.front().lexem_type != Lexem::Type::Scope )
 	{
-		return move(base_);
+		return base_;
 	}
 	NextLexem(); // Skip ::
 
@@ -615,7 +615,7 @@ fn SyntaxAnalyzer::ParseExpressionInBrackets( mut this ) : Expression
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	return move(e);
+	return e;
 }
 
 fn SyntaxAnalyzer::ParseBinaryOperatorComponent( mut this ) : Expression
@@ -694,7 +694,7 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 				return TryParseBinaryOperatorComponentPostfixOperator(move(member_access_operator));
 			}
 		},
-		default -> { return move(expr); },
+		default -> { return expr; },
 	}
 }
 
@@ -707,28 +707,28 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			var UnaryPlus mut unary_plus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
 			unary_plus.expr.deref()= ParseBinaryOperatorComponent();
-			return move(unary_plus);
+			return unary_plus;
 		},
 		Lexem::Type::Minus ->
 		{
 			var UnaryMinus mut unary_minus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
 			unary_minus.expr.deref()= ParseBinaryOperatorComponent();
-			return move(unary_minus);
+			return unary_minus;
 		},
 		Lexem::Type::Not ->
 		{
 			var LogicalNot mut logical_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
 			logical_not.expr.deref()= ParseBinaryOperatorComponent();
-			return move(logical_not);
+			return logical_not;
 		},
 		Lexem::Type::Tilda ->
 		{
 			var BitwiseNot mut bitwise_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
 			bitwise_not.expr.deref()= ParseBinaryOperatorComponent();
-			return move(bitwise_not);
+			return bitwise_not;
 		},
 		Lexem::Type::Number ->
 		{
@@ -739,7 +739,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 			NextLexem();
 
-			return move(numeric_constant);
+			return numeric_constant;
 		},
 		Lexem::Type::String ->
 		{
@@ -756,7 +756,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				NextLexem();
 			}
 
-			return move(string_literal);
+			return string_literal;
 		},
 		Lexem::Type::SquareBracketLeft ->
 		{
@@ -771,14 +771,14 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			auto src_loc= it_.front().src_loc;
 			NextLexem();
 			var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-			return move(o);
+			return o;
 		},
 		Lexem::Type::PointerToReference ->
 		{
 			auto src_loc= it_.front().src_loc;
 			NextLexem();
 			var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-			return move(o);
+			return o;
 		},
 		Lexem::Type::Scope ->
 		{
@@ -799,13 +799,13 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	{
 		var BooleanConstant mut boolean_constant{ .src_loc= it_.front().src_loc, .value= false };
 		NextLexem();
-		return move(boolean_constant);
+		return boolean_constant;
 	}
 	if( IsKeyword( it_.front(), Keyword::true_  ) )
 	{
 		var BooleanConstant mut boolean_constant{ .src_loc= it_.front().src_loc, .value= true  };
 		NextLexem();
-		return move(boolean_constant);
+		return boolean_constant;
 	}
 	if( IsKeyword( it_.front(), Keyword::fn_ ) )
 	{
@@ -820,7 +820,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var Typeinfo mut typeinfo_{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()};
-		return move(typeinfo_);
+		return typeinfo_;
 	}
 	if( IsKeyword( it_.front(), Keyword::same_type_ ) )
 	{
@@ -834,56 +834,56 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
 		var SameType mut same_type_{ .src_loc= src_loc, .l= move(l), .r= move(r) };
-		return move(same_type_);
+		return same_type_;
 	}
 	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var NonSyncExpression mut non_sync_expression{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets() };
-		return move(non_sync_expression);
+		return non_sync_expression;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_ref_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var CastRef mut cast{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
-		return move(cast);
+		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_ref_unsafe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
-		return move(cast);
+		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_imut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var CastImut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-		return move(cast);
+		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_mut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var CastMut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-		return move(cast);
+		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::safe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var SafeExpression mut e{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-		return move(e);
+		return e;
 	}
 	if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 		var UnsafeExpression mut e{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-		return move(e);
+		return e;
 	}
 	if( IsKeyword( it_.front(), Keyword::move_ ) )
 	{
@@ -902,7 +902,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 		ExpectLexem( Lexem::Type::BracketRight );
 
-		return move(move_operator);
+		return move_operator;
 	}
 	if( IsKeyword( it_.front(), Keyword::take_ ) )
 	{
@@ -910,7 +910,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		NextLexem();
 
 		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-		return move(take_operator);
+		return take_operator;
 	}
 	if( IsKeyword( it_.front(), Keyword::lambda_ ) )
 	{
@@ -938,7 +938,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			.condition( move(condition) ),
 			.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
 		};
-		return move(ternary_operator);
+		return ternary_operator;
 	}
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
@@ -960,7 +960,7 @@ fn SyntaxAnalyzer::ParseTypeNameInTemplateBrackets( mut this ) : TypeName
 	auto mut result= ParseTypeName();
 	ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-	return move(result);
+	return result;
 }
 
 fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
@@ -998,7 +998,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 
 		ExpectLexem( Lexem::Type::BracketRight );
 
-		return move(type_name);
+		return type_name;
 	}
 	else
 	{
@@ -1024,7 +1024,7 @@ fn SyntaxAnalyzer::ParseArrayType( mut this ) : ArrayType
 
 	ExpectLexem( Lexem::Type::SquareBracketRight );
 
-	return move(array_type);
+	return array_type;
 }
 
 fn SyntaxAnalyzer::ParseTupleType( mut this ) : TupleType
@@ -1051,7 +1051,7 @@ fn SyntaxAnalyzer::ParseTupleType( mut this ) : TupleType
 
 	ExpectLexem( Lexem::Type::SquareBracketRight );
 
-	return move(tuple_type);
+	return tuple_type;
 }
 
 fn SyntaxAnalyzer::ParseRawPointerType( mut this ) : RawPointerType
@@ -1067,7 +1067,7 @@ fn SyntaxAnalyzer::ParseRawPointerType( mut this ) : RawPointerType
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	return move(raw_pointer_type);
+	return raw_pointer_type;
 }
 
 fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
@@ -1111,7 +1111,7 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 
 	ParseFunctionTypeEnding( function_type );
 
-	return move(function_type);
+	return function_type;
 }
 
 fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
@@ -1209,7 +1209,7 @@ fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 		}
 	}
 
-	return move(coroutine_type);
+	return coroutine_type;
 }
 
 fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
@@ -1366,7 +1366,7 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 	lambda_function.block.reset( ParseBlock() );
 
 	var Lambda mut result{ .src_loc= lambda_src_loc, .capture= move(capture), .function( move(lambda_function) ) };
-	return move(result);
+	return result;
 }
 
 fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
@@ -1397,7 +1397,7 @@ fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
 	param.name= it_.front().text;
 	NextLexem();
 
-	return move(param);
+	return param;
 }
 
 fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function_type )
@@ -1830,7 +1830,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			PushErrorMessage();
 		}
 	}
-	return move(res);
+	return res;
 }
 
 fn SyntaxAnalyzer::ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> />
@@ -1863,7 +1863,7 @@ fn SyntaxAnalyzer::ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	return move(args);
+	return args;
 }
 
 fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer ) : Initializer
@@ -1888,14 +1888,14 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 		}
 		ExpectLexem( Lexem::Type::SquareBracketRight );
 
-		return move(sequence_initializer);
+		return sequence_initializer;
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		/// TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
 		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc, .args(ParseCall()) };
 
-		return move(constructor_initializer);
+		return constructor_initializer;
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 	{
@@ -1944,19 +1944,19 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 		}
 		ExpectLexem( Lexem::Type::BraceRight );
 
-		return move(struct_named_initializer);
+		return struct_named_initializer;
 	}
 	else if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
 	{
 		var ZeroInitializer mut zero_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
-		return move(zero_initializer);
+		return zero_initializer;
 	}
 	else if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
 	{
 		var UninitializedInitializer mut uninitialized_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
-		return move(uninitialized_initializer);
+		return uninitialized_initializer;
 	}
 	else if( parse_expression_initializer )
 	{
@@ -1985,7 +1985,7 @@ fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
 		{
 			var UninitializedInitializer mut uninitialized_initializer{ .src_loc= it_.front().src_loc };
 			NextLexem();
-			return move(uninitialized_initializer);
+			return uninitialized_initializer;
 		}
 		else
 		{
@@ -2027,7 +2027,7 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		PushErrorMessage();
 	}
 
-	return move(block);
+	return block;
 }
 
 fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
@@ -2191,7 +2191,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		}
 	}
 
-	return move(block_elements);
+	return block_elements;
 }
 
 fn SyntaxAnalyzer::TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr
@@ -2335,7 +2335,7 @@ fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 		}
 	}
 
-	return move(variables_declaration);
+	return variables_declaration;
 }
 
 fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration
@@ -2383,7 +2383,7 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 
 	ExpectSemicolon();
 
-	return move(variable_declaration);
+	return variable_declaration;
 }
 
 fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
@@ -2398,7 +2398,7 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 
 	ExpectSemicolon();
 
-	return move(res);
+	return res;
 }
 
 fn SyntaxAnalyzer::ParseYieldOperator( mut this ) : YieldOperator
@@ -2413,7 +2413,7 @@ fn SyntaxAnalyzer::ParseYieldOperator( mut this ) : YieldOperator
 
 	ExpectSemicolon();
 
-	return move(res);
+	return res;
 }
 
 fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
@@ -2434,7 +2434,7 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 		.end_src_loc= GetPrevSrcLoc(),
 	};
 
-	return move(if_operator);
+	return if_operator;
 }
 
 fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
@@ -2455,7 +2455,7 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 		.end_src_loc= GetPrevSrcLoc(),
 	};
 
-	return move(static_if_operator);
+	return static_if_operator;
 }
 
 fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperator
@@ -2498,7 +2498,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 	if_coro_advance_operator.alternative= TryParseIfAlternative();
 	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 
-	return move(if_coro_advance_operator);
+	return if_coro_advance_operator;
 }
 
 fn SyntaxAnalyzer::ParseSwitchOperator( mut this ) : SwitchOperator
@@ -2588,7 +2588,7 @@ fn SyntaxAnalyzer::ParseSwitchOperator( mut this ) : SwitchOperator
 	switch_operator.end_src_loc= it_.front().src_loc;
 	ExpectLexem( Lexem::Type::BraceRight );
 
-	return move(switch_operator);
+	return switch_operator;
 }
 
 fn SyntaxAnalyzer::TryParseLabel( mut this ) : ust::optional</Label/>
@@ -2605,7 +2605,7 @@ fn SyntaxAnalyzer::TryParseLabel( mut this ) : ust::optional</Label/>
 		label_.name= it_.front().text;
 		NextLexem();
 
-		return move(label_);
+		return label_;
 	}
 
 	return ust::null_optional;
@@ -2623,7 +2623,7 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 		.label_= TryParseLabel(),
 		.block( ParseBlock() )
 	};
-	return move(while_operator);
+	return while_operator;
 }
 
 fn SyntaxAnalyzer::ParseLoopOperator( mut this ) : LoopOperator
@@ -2637,7 +2637,7 @@ fn SyntaxAnalyzer::ParseLoopOperator( mut this ) : LoopOperator
 		.label_= TryParseLabel(),
 		.block( ParseBlock() )
 	};
-	return move(loop_operator);
+	return loop_operator;
 }
 
 fn SyntaxAnalyzer::ParseForOperator( mut this ) : BlockElement
@@ -2694,7 +2694,7 @@ fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 
 	for_operator.block.deref()= ParseBlock();
 
-	return move(for_operator);
+	return for_operator;
 }
 
 fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
@@ -2805,7 +2805,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 
 	for_operator.block.deref()= ParseBlock();
 
-	return move(for_operator);
+	return for_operator;
 }
 
 fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
@@ -2817,7 +2817,7 @@ fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
 
 	ExpectSemicolon();
 
-	return move(break_operator);
+	return break_operator;
 }
 
 fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
@@ -2829,7 +2829,7 @@ fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
 
 	ExpectSemicolon();
 
-	return move(continue_operator);
+	return continue_operator;
 }
 
 fn SyntaxAnalyzer::ParseWithOperator( mut this ) : WithOperator
@@ -2870,7 +2870,7 @@ fn SyntaxAnalyzer::ParseWithOperator( mut this ) : WithOperator
 
 	with_operator.block.deref()= ParseBlock();
 
-	return move(with_operator);
+	return with_operator;
 }
 
 fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
@@ -2902,7 +2902,7 @@ fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
 
 	ExpectSemicolon();
 
-	return move(static_assert_);
+	return static_assert_;
 }
 
 fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
@@ -2919,7 +2919,7 @@ fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
 		NextLexem();
 
 		var Halt mut halt_{ .src_loc= src_loc };
-		return move(halt_);
+		return halt_;
 	}
 	else
 	{
@@ -2935,7 +2935,7 @@ fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
 
 		ExpectSemicolon();
 
-		return move(halt_if);
+		return halt_if;
 	}
 }
 
@@ -2973,7 +2973,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 
 	class_.class_elements= ParseClassBody();
 
-	return move(class_);
+	return class_;
 }
 
 fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
@@ -2984,7 +2984,7 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 
 	ExpectLexem( Lexem::Type::BraceRight );
 
-	return move(class_elements);
+	return class_elements;
 }
 
 fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
@@ -3133,7 +3133,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 	}
 
-	return move(class_elements);
+	return class_elements;
 }
 
 fn SyntaxAnalyzer::ParseClassKindAttribute( mut this ) : Class::KindAttribute
@@ -3186,7 +3186,7 @@ fn SyntaxAnalyzer::ParseClassParentsList( mut this ) : ust::vector</ComplexName/
 		}
 	}
 
-	return move(parents_list);
+	return parents_list;
 }
 
 fn SyntaxAnalyzer::TryParseNonSyncTag( mut this ) : NonSyncTag
@@ -3280,7 +3280,7 @@ fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 		}
 	}
 
-	return move(enum_);
+	return enum_;
 }
 
 fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
@@ -3309,7 +3309,7 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 
 	ExpectSemicolon();
 
-	return move(type_alias);
+	return type_alias;
 }
 
 fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
@@ -3550,7 +3550,7 @@ fn SyntaxAnalyzer::ParseTemplateSignatureParams( mut this ) : ust::vector</TypeT
 		}
 	}
 
-	return move(signature_params);
+	return signature_params;
 }
 
 fn SyntaxAnalyzer::ParseMacro( mut this )
@@ -3791,7 +3791,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 		}
 	}
 
-	return move(match_elements);
+	return match_elements;
 }
 
 fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : Macro::ResultElements
@@ -3857,7 +3857,7 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : Macro::ResultElements
 		}
 	}
 
-	return move(result_elements);
+	return result_elements;
 }
 
 fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
@@ -3924,7 +3924,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_
 		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
 	}
 
-	return move(lexems);
+	return lexems;
 }
 
 fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>
@@ -4187,7 +4187,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 		else { halt; }
 	}
 
-	return move(lexems_expanded);
+	return lexems_expanded;
 }
 
 fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>

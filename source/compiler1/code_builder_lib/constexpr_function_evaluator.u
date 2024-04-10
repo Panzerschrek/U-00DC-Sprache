@@ -45,7 +45,7 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 
 	if( !errors.empty() || constant == LLVMValueRef::Null )
 	{
-		return move(errors);
+		return errors;
 	}
 	else
 	{

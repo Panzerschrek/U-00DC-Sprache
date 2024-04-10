@@ -59,7 +59,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 				};
 				var VariablePtr mut function_pointer_ptr= move(function_pointer).CreatePtr();
 				function_context.references_graph.AddNode( function_pointer_ptr );
-				return move(function_pointer_ptr);
+				return function_pointer_ptr;
 			}
 		}
 	}
@@ -76,7 +76,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 	};
 	var VariablePtr mut dummy_ptr= move(dummy).CreatePtr();
 	function_context.references_graph.AddNode( dummy_ptr );
-	return move(dummy_ptr);
+	return dummy_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr
@@ -172,7 +172,7 @@ fn CodeBuilder::BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& name
 									function_context.references_graph.MoveNode( variable_for_move );
 
 									RegisterTemporaryVariable( function_context, result_ptr );
-									return move(result_ptr);
+									return result_ptr;
 								}
 							}
 						}
@@ -282,7 +282,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
@@ -302,7 +302,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value
@@ -440,7 +440,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
-		return move(result_ptr);
+		return result_ptr;
 	}
 	else
 	{
@@ -496,7 +496,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
-		return move(result_ptr);
+		return result_ptr;
 	}
 }
 
@@ -525,7 +525,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, KeywordToString( Keyword::this_ ) )
 			return ErrorValue();
 		}
-		return move(this_non_null);
+		return this_non_null;
 	}
 	if( name == KeywordToString( Keyword::base_ ) )
 	{
@@ -586,7 +586,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		function_context.references_graph.TryAddLink( this_ptr, base_ptr, names_scope, src_loc );
 
 		RegisterTemporaryVariable( function_context, base_ptr );
-		return move(base_ptr);
+		return base_ptr;
 	}
 
 	return ResolveValue( names_scope, function_context, named_operand );
@@ -603,7 +603,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var VariablePtr mut result= BuildTypeinfo( t, GetRootNamespace( names_scope ) );
 	function_context.references_graph.AddNodeIfNotExists( result );
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SameType& same_type_ ) : Value
@@ -626,7 +626,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value
@@ -648,7 +648,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
@@ -700,7 +700,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	function_context.references_graph.TryAddInnerLinks( v_ptr, result_ptr, names_scope, cast_imut_.src_loc );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastMut& cast_mut_ ) : Value
@@ -742,7 +742,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	function_context.references_graph.TryAddInnerLinks( v_ptr, result_ptr, names_scope, cast_mut_.src_loc );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
@@ -751,7 +751,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	function_context.is_in_unsafe_block= false;
 	auto mut result= BuildExpressionCode( names_scope, function_context, safe_expression.expression.deref() );
 	function_context.is_in_unsafe_block= prev_unsafe;
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnsafeExpression& unsafe_expression ) : Value
@@ -801,11 +801,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			RegisterTemporaryVariable( function_context, variable_copy_ptr );
-			return move(variable_copy_ptr);
+			return variable_copy_ptr;
 		}
 	}
 
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
@@ -929,7 +929,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	function_context.references_graph.MoveNode( variable_for_move );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value
@@ -1005,7 +1005,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	// Register variable for references checking and destruction.
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
@@ -1234,7 +1234,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	// Register variable for references checking and destruction.
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) : Value
@@ -1285,7 +1285,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : Value
@@ -1345,7 +1345,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
@@ -1395,7 +1395,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				var VariablePtr mut result_ptr= move(result).CreatePtr();
 				function_context.references_graph.AddNode( result_ptr );
 				RegisterTemporaryVariable( function_context, result_ptr );
-				return move(result_ptr);
+				return result_ptr;
 			}
 			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
 				binary_operator.operator != BinaryOperatorType::CompareOrder &&
@@ -1444,7 +1444,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				var VariablePtr mut result_ptr= move(result).CreatePtr();
 				function_context.references_graph.AddNode( result_ptr );
 				RegisterTemporaryVariable( function_context, result_ptr );
-				return move(result_ptr);
+				return result_ptr;
 			}
 		}
 
@@ -1585,7 +1585,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			function_context.references_graph.MoveNode( variable_lock_node );
 			// Register variable for references checking.
 			RegisterTemporaryVariable( function_context, result_ptr );
-			return move(result_ptr);
+			return result_ptr;
 		}
 		REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
 	}
@@ -1650,7 +1650,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				{
 					var VariablePtr mut prev_node_non_null= prev_node.try_to_non_nullable();
 					function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
-					return move(prev_node_non_null);
+					return prev_node_non_null;
 				}
 			}
 
@@ -1686,7 +1686,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var VariablePtr mut result_ptr= move(result).CreateChildPtr( variable_ptr );
 			function_context.references_graph.AddNode( result_ptr );
 			v.children[ size_type(type_index) ]= result_ptr;
-			return move(result_ptr);
+			return result_ptr;
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, index.t )
 	}
@@ -1792,7 +1792,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
 				// Pass constexpr fetch result for constexpr typeinfo variable.
-				return move(fetch_result);
+				return fetch_result;
 			}
 			else
 			{
@@ -1825,7 +1825,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				function_context.references_graph.TryAddInnerLinks( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
 
 				RegisterTemporaryVariable( function_context, result_ptr );
-				return move(result_ptr);
+				return result_ptr;
 			}
 		}
 	}
@@ -1900,12 +1900,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= parameterization_result.try_to_non_nullable() };
-			return move(this_methods_set);
+			return this_methods_set;
 		}
 		else
 		{
 			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= functions_set_ptr.try_to_non_nullable() };
-			return move(this_methods_set);
+			return this_methods_set;
 		}
 	}
 
@@ -1982,7 +1982,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
@@ -2025,7 +2025,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
@@ -2069,7 +2069,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value
@@ -2174,7 +2174,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	}
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context, VariablePtr& variable_ptr ) : VariablePtr
@@ -2194,7 +2194,7 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 		{
 			var VariablePtr mut prev_node_non_null= prev_node.try_to_non_nullable();
 			function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
-			return move(prev_node_non_null);
+			return prev_node_non_null;
 		}
 	}
 
@@ -2220,7 +2220,7 @@ fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context
 	variable.children[ base_field_index ]= base_ptr;
 	function_context.references_graph.AddNode( base_ptr );
 
-	return move(base_ptr);
+	return base_ptr;
 }
 
 fn CodeBuilder::AccessClassField(
@@ -2337,7 +2337,7 @@ fn CodeBuilder::AccessDirectClassField(
 
 		// Register variable for references checking.
 		RegisterTemporaryVariable( function_context, result_ptr );
-		return move(result_ptr);
+		return result_ptr;
 	}
 	else
 	{
@@ -2352,7 +2352,7 @@ fn CodeBuilder::AccessDirectClassField(
 			{
 				var VariablePtr mut prev_node_non_null= prev_node.try_to_non_nullable();
 				function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
-				return move(prev_node_non_null);
+				return prev_node_non_null;
 			}
 		}
 
@@ -2379,7 +2379,7 @@ fn CodeBuilder::AccessDirectClassField(
 
 		v.children[ size_type(field.index) ]= result_ptr;
 
-		return move(result_ptr);
+		return result_ptr;
 	}
 }
 
@@ -3051,7 +3051,7 @@ fn CodeBuilder::BuildBinaryOperator(
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
@@ -3168,7 +3168,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	var VariablePtr mut result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::TryCallOverloadedBinaryOperator(
@@ -3497,7 +3497,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr mut result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
-		return move(result_ptr);
+		return result_ptr;
 	}
 	else
 	{
@@ -4300,7 +4300,7 @@ fn CodeBuilder::DoCallFunction(
 
 	// Register result variable for destruction and references graph checks.
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildTempVariableConstruction(
@@ -4370,7 +4370,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	}
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::ConvertVariable(
@@ -4440,7 +4440,7 @@ fn CodeBuilder::ConvertVariable(
 	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source, if needed.
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : bool

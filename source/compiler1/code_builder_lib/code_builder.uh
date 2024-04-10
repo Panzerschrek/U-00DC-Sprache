@@ -112,7 +112,7 @@ private:
 		}
 		function_context.variables_frames.drop_back();
 
-		return move(result);
+		return result;
 	}
 
 private:

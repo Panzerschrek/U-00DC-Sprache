@@ -67,7 +67,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue(
 
 	NamesScopeMerge( copy_ptr, src, src_classes_members_namespaces_table );
 
-	return move(copy_ptr);
+	return copy_ptr;
 }
 
 fn CodeBuilder::DeepCopyNamesScopeValue(

@@ -51,7 +51,7 @@ fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_
 		.src_loc= src_loc,
 	};
 
-	return move(err);
+	return err;
 }
 
 fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error )
@@ -201,7 +201,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		}
 	}
 
-	return move(out_errors);
+	return out_errors;
 }
 
 fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )

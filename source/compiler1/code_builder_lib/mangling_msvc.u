@@ -964,7 +964,7 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
 {
 	str.push_back( "\0"c8 );
-	return move(str);
+	return str;
 }
 
 fn GetCallingConventionName( LLVMCallConvID cc ) : ust::string_view8

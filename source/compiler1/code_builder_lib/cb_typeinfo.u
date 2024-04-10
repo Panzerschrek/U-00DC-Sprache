@@ -242,7 +242,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		members_lock.deref().AddName( "src_type", t );
 	}
 
-	return move(v_ptr);
+	return v_ptr;
 }
 
 fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
@@ -481,7 +481,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 
 	typeinfo_class_table_.push_back( class_type_ptr );
 
-	return move(class_type_ptr);
+	return class_type_ptr;
 }
 
 fn CodeBuilder::CreateTypeinfoHelperClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8 mut name ) : ClassTypePtr

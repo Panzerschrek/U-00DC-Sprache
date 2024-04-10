@@ -253,7 +253,7 @@ fn ManglerState::TakeResult( mut this ) : ust::string8
 	result_full_.clear();
 	result_compressed_.clear();
 
-	return move(result);
+	return result;
 }
 
 fn ManglerState::GetCurrentPos( this ) : size_type

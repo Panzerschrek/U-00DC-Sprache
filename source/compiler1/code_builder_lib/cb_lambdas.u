@@ -500,7 +500,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							RestoreFunctionContextState( function_context, state );
 							function_context.is_functionless_context= prev_is_functionless_context;
 
-							return move(result);
+							return result;
 						} );
 
 					with( &expr_result : expr_result_ptr.lock_imut().deref() )
@@ -1010,7 +1010,7 @@ fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_c
 			result.insert( variable );
 		}
 	}
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
@@ -1221,7 +1221,7 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 	function_context.references_graph.MoveNode( resolved_variable_ptr );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 struct CapturedVariableForSorting

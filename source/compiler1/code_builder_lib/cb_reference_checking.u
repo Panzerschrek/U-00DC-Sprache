@@ -280,7 +280,7 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 				if( node == inner_nodes[j] )
 				{
 					var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
-					return move(param_reference);
+					return param_reference;
 				}
 			}
 
@@ -291,7 +291,7 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 			if( node == function_context.args_nodes[i] )
 			{
 				var FunctionType::ParamReference mut param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
-				return move(param_reference);
+				return param_reference;
 			}
 
 			++coroutine_inner_reference_index;

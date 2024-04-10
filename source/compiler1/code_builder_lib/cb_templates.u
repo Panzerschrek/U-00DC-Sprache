@@ -250,7 +250,7 @@ fn CodeBuilder::PrepareTemplateParams(
 		template_params.push_back( move(out_param) );
 	}
 
-	return move(template_params);
+	return template_params;
 }
 
 fn CodeBuilder::FillVariableTemplateParamsTypes(
@@ -340,7 +340,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				template_params_usage_flags[i]= true;
 
 				var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
-				return move(res);
+				return res;
 			}
 		}
 	}
@@ -370,11 +370,11 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				if_var( &t : value.get</Type/>() )
 				{
 					var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
-					return move(type_param);
+					return type_param;
 				}
 			}
 
-			return move(specialized_template_param);
+			return specialized_template_param;
 		}
 	}
 
@@ -421,7 +421,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		.t= PrepareType( names_scope, function_context, param )
 	};
-	return move(t);
+	return t;
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -445,9 +445,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		{
 			.t= PrepareType( names_scope, function_context, param )
 		};
-		return move(t);
+		return t;
 	}
-	return move(array_type_param);
+	return array_type_param;
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -475,10 +475,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
-		return move(t);
+		return t;
 	}
 
-	return move(tuple_type_param);
+	return tuple_type_param;
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -500,10 +500,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
-		return move(t);
+		return t;
 	}
 
-	return move(raw_pointer_type_param);
+	return raw_pointer_type_param;
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -563,10 +563,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
-		return move(t);
+		return t;
 	}
 
-	return move(function_type_param);
+	return function_type_param;
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -585,7 +585,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
-		return move(t);
+		return t;
 	}
 
 	var TemplateSignatureParam::CoroutineTypeParam mut coroutine_type_param
@@ -617,7 +617,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		coroutine_type_param.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, function_context, return_value_inner_references_expression, num_params );
 	}
 
-	return move(coroutine_type_param);
+	return coroutine_type_param;
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam
@@ -625,7 +625,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	if_var( &t : value.get</Type/>() )
 	{
 		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
-		return move(type_param);
+		return type_param;
 	}
 	else if_var( &v_ptr : value.get</VariablePtr/>() )
 	{
@@ -635,30 +635,30 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
-				return move(type_param);
+				return type_param;
 			}
 			if( v.constexpr_value == LLVMValueRef::Null )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 				var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
-				return move(type_param);
+				return type_param;
 			}
 
 			var TemplateSignatureParam::VariableParam mut variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
-			return move(variable_param);
+			return variable_param;
 		}
 	}
 	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
 		var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
-		return move(type_param);
+		return type_param;
 	}
 	else
 	{
 		REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, src_loc, GetValueKindName( value ) )
 		var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
-		return move(type_param);
+		return type_param;
 	}
 }
 
@@ -812,7 +812,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		.signature_args= move(result_signature_template_args),
 	};
 
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::FinishTypeTemplateGeneration(
@@ -897,7 +897,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 
 		AddNewTemplateThing( move(template_key), args_names_scope );
 
-		return move(t);
+		return t;
 	}
 	else { halt; } // Unhandled type template kind.
 }
@@ -993,7 +993,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 	}
 
 	var TemplateFunctionPreparationResult mut result{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::FinishFunctionTemplateParameterization(
@@ -1133,7 +1133,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		lock.deref().functions.front()= function_variable;
 	}
 
-	return move(function_variable);
+	return function_variable;
 }
 
 fn CodeBuilder::ParameterizeTemplateFunctions(
@@ -1224,7 +1224,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 
 	var ust::shared_ptr_mut</FunctionsSet/> mut result( move(result_functions_set) );
 	parameterized_template_functions_cache_.insert( move(cache_key), result );
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::MatchTemplateArgument(
@@ -1645,7 +1645,7 @@ fn CodeBuilder::EvaluateTemplateArgs(
 		}
 	}
 
-	return move(template_args_finished);
+	return template_args_finished;
 }
 
 fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc, Value& value ) : ust::optional</TemplateArgFinished/>

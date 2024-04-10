@@ -1647,7 +1647,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						{
 							var VariableLite mut res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, single_value ).lock_imut().deref();
 							self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
-							return move(res);
+							return res;
 						} );
 					var SrcLoc src_loc= Synt::GetSrcLoc( single_value );
 					if( expression_variable.t != switch_type )
@@ -1692,7 +1692,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							{
 								var VariableLite mut res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
 								self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
-								return move(res);
+								return res;
 							} );
 
 						if( expression_variable.t != switch_type )

@@ -39,7 +39,7 @@ public: // Main methods.
 	// For example, if "foreach" is used not for a container, but for an iterator.
 	fn iter( byval mut this ) : auto
 	{
-		return move(this);
+		return this;
 	}
 
 public: // Helper methods.
@@ -275,7 +275,7 @@ public: // Methods returning iterators.
 	{
 		for( auto mut i= 0s; i < n && !impl_.next().empty(); ++i )
 		{}
-		return move(this);
+		return this;
 	}
 
 private:
