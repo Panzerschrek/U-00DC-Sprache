@@ -1346,8 +1346,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			ValueType::Value,
 			variable_for_move->location,
 			"_moved_" + variable_for_move->name,
-			variable_for_move->llvm_value,
-			variable_for_move->constexpr_value );
+			variable_for_move->llvm_value );
 	function_context.variables_state.AddNode( result );
 
 	function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names_scope.GetErrors(), move_operator.src_loc );

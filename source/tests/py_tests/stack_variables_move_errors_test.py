@@ -472,3 +472,30 @@ def MovedVariableHasReferences_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "MovedVariableHasReferences", 13 ) )
+
+
+def MoveConstexprIsNotPreserved_Test0():
+	c_program_text= """
+		fn constexpr Foo() : i32
+		{
+			var i32 mut x= 42;
+			x= 34;
+			return move(x); // Should return "34" here.
+		}
+		static_assert( Foo() == 34 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveConstexprIsNotPreserved_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			x= 34;
+			static_assert( move(x) == 42 );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
