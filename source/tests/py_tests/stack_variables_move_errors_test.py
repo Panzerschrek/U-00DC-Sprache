@@ -499,3 +499,141 @@ def MoveConstexprIsNotPreserved_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		struct T
+		{
+			S s;
+			fn Foo( mut this ) : S
+			{
+				return s; // Auto-move for "return" isn't possible - returning struct field.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 12 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			auto& s_ref= s;
+			return s; // Auto-move for "return" isn't possible - returned variable has a reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			auto &mut s_ref= s;
+			return s; // Auto-move for "return" isn't possible - returned variable has a mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			move(s);
+			return s; // Auto-move for "return" isn't possible - returned variable is already moved.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingMovedVariable", 11 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			auto &imut s_ref= s;
+			return s_ref; // Auto-move for "return" isn't possible - returning a reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn Foo() : S
+		{
+			var S mut s= zero_init;
+			auto &mut s_ref= s;
+			return s_ref; // Auto-move for "return" isn't possible - returning a mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test6():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+		}
+		var S mut global_s{ .x= 42 };
+		fn GetS() : S
+		{
+			unsafe{  return global_s;  } // Auto-move for "return" isn't possible - given variable is global. Copy is taken instead.
+		}
+		fn Foo()
+		{
+			auto s= GetS();
+			unsafe{  global_s.x= 0;  }
+			halt if( s.x != 42 ); // Local copy should not be changed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

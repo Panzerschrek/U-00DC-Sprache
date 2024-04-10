@@ -359,6 +359,7 @@ def ReturnAutoMove_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ReturnAutoMove_Test1():
@@ -381,3 +382,4 @@ def ReturnAutoMove_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

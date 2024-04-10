@@ -115,7 +115,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeForReturn(
 			if( input_nodes.size() == 1u )
 			{
 				const VariablePtr variable_for_move= *input_nodes.begin();
-				if( variable_for_move->value_type == ValueType::Value )
+				if( variable_for_move->value_type == ValueType::Value ) // It's a variable, not a reference.
 				{
 					bool found_in_variables= false;
 					for( const auto& stack_frame : function_context.stack_variables_stack )
