@@ -42,7 +42,7 @@ public:
 		join_impl();
 		auto mut res= impl_.try_deref().result.try_take();
 		impl_.reset();
-		return move(res);
+		return res;
 	}
 
 	fn destructor()

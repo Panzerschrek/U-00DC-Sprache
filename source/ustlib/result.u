@@ -221,7 +221,7 @@ public:
 				memory_copy_aligned( typeinfo</OkT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</OkT/>.size_of ); // Copy contents into the result.
 			}
 			move_into_nowhere( move(this) ); // Forget about the result container.
-			return move(t);
+			return t;
 		}
 	}
 
@@ -236,7 +236,7 @@ public:
 				memory_copy_aligned( typeinfo</ErrorT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</ErrorT/>.size_of ); // Copy contents into the result.
 			}
 			move_into_nowhere( move(this) ); // Forget about the result container.
-			return move(t);
+			return t;
 		}
 	}
 

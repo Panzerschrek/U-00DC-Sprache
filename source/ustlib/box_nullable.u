@@ -158,7 +158,7 @@ public:
 			var box</T/> mut result= uninitialized;
 			memory_copy_aligned( typeinfo</ box</T/> />.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( this ), typeinfo</ box</T/> />.size_of );
 			move_into_nowhere( move(this) );
-			return move(result);
+			return result;
 		}
 	}
 
@@ -175,7 +175,7 @@ public:
 			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>($>(ptr)), typeinfo</T/>.size_of ); // Copy contents into the result.
 			memory_free( polymorph_restore_original_ref( $>(ptr) ) ); // Free memory block, that was used for box.
 			ptr_= nullptr</T/>(); // Reset box storage pointer. Now it is empty.
-			return move(t);
+			return t;
 		}
 	}
 

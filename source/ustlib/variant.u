@@ -192,7 +192,7 @@ public:
 						var T mut result= uninitialized;
 						memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( storage_ ), typeinfo</T/>.size_of );
 						unsafe( move_into_nowhere( move(this) ) );
-						return move(result);
+						return result;
 					}
 				}
 			}

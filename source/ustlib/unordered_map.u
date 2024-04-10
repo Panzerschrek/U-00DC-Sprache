@@ -135,7 +135,7 @@ public:
 				call_destructor( table_value.key_storage );
 				var value_type mut r= uninitialized;
 				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, cast_ref_unsafe</byte8/>( r ), cast_ref_unsafe</byte8/>( table_value.value_storage ), typeinfo</ typeof(table_value.value_storage) />.size_of );
-				return move(r);
+				return r;
 			}
 		}
 		halt;
@@ -389,7 +389,7 @@ public:
 			{
 				var optional</ iterator_element_mut /> mut res( iterator_element_mut( $>(table_) ) );
 				drop_front_unchecked();
-				return move(res);
+				return res;
 			}
 		}
 
@@ -406,7 +406,7 @@ public:
 			{
 				var optional</ iterator_element_imut /> mut res( iterator_element_imut( $>(table_) ) );
 				drop_front_unchecked();
-				return move(res);
+				return res;
 			}
 		}
 

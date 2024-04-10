@@ -97,7 +97,7 @@ public:
 		}
 		var ust::optional</C/> mut res( C(x) );
 		++x;
-		return move(res);
+		return res;
 	}
 
 private:
@@ -479,7 +479,7 @@ fn nomangle main() : i32
 				lambda( C mut c ) : CWrapper
 				{
 					var CWrapper mut wrapper{ .c= move(c) };
-					return move(wrapper);
+					return wrapper;
 				} )
 			.collect</ ust::vector</ CWrapper /> />();
 
@@ -553,7 +553,7 @@ fn nomangle main() : i32
 				{
 					if( (c.x & 1) != 0 ) { return ust::null_optional; }
 					var CWrapper mut wrapper{ .c= move(c) };
-					return move(wrapper);
+					return wrapper;
 				})
 				.collect</ ust::vector</CWrapper/> />();
 			halt if( c_vec.size() != 5s );

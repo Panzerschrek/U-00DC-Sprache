@@ -41,7 +41,7 @@ fn constexpr get_sequential_tags( size_type offset ) : field_tags_list</S/>
 	{
 		result[i]= char8( size_type("a"c8) + i + offset );
 	}
-	return move(result);
+	return result;
 }
 
 } // namespace field_tags
@@ -95,7 +95,7 @@ fn constexpr param_n_with_sequential_tags_of_param_m_with_dst_offset( u8 n, u8 m
 		result[i][1][1] = char8( size_type("a"c8) + i );
 	}
 
-	return move(result);
+	return result;
 }
 
 // Concatenate pollition lists.
@@ -111,7 +111,7 @@ fn constexpr pollution_list_concat( [ pollution_element, S0 ]& a0, [ pollution_e
 	{
 		result[ S0 + i ]= a1[i];
 	}
-	return move(result);
+	return result;
 }
 
 } // namespace pollution
