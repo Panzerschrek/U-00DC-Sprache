@@ -97,3 +97,25 @@ If a moved value type isn't default-constructible an error will be produced.
        var [ S, 3 ] mut arr[ (55), (77), (99) ];
        var S s= take(arr[1]); // The value inside "arr[1]" will be moved into a new variable "s". For "arr[1]" a default-constructor will be called.
    }
+
+
+******************
+*moving in return*
+******************
+
+Local variables and function arguments can be automatically moved in ``return``.
+But this works only if ``return`` statement contains the variable itself, not some complex expression or a reference and only if given variable has no alive references to it.
+
+.. code-block:: u_spr
+
+   struct S
+   {
+       fn constructor( mut this, S& other )= delete;
+       i32 x;
+   }
+   static_assert( !typeinfo</S/>.is_copy_constructible );
+   fn MakeS() : S
+   {
+       var S s{ .x= 123 };
+       return s; // Moving happens here, not copying.
+   }
