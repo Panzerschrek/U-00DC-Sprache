@@ -825,7 +825,7 @@ void CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 		if( current_context->external_variables.count( variable ) > 0 )
 		{
 			REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope.GetErrors(), src_loc, name );
-			function_context.variables_state.AddNode( variable ); // Prevent further errors.
+			function_context.variables_state.AddNodeIfNotExists( variable ); // Prevent further errors.
 			lambda_preprocessing_context.has_preprocessing_errors= true;
 		}
 

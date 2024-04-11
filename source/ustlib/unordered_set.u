@@ -28,7 +28,7 @@ public:
 			}
 			result.insert( next_result.try_take() );
 		}
-		return move(result);
+		return result;
 	}
 
 public:

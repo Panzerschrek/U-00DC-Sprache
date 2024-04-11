@@ -429,7 +429,7 @@ def GeneratorIsNonCopyable_Test6():
 		fn Foo() : (generator : i32)
 		{
 			auto gen= SomeGen();
-			return gen; // Try to call copy constructor for return value.
+			return safe(gen); // Try to call copy constructor for return value.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

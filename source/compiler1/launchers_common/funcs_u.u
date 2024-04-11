@@ -369,14 +369,14 @@ fn ProcessCodeBuilderErrors(
 
 fn GetCodeBuilderOptionsForTests(bool enable_unsed_name_errors) : CodeBuilderOptions
 {
-	var CodeBuilderOptions mut options
+	var CodeBuilderOptions options
 	{
 		.build_debug_info= true,
 		.create_lifetimes= true,
 		.generate_tbaa_metadata= true,
 		.report_about_unused_names= enable_unsed_name_errors,
 	};
-	return move(options);
+	return options;
 }
 
 fn StringToArrayView( $(char8) string_start, size_type string_size ) unsafe : ust::string_view8
@@ -401,7 +401,7 @@ fn TransformSourceFiles( U1_SourceFile& source_files, size_type source_file_coun
 			source_entries.push_back( move(entry) );
 		}
 	}
-	return move(source_entries);
+	return source_entries;
 }
 
 fn PrintLexSyntErrors( SourceGraph& source_graph )
@@ -557,7 +557,7 @@ public:
 				parent_file_path_normalized_view,
 				U1_IVfsInterface::FillStringCallback(FillStringCallback),
 				ust::ref_to_int( result ) );
-			return move(result);
+			return result;
 		}
 	}
 
@@ -576,7 +576,7 @@ public:
 				ust::ref_to_int( result ) );
 			if( ok )
 			{
-				return move(result);
+				return result;
 			}
 		}
 		return ust::null_optional;

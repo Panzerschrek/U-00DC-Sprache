@@ -9,7 +9,6 @@ General:
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) Continious initializer for arrays
-*) Auto-move in "return" for local variables
 *) More advanced macros - more context, elements, string manipulations
 *) switch-style operator for expression context
 *) thread-local variables

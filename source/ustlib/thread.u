@@ -40,9 +40,9 @@ public:
 	fn join( byval mut this ) : ResultType
 	{
 		join_impl();
-		auto mut res= impl_.try_deref().result.try_take();
+		auto res= impl_.try_deref().result.try_take();
 		impl_.reset();
-		return move(res);
+		return res;
 	}
 
 	fn destructor()

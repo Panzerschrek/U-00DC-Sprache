@@ -37,9 +37,9 @@ public: // Main methods.
 	// Implement method "iter" for iterator itself.
 	// This is needed, sometimes,
 	// For example, if "foreach" is used not for a container, but for an iterator.
-	fn iter( byval mut this ) : auto
+	fn iter( byval this ) : auto
 	{
-		return move(this);
+		return this;
 	}
 
 public: // Helper methods.
@@ -116,11 +116,11 @@ public: // Helper methods.
 			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
-				return move(next_res);
+				return next_res;
 			}
 			if( func( next_res.try_deref() ) )
 			{
-				return move(next_res);
+				return next_res;
 			}
 		}
 	}
@@ -157,14 +157,14 @@ public: // Helper methods.
 		auto mut last_candidate= impl_.next();
 		if( last_candidate.empty() )
 		{
-			return move(last_candidate);
+			return last_candidate;
 		}
 		loop
 		{
 			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
-				return move(last_candidate);
+				return last_candidate;
 			}
 			last_candidate= move(next_res);
 		}
@@ -177,10 +177,10 @@ public: // Helper methods.
 		// Skip first n - 1 elements, or return earlier, if iterator finishes.
 		for( auto mut i= 0s; i < n; ++i )
 		{
-			auto mut next_res= impl_.next();
+			auto next_res= impl_.next();
 			if( next_res.empty() )
 			{
-				return move(next_res);
+				return next_res;
 			}
 		}
 		// Return nth element (may be empty).
@@ -275,7 +275,7 @@ public: // Methods returning iterators.
 	{
 		for( auto mut i= 0s; i < n && !impl_.next().empty(); ++i )
 		{}
-		return move(this);
+		return this;
 	}
 
 private:
@@ -314,10 +314,10 @@ public:
 
 	fn next( mut this ) : auto
 	{
-		auto mut next0= base_iterator0_.next();
+		auto next0= base_iterator0_.next();
 		if( !next0.empty() )
 		{
-			return move(next0);
+			return next0;
 		}
 		return base_iterator1_.next();
 	}
@@ -367,11 +367,11 @@ public:
 			auto mut next_res= base_iterator_.next();
 			if( next_res.empty() )
 			{
-				return move(next_res);
+				return next_res;
 			}
 			if( func_( next_res.try_deref() ) )
 			{
-				return move(next_res);
+				return next_res;
 			}
 			// Func result is false - move to next element and perform check for it.
 		}
@@ -428,10 +428,10 @@ public:
 				return FuncResT(); // If base iterator returns nothing, return nothing on form of "func_" type - empty "optional" or "optional_ref".
 			}
 
-			auto mut filter_map_result= func_( next_res.try_take() );
+			auto filter_map_result= func_( next_res.try_take() );
 			if( !filter_map_result.empty() )
 			{
-				return move(filter_map_result);
+				return filter_map_result;
 			}
 		}
 	}
@@ -479,12 +479,12 @@ class limit_raw_iterator
 			type ResT= typeof( base_iterator_.next() );
 			return ResT();
 		}
-		auto mut next_res= base_iterator_.next();
+		auto next_res= base_iterator_.next();
 		if( !next_res.empty() )
 		{
 			--limit_;
 		}
-		return move(next_res);
+		return next_res;
 	}
 
 private:

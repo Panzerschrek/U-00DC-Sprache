@@ -61,7 +61,7 @@ fn LoadSourceGraph(
 		source_graph.nodes.push_back( move(node) );
 	}
 
-	return move(source_graph);
+	return source_graph;
 }
 
 // Returns node index or ~0 in case of error.

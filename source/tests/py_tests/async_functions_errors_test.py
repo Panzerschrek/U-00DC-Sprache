@@ -444,7 +444,7 @@ def AsyncReturn_ForNonCopyableValue_Test0():
 		fn async Foo() : S
 		{
 			var S s;
-			return s; // Can't copy "s" here - it is non-copyable.
+			return safe(s); // Can't copy "s" here - it is non-copyable.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -560,7 +560,7 @@ def AsyncFunctionIsNonCopyable_Test6():
 		fn Foo() : (async : i32)
 		{
 			auto f= SomeFunc();
-			return f; // Try to call copy constructor for return value.
+			return safe(f); // Try to call copy constructor for return value.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

@@ -37,7 +37,7 @@ fn ToString( ArrayType& array_type ) : ust::string8
 	result+= ", ";
 	result+= ust::to_string8(array_type.element_count);
 	result+= " ]";
-	return move(result);
+	return result;
 }
 
 fn ToString( TupleType& tuple_type ) : ust::string8
@@ -48,7 +48,7 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	if( tuple_type.element_types.empty() )
 	{
 		result+= "[]";
-		return move(result);
+		return result;
 	}
 
 	result+= "[ ";
@@ -63,7 +63,7 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	}
 
 	result+= " ]";
-	return move(result);
+	return result;
 }
 
 fn ToString( RawPointerType& raw_pointer_type ) : ust::string8
@@ -74,7 +74,7 @@ fn ToString( RawPointerType& raw_pointer_type ) : ust::string8
 	result+= raw_pointer_type.element_type.ToString();
 	result+= ")";
 
-	return move(result);
+	return result;
 }
 
 fn ToString( FunctionType& function_type ) : ust::string8
@@ -136,7 +136,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		result+= " &imut";
 	}
 
-	return move(result);
+	return result;
 }
 
 fn ToString( FunctionPointerType& function_pointer_type ) : ust::string8
@@ -321,7 +321,7 @@ fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) 
 		}
 	}
 
-	return move(result);
+	return result;
 }
 
 op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
@@ -1049,7 +1049,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 			}
 
 			res+= " )";
-			return move(res);
+			return res;
 		}
 	}
 	if_var( &enum_type : t.GetEnumType() )
@@ -1533,7 +1533,7 @@ fn NamesScope::ToString( this ) : ust::string8
 					}
 					res+= "/>";
 
-					return move(res);
+					return res;
 				}
 			}
 		}
@@ -1547,7 +1547,7 @@ fn NamesScope::ToString( this ) : ust::string8
 			res+= typeinfo_class_description.source_type.ToString();
 			res+= "/>";
 			res+=")";
-			return move(res);
+			return res;
 		}
 		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
 		{
@@ -1585,7 +1585,7 @@ fn NamesScope::ToString( this ) : ust::string8
 			}
 			else { halt; }
 
-			return move(res);
+			return res;
 		}
 	}
 
@@ -1603,7 +1603,7 @@ fn NamesScope::ToString( this ) : ust::string8
 	}
 
 	res+= name_;
-	return move(res);
+	return res;
 }
 
 fn NamesScope::SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
@@ -1658,7 +1658,7 @@ fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr
 		root_names_scope= parent.try_to_non_nullable();
 	}
 
-	return move(root_names_scope);
+	return root_names_scope;
 }
 
 fn GetClosestNamedSpaceOrRoot( NamesScopePtr& names_scope ) : NamesScopePtr

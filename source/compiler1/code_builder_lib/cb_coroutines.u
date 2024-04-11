@@ -591,7 +591,10 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	// Fill promise.
 
-	var VariablePtr mut expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+	var VariablePtr mut expr_ptr=
+		select( return_value_type == ValueType::Value
+			? BuildExpressionCodeForValueReturn( names_scope, function_context, expression )
+			: BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ) );
 	if( return_value_type == ValueType::Value )
 	{
 		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;

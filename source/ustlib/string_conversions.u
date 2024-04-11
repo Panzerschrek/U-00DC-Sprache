@@ -214,7 +214,7 @@ fn to_string_impl( u64 x ) : ust::string_base</C/>
 		}
 	}
 
-	return move(result);
+	return result;
 }
 
 } // namespace ust

@@ -727,6 +727,12 @@ private:
 		NamesScope& names_scope,
 		FunctionContext& function_context );
 
+	// May move local variables.
+	VariablePtr BuildExpressionCodeForValueReturn(
+		const Synt::Expression& expression,
+		NamesScope& names_scope,
+		FunctionContext& function_context );
+
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context );
 
 	template<typename T>

@@ -539,7 +539,10 @@ void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& functio
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
+	VariablePtr expression_result=
+		coroutine_type_description->return_value_type == ValueType::Value
+			? BuildExpressionCodeForValueReturn( expression, names_scope, function_context )
+			: BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( expression_result->type == invalid_type_ )
 		return;
 

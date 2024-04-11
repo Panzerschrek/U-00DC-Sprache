@@ -286,7 +286,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : N
 
 	var NodesSet mut nodes_set;
 	GetAllAccessibleVariableNodes_r( node, nodes_set );
-	return move(nodes_set);
+	return nodes_set;
 }
 
 fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
@@ -366,7 +366,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 
 	// See the comment in same code in Compiler0.
 
-	return move(result);
+	return result;
 }
 
 fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc )

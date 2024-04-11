@@ -76,6 +76,100 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	return dummy_result;
 }
 
+VariablePtr CodeBuilder::BuildExpressionCodeForValueReturn(
+	const Synt::Expression& expression,
+	NamesScope& names_scope,
+	FunctionContext& function_context )
+{
+	// Try to automatically move local variable in return.
+	if(const auto name_lookup= std::get_if<Synt::NameLookup>( &expression ) )
+	{
+		VariablePtr resolved_variable;
+		if( name_lookup->name == Keywords::this_ )
+		{
+			if( function_context.this_ != nullptr&& !function_context.whole_this_is_unavailable )
+				resolved_variable= function_context.this_;
+		}
+		else
+		{
+			NamesScopeValue* const resolved_value_ptr= LookupName( names_scope, name_lookup->name, name_lookup->src_loc ).value;
+			if( resolved_value_ptr != nullptr )
+			{
+				resolved_value_ptr->referenced= true;
+				CollectDefinition( *resolved_value_ptr, name_lookup->src_loc );
+
+				const Value& resolved_value= resolved_value_ptr->value;
+				resolved_variable= resolved_value.GetVariable();
+
+				if( resolved_variable != nullptr && function_context.lambda_preprocessing_context != nullptr )
+				{
+					LambdaPreprocessingCheckVariableUsage( names_scope, function_context, resolved_variable, name_lookup->name, name_lookup->src_loc );
+					if( function_context.lambda_preprocessing_context->external_variables.count( resolved_variable ) > 0 )
+					{
+						// Do not try to auto-move lambda external variables.
+						return LambdaPreprocessingAccessExternalVariable( function_context, resolved_variable, name_lookup->name );
+					}
+				}
+			}
+		}
+
+		if( resolved_variable != nullptr &&
+			// Enable auto-move in "return" for immutable local variables too.
+			(resolved_variable->value_type == ValueType::ReferenceMut || resolved_variable->value_type == ValueType::ReferenceImut) &&
+			!IsGlobalVariable( resolved_variable ) &&
+			!function_context.variables_state.HasOutgoingLinks( resolved_variable ) &&
+			!function_context.variables_state.NodeMoved( resolved_variable ) )
+		{
+			const auto input_nodes= function_context.variables_state.GetNodeInputLinks( resolved_variable );
+			if( input_nodes.size() == 1u )
+			{
+				const VariablePtr variable_for_move= *input_nodes.begin();
+				if( variable_for_move->value_type == ValueType::Value ) // It's a variable, not a reference.
+				{
+					bool found_in_variables= false;
+					for( const auto& stack_frame : function_context.stack_variables_stack )
+					for( const VariablePtr& arg : stack_frame->variables_ )
+					{
+						if( arg == variable_for_move )
+						{
+							found_in_variables= true;
+							goto end_variable_search;
+						}
+					}
+
+					end_variable_search:
+					if( found_in_variables )
+					{
+						U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
+
+						const VariablePtr result=
+							Variable::Create(
+								variable_for_move->type,
+								ValueType::Value,
+								variable_for_move->location,
+								"_moved_" + variable_for_move->name,
+								variable_for_move->llvm_value,
+								// Preserve "constexpr" value (if has one) for immutable variables.
+								resolved_variable->value_type == ValueType::ReferenceImut ? variable_for_move->constexpr_value : nullptr );
+						function_context.variables_state.AddNode( result );
+
+						function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names_scope.GetErrors(), name_lookup->src_loc );
+
+						// Move both reference node and variable node.
+						function_context.variables_state.MoveNode( resolved_variable );
+						function_context.variables_state.MoveNode( variable_for_move );
+
+						RegisterTemporaryVariable( function_context, result );
+						return result;
+					}
+				}
+			}
+		}
+	}
+
+	return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
+}
+
 Value CodeBuilder::BuildExpressionCode(
 	const Synt::Expression& expression,
 	NamesScope& names_scope,

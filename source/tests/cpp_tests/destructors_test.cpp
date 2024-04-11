@@ -1274,7 +1274,139 @@ U_TEST(DestructorsTest31_DestructorNotCalledForReferenceField)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 5555 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test0)
+U_TEST(DestructorsTest32_LocalVariableAutoMoveInReturn)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+		fn Bar( i32 x ) : S
+		{
+			var S mut s( x * 2 );
+			return s; // Move here "s", not copy it.
+		}
+		fn Foo()
+		{
+			auto s= Bar( 76 );
+			halt if( s.x != 152 );
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 152 } ) );
+}
+
+U_TEST(DestructorsTest33_LocalVariableAutoMoveInReturn)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+		fn PassS( S mut s ) : S
+		{
+			return s; // Move here "s", not copy it.
+		}
+		fn Foo()
+		{
+			var S mut s_initial( 33 );
+			auto s= PassS( move(s_initial) );
+			halt if( s.x != 33 );
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 33 } ) );
+}
+
+U_TEST(DestructorsTest34_LocalVariableAutoMoveInReturn)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+		fn Bar( i32 x ) : S
+		{
+			var S s( x * 2 );
+			return s; // Move immutable local variable "s" here, not copy it.
+		}
+		fn Foo()
+		{
+			auto s= Bar( 31 );
+			halt if( s.x != 62 );
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 62 } ) );
+}
+
+U_TEST(DestructorsTest35_LocalVariableAutoMoveInReturn)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+		fn PassS( S s ) : S
+		{
+			return s; // Move immutable argument "s", not copy it.
+		}
+		fn Foo()
+		{
+			var S mut s_initial( 984 );
+			auto s= PassS( move(s_initial) );
+			halt if( s.x != 984 );
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 984 } ) );
+}
+
+U_TEST(EarlyTempVariablesDestruction_Test0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1312,7 +1444,7 @@ U_TEST(EralyTempVariablesDestruction_Test0)
 		std::vector<int>( { 854, 854 * 11 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test1)
+U_TEST(EarlyTempVariablesDestruction_Test1)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1349,7 +1481,7 @@ U_TEST(EralyTempVariablesDestruction_Test1)
 		std::vector<int>( { 44, 88 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test2)
+U_TEST(EarlyTempVariablesDestruction_Test2)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1387,7 +1519,7 @@ U_TEST(EralyTempVariablesDestruction_Test2)
 		std::vector<int>( { 95, 13, 95 * 13 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test3)
+U_TEST(EarlyTempVariablesDestruction_Test3)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1424,7 +1556,7 @@ U_TEST(EralyTempVariablesDestruction_Test3)
 		std::vector<int>( { 21, 33321, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test4)
+U_TEST(EarlyTempVariablesDestruction_Test4)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1462,7 +1594,7 @@ U_TEST(EralyTempVariablesDestruction_Test4)
 		std::vector<int>( { 955, 21, 3, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test5)
+U_TEST(EarlyTempVariablesDestruction_Test5)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1497,7 +1629,7 @@ U_TEST(EralyTempVariablesDestruction_Test5)
 		std::vector<int>( { -100, -200, -300,  -1, 1,  -124, 124,  -5, 5,  -666, 666,  100, 124 / 5, 300 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test6)
+U_TEST(EarlyTempVariablesDestruction_Test6)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1532,7 +1664,7 @@ U_TEST(EralyTempVariablesDestruction_Test6)
 		std::vector<int>( { -100, -200, -300,  -1, 1,  -124, 124,  -5, 5,  -666, 666,  100, 200, 300 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test7)
+U_TEST(EarlyTempVariablesDestruction_Test7)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1565,7 +1697,7 @@ U_TEST(EralyTempVariablesDestruction_Test7)
 		std::vector<int>( { -900, -901, -910, -911,  -0, 0,  -1, 1,  -666, 666,  900, 999, 910, 911 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test8)
+U_TEST(EarlyTempVariablesDestruction_Test8)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1599,7 +1731,7 @@ U_TEST(EralyTempVariablesDestruction_Test8)
 		std::vector<int>( { -2, 2,  -1, 1,  -666, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test9)
+U_TEST(EarlyTempVariablesDestruction_Test9)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1637,7 +1769,7 @@ U_TEST(EralyTempVariablesDestruction_Test9)
 		std::vector<int>( { -66, 66,  -1, 1,  -666, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test10)
+U_TEST(EarlyTempVariablesDestruction_Test10)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1675,7 +1807,7 @@ U_TEST(EralyTempVariablesDestruction_Test10)
 		std::vector<int>( { -66, 66,  -1, 1,  -666, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test11)
+U_TEST(EarlyTempVariablesDestruction_Test11)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1710,7 +1842,7 @@ U_TEST(EralyTempVariablesDestruction_Test11)
 		std::vector<int>( { -1, 1,  -2, 2,  -666, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test12)
+U_TEST(EarlyTempVariablesDestruction_Test12)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1745,7 +1877,7 @@ U_TEST(EralyTempVariablesDestruction_Test12)
 		std::vector<int>( { -1, 1,  -2, 2,  -666, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test13)
+U_TEST(EarlyTempVariablesDestruction_Test13)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1785,7 +1917,7 @@ U_TEST(EralyTempVariablesDestruction_Test13)
 		std::vector<int>( { -22, 22,  -66, 66 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test14)
+U_TEST(EarlyTempVariablesDestruction_Test14)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1827,7 +1959,7 @@ U_TEST(EralyTempVariablesDestruction_Test14)
 		std::vector<int>( { -3, 3,  -666, 666 } ) );
 }
 
-U_TEST(EralyTempVariablesDestruction_Test15)
+U_TEST(EarlyTempVariablesDestruction_Test15)
 {
 	static const char c_program_text[]=
 	R"(

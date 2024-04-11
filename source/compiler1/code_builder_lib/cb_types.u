@@ -119,7 +119,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 
-	return move(out_tuple_type);
+	return out_tuple_type;
 }
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Type
@@ -132,7 +132,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	var RawPointerType mut out_type{ .element_type = PrepareType( names_scope, function_context, raw_pointer_type.element_type ) };
 	out_type.llvm_type= unsafe( LLVMPointerType( out_type.element_type.GetLLVMType(), 0u ) );
 
-	return move(out_type);
+	return out_type;
 }
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
@@ -302,7 +302,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		ust::sort( res.return_references.range() );
 	}
 
-	return move(res);
+	return res;
 }
 
 fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef
@@ -381,12 +381,12 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 
 fn CodeBuilder::FunctionTypeToPointer( mut this, FunctionType mut function_type ) : FunctionPointerType
 {
-	var FunctionPointerType mut result
+	var FunctionPointerType result
 	{
 		.function_type= move(function_type),
 		.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) )
 	};
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::GetLLVMCallingConvention(

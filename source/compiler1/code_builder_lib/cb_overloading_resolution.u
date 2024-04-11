@@ -426,7 +426,7 @@ fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args 
 		}
 	}
 
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::GetFunctionWithSameType( FunctionsSet & mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable /> @(ust::reference_notation::return_inner_references::param0)
@@ -542,8 +542,8 @@ fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, Overloa
 			t= PrepareType( template_function.args_names_scope, global_function_context, param.t );
 		}
 
-		var VariableTypeExtended mut result{ .value_type= value_type, .t= move(t) };
-		return move(result);
+		var VariableTypeExtended result{ .value_type= value_type, .t= move(t) };
+		return result;
 	}
 	halt;
 }
@@ -899,7 +899,7 @@ fn CodeBuilder::GetOverloadedOperator(
 		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, matched_functions.range() );
 		if( function_index < matched_functions.size() )
 		{
-			auto mut result= FinalizeSelectedFunction( matched_functions[function_index], names_scope, src_loc );
+			auto result= FinalizeSelectedFunction( matched_functions[function_index], names_scope, src_loc );
 			if( !result.empty() )
 			{
 				// Check access rights after function selection.
@@ -911,7 +911,7 @@ fn CodeBuilder::GetOverloadedOperator(
 				}
 			}
 
-			return move(result);
+			return result;
 		}
 	}
 
@@ -950,11 +950,11 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, matched_functions.range() );
 		if( function_index < matched_functions.size() )
 		{
-			if_var( mut function_selected : FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc ) )
+			if_var( function_selected : FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc ) )
 			{
 				if( function_selected.is_conversion_constructor )
 				{
-					return move(function_selected);
+					return function_selected;
 				}
 			}
 		}

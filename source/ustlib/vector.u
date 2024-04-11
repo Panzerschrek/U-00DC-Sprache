@@ -31,7 +31,7 @@ public:
 			}
 			result.push_back( next_result.try_take() );
 		}
-		return move(result);
+		return result;
 	}
 
 public:
@@ -348,7 +348,7 @@ public:
 			--size_;
 			var T mut result= uninitialized;
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( $>(ptr_ + size_) ), c_element_size_ );
-			return move(result);
+			return result;
 		}
 	}
 
@@ -359,7 +359,7 @@ public:
 			--size_;
 			var T mut result= uninitialized;
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( $>(ptr_ + size_) ), c_element_size_ );
-			return move(result);
+			return result;
 		}
 	}
 

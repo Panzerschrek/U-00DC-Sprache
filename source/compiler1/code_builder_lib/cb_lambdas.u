@@ -495,12 +495,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							auto state= SaveFunctionContextState( function_context );
 
 							// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
-							auto mut result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
+							auto result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
 
 							RestoreFunctionContextState( function_context, state );
 							function_context.is_functionless_context= prev_is_functionless_context;
 
-							return move(result);
+							return result;
 						} );
 
 					with( &expr_result : expr_result_ptr.lock_imut().deref() )
@@ -1010,7 +1010,7 @@ fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_c
 			result.insert( variable );
 		}
 	}
-	return move(result);
+	return result;
 }
 
 fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
@@ -1041,7 +1041,7 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 			if( current.external_variables.exists( variable ) )
 			{
 				REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
-				function_context.references_graph.AddNode( variable ); // Prevent further errors.
+				function_context.references_graph.AddNodeIfNotExists( variable ); // Prevent further errors.
 				lambda_preprocessing_context.has_preprocessing_errors= true;
 			}
 			next= current.parent.lock();
@@ -1212,7 +1212,7 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 		.llvm_value= resolved_variable.llvm_value,
 		.name= "moved " + resolved_variable.name,
 	};
-	var VariablePtr mut result_ptr= move(result).CreatePtr();
+	var VariablePtr result_ptr= move(result).CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
 
@@ -1221,7 +1221,7 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 	function_context.references_graph.MoveNode( resolved_variable_ptr );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return move(result_ptr);
+	return result_ptr;
 }
 
 struct CapturedVariableForSorting

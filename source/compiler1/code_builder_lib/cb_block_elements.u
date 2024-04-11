@@ -636,7 +636,10 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 	auto mut ret= LLVMValueRef::Null;
 
-	var VariablePtr mut expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
+	var VariablePtr mut expr_ptr=
+		select( function_context.function_type.return_value_type == ValueType::Value
+			? BuildExpressionCodeForValueReturn( names_scope, function_context, return_operator.expr )
+			: BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr ) );
 
 	if( !function_context.return_type_deduction_context.empty() )
 	{
@@ -1642,9 +1645,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						function_context,
 						lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
 						{
-							var VariableLite mut res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, single_value ).lock_imut().deref();
+							var VariableLite res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, single_value ).lock_imut().deref();
 							self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
-							return move(res);
+							return res;
 						} );
 					var SrcLoc src_loc= Synt::GetSrcLoc( single_value );
 					if( expression_variable.t != switch_type )
@@ -1687,9 +1690,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							function_context,
 							lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
 							{
-								var VariableLite mut res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+								var VariableLite res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
 								self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
-								return move(res);
+								return res;
 							} );
 
 						if( expression_variable.t != switch_type )

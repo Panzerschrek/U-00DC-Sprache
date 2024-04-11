@@ -360,7 +360,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 
 	root_errors_container_= ErrorsContainerPtr();
 
-	return move(res);
+	return res;
 }
 
 fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index )
@@ -3145,12 +3145,12 @@ fn CodeBuilder::GetIntrinsic( this, ust::string_view8 name, ust::array_view_imut
 
 fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState
 {
-	var FunctionContextState mut instructions_state
+	var FunctionContextState instructions_state
 	{
 		.current_block= unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ),
 		.references_graph= function_context.references_graph,
 	};
-	return move(instructions_state);
+	return instructions_state;
 }
 
 fn CodeBuilder::RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state )
@@ -3177,7 +3177,7 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 
 	function_context.is_functionless_context= true;
 
-	return move(function_context);
+	return function_context;
 }
 
 } // namespace U1

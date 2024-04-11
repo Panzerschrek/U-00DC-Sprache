@@ -30,7 +30,7 @@ public:
 			}
 			result.push_back( next_result.try_take() );
 		}
-		return move(result);
+		return result;
 	}
 
 public:
@@ -446,7 +446,7 @@ public:
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</byte8/>( $>(range.data()) ), range.size() * c_element_size_ );
 		}
 
-		return move(result);
+		return result;
 	}
 
 	op+( range_imut range, this_type& r ) : this_type
@@ -462,7 +462,7 @@ public:
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(result.ptr_ + range.size()) ), cast_ref_unsafe</byte8/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
 		}
 
-		return move(result);
+		return result;
 	}
 
 	// +=

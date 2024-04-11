@@ -103,7 +103,7 @@ private:
 	{
 		function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
-		auto mut result= move(func)( this, function_context );
+		auto result= move(func)( this, function_context );
 
 		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
 		{
@@ -112,7 +112,7 @@ private:
 		}
 		function_context.variables_frames.drop_back();
 
-		return move(result);
+		return result;
 	}
 
 private:
@@ -403,6 +403,9 @@ private:
 	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
+
+	// May move local variables.
+	fn BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
 
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
