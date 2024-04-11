@@ -177,7 +177,7 @@ public: // Helper methods.
 		// Skip first n - 1 elements, or return earlier, if iterator finishes.
 		for( auto mut i= 0s; i < n; ++i )
 		{
-			auto mut next_res= impl_.next();
+			auto next_res= impl_.next();
 			if( next_res.empty() )
 			{
 				return next_res;
@@ -314,7 +314,7 @@ public:
 
 	fn next( mut this ) : auto
 	{
-		auto mut next0= base_iterator0_.next();
+		auto next0= base_iterator0_.next();
 		if( !next0.empty() )
 		{
 			return next0;
@@ -428,7 +428,7 @@ public:
 				return FuncResT(); // If base iterator returns nothing, return nothing on form of "func_" type - empty "optional" or "optional_ref".
 			}
 
-			auto mut filter_map_result= func_( next_res.try_take() );
+			auto filter_map_result= func_( next_res.try_take() );
 			if( !filter_map_result.empty() )
 			{
 				return filter_map_result;
@@ -479,7 +479,7 @@ class limit_raw_iterator
 			type ResT= typeof( base_iterator_.next() );
 			return ResT();
 		}
-		auto mut next_res= base_iterator_.next();
+		auto next_res= base_iterator_.next();
 		if( !next_res.empty() )
 		{
 			--limit_;

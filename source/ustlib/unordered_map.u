@@ -387,7 +387,7 @@ public:
 			}
 			unsafe
 			{
-				var optional</ iterator_element_mut /> mut res( iterator_element_mut( $>(table_) ) );
+				var optional</ iterator_element_mut /> res( iterator_element_mut( $>(table_) ) );
 				drop_front_unchecked();
 				return res;
 			}
@@ -404,7 +404,7 @@ public:
 			}
 			unsafe
 			{
-				var optional</ iterator_element_imut /> mut res( iterator_element_imut( $>(table_) ) );
+				var optional</ iterator_element_imut /> res( iterator_element_imut( $>(table_) ) );
 				drop_front_unchecked();
 				return res;
 			}

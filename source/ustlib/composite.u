@@ -10,63 +10,63 @@ namespace ust
 template</type T/>
 fn make_array() : auto
 {
-	var [T, 0] mut arr[];
+	var [T, 0] arr[];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a) : auto
 {
-	var [T, 1] mut arr[move(a)];
+	var [T, 1] arr[move(a)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b) : auto
 {
-	var [T, 2] mut arr[move(a), move(b)];
+	var [T, 2] arr[move(a), move(b)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b, T mut c) : auto
 {
-	var [T, 3] mut arr[move(a), move(b), move(c)];
+	var [T, 3] arr[move(a), move(b), move(c)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b, T mut c, T mut d) : auto
 {
-	var [T, 4] mut arr[move(a), move(b), move(c), move(d)];
+	var [T, 4] arr[move(a), move(b), move(c), move(d)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e) : auto
 {
-	var [T, 5] mut arr[move(a), move(b), move(c), move(d), move(e)];
+	var [T, 5] arr[move(a), move(b), move(c), move(d), move(e)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f) : auto
 {
-	var [T, 6] mut arr[move(a), move(b), move(c), move(d), move(e), move(f)];
+	var [T, 6] arr[move(a), move(b), move(c), move(d), move(e), move(f)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g) : auto
 {
-	var [T, 7] mut arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
+	var [T, 7] arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
 	return arr;
 }
 
 template</type T/>
 fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g, T mut h) : auto
 {
-	var [T, 8] mut arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
+	var [T, 8] arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
 	return arr;
 }
 
@@ -76,63 +76,63 @@ fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g, T m
 
 fn constexpr make_tuple() : auto
 {
-	var tup[] mut t;
+	var tup[] t;
 	return t;
 }
 
 template</type A/>
 fn make_tuple(A mut a) : auto
 {
-	var tup[A] mut t[move(a)];
+	var tup[A] t[move(a)];
 	return t;
 }
 
 template</type A, type B/>
 fn make_tuple(A mut a, B mut b) : auto
 {
-	var tup[A, B] mut t[move(a), move(b)];
+	var tup[A, B] t[move(a), move(b)];
 	return t;
 }
 
 template</type A, type B, type C/>
 fn make_tuple(A mut a, B mut b, C mut c) : auto
 {
-	var tup[A, B, C] mut t[move(a), move(b), move(c)];
+	var tup[A, B, C] t[move(a), move(b), move(c)];
 	return t;
 }
 
 template</type A, type B, type C, type D/>
 fn make_tuple(A mut a, B mut b, C mut c, D mut d) : auto
 {
-	var tup[A, B, C, D] mut t[move(a), move(b), move(c), move(d)];
+	var tup[A, B, C, D] t[move(a), move(b), move(c), move(d)];
 	return t;
 }
 
 template</type A, type B, type C, type D, type E/>
 fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e) : auto
 {
-	var tup[A, B, C, D, E] mut t[move(a), move(b), move(c), move(d), move(e)];
+	var tup[A, B, C, D, E] t[move(a), move(b), move(c), move(d), move(e)];
 	return t;
 }
 
 template</type A, type B, type C, type D, type E, type F/>
 fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f) : auto
 {
-	var tup[A, B, C, D, E, F] mut t[move(a), move(b), move(c), move(d), move(e), move(f)];
+	var tup[A, B, C, D, E, F] t[move(a), move(b), move(c), move(d), move(e), move(f)];
 	return t;
 }
 
 template</type A, type B, type C, type D, type E, type F, type G/>
 fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g) : auto
 {
-	var tup[A, B, C, D, E, F, G] mut t[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
+	var tup[A, B, C, D, E, F, G] t[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
 	return t;
 }
 
 template</type A, type B, type C, type D, type E, type F, type G, type H/>
 fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g, H mut h) : auto
 {
-	var tup[A, B, C, D, E, F, G, H] mut t[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
+	var tup[A, B, C, D, E, F, G, H] t[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
 	return t;
 }
 
