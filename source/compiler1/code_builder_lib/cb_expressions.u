@@ -4341,7 +4341,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	}
 	result.llvm_value= llvm_value;
 
-	var VariablePtr mut result_ptr= move(result).CreatePtr();
+	var VariablePtr result_ptr= move(result).CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
 
@@ -4398,7 +4398,7 @@ fn CodeBuilder::ConvertVariable(
 		.name= "converted " + dst_type.ToString(),
 	};
 
-	var VariablePtr mut result_ptr= move(result).CreatePtr();
+	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
 	// Create temp variables storage for preventing of destruction of "arg".
