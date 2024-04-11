@@ -837,3 +837,20 @@ def ReturnAutoMoveIsDisabled_Test17():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test18():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		fn generator PassS( S s ) : S
+		{
+			yield s; // Auto-move isn't applied for "yield" operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 9 ) )

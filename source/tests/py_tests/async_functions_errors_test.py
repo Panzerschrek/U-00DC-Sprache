@@ -444,7 +444,7 @@ def AsyncReturn_ForNonCopyableValue_Test0():
 		fn async Foo() : S
 		{
 			var S s;
-			return s; // Can't copy "s" here - it is non-copyable.
+			return safe(s); // Can't copy "s" here - it is non-copyable.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

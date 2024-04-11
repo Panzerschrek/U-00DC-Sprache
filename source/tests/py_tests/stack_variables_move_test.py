@@ -480,3 +480,57 @@ def ReturnAutoMove_Tes5():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMove_Test6():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn async GetS() : S
+		{
+			var S s{ .x= 564 };
+			return s; // Should automatically move local variable "s" in "return" statement in an async function.
+		}
+		fn Foo()
+		{
+			auto mut f= GetS();
+			if_coro_advance( s : f )
+			{
+				halt if( s.x != 564 );
+			}
+			else{ halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMove_Tes7():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn async PassS( S s ) : S
+		{
+			return s; // Should automatically move immutable argument "s" in "return" statement in an async function.
+		}
+		fn Foo()
+		{
+			var S mut s_initial{ .x= 767 };
+			auto mut f= PassS( move(s_initial) );
+			if_coro_advance( s : f )
+			{
+				halt if( s.x != 767 );
+			}
+			else{ halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
