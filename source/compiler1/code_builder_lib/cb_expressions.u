@@ -79,7 +79,11 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 	return dummy_ptr;
 }
 
-fn CodeBuilder::BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr
+fn CodeBuilder::BuildExpressionCodeForValueReturn(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::Expression& expression ) : VariablePtr
 {
 	// Try to automatically move local variable in return.
 	if_var( &complex_name : expression.get</Synt::ComplexName/>() )
