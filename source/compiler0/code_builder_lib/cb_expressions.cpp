@@ -148,7 +148,9 @@ VariablePtr CodeBuilder::BuildExpressionCodeForValueReturn(
 								ValueType::Value,
 								variable_for_move->location,
 								"_moved_" + variable_for_move->name,
-								variable_for_move->llvm_value );
+								variable_for_move->llvm_value,
+								// Preserve "constexpr" value (if has one) for immutable variables.
+								resolved_variable->value_type == ValueType::ReferenceImut ? variable_for_move->constexpr_value : nullptr );
 						function_context.variables_state.AddNode( result );
 
 						function_context.variables_state.TryAddInnerLinks( resolved_variable, result, names_scope.GetErrors(), name_lookup->src_loc );

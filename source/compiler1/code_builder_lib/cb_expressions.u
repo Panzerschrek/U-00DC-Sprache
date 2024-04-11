@@ -135,7 +135,7 @@ fn CodeBuilder::BuildExpressionCodeForValueReturn(
 					var Variable& reference= variable_reference_lock.deref();
 
 					// Enable auto-move in "return" for immutable local variables too.
-					if( ( reference.value_type == ValueType::ReferenceMut || reference.value_type == ValueType::ReferenceImut ) )
+					if( reference.value_type == ValueType::ReferenceMut || reference.value_type == ValueType::ReferenceImut )
 					{
 						var ReferencesGraph::NodesSet input_nodes= function_context.references_graph.GetNodeInputLinks( variable_reference_ptr );
 						if( input_nodes.size() == 1s )
@@ -164,6 +164,8 @@ fn CodeBuilder::BuildExpressionCodeForValueReturn(
 										.value_type= ValueType::Value,
 										.location= reference.location,
 										.llvm_value= reference.llvm_value,
+										// Preserve "constexpr" value (if has one) for immutable variables.
+										.constexpr_value= select( reference.value_type == ValueType::ReferenceImut ? reference.constexpr_value : LLVMValueRef::Null ),
 										.name= "moved " + reference.name,
 									};
 									var VariablePtr result_ptr= move(result).CreatePtr();
