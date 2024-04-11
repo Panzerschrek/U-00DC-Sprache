@@ -452,3 +452,31 @@ def ReturnAutoMove_Tes4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ReturnAutoMove_Tes5():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		struct T
+		{
+			fn conversion_constructor( S mut in_s ) ( s(move(in_s)) ) {}
+			S s;
+		}
+		fn MakeT( S s ) : T
+		{
+			return s; // Auto-move in "return" and than perform implicit type conversion.
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 769 };
+			auto t= MakeT( move(s) );
+			halt if( t.s.x != 769 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

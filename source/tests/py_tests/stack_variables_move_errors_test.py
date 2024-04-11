@@ -815,3 +815,25 @@ def ReturnAutoMoveIsDisabled_Test16():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 8 ) )
+
+
+def ReturnAutoMoveIsDisabled_Test17():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		struct T
+		{
+			fn conversion_constructor( S mut in_s ) ( s(move(in_s)) ) {}
+			S s;
+		}
+		fn MakeT( S s ) : T
+		{
+			return T(s); // Auto-move in "return" doesn't work here - conversion constructor is executed explicitly.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
