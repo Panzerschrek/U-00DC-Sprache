@@ -35,7 +35,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 								if( functions_set_class_non_null == this_class_type ||
 									this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
 								{
-									var ThisMethodsSet mut this_methods_set
+									var ThisMethodsSet this_methods_set
 									{
 										.this_= this_non_null,
 										.functions_set= f_ptr_non_null,
@@ -55,7 +55,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto var_ptr= names_scope_value.Get</Variable/>();
 	if( !var_ptr.empty() )
 	{
-		var VariablePtr mut var_ptr_non_null= var_ptr.try_to_non_nullable();
+		var VariablePtr var_ptr_non_null= var_ptr.try_to_non_nullable();
 		with( mut lock : var_ptr_non_null.lock_mut() )
 		{
 			lock.deref().referenced= true;
@@ -186,7 +186,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		var VariableNullablePtr v_ptr= global_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+			var VariablePtr v_ptr_non_null= v_ptr.try_to_non_nullable();
 			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
@@ -210,7 +210,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		var VariableNullablePtr v_ptr= global_auto_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+			var VariablePtr v_ptr_non_null= v_ptr.try_to_non_nullable();
 			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
@@ -511,7 +511,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			function_context.is_functionless_context= true;
 
 			auto state= SaveFunctionContextState( function_context );
-			var Type mut t= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, typeof_.expr.deref() ).lock_imut().deref().t;
+			var Type t= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, typeof_.expr.deref() ).lock_imut().deref().t;
 			RestoreFunctionContextState( function_context, state );
 
 			function_context.is_functionless_context= prev_is_functionless_context;

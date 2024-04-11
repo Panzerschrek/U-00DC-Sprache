@@ -44,7 +44,7 @@ fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_
 		}
 	}
 
-	var CodeBuilderError mut err
+	var CodeBuilderError err
 	{
 		.code= code,
 		.text= move(result_error_text),

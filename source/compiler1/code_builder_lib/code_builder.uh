@@ -103,7 +103,7 @@ private:
 	{
 		function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
-		auto mut result= move(func)( this, function_context );
+		auto result= move(func)( this, function_context );
 
 		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
 		{

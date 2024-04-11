@@ -611,7 +611,7 @@ fn SyntaxAnalyzer::ParseExpressionInBrackets( mut this ) : Expression
 {
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	var Expression mut e= ParseExpression();
+	var Expression e= ParseExpression();
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
@@ -770,14 +770,14 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		{
 			auto src_loc= it_.front().src_loc;
 			NextLexem();
-			var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+			var ReferenceToRawPointerOperator o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 			return o;
 		},
 		Lexem::Type::PointerToReference ->
 		{
 			auto src_loc= it_.front().src_loc;
 			NextLexem();
-			var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+			var RawPointerToReferenceOperator o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 			return o;
 		},
 		Lexem::Type::Scope ->
@@ -797,13 +797,13 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	}
 	if( IsKeyword( it_.front(), Keyword::false_ ) )
 	{
-		var BooleanConstant mut boolean_constant{ .src_loc= it_.front().src_loc, .value= false };
+		var BooleanConstant boolean_constant{ .src_loc= it_.front().src_loc, .value= false };
 		NextLexem();
 		return boolean_constant;
 	}
 	if( IsKeyword( it_.front(), Keyword::true_  ) )
 	{
-		var BooleanConstant mut boolean_constant{ .src_loc= it_.front().src_loc, .value= true  };
+		var BooleanConstant boolean_constant{ .src_loc= it_.front().src_loc, .value= true  };
 		NextLexem();
 		return boolean_constant;
 	}
@@ -819,7 +819,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var Typeinfo mut typeinfo_{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()};
+		var Typeinfo typeinfo_{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()};
 		return typeinfo_;
 	}
 	if( IsKeyword( it_.front(), Keyword::same_type_ ) )
@@ -833,56 +833,56 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		var TypeName mut r= ParseTypeName();
 		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-		var SameType mut same_type_{ .src_loc= src_loc, .l= move(l), .r= move(r) };
+		var SameType same_type_{ .src_loc= src_loc, .l= move(l), .r= move(r) };
 		return same_type_;
 	}
 	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var NonSyncExpression mut non_sync_expression{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets() };
+		var NonSyncExpression non_sync_expression{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets() };
 		return non_sync_expression;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_ref_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var CastRef mut cast{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
+		var CastRef cast{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
 		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_ref_unsafe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
+		var CastRefUnsafe cast{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
 		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_imut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var CastImut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		var CastImut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_mut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var CastMut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		var CastMut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return cast;
 	}
 	if( IsKeyword( it_.front(), Keyword::safe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var SafeExpression mut e{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		var SafeExpression e{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return e;
 	}
 	if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		var UnsafeExpression mut e{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		var UnsafeExpression e{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return e;
 	}
 	if( IsKeyword( it_.front(), Keyword::move_ ) )
@@ -909,7 +909,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		var TakeOperator take_operator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return take_operator;
 	}
 	if( IsKeyword( it_.front(), Keyword::lambda_ ) )
@@ -932,7 +932,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 		ExpectLexem( Lexem::Type::BracketRight );
 
-		var TernaryOperator mut ternary_operator
+		var TernaryOperator ternary_operator
 		{
 			.src_loc= src_loc,
 			.condition( move(condition) ),
@@ -957,7 +957,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 fn SyntaxAnalyzer::ParseTypeNameInTemplateBrackets( mut this ) : TypeName
 {
 	ExpectLexem( Lexem::Type::TemplateBracketLeft );
-	auto mut result= ParseTypeName();
+	auto result= ParseTypeName();
 	ExpectLexem( Lexem::Type::TemplateBracketRight );
 
 	return result;
@@ -994,7 +994,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 		// Type name inside (). We needs this for better parsing of function pointer types, for example.
 		NextLexem();
 
-		auto mut type_name= ParseTypeName();
+		auto type_name= ParseTypeName();
 
 		ExpectLexem( Lexem::Type::BracketRight );
 
@@ -1365,7 +1365,7 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 	// Lambdas always have a body.
 	lambda_function.block.reset( ParseBlock() );
 
-	var Lambda mut result{ .src_loc= lambda_src_loc, .capture= move(capture), .function( move(lambda_function) ) };
+	var Lambda result{ .src_loc= lambda_src_loc, .capture= move(capture), .function( move(lambda_function) ) };
 	return result;
 }
 
@@ -1893,7 +1893,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		/// TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
-		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc, .args(ParseCall()) };
+		var ConstructorInitializer constructor_initializer{ .src_loc= it_.front().src_loc, .args(ParseCall()) };
 
 		return constructor_initializer;
 	}
@@ -1948,13 +1948,13 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 	}
 	else if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
 	{
-		var ZeroInitializer mut zero_initializer{ .src_loc= it_.front().src_loc };
+		var ZeroInitializer zero_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 		return zero_initializer;
 	}
 	else if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
 	{
-		var UninitializedInitializer mut uninitialized_initializer{ .src_loc= it_.front().src_loc };
+		var UninitializedInitializer uninitialized_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 		return uninitialized_initializer;
 	}
@@ -1977,13 +1977,13 @@ fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
 		NextLexem();
 		if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
 		{
-			var ZeroInitializer mut zero_initializer{ .src_loc= it_.front().src_loc };
+			var ZeroInitializer zero_initializer{ .src_loc= it_.front().src_loc };
 			NextLexem();
-			return Initializer( move(zero_initializer) );
+			return zero_initializer;
 		}
 		if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
 		{
-			var UninitializedInitializer mut uninitialized_initializer{ .src_loc= it_.front().src_loc };
+			var UninitializedInitializer uninitialized_initializer{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			return uninitialized_initializer;
 		}
@@ -2425,7 +2425,7 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 	auto start_src_loc= it_.front().src_loc;
 	NextLexem();
 
-	var IfOperator mut if_operator
+	var IfOperator if_operator
 	{
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
@@ -2446,7 +2446,7 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 	auto start_src_loc= it_.front().src_loc;
 	NextLexem();
 
-	var StaticIfOperator mut static_if_operator
+	var StaticIfOperator static_if_operator
 	{
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
@@ -2616,7 +2616,7 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 	auto start_src_loc= it_.front().src_loc;
 	NextLexem(); // while
 
-	var WhileOperator mut while_operator
+	var WhileOperator while_operator
 	{
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
@@ -2631,7 +2631,7 @@ fn SyntaxAnalyzer::ParseLoopOperator( mut this ) : LoopOperator
 	auto start_src_loc= it_.front().src_loc;
 	NextLexem(); // loop
 
-	var LoopOperator mut loop_operator
+	var LoopOperator loop_operator
 	{
 		.src_loc= start_src_loc,
 		.label_= TryParseLabel(),
@@ -2918,7 +2918,7 @@ fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
 	{
 		NextLexem();
 
-		var Halt mut halt_{ .src_loc= src_loc };
+		var Halt halt_{ .src_loc= src_loc };
 		return halt_;
 	}
 	else
@@ -2980,7 +2980,7 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 {
 	ExpectLexem( Lexem::Type::BraceLeft );
 
-	auto mut class_elements= ParseClassBodyElements();
+	auto class_elements= ParseClassBodyElements();
 
 	ExpectLexem( Lexem::Type::BraceRight );
 

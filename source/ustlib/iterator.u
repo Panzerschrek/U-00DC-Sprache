@@ -37,7 +37,7 @@ public: // Main methods.
 	// Implement method "iter" for iterator itself.
 	// This is needed, sometimes,
 	// For example, if "foreach" is used not for a container, but for an iterator.
-	fn iter( byval mut this ) : auto
+	fn iter( byval this ) : auto
 	{
 		return this;
 	}

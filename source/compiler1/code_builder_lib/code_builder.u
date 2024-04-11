@@ -3145,7 +3145,7 @@ fn CodeBuilder::GetIntrinsic( this, ust::string_view8 name, ust::array_view_imut
 
 fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState
 {
-	var FunctionContextState mut instructions_state
+	var FunctionContextState instructions_state
 	{
 		.current_block= unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ),
 		.references_graph= function_context.references_graph,

@@ -339,7 +339,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			{
 				template_params_usage_flags[i]= true;
 
-				var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
+				var TemplateSignatureParam::TemplateParam res{ .index= u32(i) };
 				return res;
 			}
 		}
@@ -369,7 +369,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				auto value= ResolveValue( names_scope, function_context, param );
 				if_var( &t : value.get</Type/>() )
 				{
-					var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+					var TemplateSignatureParam::TypeParam type_param{ .t= t };
 					return type_param;
 				}
 			}
@@ -417,7 +417,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	// Nothing special - process as regular type name.
-	var TemplateSignatureParam::TypeParam mut t
+	var TemplateSignatureParam::TypeParam t
 	{
 		.t= PrepareType( names_scope, function_context, param )
 	};
@@ -441,7 +441,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( !array_type_param.element_type.GetTypeParam().empty() && !array_type_param.element_count.GetVariableParam().empty() )
 	{
 		// All params are known types/variables, so, this is just a type.
-		var TemplateSignatureParam::TypeParam mut t
+		var TemplateSignatureParam::TypeParam t
 		{
 			.t= PrepareType( names_scope, function_context, param )
 		};
@@ -471,7 +471,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( all_types_are_known )
 	{
 		// All params are known types, so, this is just a type.
-		var TemplateSignatureParam::TypeParam mut t
+		var TemplateSignatureParam::TypeParam t
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
@@ -496,7 +496,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( !raw_pointer_type_param.element_type.GetTypeParam().empty() )
 	{
-		var TemplateSignatureParam::TypeParam mut t
+		var TemplateSignatureParam::TypeParam t
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
@@ -559,7 +559,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( all_types_are_known )
 	{
-		var TemplateSignatureParam::TypeParam mut t
+		var TemplateSignatureParam::TypeParam t
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
@@ -581,7 +581,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type, template_params_usage_flags );
 	if( !return_type.GetTypeParam().empty() )
 	{
-		var TemplateSignatureParam::TypeParam mut t
+		var TemplateSignatureParam::TypeParam t
 		{
 			.t= PrepareType( names_scope, function_context, signature_param )
 		};
@@ -624,7 +624,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 {
 	if_var( &t : value.get</Type/>() )
 	{
-		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+		var TemplateSignatureParam::TypeParam type_param{ .t= t };
 		return type_param;
 	}
 	else if_var( &v_ptr : value.get</VariablePtr/>() )
@@ -634,30 +634,30 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
-				var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+				var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
 				return type_param;
 			}
 			if( v.constexpr_value == LLVMValueRef::Null )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
-				var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+				var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
 				return type_param;
 			}
 
-			var TemplateSignatureParam::VariableParam mut variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
+			var TemplateSignatureParam::VariableParam variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
 			return variable_param;
 		}
 	}
 	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
-		var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+		var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
 		return type_param;
 	}
 	else
 	{
 		REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, src_loc, GetValueKindName( value ) )
-		var TemplateSignatureParam::TypeParam mut type_param{ .t= invalid_type_ };
+		var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
 		return type_param;
 	}
 }
@@ -805,7 +805,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		return ust::null_optional;
 	}
 
-	var TemplateTypeArgsEvaluationResult mut result
+	var TemplateTypeArgsEvaluationResult result
 	{
 		.type_template= type_template_ptr,
 		.args_names_scope= result_names_scope,
@@ -992,7 +992,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 		}
 	}
 
-	var TemplateFunctionPreparationResult mut result{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
+	var TemplateFunctionPreparationResult result{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
 	return result;
 }
 
@@ -1222,7 +1222,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 		return ust::shared_ptr_nullable_mut</FunctionsSet/>();
 	}
 
-	var ust::shared_ptr_mut</FunctionsSet/> mut result( move(result_functions_set) );
+	var ust::shared_ptr_mut</FunctionsSet/> result( move(result_functions_set) );
 	parameterized_template_functions_cache_.insert( move(cache_key), result );
 	return result;
 }

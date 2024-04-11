@@ -247,7 +247,7 @@ fn ManglerState::TakeResult( mut this ) : ust::string8
 {
 	// Take copy for result. This allows us to re-use internal buffer for mangling of next name.
 	result_compressed_.push_back( "\0"c8 );
-	var ust::string8 mut result= result_compressed_;
+	var ust::string8 result= result_compressed_;
 
 	substitutions_.clear();
 	result_full_.clear();

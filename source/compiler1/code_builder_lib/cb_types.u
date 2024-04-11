@@ -381,7 +381,7 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 
 fn CodeBuilder::FunctionTypeToPointer( mut this, FunctionType mut function_type ) : FunctionPointerType
 {
-	var FunctionPointerType mut result
+	var FunctionPointerType result
 	{
 		.function_type= move(function_type),
 		.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) )

@@ -58,7 +58,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue(
 	auto src_lock= namespace_.lock_imut();
 	auto& src= src_lock.deref();
 
-	var NamesScopeMutPtr mut copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
+	var NamesScopeMutPtr copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
 
 	with( mut copy_lock : copy_ptr.lock_mut() )
 	{

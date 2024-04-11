@@ -369,7 +369,7 @@ fn ProcessCodeBuilderErrors(
 
 fn GetCodeBuilderOptionsForTests(bool enable_unsed_name_errors) : CodeBuilderOptions
 {
-	var CodeBuilderOptions mut options
+	var CodeBuilderOptions options
 	{
 		.build_debug_info= true,
 		.create_lifetimes= true,

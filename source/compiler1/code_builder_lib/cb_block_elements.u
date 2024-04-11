@@ -1645,7 +1645,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						function_context,
 						lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
 						{
-							var VariableLite mut res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, single_value ).lock_imut().deref();
+							var VariableLite res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, single_value ).lock_imut().deref();
 							self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
 							return res;
 						} );
@@ -1690,7 +1690,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							function_context,
 							lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
 							{
-								var VariableLite mut res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+								var VariableLite res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
 								self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
 								return res;
 							} );
