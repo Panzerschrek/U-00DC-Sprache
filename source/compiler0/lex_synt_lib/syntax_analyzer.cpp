@@ -2582,7 +2582,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 
 	while( it_->type != Lexem::Type::BraceRight && NotEndOfFile() )
 	{
-		const auto values_end_lexem= Lexem::Type::RightArrow; // TODO - maybe use another lexem?
+		const auto values_end_lexem= Lexem::Type::RightArrow;
 
 		SwitchOperator::CaseValues case_values;
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::default_ )

@@ -2511,8 +2511,7 @@ fn SyntaxAnalyzer::ParseSwitchOperator( mut this ) : SwitchOperator
 
 	while( it_.front().lexem_type != Lexem::Type::BraceRight && NotEndOfFile() )
 	{
-		auto values_end_lexem= Lexem::Type::RightArrow; // TODO - maybe use another lexem?
-
+		auto values_end_lexem= Lexem::Type::RightArrow;
 		var SwitchOperator::CaseValues mut case_values;
 		if( IsKeyword( it_.front(), Keyword::default_ ) )
 		{
