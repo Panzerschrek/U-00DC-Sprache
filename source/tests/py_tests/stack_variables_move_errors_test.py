@@ -854,3 +854,30 @@ def ReturnAutoMoveIsDisabled_Test18():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 9 ) )
+
+
+def ThisUnavailable_ForMove_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			move(this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ThisUnavailable", 4 ) )
+
+
+def ThisUnavailable_ForMove_Test1():
+	c_program_text= """
+		class A abstract
+		{
+			fn constructor()
+			{
+				move(this);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ThisUnavailable", 6 ) )

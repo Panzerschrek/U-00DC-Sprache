@@ -1,6 +1,26 @@
 from py_tests_common import *
 
 
+def NameIsNotTypeName_ForClassParent_Test0():
+	c_program_text= """
+		fn Foo();
+		class A : Foo {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameIsNotTypeName", 3 ) )
+
+
+def NameIsNotTypeName_ForClassParent_Test1():
+	c_program_text= """
+		var i32 some_number= 675;
+		class A : some_number {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameIsNotTypeName", 3 ) )
+
+
 def BaseUnavailable_Test0():
 	c_program_text= """
 		class A

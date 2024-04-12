@@ -81,6 +81,21 @@ def TypesMismtach_ForAutoReturnValue_Test1():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
+def TypesMismtach_ForAutoReturnValue_Test2():
+	c_program_text= """
+		fn Foo( bool b ) : auto
+		{
+			if( b )
+			{ return 42; } // return type deduced to "i32"
+			return; // return type deduced to "void"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
 def ExpectedReferenceValue_ForAutoReturnValue_Test0():
 	c_program_text= """
 		fn Foo( bool b ) : auto&

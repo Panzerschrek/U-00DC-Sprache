@@ -274,6 +274,38 @@ def ReturnForAsyncFunction_Test7():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ReturnForAsyncFunction_Test8():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+		}
+		struct T
+		{
+			fn conversion_constructor( S mut in_s )
+				( s(move(in_s)) )
+			{}
+			S s;
+		}
+		fn async MakeT(S s) : T
+		{
+			return s; // Perform implicit type conversion in return for async function.
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 7599 };
+			auto mut f= MakeT( move(s) );
+			if_coro_advance( t : f )
+			{
+				halt if( t.s.x != 7599 );
+			}
+			else{ halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def AsyncFunctionTypeName_Test0():
 	c_program_text= """
 		fn async SimpleFunc() : u32 { return 0u; }

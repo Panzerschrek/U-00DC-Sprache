@@ -149,6 +149,20 @@ U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable, 5u ) );
 }
 
+U_TEST( InvalidTypeForConstantExpressionVariableTest1 )
+{
+	// Global constexpr variable of class type.
+	static const char c_program_text[]=
+	R"(
+		class S{}
+		var S constexpr s{};
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable, 3u ) );
+}
+
 U_TEST( ConstantExpressionResultIsUndefinedTest0 )
 {
 	static const char c_program_text[]=

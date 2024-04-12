@@ -101,6 +101,32 @@ def CharIsConstructibleFromChar_Test2():
 	assert( call_result == 185 )
 
 
+def IntIsConstructibleFromChar_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 c( "a"c8 );
+			return c;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 97 )
+
+
+def IntIsConstructibleFromChar_Test1():
+	c_program_text= """
+		fn Foo() : u8
+		{
+			var u8 c( "⅀"c32 ); // It's truncated.
+			return c;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 64 )
+
+
 def ZeroInitializerForChar_Test0():
 	c_program_text= """
 		fn Foo()
