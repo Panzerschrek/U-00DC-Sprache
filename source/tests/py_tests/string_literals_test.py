@@ -378,6 +378,54 @@ def StringLiteral_EscapeSequences_Test3():
 	assert( call_result == 0 )
 
 
+def StringLiteral_EscapeSequences_Test4():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\t"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\t') )
+
+
+def StringLiteral_EscapeSequences_Test5():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\r"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\r') )
+
+
+def StringLiteral_EscapeSequences_Test6():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\f"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\f') )
+
+
+def StringLiteral_EscapeSequences_Test7():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\b"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\b') )
+
+
 def StringLiteral_CharNumber_Test0():
 	c_program_text= """
 		fn Foo() : char16

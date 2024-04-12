@@ -104,13 +104,15 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 		{
 			op*( i32 x, S &imut s, f32 f ) : bool { return true; } // 3 arguments, expected 2
 			op=( S &mut s ) {} // 1 argument, expected 1
-			op=( i32 x, S &imut s, f32 f ) {} // 2 arguments,e xpected 1
+			op=( i32 x, S &imut s, f32 f ) {} // 2 arguments, expected 1
+			op==( S a, S b, S c ) : bool; // 3 arguments, expected 2
 			op++( i32 x, S &imut s ){} // 2 arguments, expected 1
 			op--( i32 x, S &imut s, f32 f ) {}
 			op!( S &imut s, f32 x ) : bool { return false; } //  2 arguments, expected 1
 			op+( S &imut a, i32 b, f32 c ) {} // expected 2, got 3 arguments.
 			op[]( S &imut a, f32 b, bool c ) {} // expected 2, got 3 arguments.
 			op<=>( S &imut a, S &imut b, bool c ) : i32; // expected 2, got 3 arguments.
+			op()(); // Expected at least one argument - "this".
 		}
 	)";
 
@@ -125,6 +127,8 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 10u ) );
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 11u ) );
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 12u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 13u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidArgumentCountForOperator, 14u ) );
 }
 
 U_TEST( InvalidFirstParamValueTypeForAssignmentLikeOperator_Test )
