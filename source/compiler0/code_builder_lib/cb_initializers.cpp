@@ -468,46 +468,61 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		// Currently we support "=" initializer for copying and moving of structs.
 
 		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names_scope, function_context );
-		if( expression_result->type == variable->type )
-		{} // Ok, same types.
-		else if( ReferenceIsConvertible( expression_result->type, variable->type, names_scope.GetErrors(), src_loc ) )
-		{} // Ok, can do reference conversion.
+		if( ReferenceIsConvertible( expression_result->type, variable->type, names_scope.GetErrors(), src_loc ) )
+		{
+			SetupReferencesInCopyOrMove( function_context, variable, expression_result, names_scope.GetErrors(), src_loc );
+
+			// Move or try call copy constructor.
+			// TODO - produce constant initializer for generated copy constructor, if source is constant.
+			if( expression_result->value_type == ValueType::Value && expression_result->type == variable->type )
+			{
+				function_context.variables_state.MoveNode( expression_result );
+
+				U_ASSERT( expression_result->location == Variable::Location::Pointer );
+				if( !function_context.is_functionless_context )
+				{
+					CopyBytes( variable->llvm_value, expression_result->llvm_value, variable->type, function_context );
+					CreateLifetimeEnd( function_context, expression_result->llvm_value );
+				}
+
+				DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), src_loc );
+
+				return expression_result->constexpr_value; // Move can preserve constexpr.
+			}
+			else
+			{
+				llvm::Value* const value_for_copy=
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable->type, function_context );
+				TryCallCopyConstructor(
+					names_scope.GetErrors(), src_loc, variable->llvm_value, value_for_copy, variable->type.GetClassType(), function_context );
+			}
+		}
 		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result->type, variable->type, names_scope.GetErrors(), src_loc ) )
 		{
 			// Type conversion required.
-			expression_result= ConvertVariable( expression_result, variable->type, *conversion_constructor, names_scope, function_context, src_loc );
+			// Call conversion constructor directly with "variable" as destination.
+			{
+				// Create temp variables frame to prevent destruction of "expression_result".
+				const StackVariablesStorage temp_variables_storage( function_context );
+
+				DoCallFunction(
+					EnsureLLVMFunctionCreated(*conversion_constructor),
+					conversion_constructor->type,
+					src_loc,
+					{ variable, expression_result },
+					{},
+					false,
+					names_scope,
+					function_context,
+					conversion_constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+
+				CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
+			}
 		}
 		else
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, expression_result->type );
 			return nullptr;
-		}
-
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names_scope.GetErrors(), src_loc );
-
-		// Move or try call copy constructor.
-		// TODO - produce constant initializer for generated copy constructor, if source is constant.
-		if( expression_result->value_type == ValueType::Value && expression_result->type == variable->type )
-		{
-			function_context.variables_state.MoveNode( expression_result );
-
-			U_ASSERT( expression_result->location == Variable::Location::Pointer );
-			if( !function_context.is_functionless_context )
-			{
-				CopyBytes( variable->llvm_value, expression_result->llvm_value, variable->type, function_context );
-				CreateLifetimeEnd( function_context, expression_result->llvm_value );
-			}
-
-			DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), src_loc );
-
-			return expression_result->constexpr_value; // Move can preserve constexpr.
-		}
-		else
-		{
-			llvm::Value* const value_for_copy=
-				CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable->type, function_context );
-			TryCallCopyConstructor(
-				names_scope.GetErrors(), src_loc, variable->llvm_value, value_for_copy, variable->type.GetClassType(), function_context );
 		}
 	}
 	else U_ASSERT( false );
