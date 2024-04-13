@@ -344,9 +344,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_, key.tuple_for_indices.range() ), parent_scope ) );
 
-	var LambdaClassData mut lambda_class_data{ .template_args= move(template_args) };
-
-
 	var ClassTypePtr class_type_ptr(
 		ClassType
 		{
@@ -357,7 +354,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			.has_explicit_noncopy_constructors= false,
 			.is_default_constructible= false,
 			.can_be_constexpr= true, // Set later.
-			.generated_class_data= move(lambda_class_data)
+			.generated_class_data= LambdaClassData{ .template_args= move(template_args) }
 		} );
 
 	lambda_classes_table_.insert( move(key), class_type_ptr );
@@ -1118,24 +1115,25 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 			name+= " of captured lambda variable ";
 			name+= v.name;
 
-			var Variable mut accessible_variable
-			{
-				.t= invalid_type_,
-				.value_type= ValueType::Value,
-				.location= Variable::Location::Pointer,
-				.name= move(name),
-			};
-			accessible_variables.push_back( move(accessible_variable).CreatePtr() );
+			accessible_variables.push_back(
+				Variable
+				{
+					.t= invalid_type_,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.name= move(name),
+				}.CreatePtr() );
 		}
 
-		var LambdaPreprocessingContext::CapturedVariableData mut captured_variable
-		{
-			.source_variable= variable,
-			.variable_node= move(variable_node_value).CreatePtr(),
-			.reference_node= move(reference_node_value).CreatePtr(),
-			.accessible_variables= move(accessible_variables),
-		};
-		lambda_preprocessing_context.captured_external_variables.insert( name, move(captured_variable) );
+		lambda_preprocessing_context.captured_external_variables.insert(
+			name,
+			LambdaPreprocessingContext::CapturedVariableData
+			{
+				.source_variable= variable,
+				.variable_node= move(variable_node_value).CreatePtr(),
+				.reference_node= move(reference_node_value).CreatePtr(),
+				.accessible_variables= move(accessible_variables),
+			} );
 	}
 
 	var LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];

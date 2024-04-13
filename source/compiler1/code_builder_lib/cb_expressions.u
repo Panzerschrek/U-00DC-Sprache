@@ -3650,8 +3650,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	var ust::vector</ VariableTypeExtended /> mut args;
 
-	var VariableTypeExtended mut this_type{ .t(variable.t), .value_type= variable.value_type };
-	args.push_back( move(this_type) );
+	args.push_back( VariableTypeExtended{ .t(variable.t), .value_type= variable.value_type } );
 
 	WithVariablesFrame(
 		function_context,
@@ -4475,16 +4474,16 @@ fn CodeBuilder::ConvertVariable(
 		CreateLifetimeStart( function_context, llvm_value );
 	}
 
-	var Variable mut result
-	{
-		.t= dst_type,
-		.value_type= ValueType::Value,
-		.location= Variable::Location::Pointer,
-		.llvm_value= llvm_value,
-		.name= "converted " + dst_type.ToString(),
-	};
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= dst_type,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= "converted " + dst_type.ToString(),
+		}.CreatePtr();
 
-	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 
 	// Create temp variables storage for preventing of destruction of "arg".

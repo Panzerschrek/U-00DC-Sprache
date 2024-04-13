@@ -231,8 +231,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	}
 
 	var VariablePtr v_ptr= move(v).CreatePtr();
-	var TypeinfoCacheElement mut cache_element{ .variable= v_ptr };
-	typeinfo_cache_.insert( t, move(cache_element) );
+	typeinfo_cache_.insert( t, TypeinfoCacheElement{ .variable= v_ptr } );
 
 	// Add type as type alias into class members namespace.
 	// This allows us to get typename itself, using typeinfo variable and use such type as normal.
@@ -697,8 +696,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 			auto field_ptr= member.value().Get</ClassField/>();
 			if( !field_ptr.empty() )
 			{
-				var ClassFieldForTypeinfo mut f{ .class_field= field_ptr.try_to_non_nullable(), .name= member.key() };
-				class_fields.push_back( move(f) );
+				class_fields.push_back( ClassFieldForTypeinfo{ .class_field= field_ptr.try_to_non_nullable(), .name= member.key() } );
 			}
 		}
 	}
@@ -852,8 +850,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 				continue;
 			}
 
-			var ClassInnerTypeForTypeinfo mut inner_type{ .t= move(t), .name= class_member.key() };
-			class_inner_types.push_back( move(inner_type) );
+			class_inner_types.push_back( ClassInnerTypeForTypeinfo{ .t= move(t), .name= class_member.key() } );
 		}
 	}
 

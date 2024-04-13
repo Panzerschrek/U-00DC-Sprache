@@ -214,14 +214,12 @@ fn CodeBuilder::PrepareFunctionTemplate(
 
 	FillVariableTemplateParamsTypes( names_scope, syntax_element.params.range(), template_params.range(), template_params_usage_flags.range() );
 
-	var FunctionTemplate mut function_template(
+	return FunctionTemplatePtr( FunctionTemplate(
 		move(template_params),
 		move(signature_params),
 		names_scope,
 		function_template_syntax_element,
-		class_type );
-
-	return FunctionTemplatePtr( move(function_template) );
+		class_type ) );
 }
 
 fn CodeBuilder::PrepareTemplateParams(
@@ -1146,10 +1144,11 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 		auto mut all_ok= true;
 		for( auto mut i= 0s; i < template_args_finished.size(); ++i )
 		{
-			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= u32(i) };
-			var TemplateSignatureParam signature_param_abstract( move(signature_param) );
-
-			if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, template_args_finished[i] ) )
+			if( !MatchTemplateArgument(
+					result_names_scope,
+					function_template,
+					TemplateSignatureParam::TemplateParam{ .index= u32(i) },
+					template_args_finished[i] ) )
 			{
 				all_ok= false;
 				break;
@@ -1658,16 +1657,16 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 				auto lock= v_ptr.lock_imut();
 				var Variable& v= lock.deref();
 
-				var Variable mut out_var
-				{
-					.t= v.t,
-					.value_type= ValueType::ReferenceImut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), v.t.GetLLVMType(), v.constexpr_value ),
-					.constexpr_value= v.constexpr_value,
-					.name= param_name,
-				};
-				template_arg.something= VariablePtr( move(out_var) );
+				template_arg.something= VariablePtr(
+					Variable
+					{
+						.t= v.t,
+						.value_type= ValueType::ReferenceImut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), v.t.GetLLVMType(), v.constexpr_value ),
+						.constexpr_value= v.constexpr_value,
+						.name= param_name,
+					} );
 			}
 			else { halt; }
 		}
