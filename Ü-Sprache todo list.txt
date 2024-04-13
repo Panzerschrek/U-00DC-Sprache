@@ -12,8 +12,8 @@ General:
 *) More advanced macros - more context, elements, string manipulations
 *) switch-style operator for expression context
 *) thread-local variables
-*) A way to construct temporary variable with sequence initializer, struct named initializer,
-	etc. (in expression context)
+*) A way to construct temporary variable with sequence initializer or other initializer kinds,
+	(in expression context)
 *) "nodiscard" for types (and/or) functions
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
