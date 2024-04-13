@@ -238,6 +238,13 @@ struct MemberAccessOperator
 	ust::box_nullable</TemplateArgs/> template_args;
 }
 
+struct VariableInitialization
+{
+	SrcLoc src_loc;
+	ust::box</Expression/> type_name;
+	ust::box</Initializer/> initializer;
+}
+
 struct AwaitOperator
 {
 	SrcLoc src_loc;
@@ -293,6 +300,7 @@ type Expression= ust::variant</ tup[
 	IndexationOperator,
 	CallOperator,
 	MemberAccessOperator,
+	VariableInitialization,
 	AwaitOperator,
 	UnaryPlus,
 	UnaryMinus,
