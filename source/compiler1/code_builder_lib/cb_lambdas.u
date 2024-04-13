@@ -86,16 +86,18 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 							{
 								// Temportary register field value for destruction,
 								// in case if "return" or "await" happens in evaluation of further captrure expressions.
-								var Variable mut temp_initialized_variable
-								{
-									.t= field.t,
-									.value_type= ValueType::Value,
-									.location= Variable::Location::Pointer,
-									.llvm_value= init_value[0],
-									.name= capture.name,
-									.preserve_temporary= true
-								};
-								var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+
+								var VariablePtr temp_initialized_variable_ptr=
+									Variable
+									{
+										.t= field.t,
+										.value_type= ValueType::Value,
+										.location= Variable::Location::Pointer,
+										.llvm_value= init_value[0],
+										.name= capture.name,
+										.preserve_temporary= true
+									}.CreatePtr();
+
 								function_context.references_graph.AddNode( temp_initialized_variable_ptr );
 								RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
 								temp_initialized_variables.push_back( temp_initialized_variable_ptr );
@@ -342,21 +344,19 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_, key.tuple_for_indices.range() ), parent_scope ) );
 
-	var LambdaClassData mut lambda_class_data{ .template_args= move(template_args) };
+	var ClassTypePtr class_type_ptr(
+		ClassType
+		{
+			.members= class_members,
+			.members_initial= class_members,
+			.kind= ClassType::Kind::Struct, // Set temporary to struct in order to allow generation of some methods.
+			.parents_list_prepared= true,
+			.has_explicit_noncopy_constructors= false,
+			.is_default_constructible= false,
+			.can_be_constexpr= true, // Set later.
+			.generated_class_data= LambdaClassData{ .template_args= move(template_args) }
+		} );
 
-	var ClassType mut class_type
-	{
-		.members= class_members,
-		.members_initial= class_members,
-		.kind= ClassType::Kind::Struct, // Set temporary to struct in order to allow generation of some methods.
-		.parents_list_prepared= true,
-		.has_explicit_noncopy_constructors= false,
-		.is_default_constructible= false,
-		.can_be_constexpr= true, // Set later.
-		.generated_class_data= move(lambda_class_data)
-	};
-
-	var ClassTypePtr class_type_ptr( move(class_type) );
 	lambda_classes_table_.insert( move(key), class_type_ptr );
 
 	with( mut members_lock : class_members.lock_mut() )
@@ -466,8 +466,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							}
 							else
 							{
-								var LambdaPreprocessingContext::ExplicitCapture mut explicit_capture{ .capture_by_reference= capture.by_reference };
-								explicit_captures.insert( variable_ptr, move(explicit_capture) );
+								explicit_captures.insert( variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
 							}
 						}
 						else
@@ -521,16 +520,16 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							}
 						}
 
-						var Variable mut capture_variable
-						{
-							.t= expr_result.t,
-							// Make immediate values in preprocessing constant.
-							.value_type = select( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-							.location= Variable::Location::Pointer,
-							.llvm_value= llvm_value,
-							.constexpr_value= LLVMValueRef::Null, // no need to use constexpr in preprocessing.
-						};
-						var VariablePtr captured_variable_ptr= move(capture_variable).CreatePtr();
+						var VariablePtr captured_variable_ptr=
+							Variable
+							{
+								.t= expr_result.t,
+								// Make immediate values in preprocessing constant.
+								.value_type = select( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+								.location= Variable::Location::Pointer,
+								.llvm_value= llvm_value,
+								.constexpr_value= LLVMValueRef::Null, // no need to use constexpr in preprocessing.
+							}.CreatePtr();
 
 						// No need to add this variable into context of current function, since it is not used in it.
 
@@ -542,8 +541,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 						lambda_preprocessing_context.external_variables.insert( captured_variable_ptr );
 
-						var LambdaPreprocessingContext::ExplicitCapture mut explicit_capture{ .capture_by_reference= capture.by_reference };
-						explicit_captures.insert( captured_variable_ptr, move(explicit_capture) );
+						explicit_captures.insert( captured_variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
 					}
 				}
 			}
@@ -628,15 +626,14 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 			auto llvm_type= captured_variable_pair.value().source_variable.lock_imut().deref().t.GetLLVMType();
 
-			var CapturedVariableForSorting mut v
-			{
-				.name= captured_variable_pair.key(),
-				.data= captured_variable_pair.value(),
-				.capture_by_reference= capture_by_reference,
-				.alignment( unsafe( LLVMABIAlignmentOfType( data_layout_, select( capture_by_reference ? LLVMPointerType( llvm_type, 0u ) : llvm_type ) ) ) )
-			};
-
-			captured_variables.push_back( move(v) );
+			captured_variables.push_back(
+				CapturedVariableForSorting
+				{
+					.name= captured_variable_pair.key(),
+					.data= captured_variable_pair.value(),
+					.capture_by_reference= capture_by_reference,
+					.alignment( unsafe( LLVMABIAlignmentOfType( data_layout_, select( capture_by_reference ? LLVMPointerType( llvm_type, 0u ) : llvm_type ) ) ) )
+				} );
 		}
 
 		// We must sort fields in order to avoid creating fields list in hash-map iteration order (which is non-deterministic).
@@ -702,8 +699,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					}
 				}
 
-				var ClassFieldPtr mut field_ptr( move(field) );
-				class_type.fields_order.push_back( ust::make_tuple( captured_variable.name, move(field_ptr) ) );
+				class_type.fields_order.push_back( ust::make_tuple( captured_variable.name, ClassFieldPtr( move(field) ) ) );
 				class_type.SetMemberVisibility( captured_variable.name, Synt::ClassVisibility::Private );
 			}
 
@@ -723,8 +719,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ) )
 			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
-				return_references.push_back( move(param_reference) );
+				return_references.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
 			}
 		}
 
@@ -742,8 +737,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			{
 				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_inner_reference ) )
 				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
-					return_inner_references[i].push_back( move(param_reference) );
+					return_inner_references[i].push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
 				}
 			}
 		}
@@ -766,8 +760,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			{
 				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
 				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
-					result_pollution.dst= move(param_reference);
+					result_pollution.dst= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
 				}
 				else
 				{
@@ -784,8 +777,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			{
 				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(src_variable) )
 				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= this_param_index, .reference_index= tag };
-					result_pollution.src= move(param_reference);
+					result_pollution.src= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
 				}
 				else
 				{
@@ -901,20 +893,19 @@ fn CodeBuilder::GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names
 
 	var NamesScopeMutPtr class_members( NamesScope( "_lambda_preprocessing_dummy", GetRootNamespace( names_scope ) ) );
 
-	var ClassType mut class_type
-	{
-		.members= class_members,
-		.members_initial= class_members,
-		.kind= ClassType::Kind::Struct,
-		.parents_list_prepared= true,
-		.has_explicit_noncopy_constructors= false,
-		.is_default_constructible= false,
-		.can_be_constexpr= true,
-		.is_complete= true,
-		.generated_class_data= LambdaClassData(),
-	};
-
-	var ClassTypePtr class_type_ptr( move(class_type) );
+	var ClassTypePtr class_type_ptr(
+		ClassType
+		{
+			.members= class_members,
+			.members_initial= class_members,
+			.kind= ClassType::Kind::Struct,
+			.parents_list_prepared= true,
+			.has_explicit_noncopy_constructors= false,
+			.is_default_constructible= false,
+			.can_be_constexpr= true,
+			.is_complete= true,
+			.generated_class_data= LambdaClassData(),
+		} );
 	lambda_preprocessing_dummy_class_= class_type_ptr;
 
 	with( mut members_lock : class_members.lock_mut() )
@@ -1124,24 +1115,25 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 			name+= " of captured lambda variable ";
 			name+= v.name;
 
-			var Variable mut accessible_variable
-			{
-				.t= invalid_type_,
-				.value_type= ValueType::Value,
-				.location= Variable::Location::Pointer,
-				.name= move(name),
-			};
-			accessible_variables.push_back( move(accessible_variable).CreatePtr() );
+			accessible_variables.push_back(
+				Variable
+				{
+					.t= invalid_type_,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.name= move(name),
+				}.CreatePtr() );
 		}
 
-		var LambdaPreprocessingContext::CapturedVariableData mut captured_variable
-		{
-			.source_variable= variable,
-			.variable_node= move(variable_node_value).CreatePtr(),
-			.reference_node= move(reference_node_value).CreatePtr(),
-			.accessible_variables= move(accessible_variables),
-		};
-		lambda_preprocessing_context.captured_external_variables.insert( name, move(captured_variable) );
+		lambda_preprocessing_context.captured_external_variables.insert(
+			name,
+			LambdaPreprocessingContext::CapturedVariableData
+			{
+				.source_variable= variable,
+				.variable_node= move(variable_node_value).CreatePtr(),
+				.reference_node= move(reference_node_value).CreatePtr(),
+				.accessible_variables= move(accessible_variables),
+			} );
 	}
 
 	var LambdaPreprocessingContext::CapturedVariableData& captured_variable= lambda_preprocessing_context.captured_external_variables[name];
@@ -1204,15 +1196,15 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 		return ErrorValue();
 	}
 
-	var Variable mut result
-	{
-		.t= resolved_variable.t,
-		.value_type= ValueType::Value,
-		.location= resolved_variable.location,
-		.llvm_value= resolved_variable.llvm_value,
-		.name= "moved " + resolved_variable.name,
-	};
-	var VariablePtr result_ptr= move(result).CreatePtr();
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= resolved_variable.t,
+			.value_type= ValueType::Value,
+			.location= resolved_variable.location,
+			.llvm_value= resolved_variable.llvm_value,
+			.name= "moved " + resolved_variable.name,
+		}.CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
 

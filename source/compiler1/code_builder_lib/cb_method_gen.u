@@ -91,35 +91,26 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	if( constructor_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type
-		{
-			.return_type( void_type_ ),
-			.return_value_type= ValueType::Value,
-		};
-		{
-			var FunctionType::Param mut this_param
-			{
-				.t( Type( class_type ) ),
-				.value_type= ValueType::ReferenceMut,
-			};
-			function_type.params.push_back( move(this_param) );
-		}
+		var FunctionType mut function_type{ .return_type( void_type_ ), .return_value_type= ValueType::Value };
+
+		function_type.params.push_back(
+			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } );
 
 		// Prepare function variable.
-		var FunctionVariable mut function_variable
-		{
-			.is_this_call= true,
-			.is_generated= true,
-			.llvm_function( LazyLLVMFunction(
-				mangler_.deref().MangleFunction(
-					class_members,
-					KeywordToString( Keyword::constructor_ ),
-					function_type ) ) ),
-			.t= move(function_type),
-		};
 
 		constructor_index= constructors.functions.size();
-		constructors.functions.push_back( move(function_variable) );
+		constructors.functions.push_back(
+			FunctionVariable
+			{
+				.is_this_call= true,
+				.is_generated= true,
+				.llvm_function( LazyLLVMFunction(
+					mangler_.deref().MangleFunction(
+						class_members,
+						KeywordToString( Keyword::constructor_ ),
+						function_type ) ) ),
+				.t= move(function_type),
+			} );
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[constructor_index];
 
@@ -138,15 +129,16 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	if( !base_class.empty() )
 	{
-		var Variable mut base_variable
-		{
-			.t= base_class.try_to_non_nullable(),
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
-			.name= KeywordToString( Keyword::base_ ),
-		};
-		var VariablePtr base_variable_ptr= move(base_variable).CreatePtr();
+		var VariablePtr base_variable_ptr=
+			Variable
+			{
+				.t= base_class.try_to_non_nullable(),
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
+				.name= KeywordToString( Keyword::base_ ),
+			}.CreatePtr();
+
 		function_context.references_graph.AddNode( base_variable_ptr );
 
 		BuildEmptyInitializer( class_members_ptr, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), src_loc );
@@ -164,15 +156,16 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var Variable mut field_variable
-		{
-			.t= class_field.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field ),
-			.name= field_pair[0],
-		};
-		var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
+		var VariablePtr field_variable_ptr=
+			Variable
+			{
+				.t= class_field.t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field ),
+				.name= field_pair[0],
+			}.CreatePtr();
+
 		function_context.references_graph.AddNode( field_variable_ptr );
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
@@ -184,15 +177,16 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		{
 			if( class_field.is_reference )
 			{
-				var Variable mut this_variable
-				{
-					.t= class_type,
-					.llvm_value= this_llvm_value,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.name= KeywordToString( Keyword::this_ ),
-				};
-				var VariablePtr this_variable_ptr= move(this_variable).CreatePtr();
+				var VariablePtr this_variable_ptr=
+					Variable
+					{
+						.t= class_type,
+						.llvm_value= this_llvm_value,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.name= KeywordToString( Keyword::this_ ),
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( this_variable_ptr );
 				InitializeReferenceField( class_members_initial, function_context, this_variable_ptr, class_field, initializer );
 				function_context.references_graph.RemoveNode( this_variable_ptr );
@@ -296,53 +290,41 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	if( constructor_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type
-		{
-			.return_type( void_type_ ),
-			.return_value_type= ValueType::Value,
-		};
-		{
-			var FunctionType::Param mut dst_param
-			{
-				.t( Type( class_type ) ),
-				.value_type= ValueType::ReferenceMut,
-			};
-			var FunctionType::Param mut src_param
-			{
-				.t( Type( class_type ) ),
-				.value_type= ValueType::ReferenceImut,
-			};
-			function_type.params.push_back( move(dst_param) );
-			function_type.params.push_back( move(src_param) );
-		}
+		var FunctionType mut function_type{ .return_type( void_type_ ), .return_value_type= ValueType::Value };
+
+		function_type.params.push_back(
+			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } );
+
+		function_type.params.push_back(
+			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } );
+
 		{
 			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
 			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
-				var FunctionType::ReferencePollution mut pollution
-				{
-					.dst{ .param_index= 0u8, .reference_index= u8(i) },
-					.src{ .param_index= 1u8, .reference_index= u8(i) },
-				};
-				function_type.references_pollution.push_back( move(pollution) );
+				function_type.references_pollution.push_back(
+					FunctionType::ReferencePollution
+					{
+						.dst{ .param_index= 0u8, .reference_index= u8(i) },
+						.src{ .param_index= 1u8, .reference_index= u8(i) },
+					} );
 			}
 		}
 
 		// Prepare function variable.
-		var FunctionVariable mut function_variable
-		{
-			.is_this_call= true,
-			.is_generated= true,
-			.llvm_function( LazyLLVMFunction(
-				mangler_.deref().MangleFunction(
-					class_members,
-					KeywordToString( Keyword::constructor_ ),
-					function_type ) ) ),
-			.t= move(function_type),
-		};
-
 		constructor_index= constructors.functions.size();
-		constructors.functions.push_back( move(function_variable) );
+		constructors.functions.push_back(
+			FunctionVariable
+			{
+				.is_this_call= true,
+				.is_generated= true,
+				.llvm_function( LazyLLVMFunction(
+					mangler_.deref().MangleFunction(
+						class_members,
+						KeywordToString( Keyword::constructor_ ),
+						function_type ) ) ),
+				.t= move(function_type),
+			} );
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[ constructor_index ];
 
@@ -479,53 +461,41 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	if( operator_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type
-		{
-			.return_type( void_type_ ),
-			.return_value_type= ValueType::Value,
-		};
-		{
-			var FunctionType::Param mut dst_param
-			{
-				.t( Type( class_type ) ),
-				.value_type= ValueType::ReferenceMut,
-			};
-			var FunctionType::Param mut src_param
-			{
-				.t( Type( class_type ) ),
-				.value_type= ValueType::ReferenceImut,
-			};
-			function_type.params.push_back( move(dst_param) );
-			function_type.params.push_back( move(src_param) );
-		}
+		var FunctionType mut function_type{ .return_type( void_type_ ), .return_value_type= ValueType::Value };
+
+		function_type.params.push_back(
+			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } );
+
+		function_type.params.push_back(
+			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } );
+
 		{
 			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
 			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
-				var FunctionType::ReferencePollution mut pollution
-				{
-					.dst{ .param_index= 0u8, .reference_index= u8(i) },
-					.src{ .param_index= 1u8, .reference_index= u8(i) },
-				};
-				function_type.references_pollution.push_back( move(pollution) );
+				function_type.references_pollution.push_back(
+					FunctionType::ReferencePollution
+					{
+						.dst{ .param_index= 0u8, .reference_index= u8(i) },
+						.src{ .param_index= 1u8, .reference_index= u8(i) },
+					} );
 			}
 		}
 
 		// Prepare function variable.
-		var FunctionVariable mut function_variable
-		{
-			.is_this_call= true,
-			.is_generated= true,
-			.llvm_function( LazyLLVMFunction(
-				mangler_.deref().MangleFunction(
-					class_members,
-					OverloadedOperatorToString( OverloadedOperator::Assign ),
-					function_type ) ) ),
-			.t= move(function_type),
-		};
-
 		operator_index= operators.functions.size();
-		operators.functions.push_back( move(function_variable) );
+		operators.functions.push_back(
+			FunctionVariable
+			{
+				.is_this_call= true,
+				.is_generated= true,
+				.llvm_function( LazyLLVMFunction(
+					mangler_.deref().MangleFunction(
+						class_members,
+						OverloadedOperatorToString( OverloadedOperator::Assign ),
+						function_type ) ) ),
+				.t= move(function_type),
+			} );
 	}
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
 
@@ -682,8 +652,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		auto mut class_members_lock= class_members_ptr.lock_mut();
 		auto &mut class_members= class_members_lock.deref();
 
-		var FunctionsSet mut functions_set{ .class_= class_type };
-		operators_ptr= class_members.AddName( ust::string8(op_name), NamesScopeValue( move(functions_set) ) ).try_deref().Get</FunctionsSet/>();
+		operators_ptr= class_members.AddName( ust::string8(op_name), NamesScopeValue( FunctionsSet{ .class_= class_type } ) ).try_deref().Get</FunctionsSet/>();
 	}
 	auto mut operators_lock= operators_ptr.try_lock_mut();
 	var FunctionsSet &mut operators= operators_lock.deref();
@@ -691,37 +660,28 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	if( operator_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type
-		{
-			.return_type( bool_type_ ),
-			.return_value_type= ValueType::Value,
-		};
+		var FunctionType mut function_type{ .return_type( bool_type_ ), .return_value_type= ValueType::Value };
 
 		for( auto mut i= 0s; i < 2s; ++i )
 		{
-			var FunctionType::Param mut param
-			{
-				.t( class_type ),
-				.value_type= ValueType::ReferenceImut,
-			};
-			function_type.params.push_back( move(param) );
+			function_type.params.push_back(
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } );
 		}
 
 		// Prepare function variable.
-		var FunctionVariable mut function_variable
-		{
-			.is_this_call= true,
-			.is_generated= true,
-			.llvm_function( LazyLLVMFunction(
-				mangler_.deref().MangleFunction(
-					class_members_ptr.lock_imut().deref(),
-					op_name,
-					function_type ) ) ),
-			.t= move(function_type),
-		};
-
 		operator_index= operators.functions.size();
-		operators.functions.push_back( move(function_variable) );
+		operators.functions.push_back(
+			FunctionVariable
+			{
+				.is_this_call= true,
+				.is_generated= true,
+				.llvm_function( LazyLLVMFunction(
+					mangler_.deref().MangleFunction(
+						class_members_ptr.lock_imut().deref(),
+						op_name,
+						function_type ) ) ),
+				.t= move(function_type),
+			} );
 	}
 
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
@@ -810,29 +770,23 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 		.return_type( void_type_ ),
 		.return_value_type= ValueType::Value,
 	};
-	{
-		var FunctionType::Param mut this_param
-		{
-			.t( Type( class_type ) ),
-			.value_type= ValueType::ReferenceMut,
-		};
-		function_type.params.push_back( move(this_param) );
-	}
+
+	function_type.params.push_back(
+		FunctionType::Param{ .t( Type( class_type ) ), .value_type= ValueType::ReferenceMut } );
 
 	// Prepare function variable.
-	var FunctionVariable mut function_variable
-	{
-		.is_this_call= true,
-		.is_generated= true,
-		.llvm_function( LazyLLVMFunction(
-			mangler_.deref().MangleFunction(
-				class_members,
-				KeywordToString( Keyword::destructor_ ),
-				function_type ) ) ),
-		.t= move(function_type),
-	};
-
-	destructors.functions.push_back( move(function_variable) );
+	destructors.functions.push_back(
+		FunctionVariable
+		{
+			.is_this_call= true,
+			.is_generated= true,
+			.llvm_function( LazyLLVMFunction(
+				mangler_.deref().MangleFunction(
+					class_members,
+					KeywordToString( Keyword::destructor_ ),
+					function_type ) ) ),
+			.t= move(function_type),
+		} );
 }
 
 fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )

@@ -183,15 +183,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
 			var ust::string8 element_name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]";
 
-			var Variable mut element_variable
-			{
-				.t= array_type.element_type,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= element_llvm_value,
-				.name= element_name,
-			};
-			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= array_type.element_type,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element_llvm_value,
+					.name= element_name,
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, sequence_initializer.src_loc );
@@ -214,16 +215,17 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 			if( requires_destruction )
 			{
-				var Variable mut temp_initialized_variable
-				{
-					.t= array_type.element_type,
-					.value_type= ValueType::Value,
-					.location= Variable::Location::Pointer,
-					.llvm_value= element_llvm_value,
-					.name= element_name,
-					.preserve_temporary= true
-				};
-				var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+				var VariablePtr temp_initialized_variable_ptr=
+					Variable
+					{
+						.t= array_type.element_type,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= element_llvm_value,
+						.name= element_name,
+						.preserve_temporary= true
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
 				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
 				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
@@ -268,15 +270,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var LLVMValueRef element_llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) );
 			var ust::string8 element_name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]";
 
-			var Variable mut element_variable
-			{
-				.t= element_type,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= element_llvm_value,
-				.name= element_name,
-			};
-			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= element_type,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element_llvm_value,
+					.name= element_name,
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, sequence_initializer.src_loc );
@@ -299,16 +302,17 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 			if( element_type.HasDestructor() )
 			{
-				var Variable mut temp_initialized_variable
-				{
-					.t= element_type,
-					.value_type= ValueType::Value,
-					.location= Variable::Location::Pointer,
-					.llvm_value= element_llvm_value,
-					.name= element_name,
-					.preserve_temporary= true
-				};
-				var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+				var VariablePtr temp_initialized_variable_ptr=
+					Variable
+					{
+						.t= element_type,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= element_llvm_value,
+						.name= element_name,
+						.preserve_temporary= true
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
 				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
 				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
@@ -424,15 +428,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var LLVMValueRef member_llvm_value= CreateClassFieldGEP( function_context, variable, class_field );
 			var ust::string8 member_name= variable_ptr.lock_imut().deref().name + "." + member_initializer.name;
 
-			var Variable mut member_variable
-			{
-				.t= class_field.t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= member_llvm_value,
-				.name= member_name,
-			};
-			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
+			var VariablePtr member_variable_ptr=
+				Variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= member_llvm_value,
+					.name= member_name,
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, class_field, names_scope, member_initializer.src_loc );
@@ -452,16 +457,17 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 			if( class_field.t.HasDestructor() )
 			{
-				var Variable mut temp_initialized_variable
-				{
-					.t= class_field.t,
-					.value_type= ValueType::Value,
-					.location= Variable::Location::Pointer,
-					.llvm_value= member_llvm_value,
-					.name= member_name,
-					.preserve_temporary= true
-				};
-				var VariablePtr temp_initialized_variable_ptr= move(temp_initialized_variable).CreatePtr();
+				var VariablePtr temp_initialized_variable_ptr=
+					Variable
+					{
+						.t= class_field.t,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= member_llvm_value,
+						.name= member_name,
+						.preserve_temporary= true
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
 				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
 				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
@@ -492,15 +498,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( field.index == ~0u ){ continue; } // May be in case of error
 
-		var Variable mut member_variable
-		{
-			.t= field.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
-			.name= variable_ptr.lock_imut().deref().name + "." + field_name,
-		};
-		var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
+		var VariablePtr member_variable_ptr=
+			Variable
+			{
+				.t= field.t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
+				.name= variable_ptr.lock_imut().deref().name + "." + field_name,
+			}.CreatePtr();
+
 		function_context.references_graph.AddNode( member_variable_ptr );
 		function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 		function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, struct_named_initializer.src_loc );
@@ -581,15 +588,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			array_type.element_count,
 			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
-				var Variable mut element_variable
-				{
-					.t= array_type.element_type,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
-					.name= variable_ptr.lock_imut().deref().name + "[]",
-				};
-				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
+				var VariablePtr element_variable_ptr=
+					Variable
+					{
+						.t= array_type.element_type,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+						.name= variable_ptr.lock_imut().deref().name + "[]",
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( element_variable_ptr );
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, zero_initializer.src_loc );
@@ -609,15 +617,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var Variable mut element_variable
-			{
-				.t= tuple_type.element_types[i],
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
-			};
-			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= tuple_type.element_types[i],
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
+					.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( element_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, zero_initializer.src_loc );
@@ -659,15 +668,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				continue;
 			}
 
-			var Variable mut member_variable
-			{
-				.t= field.t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
-				.name= variable_ptr.lock_imut().deref().name + "." + field_pair[0],
-			};
-			var VariablePtr member_variable_ptr= move(member_variable).CreatePtr();
+			var VariablePtr member_variable_ptr=
+				Variable
+				{
+					.t= field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
+					.name= variable_ptr.lock_imut().deref().name + "." + field_pair[0],
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( member_variable_ptr );
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, zero_initializer.src_loc );
@@ -723,15 +733,16 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			array_type.element_count,
 			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
 			{
-				var Variable mut element_variable
-				{
-					.t= array_type.element_type,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
-					.name= variable_ptr.lock_imut().deref().name + "[]",
-				};
-				var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
+				var VariablePtr element_variable_ptr=
+					Variable
+					{
+						.t= array_type.element_type,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+						.name= variable_ptr.lock_imut().deref().name + "[]",
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( element_variable_ptr );
 
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
@@ -755,15 +766,16 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var Variable mut element_variable
-			{
-				.t= tuple_type.element_types[i],
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
-			};
-			var VariablePtr element_variable_ptr= move(element_variable).CreatePtr();
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= tuple_type.element_types[i],
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
+					.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( element_variable_ptr );
 
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
@@ -1511,15 +1523,16 @@ fn CodeBuilder::BuildConstructorInitialization(
 			{
 				// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
 				// So, just create derived reference field, not a child node for the field.
-				var Variable mut field_variable
-				{
-					.t= class_field.t,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
-					.name= this_ptr.lock_imut().deref().name + "." + field_name,
-				};
-				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
+				var VariablePtr field_variable_ptr=
+					Variable
+					{
+						.t= class_field.t,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
+						.name= this_ptr.lock_imut().deref().name + "." + field_name,
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
@@ -1544,15 +1557,16 @@ fn CodeBuilder::BuildConstructorInitialization(
 			{
 				// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
 				// So, just create derived reference field, not a child node for the field.
-				var Variable mut field_variable
-				{
-					.t= class_field.t,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
-					.name= this_ptr.lock_imut().deref().name + "." + field_name,
-				};
-				var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
+				var VariablePtr field_variable_ptr=
+					Variable
+					{
+						.t= class_field.t,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
+						.name= this_ptr.lock_imut().deref().name + "." + field_name,
+					}.CreatePtr();
+
 				function_context.references_graph.AddNode( field_variable_ptr );
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
@@ -1596,15 +1610,16 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
-			var Variable mut field_variable
-			{
-				.t= class_field.t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
-				.name= this_ptr.lock_imut().deref().name + "." + member_initializer.name,
-			};
-			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
+			var VariablePtr field_variable_ptr=
+				Variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
+					.name= this_ptr.lock_imut().deref().name + "." + member_initializer.name,
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( field_variable_ptr );
 			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
@@ -1632,15 +1647,16 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 	auto mut function_context= CreateGlobalFunctionContext();
 
-	var Variable mut this_variable
-	{
-		.t= class_type,
-		.value_type= ValueType::ReferenceMut,
-		.location= Variable::Location::Pointer,
-		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) ),
-		.name= KeywordToString( Keyword::this_ ),
-	};
-	var VariablePtr this_variable_ptr= move(this_variable).CreatePtr();
+	var VariablePtr this_variable_ptr=
+		Variable
+		{
+			.t= class_type,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) ),
+			.name= KeywordToString( Keyword::this_ ),
+		}.CreatePtr();
+
 	function_context.references_graph.AddNode( this_variable_ptr );
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
@@ -1661,15 +1677,16 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 		}
 		else
 		{
-			var Variable mut field_variable
-			{
-				.t= class_field.t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateClassFieldGEP( function_context, this_variable_ptr.lock_imut().deref(), class_field ),
-				.name= field_pair[0],
-			};
-			var VariablePtr field_variable_ptr= move(field_variable).CreatePtr();
+			var VariablePtr field_variable_ptr=
+				Variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, this_variable_ptr.lock_imut().deref(), class_field ),
+					.name= field_pair[0],
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( field_variable_ptr );
 
 			BuildInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );

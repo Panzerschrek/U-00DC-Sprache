@@ -41,5 +41,5 @@ template</ type T, size_type S />
 fn CreateZerosArray() : [ T, S ]
 {
 	var [ T, S ] mut arr= zero_init;
-	return move(arr);
+	return arr;
 }

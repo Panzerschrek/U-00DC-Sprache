@@ -69,14 +69,13 @@ fn CreateTemplateErrorsContext(
 
 	with( mut lock : instantiation_point_names_scope_ptr.lock_imut().deref().GetErrors().try_lock_mut() )
 	{
-		var CodeBuilderError mut template_context_error
-		{
-			.code= CodeBuilderErrorCode::TemplateContext,
-			.src_loc= instantiation_src_loc,
-			.errors_context( move(result) ),
-		};
-
-		lock.deref().push_back( move(template_context_error) );
+		lock.deref().push_back(
+			CodeBuilderError
+			{
+				.code= CodeBuilderErrorCode::TemplateContext,
+				.src_loc= instantiation_src_loc,
+				.errors_context( move(result) ),
+			} );
 	}
 
 	with( mut lock : args_names_scope_ptr.lock_mut() )
@@ -100,30 +99,27 @@ fn CodeBuilder::PrepareTypeTemplate(
 	template_params_usage_flags.resize( template_params.size(), false );
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
+
+	if( syntax_element.is_short_form )
 	{
-
-		if( syntax_element.is_short_form )
+		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			for( auto mut i= 0s; i < template_params.size(); ++i )
-			{
-				var TemplateSignatureParam::TemplateParam mut p{ .index= u32(i) };
-				signature_params.push_back( move(p) );
-				template_params_usage_flags[i]= true;
-			}
+			signature_params.push_back( TemplateSignatureParam::TemplateParam{ .index= u32(i) } );
+			template_params_usage_flags[i]= true;
 		}
-		else
+	}
+	else
+	{
+		auto mut global_function_context= CreateGlobalFunctionContext();
+		foreach( &signature_param : syntax_element.signature_params )
 		{
-			auto mut global_function_context= CreateGlobalFunctionContext();
-			foreach( &signature_param : syntax_element.signature_params )
-			{
-				signature_params.push_back(
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.name, template_params_usage_flags.range() ) );
+			signature_params.push_back(
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.name, template_params_usage_flags.range() ) );
 
-				// TODO - is this correct usage of "CreateTemplateSignatureParam" function?
-				if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
-				{
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.default_value, template_params_usage_flags.range() );
-				}
+			// TODO - is this correct usage of "CreateTemplateSignatureParam" function?
+			if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
+			{
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.default_value, template_params_usage_flags.range() );
 			}
 		}
 	}
@@ -206,8 +202,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		{
 			if( !class_type.empty() && param.name == KeywordToString( Keyword::this_ ) )
 			{
-				var TemplateSignatureParam::TypeParam mut t{ .t= class_type.try_to_non_nullable() };
-				signature_params.push_back( move(t) );
+				signature_params.push_back( TemplateSignatureParam::TypeParam{ .t= class_type.try_to_non_nullable() } );
 			}
 			else
 			{
@@ -219,14 +214,12 @@ fn CodeBuilder::PrepareFunctionTemplate(
 
 	FillVariableTemplateParamsTypes( names_scope, syntax_element.params.range(), template_params.range(), template_params_usage_flags.range() );
 
-	var FunctionTemplate mut function_template(
+	return FunctionTemplatePtr( FunctionTemplate(
 		move(template_params),
 		move(signature_params),
 		names_scope,
 		function_template_syntax_element,
-		class_type );
-
-	return FunctionTemplatePtr( move(function_template) );
+		class_type ) );
 }
 
 fn CodeBuilder::PrepareTemplateParams(
@@ -246,8 +239,7 @@ fn CodeBuilder::PrepareTemplateParams(
 			}
 		}
 
-		var TemplateBase::Param mut out_param{ .name= param.name };
-		template_params.push_back( move(out_param) );
+		template_params.push_back( TemplateBase::Param{ .name= param.name } );
 	}
 
 	return template_params;
@@ -338,9 +330,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			if( name_lookup.name == template_params[i].name )
 			{
 				template_params_usage_flags[i]= true;
-
-				var TemplateSignatureParam::TemplateParam res{ .index= u32(i) };
-				return res;
+				return TemplateSignatureParam::TemplateParam{ .index= u32(i) };
 			}
 		}
 	}
@@ -369,8 +359,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				auto value= ResolveValue( names_scope, function_context, param );
 				if_var( &t : value.get</Type/>() )
 				{
-					var TemplateSignatureParam::TypeParam type_param{ .t= t };
-					return type_param;
+					return TemplateSignatureParam::TypeParam{ .t= t };
 				}
 			}
 
@@ -417,11 +406,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	// Nothing special - process as regular type name.
-	var TemplateSignatureParam::TypeParam t
-	{
-		.t= PrepareType( names_scope, function_context, param )
-	};
-	return t;
+	return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, param ) };
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -441,11 +426,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( !array_type_param.element_type.GetTypeParam().empty() && !array_type_param.element_count.GetVariableParam().empty() )
 	{
 		// All params are known types/variables, so, this is just a type.
-		var TemplateSignatureParam::TypeParam t
-		{
-			.t= PrepareType( names_scope, function_context, param )
-		};
-		return t;
+		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, param ) };
 	}
 	return array_type_param;
 }
@@ -471,11 +452,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( all_types_are_known )
 	{
 		// All params are known types, so, this is just a type.
-		var TemplateSignatureParam::TypeParam t
-		{
-			.t= PrepareType( names_scope, function_context, signature_param )
-		};
-		return t;
+		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
 	}
 
 	return tuple_type_param;
@@ -496,11 +473,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( !raw_pointer_type_param.element_type.GetTypeParam().empty() )
 	{
-		var TemplateSignatureParam::TypeParam t
-		{
-			.t= PrepareType( names_scope, function_context, signature_param )
-		};
-		return t;
+		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
 	}
 
 	return raw_pointer_type_param;
@@ -536,9 +509,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 	else
 	{
-		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_ };
-		function_type_param.return_type= TemplateSignatureParam(move(t));
+		function_type_param.return_type= TemplateSignatureParam::TypeParam{ .t= void_type_ };
 	}
+
 	foreach( &param : signature_param.params )
 	{
 		var TemplateSignatureParam::FunctionTypeParam::Param mut out_param
@@ -559,11 +532,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( all_types_are_known )
 	{
-		var TemplateSignatureParam::TypeParam t
-		{
-			.t= PrepareType( names_scope, function_context, signature_param )
-		};
-		return t;
+		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
 	}
 
 	return function_type_param;
@@ -581,11 +550,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type, template_params_usage_flags );
 	if( !return_type.GetTypeParam().empty() )
 	{
-		var TemplateSignatureParam::TypeParam t
-		{
-			.t= PrepareType( names_scope, function_context, signature_param )
-		};
-		return t;
+		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
 	}
 
 	var TemplateSignatureParam::CoroutineTypeParam mut coroutine_type_param
@@ -624,8 +589,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 {
 	if_var( &t : value.get</Type/>() )
 	{
-		var TemplateSignatureParam::TypeParam type_param{ .t= t };
-		return type_param;
+		return TemplateSignatureParam::TypeParam{ .t= t };
 	}
 	else if_var( &v_ptr : value.get</VariablePtr/>() )
 	{
@@ -634,31 +598,26 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
-				var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
-				return type_param;
+				return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
 			}
 			if( v.constexpr_value == LLVMValueRef::Null )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
-				var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
-				return type_param;
+				return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
 			}
 
-			var TemplateSignatureParam::VariableParam variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
-			return variable_param;
+			return TemplateSignatureParam::VariableParam{ .t= v.t, .constexpr_value= v.constexpr_value };
 		}
 	}
 	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
-		var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
-		return type_param;
+		return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
 	}
 	else
 	{
 		REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, src_loc, GetValueKindName( value ) )
-		var TemplateSignatureParam::TypeParam type_param{ .t= invalid_type_ };
-		return type_param;
+		return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
 	}
 }
 
@@ -751,8 +710,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		{
 			for( auto mut i= 0s; i < type_template.params.size(); ++i )
 			{
-				var TemplateArg mut template_arg{ .index= u32(i) };
-				lock.deref().AddName( type_template.params[i].name, move(template_arg) );
+				lock.deref().AddName( type_template.params[i].name, TemplateArg{ .index= u32(i) } );
 			}
 		}
 	}
@@ -805,14 +763,12 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		return ust::null_optional;
 	}
 
-	var TemplateTypeArgsEvaluationResult result
+	return TemplateTypeArgsEvaluationResult
 	{
 		.type_template= type_template_ptr,
 		.args_names_scope= result_names_scope,
 		.signature_args= move(result_signature_template_args),
 	};
-
-	return result;
 }
 
 fn CodeBuilder::FinishTypeTemplateGeneration(
@@ -865,13 +821,12 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 
 	if_var( &class_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::Class /> />() )
 	{
-		var ClassType::BaseTemplate mut base_template
-		{
-			.class_template= type_template_ptr,
-			.signature_args= template_args_evaluation_result.signature_args,
-		};
+		auto class_type=
+			NamesScopeAddClass(
+				args_names_scope,
+				class_syntax_element,
+				ClassType::BaseTemplate{ .class_template= type_template_ptr, .signature_args= template_args_evaluation_result.signature_args } );
 
-		auto class_type= NamesScopeAddClass( args_names_scope, class_syntax_element, move(base_template) );
 		if( class_type.empty() )
 		{
 			return ust::null_optional;
@@ -992,8 +947,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 		}
 	}
 
-	var TemplateFunctionPreparationResult result{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
-	return result;
+	return TemplateFunctionPreparationResult{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
 }
 
 fn CodeBuilder::FinishFunctionTemplateParameterization(
@@ -1183,18 +1137,18 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 		{
 			for( auto mut i= 0s; i < function_template.params.size(); ++i )
 			{
-				var TemplateArg mut template_arg{ .index= u32(i) };
-				lock.deref().AddName( function_template.params[i].name, move(template_arg) );
+				lock.deref().AddName( function_template.params[i].name, TemplateArg{ .index= u32(i) } );
 			}
 		}
 
 		auto mut all_ok= true;
 		for( auto mut i= 0s; i < template_args_finished.size(); ++i )
 		{
-			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= u32(i) };
-			var TemplateSignatureParam signature_param_abstract( move(signature_param) );
-
-			if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, template_args_finished[i] ) )
+			if( !MatchTemplateArgument(
+					result_names_scope,
+					function_template,
+					TemplateSignatureParam::TemplateParam{ .index= u32(i) },
+					template_args_finished[i] ) )
 			{
 				all_ok= false;
 				break;
@@ -1206,14 +1160,13 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 			continue;
 		}
 
-		var ParameterizedFunctionTemplate mut parameterized_function_template
-		{
-			.known_args= template_args_finished,
-			.base_template= function_template_ptr,
-			.instantiation_point_names_scope= args_names_scope,
-		};
-
-		result_functions_set.parameterized_function_templates.push_back( move(parameterized_function_template) );
+		result_functions_set.parameterized_function_templates.push_back(
+			ParameterizedFunctionTemplate
+			{
+				.known_args= template_args_finished,
+				.base_template= function_template_ptr,
+				.instantiation_point_names_scope= args_names_scope,
+			} );
 	}
 
 	if( result_functions_set.parameterized_function_templates.empty() )
@@ -1310,17 +1263,17 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
-				var Variable mut out_var
-				{
-					.t= given_variable.t,
-					.value_type= ValueType::ReferenceImut,
-					.location= Variable::Location::Pointer,
-					.constexpr_value= given_variable.constexpr_value,
-					.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
-					.name= param_name,
-				};
+				template_arg.something= VariablePtr(
+					Variable
+					{
+						.t= given_variable.t,
+						.value_type= ValueType::ReferenceImut,
+						.location= Variable::Location::Pointer,
+						.constexpr_value= given_variable.constexpr_value,
+						.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
+						.name= param_name,
+					} );
 
-				template_arg.something= VariablePtr( move(out_var) );
 				return true;
 			}
 			if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
@@ -1704,16 +1657,16 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 				auto lock= v_ptr.lock_imut();
 				var Variable& v= lock.deref();
 
-				var Variable mut out_var
-				{
-					.t= v.t,
-					.value_type= ValueType::ReferenceImut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), v.t.GetLLVMType(), v.constexpr_value ),
-					.constexpr_value= v.constexpr_value,
-					.name= param_name,
-				};
-				template_arg.something= VariablePtr( move(out_var) );
+				template_arg.something= VariablePtr(
+					Variable
+					{
+						.t= v.t,
+						.value_type= ValueType::ReferenceImut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), v.t.GetLLVMType(), v.constexpr_value ),
+						.constexpr_value= v.constexpr_value,
+						.name= param_name,
+					} );
 			}
 			else { halt; }
 		}

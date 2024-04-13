@@ -393,12 +393,12 @@ fn TransformSourceFiles( U1_SourceFile& source_files, size_type source_file_coun
 		for( auto mut i= 0s; i < source_file_count; ++i )
 		{
 			auto &source_file= files_array[i];
-			var U1::TestVfs::SourceEntry mut entry
-			{
-				.file_path= StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
-				.file_content= StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
-			};
-			source_entries.push_back( move(entry) );
+			source_entries.push_back(
+				U1::TestVfs::SourceEntry
+				{
+					.file_path= StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
+					.file_content= StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
+				} );
 		}
 	}
 	return source_entries;
@@ -493,12 +493,7 @@ public:
 
 	fn constructor( ust::string8 mut file_content )
 	{
-		var SourceEntry mut entry
-		{
-			.file_path= "_",
-			.file_content= move(file_content),
-		};
-		source_entries_.push_back(move(entry));
+		source_entries_.push_back( SourceEntry{ .file_path= "_", .file_content= move(file_content) } );
 	}
 
 	fn constructor( SourceEntries mut source_entries )

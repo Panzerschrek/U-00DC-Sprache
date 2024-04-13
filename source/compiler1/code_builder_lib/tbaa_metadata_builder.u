@@ -65,8 +65,7 @@ fn TBAAMetadataBuilder::CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef
 fn TBAAMetadataBuilder::CreateReferenceAccessTag( mut this, Type& t ) : LLVMMetadataRef
 {
 	// Create access tags for references as for pointers.
-	var RawPointerType mut raw_pointer_type{ .element_type= t };
-	return CreateAccessTag( move(raw_pointer_type) );
+	return CreateAccessTag( RawPointerType { .element_type= t } );
 }
 
 fn TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag( mut this ) : LLVMMetadataRef

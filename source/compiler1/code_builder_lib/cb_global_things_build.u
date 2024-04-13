@@ -414,8 +414,7 @@ fn CodeBuilder::PrepareClassParentsList( mut this, ClassTypePtr& class_type )
 				AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
 			}
 
-			var ClassType::Parent mut parent{ .class_= parent_class };
-			parents.push_back( move(parent) );
+			parents.push_back( ClassType::Parent{ .class_= parent_class } );
 		}
 	}
 
@@ -1604,14 +1603,14 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		return;
 	}
 
-	var Variable mut variable
-	{
-		.t= t,
-		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.name= variable_declaration.name,
-	};
-	auto mut variable_ptr= move(variable).CreatePtr();
+	auto mut variable_ptr=
+		Variable
+		{
+			.t= t,
+			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= variable_declaration.name,
+		}.CreatePtr();
 
 	auto mut constexpr_value= LLVMValueRef::Null;
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
@@ -1628,16 +1627,16 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		function_context.references_graph.AddNode( variable_ptr );
 		{
-			var Variable mut variable_for_initialization
-			{
-				.t= t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.name= variable_declaration.name,
-				.llvm_value= llvm_value,
-			};
+			var VariablePtr variable_for_initialization_ptr=
+				Variable
+				{
+					.t= t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.name= variable_declaration.name,
+					.llvm_value= llvm_value,
+				}.CreatePtr();
 
-			var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
 			function_context.references_graph.AddNode( variable_for_initialization_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
 

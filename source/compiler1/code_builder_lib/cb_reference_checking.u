@@ -279,8 +279,7 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 			{
 				if( node == inner_nodes[j] )
 				{
-					var FunctionType::ParamReference param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
-					return param_reference;
+					return FunctionType::ParamReference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index + j) };
 				}
 			}
 
@@ -290,8 +289,7 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 		{
 			if( node == function_context.args_nodes[i] )
 			{
-				var FunctionType::ParamReference param_reference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
-				return param_reference;
+				return FunctionType::ParamReference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
 			}
 
 			++coroutine_inner_reference_index;
@@ -328,15 +326,13 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 					{
 						if( accessible_variable_node == function_context.args_nodes[j] )
 						{
-							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
-							param_reference= move(r);
+							param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
 						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
 						{
 							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
 							{
-								var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index=u8(tag_j) };
-								param_reference= move(r);
+								param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
 						}
 					}
@@ -386,8 +382,8 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 		{
 			if( variable_node == function_context.args_nodes[arg_n] )
 			{
-				var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number };
-				reference_notation_deduction_context.return_references.push_back( move(param_reference) );
+				reference_notation_deduction_context.return_references.push_back(
+					FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 			}
 		}
 
@@ -397,8 +393,8 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 			{
 				if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
 				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
-					reference_notation_deduction_context.return_references.push_back( move(param_reference) );
+					reference_notation_deduction_context.return_references.push_back(
+						FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 				}
 			}
 		}
@@ -450,8 +446,8 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 				{
 					if( variable_node == function_context.args_nodes[arg_n] )
 					{
-						var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number };
-						reference_notation_deduction_context.return_inner_references[i].push_back( move(param_reference) );
+						reference_notation_deduction_context.return_inner_references[i].push_back(
+							FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 					}
 				}
 
@@ -461,9 +457,8 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 					{
 						if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
 						{
-
-							var FunctionType::ParamReference mut param_reference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) };
-							reference_notation_deduction_context.return_inner_references[i].push_back( move(param_reference) );
+							reference_notation_deduction_context.return_inner_references[i].push_back(
+								FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 						}
 					}
 				}
@@ -538,29 +533,25 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					{
 						if( accessible_variable_node == cast_imut(function_context).args_nodes[j] )
 						{
-							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
-							src_param_reference= move(r);
+							src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
 						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
 						{
 							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
 							{
-								var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index=u8(tag_j) };
-								src_param_reference= move(r);
+								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
 						}
 					}
 
 					if( !src_param_reference.empty() )
 					{
-						var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
-
-						var FunctionType::ReferencePollution mut actual_reference_pollution
-						{
-							.dst= move(dst_param_reference),
-							.src= src_param_reference.try_deref(),
-						};
-						reference_notation_deduction_context.references_pollution.push_back( move(actual_reference_pollution) );
+						reference_notation_deduction_context.references_pollution.push_back(
+							FunctionType::ReferencePollution
+							{
+								.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
+								.src= src_param_reference.try_deref(),
+							} );
 					}
 
 					if( !lambda_preprocessing_context_ptr.empty() )
@@ -589,14 +580,12 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 
 						if( !src_captured_variable.empty() )
 						{
-							var FunctionType::ParamReference mut dst_param_reference{ .param_index= u8(param_i), .reference_index= u8(tag_i) };
-
-							var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
-							{
-								.dst= move(dst_param_reference),
-								.src= src_captured_variable.try_to_non_nullable(),
-							};
-							lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
+							lambda_preprocessing_context.references_pollution.push_back(
+								LambdaPreprocessingContext::ReferencePollution
+								{
+									.dst= FunctionType::ParamReference{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
+									.src= src_captured_variable.try_to_non_nullable(),
+								} );
 						}
 					}
 				}
@@ -636,15 +625,13 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					{
 						if( accessible_variable_node == function_context.args_nodes[j] )
 						{
-							var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
-							src_param_reference= move(r);
+							src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
 						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
 						{
 							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
 							{
-								var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index=u8(tag_j) };
-								src_param_reference= move(r);
+								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
 						}
 					}
@@ -671,12 +658,12 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 						continue;
 					}
 
-					var LambdaPreprocessingContext::ReferencePollution mut actual_reference_pollution
-					{
-						.dst= dst_node,
-						.src= src_param_reference.try_deref(),
-					};
-					lambda_preprocessing_context.references_pollution.push_back( move(actual_reference_pollution) );
+					lambda_preprocessing_context.references_pollution.push_back(
+						LambdaPreprocessingContext::ReferencePollution
+						{
+							.dst= dst_node,
+							.src= src_param_reference.try_deref(),
+						} );
 				}
 			}
 		}

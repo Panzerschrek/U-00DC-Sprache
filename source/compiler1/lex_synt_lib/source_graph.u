@@ -52,13 +52,12 @@ fn LoadSourceGraph(
 			}
 		}
 
-		var SourceGraph::Node mut node
-		{
-			.synt_result= move(synt_result),
-			.file_path_normalized= "compiler_generated_prelude"
-		};
-
-		source_graph.nodes.push_back( move(node) );
+		source_graph.nodes.push_back(
+			SourceGraph::Node
+			{
+				.synt_result= move(synt_result),
+				.file_path_normalized= "compiler_generated_prelude"
+			} );
 	}
 
 	return source_graph;
@@ -118,8 +117,7 @@ fn LoadSourceGraph_r(
 
 	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();
-	var SourceGraph::Node mut stub_node{ .file_path_normalized= file_path_normalized };
-	source_graph.nodes.push_back( move(stub_node) );
+	source_graph.nodes.push_back( SourceGraph::Node{ .file_path_normalized= file_path_normalized } );
 
 	auto mut lex_result= LexicalAnalysis( file_content_view );
 

@@ -35,12 +35,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 								if( functions_set_class_non_null == this_class_type ||
 									this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
 								{
-									var ThisMethodsSet this_methods_set
+									return ThisMethodsSet
 									{
 										.this_= this_non_null,
 										.functions_set= f_ptr_non_null,
 									};
-									return this_methods_set;
 								}
 							}
 						}
@@ -423,16 +422,16 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			lock.deref().referenced= true;
 			if_var( &element : lock.deref().elements.find( names_scope_fetch.name ) )
 			{
-				var Variable mut v
-				{
-					.t= enum_non_null,
-					.value_type= ValueType::ReferenceImut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= element.llvm_value,
-					.constexpr_value= element.constexpr_value,
-					.name= names_scope_fetch.name,
-				};
-				return NamesScopeValue(move(v));
+				return NamesScopeValue(
+					Variable
+					{
+						.t= enum_non_null,
+						.value_type= ValueType::ReferenceImut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= element.llvm_value,
+						.constexpr_value= element.constexpr_value,
+						.name= names_scope_fetch.name,
+					} );
 			}
 		}
 	}

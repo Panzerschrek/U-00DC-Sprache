@@ -81,9 +81,8 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				{
 					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
 
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_index), .reference_index= u8(i) };
 					var FunctionType::ParamReferences mut param_references;
-					param_references.push_back( move(param_reference) );
+					param_references.push_back( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } );
 					coroutine_return_inner_ferences.push_back( move(param_references) );
 				}
 			}
@@ -95,9 +94,8 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back( select( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
-			var FunctionType::ParamReference mut param_reference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number };
 			var FunctionType::ParamReferences mut param_references;
-			param_references.push_back( move(param_reference) );
+			param_references.push_back( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } );
 			coroutine_return_inner_ferences.push_back( move(param_references) );
 		}
 	}
@@ -110,16 +108,15 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			continue;
 		}
 
-		var FunctionType::ParamReference mut out_reference
-		{
-			.param_index(0),
-			.reference_index= select(
-				param_reference.reference_index == FunctionType::c_param_reference_number
-					? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
-					: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
-		};
-
-		coroutine_type_description.return_references.push_back( move(out_reference) );
+		coroutine_type_description.return_references.push_back(
+			FunctionType::ParamReference
+			{
+				.param_index(0),
+				.reference_index= select(
+					param_reference.reference_index == FunctionType::c_param_reference_number
+						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
+						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
+			} );
 	}
 
 	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
@@ -132,16 +129,15 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				continue;
 			}
 
-			var FunctionType::ParamReference mut out_reference
-			{
-				.param_index(0),
-				.reference_index= select(
-					param_reference.reference_index == FunctionType::c_param_reference_number
-						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
-						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
-			};
-
-			coroutine_type_description.return_inner_references[i].push_back( move(out_reference) );
+			coroutine_type_description.return_inner_references[i].push_back(
+				FunctionType::ParamReference
+				{
+					.param_index(0),
+					.reference_index= select(
+						param_reference.reference_index == FunctionType::c_param_reference_number
+							? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
+							: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
+				} );
 		}
 	}
 
@@ -169,24 +165,24 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 	}
 
 	var NamesScopeMutPtr class_members_ptr( NamesScope( class_base_name, root_namespace ) );
-	var ClassType mut class_type
-	{
-		.members= class_members_ptr,
-		.members_initial= class_members_ptr,
-		.is_complete= true,
-		.is_default_constructible= false,
-		.is_copy_constructible= false,
-		.is_copy_assignable= false,
-		.is_equality_comparable= true,
-		.has_explicit_noncopy_constructors= false,
-		// This class allocates heep memory and because of that can't be constexpr.
-		.can_be_constexpr= false,
-		.parents_list_prepared= true,
-		.inner_references= coroutine_type_description.inner_references,
-		.generated_class_data( coroutine_type_description ),
-	};
 
-	var ClassTypePtr class_type_ptr( move(class_type) );
+	var ClassTypePtr class_type_ptr(
+		ClassType
+		{
+			.members= class_members_ptr,
+			.members_initial= class_members_ptr,
+			.is_complete= true,
+			.is_default_constructible= false,
+			.is_copy_constructible= false,
+			.is_copy_assignable= false,
+			.is_equality_comparable= true,
+			.has_explicit_noncopy_constructors= false,
+			// This class allocates heep memory and because of that can't be constexpr.
+			.can_be_constexpr= false,
+			.parents_list_prepared= true,
+			.inner_references= coroutine_type_description.inner_references,
+			.generated_class_data( coroutine_type_description ),
+		} );
 
 	var ust::string8 class_name= mangler_.deref().MangleType( class_type_ptr );
 	var LLVMTypeRef llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, class_name.front() ) );
@@ -235,19 +231,11 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 	{ // Generate == operator
 
 		// Prepare function type.
-		var FunctionType mut function_type
-		{
-			.return_type( bool_type_ ),
-			.return_value_type= ValueType::Value,
-		};
+		var FunctionType mut function_type{ .return_type( bool_type_ ), .return_value_type= ValueType::Value };
 		for( auto mut i= 0s; i < 2s; ++i )
 		{
-			var FunctionType::Param mut param
-			{
-				.t( class_type_ptr ),
-				.value_type= ValueType::ReferenceImut,
-			};
-			function_type.params.push_back( move(param) );
+			function_type.params.push_back(
+				FunctionType::Param{ .t( class_type_ptr ), .value_type= ValueType::ReferenceImut } );
 		}
 
 		auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
@@ -579,14 +567,15 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	var LLVMValueRef promise= function_context.s_ret;
 
-	var Variable mut return_node_variable
-	{
-		.t= return_type,
-		.value_type= return_value_type,
-		.location= Variable::Location::Pointer,
-		.name= "async return value",
-	};
-	var VariablePtr return_node= move(return_node_variable).CreatePtr();
+	var VariablePtr return_node=
+		Variable
+		{
+			.t= return_type,
+			.value_type= return_value_type,
+			.location= Variable::Location::Pointer,
+			.name= "async return value",
+		}.CreatePtr();
+
 	function_context.references_graph.AddNode( return_node );
 
 	// Fill promise.

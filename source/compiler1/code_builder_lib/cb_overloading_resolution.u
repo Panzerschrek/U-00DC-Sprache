@@ -542,8 +542,7 @@ fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, Overloa
 			t= PrepareType( template_function.args_names_scope, global_function_context, param.t );
 		}
 
-		var VariableTypeExtended result{ .value_type= value_type, .t= move(t) };
-		return result;
+		return VariableTypeExtended{ .value_type= value_type, .t= move(t) };
 	}
 	halt;
 }
