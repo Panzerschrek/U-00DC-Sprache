@@ -3436,38 +3436,41 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 
 		class_.class_elements= ParseClassBody();
 
-		return ust::make_shared_ptr_final( TypeTemplate
-		{
-			.src_loc= class_src_loc,
-			.name= template_name,
-			.something( ust::make_shared_ptr_final( move(class_) ) ),
-			.params= move(params),
-			.signature_params= move(signature_params),
-			.is_short_form= is_short_form,
-		} );
+		return ust::make_shared_ptr_final(
+			TypeTemplate
+			{
+				.src_loc= class_src_loc,
+				.name= template_name,
+				.something( ust::make_shared_ptr_final( move(class_) ) ),
+				.params= move(params),
+				.signature_params= move(signature_params),
+				.is_short_form= is_short_form,
+			} );
 	}
 	else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 	{
 		auto mut function= ParseFunction();
-		return ust::make_shared_ptr_final( FunctionTemplate
-		{
-			.src_loc= function.src_loc,
-			.name= function.name.back(),
-			.params= move(params),
-			.function( move(function) ),
-		} );
+		return ust::make_shared_ptr_final(
+			FunctionTemplate
+			{
+				.src_loc= function.src_loc,
+				.name= function.name.back(),
+				.params= move(params),
+				.function( move(function) ),
+			} );
 	}
 	else
 	{
 		PushErrorMessage();
 
 		// Fill dummpy
-		return ust::make_shared_ptr_final( TypeTemplate
-		{
-			.something( ust::make_shared_ptr_final( TypeAlias() ) ),
-			.params= move(params),
-			.is_short_form= false,
-		} );
+		return ust::make_shared_ptr_final(
+			TypeTemplate
+			{
+				.something( ust::make_shared_ptr_final( TypeAlias() ) ),
+				.params= move(params),
+				.is_short_form= false,
+			} );
 	}
 }
 

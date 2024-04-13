@@ -509,7 +509,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 	else
 	{
-		function_type_param.return_type= TemplateSignatureParam( TemplateSignatureParam::TypeParam{ .t= void_type_ } );
+		function_type_param.return_type= TemplateSignatureParam::TypeParam{ .t= void_type_ };
 	}
 
 	foreach( &param : signature_param.params )

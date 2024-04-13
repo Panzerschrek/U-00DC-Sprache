@@ -70,7 +70,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 	var VariablePtr dummy_ptr=
 		Variable
 		{
-			.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ),
+			.t= invalid_type_,
 			.value_type= ValueType::Value,
 			.location= Variable::Location::LLVMRegister,
 			.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) ),
