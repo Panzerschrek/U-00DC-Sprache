@@ -22,6 +22,25 @@ def NameIsNotTypeName_ForStructInitializationExpression_Test1():
 	assert( HasError( errors_list, "NameIsNotTypeName", 3 ) )
 
 
+def NameIsNotTypeName_ForStructInitializationExpression_Test2():
+	c_program_text= """
+		auto x= 42{}; // Expected type name for {} initializer, got numeric value.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameIsNotTypeName", 2 ) )
+
+
+def NameIsNotTypeName_ForStructInitializationExpression_Test3():
+	c_program_text= """
+		var i32 x= 65, y= 4;
+		auto z= (x / y){}; // Expected type name for {} initializer, got binary expression result.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameIsNotTypeName", 3 ) )
+
+
 def ConstructingAbstractClassOrInterface_ForStructInitializationExpression_Test0():
 	c_program_text= """
 		class A abstract {}
@@ -177,3 +196,59 @@ def ExpectedInitializer_ForStructInitializationExpression_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ExpectedInitializer", 5 ) )
+
+
+def ExpectedReferenceValue_ForStructInitializationExpression_Test0():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Foo()
+		{
+			auto& s= S{ .x= 0 }; // This expressions produces a value, which is used to initialize reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def DestroyedVariableStillHasReferences_ForStructInitializationExpression_Test0():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Foo()
+		{
+			auto& s= PassS( S{ .x= 0 } ); // Passing a reference to a temporary variable with {} initializer through a function and try to save a reference to this temporary.
+		}
+		fn PassS(S& s) : S& { return s; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 5 ) )
+
+
+def DestroyedVariableStillHasReferences_ForStructInitializationExpression_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Foo()
+		{
+			var S stack_s= zero_init;
+			select( true ? stack_s : PassS( S{ .x= 0 } ) ); // Passing a reference to a temporary variable with {} initializer through a function and try to save a reference to this temporary.
+		}
+		fn PassS(S& s) : S& { return s; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 6 ) )
+
+
+def DestroyedVariableStillHasReferences_ForStructInitializationExpression_Test2():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Foo() : S&
+		{
+			return PassS(S{ .x= 0 }); // returning a reference to a temporary, constructed with {}.
+		}
+		fn PassS(S& s) : S& { return s; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 5 ) )

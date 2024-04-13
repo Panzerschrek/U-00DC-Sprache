@@ -117,3 +117,31 @@ def StructInitializationExpression_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructInitializationExpression_Test7():
+	c_program_text= """
+		struct S { f32 x; }
+		fn ExtractX( S& s ) : f32 { return s.x; }
+		fn Foo()
+		{
+			// Pass a variable, created with {} initializer into a function.
+			var f32 x= ExtractX( S{ .x= 3.141592535f } );
+			halt if( x != 3.141592535f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructInitializationExpression_Test8():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Foo()
+		{
+			// Use member access operator after struct initialization.
+			halt if( S{ .x= 65 }.x != 65 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
