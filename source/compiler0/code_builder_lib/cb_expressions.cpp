@@ -580,7 +580,7 @@ Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionCon
 	const Value type_value= BuildExpressionCode( variable_initialization.type, names_scope, function_context );
 	CHECK_RETURN_ERROR_VALUE(type_value)
 
-	const Type* type= type_value.GetTypeName();
+	const Type* const type= type_value.GetTypeName();
 	if(type == nullptr)
 	{
 		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), variable_initialization.src_loc, type_value.GetKindName() );
