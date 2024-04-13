@@ -189,16 +189,17 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 
 	var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
 
-	var Variable mut variable_reference_variable
-	{
-		.t= t,
-		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.name= variable_declaration.name,
-		.src_loc= variable_declaration.src_loc,
-		.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
-	};
-	var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= t,
+			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= variable_declaration.name,
+			.src_loc= variable_declaration.src_loc,
+			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
+		}.CreatePtr();
+
 	// Do not forget to remove node in case of error-return!!!
 	function_context.references_graph.AddNode( variable_reference );
 
@@ -231,16 +232,16 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 		function_context.references_graph.AddLink( variable_ptr, variable_reference );
 
 		{
-			var Variable mut variable_for_initialization
-			{
-				.t= t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= llvm_value,
-				.name= variable_declaration.name,
-			};
+			var VariablePtr variable_for_initialization_ptr=
+				Variable
+				{
+					.t= t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= llvm_value,
+					.name= variable_declaration.name,
+				}.CreatePtr();
 
-			var VariablePtr variable_for_initialization_ptr= move(variable_for_initialization).CreatePtr();
 			function_context.references_graph.AddNode( variable_for_initialization_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_for_initialization_ptr, names_scope, variable_declaration.src_loc );
@@ -391,17 +392,18 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 
 	var bool is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
 
-	var Variable mut variable_reference_variable
-	{
-		.t= expr.t,
-		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
-		.name= auto_variable_declaration.name,
-		.src_loc= auto_variable_declaration.src_loc,
-		.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
-	};
-	var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= expr.t,
+			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
+			.name= auto_variable_declaration.name,
+			.src_loc= auto_variable_declaration.src_loc,
+			.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
+		}.CreatePtr();
+
 	// Do not forget to remove node in case of errror-return!!!
 	function_context.references_graph.AddNode( variable_reference );
 
@@ -554,8 +556,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			self.BuildReturnOperatorImpl( names_scope, function_context, return_operator );
 		} );
-	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
-	return block_element_build_info;
+
+	return BlockElementBuildInfo{ .has_terminal_instruction_inside= true };
 }
 
 fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
@@ -675,14 +677,15 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 	}
 
 	// Create return reference node and link it with expression node.
-	var Variable mut return_node_variable
-	{
-		.t= function_context.function_type.return_type,
-		.value_type= function_context.function_type.return_value_type,
-		.location= Variable::Location::Pointer,
-		.name= "return value",
-	};
-	var VariablePtr return_node= move(return_node_variable).CreatePtr();
+	var VariablePtr return_node=
+		Variable
+		{
+			.t= function_context.function_type.return_type,
+			.value_type= function_context.function_type.return_value_type,
+			.location= Variable::Location::Pointer,
+			.name= "return value",
+		}.CreatePtr();
+
 	function_context.references_graph.AddNode( return_node );
 
 	if( function_context.function_type.return_value_type == ValueType::Value )
@@ -1187,16 +1190,17 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		return BlockElementBuildInfo();
 	}
 
-	var Variable mut coro_expr_lock_variable
-	{
-		.t= coro_expr.t,
-		.value_type= ValueType::ReferenceMut,
-		.location= Variable::Location::Pointer,
-		.llvm_value= coro_expr.llvm_value,
-		.constexpr_value= coro_expr.constexpr_value,
-		.name= coro_expr_ptr.lock_imut().deref().name + " lock",
-	};
-	var VariablePtr coro_expr_lock= move(coro_expr_lock_variable).CreatePtr();
+	var VariablePtr coro_expr_lock=
+		Variable
+		{
+			.t= coro_expr.t,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= coro_expr.llvm_value,
+			.constexpr_value= coro_expr.constexpr_value,
+			.name= coro_expr_ptr.lock_imut().deref().name + " lock",
+		}.CreatePtr();
+
 	function_context.references_graph.AddNode( coro_expr_lock );
 
 	function_context.references_graph.TryAddLink( coro_expr_ptr, coro_expr_lock, names_scope, if_coro_advance_operator.src_loc );
@@ -1285,18 +1289,19 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			var Variable mut variable_reference_variable
-			{
-				.t= result_type,
-				.value_type= select( if_coro_advance_operator.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.location= Variable::Location::Pointer,
-				.name= if_coro_advance_operator.variable_name,
-				.src_loc= if_coro_advance_operator.src_loc,
-				.referenced=
-					( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
-					VariableExistanceMayHaveSideEffects(result_type)
-			};
-			var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+			var VariablePtr mut variable_reference=
+				Variable
+				{
+					.t= result_type,
+					.value_type= select( if_coro_advance_operator.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.location= Variable::Location::Pointer,
+					.name= if_coro_advance_operator.variable_name,
+					.src_loc= if_coro_advance_operator.src_loc,
+					.referenced=
+						( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
+						VariableExistanceMayHaveSideEffects(result_type)
+				}.CreatePtr();
+
 			function_context.references_graph.AddNode( variable_reference );
 
 			if( result_value_type == ValueType::Value )
@@ -1672,8 +1677,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						is_signed
 							? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
 							: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
-					var SwitchCaseRange mut range{ .low= val, .high= val, .src_loc= src_loc };
-					case_values.push_back( move(range) );
+
+					case_values.push_back( SwitchCaseRange{ .low= val, .high= val, .src_loc= src_loc } );
 				}
 				else if_var( &range : value.get</ Synt::SwitchOperator::CaseRange />() )
 				{
@@ -1731,8 +1736,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						continue;
 					}
 
-					var SwitchCaseRange mut out_range{ .low= range_constants[0], .high= range_constants[1], .src_loc= src_loc };
-					case_values.push_back( move(out_range) );
+					case_values.push_back( SwitchCaseRange{ .low= range_constants[0], .high= range_constants[1], .src_loc= src_loc } );
 				}
 				else { halt; }
 			}
@@ -2239,14 +2243,15 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 	auto is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
 
-	var Variable mut lock_variable
-	{
-		.t= sequence_expression.t,
-		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.name= sequence_expression_ptr.lock_imut().deref().name + " sequence lock",
-	};
-	var VariablePtr sequence_lock_node= move(lock_variable).CreatePtr();
+	var VariablePtr sequence_lock_node=
+		Variable
+		{
+			.t= sequence_expression.t,
+			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= sequence_expression_ptr.lock_imut().deref().name + " sequence lock",
+		}.CreatePtr();
+
 	function_context.references_graph.AddNode( sequence_lock_node );
 	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 	function_context.references_graph.TryAddInnerLinks( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
@@ -2281,21 +2286,22 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 				function_context,
 				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 				{
-					var Variable mut variable_reference_variable
-					{
-						.t= variable_type,
-						.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-						.location= Variable::Location::Pointer,
-						.constexpr_value=
-							select(
-								is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
-									? LLVMValueRef::Null
-									: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
-						.name= range_for_operator.loop_variable_name,
-						.src_loc= range_for_operator.src_loc,
-						.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
-					};
-					var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+					var VariablePtr mut variable_reference=
+						Variable
+						{
+							.t= variable_type,
+							.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+							.location= Variable::Location::Pointer,
+							.constexpr_value=
+								select(
+									is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
+										? LLVMValueRef::Null
+										: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
+							.name= range_for_operator.loop_variable_name,
+							.src_loc= range_for_operator.src_loc,
+							.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
+						}.CreatePtr();
+
 					// Do not forget to remove node in case of error-return!!!
 					function_context.references_graph.AddNode( variable_reference );
 
@@ -2369,9 +2375,11 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 						// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
 						// TODO - maybe make this counter available for a programmer?
-						{
-							auto index_value= unsafe( LLVMConstInt( self.fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
-							var Variable mut tuple_for_index
+
+						auto index_value= unsafe( LLVMConstInt( self.fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
+						lock.deref().AddName(
+							" tuple for index",
+							Variable
 							{
 								.t= FundamentalType( U_FundamentalType::u32_, self.fundamental_llvm_types_.u32_ ),
 								.value_type= ValueType::Value,
@@ -2379,9 +2387,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 								.llvm_value= index_value,
 								.constexpr_value= index_value,
 								.referenced= true,
-							};
-							lock.deref().AddName( " tuple for index", move(tuple_for_index).CreatePtr() ).empty();
-						}
+							}.CreatePtr() ).empty();
 					}
 
 					self.AddLoopFrame( names_scope, function_context, finish_basic_block, next_basic_block, range_for_operator.label_ );
@@ -2683,17 +2689,18 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 
 	var bool is_mutable= with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
 
-	var Variable mut variable_reference_variable
-	{
-		.t= expr.t,
-		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
-		.name= with_operator.variable_name,
-		.src_loc= with_operator.src_loc,
-		.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
-	};
-	var VariablePtr mut variable_reference= move(variable_reference_variable).CreatePtr();
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= expr.t,
+			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
+			.name= with_operator.variable_name,
+			.src_loc= with_operator.src_loc,
+			.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
+		}.CreatePtr();
+
 	// Do not forget to remove node in case of error-return!!!
 	function_context.references_graph.AddNode( variable_reference );
 
