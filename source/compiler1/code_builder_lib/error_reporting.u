@@ -44,14 +44,12 @@ fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_
 		}
 	}
 
-	var CodeBuilderError err
+	return CodeBuilderError
 	{
 		.code= code,
 		.text= move(result_error_text),
 		.src_loc= src_loc,
 	};
-
-	return err;
 }
 
 fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error )
@@ -144,22 +142,21 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 	{
 		var ust::shared_ptr_mut</ErrorsContainer/> internal_errors( ErrorsContainer() );
 
-		var TemplateErrorsContext mut template_errors_context
-		{
-			.errors= internal_errors,
-			.context_declaration_src_loc= macro_expansion_context.macro_declaration_src_loc,
-			.context_name= macro_expansion_context.macro_name,
-		};
+		macro_contexts_errors.push_back(
+			CodeBuilderError
+			{
+				.code= CodeBuilderErrorCode::MacroExpansionContext,
+				.src_loc= macro_expansion_context.src_loc,
+				.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"",
+				.errors_context(
+					TemplateErrorsContext
+					{
+						.errors= internal_errors,
+						.context_declaration_src_loc= macro_expansion_context.macro_declaration_src_loc,
+						.context_name= macro_expansion_context.macro_name,
+					} ),
+			} );
 
-		var CodeBuilderError mut macro_expansion_context_error
-		{
-			.code= CodeBuilderErrorCode::MacroExpansionContext,
-			.src_loc= macro_expansion_context.src_loc,
-			.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"",
-			.errors_context( move(template_errors_context) ),
-		};
-
-		macro_contexts_errors.push_back( move(macro_expansion_context_error) );
 		macro_contexts_errors_internals.push_back( internal_errors );
 	}
 

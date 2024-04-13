@@ -9,8 +9,7 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
 	debug_assert( nodes_.find( node ).empty(), "Node is already registered!" );
 
-	var NodeState mut node_state{ .moved= false };
-	nodes_.insert( node, move(node_state) );
+	nodes_.insert( node, NodeState{ .moved= false } );
 
 	with( &node_val : node.lock_imut().deref() )
 	{
@@ -26,8 +25,7 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
 {
-	var NodeState mut node_state{ .moved= false };
-	nodes_.insert( node, move(node_state) );
+	nodes_.insert( node, NodeState{ .moved= false } );
 
 	foreach( &inner_reference_node : node.lock_imut().deref().inner_reference_nodes )
 	{

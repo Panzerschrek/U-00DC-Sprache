@@ -308,8 +308,7 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 	}
 
 	// Not found replacement - add new substitution.
-	var Substitution substitution{ .start= LenType(start), .size= LenType(size) };
-	substitutions_.push_back( substitution );
+	substitutions_.push_back( Substitution{ .start= LenType(start), .size= LenType(size) } );
 }
 
 fn Base36Digit( u32 value ) : char8
@@ -827,15 +826,9 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 
 		mangler_state.Push( "F" );
 
-		{
-			var FunctionType::Param ret_param
-			{
-				.t( function_type.return_type ),
-				.value_type= function_type.return_value_type,
-			};
-
-			EncodeFunctionParam( mangler_state, ret_param );
-		}
+		EncodeFunctionParam(
+			mangler_state,
+			FunctionType::Param{ .t( function_type.return_type ), .value_type= function_type.return_value_type } );
 
 		EncodeFunctionParams( mangler_state, function_type.params );
 
