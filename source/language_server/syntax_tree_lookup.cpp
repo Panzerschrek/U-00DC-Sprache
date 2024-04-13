@@ -116,6 +116,12 @@ void FindImpl( const Synt::MemberAccessOperatorCompletion& member_access_operato
 	}
 }
 
+void FindImpl( const Synt::VariableInitialization& variable_initialization )
+{
+	FindImpl( variable_initialization.type );
+	FindImpl( variable_initialization.initializer );
+}
+
 void FindImpl( const Synt::AwaitOperator& await_operator )
 {
 	FindImpl( await_operator.expression );

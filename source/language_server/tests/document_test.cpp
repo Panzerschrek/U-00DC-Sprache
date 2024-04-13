@@ -1041,6 +1041,72 @@ U_TEST( DocumentCompletion_Test27 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test28 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "struct S{ i32 some; } fn Foo(){  }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest member name in struct initializer in expression context.
+	document.UpdateText( DocumentRange{ { 1, 32 }, { 1, 32 } }, "auto s= S{ ." );
+
+	const CompletionItemsNormalized expected_completion_result{ "some" };
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 44 } );
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test29 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "struct Some{} fn Foo(){  }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest type name in struct initializer in expression context.
+	document.UpdateText( DocumentRange{ { 1, 24 }, { 1, 24 } }, "auto s= So" );
+
+	const CompletionItemsNormalized expected_completion_result{ "Some" };
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 34 } );
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test30 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "struct S{ i32 some; } fn Foo(){  }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest field name in member access after struct initializer in expression context.
+	document.UpdateText( DocumentRange{ { 1, 32 }, { 1, 32 } }, "auto s= S{}.ome" );
+
+	const CompletionItemsNormalized expected_completion_result{ "some" };
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 47 } );
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
