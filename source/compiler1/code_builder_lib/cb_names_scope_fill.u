@@ -232,16 +232,12 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var Enum mut result_enum
-	{
-		.syntax_element= enum_,
-		.names_scope( NamesScope( name, names_scope_ptr ) )
-	};
-
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( name, move(result_enum) ).empty();
+		insert_not_ok= lock.deref().AddName(
+			name,
+			Enum{ .syntax_element= enum_, .names_scope( NamesScope( name, names_scope_ptr ) ) } ).empty();
 	}
 
 	if( insert_not_ok )
@@ -269,12 +265,10 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var TypeAlias mut result_type_alias{ .syntax_element= type_alias };
-
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( name, move(result_type_alias) ).empty();
+		insert_not_ok= lock.deref().AddName( name, TypeAlias{ .syntax_element= type_alias } ).empty();
 	}
 
 	if( insert_not_ok )
@@ -358,16 +352,16 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 			continue;
 		}
 
-		var GlobalVariable mut global_variable
-		{
-			.syntax_element= variables_declaration,
-			.variable_index= u32(i),
-		};
-
 		var bool mut insert_not_ok= false;
 		with( mut lock : names_scope_ptr.lock_mut() )
 		{
-			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(global_variable) ).empty();
+			insert_not_ok= lock.deref().AddName(
+				variable_declaration.name,
+				GlobalVariable
+				{
+					.syntax_element= variables_declaration,
+					.variable_index= u32(i),
+				} ).empty();
 		}
 
 		if( insert_not_ok )
@@ -398,12 +392,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var GlobalAutoVariable mut global_auto_variable{ .syntax_element= auto_variable_declaration };
 
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( auto_variable_declaration.deref().name, move(global_auto_variable) ).empty();
+		insert_not_ok= lock.deref().AddName(
+			auto_variable_declaration.deref().name,
+			GlobalAutoVariable{ .syntax_element= auto_variable_declaration } ).empty();
 	}
 
 	if( insert_not_ok )
