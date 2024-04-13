@@ -65,8 +65,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			// Move.
 			function_context.references_graph.MoveNode( expr_result_ptr );
 
-			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
-			CreateLifetimeEnd( function_context, expr_result.llvm_value );
+			if( !function_context.is_functionless_context )
+			{
+				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+				CreateLifetimeEnd( function_context, expr_result.llvm_value );
+			}
 		}
 		else
 		{
@@ -101,8 +104,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			{
 				// Move.
 				function_context.references_graph.MoveNode( expr_result_ptr );
-				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
-				CreateLifetimeEnd( function_context, expr_result.llvm_value );
+				if( !function_context.is_functionless_context )
+				{
+					CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+					CreateLifetimeEnd( function_context, expr_result.llvm_value );
+				}
 			}
 			else if( !function_context.is_functionless_context )
 			{

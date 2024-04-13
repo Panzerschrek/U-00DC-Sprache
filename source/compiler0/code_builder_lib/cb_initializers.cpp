@@ -489,7 +489,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 				return expression_result->constexpr_value; // Move can preserve constexpr.
 			}
-			else
+			else if( !function_context.is_functionless_context )
 			{
 				llvm::Value* const value_for_copy=
 					CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable->type, function_context );
