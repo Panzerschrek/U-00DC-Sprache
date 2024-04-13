@@ -105,28 +105,25 @@ fn CodeBuilder::constructor(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
 
-	{
-		// A pair of chars.
-		// First - number of param from '0' up to '9'.
-		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
-		var ArrayType mut a
+	// A pair of chars.
+	// First - number of param from '0' up to '9'.
+	// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+	reference_notation_param_reference_description_type_=
+		ArrayType
 		{
 			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
 			.element_count(2),
 			.llvm_type= unsafe( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ) ),
 		};
-		reference_notation_param_reference_description_type_= move(a);
-	}
-	{
-		// A pair of reference param descriptions. First - destination, second - source.
-		var ArrayType mut a
+
+	// A pair of reference param descriptions. First - destination, second - source.
+	reference_notation_pollution_element_type_=
+		ArrayType
 		{
 			.element_type= reference_notation_param_reference_description_type_,
 			.element_count(2),
 			.llvm_type= unsafe( LLVMArrayType( reference_notation_param_reference_description_type_.GetLLVMType(), 2u ) ),
 		};
-		reference_notation_pollution_element_type_= move(a);
-	}
 
 	virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u ));
 
@@ -707,12 +704,12 @@ fn CodeBuilder::PrepareFunction(
 			auto reference_tag_count= class_type_non_null.lock_imut().deref().inner_references.size();
 			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
-				var FunctionType::ReferencePollution mut pollution
-				{
-					.dst{ .param_index= 0u8, .reference_index= u8(i) },
-					.src{ .param_index= 1u8, .reference_index= u8(i) },
-				};
-				function_variable.t.references_pollution.push_back( move(pollution) );
+				function_variable.t.references_pollution.push_back(
+					FunctionType::ReferencePollution
+					{
+						.dst{ .param_index= 0u8, .reference_index= u8(i) },
+						.src{ .param_index= 1u8, .reference_index= u8(i) },
+					} );
 			}
 		}
 
@@ -1319,14 +1316,14 @@ fn CodeBuilder::BuildFuncCode(
 					variable_inner_reference_node,
 					variable_reference_ptr.lock_imut().deref().inner_reference_nodes[i] );
 
-				var Variable mut accesible_variable
-				{
-					.t= invalid_type_,
-					.value_type= ValueType::Value,
-					.location= Variable::Location::Pointer,
-					.name= in_param.name + " referenced variable"
-				};
-				var VariablePtr accesible_variable_ptr= move(accesible_variable).CreatePtr();
+				var VariablePtr accesible_variable_ptr=
+					Variable
+					{
+						.t= invalid_type_,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.name= in_param.name + " referenced variable"
+					}.CreatePtr();
 				function_context.references_graph.AddNode( accesible_variable_ptr );
 
 				function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
@@ -1383,25 +1380,25 @@ fn CodeBuilder::BuildFuncCode(
 									? CreateTypedReferenceLoad( function_context, field.t, field_address )
 									: field_address );
 
-							var Variable mut variable
-							{
-								.t= field.t,
-								.value_type= ValueType::Value,
-								.location= Variable::Location::Pointer,
-								.name= field_name,
-								.llvm_value= llvm_value,
-							};
-							var VariablePtr variable_ptr= move(variable).CreatePtr();
+							var VariablePtr variable_ptr=
+								Variable
+								{
+									.t= field.t,
+									.value_type= ValueType::Value,
+									.location= Variable::Location::Pointer,
+									.name= field_name,
+									.llvm_value= llvm_value,
+								}.CreatePtr();
 
-							var Variable mut variable_reference
-							{
-								.t= field.t,
-								.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-								.location= Variable::Location::Pointer,
-								.name= field_name,
-								.llvm_value= llvm_value,
-							};
-							var VariablePtr variable_reference_ptr= move(variable_reference).CreatePtr();
+							var VariablePtr variable_reference_ptr=
+								Variable
+								{
+									.t= field.t,
+									.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+									.location= Variable::Location::Pointer,
+									.name= field_name,
+									.llvm_value= llvm_value,
+								}.CreatePtr();
 
 							function_context.references_graph.AddNode( variable_ptr );
 							function_context.references_graph.AddNode( variable_reference_ptr );
@@ -1418,14 +1415,15 @@ fn CodeBuilder::BuildFuncCode(
 							{
 								var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
 
-								var Variable mut accesible_variable
-								{
-									.t= invalid_type_,
-									.value_type= ValueType::Value,
-									.location= Variable::Location::Pointer,
-									.name= field_name + " referenced variable"
-								};
-								var VariablePtr accesible_variable_ptr= move(accesible_variable).CreatePtr();
+								var VariablePtr accesible_variable_ptr=
+									Variable
+									{
+										.t= invalid_type_,
+										.value_type= ValueType::Value,
+										.location= Variable::Location::Pointer,
+										.name= field_name + " referenced variable"
+									}.CreatePtr();
+
 								function_context.references_graph.AddNode( accesible_variable_ptr );
 								function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
 								function_context.references_graph.AddLink(
@@ -3034,13 +3032,13 @@ fn CodeBuilder::ConstexprCompareEqual(
 					{
 						foreach( &err : errors )
 						{
-							var CodeBuilderError mut out_error
-							{
-								.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-								.src_loc= src_loc,
-								.text= err,
-							};
-							lock.deref().push_back( move(out_error) );
+							lock.deref().push_back(
+								CodeBuilderError
+								{
+									.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+									.src_loc= src_loc,
+									.text= err,
+								} );
 						}
 					}
 
@@ -3145,12 +3143,11 @@ fn CodeBuilder::GetIntrinsic( this, ust::string_view8 name, ust::array_view_imut
 
 fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState
 {
-	var FunctionContextState instructions_state
+	return FunctionContextState
 	{
 		.current_block= unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ),
 		.references_graph= function_context.references_graph,
 	};
-	return instructions_state;
 }
 
 fn CodeBuilder::RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state )
@@ -3164,16 +3161,10 @@ fn CodeBuilder::RestoreFunctionContextState( FunctionContext &mut function_conte
 
 fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 {
-	var FunctionType mut function_type
-	{
-		.return_type= void_type_,
-		.return_value_type= ValueType::Value,
-	};
-
 	var FunctionContext mut function_context(
 		llvm_context_,
 		global_llvm_function_,
-		move(function_type) );
+		FunctionType{ .return_type= void_type_, .return_value_type= ValueType::Value } );
 
 	function_context.is_functionless_context= true;
 
