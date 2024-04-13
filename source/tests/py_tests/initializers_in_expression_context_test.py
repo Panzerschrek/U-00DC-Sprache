@@ -145,3 +145,55 @@ def StructInitializationExpression_Test8():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructInitializationExpression_Test9():
+	c_program_text= """
+		struct S{ i32 x; u64 y(66); f32 z; }
+		// {} initializer in expression context may produce constexpr values.
+		auto s= S{ .x= 55, .z= -1.0f };
+		static_assert( s.x == 55 );
+		static_assert( s.y == u64(66) );
+		static_assert( s.z == -1.0f );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructInitializationExpression_Test10():
+	c_program_text= """
+		struct S{ i32 x; }
+		// {} initializer in expression context may produce constexpr values.
+		static_assert( S{ .x= 1266 }.x == 1266 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructInitializationExpression_Test11():
+	c_program_text= """
+		struct S{ i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 643;
+			++ S{ .r= x }.r; // Initialize reference field in {}, than access it and modify referenced value.
+			halt if( x != 644 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructInitializationExpression_Test12():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Initialize reference field in "s".
+			// This causes an error, because a mutable and an immutable references are passed into a function in the same time.
+			Bar( S{ .r= x }, x );
+		}
+		fn Bar(S s, i32 &mut x);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
