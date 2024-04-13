@@ -762,14 +762,13 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 
 			foreach( &function : functions_set_ptr.lock_imut().deref().functions )
 			{
-				var ClassFunctionForTypeinfo mut f
-				{
-					.function= function,
-					.name= class_member.key(),
-					.mangled_name= function.llvm_function.lock_imut().deref().name_mangled
-				};
-
-				functions_list.push_back( move(f) );
+				functions_list.push_back(
+					ClassFunctionForTypeinfo
+					{
+						.function= function,
+						.name= class_member.key(),
+						.mangled_name= function.llvm_function.lock_imut().deref().name_mangled
+					} );
 			}
 		}
 	}
@@ -926,13 +925,12 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 
 	foreach( &enum_element : enum_.elements )
 	{
-		var EnumElementForTypeinfo mut el
-		{
-			.value= enum_element.value().constexpr_value,
-			.name= enum_element.key()
-		};
-
-		enum_elemens_list.push_back( move(el) );
+		enum_elemens_list.push_back(
+			EnumElementForTypeinfo
+			{
+				.value= enum_element.value().constexpr_value,
+				.name= enum_element.key()
+			} );
 	}
 
 	// Sort enum elements in typeinfo by name, because we need strong order.

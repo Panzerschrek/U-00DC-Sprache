@@ -275,15 +275,14 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 
 	var LLVMTypeRef element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
 
-	var ArrayType mut array_type
-	{
-		.element_type= reference_notation_param_reference_description_type_,
-		.element_count= u64( constant_initializers.size() ),
-		.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
-	};
-
 	return ust::make_tuple(
-		Type( move(array_type) ),
+		Type(
+			ArrayType
+			{
+				.element_type= reference_notation_param_reference_description_type_,
+				.element_count= u64( constant_initializers.size() ),
+				.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
+			} ),
 		unsafe( LLVMConstArray( element_llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
 }
 
@@ -325,15 +324,14 @@ fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPo
 
 	var LLVMTypeRef element_llvm_type= reference_notation_pollution_element_type_.GetLLVMType();
 
-	var ArrayType mut array_type
-	{
-		.element_type= reference_notation_pollution_element_type_,
-		.element_count= u64( constant_initializers.size() ),
-		.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
-	};
-
 	return ust::make_tuple(
-		Type( move(array_type) ),
+		Type(
+			ArrayType
+			{
+				.element_type= reference_notation_pollution_element_type_,
+				.element_count= u64( constant_initializers.size() ),
+				.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
+			} ),
 		unsafe( LLVMConstArray( element_llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
 }
 

@@ -105,15 +105,14 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				continue; // May be in case of error
 			}
 
-			var VirtualFunctionWithName mut f
-			{
-				.functions_set= functions_set_ptr.try_to_non_nullable(),
-				.index= i,
-				.name= class_member.key(),
-				.mangled_name= functions_set.functions[i].llvm_function.lock_imut().deref().name_mangled,
-			};
-
-			this_virtual_functions.push_back( move(f) );
+			this_virtual_functions.push_back(
+				VirtualFunctionWithName
+				{
+					.functions_set= functions_set_ptr.try_to_non_nullable(),
+					.index= i,
+					.name= class_member.key(),
+					.mangled_name= functions_set.functions[i].llvm_function.lock_imut().deref().name_mangled,
+				} );
 		}
 	}
 
@@ -177,16 +176,16 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				{
 					function.virtual_table_index= u32(class_type.virtual_table.size());
 
-					var ClassType::VirtualTableEntry mut new_virtual_table_entry
-					{
-						.name= function_name,
-						.function_variable= function,
-						.is_pure= false,
-						.is_final= false,
-						.index_in_table= own_virtual_table_index,
-						.parent_virtual_table_index= ~0u,
-					};
-					class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+					class_type.virtual_table.push_back(
+						ClassType::VirtualTableEntry
+						{
+							.name= function_name,
+							.function_variable= function,
+							.is_pure= false,
+							.is_final= false,
+							.index_in_table= own_virtual_table_index,
+							.parent_virtual_table_index= ~0u,
+						} );
 					++own_virtual_table_index;
 				}
 			}
@@ -205,16 +204,16 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			{
 				function.virtual_table_index= u32(class_type.virtual_table.size());
 
-				var ClassType::VirtualTableEntry mut new_virtual_table_entry
-				{
-					.name= function_name,
-					.function_variable= function,
-					.is_pure= false,
-					.is_final= false,
-					.index_in_table= own_virtual_table_index,
-					.parent_virtual_table_index= ~0u,
-				};
-				class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+				class_type.virtual_table.push_back(
+					ClassType::VirtualTableEntry
+					{
+						.name= function_name,
+						.function_variable= function,
+						.is_pure= false,
+						.is_final= false,
+						.index_in_table= own_virtual_table_index,
+						.parent_virtual_table_index= ~0u,
+					} );
 				++own_virtual_table_index;
 			}
 		}
@@ -276,16 +275,16 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 				function.virtual_table_index= u32(class_type.virtual_table.size());
 
-				var ClassType::VirtualTableEntry mut new_virtual_table_entry
-				{
-					.name= function_name,
-					.function_variable= function,
-					.is_pure= true,
-					.is_final= false,
-					.index_in_table= own_virtual_table_index,
-					.parent_virtual_table_index= ~0u,
-				};
-				class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+				class_type.virtual_table.push_back(
+					ClassType::VirtualTableEntry
+					{
+						.name= function_name,
+						.function_variable= function,
+						.is_pure= true,
+						.is_final= false,
+						.index_in_table= own_virtual_table_index,
+						.parent_virtual_table_index= ~0u,
+					} );
 				++own_virtual_table_index;
 			}
 		}
