@@ -104,6 +104,18 @@ Each field is specified starting with ``.``.
        var tup[ S ] t[ { .z= 0, .x= 2, .y= 2 } ];
    }
 
+It's possible to use this initializer kind in expression context in order to construct temporary values of struct types.
+
+.. code-block:: u_spr
+
+   struct S{ i32 x; i32 y; }
+   fn Bar(S s);
+   fn Foo()
+   {
+       Bar( S{ .x= 42, .y= 24 } ); // Create temporary value of "S" type by initializing its fields, than pass it into a function.
+   }
+
+
 **********************
 *Empty initialization*
 **********************
