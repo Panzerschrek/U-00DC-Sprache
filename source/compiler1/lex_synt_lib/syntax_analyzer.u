@@ -694,6 +694,16 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 				return TryParseBinaryOperatorComponentPostfixOperator(move(member_access_operator));
 			}
 		},
+		Lexem::Type::BraceLeft ->
+		{
+			var VariableInitialization mut variable_initialization
+			{
+				.src_loc= it_.front().src_loc,
+				.type_name(move(expr)),
+				.initializer(ParseInitializer(false)),
+			};
+			return TryParseBinaryOperatorComponentPostfixOperator(move(variable_initialization));
+		},
 		default -> { return expr; },
 	}
 }

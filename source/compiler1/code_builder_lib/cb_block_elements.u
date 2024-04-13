@@ -3228,6 +3228,8 @@ fn SingleExpressionIsUselessImpl( Synt::CallOperator& e ) : bool { ust::ignore_u
 // It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
 fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::ignore_unused(e); return true; }
+// It's useless to initialize new variable and not using it.
+fn SingleExpressionIsUselessImpl( Synt::VariableInitialization& e ) : bool { ust::ignore_unused(e); return true; }
 // Await operator is basically an operator for an async call.
 fn SingleExpressionIsUselessImpl( Synt::AwaitOperator& e ) : bool { ust::ignore_unused(e); return false; }
 fn SingleExpressionIsUselessImpl( Synt::UnaryPlus& e ) : bool { ust::ignore_unused(e); return true; }

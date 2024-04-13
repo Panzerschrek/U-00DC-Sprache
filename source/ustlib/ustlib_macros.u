@@ -31,7 +31,7 @@
 //
 // "foreach" - used for iteration over containers, iterators,arrays, tuples.
 //
-?macro <? foreach:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?l:opt<? label ?l:expr ?> ?b:block ?>
+?macro <? foreach:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?l:opt<? label ?l:ident ?> ?b:block ?>
 ->
 <?
 	with( & ?m<? mut ?> ??e_result : ?e )

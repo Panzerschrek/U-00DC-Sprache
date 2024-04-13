@@ -953,6 +953,16 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			return std::move(member_access_operator_completion);
 		}
 
+	case Lexem::Type::BraceLeft:
+		{
+			// Parse struct initializer for "{" in expression context.
+			auto variable_initialization= std::make_unique<VariableInitialization>( it_->src_loc );
+			variable_initialization->type= std::move(expr);
+			variable_initialization->initializer= ParseStructNamedInitializer();
+
+			return TryParseBinaryOperatorComponentPostfixOperator(std::move(variable_initialization));
+		}
+
 	default:
 		return expr;
 	};

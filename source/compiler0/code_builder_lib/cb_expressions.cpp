@@ -575,6 +575,61 @@ Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionCon
 	return ErrorValue();
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariableInitialization& variable_initialization )
+{
+	const Value type_value= BuildExpressionCode( variable_initialization.type, names_scope, function_context );
+	CHECK_RETURN_ERROR_VALUE(type_value)
+
+	const Type* const type= type_value.GetTypeName();
+	if(type == nullptr)
+	{
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), variable_initialization.src_loc, type_value.GetKindName() );
+		return ErrorValue();
+	}
+
+	if( !EnsureTypeComplete( *type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_initialization.src_loc, type );
+		return ErrorValue();
+	}
+	else if( type->IsAbstract() )
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), variable_initialization.src_loc, type );
+
+	const VariableMutPtr variable=
+		Variable::Create(
+			*type,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			"temp " + type->ToString() );
+	function_context.variables_state.AddNode( variable );
+
+	if( !function_context.is_functionless_context )
+	{
+		variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( type->GetLLVMType() );
+		CreateLifetimeStart( function_context, variable->llvm_value );
+	}
+
+	{
+		const VariablePtr variable_for_initialization=
+			Variable::Create(
+				*type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				variable->name,
+				variable->llvm_value );
+		function_context.variables_state.AddNode( variable_for_initialization );
+		function_context.variables_state.AddLink( variable, variable_for_initialization );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names_scope.GetErrors(), variable_initialization.src_loc );
+
+		variable->constexpr_value= ApplyInitializer( variable_for_initialization, names_scope, function_context, variable_initialization.initializer );
+
+		function_context.variables_state.RemoveNode( variable_for_initialization );
+	}
+
+	RegisterTemporaryVariable( function_context, variable );
+	return variable;
+}
+
 Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AwaitOperator& await_operator )
 {
 	return BuildAwait( names_scope, function_context, await_operator.expression, await_operator.src_loc );
