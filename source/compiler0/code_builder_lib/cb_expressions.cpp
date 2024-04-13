@@ -575,6 +575,15 @@ Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionCon
 	return ErrorValue();
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariableInitialization& variable_initialization )
+{
+	const Value type_name= BuildExpressionCode( variable_initialization.type, names_scope, function_context );
+	// TODO
+	(void)type_name;
+
+	return ErrorValue();
+}
+
 Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AwaitOperator& await_operator )
 {
 	return BuildAwait( names_scope, function_context, await_operator.expression, await_operator.src_loc );

@@ -34,6 +34,8 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::IndexationOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperatorCompletion>& ) { return true; }
+		// It's useless to initialize new variable and not using it.
+		bool operator()( const std::unique_ptr<const Synt::VariableInitialization>& ) { return true; }
 		// Await operator is basically an operator for an async call.
 		bool operator()( const std::unique_ptr<const Synt::AwaitOperator>& ) { return false; }
 		bool operator()( const std::unique_ptr<const Synt::UnaryPlus>& ) { return true; }

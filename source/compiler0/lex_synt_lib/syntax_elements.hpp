@@ -63,6 +63,7 @@ struct CallOperatorSignatureHelp;
 struct IndexationOperator;
 struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
+struct VariableInitialization;
 struct AwaitOperator;
 struct UnaryPlus;
 struct UnaryMinus;
@@ -182,6 +183,7 @@ using Expression= std::variant<
 	std::unique_ptr<const IndexationOperator>,
 	std::unique_ptr<const MemberAccessOperator>,
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
+	std::unique_ptr<const VariableInitialization>,
 	std::unique_ptr<const AwaitOperator>,
 	std::unique_ptr<const UnaryPlus>,
 	std::unique_ptr<const UnaryMinus>,
@@ -1237,6 +1239,16 @@ public:
 	SrcLoc src_loc;
 	Capture capture;
 	Function function;
+};
+
+struct VariableInitialization
+{
+	explicit VariableInitialization( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	Expression type;
+	Initializer initializer;
 };
 
 struct TypeAlias
