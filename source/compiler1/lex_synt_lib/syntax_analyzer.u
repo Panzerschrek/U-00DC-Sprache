@@ -122,44 +122,39 @@ private:
 
 	template</size_type priority/> fn TryParseBinaryOperator( mut this ) : Expression
 	{
-		// Parse chain of binary operators with same priority and combine chain components together (last is root).
-		// Use binary operators with greater priority as chain components.
-
 		static_if( priority >= typeinfo</typeof(g_operators_by_priority_table)/>.element_count )
 		{
 			return ParseBinaryOperatorComponent();
 		}
 		else
 		{
-			auto constexpr next_priority= priority + 1s;
-			var Expression mut expr= SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>();
-			while( NotEndOfFile() ) label operators_chain
-			{
-				auto lexem_type= it_.front().lexem_type;
-				foreach( &op_pair : g_operators_by_priority_table[ priority ] )
-				{
-					if( lexem_type == op_pair[0] )
-					{
-						auto src_loc= it_.front().src_loc;
-						NextLexem();
-
-						expr= BinaryOperator
-						{
-							.src_loc= src_loc,
-							.l( take(expr) ),
-							.r( SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>() ),
-							.operator( op_pair[1] ),
-						};
-
-						continue label operators_chain; // Continue operators chain.
-					}
-				}
-
-				break; // No more binary operators with current priority.
-			}
-
-			return expr;
+			auto mut l= SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>();
+			return TryParseBinaryOperatorRightPart</priority/>( move(l) );
 		}
+	}
+
+	template</size_type priority/> fn TryParseBinaryOperatorRightPart( mut this, Expression mut l ) : Expression
+	{
+		foreach( &op_pair : g_operators_by_priority_table[ priority ] )
+		{
+			if( it_.front().lexem_type == op_pair[0] )
+			{
+				auto src_loc= it_.front().src_loc;
+				NextLexem();
+
+				var BinaryOperator mut operator
+				{
+					.src_loc= src_loc,
+					.l( move(l) ),
+					.r( SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>() ),
+					.operator( op_pair[1] ),
+				};
+
+				return SyntaxAnalyzer::TryParseBinaryOperatorRightPart</priority/>( move(operator) );
+			}
+		}
+
+		return l;
 	}
 
 	fn ParseExpressionInBrackets( mut this ) : Expression;
