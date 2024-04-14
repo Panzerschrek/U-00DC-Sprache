@@ -100,18 +100,10 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
 
-	if( syntax_element.is_short_form )
-	{
-		for( auto mut i= 0s; i < template_params.size(); ++i )
-		{
-			signature_params.push_back( TemplateSignatureParam::TemplateParam{ .index= u32(i) } );
-			template_params_usage_flags[i]= true;
-		}
-	}
-	else
+	if_var( &in_signature_params : syntax_element.signature_params )
 	{
 		auto mut global_function_context= CreateGlobalFunctionContext();
-		foreach( &signature_param : syntax_element.signature_params )
+		foreach( &signature_param : in_signature_params )
 		{
 			signature_params.push_back(
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.name, template_params_usage_flags.range() ) );
@@ -121,6 +113,15 @@ fn CodeBuilder::PrepareTypeTemplate(
 			{
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.default_value, template_params_usage_flags.range() );
 			}
+		}
+	}
+	else
+	{
+		// Short form.
+		for( auto mut i= 0s; i < template_params.size(); ++i )
+		{
+			signature_params.push_back( TemplateSignatureParam::TemplateParam{ .index= u32(i) } );
+			template_params_usage_flags[i]= true;
 		}
 	}
 
@@ -136,17 +137,20 @@ fn CodeBuilder::PrepareTypeTemplate(
 	}
 
 	// Check default signature params correctness.
-	auto mut first_default_param= syntax_element.signature_params.size();
-	for( auto mut i= 0s; i < syntax_element.signature_params.size(); ++i )
+	auto mut first_default_param= signature_params.size();
+	if_var( &in_signature_params : syntax_element.signature_params )
 	{
-		if( syntax_element.signature_params[i].default_value.get</ Synt::EmptyVariant />().empty() )
+		for( auto mut i= 0s; i < in_signature_params.size(); ++i )
 		{
-			first_default_param= ust::min( first_default_param, i );
-		}
-		else if( first_default_param < i )
-		{
-			REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope, syntax_element.src_loc )
-			return;
+			if( in_signature_params[i].default_value.get</ Synt::EmptyVariant />().empty() )
+			{
+				first_default_param= ust::min( first_default_param, i );
+			}
+			else if( first_default_param < i )
+			{
+				REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope, syntax_element.src_loc )
+				return;
+			}
 		}
 	}
 
@@ -684,20 +688,10 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	// Do this in order to avoid holding lock in recursive calls.
 	with( &type_template : type_template_ptr.lock_imut().deref() )
 	{
-		if( type_template.syntax_element.deref().is_short_form )
+		if( template_args.size() < type_template.first_default_param ||
+			template_args.size() > type_template.signature_params.size() )
 		{
-			if( template_args.size() != type_template.syntax_element.deref().params.size() )
-			{
-				return ust::null_optional;
-			}
-		}
-		else
-		{
-			if( template_args.size() < type_template.first_default_param ||
-				template_args.size() > type_template.signature_params.size() )
-			{
-				return ust::null_optional;
-			}
+			return ust::null_optional;
 		}
 	}
 
@@ -733,27 +727,30 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	var Synt::TypeTemplate& syntax_element= syntax_element_ptr.deref();
 
 	// Evaluate and match default args (if needed).
-	if( !syntax_element.is_short_form && template_args.size() < syntax_element.signature_params.size() )
+	if_var( &signature_params : syntax_element.signature_params )
 	{
-		auto mut global_function_context= CreateGlobalFunctionContext();
-		for( auto mut i= template_args.size(); i < syntax_element.signature_params.size(); ++i )
+		if( template_args.size() < signature_params.size() )
 		{
-			var Synt::Expression& expr= syntax_element.signature_params[i].default_value;
-			var Value value= BuildExpressionCode( result_names_scope, global_function_context, expr );
-			auto mut template_arg_opt= ValueToTemplateArg( result_names_scope, Synt::GetSrcLoc( expr ), value );
-			if( !template_arg_opt.empty() )
+			auto mut global_function_context= CreateGlobalFunctionContext();
+			for( auto mut i= template_args.size(); i < signature_params.size(); ++i )
 			{
-				result_signature_template_args.push_back( template_arg_opt.try_take() );
-			}
-			else
-			{
-				all_ok= false;
-				continue;
-			}
+				var Synt::Expression& expr= signature_params[i].default_value;
+				var Value value= BuildExpressionCode( result_names_scope, global_function_context, expr );
+				auto mut template_arg_opt= ValueToTemplateArg( result_names_scope, Synt::GetSrcLoc( expr ), value );
+				if( !template_arg_opt.empty() )
+				{
+					result_signature_template_args.push_back( template_arg_opt.try_take() );
+				}
+				else
+				{
+					all_ok= false;
+					continue;
+				}
 
-			with( &type_template : type_template_ptr.lock_imut().deref() )
-			{
-				all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back() );
+				with( &type_template : type_template_ptr.lock_imut().deref() )
+				{
+					all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back() );
+				}
 			}
 		}
 	}

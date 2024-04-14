@@ -3348,16 +3348,10 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		auto type_alias_src_loc= it_.front().src_loc;
 		NextLexem();
 
-		auto mut is_short_form= false;
-		var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
+		var ust::optional</ust::vector</TypeTemplate::SignatureParam/>/> mut signature_params;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			is_short_form= false;
 			signature_params= ParseTemplateSignatureParams();
-		}
-		else
-		{
-			is_short_form= true;
 		}
 
 		ExpectLexem( Lexem::Type::Assignment );
@@ -3379,7 +3373,6 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 				} ) ),
 			.params= move(params),
 			.signature_params= move(signature_params),
-			.is_short_form= is_short_form,
 		};
 
 		return ust::make_shared_ptr_final(move(type_template));
@@ -3397,16 +3390,10 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		auto class_src_loc= it_.front().src_loc;
 		NextLexem();
 
-		auto mut is_short_form= false;
-		var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
+		var ust::optional</ust::vector</TypeTemplate::SignatureParam/>/> mut signature_params;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			is_short_form= false;
 			signature_params= ParseTemplateSignatureParams();
-		}
-		else
-		{
-			is_short_form= true;
 		}
 
 		var Class mut class_
@@ -3437,7 +3424,6 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 				.something( ust::make_shared_ptr_final( move(class_) ) ),
 				.params= move(params),
 				.signature_params= move(signature_params),
-				.is_short_form= is_short_form,
 			} );
 	}
 	else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
@@ -3462,7 +3448,6 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			{
 				.something( ust::make_shared_ptr_final( TypeAlias() ) ),
 				.params= move(params),
-				.is_short_form= false,
 			} );
 	}
 }

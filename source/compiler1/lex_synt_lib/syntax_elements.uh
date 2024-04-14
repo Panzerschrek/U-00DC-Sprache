@@ -868,10 +868,8 @@ struct TypeTemplate
 		Expression name;
 		Expression default_value;
 	}
-	ust::vector</SignatureParam/> signature_params;
-
-	// Short form means that template argumenst are also signature arguments.
-	bool is_short_form;
+	// If none - short form template.
+	ust::optional</ust::vector</SignatureParam/>/> signature_params;
 
 	ust::variant</ tup[
 		ust::shared_ptr_final</Class/>,
