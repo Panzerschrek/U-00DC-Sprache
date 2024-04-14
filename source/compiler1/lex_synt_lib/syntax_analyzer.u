@@ -409,8 +409,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			auto t= ParseTemplate();
-			variant_visit( &v : t )
+			variant_visit( &v : ParseTemplate() )
 			{
 				namespace_elements.push_back( v );
 			}
@@ -3007,8 +3006,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			auto t= ParseTemplate();
-			variant_visit( &v : t )
+			variant_visit( &v : ParseTemplate() )
 			{
 				class_elements.push_back( v );
 			}
