@@ -62,7 +62,7 @@ const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 
 // See https://en.cppreference.com/w/cpp/language/operator_precedence.
 // Use C++ priorities.
-static const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
+const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
 {
 	{
 		{ Lexem::Type::Disjunction, BinaryOperatorType::LazyLogicalOr },
@@ -177,6 +177,7 @@ private:
 
 	Expression ParseExpression();
 	template<size_t priority> Expression TryParseBinaryOperator();
+	template<size_t priority> Expression TryParseBinaryOperatorRightPart( Expression l );
 
 	Expression ParseExpressionInBrackets();
 	Expression ParseBinaryOperatorComponent();
@@ -801,41 +802,30 @@ Expression SyntaxAnalyzer::ParseExpression()
 
 template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperator()
 {
-	// Parse chain of binary operators with same priority and combine chain components together (last is root).
-	// Use binary operators with greater priority as chain components.
-
-	constexpr size_t max_priority= std::size(g_operators_by_priority_table);
-	constexpr size_t next_priority= priority >= max_priority ? priority : priority + 1;
-
-	if( priority >= max_priority )
+	if constexpr( priority >= std::size(g_operators_by_priority_table) )
 		return ParseBinaryOperatorComponent();
+	else
+		return TryParseBinaryOperatorRightPart<priority>( TryParseBinaryOperator<priority + 1>() );
+}
 
-	Expression expr= TryParseBinaryOperator<next_priority>();
-	while( NotEndOfFile() )
+template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperatorRightPart( Expression l )
+{
+	for( const auto& op_pair : g_operators_by_priority_table[priority] )
 	{
-		bool binary_op_parsed= false;
-		for( const auto& op_pair : g_operators_by_priority_table[priority] )
+		if( it_->type == op_pair.first )
 		{
-			if( it_->type == op_pair.first )
-			{
-				auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
-				NextLexem();
+			auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
+			NextLexem();
 
-				binary_operator->left= std::move(expr);
-				binary_operator->operator_type= op_pair.second;
-				binary_operator->right= TryParseBinaryOperator<next_priority>();
+			binary_operator->left= std::move(l);
+			binary_operator->operator_type= op_pair.second;
+			binary_operator->right= TryParseBinaryOperator<priority + 1>();
 
-				expr= std::move(binary_operator);
-				binary_op_parsed= true;
-				break;
-			}
+			return TryParseBinaryOperatorRightPart<priority>( std::move(binary_operator) );
 		}
-
-		if( !binary_op_parsed )
-			break;
 	}
 
-	return expr;
+	return l;
 }
 
 Expression SyntaxAnalyzer::ParseExpressionInBrackets()
@@ -2603,7 +2593,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 		else
 		{
 			std::vector<SwitchOperator::CaseValue> values;
-			while(true)
+			while( NotEndOfFile() )
 			{
 				if( it_->type == Lexem::Type::Ellipsis )
 				{

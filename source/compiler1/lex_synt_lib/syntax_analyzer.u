@@ -122,44 +122,39 @@ private:
 
 	template</size_type priority/> fn TryParseBinaryOperator( mut this ) : Expression
 	{
-		// Parse chain of binary operators with same priority and combine chain components together (last is root).
-		// Use binary operators with greater priority as chain components.
-
 		static_if( priority >= typeinfo</typeof(g_operators_by_priority_table)/>.element_count )
 		{
 			return ParseBinaryOperatorComponent();
 		}
 		else
 		{
-			auto constexpr next_priority= priority + 1s;
-			var Expression mut expr= SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>();
-			while( NotEndOfFile() ) label operators_chain
-			{
-				auto lexem_type= it_.front().lexem_type;
-				foreach( &op_pair : g_operators_by_priority_table[ priority ] )
-				{
-					if( lexem_type == op_pair[0] )
-					{
-						auto src_loc= it_.front().src_loc;
-						NextLexem();
-
-						expr= BinaryOperator
-						{
-							.src_loc= src_loc,
-							.l( take(expr) ),
-							.r( SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>() ),
-							.operator( op_pair[1] ),
-						};
-
-						continue label operators_chain; // Continue operators chain.
-					}
-				}
-
-				break; // No more binary operators with current priority.
-			}
-
-			return expr;
+			auto mut l= SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>();
+			return TryParseBinaryOperatorRightPart</priority/>( move(l) );
 		}
+	}
+
+	template</size_type priority/> fn TryParseBinaryOperatorRightPart( mut this, Expression mut l ) : Expression
+	{
+		foreach( &op_pair : g_operators_by_priority_table[ priority ] )
+		{
+			if( it_.front().lexem_type == op_pair[0] )
+			{
+				auto src_loc= it_.front().src_loc;
+				NextLexem();
+
+				var BinaryOperator mut operator
+				{
+					.src_loc= src_loc,
+					.l( move(l) ),
+					.r( SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>() ),
+					.operator( op_pair[1] ),
+				};
+
+				return SyntaxAnalyzer::TryParseBinaryOperatorRightPart</priority/>( move(operator) );
+			}
+		}
+
+		return l;
 	}
 
 	fn ParseExpressionInBrackets( mut this ) : Expression;
@@ -414,8 +409,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			auto t= ParseTemplate();
-			variant_visit( &v : t )
+			variant_visit( &v : ParseTemplate() )
 			{
 				namespace_elements.push_back( v );
 			}
@@ -2500,7 +2494,7 @@ fn SyntaxAnalyzer::ParseSwitchOperator( mut this ) : SwitchOperator
 		else
 		{
 			var ust::vector</SwitchOperator::CaseValue/> mut values;
-			loop
+			while( NotEndOfFile() )
 			{
 				if( it_.front().lexem_type == Lexem::Type::Ellipsis )
 				{
@@ -3012,8 +3006,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			auto t= ParseTemplate();
-			variant_visit( &v : t )
+			variant_visit( &v : ParseTemplate() )
 			{
 				class_elements.push_back( v );
 			}
@@ -3355,16 +3348,10 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		auto type_alias_src_loc= it_.front().src_loc;
 		NextLexem();
 
-		auto mut is_short_form= false;
-		var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
+		var ust::optional</ust::vector</TypeTemplate::SignatureParam/>/> mut signature_params;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			is_short_form= false;
 			signature_params= ParseTemplateSignatureParams();
-		}
-		else
-		{
-			is_short_form= true;
 		}
 
 		ExpectLexem( Lexem::Type::Assignment );
@@ -3386,7 +3373,6 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 				} ) ),
 			.params= move(params),
 			.signature_params= move(signature_params),
-			.is_short_form= is_short_form,
 		};
 
 		return ust::make_shared_ptr_final(move(type_template));
@@ -3404,16 +3390,10 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		auto class_src_loc= it_.front().src_loc;
 		NextLexem();
 
-		auto mut is_short_form= false;
-		var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
+		var ust::optional</ust::vector</TypeTemplate::SignatureParam/>/> mut signature_params;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			is_short_form= false;
 			signature_params= ParseTemplateSignatureParams();
-		}
-		else
-		{
-			is_short_form= true;
 		}
 
 		var Class mut class_
@@ -3444,7 +3424,6 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 				.something( ust::make_shared_ptr_final( move(class_) ) ),
 				.params= move(params),
 				.signature_params= move(signature_params),
-				.is_short_form= is_short_form,
 			} );
 	}
 	else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
@@ -3469,7 +3448,6 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			{
 				.something( ust::make_shared_ptr_final( TypeAlias() ) ),
 				.params= move(params),
-				.is_short_form= false,
 			} );
 	}
 }
