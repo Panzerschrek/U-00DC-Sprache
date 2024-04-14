@@ -62,7 +62,7 @@ const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 
 // See https://en.cppreference.com/w/cpp/language/operator_precedence.
 // Use C++ priorities.
-static const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
+const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
 {
 	{
 		{ Lexem::Type::Disjunction, BinaryOperatorType::LazyLogicalOr },
