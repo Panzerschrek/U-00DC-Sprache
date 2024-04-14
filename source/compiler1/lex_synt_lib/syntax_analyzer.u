@@ -2495,7 +2495,7 @@ fn SyntaxAnalyzer::ParseSwitchOperator( mut this ) : SwitchOperator
 		else
 		{
 			var ust::vector</SwitchOperator::CaseValue/> mut values;
-			loop
+			while( NotEndOfFile() )
 			{
 				if( it_.front().lexem_type == Lexem::Type::Ellipsis )
 				{

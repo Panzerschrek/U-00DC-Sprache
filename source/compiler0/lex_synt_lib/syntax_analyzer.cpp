@@ -2593,7 +2593,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 		else
 		{
 			std::vector<SwitchOperator::CaseValue> values;
-			while(true)
+			while( NotEndOfFile() )
 			{
 				if( it_->type == Lexem::Type::Ellipsis )
 				{
