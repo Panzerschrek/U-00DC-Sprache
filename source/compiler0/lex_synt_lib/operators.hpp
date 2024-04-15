@@ -36,7 +36,7 @@ enum class OverloadedOperator : uint8_t
 {
 	None,
 
-	Add, // for unary and binary +
+	Add,
 	Sub, // for unary and binary -
 	Mul,
 	Div,

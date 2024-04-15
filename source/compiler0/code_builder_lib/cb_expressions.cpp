@@ -685,15 +685,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const Synt::UnaryPlus& unary_plus )
-{
-	// TODO - maybe check type of expression here?
-	return BuildExpressionCode( unary_plus.expression, names_scope, function_context );
-}
-
-Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names_scope,
-	FunctionContext& function_context,
 	const Synt::LogicalNot& logical_not )
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( logical_not.expression, names_scope, function_context );
