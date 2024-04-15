@@ -27,7 +27,7 @@ fn atomic_write( u32 &mut addr, u32 x )
 // Functions returns old value of 'x'.
 fn atomic_add( i32 &mut x, i32 y ) : i32 { return ust_atomic_add_i32_impl( x, y ); }
 fn atomic_sub( i32 &mut x, i32 y ) : i32 { return atomic_add( x, -y ); }
-fn atomic_inc( i32 &mut x ) : i32 { return atomic_add( x, +1 ); }
+fn atomic_inc( i32 &mut x ) : i32 { return atomic_add( x,  1 ); }
 fn atomic_dec( i32 &mut x ) : i32 { return atomic_add( x, -1 ); }
 
 fn atomic_add( u32 &mut x, u32 y ) : u32 { return ust_atomic_add_u32_impl( x, y ); }

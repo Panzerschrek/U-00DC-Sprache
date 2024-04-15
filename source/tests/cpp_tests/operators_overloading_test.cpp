@@ -751,7 +751,7 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 			halt if( b > a );
 			halt if( b >= a );
 			halt if( !( b >= b ) );
-			halt if( a <=> b != +1 );
+			halt if( a <=> b !=  1 );
 			halt if( b <=> a != -1 );
 			halt if( 0 != a <=> a );
 			halt if( 0 != b <=> b );
@@ -793,9 +793,9 @@ U_TEST( OperatorsOverloadingTest_EqualityOperatorsConstexpr )
 		static_assert( b <= a );
 		static_assert( ! ( b > a ) );
 		static_assert( ! ( b >= a ) );
-		static_assert( a <=> b == +1 );
+		static_assert( a <=> b ==  1 );
 		static_assert( b <=> a == -1 );
-		static_assert( +1 == a <=> b );
+		static_assert(  1 == a <=> b );
 		static_assert( -1 == b <=> a );
 		static_assert( a <=> a == 0 );
 		static_assert( 0 == b <=> b );

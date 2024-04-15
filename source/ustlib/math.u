@@ -19,7 +19,7 @@ template</type T/>
 fn constexpr enable_if( math_impl::is_float</T/>() )
 plus_inf() : T
 {
-	return T(+1) / T(0);
+	return T( 1) / T(0);
 }
 
 template</type T/>

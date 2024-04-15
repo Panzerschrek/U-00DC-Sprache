@@ -604,7 +604,7 @@ U_TEST( ClassTemplateTest19_StaticAssertForVariableOfTempateDependentType )
 		{
 			fn Foo()
 			{
-				static_assert( T(-0.0f) == T(+0.0f) );
+				static_assert( T(-0.0f) == T(0.0f) );
 			}
 		}
 

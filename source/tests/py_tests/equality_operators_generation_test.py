@@ -57,7 +57,7 @@ def EqualityOperatorGeneration_Test1():
 	var S e{ .a= 24, .b= 66.1f, .c= 789u, .d[ 76, -33 ] };
 	var S r{ .a= 42, .b= 66.1f, .c= 789u, .d[  0, -33 ] };
 	var S t{ .a= 42, .b= 66.1f, .c= -89u, .d[ 76, -33 ] };
-	var S y{ .a= 42, .b= 66.1f, .c= 789u, .d[ 76, +33 ] };
+	var S y{ .a= 42, .b= 66.1f, .c= 789u, .d[ 76,  33 ] };
 
 	static_assert( q == q );
 	static_assert( q == w );
@@ -88,7 +88,7 @@ def EqualityOperatorGeneration_Test2():
 		var Vec mut normal_vec_copy= normal_vec;
 		var Vec mut another_normal_vec{ .x= 65.4f, .y= 999999999.0f };
 
-		var Vec mut plus_zero_vec { .x= +0.0f, .y= +0.0f };
+		var Vec mut plus_zero_vec { .x=  0.0f, .y=  0.0f };
 		var Vec mut minus_zero_vec{ .x= -0.0f, .y= -0.0f };
 
 		var Vec mut nan_vec0{ .x= 77.0f, .y= 0.0f / 0.0f };
@@ -603,7 +603,7 @@ def EqualityOperatorForCompositeValue_Test3():
 		fn Foo()
 		{
 			// Use "mut" to prevent "constexpr"
-			var [ f32, 2 ] mut a[ 1.0f, 2.0f ], mut a_copy[ 1.0f, 2.0f ], mut b[ 0.0f, 2.0f ], mut c[ 1.0f, 0.0f ], mut plus_zero[ +0.0f, +0.0f ], mut minus_zero[ -0.0f, 0.0f ], mut nan [ 0.0f / 0.0f, 0.0f / 0.0f ];
+			var [ f32, 2 ] mut a[ 1.0f, 2.0f ], mut a_copy[ 1.0f, 2.0f ], mut b[ 0.0f, 2.0f ], mut c[ 1.0f, 0.0f ], mut plus_zero[  0.0f,  0.0f ], mut minus_zero[ -0.0f, 0.0f ], mut nan [ 0.0f / 0.0f, 0.0f / 0.0f ];
 			halt if( a != a );
 			halt if( !( a == a ) );
 			halt if( a != a_copy );
@@ -618,7 +618,7 @@ def EqualityOperatorForCompositeValue_Test3():
 			halt if( !( nan != nan ) );
 		}
 
-		var [ f32, 2 ] a[ 1.0f, 2.0f ], a_copy[ 1.0f, 2.0f ], b[ 0.0f, 2.0f ], c[ 1.0f, 0.0f ], plus_zero[ +0.0f, +0.0f ], minus_zero[ -0.0f, 0.0f ], nan [ 0.0f / 0.0f, 0.0f / 0.0f ];
+		var [ f32, 2 ] a[ 1.0f, 2.0f ], a_copy[ 1.0f, 2.0f ], b[ 0.0f, 2.0f ], c[ 1.0f, 0.0f ], plus_zero[  0.0f,  0.0f ], minus_zero[ -0.0f, 0.0f ], nan [ 0.0f / 0.0f, 0.0f / 0.0f ];
 		static_assert( a == a );
 		static_assert( !( a != a ) );
 		static_assert( a == a_copy );

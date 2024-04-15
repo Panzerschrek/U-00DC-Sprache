@@ -65,7 +65,6 @@ struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
 struct VariableInitialization;
 struct AwaitOperator;
-struct UnaryPlus;
 struct UnaryMinus;
 struct LogicalNot;
 struct BitwiseNot;
@@ -185,7 +184,6 @@ using Expression= std::variant<
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
 	std::unique_ptr<const VariableInitialization>,
 	std::unique_ptr<const AwaitOperator>,
-	std::unique_ptr<const UnaryPlus>,
 	std::unique_ptr<const UnaryMinus>,
 	std::unique_ptr<const LogicalNot>,
 	std::unique_ptr<const BitwiseNot>,
@@ -646,15 +644,6 @@ struct MemberAccessOperatorCompletion
 	SrcLoc src_loc;
 	Expression expression;
 	std::string member_name;
-};
-
-struct UnaryPlus
-{
-	explicit UnaryPlus( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
 };
 
 struct UnaryMinus

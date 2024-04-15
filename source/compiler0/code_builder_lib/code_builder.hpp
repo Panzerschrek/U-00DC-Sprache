@@ -750,7 +750,6 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariableInitialization& variable_initialization );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AwaitOperator& await_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
-	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );

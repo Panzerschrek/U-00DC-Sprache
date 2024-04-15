@@ -127,11 +127,6 @@ void FindImpl( const Synt::AwaitOperator& await_operator )
 	FindImpl( await_operator.expression );
 }
 
-void FindImpl( const Synt::UnaryPlus& unary_plus )
-{
-	FindImpl( unary_plus.expression );
-}
-
 void FindImpl( const Synt::UnaryMinus& unary_minus )
 {
 	FindImpl( unary_minus.expression );

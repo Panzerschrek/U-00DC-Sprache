@@ -294,7 +294,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 		}
 		else if( !it.empty() && it.front() == "+"c8 )
 		{
-			sign= +1;
+			sign=  1;
 			it.drop_front();
 		}
 
@@ -338,7 +338,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 
 	result.value_int= integer_part;
 
-	for( auto mut i= 0; i < +exponent; ++i )
+	for( auto mut i= 0; i <  exponent; ++i )
 	{
 		result.value_int*= base_;
 	}

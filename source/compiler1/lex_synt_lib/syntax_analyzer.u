@@ -697,13 +697,6 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 {
 	switch( it_.front().lexem_type )
 	{
-		Lexem::Type::Plus ->
-		{
-			var UnaryPlus mut unary_plus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
-			NextLexem();
-			unary_plus.expr.deref()= ParseBinaryOperatorComponent();
-			return unary_plus;
-		},
 		Lexem::Type::Minus ->
 		{
 			var UnaryMinus mut unary_minus{ .src_loc= it_.front().src_loc, .expr(Expression()) };

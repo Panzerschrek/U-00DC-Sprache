@@ -2004,13 +2004,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return BuildAwait( names_scope, function_context, await_operator.value.deref(), await_operator.src_loc );
 }
 
-fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
-{
-	// Do nothing with unary plus.
-	// TODO - maybe check type or do something else?
-	return BuildExpressionCode( names_scope, function_context, unary_plus.expr.deref() );
-}
-
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
 {
 	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.deref() );

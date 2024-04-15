@@ -455,11 +455,6 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );
 			ElementWrite( unary_minus->expression, stream );
 		}
-		void operator()( const std::unique_ptr<const UnaryPlus>& unary_plus ) const
-		{
-			stream << OverloadedOperatorToString( OverloadedOperator::Add );
-			ElementWrite( unary_plus->expression, stream );
-		}
 		void operator()( const std::unique_ptr<const LogicalNot>& logical_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
