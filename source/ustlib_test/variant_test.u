@@ -173,7 +173,7 @@ fn nomangle main() : i32
 	{ // ==
 		static_assert( typeinfo</ ust::variant</ tup[ i32, f32, ust::string8 ] /> />.is_equality_comparable );
 		auto nan= 0.0f / 0.0f;
-		var ust::variant</ tup[ i32, f32, ust::string8 ] /> v0(5), v1(5), v2(33), v3(5.0f), v4(5.0f), v5(+0.0f), v6(-0.0f), v7(nan), v8(nan), v9(ust::string8("foo")), v10(ust::string8("foo")), v11(ust::string8("wdw"));
+		var ust::variant</ tup[ i32, f32, ust::string8 ] /> v0(5), v1(5), v2(33), v3(5.0f), v4(5.0f), v5(0.0f), v6(-0.0f), v7(nan), v8(nan), v9(ust::string8("foo")), v10(ust::string8("foo")), v11(ust::string8("wdw"));
 
 		// variant == variant
 
@@ -218,7 +218,7 @@ fn nomangle main() : i32
 		halt if( v3 != 5.0f );
 		halt if( v4 == -999.0f );
 		halt if( v5 != -0.0f );
-		halt if( v6 != +0.0f );
+		halt if( v6 !=  0.0f );
 		halt if( v7 == nan );
 		halt if( v8 == nan );
 		halt if( v9 != ust::string8("foo") );
@@ -237,7 +237,7 @@ fn nomangle main() : i32
 		halt if( 33 != v2 );
 		halt if( 5.0f != v3 );
 		halt if( -999.0f == v4 );
-		halt if( +0.0f != v5 );
+		halt if(  0.0f != v5 );
 		halt if( -0.0f != v6 );
 		halt if( nan == v7 );
 		halt if( nan == v8 );

@@ -15,7 +15,7 @@ fn ExpectNear( T a, T b, T eps )
 	if( diff < T(0) )
 	{ halt if( diff < -eps ); }
 	else
-	{ halt if( diff > +eps ); }
+	{ halt if( diff >  eps ); }
 }
 
 template</type T/>
@@ -51,9 +51,9 @@ fn DoFloatsTest()
 
 	// abs
 	halt if( ust::abs( T(0.0) ) != T(0.0) );
-	halt if( ust::abs( T(+1.0) ) != T(1.0) );
+	halt if( ust::abs( T( 1.0) ) != T(1.0) );
 	halt if( ust::abs( T(-1.0) ) != T(1.0) );
-	halt if( ust::abs( T(+942.3) ) != T(942.3) );
+	halt if( ust::abs( T( 942.3) ) != T(942.3) );
 	halt if( ust::abs( T(-942.3) ) != T(942.3) );
 	halt if( ust::abs( ust::minus_inf</T/>() ) != ust::plus_inf</T/>() );
 	halt if( !ust::is_nan( ust::abs( ust::nan</T/>() ) ) ); // result for nan is nan
@@ -62,7 +62,7 @@ fn DoFloatsTest()
 	halt if( ust::abs( 55 ) != 55 );
 	halt if( ust::abs( -99956525 ) != 99956525 );
 	halt if( ust::abs( 722u ) != 722u );
-	halt if( ust::abs( +100005250250251i64 ) != 100005250250251i64 );
+	halt if( ust::abs(  100005250250251i64 ) != 100005250250251i64 );
 	halt if( ust::abs( -100005250250251i64 ) != 100005250250251i64 );
 
 	// sqrt
@@ -104,7 +104,7 @@ fn DoFloatsTest()
 
 	// exp
 	halt if( ust::exp( T(0.0) ) != T(1.0) );
-	ExpectNear( ust::exp( T(+1) ), T(2.718281828), T(1.0e-5) );
+	ExpectNear( ust::exp( T( 1) ), T(2.718281828), T(1.0e-5) );
 	ExpectNear( ust::exp( T(-1) ), T(1.0 / 2.718281828), T(1.0e-5) );
 	ExpectNear( ust::exp( T(2) ), T(2.718281828 * 2.718281828), T(1.0e-5) );
 	ExpectNear( ust::exp( T(2.302585) ), T(10), T(1.0e-5) );
@@ -125,7 +125,7 @@ fn DoFloatsTest()
 
 	// expm1
 	halt if( ust::expm1( T(0.0) ) != T(0.0) );
-	ExpectNear( ust::expm1( T(+1) ), T(1.718281828), T(1.0e-5) );
+	ExpectNear( ust::expm1( T( 1) ), T(1.718281828), T(1.0e-5) );
 	ExpectNear( ust::expm1( T(-1) ), T(1.0 / 2.718281828 - 1.0), T(1.0e-5) );
 	ExpectNear( ust::expm1( T(2) ), T(2.718281828 * 2.718281828 - 1.0), T(1.0e-5) );
 	ExpectNear( ust::expm1( T(2.302585) ), T(9), T(1.0e-5) );
@@ -228,37 +228,37 @@ fn DoFloatsTest()
 
 	// asin
 	halt if( ust::asin( T(0.0) ) != T(0.0) );
-	ExpectNear( ust::asin( +T(0.5) ), +pi6, T(1.0e-5) );
-	ExpectNear( ust::asin( +half_sqrt2 ), +pi4, T(1.0e-5) );
-	ExpectNear( ust::asin( +half_sqrt3 ), +pi3, T(1.0e-5) );
-	ExpectNear( ust::asin( +T(1.0) ), +pi2, T(1.0e-5) );
+	ExpectNear( ust::asin(  T(0.5) ),  pi6, T(1.0e-5) );
+	ExpectNear( ust::asin(  half_sqrt2 ),  pi4, T(1.0e-5) );
+	ExpectNear( ust::asin(  half_sqrt3 ),  pi3, T(1.0e-5) );
+	ExpectNear( ust::asin(  T(1.0) ),  pi2, T(1.0e-5) );
 	ExpectNear( ust::asin( -T(0.5) ), -pi6, T(1.0e-5) );
 	ExpectNear( ust::asin( -half_sqrt2 ), -pi4, T(1.0e-5) );
 	ExpectNear( ust::asin( -half_sqrt3 ), -pi3, T(1.0e-5) );
 	ExpectNear( ust::asin( -T(1.0) ), -pi2, T(1.0e-5) );
 	halt if( !ust::is_nan( ust::asin( ust::nan</T/>() ) ) ); // result for nan is nan
-	halt if( !ust::is_nan( ust::asin( T(+1.01) ) ) ); // result outside range [-1, 1] is nan
+	halt if( !ust::is_nan( ust::asin( T( 1.01) ) ) ); // result outside range [-1, 1] is nan
 	halt if( !ust::is_nan( ust::asin( T(-1.01) ) ) ); // result outside range [-1, 1] is nan
 
 	// acos
 	ExpectNear( ust::acos( T(0.0) ), pi2, T(1.0e-5) );
-	ExpectNear( ust::acos( +T(0.5) ), pi3, T(1.0e-5) );
-	ExpectNear( ust::acos( +half_sqrt2 ), pi4, T(1.0e-5) );
-	ExpectNear( ust::acos( +half_sqrt3 ), pi6, T(1.0e-5) );
+	ExpectNear( ust::acos(  T(0.5) ), pi3, T(1.0e-5) );
+	ExpectNear( ust::acos(  half_sqrt2 ), pi4, T(1.0e-5) );
+	ExpectNear( ust::acos(  half_sqrt3 ), pi6, T(1.0e-5) );
 	ExpectNear( ust::acos( -T(0.5) ), pi * T(2) / T(3), T(1.0e-5) );
 	ExpectNear( ust::acos( -half_sqrt2 ), pi * T(3) / T(4), T(1.0e-5) );
 	ExpectNear( ust::acos( -half_sqrt3 ), pi * T(5) / T(6), T(1.0e-5) );
 	ExpectNear( ust::acos( -T(1.0) ), pi, T(1.0e-5) );
 	halt if( !ust::is_nan( ust::acos( ust::nan</T/>() ) ) ); // result for nan is nan
-	halt if( !ust::is_nan( ust::acos( T(+1.01) ) ) ); // result outside range [-1, 1] is nan
+	halt if( !ust::is_nan( ust::acos( T( 1.01) ) ) ); // result outside range [-1, 1] is nan
 	halt if( !ust::is_nan( ust::acos( T(-1.01) ) ) ); // result outside range [-1, 1] is nan
 
 	// atan
 	halt if( ust::atan( T(0.0) ) != T(0.0) );
-	ExpectNear( ust::atan( +T(1.0) / ust::sqrt( T(3.0) ) ), +pi6, T(1.0e-5) );
-	ExpectNear( ust::atan( +T(1.0) ), +pi4, T(1.0e-5) );
-	ExpectNear( ust::atan( +ust::sqrt( T(3.0) ) ), +pi3, T(1.0e-5) );
-	ExpectNear( ust::atan( ust:: plus_inf</T/>() ), +pi2, T(1.0e-5) );
+	ExpectNear( ust::atan(  T(1.0) / ust::sqrt( T(3.0) ) ),  pi6, T(1.0e-5) );
+	ExpectNear( ust::atan(  T(1.0) ),  pi4, T(1.0e-5) );
+	ExpectNear( ust::atan(  ust::sqrt( T(3.0) ) ),  pi3, T(1.0e-5) );
+	ExpectNear( ust::atan( ust:: plus_inf</T/>() ),  pi2, T(1.0e-5) );
 	ExpectNear( ust::atan( -T(1.0) / ust::sqrt( T(3.0) ) ), -pi6, T(1.0e-5) );
 	ExpectNear( ust::atan( -T(1.0) ), -pi4, T(1.0e-5) );
 	ExpectNear( ust::atan( -ust::sqrt( T(3.0) ) ), -pi3, T(1.0e-5) );
@@ -266,15 +266,15 @@ fn DoFloatsTest()
 	halt if( !ust::is_nan( ust::atan( ust::nan</T/>() ) ) ); // result for nan is nan
 
 	// atan2
-	ExpectNear( ust::atan2( +T(0.0), T(1.0) ), +T(0.0), T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(0.5), half_sqrt3 ), +pi6, T(1.0e-5) );
-	ExpectNear( ust::atan2( +half_sqrt2, half_sqrt2 ), +pi4, T(1.0e-5) );
-	ExpectNear( ust::atan2( +half_sqrt3, T(0.5) ), +pi3, T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(1.0), T(0.0) ), +pi2, T(1.0e-5) );
-	ExpectNear( ust::atan2( +half_sqrt3, -T(0.5) ), +pi * T(2) / T(3), T(1.0e-5) );
-	ExpectNear( ust::atan2( +half_sqrt2, -half_sqrt2 ), +pi * T(3) / T(4), T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(0.5), -half_sqrt3 ), +pi * T(5) / T(6), T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(0.0), T(-1.0) ), +pi, T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(0.0), T(1.0) ),  T(0.0), T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(0.5), half_sqrt3 ),  pi6, T(1.0e-5) );
+	ExpectNear( ust::atan2(  half_sqrt2, half_sqrt2 ),  pi4, T(1.0e-5) );
+	ExpectNear( ust::atan2(  half_sqrt3, T(0.5) ),  pi3, T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(1.0), T(0.0) ),  pi2, T(1.0e-5) );
+	ExpectNear( ust::atan2(  half_sqrt3, -T(0.5) ),  pi * T(2) / T(3), T(1.0e-5) );
+	ExpectNear( ust::atan2(  half_sqrt2, -half_sqrt2 ),  pi * T(3) / T(4), T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(0.5), -half_sqrt3 ),  pi * T(5) / T(6), T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(0.0), T(-1.0) ),  pi, T(1.0e-5) );
 	ExpectNear( ust::atan2( -T(0.0), T(1.0) ), -T(0.0), T(1.0e-5) );
 	ExpectNear( ust::atan2( -T(0.5), half_sqrt3 ), -pi6, T(1.0e-5) );
 	ExpectNear( ust::atan2( -half_sqrt2, half_sqrt2 ), -pi4, T(1.0e-5) );
@@ -287,18 +287,18 @@ fn DoFloatsTest()
 	ExpectNear( ust::atan2( T(5.0), T(7.0) ), ust::atan2( T(50.0), T(70.0) ), T(1.0e-5) );
 	halt if( !ust::is_nan( ust::atan2( ust::nan</T/>(), T(0.0) ) ) ); // result for nan is nan
 	halt if( !ust::is_nan( ust::atan2( T(0.0), ust::nan</T/>() ) ) ); // result for nan is nan
-	ExpectNear( ust::atan2( ust:: plus_inf</T/>(), T(0.0) ), +pi2, T(1.0e-5) );
+	ExpectNear( ust::atan2( ust:: plus_inf</T/>(), T(0.0) ),  pi2, T(1.0e-5) );
 	ExpectNear( ust::atan2( ust::minus_inf</T/>(), T(0.0) ), -pi2, T(1.0e-5) );
 	ExpectNear( ust::atan2( T(0.0), ust:: plus_inf</T/>() ), T(0.0), T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(1.0), ust::minus_inf</T/>() ), +pi, T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(1.0), ust::minus_inf</T/>() ),  pi, T(1.0e-5) );
 	ExpectNear( ust::atan2( -T(1.0), ust::minus_inf</T/>() ), -pi, T(1.0e-5) );
-	ExpectNear( ust::atan2( ust:: plus_inf</T/>(), ust:: plus_inf</T/>() ), +pi4, T(1.0e-5) );
+	ExpectNear( ust::atan2( ust:: plus_inf</T/>(), ust:: plus_inf</T/>() ),  pi4, T(1.0e-5) );
 	ExpectNear( ust::atan2( ust::minus_inf</T/>(), ust:: plus_inf</T/>() ), -pi4, T(1.0e-5) );
-	ExpectNear( ust::atan2( ust:: plus_inf</T/>(), ust::minus_inf</T/>() ), +pi * T(3) / T(4), T(1.0e-5) );
+	ExpectNear( ust::atan2( ust:: plus_inf</T/>(), ust::minus_inf</T/>() ),  pi * T(3) / T(4), T(1.0e-5) );
 	ExpectNear( ust::atan2( ust::minus_inf</T/>(), ust::minus_inf</T/>() ), -pi * T(3) / T(4), T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(0.0), +T(0.0) ), T(0.0), T(1.0e-5) );
-	ExpectNear( ust::atan2( -T(0.0), +T(0.0) ), T(0.0), T(1.0e-5) );
-	ExpectNear( ust::atan2( +T(0.0), -T(0.0) ), +pi, T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(0.0),  T(0.0) ), T(0.0), T(1.0e-5) );
+	ExpectNear( ust::atan2( -T(0.0),  T(0.0) ), T(0.0), T(1.0e-5) );
+	ExpectNear( ust::atan2(  T(0.0), -T(0.0) ),  pi, T(1.0e-5) );
 	ExpectNear( ust::atan2( -T(0.0), -T(0.0) ), -pi, T(1.0e-5) );
 
 	// floor
@@ -327,7 +327,7 @@ fn DoFloatsTest()
 	halt if( ust::round( T(2.9) ) != T(3.0) );
 	halt if( ust::round( T(-10.1) ) != T(-10.0) );
 	halt if( ust::round( T(-10.9) ) != T(-11.0) );
-	halt if( ust::round( T(+53.5) ) != T(+54.0) );
+	halt if( ust::round( T( 53.5) ) != T( 54.0) );
 	halt if( ust::round( T(-53.5) ) != T(-54.0) );
 	halt if( !ust::is_nan( ust::round( ust::nan</T/>() ) ) ); // result for nan is nan
 	halt if( ust::round( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
@@ -339,7 +339,7 @@ fn DoFloatsTest()
 	halt if( ust::trunc( T(2.9) ) != T(2.0) );
 	halt if( ust::trunc( T(-10.1) ) != T(-10.0) );
 	halt if( ust::trunc( T(-10.9) ) != T(-10.0) );
-	halt if( ust::trunc( T(+53.5) ) != T(+53.0) );
+	halt if( ust::trunc( T( 53.5) ) != T( 53.0) );
 	halt if( ust::trunc( T(-53.5) ) != T(-53.0) );
 	halt if( !ust::is_nan( ust::trunc( ust::nan</T/>() ) ) ); // result for nan is nan
 	halt if( ust::trunc( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
