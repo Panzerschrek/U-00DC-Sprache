@@ -962,14 +962,6 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 {
 	switch( it_->type )
 	{
-	case Lexem::Type::Plus:
-		{
-			auto unary_plus= std::make_unique<UnaryPlus>( it_->src_loc );
-			NextLexem();
-
-			unary_plus->expression= ParseBinaryOperatorComponent();
-			return std::move(unary_plus);
-		}
 	case Lexem::Type::Minus:
 		{
 			auto unary_minus= std::make_unique<UnaryMinus>( it_->src_loc );
