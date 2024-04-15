@@ -3239,7 +3239,6 @@ fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::
 fn SingleExpressionIsUselessImpl( Synt::VariableInitialization& e ) : bool { ust::ignore_unused(e); return true; }
 // Await operator is basically an operator for an async call.
 fn SingleExpressionIsUselessImpl( Synt::AwaitOperator& e ) : bool { ust::ignore_unused(e); return false; }
-fn SingleExpressionIsUselessImpl( Synt::UnaryPlus& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::LogicalNot& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::BitwiseNot& e ) : bool { ust::ignore_unused(e); return true; }

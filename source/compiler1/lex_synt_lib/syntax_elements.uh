@@ -251,12 +251,6 @@ struct AwaitOperator
 	ust::box</Expression/> value;
 }
 
-struct UnaryPlus
-{
-	SrcLoc src_loc;
-	ust::box</Expression/> expr;
-}
-
 struct UnaryMinus
 {
 	SrcLoc src_loc;
@@ -302,7 +296,6 @@ type Expression= ust::variant</ tup[
 	MemberAccessOperator,
 	VariableInitialization,
 	AwaitOperator,
-	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,
 	BitwiseNot,
