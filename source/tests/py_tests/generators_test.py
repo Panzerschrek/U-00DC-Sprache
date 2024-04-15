@@ -248,12 +248,12 @@ def GeneratorReturn_Test0():
 			if_coro_advance( val : gen )
 			{
 				halt if( val != 42 );
-				+++advanced;
+				++advanced;
 			}
 			if_coro_advance( val : gen )
 			{
 				halt if( val != 24 );
-				+++advanced;
+				++advanced;
 			}
 			halt if( advanced != select( cond ? 2s : 1s ) );
 		}
@@ -285,12 +285,12 @@ def GeneratorReturn_Test1():
 			if_coro_advance( val : gen )
 			{
 				halt if( val != 66 );
-				+++advanced;
+				++advanced;
 			}
 			if_coro_advance( val : gen )
 			{
 				halt if( val != 77 );
-				+++advanced;
+				++advanced;
 			}
 			halt if( advanced != select( cond ? 2s : 1s ) );
 		}
@@ -322,12 +322,12 @@ def GeneratorReturn_Test2():
 			if_coro_advance( val : gen )
 			{
 				halt if( val != 17 );
-				+++advanced;
+				++advanced;
 			}
 			if_coro_advance( val : gen )
 			{
 				halt if( val != select( cond ? 19 : 23 ) );
-				+++advanced;
+				++advanced;
 			}
 			halt if( advanced != 2s );
 		}
