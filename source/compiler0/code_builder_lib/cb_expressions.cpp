@@ -3840,9 +3840,6 @@ Value CodeBuilder::DoCallFunction(
 		if( dst_arg >= function_type.params.size() || src_arg >= function_type.params.size() )
 			continue;
 
-		if( function_type.params[ dst_arg ].type.ReferenceTagCount() == 0 )
-			continue;
-
 		const VariablePtr& src_arg_node= args_nodes[ src_arg ];
 		const VariablePtr& dst_arg_node= args_nodes[ dst_arg ];
 
