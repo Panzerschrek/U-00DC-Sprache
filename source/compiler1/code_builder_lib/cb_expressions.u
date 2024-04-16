@@ -60,6 +60,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 					}.CreatePtr();
 
 				function_context.references_graph.AddNode( function_pointer_ptr );
+				RegisterTemporaryVariable( function_context, function_pointer_ptr );
 				return function_pointer_ptr;
 			}
 		}
@@ -78,6 +79,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 		}.CreatePtr();
 
 	function_context.references_graph.AddNode( dummy_ptr );
+	RegisterTemporaryVariable( function_context, dummy_ptr );
 	return dummy_ptr;
 }
 
