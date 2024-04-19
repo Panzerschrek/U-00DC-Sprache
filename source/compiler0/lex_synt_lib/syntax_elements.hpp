@@ -84,6 +84,8 @@ struct CastRefUnsafe;
 // Initializers
 struct ZeroInitializer;
 struct UninitializedInitializer;
+struct SafeInitializerWrapper;
+struct UnsafeInitializerWrapper;
 struct SequenceInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
@@ -225,7 +227,9 @@ using Initializer= std::variant<
 	SequenceInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
-	ConstructorInitializerSignatureHelp
+	ConstructorInitializerSignatureHelp,
+	SafeInitializerWrapper,
+	UnsafeInitializerWrapper
 	>;
 
 //
@@ -829,6 +833,24 @@ struct ConstructorInitializerSignatureHelp
 
 	SrcLoc src_loc;
 	std::vector<Expression> arguments;
+};
+
+struct SafeInitializerWrapper
+{
+	explicit SafeInitializerWrapper( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Initializer> initiailizer;
+};
+
+struct UnsafeInitializerWrapper
+{
+	explicit UnsafeInitializerWrapper( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Initializer> initiailizer;
 };
 
 struct StructNamedInitializer::MemberInitializer

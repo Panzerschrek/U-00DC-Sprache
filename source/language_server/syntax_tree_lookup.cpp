@@ -413,6 +413,16 @@ void FindImpl( const Synt::UninitializedInitializer& uninitialized_initializer )
 	(void)uninitialized_initializer;
 }
 
+void FindImpl( const Synt::SafeInitializerWrapper& safe_initializer_wrapper )
+{
+	FindImpl( safe_initializer_wrapper.initiailizer );
+}
+
+void FindImpl( const Synt::UnsafeInitializerWrapper& unsafe_initializer_wrapper )
+{
+	FindImpl( unsafe_initializer_wrapper.initiailizer );
+}
+
 void FindImpl( const Synt::ProgramElementsList& program_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;

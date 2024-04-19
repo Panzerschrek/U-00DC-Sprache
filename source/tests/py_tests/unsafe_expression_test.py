@@ -219,7 +219,6 @@ def UnsafeExpressionIsNotConstexpr_Test1():
 	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
 
 
-
 def UnsafeExpressionIsNotConstexpr_Test2():
 	c_program_text= """
 	fn foo()

@@ -100,6 +100,7 @@ def main():
 		"unconditional_loop_test",
 		"uninitialized_initializer_test",
 		"unsafe_expression_test",
+		"unsafe_initializer_test",
 		"unsafe_test",
 		"useless_expression_root_errors_test",
 		"unused_name_errors_test",
