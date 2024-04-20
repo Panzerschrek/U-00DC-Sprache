@@ -26,6 +26,21 @@ template</ size_type alignment />
 struct aligned_storage</ 0s, alignment />
 {}
 
+// Use this function to initialize an aligned storage instance with actually uninitialized data.
+// This is helpful in constructor initializer list, where using "uninitialized" initializer syntactically isn't possible,
+// but it's possible to call unsafe functions.
+// Initializing a variable with such function call requires "memcpy",
+// but it's effectively eliminated by LLVM optimization passes, because "memcpy" with uninitialized data as source has no effect.
+template</type Storage/>
+fn get_uninitialized_aligned_storage() unsafe : Storage
+{
+	unsafe
+	{
+		var Storage s= uninitialized;
+		return s;
+	}
+}
+
 // Unsafe, since caller must ensure that logical reference pollution doesn't actually happens with "swap".
 // It is totally fine to call "swap" for types without references inside.
 // It's also fine to call it inside containers to swap contained values.
