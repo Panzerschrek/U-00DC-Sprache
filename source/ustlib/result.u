@@ -60,14 +60,14 @@ public:
 public:
 	// Construt from ok value.
 	fn conversion_constructor( mut this, OkT mut res )
-		( is_ok_= true, storage_= zero_init ) // TODO - use uninitialized initializer for storage
+		( is_ok_= true, storage_= unsafe(get_uninitialized_value</storage_type/>()) )
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(res) ) );
 	}
 
 	// Construct from error value.
 	fn conversion_constructor( mut this, ErrorT mut err )
-		( is_ok_= false, storage_= zero_init ) // TODO - use uninitialized initializer for storage
+		( is_ok_= false, storage_= unsafe(get_uninitialized_value</storage_type/>()) )
 	{
 		unsafe( move_into_uninitialized( deref_error_unchecked(), move(err) ) );
 	}
@@ -314,6 +314,7 @@ public:
 
 private:
 	type this_type= result</OkT, ErrorT/>;
+	type storage_type= aligned_storage</ c_storage_size, c_storage_align />;
 
 	var size_type constexpr c_storage_size = select( typeinfo</OkT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</OkT/>.size_of  : typeinfo</ErrorT/>.size_of  );
 	var size_type constexpr c_storage_align= select( typeinfo</OkT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</OkT/>.align_of : typeinfo</ErrorT/>.align_of );
@@ -322,7 +323,7 @@ private:
 
 private:
 	ContainerTag</ tup[ OkT, ErrorT ] /> container_tag_;
-	aligned_storage</ c_storage_size, c_storage_align /> storage_;
+	storage_type storage_;
 	bool is_ok_;
 }
 
