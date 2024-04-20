@@ -1223,16 +1223,16 @@ private:
 
 		LLVMTypeRef int_ptr; // Type with width of pointer.
 	}
-	FundamentalLLVMTypes fundamental_llvm_types_= zero_init;
+	FundamentalLLVMTypes imut fundamental_llvm_types_;
 
-	Type invalid_type_;
-	Type void_type_;
-	Type bool_type_;
-	Type size_type_; // Alias for u32 or u64
-	Type reference_notation_param_reference_description_type_;
-	Type reference_notation_pollution_element_type_;
-	LLVMTypeRef virtual_function_pointer_type_= LLVMTypeRef::Null; // Use common type for all function pointers in virtual table - for simplicity.
-	LLVMTypeRef polymorph_type_id_table_element_type_= LLVMTypeRef::Null;
+	Type imut invalid_type_;
+	Type imut void_type_;
+	Type imut bool_type_;
+	Type imut size_type_; // Alias for u32 or u64
+	Type imut reference_notation_param_reference_description_type_;
+	Type imut reference_notation_pollution_element_type_;
+	LLVMTypeRef imut virtual_function_pointer_type_; // Use common type for all function pointers in virtual table - for simplicity.
+	LLVMTypeRef imut polymorph_type_id_table_element_type_;
 
 	LLVMModuleRef module_= LLVMModuleRef::Null;
 

@@ -46,79 +46,68 @@ fn CodeBuilder::constructor(
 		report_about_unused_names_( options.report_about_unused_names ),
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info),
-		mangler_(CreateMangler(options.mangling_scheme, data_layout))
+		mangler_(CreateMangler(options.mangling_scheme, data_layout)),
+		fundamental_llvm_types_
+		{
+			.i8_  = unsafe( LLVMInt8TypeInContext  ( llvm_context_ ) ),
+			.u8_  = unsafe( LLVMInt8TypeInContext  ( llvm_context_ ) ),
+			.i16_ = unsafe( LLVMInt16TypeInContext ( llvm_context_ ) ),
+			.u16_ = unsafe( LLVMInt16TypeInContext ( llvm_context_ ) ),
+			.i32_ = unsafe( LLVMInt32TypeInContext ( llvm_context_ ) ),
+			.u32_ = unsafe( LLVMInt32TypeInContext ( llvm_context_ ) ),
+			.i64_ = unsafe( LLVMInt64TypeInContext ( llvm_context_ ) ),
+			.u64_ = unsafe( LLVMInt64TypeInContext ( llvm_context_ ) ),
+			.i128_= unsafe( LLVMInt128TypeInContext( llvm_context_ ) ),
+			.u128_= unsafe( LLVMInt128TypeInContext( llvm_context_ ) ),
+			.f32_ = unsafe( LLVMFloatTypeInContext ( llvm_context_ ) ),
+			.f64_ = unsafe( LLVMDoubleTypeInContext ( llvm_context_ ) ),
+			.char8_ = unsafe( LLVMInt8TypeInContext ( llvm_context_ ) ),
+			.char16_= unsafe( LLVMInt16TypeInContext( llvm_context_ ) ),
+			.char32_= unsafe( LLVMInt32TypeInContext( llvm_context_ ) ),
+			.byte8_  = unsafe( LLVMInt8TypeInContext  ( llvm_context_ ) ),
+			.byte16_ = unsafe( LLVMInt16TypeInContext ( llvm_context_ ) ),
+			.byte32_ = unsafe( LLVMInt32TypeInContext ( llvm_context_ ) ),
+			.byte64_ = unsafe( LLVMInt64TypeInContext ( llvm_context_ ) ),
+			.byte128_= unsafe( LLVMInt128TypeInContext( llvm_context_ ) ),
+			.invalid_type_= unsafe( LLVMInt8TypeInContext( llvm_context_ ) ),
+			.void_for_ret_= unsafe( LLVMVoidTypeInContext( llvm_context_ ) ),
+			.void_= unsafe( LLVMStructCreateNamed( llvm_context_, "__U_void\0"[0] ) ),
+			.bool_= unsafe( LLVMInt1TypeInContext( llvm_context_ ) ),
+			.int_ptr= unsafe( LLVMIntPtrTypeInContext( llvm_context_, data_layout_ ) ),
+		},
+		invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ),
+		void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ ),
+		bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ ),
+		size_type_= select(
+			unsafe( LLVMGetIntTypeWidth( fundamental_llvm_types_.int_ptr ) ) == 32u
+				? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
+				: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) ),
+		// A pair of chars.
+		// First - number of param from '0' up to '9'.
+		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
+		reference_notation_param_reference_description_type_=
+			ArrayType
+			{
+				.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
+				.element_count(2),
+				.llvm_type= unsafe( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ) ),
+			},
+		// A pair of reference param descriptions. First - destination, second - source.
+		reference_notation_pollution_element_type_=
+			ArrayType
+			{
+				.element_type= reference_notation_param_reference_description_type_,
+				.element_count(2),
+				.llvm_type= unsafe( LLVMArrayType( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ), 2u ) ),
+			},
+		virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u )),
+		polymorph_type_id_table_element_type_= unsafe( LLVMStructCreateNamed( llvm_context_, "__U_polymorph_type_id_table_element\0"[0] ) ),
 	)
 {
-	unsafe
-	{
-		fundamental_llvm_types_.i8_  = LLVMInt8TypeInContext  ( llvm_context_ );
-		fundamental_llvm_types_.u8_  = LLVMInt8TypeInContext  ( llvm_context_ );
-		fundamental_llvm_types_.i16_ = LLVMInt16TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.u16_ = LLVMInt16TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.i32_ = LLVMInt32TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.u32_ = LLVMInt32TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.i64_ = LLVMInt64TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.u64_ = LLVMInt64TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.i128_= LLVMInt128TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.u128_= LLVMInt128TypeInContext( llvm_context_ );
-
-		fundamental_llvm_types_.f32_= LLVMFloatTypeInContext( llvm_context_ );
-		fundamental_llvm_types_.f64_= LLVMDoubleTypeInContext( llvm_context_ );
-
-		fundamental_llvm_types_.char8_ = LLVMInt8TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.char16_= LLVMInt16TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.char32_= LLVMInt32TypeInContext( llvm_context_ );
-
-		fundamental_llvm_types_.byte8_  = LLVMInt8TypeInContext  ( llvm_context_ );
-		fundamental_llvm_types_.byte16_ = LLVMInt16TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.byte32_ = LLVMInt32TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.byte64_ = LLVMInt64TypeInContext ( llvm_context_ );
-		fundamental_llvm_types_.byte128_= LLVMInt128TypeInContext( llvm_context_ );
-
-		fundamental_llvm_types_.invalid_type_= LLVMInt8TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.void_for_ret_= LLVMVoidTypeInContext( llvm_context_ );
-		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
-
-		fundamental_llvm_types_.void_= LLVMStructCreateNamed( llvm_context_, "__U_void\0"[0] );
-		LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
-
-		fundamental_llvm_types_.int_ptr= LLVMIntPtrTypeInContext( llvm_context_, data_layout_ );
-	}
-
-	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
-	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
-
-	size_type_= select(
-		unsafe( LLVMGetIntTypeWidth( fundamental_llvm_types_.int_ptr ) ) == 32u
-		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
-		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
-
-	// A pair of chars.
-	// First - number of param from '0' up to '9'.
-	// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
-	reference_notation_param_reference_description_type_=
-		ArrayType
-		{
-			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
-			.element_count(2),
-			.llvm_type= unsafe( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ) ),
-		};
-
-	// A pair of reference param descriptions. First - destination, second - source.
-	reference_notation_pollution_element_type_=
-		ArrayType
-		{
-			.element_type= reference_notation_param_reference_description_type_,
-			.element_count(2),
-			.llvm_type= unsafe( LLVMArrayType( reference_notation_param_reference_description_type_.GetLLVMType(), 2u ) ),
-		};
-
-	virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u ));
+	unsafe( LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False ) );
 
 	unsafe
 	{
-		polymorph_type_id_table_element_type_= LLVMStructCreateNamed( llvm_context_, "__U_polymorph_type_id_table_element\0"[0] );
 		var [ LLVMTypeRef, 2 ] mut elements
 		[
 			fundamental_llvm_types_.int_ptr,
