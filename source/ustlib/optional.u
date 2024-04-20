@@ -17,26 +17,26 @@ public:
 
 public:
 	fn constructor()
-	( storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()), has_value_= false )
+	( storage_= unsafe(get_uninitialized_value</storage_type/>()), has_value_= false )
 	{}
 
 	// Use this conversion constructor in order to use simple "ust::null_optional" to pass/return empty optional, without specifying exact optional type.
 	fn conversion_constructor( null_optional_type n )
-	( storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()), has_value_= false )
+	( storage_= unsafe(get_uninitialized_value</storage_type/>()), has_value_= false )
 	{
 		ignore_unused(n);
 	}
 	
 	// Construct with value.
 	fn conversion_constructor( mut this, T mut val ) @(c_param1_pollution)
-	( storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()), has_value_= true  )
+	( storage_= unsafe(get_uninitialized_value</storage_type/>()), has_value_= true  )
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(val) ) );
 	}
 
 	// Copy constructor
 	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( this_type& other )
-	( storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()), has_value_= other.has_value_ )
+	( storage_= unsafe(get_uninitialized_value</storage_type/>()), has_value_= other.has_value_ )
 	{
 		if( other.has_value_ )
 		{
