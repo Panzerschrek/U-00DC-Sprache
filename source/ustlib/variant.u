@@ -42,7 +42,7 @@ public:
 	fn
 	enable_if( typeinfo</Y/>.elements_list[0].type.is_default_constructible )
 	constructor()
-		( index_(0), storage_= zero_init )
+		( index_(0), storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()) )
 	{
 		type FirstT= typeof(typeinfo</Y/>.elements_list[0].type)::src_type;
 		var FirstT mut val;
@@ -52,7 +52,7 @@ public:
 	fn
 	enable_if( tuple_type_properties_.all_elements_are_copy_constructible )
 	constructor( this_type& other )
-		( index_(other.index_), storage_= zero_init )
+		( index_(other.index_), storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()) )
 	{
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
@@ -74,7 +74,7 @@ public:
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	conversion_constructor(T mut val)
-		( index_(0), storage_= zero_init )
+		( index_(0), storage_= unsafe(get_uninitialized_aligned_storage</storage_type/>()) )
 	{
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
@@ -256,13 +256,11 @@ public:
 private:
 	var variant_impl::TupleTypeProperties tuple_type_properties_= variant_impl::get_tuple_type_properties</Y/>();
 
+	type storage_type= aligned_storage</ tuple_type_properties_.max_element_size, tuple_type_properties_.max_element_alignment />;
+
 private:
 	ContainerTag</ Y /> container_tag_;
-
-	aligned_storage</
-		tuple_type_properties_.max_element_size,
-		tuple_type_properties_.max_element_alignment
-		/> storage_;
+	storage_type storage_;
 	u8 index_;
 }
 
