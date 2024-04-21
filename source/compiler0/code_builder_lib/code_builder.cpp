@@ -2149,7 +2149,7 @@ llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_c
 	return function_context.llvm_ir_builder.CreateInBoundsGEP( type, value, { GetZeroGEPIndex(), index } );
 }
 
-llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, const uint32_t index )
+llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, const uint32_t index )
 {
 	if( value == nullptr )
 		return nullptr;
