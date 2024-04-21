@@ -1145,7 +1145,7 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		// TODO - avoid taking copy
 		var CoroutineTypeDescription coroutine_type_description=
-			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 
 		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
 		{
@@ -1526,7 +1526,7 @@ fn CodeBuilder::BuildFuncCode(
 			else if( func_variable.kind == FunctionVariable::Kind::Async )
 			{
 				// Automatically generate final suspend for void-return async functions.
-				auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+				auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 				if( !( coroutine_type_description.return_type == void_type_ && coroutine_type_description.return_value_type == ValueType::Value ) )
 				{
 					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )

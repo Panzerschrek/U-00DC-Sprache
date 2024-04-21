@@ -531,7 +531,7 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state,
 
 fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, ClassType& the_class )
 {
-	var ClassType::BaseTemplate& base_template= the_class.generated_class_data.get</ ClassType::BaseTemplate />().try_deref();
+	var ClassType::BaseTemplate& base_template= the_class.generated_class_data.try_get</ ClassType::BaseTemplate />();
 	auto lock= base_template.class_template.lock_imut();
 	var TypeTemplate& type_template= lock.deref();
 
@@ -551,7 +551,7 @@ fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, 
 
 fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, ClassType& the_class )
 {
-	auto& lambda_class_data= the_class.generated_class_data.get</ LambdaClassData />().try_deref();
+	auto& lambda_class_data= the_class.generated_class_data.try_get</ LambdaClassData />();
 
 	with( &members : the_class.members.lock_imut().deref() )
 	{
@@ -577,7 +577,7 @@ fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, Cl
 
 fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state, ClassType& the_class )
 {
-	var CoroutineTypeDescription& coroutine_type_description= the_class.generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+	var CoroutineTypeDescription& coroutine_type_description= the_class.generated_class_data.try_get</ CoroutineTypeDescription />();
 
 	// Use separate backreferences table.
 	var ManglerState mut template_mangler_state;

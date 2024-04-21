@@ -548,7 +548,7 @@ fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, FunctionT
 
 fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
-	auto& base_template= class_type.generated_class_data.get</ ClassType::BaseTemplate />().try_deref();
+	auto& base_template= class_type.generated_class_data.try_get</ ClassType::BaseTemplate />();
 	ADD_NODE( mangler_state )
 	{
 		// Skip template parameters namespace.
@@ -566,7 +566,7 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 
 fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
-	auto& lambda_class_data= class_type.generated_class_data.get</ LambdaClassData />().try_deref();
+	auto& lambda_class_data= class_type.generated_class_data.try_get</ LambdaClassData />();
 
 	with( &members : class_type.members.lock_imut().deref() )
 	{
@@ -619,7 +619,7 @@ fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type
 
 fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
-	var CoroutineTypeDescription& coroutine_type_description= class_type.generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+	var CoroutineTypeDescription& coroutine_type_description= class_type.generated_class_data.try_get</ CoroutineTypeDescription />();
 
 	ADD_NODE( mangler_state )
 	{

@@ -566,7 +566,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
 		{
-			auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+			auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 			switch(coroutine_type_description.kind)
 			{
 				CoroutineKind::Generator ->
@@ -619,7 +619,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
 	{
-		auto coroutine_kind= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref().kind;
+		auto coroutine_kind= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />().kind;
 		switch(coroutine_kind)
 		{
 			CoroutineKind::Generator ->
@@ -1182,7 +1182,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		return BlockElementBuildInfo();
 	}
 	// TODO - avoid taking copy
-	var CoroutineTypeDescription coroutine_type_description= coro_class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+	var CoroutineTypeDescription coroutine_type_description= coro_class_type.lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 
 	if( coro_expr.value_type == ValueType::ReferenceImut )
 	{

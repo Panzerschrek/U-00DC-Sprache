@@ -726,11 +726,11 @@ op Type::==( Type& l, Type& r ) : bool
 			same_type</ LeftT, ust::shared_ptr_final</RawPointerType/> /> ||
 			same_type</ LeftT, ust::shared_ptr_final</FunctionPointerType/> /> )
 		{
-			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
+			return l_t.deref() == r.something_.try_get</ LeftT />().deref();
 		}
 		else
 		{
-			return l_t == r.something_.get</ LeftT />().try_deref();
+			return l_t == r.something_.try_get</ LeftT />();
 		}
 	}
 
@@ -1304,11 +1304,11 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 			same_type</ LeftT, ust::shared_ptr_final</CoroutineTypeParam/> /> ||
 			same_type</ LeftT, ust::shared_ptr_final</SpecializedTemplateParam/> /> )
 		{
-			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
+			return l_t.deref() == r.something_.try_get</ LeftT />().deref();
 		}
 		else
 		{
-			return l_t == r.something_.get</ LeftT />().try_deref();
+			return l_t == r.something_.try_get</ LeftT />();
 		}
 	}
 
