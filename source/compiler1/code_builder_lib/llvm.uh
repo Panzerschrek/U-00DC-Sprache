@@ -448,6 +448,7 @@ fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRe
 fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;
 
 fn nomangle LLVMBuildGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildInBoundsGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
 fn nomangle LLVMBuildCall2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Fn, $(LLVMValueRef) Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
 fn nomangle LLVMBuildSelect(LLVMBuilderRef Builder, LLVMValueRef If, LLVMValueRef Then, LLVMValueRef Else, NullTerminatedString& Name) unsafe : LLVMValueRef;
