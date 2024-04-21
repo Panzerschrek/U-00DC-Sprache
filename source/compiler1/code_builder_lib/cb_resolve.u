@@ -369,7 +369,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 					enum_= enum_type;
 				}
 			}
-			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			if( template_arg.something.has</TemplateArg::NotKnownYet/>() )
 			{
 				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, names_scope_fetch.src_loc, ust::to_string8(template_arg.index) )
 			}

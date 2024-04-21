@@ -11,10 +11,10 @@ import "ustlib_macros.u"
 	{
 		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
 		{
-			auto ??ref= ??variant.get</ typeof(??element_type_typeinfo.type)::src_type />();
-			if( !??ref.empty() )
+			type ??ElementT= typeof(??element_type_typeinfo.type)::src_type;
+			if( ??variant.has</ ??ElementT />() )
 			{
-				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??ref.try_deref() )
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??variant.try_get</??ElementT/>() )
 				?b
 			}
 		}
@@ -128,6 +128,29 @@ public:
 		return size_type(index_);
 	}
 
+	// Check if variant contains given type.
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	has( this ) : bool
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return true;
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return false;
+	}
+
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	get( this ) : optional_ref</ T, false />  @( reference_notation::return_inner_references::param0 )
@@ -172,6 +195,52 @@ public:
 			}
 		}
 		return res;
+	}
+
+	// try_get - return a reference to given type or halt, if variant doesn't contain type specified.
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_get( this ) : T &imut @( reference_notation::return_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
+	}
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_get( mut this ) : T &mut @( reference_notation::return_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
 	}
 
 	// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.

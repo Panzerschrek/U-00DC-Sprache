@@ -291,7 +291,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		var LLVMTypeRef mut pointer_type= LLVMPointerTypeInContext( llvm_context_, 0u );
 
 		var ClassTypePtr coroutine_class= function_context.function_type.return_type.GetClassType().try_deref();
-		var CoroutineTypeDescription coroutine_type_description= coroutine_class.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+		var CoroutineTypeDescription coroutine_type_description= coroutine_class.lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 		var LLVMTypeRef promise_type= select(
 			coroutine_type_description.return_value_type == ValueType::Value
 				? coroutine_type_description.return_type.GetLLVMType()
@@ -421,12 +421,12 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 
 	// TODO - avoid taking copy
 	var CoroutineTypeDescription coroutine_type_description=
-		function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+		function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 
 	var Type& yield_type= coroutine_type_description.return_type;
 	var ValueType return_value_type= coroutine_type_description.return_value_type;
 
-	if( !expression.get</Synt::EmptyVariant/>().empty() )
+	if( expression.has</Synt::EmptyVariant/>() )
 	{
 		switch( coroutine_type_description.kind )
 		{
@@ -560,7 +560,7 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	// TODO - avoid taking copy
 	var CoroutineTypeDescription coroutine_type_description=
-		function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+		function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 
 	var Type& return_type= coroutine_type_description.return_type;
 	var ValueType return_value_type= coroutine_type_description.return_value_type;

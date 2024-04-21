@@ -523,7 +523,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 
 	// Get functions table pointer from whole virtual table pointer, than get address of function in this table.
 	llvm::Value* const ptr_to_function_ptr=
-		function_context.llvm_ir_builder.CreateGEP(
+		function_context.llvm_ir_builder.CreateInBoundsGEP(
 			function_class->virtual_table_llvm_type,
 			function_virtual_table,
 			{

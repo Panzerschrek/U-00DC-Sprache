@@ -109,7 +109,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.name, template_params_usage_flags.range() ) );
 
 			// TODO - is this correct usage of "CreateTemplateSignatureParam" function?
-			if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
+			if( !signature_param.default_value.has</Synt::EmptyVariant/>() )
 			{
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.default_value, template_params_usage_flags.range() );
 			}
@@ -142,7 +142,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	{
 		for( auto mut i= 0s; i < in_signature_params.size(); ++i )
 		{
-			if( in_signature_params[i].default_value.get</ Synt::EmptyVariant />().empty() )
+			if( !in_signature_params[i].default_value.has</ Synt::EmptyVariant />() )
 			{
 				first_default_param= ust::min( first_default_param, i );
 			}
@@ -264,7 +264,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 	for( auto mut i= 0s; i < in_params.size(); ++i )
 	{
 		auto& template_param= in_params[i];
-		if( template_param.t.get</Synt::EmptyVariant/>().empty() )
+		if( !template_param.t.has</Synt::EmptyVariant/>() )
 		{
 			var TemplateSignatureParam mut param=
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
@@ -613,7 +613,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			return TemplateSignatureParam::VariableParam{ .t= v.t, .constexpr_value= v.constexpr_value };
 		}
 	}
-	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
+	else if( value.has</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 	{
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
 		return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
@@ -1258,7 +1258,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			if( template_arg.something.has</TemplateArg::NotKnownYet/>() )
 			{
 				template_arg.something= VariablePtr(
 					Variable
@@ -1299,7 +1299,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		// Type param
 		if_var( &given_type : given_arg.get</Type/>() )
 		{
-			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			if( template_arg.something.has</TemplateArg::NotKnownYet/>() )
 			{
 				template_arg.something= given_type;
 				return true;

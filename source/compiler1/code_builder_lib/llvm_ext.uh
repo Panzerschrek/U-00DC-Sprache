@@ -11,7 +11,7 @@ fn nomangle U1_SetStructName(LLVMTypeRef t, NullTerminatedString& name) unsafe;
 
 fn nomangle U1_BasicBlockHasPredecessors(LLVMBasicBlockRef basic_block) unsafe : bool;
 
-fn nomangle U1_CreateOrphanGEP( LLVMTypeRef t, LLVMValueRef pointer, $(LLVMValueRef) indices, u32 num_indices ) unsafe : LLVMValueRef;
+fn nomangle U1_CreateOrphanInBoundsGEP( LLVMTypeRef t, LLVMValueRef pointer, $(LLVMValueRef) indices, u32 num_indices ) unsafe : LLVMValueRef;
 fn nomangle U1_InsertInstructionAfterAnother(LLVMValueRef src_instructuon, LLVMValueRef instruction_for_insert) unsafe;
 
 fn nomangle U1_FunctionAddDereferenceableAttr(LLVMValueRef function, u32 index, u64 bytes) unsafe;

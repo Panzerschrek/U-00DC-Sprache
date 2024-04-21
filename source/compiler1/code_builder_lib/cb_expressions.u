@@ -1796,7 +1796,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var ClassTypePtr class_type= class_type_ref.try_deref();
 
 	if( member_access_operator.template_args.empty() &&
-		!class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty() )
+		class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() )
 	{
 		var VariableNullablePtr fetch_result_opt= TryFetchTypeinfoClassLazyField( variable.t, member_access_operator.member_name.range() );
 		if( !fetch_result_opt.empty() )
@@ -2385,7 +2385,7 @@ fn CodeBuilder::AccessDirectClassField(
 					}
 					else
 					{
-						if( !class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty() && field_name == "type_id" )
+						if( class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() && field_name == "type_id" )
 						{
 							// HACK!
 							// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
@@ -2508,6 +2508,13 @@ fn CodeBuilder::BuildBinaryOperator(
 	if( operator == BinaryOperatorType::Add && ( !l_raw_pointer_type.empty() || !r_raw_pointer_type.empty() ) )
 	{
 		// Add pointer and integer.
+
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
 		var u32 pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
 		var u32 mut int_size(0);
 
@@ -2579,7 +2586,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 			if( !function_context.is_functionless_context )
 			{
-				result.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
+				result.llvm_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
 			}
 		}
 	}
@@ -2631,6 +2638,12 @@ fn CodeBuilder::BuildBinaryOperator(
 	{
 		// Subtract integer from pointer.
 
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
 		if( r_fundamental_type.empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
@@ -2678,7 +2691,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 			if( !function_context.is_functionless_context )
 			{
-				result.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
+				result.llvm_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
 			}
 		}
 	}

@@ -105,9 +105,9 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 		{
 			var Synt::Class& syntax_element= syntax_element_ptr.try_deref();
 
-			if( !syntax_element.non_sync_tag.get</Synt::NonSyncTagNone/>().empty() )
+			if( syntax_element.non_sync_tag.has</Synt::NonSyncTagNone/>() )
 			{}
-			if( !syntax_element.non_sync_tag.get</Synt::NonSyncTagTrue/>().empty() )
+			if( syntax_element.non_sync_tag.has</Synt::NonSyncTagTrue/>() )
 			{
 				prev_types_stack.pop_back();
 				return true;
@@ -193,11 +193,11 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 
 fn CodeBuilder::ImmediateEvaluateNonSyncTag( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncTag& non_sync_tag ) : bool
 {
-	if( !non_sync_tag.get</Synt::NonSyncTagNone/>().empty() )
+	if( non_sync_tag.has</Synt::NonSyncTagNone/>() )
 	{
 		return false;
 	}
-	if( !non_sync_tag.get</Synt::NonSyncTagTrue/>().empty() )
+	if( non_sync_tag.has</Synt::NonSyncTagTrue/>() )
 	{
 		return true;
 	}

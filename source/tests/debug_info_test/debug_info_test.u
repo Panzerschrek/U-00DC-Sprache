@@ -65,9 +65,12 @@ fn RawPointerTypeTest()
 {
 	auto mut x= 0;
 	auto mut x_ptr= $<(x);
-	++x_ptr;
-	--x_ptr;
-	unsafe{  $>(x_ptr)= 66;  }
+	unsafe
+	{
+		++x_ptr;
+		--x_ptr;
+		$>(x_ptr)= 66;
+	}
 
 	var $(f32) f_zero= zero_init;
 

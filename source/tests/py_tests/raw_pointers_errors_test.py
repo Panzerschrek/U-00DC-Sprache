@@ -120,6 +120,39 @@ def RawPointerToReferenceConversionOutsideUnsafeBlock_Test1():
 	assert( HasError( errors_list, "RawPointerToReferenceConversionOutsideUnsafeBlock", 10 ) )
 
 
+def RawPointerArithmeticOutsideUnsafeBlock_Test0():
+	c_program_text= """
+		fn Foo( $(f32) ptr )
+		{
+			auto add_result= ptr + 5;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "RawPointerArithmeticOutsideUnsafeBlock", 4 ) )
+
+
+def RawPointerArithmeticOutsideUnsafeBlock_Test1():
+	c_program_text= """
+		fn Foo( $(f32) mut ptr )
+		{
+			ptr-= 3;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "RawPointerArithmeticOutsideUnsafeBlock", 4 ) )
+
+
+def RawPointerArithmeticOutsideUnsafeBlock_Test2():
+	c_program_text= """
+		fn Foo( $(f32) mut ptr )
+		{
+			++ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "RawPointerArithmeticOutsideUnsafeBlock", 4 ) )
+
+
 def ValueIsNotPointer_Test0():
 	c_program_text= """
 		fn Foo()

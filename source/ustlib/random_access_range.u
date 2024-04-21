@@ -159,7 +159,7 @@ public:
 	fn drop_front( mut this )
 	{
 		halt if( empty() );
-		++begin_;
+		unsafe{ ++begin_; }
 		--size_;
 	}
 
@@ -172,7 +172,7 @@ public:
 	// Precondition - range is nonempty.
 	fn drop_front_unchecked( mut this ) unsafe
 	{
-		++begin_;
+		unsafe{ ++begin_; }
 		--size_;
 	}
 
@@ -198,7 +198,7 @@ public:
 	fn enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		auto & mut res= unsafe( $>(begin_) );
-		++begin_;
+		unsafe{ ++begin_; }
 		--size_;
 		return res;
 	}
@@ -207,7 +207,7 @@ public:
 	fn enable_if(!is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		auto &imut res= unsafe( $>(begin_) );
-		++begin_;
+		unsafe{ ++begin_; }
 		--size_;
 		return res;
 	}

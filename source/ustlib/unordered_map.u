@@ -414,7 +414,7 @@ public:
 		{
 			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != TableValue::CellContent::HaveValue )
 			{
-				++table_;
+				unsafe{ ++table_; }
 				--capacity_;
 			}
 		}
@@ -422,7 +422,7 @@ public:
 		// Precondition - end is not reached.
 		fn drop_front_unchecked( mut this ) unsafe
 		{
-			++table_;
+			unsafe{ ++table_; }
 			--capacity_;
 		}
 

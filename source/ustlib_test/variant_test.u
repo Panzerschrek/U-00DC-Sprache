@@ -69,22 +69,32 @@ fn nomangle main() : i32
 			vi(4),
 			vf( 0.5f );
 
+		halt if( !vi.has</i32/>() );
+		halt if(  vi.has</f32/>() );
 		halt if(  vi.get</i32/>().empty() );
 		halt if( !vi.get</f32/>().empty() );
 		halt if(  vi.get</i32/>().try_deref() != 4 );
+		halt if( vi.try_get</i32/>() != 4 );
 
+		halt if( !vf.has</f32/>() );
+		halt if(  vf.has</i32/>() );
 		halt if( !vf.get</i32/>().empty() );
 		halt if(  vf.get</f32/>().empty() );
 		halt if(  vf.get</f32/>().try_deref() != 0.5f );
+		halt if( vf.try_get</f32/>() != 0.5f );
 	}
 	{ // Can modify contents of variant.
 		var ust::variant</ tup[ i32, f32 ] /> mut vi(66), mut vf(7.5f);
 
 		vi.get</i32/>().try_deref() /= 11;
 		halt if( vi.get</i32/>().try_deref() != 6 );
+		vi.try_get</i32/>()= 786;
+		halt if( vi.try_get</i32/>() != 786 );
 
 		vf.get</f32/>().try_deref() *= 2.0f;
 		halt if( vf.get</f32/>().try_deref() != 15.0f );
+		vf.try_get</f32/>()= 56.3f;
+		halt if( vf.try_get</f32/>() != 56.3f );
 	}
 	{ // Variant calls destructor.
 		var i32 mut x= 66;

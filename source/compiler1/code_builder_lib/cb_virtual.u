@@ -375,7 +375,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 			auto polymorph_type_id_table= parent.class_.lock_imut().deref().polymorph_type_id_table;
 			var [ LLVMValueRef, 2 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
 			var LLVMValueRef first_element_address=
-				LLVMBuildGEP2(
+				LLVMBuildInBoundsGEP2(
 					dummy_function_context.llvm_ir_builder,
 					LLVMTypeOf( LLVMGetInitializer(polymorph_type_id_table) ),
 					polymorph_type_id_table,
@@ -459,7 +459,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 			auto dummy_function_context= CreateGlobalFunctionContext();
 			var [ LLVMValueRef, 2 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
 			initializer_values.push_back(
-				LLVMBuildGEP2(
+				LLVMBuildInBoundsGEP2(
 					dummy_function_context.llvm_ir_builder,
 					LLVMTypeOf( LLVMGetInitializer(dst_class.polymorph_type_id_table) ),
 					dst_class.polymorph_type_id_table,
@@ -544,14 +544,14 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 				GetZeroGEPIndex(),
 				CreateIndexValue( parent.field_number )
 			];
-			auto parent_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.llvm_type, this_, $<(parent_indexes[0]), 2u, g_null_string );
+			auto parent_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.llvm_type, this_, $<(parent_indexes[0]), 2u, g_null_string );
 
 			var [ LLVMValueRef, 2 ] mut vtable_indexes
 			[
 				GetZeroGEPIndex(),
 				CreateIndexValue( select( parent.field_number == 0u ? 0u : vtable_field_number ) ),
 			];
-			auto vtable_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.virtual_table_llvm_type, ptr_to_vtable_ptr, $<(vtable_indexes[0]), 2u, g_null_string );
+			auto vtable_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.virtual_table_llvm_type, ptr_to_vtable_ptr, $<(vtable_indexes[0]), 2u, g_null_string );
 
 			SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, parent.class_.lock_imut().deref(), function_context );
 
@@ -568,7 +568,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 		unsafe
 		{
 			var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
-			auto vtable_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.llvm_type, this_, $<(indexes[0]), 2u, g_null_string );
+			auto vtable_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.llvm_type, this_, $<(indexes[0]), 2u, g_null_string );
 
 			auto store_inst= LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );
 			if( generate_tbaa_metadata_ )
@@ -693,7 +693,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 				GetZeroGEPIndex(),
 				CreateIndexValue(field_index),
 			];
-			function_virtual_table= LLVMBuildGEP2( function_context.llvm_ir_builder,current_class.virtual_table_llvm_type, function_virtual_table, $<(index_list[0]), 2u, g_null_string );
+			function_virtual_table= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder,current_class.virtual_table_llvm_type, function_virtual_table, $<(index_list[0]), 2u, g_null_string );
 		}
 
 		auto next_class_ptr= current_class.parents[ size_type(parent_virtual_table_index) ].class_;
@@ -724,7 +724,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		CreateIndexValue( index_in_table ),
 	];
 	auto ptr_to_function_ptr=
-		unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, function_class_virtual_table_type, function_virtual_table, $<(function_ptr_indexes[0]), 3u, g_null_string ) );
+		unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, function_class_virtual_table_type, function_virtual_table, $<(function_ptr_indexes[0]), 3u, g_null_string ) );
 
 	auto function_ptr= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, virtual_function_pointer_type_, ptr_to_function_ptr, g_null_string ) );
 	MarkLoadInstructionWithNonNullMetadata( function_ptr ); // Function pointer inside virtual table is never null.
@@ -756,7 +756,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			CreateIndexValue(c_offset_field_number),
 		];
 		auto offset_ptr=
-			unsafe( LLVMBuildGEP2(
+			unsafe( LLVMBuildInBoundsGEP2(
 				function_context.llvm_ir_builder,
 				root_class.lock_imut().deref().virtual_table_llvm_type,
 				virtual_table_ptr, // Reinterpretate this pointer as pointer to root table.

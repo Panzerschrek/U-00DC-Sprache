@@ -1145,7 +1145,7 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		// TODO - avoid taking copy
 		var CoroutineTypeDescription coroutine_type_description=
-			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 
 		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
 		{
@@ -1340,7 +1340,7 @@ fn CodeBuilder::BuildFuncCode(
 		{
 			with( &this_class_type : this_class_type_ptr.lock_imut().deref() )
 			{
-				if( !this_class_type.generated_class_data.get</ LambdaClassData />().empty() )
+				if( this_class_type.generated_class_data.has</ LambdaClassData />() )
 				{
 					if( func_variable.t.params.front().value_type == ValueType::Value &&
 						body_syntax_element.function_type.params.front().mutability_modifier == Synt::MutabilityModifier::Mutable )
@@ -1526,7 +1526,7 @@ fn CodeBuilder::BuildFuncCode(
 			else if( func_variable.kind == FunctionVariable::Kind::Async )
 			{
 				// Automatically generate final suspend for void-return async functions.
-				auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
+				auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 				if( !( coroutine_type_description.return_type == void_type_ && coroutine_type_description.return_value_type == ValueType::Value ) )
 				{
 					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
@@ -2653,7 +2653,7 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 			CreateIndexValue(field.index),
 		];
 
-		return LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
+		return LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
 }
 
@@ -2676,7 +2676,7 @@ fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_conte
 			CreateIndexValue( parent.field_number ),
 		];
 
-		return LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, g_null_string );
+		return LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, g_null_string );
 	}
 }
 
@@ -2697,7 +2697,7 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context
 		GetZeroGEPIndex(), // Base class is always zero field.
 	];
 
-	return unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, ".base\0"[0] ) );
+	return unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, ".base\0"[0] ) );
 }
 
 fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, VariableLite& tuple_variable, u32 element_index ) : LLVMValueRef
@@ -2725,7 +2725,7 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 			CreateIndexValue(element_index)
 		];
 
-		return LLVMBuildGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
+		return LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
 }
 
@@ -2749,7 +2749,7 @@ fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, 
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index ];
-		return LLVMBuildGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, g_null_string );
+		return LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, g_null_string );
 	}
 }
 
@@ -2769,12 +2769,12 @@ fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_con
 	{
 		// Constant will be folded properly and no instruction will be actiually inserted.
 		var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), CreateIndexValue( index ) ];
-		var LLVMValueRef gep= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, t, value, $<(indexes[0]), 2u, g_null_string ) );
+		var LLVMValueRef gep= unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, t, value, $<(indexes[0]), 2u, g_null_string ) );
 		return gep;
 	}
 
 	var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), CreateIndexValue( index ) ];
-	var LLVMValueRef gep= unsafe( U1_CreateOrphanGEP( t, value, $<(indexes[0]), 2u ) );
+	var LLVMValueRef gep= unsafe( U1_CreateOrphanInBoundsGEP( t, value, $<(indexes[0]), 2u ) );
 
 	// Try to insert "GEP" instruction with constant index directly after of value calculation.
 	// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
@@ -2844,7 +2844,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 					GetZeroGEPIndex(),
 					CreateIndexValue(i)
 				];
-				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
+				auto element_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
 				auto constant_element= LLVMGetAggregateElement( constant, i );
 
@@ -2861,7 +2861,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 					GetZeroGEPIndex(),
 					CreateIndexValue(i)
 				];
-				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
+				auto element_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
 				auto constant_element= LLVMGetAggregateElement( constant, i );
 

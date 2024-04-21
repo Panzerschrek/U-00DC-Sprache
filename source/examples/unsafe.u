@@ -6,13 +6,14 @@ fn nomangle main() : i32
 {
 	var [ i32, 4 ] mut arr[ 11, 22, 33, 44 ];
 	var $(i32) mut ptr= $<( arr[0] ); // Convert a reference to first array element into a pointer.
-	// Basic pointer arithmetic is allowed.
-	ptr+= 2;
-	--ptr;
-	ptr= ptr + 2;
 
 	unsafe
 	{
+		// Basic pointer arithmetic is allowed, but only in "unsafe" blocks, since overflow is undefined.
+		ptr+= 2;
+		--ptr;
+		ptr= ptr + 2;
+
 		// Call a function in "unsafe" block, because some preconditions, which the compiler itself can't properly check, must be satisfied.
 		// "unsafe" here serves as a workaround for compiler type/mutability/reference rules checking.
 		auto x= ReadInt(ptr);

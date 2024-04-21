@@ -2905,6 +2905,10 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 {
 	U_ASSERT( l_var.type.GetRawPointerType() != nullptr || r_var.type.GetRawPointerType() != nullptr );
 
+	// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+	if( !function_context.is_in_unsafe_block )
+		REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
+
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
@@ -2971,7 +2975,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				else
 					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 			}
-			result->llvm_value= function_context.llvm_ir_builder.CreateGEP( element_type.GetLLVMType(), ptr_value, index_value );
+			result->llvm_value= function_context.llvm_ir_builder.CreateInBoundsGEP( element_type.GetLLVMType(), ptr_value, index_value );
 		}
 	}
 	else if( binary_operator == BinaryOperatorType::Sub )
@@ -3047,7 +3051,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 						index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 				}
 				llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
-				result->llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_type->element_type.GetLLVMType(), l_value_for_op, index_value_negative );
+				result->llvm_value= function_context.llvm_ir_builder.CreateInBoundsGEP( ptr_type->element_type.GetLLVMType(), l_value_for_op, index_value_negative );
 			}
 		}
 		else

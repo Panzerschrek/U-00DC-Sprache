@@ -514,7 +514,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.deref().initializer;
-		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		if( initializer.has</Synt::EmptyVariant/>() )
 		{
 			if( field.is_reference )
 			{
@@ -1512,7 +1512,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
-		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		if( initializer.has</Synt::EmptyVariant/>() )
 		{
 			if( class_field.is_reference )
 			{
@@ -1666,7 +1666,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
-		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		if( initializer.has</Synt::EmptyVariant/>() )
 		{
 			continue; // Skip empty initializers.
 		}

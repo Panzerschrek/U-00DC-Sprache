@@ -2146,10 +2146,10 @@ llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_c
 	if( function_context.is_functionless_context && !(llvm::isa<llvm::Constant>(value) && llvm::isa<llvm::Constant>(index) ) )
 		return nullptr;
 
-	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
+	return function_context.llvm_ir_builder.CreateInBoundsGEP( type, value, { GetZeroGEPIndex(), index } );
 }
 
-llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, const uint32_t index )
+llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, const uint32_t index )
 {
 	if( value == nullptr )
 		return nullptr;
@@ -2159,7 +2159,7 @@ llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function
 	if( llvm::isa<llvm::Constant>(value) )
 	{
 		// Constant will be folded properly and no instruction will be actiually inserted.
-		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index_value } );
+		return function_context.llvm_ir_builder.CreateInBoundsGEP( type, value, { GetZeroGEPIndex(), index_value } );
 	}
 
 	const auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index_value } );

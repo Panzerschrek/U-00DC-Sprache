@@ -31,9 +31,14 @@ bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
 	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);
 }
 
-LLVMValueRef U1_CreateOrphanGEP( const LLVMTypeRef t, const LLVMValueRef poiter, LLVMValueRef* const indices, const uint32_t num_indices )
+LLVMValueRef U1_CreateOrphanInBoundsGEP( const LLVMTypeRef t, const LLVMValueRef poiter, LLVMValueRef* const indices, const uint32_t num_indices )
 {
-	return llvm::wrap( llvm::GetElementPtrInst::Create( llvm::unwrap(t), llvm::unwrap(poiter), llvm::ArrayRef<llvm::Value*>( reinterpret_cast<llvm::Value**>(indices), num_indices ) ) );
+	return
+		llvm::wrap(
+			llvm::GetElementPtrInst::CreateInBounds(
+				llvm::unwrap(t),
+				llvm::unwrap(poiter),
+				llvm::ArrayRef<llvm::Value*>( reinterpret_cast<llvm::Value**>(indices), num_indices ) ) );
 }
 
 void U1_InsertInstructionAfterAnother( const LLVMValueRef src_instructuon, const LLVMValueRef instruction_for_insert )
