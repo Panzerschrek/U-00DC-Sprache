@@ -1796,7 +1796,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var ClassTypePtr class_type= class_type_ref.try_deref();
 
 	if( member_access_operator.template_args.empty() &&
-		!class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty() )
+		class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() )
 	{
 		var VariableNullablePtr fetch_result_opt= TryFetchTypeinfoClassLazyField( variable.t, member_access_operator.member_name.range() );
 		if( !fetch_result_opt.empty() )
@@ -2385,7 +2385,7 @@ fn CodeBuilder::AccessDirectClassField(
 					}
 					else
 					{
-						if( !class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty() && field_name == "type_id" )
+						if( class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() && field_name == "type_id" )
 						{
 							// HACK!
 							// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.

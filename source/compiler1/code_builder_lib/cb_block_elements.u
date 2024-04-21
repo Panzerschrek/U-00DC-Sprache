@@ -246,7 +246,7 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_for_initialization_ptr, names_scope, variable_declaration.src_loc );
 
-			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+			if( variable_declaration.initializer.has</Synt::EmptyVariant/>() )
 			{
 				constexpr_value= BuildEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
 			}
@@ -268,7 +268,7 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
-		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+		if( variable_declaration.initializer.has</Synt::EmptyVariant/>() )
 		{
 			REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.src_loc, variable_declaration.name )
 			function_context.references_graph.RemoveNode( variable_reference );
@@ -562,7 +562,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
-	if( !return_operator.expr.get</Synt::EmptyVariant/>().empty() )
+	if( return_operator.expr.has</Synt::EmptyVariant/>() )
 	{
 		if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
 		{
@@ -1013,10 +1013,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					}
 				}
 			}
-			if( !value.get</Type/>().empty() ||
-				!value.get</FunctionsSetPtr/>().empty() ||
-				!value.get</ThisMethodsSet/>().empty() ||
-				!value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
+			if( value.has</Type/>() ||
+				value.has</FunctionsSetPtr/>() ||
+				value.has</ThisMethodsSet/>() ||
+				value.has</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 			{
 				REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
 			}
@@ -1176,7 +1176,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		return BlockElementBuildInfo();
 	}
 	var ClassTypePtr coro_class_type= coro_class_type_opt.try_deref();
-	if( coro_class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().empty() )
+	if( !coro_class_type.lock_imut().deref().generated_class_data.has</ CoroutineTypeDescription />() )
 	{
 		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names_scope, if_coro_advance_operator.src_loc, coro_expr.t )
 		return BlockElementBuildInfo();
@@ -1686,7 +1686,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					for( auto mut i= 0s; i < 2s; ++i )
 					{
 						var Synt::Expression& expression = select( i == 0s ? range.low : range.high );
-						if( !expression.get</ Synt::EmptyVariant />().empty() )
+						if( expression.has</ Synt::EmptyVariant />() )
 						{
 							continue;
 						}
@@ -1741,7 +1741,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				else { halt; }
 			}
 		}
-		else if( ! case_.values.get</ Synt::SwitchOperator::DefaultPlaceholder />().empty() )
+		else if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
 		{
 			if( has_default_branch )
 			{
@@ -1952,7 +1952,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	for( auto mut i= 0s; i < switch_operator.cases.size(); ++i )
 	{
 		var Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
-		if( !case_.values.get</Synt::SwitchOperator::DefaultPlaceholder/>().empty() )
+		if( case_.values.has</Synt::SwitchOperator::DefaultPlaceholder/>() )
 		{
 			// Default branch - handle it later.
 			continue;
@@ -2525,7 +2525,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, test_block );
 	}
 
-	if( !c_style_for_operator.loop_condition.get</Synt::EmptyVariant/>().empty() )
+	if( c_style_for_operator.loop_condition.has</Synt::EmptyVariant/>() )
 	{
 		// No condition.
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
@@ -3280,7 +3280,7 @@ fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::option
 {
 	foreach( &case_ : switch_operator.cases )
 	{
-		if( !case_.values.get</ Synt::SwitchOperator::DefaultPlaceholder />().empty() )
+		if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
 		{
 			return ust::optional_ref_imut</Synt::Block/>( case_.block.deref() );
 		}

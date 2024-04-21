@@ -269,19 +269,19 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( !class_type.generated_class_data.get</ ClassType::BaseTemplate />().empty() )
+		else if( class_type.generated_class_data.has</ ClassType::BaseTemplate />() )
 		{
 			EncodeTemplateClassName( mangler_state, class_type );
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( !class_type.generated_class_data.get</ CoroutineTypeDescription />().empty() )
+		else if( class_type.generated_class_data.has</ CoroutineTypeDescription />() )
 		{
 			EncodeCoroutineClassName( mangler_state, class_type );
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( !class_type.generated_class_data.get</ LambdaClassData />().empty() )
+		else if( class_type.generated_class_data.has</ LambdaClassData />() )
 		{
 			EncodeLambdaClassName( mangler_state, class_type );
 			// Finish list of name components.
@@ -507,17 +507,17 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state,
 	{
 		auto class_lock= class_ptr.try_lock_imut();
 		auto& class_= class_lock.deref();
-		if( !class_.generated_class_data.get</ ClassType::BaseTemplate />().empty() )
+		if( class_.generated_class_data.has</ ClassType::BaseTemplate />() )
 		{
 			EncodeTemplateClassName( mangler_state, class_ );
 			return;
 		}
-		if( !class_.generated_class_data.get</ CoroutineTypeDescription />().empty() )
+		if( class_.generated_class_data.has</ CoroutineTypeDescription />() )
 		{
 			EncodeCoroutineClassName( mangler_state, class_ );
 			return;
 		}
-		if( !class_.generated_class_data.get</ LambdaClassData />().empty() )
+		if( class_.generated_class_data.has</ LambdaClassData />() )
 		{
 			EncodeLambdaClassName( mangler_state, class_ );
 			return;

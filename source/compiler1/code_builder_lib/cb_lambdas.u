@@ -416,17 +416,17 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			.parent= function_context.lambda_preprocessing_context,
 			.external_variables= CollectCurrentFunctionVariables( function_context ),
-			.capture_by_reference= !lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty(),
+			.capture_by_reference= lambda_.capture.has</Synt::Lambda::CaptureAllByReference/>(),
 			.lambda_this_is_mutable= lambda_.function.deref().function_type.params.front().mutability_modifier == Synt::MutabilityModifier::Mutable,
 		};
 
-		if( !lambda_.capture.get</Synt::Lambda::CaptureNothing/>().empty() )
+		if( lambda_.capture.has</Synt::Lambda::CaptureNothing/>() )
 		{
 			lambda_preprocessing_context.explicit_captures= LambdaPreprocessingContext::ExplicitCaptures();
 		}
 		else if(
-			!lambda_.capture.get</Synt::Lambda::CaptureAllByValue/>().empty() ||
-			!lambda_.capture.get</Synt::Lambda::CaptureAllByReference/>().empty() )
+			lambda_.capture.has</Synt::Lambda::CaptureAllByValue/>() ||
+			lambda_.capture.has</Synt::Lambda::CaptureAllByReference/>() )
 		{
 			lambda_preprocessing_context.explicit_captures= ust::null_optional;
 		}

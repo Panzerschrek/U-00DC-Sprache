@@ -59,7 +59,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto field_lock= field_pair[1].lock_imut();
 		auto& field= field_lock.deref();
 
-		if( !field.syntax_element.deref().initializer.get</Synt::EmptyVariant/>().empty() &&
+		if( field.syntax_element.deref().initializer.has</Synt::EmptyVariant/>() &&
 			( field.is_reference || !field.t.IsDefaultConstructible() ) )
 		{
 			all_fields_are_default_constructible= false;
@@ -169,7 +169,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		function_context.references_graph.AddNode( field_variable_ptr );
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
-		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		if( initializer.has</Synt::EmptyVariant/>() )
 		{
 			BuildEmptyInitializer( class_members_ptr, function_context, field_variable_ptr, field_pair[0], src_loc );
 		}

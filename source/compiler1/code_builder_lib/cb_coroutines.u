@@ -426,7 +426,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 	var Type& yield_type= coroutine_type_description.return_type;
 	var ValueType return_value_type= coroutine_type_description.return_value_type;
 
-	if( !expression.get</Synt::EmptyVariant/>().empty() )
+	if( expression.has</Synt::EmptyVariant/>() )
 	{
 		switch( coroutine_type_description.kind )
 		{

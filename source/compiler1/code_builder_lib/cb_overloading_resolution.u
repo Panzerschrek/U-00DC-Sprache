@@ -549,7 +549,7 @@ fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, Overloa
 
 fn CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam
 {
-	if( !item.get</FunctionVariable/>().empty() )
+	if( item.has</FunctionVariable/>() )
 	{
 		return TemplateSignatureParam::TypeParam();
 	}

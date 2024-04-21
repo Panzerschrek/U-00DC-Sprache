@@ -1758,7 +1758,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 				NextLexem();
 
 				member_initializer.initializer.deref()= ParseVariableInitializer();
-				if( !member_initializer.initializer.deref().get</EmptyVariant/>().empty() )
+				if( member_initializer.initializer.deref().has</EmptyVariant/>() )
 				{
 					PushErrorMessage();
 				}
@@ -1877,7 +1877,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 			NextLexem();
 
 			auto mut initializer= ParseVariableInitializer();
-			if( !initializer.get</EmptyVariant/>().empty() )
+			if( initializer.has</EmptyVariant/>() )
 			{
 				PushErrorMessage();
 			}
@@ -2205,15 +2205,15 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 						return IfAlternativeNullablePtr();
 					}
 				}
-				if( !block_element.get</IfOperator/>().empty() )
+				if( block_element.has</IfOperator/>() )
 				{
 					return IfAlternativeNullablePtr( move(block_element).try_move</IfOperator/>() );
 				}
-				if( !block_element.get</StaticIfOperator/>().empty() )
+				if( block_element.has</StaticIfOperator/>() )
 				{
 					return IfAlternativeNullablePtr( move(block_element).try_move</StaticIfOperator/>() );
 				}
-				if( !block_element.get</IfCoroAdvanceOperator/>().empty() )
+				if( block_element.has</IfCoroAdvanceOperator/>() )
 				{
 					return IfAlternativeNullablePtr( move(block_element).try_move</IfCoroAdvanceOperator/>() );
 				}

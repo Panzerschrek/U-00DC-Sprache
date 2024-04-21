@@ -544,7 +544,7 @@ fn Type::HasDestructor( this ) : bool
 	if_var( &class_type_ptr : GetClassType() )
 	{
 		// Assume all classes except typeinfo have destructors.
-		return class_type_ptr.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty();
+		return !class_type_ptr.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />();
 	}
 	if_var( &array_type : GetArrayType() )
 	{

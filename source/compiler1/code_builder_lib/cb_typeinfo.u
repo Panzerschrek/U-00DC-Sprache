@@ -401,7 +401,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 
 		ADD_BOOL_FIELD( "is_interface", class_.kind == ClassType::Kind::Interface )
 
-		ADD_BOOL_FIELD( "is_typeinfo", !class_.generated_class_data.get</ TypeinfoClassDescription />().empty() )
+		ADD_BOOL_FIELD( "is_typeinfo", class_.generated_class_data.has</ TypeinfoClassDescription />() )
 
 		if_var( &coroutine_type_description : class_.generated_class_data.get</ CoroutineTypeDescription />() )
 		{
@@ -419,7 +419,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 			ADD_BOOL_FIELD( "is_coroutine", false )
 		}
 
-		ADD_BOOL_FIELD( "is_lambda", !class_.generated_class_data.get</ LambdaClassData />().empty() )
+		ADD_BOOL_FIELD( "is_lambda", class_.generated_class_data.has</ LambdaClassData />() )
 	}
 	else if_var( &enum_ptr : t.GetEnumType() )
 	{
