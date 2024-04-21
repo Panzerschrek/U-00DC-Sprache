@@ -3199,6 +3199,12 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 			return;
 		}
 
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
 		var LLVMValueRef pointer_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 		auto& op_name= select( delta > 0 ? "++\0" : "--\0" );
 		unsafe
