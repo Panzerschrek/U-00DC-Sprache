@@ -521,20 +521,23 @@ def RawPointerIntegerAdd_Test0():
 			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
-			halt if( ptr0 + 0 != ptr0 );
-			halt if( 0 + ptr0 != ptr0 );
+			unsafe
+			{
+				halt if( ptr0 + 0 != ptr0 );
+				halt if( 0 + ptr0 != ptr0 );
 
-			halt if( ptr0 + 1 != ptr1 );
-			halt if( 1 + ptr0 != ptr1 );
+				halt if( ptr0 + 1 != ptr1 );
+				halt if( 1 + ptr0 != ptr1 );
 
-			halt if( ptr0 + 2 != ptr2 );
-			halt if( 2 + ptr0 != ptr2 );
+				halt if( ptr0 + 2 != ptr2 );
+				halt if( 2 + ptr0 != ptr2 );
 
-			halt if( ptr1 + 1 != ptr2 );
-			halt if( 1 + ptr1 != ptr2 );
+				halt if( ptr1 + 1 != ptr2 );
+				halt if( 1 + ptr1 != ptr2 );
 
-			halt if( ptr1 + (-1) != ptr0 );
-			halt if( (-1) + ptr1 != ptr0 );
+				halt if( ptr1 + (-1) != ptr0 );
+				halt if( (-1) + ptr1 != ptr0 );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -548,25 +551,28 @@ def RawPointerIntegerAdd_Test1():
 			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
-			// Add signed positive value.
-			halt if( ptr0 + i32(1) != ptr1 );
-			halt if( i32(1) + ptr0 != ptr1 );
+			unsafe
+			{
+				// Add signed positive value.
+				halt if( ptr0 + i32(1) != ptr1 );
+				halt if( i32(1) + ptr0 != ptr1 );
 
-			// Add unsigned positive value.
-			halt if( ptr0 + u32(1) != ptr1 );
-			halt if( u32(1) + ptr0 != ptr1 );
+				// Add unsigned positive value.
+				halt if( ptr0 + u32(1) != ptr1 );
+				halt if( u32(1) + ptr0 != ptr1 );
 
-			// Add signed negative value.
-			halt if( ptr1 + i32(-1) != ptr0 );
-			halt if( i32(-1) + ptr1 != ptr0 );
+				// Add signed negative value.
+				halt if( ptr1 + i32(-1) != ptr0 );
+				halt if( i32(-1) + ptr1 != ptr0 );
 
-			// Add unsigned value of small type.
-			halt if( ptr2 + u8(0xFE) < ptr2 );
-			halt if( u8(0xFE) + ptr2 < ptr2 );
+				// Add unsigned value of small type.
+				halt if( ptr2 + u8(0xFE) < ptr2 );
+				halt if( u8(0xFE) + ptr2 < ptr2 );
 
-			// Add signed value of small type.
-			halt if( ptr2 + i8(0xFE) != ptr0 );
-			halt if( i8(0xFE) + ptr2 !=  ptr0 );
+				// Add signed value of small type.
+				halt if( ptr2 + i8(0xFE) != ptr0 );
+				halt if( i8(0xFE) + ptr2 !=  ptr0 );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -580,10 +586,13 @@ def RawPointerIntegerAdd_Test2():
 			var tup[] mut t= zero_init;
 			auto ptr= $<(t);
 
-			// Integer to pointer addition produces pointer value itslef for element types with zero size.
-			halt if( ptr + 1 != ptr );
-			halt if( ptr - 2 != ptr );
-			halt if( ptr + 100 != ptr - 222 );
+			unsafe
+			{
+				// Integer to pointer addition produces pointer value itslef for element types with zero size.
+				halt if( ptr + 1 != ptr );
+				halt if( ptr - 2 != ptr );
+				halt if( ptr + 100 != ptr - 222 );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -597,10 +606,13 @@ def RawPointerIntegerAdd_Test3():
 			var void mut v= zero_init;
 			auto ptr= $<(v);
 
-			// Integer to pointer addition produces pointer value itslef for element types with zero size.
-			halt if( ptr + 1 != ptr );
-			halt if( ptr - 2 != ptr );
-			halt if( ptr + 100 != ptr - 222 );
+			unsafe
+			{
+				// Integer to pointer addition produces pointer value itslef for element types with zero size.
+				halt if( ptr + 1 != ptr );
+				halt if( ptr - 2 != ptr );
+				halt if( ptr + 100 != ptr - 222 );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -614,13 +626,13 @@ def RawPointerIntegerSub_Test0():
 			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
-			halt if( ptr0 - 0 != ptr0 );
-			halt if( ptr1 - 1 != ptr0 );
-			halt if( ptr2 - 2 != ptr0 );
-			halt if( ptr2 - 1 != ptr1 );
-
 			unsafe
 			{
+				halt if( ptr0 - 0 != ptr0 );
+				halt if( ptr1 - 1 != ptr0 );
+				halt if( ptr2 - 2 != ptr0 );
+				halt if( ptr2 - 1 != ptr1 );
+
 				halt if( $>(ptr1 - 1) != 33 );
 				halt if( $>(ptr2 - 2) != 33 );
 				halt if( $>(ptr2 - 1) != 55 );
@@ -675,22 +687,25 @@ def RawPointersDifference_Test0():
 			var [ i32, 3 ] mut a= zero_init;
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
-			// Difference between pointer is divided by element size.
-			halt if( i32(ptr0 - ptr0) != 0 );
-			halt if( i32(ptr1 - ptr0) != 1 );
-			halt if( i32(ptr2 - ptr0) != 2 );
-			halt if( i32(ptr0 - ptr1) != -1 );
-			halt if( i32(ptr0 - ptr2) != -2 );
+			unsafe
+			{
+				// Difference between pointer is divided by element size.
+				halt if( i32(ptr0 - ptr0) != 0 );
+				halt if( i32(ptr1 - ptr0) != 1 );
+				halt if( i32(ptr2 - ptr0) != 2 );
+				halt if( i32(ptr0 - ptr1) != -1 );
+				halt if( i32(ptr0 - ptr2) != -2 );
 
-			halt if( (ptr2 - ptr1) + (ptr1 - ptr0) != ptr2 - ptr0 );
+				halt if( (ptr2 - ptr1) + (ptr1 - ptr0) != ptr2 - ptr0 );
 
-			halt if( i32( ptr2 + 100 - ptr2 ) != 100 );
+				halt if( i32( ptr2 + 100 - ptr2 ) != 100 );
 
-			// Difference type must be signed integer.
-			halt if( !typeinfo</ typeof( ptr0 - ptr0 ) />.is_signed_integer );
+				// Difference type must be signed integer.
+				halt if( !typeinfo</ typeof( ptr0 - ptr0 ) />.is_signed_integer );
 
-			// Size of difference type must be equal to size of "size_type".
-			halt if( typeinfo</size_type/>.size_of != typeinfo</ typeof( ptr0 - ptr0 ) />.size_of );
+				// Size of difference type must be equal to size of "size_type".
+				halt if( typeinfo</size_type/>.size_of != typeinfo</ typeof( ptr0 - ptr0 ) />.size_of );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -704,9 +719,12 @@ def AdditiveAssignmentForRawPointers_Test0():
 			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) mut ptr= $<(a[0]);
 
-			ptr+= 2;
-			ptr-= 1;
-			unsafe{  return $>(ptr);  }
+			unsafe
+			{
+				ptr+= 2;
+				ptr-= 1;
+				return $>(ptr);
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -720,8 +738,11 @@ def AdditiveAssignmentForRawPointers_Test1():
 		{
 			var f64 mut f= 67785.5;
 			var $(f64) mut ptr= zero_init;
-			ptr+= ( $<(f) - ptr );
-			unsafe{  return $>(ptr);  }
+			unsafe
+			{
+				ptr+= ( $<(f) - ptr );
+				return $>(ptr);
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
