@@ -376,7 +376,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 				auto dummy_function_context= CreateGlobalFunctionContext();
 				var [ LLVMValueRef, 3 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex(), GetZeroGEPIndex() ];
 				var LLVMValueRef address=
-					LLVMBuildGEP2(
+					LLVMBuildInBoundsGEP2(
 						dummy_function_context.llvm_ir_builder,
 						LLVMTypeOf( LLVMGetInitializer(class_.polymorph_type_id_table) ),
 						class_.polymorph_type_id_table,
