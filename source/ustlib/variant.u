@@ -128,6 +128,29 @@ public:
 		return size_type(index_);
 	}
 
+	// Check if variant contains given type.
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	has( this ) : bool
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return true;
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return false;
+	}
+
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	get( this ) : optional_ref</ T, false />  @( reference_notation::return_inner_references::param0 )

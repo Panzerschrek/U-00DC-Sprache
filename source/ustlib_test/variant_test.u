@@ -69,10 +69,14 @@ fn nomangle main() : i32
 			vi(4),
 			vf( 0.5f );
 
+		halt if( !vi.has</i32/>() );
+		halt if(  vi.has</f32/>() );
 		halt if(  vi.get</i32/>().empty() );
 		halt if( !vi.get</f32/>().empty() );
 		halt if(  vi.get</i32/>().try_deref() != 4 );
 
+		halt if( !vf.has</f32/>() );
+		halt if(  vf.has</i32/>() );
 		halt if( !vf.get</i32/>().empty() );
 		halt if(  vf.get</f32/>().empty() );
 		halt if(  vf.get</f32/>().try_deref() != 0.5f );
