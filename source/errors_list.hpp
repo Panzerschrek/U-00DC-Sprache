@@ -230,6 +230,7 @@ PROCESS_ERROR( UnsafeExpressionInGlobalContext, "Unsafe expression in global con
 PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable or immutable reference, got immediate value." )
 PROCESS_ERROR( ValueIsNotPointer, "Value of type \"{0}\" is not a pointer." )
 PROCESS_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, "Raw pointer to reference conversion outside unsafe block or unsafe expression." )
+PROCESS_ERROR( RawPointerArithmeticOutsideUnsafeBlock, "Raw pointer airthmetic outside unsafe block or unsafe expression." )
 PROCESS_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, "Can not calculate difference between pointers of type \"{0}\" with zero element size." )
 
 // Coroutines

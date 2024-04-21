@@ -2907,7 +2907,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 	// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
+		REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
 
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );

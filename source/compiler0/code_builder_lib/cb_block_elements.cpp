@@ -2961,7 +2961,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
 		if( !function_context.is_in_unsafe_block )
-			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
 
 		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
