@@ -197,6 +197,52 @@ public:
 		return res;
 	}
 
+	// try_get - return a reference to given type or halt, if variant doesn't contain type specified.
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_get( this ) : T &imut @( reference_notation::return_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
+	}
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_get( mut this ) : T &mut @( reference_notation::return_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
+	}
+
 	// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.
 	// It is recommended to move variant value while calling this function.
 	template</ type T />
