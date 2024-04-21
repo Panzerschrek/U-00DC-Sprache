@@ -11,10 +11,10 @@ import "ustlib_macros.u"
 	{
 		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
 		{
-			auto ??ref= ??variant.get</ typeof(??element_type_typeinfo.type)::src_type />();
-			if( !??ref.empty() )
+			type ??ElementT= typeof(??element_type_typeinfo.type)::src_type;
+			if( ??variant.has</ ??ElementT />() )
 			{
-				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??ref.try_deref() )
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??variant.try_get</??ElementT/>() )
 				?b
 			}
 		}
