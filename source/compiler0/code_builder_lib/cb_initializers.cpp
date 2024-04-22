@@ -55,7 +55,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				array_type->element_count,
 				initializer.initializers.size() );
 			return nullptr;
-			// SPRACHE_TODO - add array continious initializers.
 		}
 
 		const VariableMutPtr array_member=

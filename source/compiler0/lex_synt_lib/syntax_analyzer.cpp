@@ -1953,7 +1953,6 @@ Initializer SyntaxAnalyzer::ParseArrayInitializer()
 			NextLexem();
 		else
 			break;
-		// TODO - parse continious flag here
 	}
 	ExpectLexem( Lexem::Type::SquareBracketRight );
 

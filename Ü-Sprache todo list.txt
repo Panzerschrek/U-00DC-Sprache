@@ -8,7 +8,6 @@ General:
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
-*) Continious initializer for arrays
 *) More advanced macros - more context, elements, string manipulations
 *) switch-style operator for expression context
 *) thread-local variables
