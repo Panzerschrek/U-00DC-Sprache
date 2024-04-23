@@ -58,6 +58,8 @@ private:
 
 		// Base for all pointers.
 		LLVMMetadataRef ptr;
+
+		LLVMMetadataRef size_type_enum_base;
 	}
 
 private:

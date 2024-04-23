@@ -71,6 +71,8 @@ private:
 		// Base for all pointers.
 		llvm::MDNode* ptr= nullptr;
 
+		llvm::MDNode* size_type_enum_base= nullptr;
+
 	} type_descriptors_;
 
 	std::unordered_map< Type, llvm::MDNode*, TypeHasher > types_descriptors_cache_;

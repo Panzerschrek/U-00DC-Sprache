@@ -57,6 +57,8 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetData
 		auto ptr_base= select( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
 
 		type_descriptors_.ptr= MakeTBAATypeDescriptor( llvm_context_, ptr_base, "__U_any_pointer" );
+
+		type_descriptors_.size_type_enum_base= select( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
 	}
 }
 
@@ -195,11 +197,10 @@ fn TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( mut this, EnumTypePtr& en
 		U_FundamentalType::u64_  -> { return type_descriptors_.byte64_ ; },
 		U_FundamentalType::i128_ -> { return type_descriptors_.byte128_; },
 		U_FundamentalType::u128_ -> { return type_descriptors_.byte128_; },
+		U_FundamentalType::ssize_type_, U_FundamentalType::size_type_ -> { return type_descriptors_.size_type_enum_base; },
 		U_FundamentalType::InvalidType,
 		U_FundamentalType::void_,
 		U_FundamentalType::bool_,
-		U_FundamentalType::ssize_type_,
-		U_FundamentalType::size_type_,
 		U_FundamentalType::f32_,
 		U_FundamentalType::f64_,
 		U_FundamentalType::char8_ ,

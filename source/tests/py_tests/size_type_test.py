@@ -292,3 +292,33 @@ def SizeTypesConversions_Test4():
 		static_assert(c == a);
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def SizeTypeAsEnumBase_Test0():
+	c_program_text= """
+		enum E : size_type { A, B, C }
+		fn Foo()
+		{
+			var E mut a= E::A, mut b= E::B, mut c= E::C;
+			halt if( size_type(a) != 0s );
+			halt if( size_type(b) != 1s );
+			halt if( size_type(c) != 2s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function("_Z3Foov")
+
+
+def SizeTypeAsEnumBase_Test1():
+	c_program_text= """
+		enum E : ssize_type { A, B, C }
+		fn Foo()
+		{
+			var E mut a= E::A, mut b= E::B, mut c= E::C;
+			halt if( ssize_type(a) != ssize_type(0) );
+			halt if( ssize_type(b) != ssize_type(1) );
+			halt if( ssize_type(c) != ssize_type(2) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function("_Z3Foov")

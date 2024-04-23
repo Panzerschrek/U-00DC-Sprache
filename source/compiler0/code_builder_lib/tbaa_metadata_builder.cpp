@@ -65,6 +65,8 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	// Use intermediate type for all pointer type (not just raw byte32 or byte64).
 	// Do this in case we add something, like "generic" pointers/references.
 	type_descriptors_.ptr= md_builder_.createTBAAScalarTypeNode( "__U_any_pointer", ptr_base );
+
+	type_descriptors_.size_type_enum_base= is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_;
 }
 
 llvm::MDNode* TBAAMetadataBuilder::CreateAccessTag( const Type& type )
@@ -185,6 +187,9 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 	case U_FundamentalType::i128_:
 	case U_FundamentalType::u128_:
 		return type_descriptors_.byte128_;
+	case U_FundamentalType::ssize_type_:
+	case U_FundamentalType::size_type_:
+		return type_descriptors_.size_type_enum_base;
 	default:
 		U_ASSERT(false);
 		return type_descriptors_.byte8_;
