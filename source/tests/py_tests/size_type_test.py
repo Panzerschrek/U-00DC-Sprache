@@ -26,6 +26,9 @@ def SizeTypeInfo_Test0():
 		static_assert( ti.is_copy_constructible );
 		static_assert( ti.is_copy_assignable );
 		static_assert( ti.is_equality_comparable );
+
+		static_assert( ti.size_of == 4s || ti.size_of == 8s );
+		static_assert( ti.size_of == typeinfo</ $(byte8) />.size_of ); // size_type always has pointer size.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -56,6 +59,9 @@ def SizeTypeInfo_Test1():
 		static_assert( ti.is_copy_constructible );
 		static_assert( ti.is_copy_assignable );
 		static_assert( ti.is_equality_comparable );
+
+		static_assert( ti.size_of == 4s || ti.size_of == 8s );
+		static_assert( ti.size_of == typeinfo</ $(byte8) />.size_of ); // ssize_type always has pointer size.
 	"""
 	tests_lib.build_program( c_program_text )
 
