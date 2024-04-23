@@ -468,6 +468,7 @@ U_TEST( FundamentalTypesManglingTest )
 		fn FooByte32Bar( byte32 x ){}
 		fn FooByte64Bar( byte64 x ){}
 		fn FooByte128Bar( byte128 x ){}
+		fn SizeTypeFunc( size_type s ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -494,6 +495,7 @@ U_TEST( FundamentalTypesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z12FooByte32Baru6byte32" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z12FooByte64Baru6byte64" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z13FooByte128Baru7byte128" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z12SizeTypeFuncm" ) != nullptr );
 }
 
 U_TEST( FunctionTypesMangling_Test0 )
