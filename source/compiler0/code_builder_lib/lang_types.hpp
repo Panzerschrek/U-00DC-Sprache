@@ -24,7 +24,8 @@ enum class U_FundamentalType : uint8_t
 	i128_,
 	u128_,
 
-	size_type_,
+	ssize_type_, // signed, size depends on target
+	size_type_, // unsigned, size depends on target
 
 	f32_,
 	f64_,

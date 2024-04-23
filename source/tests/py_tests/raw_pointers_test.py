@@ -690,11 +690,11 @@ def RawPointersDifference_Test0():
 			unsafe
 			{
 				// Difference between pointer is divided by element size.
-				halt if( i32(ptr0 - ptr0) != 0 );
-				halt if( i32(ptr1 - ptr0) != 1 );
-				halt if( i32(ptr2 - ptr0) != 2 );
-				halt if( i32(ptr0 - ptr1) != -1 );
-				halt if( i32(ptr0 - ptr2) != -2 );
+				halt if( ptr0 - ptr0 != ssize_type(0) );
+				halt if( ptr1 - ptr0 != ssize_type(1) );
+				halt if( ptr2 - ptr0 != ssize_type(2) );
+				halt if( ptr0 - ptr1 != ssize_type(-1) );
+				halt if( ptr0 - ptr2 != ssize_type(-2) );
 
 				halt if( (ptr2 - ptr1) + (ptr1 - ptr0) != ptr2 - ptr0 );
 
@@ -705,6 +705,8 @@ def RawPointersDifference_Test0():
 
 				// Size of difference type must be equal to size of "size_type".
 				halt if( typeinfo</size_type/>.size_of != typeinfo</ typeof( ptr0 - ptr0 ) />.size_of );
+				// The exact type of pointer difference result is "ssize_type".
+				static_assert( same_type</ typeof( ptr0 - ptr0 ), ssize_type /> );
 			}
 		}
 	"""

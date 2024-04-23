@@ -3003,10 +3003,10 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				return ErrorValue();
 			}
 
-			const U_FundamentalType diff_type= fundamental_llvm_types_.size_type_->getIntegerBitWidth() == 32u ? U_FundamentalType::i32_ : U_FundamentalType::i64_;
-			llvm::Type* const diff_llvm_type= GetFundamentalLLVMType( diff_type );
-
-			result->type= FundamentalType( diff_type, diff_llvm_type );
+			// Result is special "ssize_type" - like "size_type", but signed.
+			// Its size is equal to pointer size.
+			llvm::Type* const diff_llvm_type= fundamental_llvm_types_.ssize_type_;
+			result->type= ssize_type_;
 
 			const auto element_size= data_layout_.getTypeAllocSize( ptr_type->element_type.GetLLVMType() );
 			if( element_size == 0 )

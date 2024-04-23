@@ -135,11 +135,13 @@ CodeBuilder::CodeBuilder(
 	// Use empty named structure for "void" type.
 	fundamental_llvm_types_.void_= llvm::StructType::create( llvm_context_, {}, "__U_void" );
 
+	fundamental_llvm_types_.ssize_type_= data_layout_.getIntPtrType(llvm_context_);
 	fundamental_llvm_types_.size_type_= data_layout_.getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
 	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
+	ssize_type_= FundamentalType( U_FundamentalType::ssize_type_, fundamental_llvm_types_.ssize_type_ );
 	size_type_= FundamentalType( U_FundamentalType::size_type_, fundamental_llvm_types_.size_type_ );
 
 	{
@@ -569,8 +571,6 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 				Type( FundamentalType( fundamental_type, GetFundamentalLLVMType( fundamental_type ) ) ),
 				fundamental_globals_src_loc ) );
 	}
-
-	global_names_scope.AddName( Keyword( Keywords::size_type_ ), NamesScopeValue( size_type_, fundamental_globals_src_loc ) );
 }
 
 bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
@@ -637,7 +637,7 @@ void CodeBuilder::GenerateLoop(
 	if( iteration_count == 0u )
 		return;
 
-	const auto size_type_llvm= size_type_.GetLLVMType();
+	const auto size_type_llvm= fundamental_llvm_types_.size_type_;
 	llvm::Value* const zero_value= llvm::Constant::getNullValue( size_type_llvm );
 
 	if( function_context.is_functionless_context )
@@ -1980,6 +1980,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	case U_FundamentalType::u64_ : return fundamental_llvm_types_.u64_ ;
 	case U_FundamentalType::i128_: return fundamental_llvm_types_.i128_;
 	case U_FundamentalType::u128_: return fundamental_llvm_types_.u128_;
+	case U_FundamentalType::ssize_type_: return fundamental_llvm_types_.ssize_type_;
 	case U_FundamentalType::size_type_: return fundamental_llvm_types_.size_type_;
 	case U_FundamentalType::f32_: return fundamental_llvm_types_.f32_;
 	case U_FundamentalType::f64_: return fundamental_llvm_types_.f64_;

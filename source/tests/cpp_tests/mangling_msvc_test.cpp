@@ -35,6 +35,7 @@ U_TEST( BasicFunctionManglingTest )
 		fn FooByte128Bar( byte128 x ){}
 
 		fn SizeTypeFunc( size_type s ) {}
+		fn SsizeTypeFunc( ssize_type s ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -62,6 +63,7 @@ U_TEST( BasicFunctionManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooByte128Bar@@YAXUbyte128@@@Z" ) != nullptr );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?SizeTypeFunc@@YAXK@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SsizeTypeFunc@@YAXJ@Z" ) != nullptr );
 }
 
 U_TEST( BasicGlobalVariablesManglingTest )

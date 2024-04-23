@@ -43,6 +43,11 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	type_descriptors_.i128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i128_ ) ), type_descriptors_.byte128_ );
 	type_descriptors_.u128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u128_ ) ), type_descriptors_.byte128_ );
 
+	type_descriptors_.ssize_type_=
+		md_builder_.createTBAAScalarTypeNode(
+			StringViewToStringRef( Keyword( Keywords::ssize_type_ ) ),
+			is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
+
 	type_descriptors_.size_type_=
 		md_builder_.createTBAAScalarTypeNode(
 			StringViewToStringRef( Keyword( Keywords::size_type_ ) ),
@@ -142,6 +147,7 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 	case U_FundamentalType::u64_ : return type_descriptors_.u64_ ;
 	case U_FundamentalType::i128_: return type_descriptors_.i128_;
 	case U_FundamentalType::u128_: return type_descriptors_.u128_;
+	case U_FundamentalType::ssize_type_: return type_descriptors_.ssize_type_;
 	case U_FundamentalType::size_type_: return type_descriptors_.size_type_;
 	case U_FundamentalType::f32_: return type_descriptors_.f32_;
 	case U_FundamentalType::f64_: return type_descriptors_.f64_;
