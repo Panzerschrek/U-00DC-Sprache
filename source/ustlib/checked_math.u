@@ -23,18 +23,6 @@ fn add_overflow_check_halt( u64 a, u64 b ) : u64
 	return ust_add_overflow_check_halt_u64_impl( a, b );
 }
 
-fn add_overflow_check_halt( size_type a, size_type b ) : size_type
-{
-	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
-	{
-		return size_type( add_overflow_check_halt( u32(a), u32(b) ) );
-	}
-	else
-	{
-		return size_type( add_overflow_check_halt( u64(a), u64(b) ) );
-	}
-}
-
 fn add_overflow_check_halt( ssize_type a, ssize_type b ) : ssize_type
 {
 	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
@@ -44,6 +32,18 @@ fn add_overflow_check_halt( ssize_type a, ssize_type b ) : ssize_type
 	else
 	{
 		return ssize_type( add_overflow_check_halt( i64(a), i64(b) ) );
+	}
+}
+
+fn add_overflow_check_halt( size_type a, size_type b ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( add_overflow_check_halt( u32(a), u32(b) ) );
+	}
+	else
+	{
+		return size_type( add_overflow_check_halt( u64(a), u64(b) ) );
 	}
 }
 
@@ -67,18 +67,6 @@ fn sub_overflow_check_halt( u64 a, u64 b ) : u64
 	return ust_sub_overflow_check_halt_u64_impl( a, b );
 }
 
-fn sub_overflow_check_halt( size_type a, size_type b ) : size_type
-{
-	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
-	{
-		return size_type( sub_overflow_check_halt( u32(a), u32(b) ) );
-	}
-	else
-	{
-		return size_type( sub_overflow_check_halt( u64(a), u64(b) ) );
-	}
-}
-
 fn sub_overflow_check_halt( ssize_type a, ssize_type b ) : ssize_type
 {
 	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
@@ -88,6 +76,18 @@ fn sub_overflow_check_halt( ssize_type a, ssize_type b ) : ssize_type
 	else
 	{
 		return ssize_type( sub_overflow_check_halt( i64(a), i64(b) ) );
+	}
+}
+
+fn sub_overflow_check_halt( size_type a, size_type b ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( sub_overflow_check_halt( u32(a), u32(b) ) );
+	}
+	else
+	{
+		return size_type( sub_overflow_check_halt( u64(a), u64(b) ) );
 	}
 }
 
@@ -111,18 +111,6 @@ fn mul_overflow_check_halt( u64 a, u64 b ) : u64
 	return ust_mul_overflow_check_halt_u64_impl( a, b );
 }
 
-fn mul_overflow_check_halt( size_type a, size_type b ) : size_type
-{
-	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
-	{
-		return size_type( mul_overflow_check_halt( u32(a), u32(b) ) );
-	}
-	else
-	{
-		return size_type( mul_overflow_check_halt( u64(a), u64(b) ) );
-	}
-}
-
 fn mul_overflow_check_halt( ssize_type a, ssize_type b ) : ssize_type
 {
 	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
@@ -132,6 +120,18 @@ fn mul_overflow_check_halt( ssize_type a, ssize_type b ) : ssize_type
 	else
 	{
 		return ssize_type( mul_overflow_check_halt( i64(a), i64(b) ) );
+	}
+}
+
+fn mul_overflow_check_halt( size_type a, size_type b ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( mul_overflow_check_halt( u32(a), u32(b) ) );
+	}
+	else
+	{
+		return size_type( mul_overflow_check_halt( u64(a), u64(b) ) );
 	}
 }
 
