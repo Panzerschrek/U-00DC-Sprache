@@ -14,8 +14,6 @@ template<//> type get_unsigned_type</  i32 /> =  u32;
 template<//> type get_unsigned_type</  i64 /> =  u64;
 template<//> type get_unsigned_type</ i128 /> = u128;
 
-type ptr_diff_type= get_signed_type</ size_type />;
-
 template</ type A, type B />
 fn is_parent_for() : bool
 {
