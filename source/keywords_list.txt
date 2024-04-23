@@ -80,6 +80,7 @@ byte1024
 byte2048
 byte4096
 size_type
+ssize_type
 true
 false
 mut
