@@ -22,6 +22,9 @@ enum U_FundamentalType
 	i128_,
 	u128_,
 
+	size_type_,
+	ssize_type_,
+
 	f32_,
 	f64_,
 

@@ -866,6 +866,9 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 		if( llvm_value != LLVMValueRef::Null )
 		{
+			var u32 src_size= GetFundamentalTypeSize( src_type.fundamental_type );
+			var u32 dst_size= GetFundamentalTypeSize( dst_type.fundamental_type );
+
 			unsafe
 			{
 				if( src_type.fundamental_type == dst_type.fundamental_type )
@@ -873,7 +876,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				else if( IsInteger( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) )
 				{
 					// int to int
-					if( src_type.GetSize() < dst_type.GetSize() )
+					if( src_size < dst_size )
 					{
 						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
 						if( IsUnsignedInteger( dst_type.fundamental_type ) )
@@ -885,7 +888,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 							llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 						}
 					}
-					else if( src_type.GetSize() > dst_type.GetSize() )
+					else if( src_size > dst_size )
 					{
 						llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
@@ -894,11 +897,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				else if( IsFloatingPoint( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) )
 				{
 					// float to float
-					if( src_type.GetSize() < dst_type.GetSize() )
+					if( src_size < dst_size )
 					{
 						llvm_value= LLVMBuildFPExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
-					else if( src_type.GetSize() > dst_type.GetSize() )
+					else if( src_size > dst_size )
 					{
 						llvm_value= LLVMBuildFPTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
@@ -931,11 +934,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				else if( IsChar( dst_type.fundamental_type ) && ( IsInteger( src_type.fundamental_type ) || IsChar( src_type.fundamental_type ) ) )
 				{
 					// int to char or char to char
-					if( src_type.GetSize() < dst_type.GetSize() )
+					if( src_size < dst_size )
 					{
 						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
-					else if( src_type.GetSize() > dst_type.GetSize() )
+					else if( src_size > dst_size )
 					{
 						llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
@@ -943,7 +946,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				else if( IsInteger( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) )
 				{
 					// char to int
-					if( src_type.GetSize() < dst_type.GetSize() )
+					if( src_size < dst_size )
 					{
 						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
 						if( IsUnsignedInteger( dst_type.fundamental_type ) )
@@ -955,27 +958,27 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 							llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 						}
 					}
-					else if( src_type.GetSize() > dst_type.GetSize() )
+					else if( src_size > dst_size )
 					{
 						llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
 					else{} // Same size - do nothing
 				}
-				else if( src_type.GetSize() == dst_type.GetSize() && (
+				else if( src_size== dst_size && (
 					( IsByte( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) ) ||
 					( IsInteger( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
 				{
 					// Perform int -> bytes or bytes -> int conversion.
 					// Do nothing, because internally bytes and int of same size is same type.
 				}
-				else if( src_type.GetSize() == dst_type.GetSize() && (
+				else if( src_size == dst_size && (
 					( IsByte( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) ) ||
 					( IsChar( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
 				{
 					// Perform char -> bytes or bytes -> char conversion.
 					// Do nothing, because internally bytes and char of same size is same type.
 				}
-				else if( src_type.GetSize() == dst_type.GetSize() && (
+				else if( src_size == dst_size && (
 					( IsByte( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) ) ||
 					( IsFloatingPoint( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
 				{

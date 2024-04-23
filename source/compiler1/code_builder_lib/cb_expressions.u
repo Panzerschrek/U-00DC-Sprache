@@ -1548,18 +1548,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				unsafe
 				{
 					auto mut index_value_for_compare= index_value;
-					auto index_type_size= index_fundamental_type.GetSize();
-					auto size_type_size= size_type_.GetFundamentalType().try_deref().GetSize();
+					auto index_type_size= GetFundamentalTypeSize( index_fundamental_type.fundamental_type );
+					auto size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
 					if( index_type_size > size_type_size )
 					{
-						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, g_null_string );
+						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.size_type_, g_null_string );
 					}
 					else if( index_type_size < size_type_size )
 					{
-						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, g_null_string );
+						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.size_type_, g_null_string );
 					}
 
-					auto size_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, variable_array_type.element_count, LLVMBool::False );
+					auto size_value= LLVMConstInt( fundamental_llvm_types_.size_type_, variable_array_type.element_count, LLVMBool::False );
 					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value_for_compare, size_value, g_null_string );
 					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
@@ -2515,7 +2515,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
 		}
 
-		var u32 pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
+		var u32 pointer_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
 		var u32 mut int_size(0);
 
 		var LLVMValueRef mut ptr_value= LLVMValueRef::Null, mut index_value= LLVMValueRef::Null;
@@ -2529,7 +2529,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 			int_type= r_fundamental_type.try_deref().fundamental_type;
-			int_size= r_fundamental_type.try_deref().GetSize();
+			int_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type );
 
 			result.t= l_type;
 			ptr_value= l_in_register;
@@ -2543,7 +2543,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 			int_type= l_fundamental_type.try_deref().fundamental_type;
-			int_size= l_fundamental_type.try_deref().GetSize();
+			int_size= GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type );
 
 			result.t= r_type;
 			ptr_value= r_in_register;
@@ -2606,8 +2606,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		var u32 pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
-		var U_FundamentalType diff_type= select( pointer_size == 4u ? U_FundamentalType::i32_ : U_FundamentalType::i64_ );
+		var U_FundamentalType diff_type= U_FundamentalType::ssize_type_;
 		var LLVMTypeRef diff_llvm_type= GetFundamentalLLVMType( diff_type );
 
 		result.t= FundamentalType( diff_type, diff_llvm_type );
@@ -2653,8 +2652,8 @@ fn CodeBuilder::BuildBinaryOperator(
 		var U_FundamentalType int_type= r_fundamental_type.try_deref().fundamental_type;
 
 		var u32
-			int_size= r_fundamental_type.try_deref().GetSize(),
-			pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
+			int_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type ),
+			pointer_size= GetFundamentalTypeSize( size_type_.GetFundamentalType().try_deref().fundamental_type );
 
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{
@@ -2712,7 +2711,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.try_deref().GetSize() < 4u )
+		if( GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type ) < 4u )
 		{
 			// Operation supported only for 32 and 64bit operands
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
@@ -2873,14 +2872,16 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
+			var u32 l_size= GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type );
+			var u32 r_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type );
 			unsafe
 			{
 				// Convert value of shift to type of shifted value. LLVM Reuqired this.
-				if( r_fundamental_type.try_deref().GetSize() > l_fundamental_type.try_deref().GetSize() )
+				if( r_size > l_size )
 				{
 					r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
 				}
-				else if( r_fundamental_type.try_deref().GetSize() < l_fundamental_type.try_deref().GetSize() )
+				else if( r_size < l_size )
 				{
 					r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
 				}
@@ -2892,7 +2893,7 @@ fn CodeBuilder::BuildBinaryOperator(
 						r_value_for_op,
 						LLVMConstInt(
 							l_type.GetLLVMType(),
-							u64(l_fundamental_type.try_deref().GetSize()) * 8u64 - 1u64,
+							u64(l_size) * 8u64 - 1u64,
 							LLVMBool::False ),
 						g_null_string );
 

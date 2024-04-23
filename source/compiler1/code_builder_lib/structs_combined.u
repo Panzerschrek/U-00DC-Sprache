@@ -160,26 +160,6 @@ fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMType
 	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
 {}
 
-fn FundamentalType::GetSize(this) : u32
-{
-	switch(fundamental_type)
-	{
-		U_FundamentalType::InvalidType -> { return 0u; },
-		U_FundamentalType::void_ -> { return 0u; },
-		U_FundamentalType::bool_ -> { return 1u; },
-		U_FundamentalType::i8_  , U_FundamentalType::u8_  , U_FundamentalType::byte8_   -> { return  1u; },
-		U_FundamentalType::i16_ , U_FundamentalType::u16_ , U_FundamentalType::byte16_  -> { return  2u; },
-		U_FundamentalType::i32_ , U_FundamentalType::u32_ , U_FundamentalType::byte32_  -> { return  4u; },
-		U_FundamentalType::i64_ , U_FundamentalType::u64_ , U_FundamentalType::byte64_  -> { return  8u; },
-		U_FundamentalType::i128_, U_FundamentalType::u128_, U_FundamentalType::byte128_ -> { return 16u; },
-		U_FundamentalType::f32_ -> { return 4u; },
-		U_FundamentalType::f64_ -> { return 8u; },
-		U_FundamentalType::char8_  -> { return 1u; },
-		U_FundamentalType::char16_ -> { return 2u; },
-		U_FundamentalType::char32_ -> { return 4u; },
-	}
-}
-
 op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
 {
 	return l.fundamental_type == r.fundamental_type;

@@ -322,7 +322,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 	if( virtual_table_struct_fields.empty() )
 	{
 		// No parents - create special fields - base offset, type id, etc.
-		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.size_type_ ); // Offset field.
 		virtual_table_struct_fields.push_back( unsafe( LLVMPointerType( polymorph_type_id_table_element_type_, 0u ) ) );  // type_id field
 	}
 
@@ -385,7 +385,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 			var u64 offset= LLVMOffsetOfElement( data_layout_, class_.llvm_type, parent.field_number );
 			var [ LLVMValueRef, 2 ] mut element_initializers
 			[
-				LLVMConstInt( fundamental_llvm_types_.int_ptr, offset, LLVMBool::False ),
+				LLVMConstInt( fundamental_llvm_types_.size_type_, offset, LLVMBool::False ),
 				first_element_address,
 			];
 
@@ -453,7 +453,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 		if( initializer_values.empty() )
 		{
 			// offset
-			initializer_values.push_back( LLVMConstInt( fundamental_llvm_types_.int_ptr, offset, LLVMBool::False ) );
+			initializer_values.push_back( LLVMConstInt( fundamental_llvm_types_.size_type_, offset, LLVMBool::False ) );
 
 			// Type id
 			auto dummy_function_context= CreateGlobalFunctionContext();
@@ -765,7 +765,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		auto offset_type= size_type_;
 		auto offset= CreateTypedLoad( function_context, offset_type, offset_ptr );
 
-		auto this_ptr_as_int= unsafe( LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.int_ptr, g_null_string ) );
+		auto this_ptr_as_int= unsafe( LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.size_type_, g_null_string ) );
 		auto this_sub_offset= unsafe( LLVMBuildSub( function_context.llvm_ir_builder, this_ptr_as_int, offset, g_null_string ) );
 		this_casted.llvm_value= unsafe( LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), g_null_string ) );
 	}

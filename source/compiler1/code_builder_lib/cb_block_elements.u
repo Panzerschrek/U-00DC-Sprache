@@ -1593,7 +1593,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 	else if_var( &fundamental_type : switch_type.GetFundamentalType() )
 	{
-		var u32 size_in_bits= fundamental_type.GetSize() * 8u;
+		var u32 size_in_bits= GetFundamentalTypeSize( fundamental_type.fundamental_type ) * 8u;
 		if( size_in_bits > 64u )
 		{
 			REPORT_ERROR(

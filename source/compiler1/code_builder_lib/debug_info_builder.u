@@ -322,7 +322,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMeta
 	return unsafe( LLVMDIBuilderCreateBasicType(
 		builder_,
 		type_name.data(), type_name.size(),
-		u64( t.GetSize() * 8u ),
+		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 		encoding,
 		0u ) );
 }

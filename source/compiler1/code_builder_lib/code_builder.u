@@ -59,6 +59,8 @@ fn CodeBuilder::constructor(
 			.u64_ = unsafe( LLVMInt64TypeInContext ( llvm_context_ ) ),
 			.i128_= unsafe( LLVMInt128TypeInContext( llvm_context_ ) ),
 			.u128_= unsafe( LLVMInt128TypeInContext( llvm_context_ ) ),
+			.ssize_type_= unsafe( LLVMIntPtrTypeInContext( llvm_context_, data_layout_ ) ),
+			.size_type_ = unsafe( LLVMIntPtrTypeInContext( llvm_context_, data_layout_ ) ),
 			.f32_ = unsafe( LLVMFloatTypeInContext ( llvm_context_ ) ),
 			.f64_ = unsafe( LLVMDoubleTypeInContext ( llvm_context_ ) ),
 			.char8_ = unsafe( LLVMInt8TypeInContext ( llvm_context_ ) ),
@@ -73,15 +75,12 @@ fn CodeBuilder::constructor(
 			.void_for_ret_= unsafe( LLVMVoidTypeInContext( llvm_context_ ) ),
 			.void_= unsafe( LLVMStructCreateNamed( llvm_context_, "__U_void\0"[0] ) ),
 			.bool_= unsafe( LLVMInt1TypeInContext( llvm_context_ ) ),
-			.int_ptr= unsafe( LLVMIntPtrTypeInContext( llvm_context_, data_layout_ ) ),
 		},
 		invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ),
 		void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ ),
 		bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ ),
-		size_type_= select(
-			unsafe( LLVMGetIntTypeWidth( fundamental_llvm_types_.int_ptr ) ) == 32u
-				? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
-				: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) ),
+		ssize_type_= FundamentalType( U_FundamentalType::ssize_type_, fundamental_llvm_types_.ssize_type_ ),
+		size_type_ = FundamentalType( U_FundamentalType::size_type_ , fundamental_llvm_types_.size_type_  ),
 		// A pair of chars.
 		// First - number of param from '0' up to '9'.
 		// Second - '_' for reference param or letters from 'a' up to 'z' for inner reference tags.
@@ -110,7 +109,7 @@ fn CodeBuilder::constructor(
 	{
 		var [ LLVMTypeRef, 2 ] mut elements
 		[
-			fundamental_llvm_types_.int_ptr,
+			fundamental_llvm_types_.size_type_,
 			LLVMPointerType( polymorph_type_id_table_element_type_, 0u ),
 		];
 		LLVMStructSetBody( polymorph_type_id_table_element_type_, $<(elements[0]), 2u, LLVMBool::False );
@@ -150,7 +149,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 	{
 		// Use some temporary names for allocation functions.
 		// Do this in order to avoid collisions with user-defined names.
-		var LLVMTypeRef mut malloc_size_type= fundamental_llvm_types_.int_ptr;
+		var LLVMTypeRef mut malloc_size_type= fundamental_llvm_types_.size_type_;
 		var LLVMTypeRef mut malloc_result_type= unsafe( LLVMPointerType( fundamental_llvm_types_.u8_, 0u ) );
 
 		malloc_function_= LLVMAddFunction(
@@ -190,7 +189,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		coro_.id= GetIntrinsic( "llvm.coro.id", ust::empty_range );
 		coro_.alloc= GetIntrinsic( "llvm.coro.alloc", ust::empty_range );
 		coro_.free= GetIntrinsic( "llvm.coro.free", ust::empty_range );
-		coro_.size= GetIntrinsic( "llvm.coro.size", ust::make_array( fundamental_llvm_types_.int_ptr ) );
+		coro_.size= GetIntrinsic( "llvm.coro.size", ust::make_array( fundamental_llvm_types_.size_type_ ) );
 
 		coro_.begin= GetIntrinsic( "llvm.coro.begin", ust::empty_range );
 		coro_.end= GetIntrinsic( "llvm.coro.end", ust::empty_range );
@@ -423,7 +422,7 @@ fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 {
-	var [ tup[ Keyword, U_FundamentalType ], 22 ] constexpr types_table
+	var [ tup[ Keyword, U_FundamentalType ], 24 ] constexpr types_table
 	[
 		[ Keyword::void_, U_FundamentalType::void_ ],
 		[ Keyword::bool_, U_FundamentalType::bool_ ],
@@ -437,6 +436,8 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 		[ Keyword::u64_ , U_FundamentalType::u64_  ],
 		[ Keyword::i128_, U_FundamentalType::i128_ ],
 		[ Keyword::u128_, U_FundamentalType::u128_ ],
+		[ Keyword::ssize_type_, U_FundamentalType::ssize_type_ ],
+		[ Keyword::size_type_ , U_FundamentalType::size_type_  ],
 		[ Keyword::f32_ , U_FundamentalType::f32_  ],
 		[ Keyword::f64_ , U_FundamentalType::f64_  ],
 		[ Keyword::char8_ , U_FundamentalType::char8_  ],
@@ -453,8 +454,6 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	{
 		names_scope.AddName( KeywordToString( el[0] ), Type( FundamentalType( el[1], GetFundamentalLLVMType(el[1]) ) ) );
 	}
-
-	names_scope.AddName( KeywordToString(Keyword::size_type_), size_type_ );
 }
 
 fn CodeBuilder::PrepareFunction(
@@ -2559,6 +2558,8 @@ fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRe
 		U_FundamentalType::u64_		-> { return fundamental_llvm_types_.u64_	; },
 		U_FundamentalType::i128_	-> { return fundamental_llvm_types_.i128_; },
 		U_FundamentalType::u128_	-> { return fundamental_llvm_types_.u128_; },
+		U_FundamentalType::ssize_type_	-> { return fundamental_llvm_types_.ssize_type_; },
+		U_FundamentalType::size_type_	-> { return fundamental_llvm_types_.size_type_ ; },
 		U_FundamentalType::f32_		-> { return fundamental_llvm_types_.f32_; },
 		U_FundamentalType::f64_		-> { return fundamental_llvm_types_.f64_; },
 		U_FundamentalType::char8_	-> { return fundamental_llvm_types_.char8_ ; },
@@ -2569,6 +2570,29 @@ fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRe
 		U_FundamentalType::byte32_	-> { return fundamental_llvm_types_.byte32_ ; },
 		U_FundamentalType::byte64_	-> { return fundamental_llvm_types_.byte64_ ; },
 		U_FundamentalType::byte128_	-> { return fundamental_llvm_types_.byte128_; },
+	}
+}
+
+fn CodeBuilder::GetFundamentalTypeSize( this, U_FundamentalType t ) : u32
+{
+	// Handle here all cases except size_type and ssize_type, which have veraible size.
+	switch(t)
+	{
+		U_FundamentalType::InvalidType -> { return 0u; },
+		U_FundamentalType::void_ -> { return 0u; },
+		U_FundamentalType::bool_ -> { return 1u; },
+		U_FundamentalType::i8_  , U_FundamentalType::u8_  , U_FundamentalType::byte8_   -> { return  1u; },
+		U_FundamentalType::i16_ , U_FundamentalType::u16_ , U_FundamentalType::byte16_  -> { return  2u; },
+		U_FundamentalType::i32_ , U_FundamentalType::u32_ , U_FundamentalType::byte32_  -> { return  4u; },
+		U_FundamentalType::i64_ , U_FundamentalType::u64_ , U_FundamentalType::byte64_  -> { return  8u; },
+		U_FundamentalType::i128_, U_FundamentalType::u128_, U_FundamentalType::byte128_ -> { return 16u; },
+		U_FundamentalType::ssize_type_ -> { return u32( unsafe( LLVMABISizeOfType( data_layout_, fundamental_llvm_types_.ssize_type_ ) ) ); },
+		U_FundamentalType::size_type_  -> { return u32( unsafe( LLVMABISizeOfType( data_layout_, fundamental_llvm_types_.size_type_  ) ) ); },
+		U_FundamentalType::f32_ -> { return 4u; },
+		U_FundamentalType::f64_ -> { return 8u; },
+		U_FundamentalType::char8_  -> { return 1u; },
+		U_FundamentalType::char16_ -> { return 2u; },
+		U_FundamentalType::char32_ -> { return 4u; },
 	}
 }
 

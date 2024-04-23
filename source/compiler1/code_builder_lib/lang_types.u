@@ -11,7 +11,8 @@ fn IsUnsignedInteger( U_FundamentalType t ) : bool
 		t == U_FundamentalType::u16_ ||
 		t == U_FundamentalType::u32_ ||
 		t == U_FundamentalType::u64_ ||
-		t == U_FundamentalType::u128_;
+		t == U_FundamentalType::u128_ ||
+		t == U_FundamentalType::size_type_;
 }
 
 fn IsSignedInteger( U_FundamentalType t ) : bool
@@ -21,7 +22,8 @@ fn IsSignedInteger( U_FundamentalType t ) : bool
 		t == U_FundamentalType::i16_ ||
 		t == U_FundamentalType::i32_ ||
 		t == U_FundamentalType::i64_ ||
-		t == U_FundamentalType::i128_;
+		t == U_FundamentalType::i128_ ||
+		t == U_FundamentalType::ssize_type_;
 }
 
 fn IsInteger( U_FundamentalType t ) : bool
@@ -76,6 +78,8 @@ fn GetFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 		U_FundamentalType::u64_		-> { return KeywordToString( Keyword::u64_	); },
 		U_FundamentalType::i128_	-> { return KeywordToString( Keyword::i128_	); },
 		U_FundamentalType::u128_	-> { return KeywordToString( Keyword::u128_	); },
+		U_FundamentalType::ssize_type_-> { return KeywordToString( Keyword::ssize_type_ ); },
+		U_FundamentalType::size_type_ -> { return KeywordToString( Keyword::size_type_  ); },
 		U_FundamentalType::f32_		-> { return KeywordToString( Keyword::f32_	); },
 		U_FundamentalType::f64_		-> { return KeywordToString( Keyword::f64_	); },
 		U_FundamentalType::char8_	-> { return KeywordToString( Keyword::char8_ ); },
@@ -105,6 +109,8 @@ fn GetFundamentalTypeByName( ust::string_view8 name ) : U_FundamentalType
 	if( name == KeywordToString( Keyword::u128_ ) ) { return U_FundamentalType::u128_; }
 	if( name == KeywordToString( Keyword::f32_ ) ) { return U_FundamentalType::f32_; }
 	if( name == KeywordToString( Keyword::f64_ ) ) { return U_FundamentalType::f64_; }
+	if( name == KeywordToString( Keyword::ssize_type_ ) ) { return U_FundamentalType::ssize_type_; }
+	if( name == KeywordToString( Keyword::size_type_  ) ) { return U_FundamentalType::size_type_ ; }
 	if( name == KeywordToString( Keyword::char8_  ) ) { return U_FundamentalType::char8_ ; }
 	if( name == KeywordToString( Keyword::char16_ ) ) { return U_FundamentalType::char16_; }
 	if( name == KeywordToString( Keyword::char32_ ) ) { return U_FundamentalType::char32_; }

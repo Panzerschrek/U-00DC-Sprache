@@ -359,6 +359,8 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 		U_FundamentalType::u64_		-> { return "y"; },
 		U_FundamentalType::i128_	-> { return "n"; },
 		U_FundamentalType::u128_	-> { return "o"; },
+		U_FundamentalType::ssize_type_-> { return "l"; },
+		U_FundamentalType::size_type_ -> { return "m"; },
 		U_FundamentalType::f32_		-> { return "f"; },
 		U_FundamentalType::f64_		-> { return "d"; },
 		U_FundamentalType::char8_	-> { return "c"; },

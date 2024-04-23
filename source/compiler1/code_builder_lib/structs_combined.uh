@@ -38,8 +38,6 @@ struct FundamentalType
 	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
 
 	op==( FundamentalType& l, FundamentalType& r ) : bool;
-
-	fn GetSize(this) : u32;
 }
 
 struct ArrayType
