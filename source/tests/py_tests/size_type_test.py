@@ -228,3 +228,61 @@ def SsizeTypeIsDistinct_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
+
+
+def SizeTypesConversions_Test0():
+	c_program_text= """
+		// Unsigned integer to size_type.
+		var u32 x(67), y(3249720402);
+		var size_type xs(x), ys(y);
+		static_assert(xs == 67s);
+		static_assert(ys == 3249720402s);
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SizeTypesConversions_Test1():
+	c_program_text= """
+		// Signed integer to size_type.
+		var i32 x(67), y(-33);
+		var size_type xs(x), ys(y);
+		static_assert(xs == 67s);
+		// Should overflow in case of negative value.
+		static_assert(ys == size_type(0u32 - 33u32) || ys == size_type(0u64 - 33u64));
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SizeTypesConversions_Test2():
+	c_program_text= """
+		// Unsigned integer to ssize_type.
+		var u32 x(67), y(3249720402);
+		var ssize_type xs(x), ys(y);
+		static_assert(xs == ssize_type(67));
+		// May overflow in case if ssize_type is 32 bit.
+		static_assert(ys == ssize_type(i32(3249720402)) || ys == ssize_type(i64(3249720402)));
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SizeTypesConversions_Test3():
+	c_program_text= """
+		// Signed integer to ssize_type.
+		var i32 x(67), y(-33);
+		var ssize_type xs(x), ys(y);
+		static_assert(xs == ssize_type(67));
+		// Should not overflow.
+		static_assert(ys == ssize_type(-33));
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SizeTypesConversions_Test4():
+	c_program_text= """
+		// size_type to ssize_type and backwards.
+		auto a= 765745s;
+		var ssize_type b(a);
+		var size_type c(b);
+		static_assert(c == a);
+	"""
+	tests_lib.build_program( c_program_text )
