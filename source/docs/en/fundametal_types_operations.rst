@@ -47,6 +47,7 @@ Signed integer types:
 * ``i32``
 * ``i64``
 * ``i128``
+* ``ssize_type``
 
 Unsigned integer types:
 
@@ -55,6 +56,7 @@ Unsigned integer types:
 * ``u32``
 * ``u64``
 * ``u128``
+* ``size_type``
 
 Numeric suffix of the type name means its size in bits.
 
@@ -103,9 +105,12 @@ The most right bits are missing, the most left bits are replaced by 0 (for unsig
 *size_type*
 ***********
 
-``size_type`` is a built-in alias for one of unsigned integer types.
-It aliases to a type with size equal to size of pointer on the target platform.
-It is used in containers code, for indexing, etc.
+``size_type`` is an unsigned integer type, distinct from other unsigned integers.
+Its size is equal to pointer size and thus depends on the target architecture.
+Its internal represenation is the same as one of unsigned integer types with the same size.
+
+``ssize_type`` is like ``size_type``, but it is signed.
+The result of raw pointer differense has this type.
 
 ************
 *char types*

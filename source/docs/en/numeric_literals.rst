@@ -55,7 +55,7 @@ A name of any fundamental type may be used as type suffix.
 There are also additional type suffixes:
 
 * ``u`` - suffix for ``u32`` type.
-* ``s`` - suffix for ``size_type`` type alias.
+* ``s`` - suffix for ``size_type`` type.
 * ``f`` - suffix for ``f32`` type.
 * ``c8`` - suffix for ``char8`` type.
 * ``c16`` - suffix for ``char16`` type.
