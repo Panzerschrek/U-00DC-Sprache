@@ -2575,7 +2575,7 @@ fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRe
 
 fn CodeBuilder::GetFundamentalTypeSize( this, U_FundamentalType t ) : u32
 {
-	// Handle here all cases except size_type and ssize_type, which have veraible size.
+	// Handle here all cases except size_type and ssize_type, which have variable size.
 	switch(t)
 	{
 		U_FundamentalType::InvalidType -> { return 0u; },

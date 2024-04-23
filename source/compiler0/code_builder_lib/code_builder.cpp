@@ -2002,7 +2002,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 uint64_t CodeBuilder::GetFundamentalTypeSize( const U_FundamentalType fundamental_type )
 {
-	// Handle here all cases except size_type and ssize_type, which have veraible size.
+	// Handle here all cases except size_type and ssize_type, which have variable size.
 	switch(fundamental_type)
 	{
 	case U_FundamentalType::InvalidType: return 0u;
