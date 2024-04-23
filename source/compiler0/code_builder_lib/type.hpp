@@ -50,7 +50,6 @@ struct FundamentalType final
 	llvm::Type* llvm_type;
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::void_, llvm::Type* llvm_type= nullptr );
-	uint64_t GetSize() const;
 };
 
 bool operator==( const FundamentalType& l, const FundamentalType& r );

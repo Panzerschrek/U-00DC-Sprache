@@ -260,7 +260,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr class_type )
 	if( virtual_table_struct_fields.empty() )
 	{
 		// No parents - create special fields - base offset, type id, etc.
-		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field. Always use "size_type" here.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.size_type_ ); // Offset field. Always use "size_type" here.
 		virtual_table_struct_fields.push_back( polymorph_type_id_table_element_type_->getPointerTo() ); // type_id field
 	}
 
@@ -308,7 +308,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			polymorph_type_id_table_element_type_,
 			{
 				llvm::ConstantInt::get(
-					fundamental_llvm_types_.int_ptr,
+					fundamental_llvm_types_.size_type_,
 					class_data_layout->getElementOffset( parent.field_number ) ),
 				first_element_address,
 			} );
@@ -368,7 +368,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 	if( initializer_values.empty() )
 	{
 		// offset
-		initializer_values.push_back( llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, offset ) );
+		initializer_values.push_back( llvm::ConstantInt::get( fundamental_llvm_types_.size_type_, offset ) );
 
 		// Type id
 		// Take address of first element of type id table.
@@ -555,7 +555,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 				GetFieldGEPIndex(c_offset_field_number) );
 		llvm::Value* const offset= CreateTypedLoad( function_context, size_type_, offset_ptr );
 
-		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted->llvm_value, fundamental_llvm_types_.int_ptr );
+		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted->llvm_value, fundamental_llvm_types_.size_type_ );
 		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
 		this_casted->llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted->type.GetLLVMType()->getPointerTo() );
 	}

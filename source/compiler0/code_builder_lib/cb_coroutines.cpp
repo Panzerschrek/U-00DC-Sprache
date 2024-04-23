@@ -301,7 +301,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_alloc );
 
 	llvm::CallInst* const coro_frame_size= function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_size, { fundamental_llvm_types_.int_ptr } ),
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_size, { fundamental_llvm_types_.size_type_ } ),
 		{},
 		"coro_frame_size" );
 	coro_frame_size->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );

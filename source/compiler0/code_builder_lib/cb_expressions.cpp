@@ -313,8 +313,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// If index is not constant - check bounds.
 		if( index->constexpr_value == nullptr && !function_context.is_functionless_context )
 		{
-			const uint64_t index_size= index_fundamental_type->GetSize();
-			const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
+			const uint64_t index_size= GetFundamentalTypeSize( index_fundamental_type->fundamental_type );
+			const uint64_t size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
 			if( index_size > size_type_size )
 				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
 			else if( index_size < size_type_size )
@@ -1368,7 +1368,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( const auto constant_data_array = llvm::dyn_cast<llvm::ConstantDataArray>(initializer) )
 			md5.update( constant_data_array->getRawDataValues() );
 		else if( llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) != nullptr )
-			md5.update( std::string( size_t(array_size * FundamentalType( char_type ).GetSize()), '\0' ) );
+			md5.update( std::string( size_t(array_size * GetFundamentalTypeSize(char_type) ), '\0' ) );
 		md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
 		llvm::MD5::MD5Result md5_result;
 		md5.final(md5_result);
@@ -2502,7 +2502,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else
 		{
-			if( l_fundamental_type->GetSize() < 4u )
+			if( GetFundamentalTypeSize( l_fundamental_type->fundamental_type ) < 4u )
 			{
 				// Operation supported only for 32 and 64bit operands
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_type );
@@ -2835,8 +2835,8 @@ Value CodeBuilder::BuildBinaryOperator(
 
 			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-				const uint64_t l_type_size= l_fundamental_type->GetSize();
-				const uint64_t r_type_size= r_fundamental_type->GetSize();
+				const uint64_t l_type_size= GetFundamentalTypeSize( l_fundamental_type->fundamental_type );
+				const uint64_t r_type_size= GetFundamentalTypeSize( r_fundamental_type->fundamental_type );
 
 				llvm::Value* r_value_converted= r_value_for_op;
 
@@ -2920,7 +2920,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 	if( binary_operator == BinaryOperatorType::Add )
 	{
-		const uint64_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
+		const uint64_t ptr_size= fundamental_llvm_types_.size_type_->getIntegerBitWidth() / 8;
 		uint64_t int_size= 0u;
 		U_FundamentalType int_type= U_FundamentalType::InvalidType;
 
@@ -2929,7 +2929,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 		if( const auto l_fundamental_type= l_var.type.GetFundamentalType() )
 		{
-			int_size= l_fundamental_type->GetSize();
+			int_size= GetFundamentalTypeSize( l_fundamental_type->fundamental_type );
 			int_type= l_fundamental_type->fundamental_type;
 			index_value= l_value_for_op;
 
@@ -2939,7 +2939,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 		}
 		else if( const auto r_fundamental_type= r_var.type.GetFundamentalType() )
 		{
-			int_size= r_fundamental_type->GetSize();
+			int_size= GetFundamentalTypeSize( r_fundamental_type->fundamental_type );
 			int_type= r_fundamental_type->fundamental_type;
 			index_value= r_value_for_op;
 
@@ -2971,9 +2971,9 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			if( int_size < ptr_size )
 			{
 				if( IsSignedInteger( int_type ) )
-					index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
+					index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.size_type_ );
 				else
-					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.size_type_ );
 			}
 			result->llvm_value= function_context.llvm_ir_builder.CreateInBoundsGEP( element_type.GetLLVMType(), ptr_value, index_value );
 		}
@@ -3003,7 +3003,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				return ErrorValue();
 			}
 
-			const U_FundamentalType diff_type= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u ? U_FundamentalType::i32_ : U_FundamentalType::i64_;
+			const U_FundamentalType diff_type= fundamental_llvm_types_.size_type_->getIntegerBitWidth() == 32u ? U_FundamentalType::i32_ : U_FundamentalType::i64_;
 			llvm::Type* const diff_llvm_type= GetFundamentalLLVMType( diff_type );
 
 			result->type= FundamentalType( diff_type, diff_llvm_type );
@@ -3029,8 +3029,8 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 		{
 			// Subtract integer from pointer.
 
-			const uint64_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
-			const uint64_t int_size= r_fundamental_type->GetSize();
+			const uint64_t ptr_size= fundamental_llvm_types_.size_type_->getIntegerBitWidth() / 8;
+			const uint64_t int_size= GetFundamentalTypeSize( r_fundamental_type->fundamental_type );
 
 			if( !IsInteger( r_fundamental_type->fundamental_type ) || int_size > ptr_size )
 			{
@@ -3046,9 +3046,9 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				if( int_size < ptr_size )
 				{
 					if( IsSignedInteger( r_fundamental_type->fundamental_type ) )
-						index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
+						index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.size_type_ );
 					else
-						index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+						index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.size_type_ );
 				}
 				llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
 				result->llvm_value= function_context.llvm_ir_builder.CreateInBoundsGEP( ptr_type->element_type.GetLLVMType(), l_value_for_op, index_value_negative );

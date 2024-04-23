@@ -232,7 +232,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
 
 	return builder_->createBasicType(
 		StringViewToStringRef( GetFundamentalTypeName(type.fundamental_type) ),
-		type.GetSize() * 8u,
+		data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
 		type_encoding );
 }
 
@@ -388,7 +388,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 			type->members.GetThisNamespaceName(),
 			di_file,
 			0u, // TODO - src_loc
-			8u * type->underlying_type.GetSize(),
+			data_layout_.getTypeAllocSizeInBits( type->underlying_type.llvm_type ),
 			uint32_t(data_layout_.getABITypeAlignment( type->underlying_type.llvm_type )),
 			builder_->getOrCreateArray(elements),
 			CreateDIType( type->underlying_type ) );

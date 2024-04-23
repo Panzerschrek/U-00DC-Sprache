@@ -135,15 +135,12 @@ CodeBuilder::CodeBuilder(
 	// Use empty named structure for "void" type.
 	fundamental_llvm_types_.void_= llvm::StructType::create( llvm_context_, {}, "__U_void" );
 
-	fundamental_llvm_types_.int_ptr= data_layout_.getIntPtrType(llvm_context_);
+	fundamental_llvm_types_.size_type_= data_layout_.getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
 	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
-	size_type_=
-		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
-		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
-		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
+	size_type_= FundamentalType( U_FundamentalType::size_type_, fundamental_llvm_types_.size_type_ );
 
 	{
 		// A pair of chars.
@@ -171,7 +168,7 @@ CodeBuilder::CodeBuilder(
 		polymorph_type_id_table_element_type_= llvm::StructType::create( llvm_context_, "__U_polymorph_type_id_table_element" );
 		llvm::Type* const elements[]
 		{
-			fundamental_llvm_types_.int_ptr, // Parent class offset.
+			fundamental_llvm_types_.size_type_, // Parent class offset.
 			polymorph_type_id_table_element_type_->getPointerTo(), // Pointer to parent class type_id table.
 		};
 		polymorph_type_id_table_element_type_->setBody( elements );
@@ -234,7 +231,7 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 			llvm::Function::Create(
 					llvm::FunctionType::get(
 						ptr_type,
-						{ fundamental_llvm_types_.int_ptr },
+						{ fundamental_llvm_types_.size_type_ },
 						false ),
 					llvm::Function::ExternalLinkage,
 					"__U_ust_memory_allocate_impl",
@@ -1983,6 +1980,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	case U_FundamentalType::u64_ : return fundamental_llvm_types_.u64_ ;
 	case U_FundamentalType::i128_: return fundamental_llvm_types_.i128_;
 	case U_FundamentalType::u128_: return fundamental_llvm_types_.u128_;
+	case U_FundamentalType::size_type_: return fundamental_llvm_types_.size_type_;
 	case U_FundamentalType::f32_: return fundamental_llvm_types_.f32_;
 	case U_FundamentalType::f64_: return fundamental_llvm_types_.f64_;
 	case U_FundamentalType::char8_ : return fundamental_llvm_types_.char8_ ;
@@ -1999,6 +1997,11 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+uint64_t CodeBuilder::GetFundamentalTypeSize( const U_FundamentalType fundamental_type )
+{
+	return data_layout_.getTypeAllocSize( GetFundamentalLLVMType( fundamental_type ) );
 }
 
 llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )

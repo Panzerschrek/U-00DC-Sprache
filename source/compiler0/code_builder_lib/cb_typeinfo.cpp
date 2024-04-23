@@ -216,7 +216,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 			typeinfo_class->members->AddName(
 				"type_id",
 				NamesScopeValue( std::make_shared<ClassField>( "type_id", typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
-			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
+			fields_llvm_types.push_back( fundamental_llvm_types_.size_type_->getPointerTo() );
 
 			// Take address of fist member of first element of typeinfo table, which is offset of type "int_ptr".
 			llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex(), GetZeroGEPIndex() };

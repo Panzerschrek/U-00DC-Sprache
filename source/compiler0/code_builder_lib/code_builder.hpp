@@ -1327,6 +1327,7 @@ private:
 	// Other stuff
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
+	uint64_t GetFundamentalTypeSize( U_FundamentalType fundamental_type );
 
 	llvm::Value* CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
 	llvm::LoadInst* CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
@@ -1410,6 +1411,8 @@ private:
 		llvm::IntegerType* i128_;
 		llvm::IntegerType* u128_;
 
+		llvm::IntegerType* size_type_; // Type with width of pointer.
+
 		llvm::Type* f32_;
 		llvm::Type* f64_;
 
@@ -1424,8 +1427,6 @@ private:
 		llvm::IntegerType* byte128_;
 
 		llvm::Type* void_for_ret_;
-
-		llvm::IntegerType* int_ptr; // Type with width of pointer.
 	} fundamental_llvm_types_{};
 
 	llvm::Function* halt_func_= nullptr;

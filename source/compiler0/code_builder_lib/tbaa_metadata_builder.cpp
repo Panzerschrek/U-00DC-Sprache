@@ -16,6 +16,8 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	: mangler_( std::move(mangler) )
 	, md_builder_(llvm_context)
 {
+	const bool is_32_bit= data_layout.getIntPtrType(llvm_context)->getIntegerBitWidth() == 32u;
+
 	llvm::MDNode* const tbaa_root= md_builder_.createTBAARoot( "__U_tbaa_root" );
 
 	// byte8 is a base type for all other byte types.
@@ -41,6 +43,11 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	type_descriptors_.i128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i128_ ) ), type_descriptors_.byte128_ );
 	type_descriptors_.u128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u128_ ) ), type_descriptors_.byte128_ );
 
+	type_descriptors_.size_type_=
+		md_builder_.createTBAAScalarTypeNode(
+			StringViewToStringRef( Keyword( Keywords::size_type_ ) ),
+			is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
+
 	type_descriptors_.char8_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::char8_  ) ), type_descriptors_.byte8_  );
 	type_descriptors_.char16_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::char16_ ) ), type_descriptors_.byte16_ );
 	type_descriptors_.char32_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::char32_ ) ), type_descriptors_.byte32_ );
@@ -48,10 +55,7 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	type_descriptors_.f32_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::f32_ ) ), type_descriptors_.byte32_ );
 	type_descriptors_.f64_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::f64_ ) ), type_descriptors_.byte64_ );
 
-	const auto ptr_base=
-		data_layout.getIntPtrType(llvm_context)->getIntegerBitWidth() == 32u
-			? type_descriptors_.byte32_
-			: type_descriptors_.byte64_;
+	const auto ptr_base= is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_;
 
 	// Use intermediate type for all pointer type (not just raw byte32 or byte64).
 	// Do this in case we add something, like "generic" pointers/references.
@@ -138,6 +142,7 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 	case U_FundamentalType::u64_ : return type_descriptors_.u64_ ;
 	case U_FundamentalType::i128_: return type_descriptors_.i128_;
 	case U_FundamentalType::u128_: return type_descriptors_.u128_;
+	case U_FundamentalType::size_type_: return type_descriptors_.size_type_;
 	case U_FundamentalType::f32_: return type_descriptors_.f32_;
 	case U_FundamentalType::f64_: return type_descriptors_.f64_;
 	case U_FundamentalType::char8_ : return type_descriptors_.char8_ ;

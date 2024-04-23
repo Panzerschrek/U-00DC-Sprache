@@ -24,6 +24,8 @@ enum class U_FundamentalType : uint8_t
 	i128_,
 	u128_,
 
+	size_type_,
+
 	f32_,
 	f64_,
 
