@@ -2002,7 +2002,39 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 uint64_t CodeBuilder::GetFundamentalTypeSize( const U_FundamentalType fundamental_type )
 {
-	return data_layout_.getTypeAllocSize( GetFundamentalLLVMType( fundamental_type ) );
+	// Handle here all cases except size_type and ssize_type, which have veraible size.
+	switch(fundamental_type)
+	{
+	case U_FundamentalType::InvalidType: return 0u;
+	case U_FundamentalType::void_: return 0u;
+	case U_FundamentalType::bool_: return 1u;
+	case U_FundamentalType::i8_  : return  1u;
+	case U_FundamentalType::u8_  : return  1u;
+	case U_FundamentalType::i16_ : return  2u;
+	case U_FundamentalType::u16_ : return  2u;
+	case U_FundamentalType::i32_ : return  4u;
+	case U_FundamentalType::u32_ : return  4u;
+	case U_FundamentalType::i64_ : return  8u;
+	case U_FundamentalType::u64_ : return  8u;
+	case U_FundamentalType::i128_: return 16u;
+	case U_FundamentalType::u128_: return 16u;
+	case U_FundamentalType::ssize_type_: return fundamental_llvm_types_.ssize_type_->getBitWidth() >> 3;
+	case U_FundamentalType::size_type_ : return fundamental_llvm_types_.size_type_ ->getBitWidth() >> 3;
+	case U_FundamentalType::f32_: return 4u;
+	case U_FundamentalType::f64_: return 8u;
+	case U_FundamentalType::char8_ : return 1u;
+	case U_FundamentalType::char16_: return 2u;
+	case U_FundamentalType::char32_: return 4u;
+	case U_FundamentalType::byte8_  : return  1u;
+	case U_FundamentalType::byte16_ : return  2u;
+	case U_FundamentalType::byte32_ : return  4u;
+	case U_FundamentalType::byte64_ : return  8u;
+	case U_FundamentalType::byte128_: return 16u;
+	case U_FundamentalType::LastType: break;
+	};
+
+	U_ASSERT( false );
+	return 0u;
 }
 
 llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
