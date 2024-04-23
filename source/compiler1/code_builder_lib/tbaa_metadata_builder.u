@@ -35,8 +35,17 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetData
 		type_descriptors_.i128_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte128_, KeywordToString( Keyword::i128_ ) );
 		type_descriptors_.u128_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte128_, KeywordToString( Keyword::u128_ ) );
 
-		type_descriptors_.ssize_type_= select( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
-		type_descriptors_.size_type_ = select( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
+		type_descriptors_.ssize_type_=
+			MakeTBAATypeDescriptor(
+				llvm_context_,
+				select( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ ),
+				KeywordToString( Keyword::ssize_type_ ) );
+
+		type_descriptors_.size_type_ =
+			MakeTBAATypeDescriptor(
+				llvm_context_,
+				select( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ ),
+				KeywordToString( Keyword::size_type_  ) );
 
 		type_descriptors_.f32_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte32_, KeywordToString( Keyword::f32_ ) );
 		type_descriptors_.f64_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte64_, KeywordToString( Keyword::f64_ ) );
