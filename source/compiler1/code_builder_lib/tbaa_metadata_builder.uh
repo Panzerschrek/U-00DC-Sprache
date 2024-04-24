@@ -41,7 +41,7 @@ private:
 		LLVMMetadataRef u128_;
 
 		LLVMMetadataRef ssize_type_;
-		LLVMMetadataRef size_type_;
+		LLVMMetadataRef size_type_ ;
 
 		LLVMMetadataRef f32_;
 		LLVMMetadataRef f64_;

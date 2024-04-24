@@ -2653,7 +2653,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		var u32
 			int_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type ),
-			pointer_size= GetFundamentalTypeSize( size_type_.GetFundamentalType().try_deref().fundamental_type );
+			pointer_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
 
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{

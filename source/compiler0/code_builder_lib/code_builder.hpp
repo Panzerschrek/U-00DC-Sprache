@@ -1413,7 +1413,7 @@ private:
 
 		// Types with width of pointer.
 		llvm::IntegerType* ssize_type_;
-		llvm::IntegerType* size_type_;
+		llvm::IntegerType* size_type_ ;
 
 		llvm::Type* f32_;
 		llvm::Type* f64_;
@@ -1444,7 +1444,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type ssize_type_;
-	Type size_type_;
+	Type size_type_ ;
 	Type reference_notation_param_reference_description_type_;
 	Type reference_notation_pollution_element_type_;
 	llvm::PointerType* virtual_function_pointer_type_= nullptr; // Use common type for all function pointers in virtual table - for simplicity.

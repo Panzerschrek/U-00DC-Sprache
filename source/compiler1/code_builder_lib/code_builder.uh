@@ -1209,7 +1209,7 @@ private:
 
 		// Types with width of pointer.
 		LLVMTypeRef ssize_type_;
-		LLVMTypeRef size_type_;
+		LLVMTypeRef size_type_ ;
 
 		LLVMTypeRef f32_;
 		LLVMTypeRef f64_;
@@ -1233,7 +1233,7 @@ private:
 	Type imut void_type_;
 	Type imut bool_type_;
 	Type imut ssize_type_;
-	Type imut size_type_;
+	Type imut size_type_ ;
 	Type imut reference_notation_param_reference_description_type_;
 	Type imut reference_notation_pollution_element_type_;
 	LLVMTypeRef imut virtual_function_pointer_type_; // Use common type for all function pointers in virtual table - for simplicity.

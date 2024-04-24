@@ -964,7 +964,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 					}
 					else{} // Same size - do nothing
 				}
-				else if( src_size== dst_size && (
+				else if( src_size == dst_size && (
 					( IsByte( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) ) ||
 					( IsInteger( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
 				{

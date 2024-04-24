@@ -150,7 +150,7 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 	case U_FundamentalType::i128_: return type_descriptors_.i128_;
 	case U_FundamentalType::u128_: return type_descriptors_.u128_;
 	case U_FundamentalType::ssize_type_: return type_descriptors_.ssize_type_;
-	case U_FundamentalType::size_type_: return type_descriptors_.size_type_;
+	case U_FundamentalType::size_type_ : return type_descriptors_.size_type_ ;
 	case U_FundamentalType::f32_: return type_descriptors_.f32_;
 	case U_FundamentalType::f64_: return type_descriptors_.f64_;
 	case U_FundamentalType::char8_ : return type_descriptors_.char8_ ;
@@ -188,7 +188,7 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 	case U_FundamentalType::u128_:
 		return type_descriptors_.byte128_;
 	case U_FundamentalType::ssize_type_:
-	case U_FundamentalType::size_type_:
+	case U_FundamentalType::size_type_ :
 		return type_descriptors_.size_type_enum_base;
 	default:
 		U_ASSERT(false);

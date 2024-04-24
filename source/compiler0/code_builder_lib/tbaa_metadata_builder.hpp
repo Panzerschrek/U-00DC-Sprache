@@ -53,7 +53,7 @@ private:
 		llvm::MDNode* u128_= nullptr;
 
 		llvm::MDNode* ssize_type_= nullptr;
-		llvm::MDNode* size_type_= nullptr;
+		llvm::MDNode* size_type_ = nullptr;
 
 		llvm::MDNode* f32_= nullptr;
 		llvm::MDNode* f64_= nullptr;

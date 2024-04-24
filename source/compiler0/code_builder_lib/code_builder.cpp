@@ -136,13 +136,13 @@ CodeBuilder::CodeBuilder(
 	fundamental_llvm_types_.void_= llvm::StructType::create( llvm_context_, {}, "__U_void" );
 
 	fundamental_llvm_types_.ssize_type_= data_layout_.getIntPtrType(llvm_context_);
-	fundamental_llvm_types_.size_type_= data_layout_.getIntPtrType(llvm_context_);
+	fundamental_llvm_types_.size_type_ = data_layout_.getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
 	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
 	ssize_type_= FundamentalType( U_FundamentalType::ssize_type_, fundamental_llvm_types_.ssize_type_ );
-	size_type_= FundamentalType( U_FundamentalType::size_type_, fundamental_llvm_types_.size_type_ );
+	size_type_ = FundamentalType( U_FundamentalType::size_type_ , fundamental_llvm_types_.size_type_  );
 
 	{
 		// A pair of chars.
@@ -1981,7 +1981,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	case U_FundamentalType::i128_: return fundamental_llvm_types_.i128_;
 	case U_FundamentalType::u128_: return fundamental_llvm_types_.u128_;
 	case U_FundamentalType::ssize_type_: return fundamental_llvm_types_.ssize_type_;
-	case U_FundamentalType::size_type_: return fundamental_llvm_types_.size_type_;
+	case U_FundamentalType::size_type_ : return fundamental_llvm_types_.size_type_ ;
 	case U_FundamentalType::f32_: return fundamental_llvm_types_.f32_;
 	case U_FundamentalType::f64_: return fundamental_llvm_types_.f64_;
 	case U_FundamentalType::char8_ : return fundamental_llvm_types_.char8_ ;
