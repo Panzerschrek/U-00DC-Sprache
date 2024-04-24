@@ -440,17 +440,15 @@ def AdditiveAssignmentErrors_ForRawPointers_Test2():
 
 def AdditiveAssignmentErrors_ForRawPointers_Test3():
 	c_program_text= """
-		template<//> struct get_signed_type  </ u32 /> { type t= i32; }
-		template<//> struct get_signed_type  </ u64 /> { type t= i64; }
 		fn Foo()
 		{
 			var $(i32) mut ptr= zero_init;
-			var get_signed_type</size_type/>::t mut i(0);
+			var ssize_type mut i(0);
 			i+= ptr; // Can not add pointer to integer.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "TypesMismatch", 8 ) )
+	assert( HasError( errors_list, "TypesMismatch", 6 ) )
 
 
 def AdditiveAssignmentErrors_ForRawPointers_Test4():

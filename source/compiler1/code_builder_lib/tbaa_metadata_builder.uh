@@ -40,6 +40,9 @@ private:
 		LLVMMetadataRef i128_;
 		LLVMMetadataRef u128_;
 
+		LLVMMetadataRef ssize_type_;
+		LLVMMetadataRef size_type_ ;
+
 		LLVMMetadataRef f32_;
 		LLVMMetadataRef f64_;
 
@@ -55,6 +58,8 @@ private:
 
 		// Base for all pointers.
 		LLVMMetadataRef ptr;
+
+		LLVMMetadataRef size_type_enum_base;
 	}
 
 private:

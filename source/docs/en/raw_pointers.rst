@@ -51,7 +51,7 @@ Following operations are possible:
 * Pointers difference.
   It's allowed to calculate pointers difference via ``-`` operator.
   The element type should have non-zero size.
-  The result of the pointer difference is a signed integer number with size equal to pointer size that is equal to address difference divided by the pointer element size.
+  The result of the pointer difference is an integer number of type ``ssize_type`` that is equal to address difference divided by the pointer element size.
 * Increment and decrement.
   It's allowed to use ``++`` and ``--`` for pointers.
   The value of a pointer will be increased or decreased by the element size.

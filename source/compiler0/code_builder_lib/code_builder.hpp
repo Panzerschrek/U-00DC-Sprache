@@ -1327,6 +1327,7 @@ private:
 	// Other stuff
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
+	uint64_t GetFundamentalTypeSize( U_FundamentalType fundamental_type );
 
 	llvm::Value* CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
 	llvm::LoadInst* CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
@@ -1410,6 +1411,10 @@ private:
 		llvm::IntegerType* i128_;
 		llvm::IntegerType* u128_;
 
+		// Types with width of pointer.
+		llvm::IntegerType* ssize_type_;
+		llvm::IntegerType* size_type_ ;
+
 		llvm::Type* f32_;
 		llvm::Type* f64_;
 
@@ -1424,8 +1429,6 @@ private:
 		llvm::IntegerType* byte128_;
 
 		llvm::Type* void_for_ret_;
-
-		llvm::IntegerType* int_ptr; // Type with width of pointer.
 	} fundamental_llvm_types_{};
 
 	llvm::Function* halt_func_= nullptr;
@@ -1440,7 +1443,8 @@ private:
 	Type invalid_type_;
 	Type void_type_;
 	Type bool_type_;
-	Type size_type_; // Alias for u32 or u64
+	Type ssize_type_;
+	Type size_type_ ;
 	Type reference_notation_param_reference_description_type_;
 	Type reference_notation_pollution_element_type_;
 	llvm::PointerType* virtual_function_pointer_type_= nullptr; // Use common type for all function pointers in virtual table - for simplicity.

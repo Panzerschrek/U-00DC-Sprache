@@ -15,8 +15,8 @@ There are following fundamental types in Ü:
 
 * ``void`` - is used as return type for functions that return nothing. It has zero size.
 * ``bool`` - logical type, possible values are ``true`` and ``false``.
-* Signed integer types - ``i8``, ``i16``, ``i32``, ``i64``, ``i128``.
-* Unsigned integer types - ``u8``, ``u16``, ``u32``, ``u64``, ``u128``.
+* Signed integer types - ``i8``, ``i16``, ``i32``, ``i64``, ``i128``, ``ssize_type``.
+* Unsigned integer types - ``u8``, ``u16``, ``u32``, ``u64``, ``u128``, ``size_type``.
 * Floating point types - ``f32``, ``f64``.
 * Char types - ``char8``, ``char16``, ``char32``.
 * Raw data types - ``byte8``, ``byte16``, ``byte32``, ``byte64``, ``byte128``.

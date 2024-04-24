@@ -817,8 +817,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			{
 				// Perform fundamental types conversion.
 
-				const uint64_t src_size= src_type->GetSize();
-				const uint64_t dst_size= dst_type->GetSize();
+				const uint64_t src_size= GetFundamentalTypeSize( src_type->fundamental_type );
+				const uint64_t dst_size= GetFundamentalTypeSize( dst_type->fundamental_type );
 				if( IsInteger( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
 				{
 					// int to int

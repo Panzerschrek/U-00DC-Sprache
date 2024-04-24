@@ -564,7 +564,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	if( allocate_virtual_table_pointer )
 	{
-		fields_llvm_types.push_back( unsafe( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) ) );// set exact type later.
+		fields_llvm_types.push_back( unsafe( LLVMPointerType( fundamental_llvm_types_.size_type_, 0u ) ) );// set exact type later.
 	}
 
 	with( mut lock : class_type.lock_mut() )
@@ -1507,7 +1507,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		enum_elements.insert( element.name, move(out_element) );
 	}
 
-	var u64 bit_width(underlying_type.GetSize() * 8u);
+	var u64 bit_width( GetFundamentalTypeSize( underlying_type.fundamental_type ) * 8u );
 	if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
 	{
 		auto max_value_plus_one=

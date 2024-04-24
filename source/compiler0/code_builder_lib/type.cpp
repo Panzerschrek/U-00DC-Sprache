@@ -17,40 +17,6 @@ namespace U
 namespace
 {
 
-uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
-{
-	switch(type)
-	{
-	case U_FundamentalType::InvalidType: return 0u;
-	case U_FundamentalType::void_: return 0u;
-	case U_FundamentalType::bool_: return 1u;
-	case U_FundamentalType::i8_  : return  1u;
-	case U_FundamentalType::u8_  : return  1u;
-	case U_FundamentalType::i16_ : return  2u;
-	case U_FundamentalType::u16_ : return  2u;
-	case U_FundamentalType::i32_ : return  4u;
-	case U_FundamentalType::u32_ : return  4u;
-	case U_FundamentalType::i64_ : return  8u;
-	case U_FundamentalType::u64_ : return  8u;
-	case U_FundamentalType::i128_: return 16u;
-	case U_FundamentalType::u128_: return 16u;
-	case U_FundamentalType::f32_: return 4u;
-	case U_FundamentalType::f64_: return 8u;
-	case U_FundamentalType::char8_ : return 1u;
-	case U_FundamentalType::char16_: return 2u;
-	case U_FundamentalType::char32_: return 4u;
-	case U_FundamentalType::byte8_  : return  1u;
-	case U_FundamentalType::byte16_ : return  2u;
-	case U_FundamentalType::byte32_ : return  4u;
-	case U_FundamentalType::byte64_ : return  8u;
-	case U_FundamentalType::byte128_: return 16u;
-	case U_FundamentalType::LastType: break;
-	};
-
-	U_ASSERT( false );
-	return 0u;
-}
-
 template<typename T>
 llvm::Type* GetLLVMTypeImpl( const T& el )
 {
@@ -88,11 +54,6 @@ FundamentalType::FundamentalType(
 	: fundamental_type(in_fundamental_type)
 	, llvm_type(in_llvm_type)
 {}
-
-uint64_t FundamentalType::GetSize() const
-{
-	return GetFundamentalTypeSize(fundamental_type);
-}
 
 bool operator==( const FundamentalType& l, const FundamentalType& r )
 {

@@ -1992,13 +1992,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	bool is_signed= false;
 	if( const auto enum_= switch_type.GetEnumType() )
 	{
-		const uint32_t size_in_bits= 8 * uint32_t(enum_->underlying_type.GetSize());
+		const uint32_t size_in_bits= 8 * uint32_t( GetFundamentalTypeSize( enum_->underlying_type.fundamental_type ) );
 		type_low= llvm::APInt( size_in_bits, uint64_t(0) );
 		type_high= llvm::APInt( size_in_bits, uint64_t(enum_->element_count - 1) );
 	}
 	else if( const auto fundamental_type= switch_type.GetFundamentalType() )
 	{
-		const uint32_t size_in_bits= 8 * uint32_t(fundamental_type->GetSize());
+		const uint32_t size_in_bits= 8 * uint32_t( GetFundamentalTypeSize( fundamental_type->fundamental_type ) );
 		if( IsSignedInteger( fundamental_type->fundamental_type ) )
 		{
 			is_signed= true;
@@ -2964,7 +2964,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope.GetErrors(), src_loc );
 
 		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
-		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
+		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.size_type_, positive ? uint64_t(1u) : ~uint64_t(0), true );
 		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateInBoundsGEP( raw_poiter_type->element_type.GetLLVMType(), ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );

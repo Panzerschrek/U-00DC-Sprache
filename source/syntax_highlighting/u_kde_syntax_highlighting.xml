@@ -141,6 +141,7 @@
 			<item>byte2048</item>
 			<item>byte4096</item>
 			<item>size_type</item>
+			<item>ssize_type</item>
 		</list>
 
 	<contexts>

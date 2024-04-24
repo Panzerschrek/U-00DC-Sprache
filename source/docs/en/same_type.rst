@@ -9,7 +9,8 @@ Usage example:
 
 .. code-block:: u_spr
 
-   static_assert( same_type</ u32, size_type /> || same_type</ u64, size_type /> );
+   type Uint= u32;
+   static_assert( same_type</ u32, Uint /> );
 
 This operator is intended for usage in template code for cases, where it is necessary to check if two types are equal.
 Like this, for example:
@@ -36,7 +37,6 @@ This affects also inheritance - a child and its parent are different.
 Different are also all enums.
 
 Fundamental types are also different from each other.
-Exception - ``size_type``, which is for now a type alias for one of unsigned integers.
 
 Function pointer types are different if function types are different.
 But there are some caveats.

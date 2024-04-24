@@ -43,6 +43,30 @@ fn to_string8 ( u64 x ) : string8
 	return to_string</char8 />(x);
 }
 
+fn to_string8 ( ssize_type x ) : string8
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return to_string8 ( i32(x) );
+	}
+	else
+	{
+		return to_string8 ( i64(x) );
+	}
+}
+
+fn to_string8 ( size_type x ) : string8
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return to_string8 ( u32(x) );
+	}
+	else
+	{
+		return to_string8 ( u64(x) );
+	}
+}
+
 fn to_string16( i8 x ) : string16
 {
 	return to_string</char16/>(x);
@@ -83,6 +107,30 @@ fn to_string16( u64 x ) : string16
 	return to_string</char16/>(x);
 }
 
+fn to_string16( ssize_type x ) : string16
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return to_string16( i32(x) );
+	}
+	else
+	{
+		return to_string16( i64(x) );
+	}
+}
+
+fn to_string16( size_type x ) : string16
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return to_string16( u32(x) );
+	}
+	else
+	{
+		return to_string16( u64(x) );
+	}
+}
+
 fn to_string32( i8 x ) : string32
 {
 	return to_string</char32/>(x);
@@ -121,6 +169,30 @@ fn to_string32( i64 x ) : string32
 fn to_string32( u64 x ) : string32
 {
 	return to_string</char32/>(x);
+}
+
+fn to_string32( ssize_type x ) : string32
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return to_string32( i32(x) );
+	}
+	else
+	{
+		return to_string32( i64(x) );
+	}
+}
+
+fn to_string32( size_type x ) : string32
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return to_string32( u32(x) );
+	}
+	else
+	{
+		return to_string32( u64(x) );
+	}
 }
 
 template</type C/>

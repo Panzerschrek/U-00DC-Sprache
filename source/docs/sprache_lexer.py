@@ -104,6 +104,7 @@ class SpracheLexer(RegexLexer):
 			(r'byte2048(?![a-zA-Z_0-9])', token.Keyword),
 			(r'byte4096(?![a-zA-Z_0-9])', token.Keyword),
 			(r'size_type(?![a-zA-Z_0-9])', token.Keyword),
+			(r'ssize_type(?![a-zA-Z_0-9])', token.Keyword),
 			(r'true(?![a-zA-Z_0-9])', token.Keyword),
 			(r'false(?![a-zA-Z_0-9])', token.Keyword),
 			(r'mut(?![a-zA-Z_0-9])', token.Keyword),

@@ -56,16 +56,16 @@ private:
 	{
 		if( function_context.is_functionless_context )
 		{
-			auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
+			auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.size_type_ ) );
 			move(func)( this, function_context, counter_value );
 		}
 		else if( iteration_count != 0u64 )
 		{
 			unsafe
 			{
-				auto zero_value= LLVMConstNull( fundamental_llvm_types_.int_ptr );
-				auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
-				auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, iteration_count, LLVMBool::False );
+				auto zero_value= LLVMConstNull( fundamental_llvm_types_.size_type_ );
+				auto one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool::False );
+				auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.size_type_, iteration_count, LLVMBool::False );
 
 				auto block_before_loop= LLVMGetInsertBlock( function_context.llvm_ir_builder ) ;
 				auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
@@ -76,7 +76,7 @@ private:
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
 
-				auto counter_value= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, g_null_string );
+				auto counter_value= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.size_type_, g_null_string );
 				auto counter_value_plus_one= LLVMBuildAdd( function_context.llvm_ir_builder, counter_value, one_value, g_null_string );
 
 				safe( move(func)( this, function_context, counter_value ) );
@@ -1128,6 +1128,7 @@ private:
 	fn CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address );
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
+	fn GetFundamentalTypeSize( this, U_FundamentalType t ) : u32;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( mut this, VariableLite& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
@@ -1206,6 +1207,10 @@ private:
 		LLVMTypeRef i128_;
 		LLVMTypeRef u128_;
 
+		// Types with width of pointer.
+		LLVMTypeRef ssize_type_;
+		LLVMTypeRef size_type_ ;
+
 		LLVMTypeRef f32_;
 		LLVMTypeRef f64_;
 
@@ -1221,14 +1226,14 @@ private:
 
 		LLVMTypeRef void_for_ret_;
 
-		LLVMTypeRef int_ptr; // Type with width of pointer.
 	}
 	FundamentalLLVMTypes imut fundamental_llvm_types_;
 
 	Type imut invalid_type_;
 	Type imut void_type_;
 	Type imut bool_type_;
-	Type imut size_type_; // Alias for u32 or u64
+	Type imut ssize_type_;
+	Type imut size_type_ ;
 	Type imut reference_notation_param_reference_description_type_;
 	Type imut reference_notation_pollution_element_type_;
 	LLVMTypeRef imut virtual_function_pointer_type_; // Use common type for all function pointers in virtual table - for simplicity.

@@ -126,6 +126,28 @@ fn nomangle main() : i32
 	halt if( ust::to_string8(18446744073709551614u64) != "18446744073709551614" );
 	halt if( ust::to_string8(18446744073709551615u64) != "18446744073709551615" );
 
+	// size_type
+	halt if( ust::to_string8(0s) != "0" );
+	halt if( ust::to_string8(1s) != "1" );
+	halt if( ust::to_string8(5s) != "5" );
+	halt if( ust::to_string8(13s) != "13" );
+	halt if( ust::to_string8(78s) != "78" );
+	halt if( ust::to_string8(412s) != "412" );
+	halt if( ust::to_string8(5624s) != "5624" );
+	halt if( ust::to_string8(2147483647s) != "2147483647" );
+	halt if( ust::to_string8(2147483648s) != "2147483648" );
+	halt if( ust::to_string8(4294967295s) != "4294967295" );
+
+	// ssize_type
+	halt if( ust::to_string8(ssize_type(0)) != "0" );
+	halt if( ust::to_string8(ssize_type(1)) != "1" );
+	halt if( ust::to_string8(ssize_type(5)) != "5" );
+	halt if( ust::to_string8(ssize_type(13)) != "13" );
+	halt if( ust::to_string8(ssize_type(78)) != "78" );
+	halt if( ust::to_string8(ssize_type(412)) != "412" );
+	halt if( ust::to_string8(ssize_type(5624)) != "5624" );
+	halt if( ust::to_string8(ssize_type(2147483647)) != "2147483647" );
+
 	// string16
 	halt if( ust::to_string16(0i8) != "0"u16 );
 	halt if( ust::to_string16(1u8) != "1"u16 );
