@@ -191,3 +191,22 @@ def NumericConstants_TypeSuffix_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NumericConstantOverflow_Test0():
+	c_program_text= """
+		auto x= 18446744073709551616; // 2 ^ 64
+		auto y= 20000000000000000000;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors( c_program_text ) )
+	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[0].text.find( "Integer part of numeric literal is too long" ) != -1 )
+
+
+def NumericConstantOverflow_Test1():
+	c_program_text= """
+		auto x= 20000000000000000000; // More than 2 ^ 64
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors( c_program_text ) )
+	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[0].text.find( "Integer part of numeric literal is too long" ) != -1 )
