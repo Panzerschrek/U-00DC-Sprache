@@ -3368,6 +3368,10 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return Value( VariablePtr( Variable{ .t= void_type_, .value_type= ValueType::Value, .location= Variable::Location::LLVMRegister } ) );
 	}
+	else if( operator == OverloadedOperator::Add && IsCompatibleCharArrays( args_ref.front().t, args_ref.back().t ) )
+	{
+		return ConcatenateCharArrays( names_scope, function_context, arg_l, arg_r, src_loc );
+	}
 	else if( args_ref.front().t == args_ref.back().t && ( !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) )
 	{
 		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, src_loc );
@@ -3600,6 +3604,102 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.lock_imut().deref().t )
 		return ErrorValue();
 	}
+}
+
+fn CodeBuilder::ConcatenateCharArrays(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	SrcLoc& src_loc ) : Value
+{
+	var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+	var VariableLite l_var= l_var_ptr.lock_imut().deref();
+
+	if( l_var.t == invalid_type_ )
+	{
+		return ErrorValue();
+	}
+
+	var VariablePtr l_var_lock_node=
+		Variable
+		{
+			.t= l_var.t,
+			.value_type= ValueType::ReferenceImut,
+			.location= Variable::Location::Pointer,
+			.name= l_var_ptr.lock_imut().deref().name + " lock",
+			.preserve_temporary= true,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( l_var_lock_node );
+	function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+	function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+	RegisterTemporaryVariable( function_context, l_var_lock_node );
+
+	var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+	var VariableLite r_var= r_var_ptr.lock_imut().deref();
+
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
+
+	function_context.references_graph.MoveNode( l_var_lock_node );
+
+	var ArrayType& l_array_type= l_var.t.GetArrayType().try_deref();
+	var ArrayType& r_array_type= r_var.t.GetArrayType().try_deref();
+	debug_assert( l_array_type.element_type == r_array_type.element_type );
+
+	var ArrayType mut result_array_type
+	{
+		.element_count= l_array_type.element_count + r_array_type.element_count,
+		.element_type= l_array_type.element_type,
+	};
+	result_array_type.llvm_type= unsafe( LLVMArrayType( result_array_type.element_type.GetLLVMType(), u32(result_array_type.element_count) ) );
+
+	var Variable mut result
+	{
+		.t= result_array_type,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.name= "+",
+	};
+
+	if( !function_context.is_functionless_context )
+	{
+		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result_array_type.llvm_type, "temp +\0"[0] ) );
+		CreateLifetimeStart( function_context, result.llvm_value );
+
+		if( l_var.llvm_value != LLVMValueRef::Null && r_var.llvm_value != LLVMValueRef::Null )
+		{
+			unsafe
+			{
+				var u64 size_l= LLVMABISizeOfType( data_layout_, l_var.t.GetLLVMType() );
+				var u64 size_r= LLVMABISizeOfType( data_layout_, r_var.t.GetLLVMType() );
+				var u32 alignment= LLVMABIAlignmentOfType( data_layout_, l_array_type.element_type.GetLLVMType() );
+
+				// Copy l_var bytes into destination.
+				LLVMBuildMemCpy(
+					function_context.llvm_ir_builder,
+					result.llvm_value, alignment,
+					l_var.llvm_value, alignment,
+					LLVMConstInt( fundamental_llvm_types_.u64_, size_l, LLVMBool::False ) );
+
+				// Copy r_var bytes into destination.
+				var LLVMValueRef mut one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool::False );
+				var LLVMValueRef dst_r= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, l_array_type.llvm_type, result.llvm_value, $<(one_value), 1u, g_null_string );
+
+				LLVMBuildMemCpy(
+					function_context.llvm_ir_builder,
+					dst_r, alignment,
+					r_var.llvm_value, alignment,
+					LLVMConstInt( fundamental_llvm_types_.u64_, size_r, LLVMBool::False ) );
+			}
+		}
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
 }
 
 fn CodeBuilder::TryCallOverloadedUnaryOperator(
@@ -4564,6 +4664,28 @@ fn CastPtr( $(Src) src ) unsafe : $(Dst)
 {
 	// Cast reference to pointer to reference to pointer of other type.
 	return unsafe( cast_ref_unsafe</$(Dst)/>(src) );
+}
+
+fn IsCompatibleCharArrays( Type& l, Type& r ) : bool
+{
+	if_var( &l_array : l.GetArrayType() )
+	{
+		if_var( & r_array : r.GetArrayType() )
+		{
+			if( l_array.element_type == r_array.element_type )
+			{
+				if_var( &fundamental_type : l_array.element_type.GetFundamentalType() )
+				{
+					if( IsChar( fundamental_type.fundamental_type ) )
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 } // namespace U1

@@ -27,7 +27,7 @@ bool IsCompatibleCharArrays( const Type& l, const Type& r )
 			if( l_array->element_type == r_array->element_type )
 				if( const auto fundamental_type= l_array->element_type.GetFundamentalType() )
 					if( IsChar( fundamental_type->fundamental_type ) )
-							return true;
+						return true;
 
 	return false;
 }
