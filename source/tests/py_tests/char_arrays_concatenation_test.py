@@ -48,6 +48,22 @@ def CharArrayConcatenation_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def CharArrayConcatenation_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut a= "aaaa";
+			auto mut b= "bbbb";
+			auto ab= a + b; // Sizes are equal.
+			halt if( ab != "aaaabbbb" );
+			auto ba= b + a;
+			halt if( ba != "bbbbaaaa" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def CharArrayConcatenationConstexpr_Test0():
 	c_program_text= """
 		auto a= "ryR";
@@ -56,5 +72,9 @@ def CharArrayConcatenationConstexpr_Test0():
 		static_assert( c == "ryR7766N-Q" );
 		auto d= b + a;
 		static_assert( d == "7766N-QryR" );
+		auto e= a + a;
+		static_assert( e == "ryRryR" );
+		auto f= c + d;
+		static_assert( f == "ryR7766N-Q7766N-QryR" );
 	"""
 	tests_lib.build_program( c_program_text )

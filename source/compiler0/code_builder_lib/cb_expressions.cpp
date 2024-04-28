@@ -2181,10 +2181,10 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
-	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
-		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names_scope, function_context );
 	else if( op == OverloadedOperator::Add && IsCompatibleCharArrays( args.front().type, args.back().type ) )
 		return ConcatenateCharArrays( left_expr, right_expr, src_loc, names_scope, function_context );
+	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
+		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names_scope, function_context );
 
 	if( const auto overloaded_operator= GetOverloadedOperator( args, op, names_scope, src_loc ) )
 	{
