@@ -64,6 +64,47 @@ def CharArrayConcatenation_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def CharArrayConcatenation_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			// Non-ASCII UTF-8
+			auto mut a= "Пын";
+			auto mut b= "еходы";
+			auto ab= a + b;
+			halt if( ab != "Пынеходы" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CharArrayConcatenation_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			// Non-ASCII UTF-16
+			auto mut a= "Begrü"u16;
+			auto mut b= "ßunf"u16;
+			auto ab= a + b;
+			halt if( ab != "Begrüßunf"u16 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def CharArrayConcatenation_Test6():
+	c_program_text= """
+		// Non-ASCII UTF-32
+		auto a= "Begrüßunf"u32;
+		auto b= "приветствие"u32;
+		auto ab= a + " - "u32 + b;
+		static_assert( ab == "Begrüßunf - приветствие"u32 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def CharArrayConcatenationConstexpr_Test0():
 	c_program_text= """
 		auto a= "ryR";
