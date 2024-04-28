@@ -9,6 +9,7 @@ Generaçija teksta programmy v proçesse kompiläçii otkryvajet širocajšije v
 * Dostup k clenam klassa po zaraneje ne izvestnomu imeni - kotoroje polucajetsä, naprimer, iz "typeinfo".
 * Generaçija koda serializaçii/deserializaçii struktur i klassov.
 * Generaçija koda iz aljternativnogo predstavlenija - "regexp", "SQL", kakogo-libo skriptovogo jazyka i t. d.
+* Interpoläçija strok
 
 Planirujetsä dobavitj v sintaksis jazyka konstrukçiju vrode "mixin( expression )", kotoraja možet bytj ispoljzovana v raznyh kontekstah - v prostranstve imön, v klasse, v bloke, v imeni tipa, v vyraženii i t. d. Pri postrojenii koda zadannoje vyraženije vycisläjetsä, v nöm ožidajetsä "constexpr" stoka, kotoraja razbirajetsä na leksemy, potom podvergajetsä sintaksiceskomu analizu i rezuljtirujuscije sintaksiceskije elementy dobavläjutsä v mesto ispoljzovanija "mixin". Sintaksiceskij analiz pri etom nužno delatj s naborom makrosov, dostupnom v fajle, gde "mixin" raskryvajetsä.
 
@@ -16,10 +17,10 @@ V slucaje ispoljzovanija "mixin" vnutri prostranstva imön ili klassa nado vycis
 
 Stoit ucestj vozmožnostj raskrytija "mixin" pri raskrytii "mixin". Eto prakticeski ne ocenj nužno, no možet vsö že vstrecatjsä. Pri etom nado kak-to predotvratitj potençialjnoje beskonecnoje raskrytije, v slucaje, jesli kto-to radi šutki napišet cto-to vrode "mixin quine".
 
-Nado kak-to osobym obrazom modifiçirovatj "SrcLoc" koda v "mixin", daby sdelatj jego unikaljnym po otnošeniju k ne-"mixin" kodu i kodu iz drugih "mixin". Takže nado obrabatyvatj ošibki vnutri "mixin" koda shožim s makrosami i šablonami obrazom - pokazyvaja v nacale mesto raskrytija "mixin".
+Nado kak-to osobym obrazom modifiçirovatj "SrcLoc" koda v "mixin", daby sdelatj jego unikaljnym po otnošeniju k ne-"mixin" kodu i kodu iz drugih "mixin". Takže nado obrabatyvatj ošibki vnutri "mixin" koda shožim s makrosami i šablonami obrazom - pokazyvaja v nacale mesto raskrytija "mixin". Potençialjno eto možno sdelatj, sozdavaja otdeljnyj virtualjnyj fajl dlä raskrytija "mixin" i k tomu že kontekst raskrytija šablona. Aljternativnyj variant - prostovlätj toljko kontekst raskrytija makrosa, a nomer fajla ostavlätj tem že, nomera strok že prostavlätj nacinaja so stroki, gde raskryvajetsä "mixin".
 
 Pri raskrytii "mixin" mogut voznikatj raznoobraznyje ošibki - nevalidnaja "UTF-8" stroka, leksiceskije ošibki, sintaksiceskije ošibki. Ih nado kak-to dolžnym obrazom pokazyvatj. Vozmožno, stoit zavesti räd kodov ošibok dlä "mixin".
 
-Suscestvujet räd mest, gde "mixin" možet raskryvatjsä mnogokratno. Takije mesta eto šablonnyj kod, parametry signatury šablona, sobstvennyje iniçializatory polej, çikly "for" dlä kortežej, "auto" funkçii, lämbdy i vozmožno jescö cto-to. Dlä nekotoryh iz nih mnogokratnoje raskrytije validno, a v nekotoryh mestah jego stoit izbegatj i realizovatj kakoje-to keširovanije.
+Suscestvujet räd mest, gde "mixin" možet raskryvatjsä mnogokratno. Takije mesta eto šablonnyj kod, parametry signatury šablona, sobstvennyje iniçializatory polej, çikly "for" dlä kortežej, "auto" funkçii, lämbdy i vozmožno jescö cto-to. Dlä nekotoryh iz nih mnogokratnoje raskrytije validno, a v nekotoryh mestah jego stoit izbegatj i realizovatj kakoje-to keširovanije. Vozmožno, hvatit keširovanija po klücü - raskrytoj stroke, dopolnennoj "SrcLoc" etogo "mixin".
 
 Generaçija teksta "mixin" možet bytj soprežena s nekotorymi trudnostämi. Prosto "ust::string8" dlä etogo ispoljzovatj neljzä, t. k. etot klass vydeläjet vnutri pamätj cerez "malloc" i poetomu ne možet bytj ispoljzovan v "constexpr" vycislenijah. Ostajotsä toljko libo ispoljzovanije massivov "char8" dostatocno boljšoj dliny s postepennoj zapisju v nih, libo drevovidnaja binarnaja konkatenaçija massivov "char8", cto ne rabotajet v slucaje, kogda neobhodim çikl. Dlä vtorogo slucaja nado realizovatj kakoj-to vspomogateljnyj metod v standartnoj biblioteke, ili voobsce, konkatenaçiju massivov "char8" kak vstrojennyj operator jazyka. Vozmožno daže nužno cto-to boljšeje, vrode interpoläçii strok.
