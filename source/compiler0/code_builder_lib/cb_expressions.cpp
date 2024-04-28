@@ -2421,13 +2421,14 @@ Value CodeBuilder::ConcatenateCharArrays(
 	U_ASSERT( l_array_type->element_type == r_array_type->element_type );
 
 	ArrayType result_array_type;
+	// TODO - handle overflow?
 	result_array_type.element_count= l_array_type->element_count + r_array_type->element_count;
 	result_array_type.element_type= l_array_type->element_type;
 	result_array_type.llvm_type= llvm::ArrayType::get( result_array_type.element_type.GetLLVMType(), result_array_type.element_count );
 
 	const VariableMutPtr result=
 		Variable::Create(
-			std::move(result_array_type),
+			result_array_type,
 			ValueType::Value,
 			Variable::Location::Pointer,
 			std::string( OverloadedOperatorToString( OverloadedOperator::Add ) ) );
@@ -2462,6 +2463,21 @@ Value CodeBuilder::ConcatenateCharArrays(
 				r_var->llvm_value , llvm::MaybeAlign(alignment),
 				size_r );
 		}
+	}
+
+	if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
+	{
+		// TODO - optimize this, handle ConstantDataArray.
+		llvm::SmallVector<llvm::Constant*, 64> constants;
+		constants.resize( result_array_type.element_count );
+
+		for( uint64_t i= 0; i < l_array_type->element_count; ++i )
+			constants[size_t(i)]= l_var->constexpr_value->getAggregateElement(uint32_t(i));
+
+		for( uint64_t i= 0; i < r_array_type->element_count; ++i )
+			constants[size_t(i + l_array_type->element_count)]= r_var->constexpr_value->getAggregateElement(uint32_t(i));
+
+		result->constexpr_value= llvm::ConstantArray::get( result_array_type.llvm_type, constants );
 	}
 
 	function_context.variables_state.AddNode( result );

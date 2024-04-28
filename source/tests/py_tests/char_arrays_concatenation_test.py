@@ -46,3 +46,15 @@ def CharArrayConcatenation_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def CharArrayConcatenationConstexpr_Test0():
+	c_program_text= """
+		auto a= "ryR";
+		auto b= "7766N-Q";
+		auto c= a + b;
+		static_assert( c == "ryR7766N-Q" );
+		auto d= b + a;
+		static_assert( d == "7766N-QryR" );
+	"""
+	tests_lib.build_program( c_program_text )
