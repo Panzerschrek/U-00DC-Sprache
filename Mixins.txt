@@ -1,0 +1,19 @@
+V jazyke "D" jestj takaja funkçionaljnostj, kak "mixin". Po suti eto fragment teksta programmy, generirujemyj "constexpr" kodom.
+
+V Ü horošo bylo by imetj takuju vozmožnostj.
+
+Generaçija teksta programmy v proçesse kompiläçii otkryvajet širocajšije vozmožnosti po sozdaniju koda, kotoryje ne vozmožny cerez makrosy i šablony:
+* Funkçii s peremennym cislom parametrov - cerez "mixin" možno prosto sgenerirovatj vse vozmožnyje peregruzki ot 0 do N parametrov.
+* Funkçii s "value type" parametrov i vozvrascajemogo znacenija, kotoryje možno zadavatj v zavisimosti ot uslovij, vrode tipov argumentov šablona.
+* Klassy s gibkim sostavom polej, funkçij i drugih clenov.
+* Dostup k clenam klassa po zaraneje ne izvestnomu imeni - kotoroje polucajetsä, naprimer, iz "typeinfo".
+
+Planirujetsä dobavitj v sintaksis jazyka konstrukçiju vrode "mixin( expression )", kotoraja možet bytj ispoljzovana v raznyh kontekstah - v prostranstve imön, v klasse, v bloke, v imeni tipa, v vyraženii i t. d. Pri postrojenii koda zadannoje vyraženije vycisläjetsä, v nöm ožidajetsä "constexpr" stoka, kotoraja razbirajetsä na leksemy, potom podvergajetsä sintaksiceskomu analizu i rezuljtirujuscije sintaksiceskije elementy dobavläjutsä v mesto ispoljzovanija "mixin".
+
+V slucaje ispoljzovanija "mixin" vnutri prostranstva imön ili klassa nado vycislätj eti "mixin" posle postrojenija tabliçy simvolov, no do postrojenija koda, daby pri vycislenii "mixin" vyraženija uže byli vidny ne-"mixin" simvoly i ctoby pri postrojenii ne-"mixin" koda byli vidny "mixin" simvoly. Pri etom porädok postrojenija samih "mixin" dolžen bytj žöstko zadan, ctoby simvoly iz predyduscego "mixin" byli vidny v posledujuscem. Pri etom stoit kak-to dorobatatj obscij proçess postroitelä koda - dobavitj šag raskrytija "mixin", cto možet vyzvatj nekotoryje zatrudnenija, osobenno v Kompilätore1.
+
+Nado kak-to osobym obrazom modifiçirovatj "SrcLoc" koda v "mixin", daby sdelatj jego unikaljnym po otnošeniju k ne-"mixin" kodu i kodu iz drugih "mixin". Takže nado obrabatyvatj ošibki vnutri "mixin" koda shožim s makrosami i šablonami obrazom - pokazyvaja v nacale mesto raskrytija "mixin".
+
+Pri raskrytii "mixin" mogut voznikatj raznoobraznyje ošibki - nevalidnaja "UTF-8" stroka, leksiceskije ošibki, sintaksiceskije ošibki. Ih nado kak-to dolžnym obrazom pokazyvatj. Vozmožno, stoit zavesti räd kodov ošibok dlä "mixin".
+
+Suscestvujet räd mest, gde "mixin" možet raskryvatjsä mnogokratno. Takije mesta eto šablonnyj kod, parametry signatury šablona, sobstvennyje iniçializatory polej, çikly "for" dlä kortežej, "auto" funkçii, lämbdy i vozmožno jescö cto-to. Dlä nekotoryh iz nih mnogokratnoje raskrytije validno, a v nekotoryh mestah jego stoit izbegatj i realizovatj kakoje-to keširovanije.
