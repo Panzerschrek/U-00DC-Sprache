@@ -2435,7 +2435,7 @@ Value CodeBuilder::ConcatenateCharArrays(
 
 	if( !function_context.is_functionless_context )
 	{
-		result->llvm_value= function_context.llvm_ir_builder.CreateAlloca( result->type.GetLLVMType() );
+		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( result->type.GetLLVMType() );
 		CreateLifetimeStart( function_context, result->llvm_value );
 
 		if( l_var->llvm_value != nullptr && r_var->llvm_value != nullptr )

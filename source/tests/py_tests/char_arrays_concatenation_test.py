@@ -11,7 +11,6 @@ def CharArrayConcatenation_Test0():
 			halt if( c != "ryR7766N-Q" );
 			auto d= b + a;
 			halt if( d != "7766N-QryR" );
-
 			static_assert( typeinfo</typeof(c)/>.element_count == 10s );
 			static_assert( typeinfo</typeof(d)/>.element_count == 10s );
 		}
