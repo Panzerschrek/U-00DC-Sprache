@@ -9,7 +9,7 @@ comment "//"
 color white "\<[a-zA-Z][a-zA-Z0-9_]*\>"
 
 # Keywords
-color green "\<(fn|op|var|auto|return|yield|label|while|loop|break|continue|if|static_if|enable_if|if_coro_advance|else|move|take|byval|select|tup|struct|class|final|polymorph|interface|abstract|non_sync|ordered|nomangle|call_conv|virtual|override|pure|generator|async|await|namespace|public|private|protected|true|false|mut|imut|constexpr|const|zero_init|this|base|constructor|destructor|conversion_constructor|static_assert|halt|safe|type|typeinfo|same_type|typeof|template|enum|cast_ref|cast_imut|as|is|import|export|default|delete|for|with|do|switch|case|typename|lambda|static|package|module)\>"
+color green "\<(fn|op|var|auto|return|yield|label|while|loop|break|continue|if|static_if|enable_if|if_coro_advance|else|move|take|byval|select|tup|struct|class|final|polymorph|interface|abstract|non_sync|ordered|nomangle|call_conv|virtual|override|pure|generator|async|await|namespace|public|private|protected|true|false|mut|imut|constexpr|const|zero_init|this|base|constructor|destructor|conversion_constructor|static_assert|halt|safe|type|typeinfo|same_type|typeof|template|enum|cast_ref|cast_imut|as|is|import|export|default|delete|for|with|do|switch|case|typename|lambda|static|package|module|mixin)\>"
 color brightyellow "\<(void|bool|i8|u8|i16|u16|i32|u32|i64|u64|i128|u128|i256|u256|i512|u512|i1024|u1024|i2048|u2048|i4096|u4096|f16|f32|f80|f64|f128|char8|char16|char32|byte8|byte16|byte32|byte64|byte128|byte256|byte512|byte1024|byte2048|byte4096|size_type|ssize_type)\>"
 color red "\<(unsafe|uninitialized|cast_mut|cast_ref_unsafe)\>"
 
