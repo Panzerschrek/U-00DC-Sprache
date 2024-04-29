@@ -20,7 +20,7 @@ namespace U
 namespace
 {
 
-bool IsCompatibleCharArrays( const Type& l, const Type& r )
+bool AreCharArraysWithSameElementType( const Type& l, const Type& r )
 {
 	if( const auto l_array= l.GetArrayType() )
 		if( const auto r_array= r.GetArrayType() )
@@ -2181,7 +2181,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
-	else if( op == OverloadedOperator::Add && IsCompatibleCharArrays( args.front().type, args.back().type ) )
+	else if( op == OverloadedOperator::Add && AreCharArraysWithSameElementType( args.front().type, args.back().type ) )
 		return ConcatenateCharArrays( left_expr, right_expr, src_loc, names_scope, function_context );
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names_scope, function_context );
@@ -2460,7 +2460,7 @@ Value CodeBuilder::ConcatenateCharArrays(
 
 			function_context.llvm_ir_builder.CreateMemCpy(
 				dst_r, llvm::MaybeAlign(alignment),
-				r_var->llvm_value , llvm::MaybeAlign(alignment),
+				r_var->llvm_value, llvm::MaybeAlign(alignment),
 				size_r );
 		}
 	}

@@ -3368,7 +3368,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return Value( VariablePtr( Variable{ .t= void_type_, .value_type= ValueType::Value, .location= Variable::Location::LLVMRegister } ) );
 	}
-	else if( operator == OverloadedOperator::Add && IsCompatibleCharArrays( args_ref.front().t, args_ref.back().t ) )
+	else if( operator == OverloadedOperator::Add && AreCharArraysWithSameElementType( args_ref.front().t, args_ref.back().t ) )
 	{
 		return ConcatenateCharArrays( names_scope, function_context, arg_l, arg_r, src_loc );
 	}
@@ -3680,7 +3680,7 @@ fn CodeBuilder::ConcatenateCharArrays(
 				LLVMBuildMemCpy(
 					function_context.llvm_ir_builder,
 					result.llvm_value, alignment,
-					l_var.llvm_value, alignment,
+					l_var.llvm_value , alignment,
 					LLVMConstInt( fundamental_llvm_types_.u64_, size_l, LLVMBool::False ) );
 
 				// Copy r_var bytes into destination.
@@ -4683,7 +4683,7 @@ fn CastPtr( $(Src) src ) unsafe : $(Dst)
 	return unsafe( cast_ref_unsafe</$(Dst)/>(src) );
 }
 
-fn IsCompatibleCharArrays( Type& l, Type& r ) : bool
+fn AreCharArraysWithSameElementType( Type& l, Type& r ) : bool
 {
 	if_var( &l_array : l.GetArrayType() )
 	{
