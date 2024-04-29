@@ -120,6 +120,17 @@ def CharArrayConcatenationConstexpr_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def CharArrayConcatenationConstexpr_Test1():
+	c_program_text= """
+		// UTF-32.
+		auto a= "Йо"u32;
+		auto b= " Моё"u32;
+		auto c= a + b;
+		static_assert( c == "Йо Моё"u32 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def NoConcatenationForNonCharArrays_Test0():
 	c_program_text= """
 		fn Foo()

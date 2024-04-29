@@ -2467,17 +2467,41 @@ Value CodeBuilder::ConcatenateCharArrays(
 
 	if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
 	{
-		// TODO - optimize this, handle ConstantDataArray.
-		llvm::SmallVector<llvm::Constant*, 64> constants;
-		constants.resize( result_array_type.element_count );
+		if( const auto l_constant_data_array= llvm::dyn_cast<llvm::ConstantDataArray>( l_var->constexpr_value ) )
+		{
+			if( const auto r_constant_data_array= llvm::dyn_cast<llvm::ConstantDataArray>( r_var->constexpr_value ) )
+			{
+				// Fast path - for constant data arrays.
+				const llvm::StringRef l_data= l_constant_data_array->getRawDataValues();
+				const llvm::StringRef r_data= r_constant_data_array->getRawDataValues();
 
-		for( uint64_t i= 0; i < l_array_type->element_count; ++i )
-			constants[size_t(i)]= l_var->constexpr_value->getAggregateElement(uint32_t(i));
+				llvm::SmallString<128> concat_result;
+				concat_result.resize( l_data.size() + r_data.size() );
 
-		for( uint64_t i= 0; i < r_array_type->element_count; ++i )
-			constants[size_t(i + l_array_type->element_count)]= r_var->constexpr_value->getAggregateElement(uint32_t(i));
+				U_ASSERT( concat_result.size() == data_layout_.getTypeAllocSize( result_array_type.llvm_type ) );
 
-		result->constexpr_value= llvm::ConstantArray::get( result_array_type.llvm_type, constants );
+				std::memcpy( concat_result.data(), l_data.data(), l_data.size() );
+				std::memcpy( concat_result.data() + l_data.size(), r_data.data(), r_data.size() );
+
+				result->constexpr_value=
+					llvm::ConstantDataArray::getRaw( concat_result, result_array_type.element_count, result_array_type.element_type.GetLLVMType() );
+			}
+		}
+
+		if( result->constexpr_value == nullptr )
+		{
+			// Generic path - process concatenation symbol by symbol.
+			llvm::SmallVector<llvm::Constant*, 64> constants;
+			constants.resize( result_array_type.element_count );
+
+			for( uint64_t i= 0; i < l_array_type->element_count; ++i )
+				constants[size_t(i)]= l_var->constexpr_value->getAggregateElement(uint32_t(i));
+
+			for( uint64_t i= 0; i < r_array_type->element_count; ++i )
+				constants[size_t(i + l_array_type->element_count)]= r_var->constexpr_value->getAggregateElement(uint32_t(i));
+
+			result->constexpr_value= llvm::ConstantArray::get( result_array_type.llvm_type, constants );
+		}
 	}
 
 	function_context.variables_state.AddNode( result );
