@@ -179,7 +179,13 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
 	class_type->members->SetClass( class_type );
 
-	FillClassNamesScope( class_type, class_name, class_declaration.kind_attribute_, class_declaration.elements );
+	FillClassNamesScope(
+		class_type,
+		class_name,
+		class_declaration.kind_attribute_,
+		class_declaration.elements,
+		// Members are public by-default, until first visibility label.
+		ClassMemberVisibility::Public );
 
 	return class_type;
 }
@@ -188,7 +194,8 @@ void CodeBuilder::FillClassNamesScope(
 	const ClassPtr class_type,
 	const std::string_view class_name,
 	const Synt::ClassKindAttribute class_kind,
-	const Synt::ClassElementsList& class_elements )
+	const Synt::ClassElementsList& class_elements,
+	const ClassMemberVisibility initial_visibility )
 {
 	// TODO - provide initial visibility.
 	struct Visitor final
@@ -197,11 +204,17 @@ void CodeBuilder::FillClassNamesScope(
 		const Synt::ClassKindAttribute class_kind;
 		ClassPtr class_type;
 		const std::string_view class_name;
-		ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
+		ClassMemberVisibility current_visibility;
 		uint32_t field_number= 0u;
 
-		Visitor( CodeBuilder& in_this, const Synt::ClassKindAttribute in_class_kind, ClassPtr in_class_type, const std::string_view in_class_name )
-			: this_(in_this), class_kind(in_class_kind), class_type(in_class_type), class_name(in_class_name)
+		Visitor(
+			CodeBuilder& in_this,
+			const Synt::ClassKindAttribute
+			in_class_kind,
+			ClassPtr in_class_type,
+			const std::string_view in_class_name,
+			const ClassMemberVisibility initial_visibility )
+			: this_(in_this), class_kind(in_class_kind), class_type(in_class_type), class_name(in_class_name), current_visibility(initial_visibility)
 		{}
 
 		void operator()( const Synt::ClassField& in_class_field )
@@ -273,7 +286,7 @@ void CodeBuilder::FillClassNamesScope(
 		}
 	};
 
-	class_elements.Iter( Visitor( *this, class_kind, class_type, class_name ) );
+	class_elements.Iter( Visitor( *this, class_kind, class_type, class_name, initial_visibility ) );
 }
 
 void CodeBuilder::NamesScopeFill(

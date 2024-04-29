@@ -203,9 +203,10 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, const Synt::Mixin
 	else
 		class_name= class_members.GetThisNamespaceName();
 
-	// TODO - handle visibility label of this mixin.
+	// TODO - use visibility label of this mixin.
+	ClassMemberVisibility visibility= ClassMemberVisibility::Public;
 
-	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements );
+	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements, visibility );
 }
 
 std::optional<llvm::StringRef> CodeBuilder::EvaluateMixinString( NamesScope& names_scope, const Synt::Mixin& mixin )
