@@ -3695,6 +3695,23 @@ fn CodeBuilder::ConcatenateCharArrays(
 			}
 		}
 	}
+	if( l_var.constexpr_value != LLVMValueRef::Null && r_var.constexpr_value != LLVMValueRef::Null )
+	{
+		// TODO - speed-up this, handle the case where both constexpr values are llvm::ConstantDataArray instances.
+
+		var ust::vector</LLVMValueRef/> mut constants( size_type(result_array_type.element_count), LLVMValueRef::Null );
+
+		for( auto mut i= 0u; i < u32(l_array_type.element_count); ++i )
+		{
+			constants[size_type(i)]= unsafe( LLVMGetAggregateElement( l_var.constexpr_value, i ) );
+		}
+		for( auto mut i= 0u; i < u32(r_array_type.element_count); ++i )
+		{
+			constants[size_type(i) + size_type(l_array_type.element_count)]= unsafe( LLVMGetAggregateElement( r_var.constexpr_value, i ) );
+		}
+
+		result.constexpr_value= unsafe( LLVMConstArray( result_array_type.element_type.GetLLVMType(), constants.data(), u32(constants.size()) ) );
+	}
 
 	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
