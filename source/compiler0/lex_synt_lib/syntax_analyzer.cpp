@@ -253,6 +253,8 @@ private:
 			FunctionTemplate >;
 	TemplateVar ParseTemplate();
 
+	Mixin ParseMixin();
+
 	const Macro* FetchMacro( const std::string& macro_name, const Macro::Context context );
 
 	template<typename ParseFnResult>
@@ -726,7 +728,11 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_le
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			result_builder.Append(ParseTypeAlias() );
+			result_builder.Append( ParseTypeAlias() );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
+		{
+			result_builder.Append( ParseMixin() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
@@ -3576,6 +3582,10 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 		{
 			result_builder.Append( ParseTypeAlias() );
 		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
+		{
+			result_builder.Append( ParseMixin() );
+		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
@@ -3935,6 +3945,20 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 
 	U_ASSERT(false);
 	return EmptyVariant();
+}
+
+Mixin SyntaxAnalyzer::ParseMixin()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ );
+
+	Mixin mixin( it_->src_loc );
+
+	NextLexem();
+
+	mixin.expression= ParseExpressionInBrackets();
+	ExpectSemicolon();
+
+	return mixin;
 }
 
 const Macro* SyntaxAnalyzer::FetchMacro( const std::string& macro_name, const Macro::Context context )

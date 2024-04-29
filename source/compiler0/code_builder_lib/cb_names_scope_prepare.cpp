@@ -255,6 +255,10 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 			this_.NamesScopeFill( *class_type->members, inner_class );
 			class_type->SetMemberVisibility( inner_class.name, current_visibility );
 		}
+		void operator()( const Synt::Mixin& mixin )
+		{
+			this_.NamesScopeFill( *class_type->members, mixin );
+		}
 	};
 
 	class_declaration.elements.Iter( Visitor( *this, class_declaration, class_type, class_name ) );
@@ -327,6 +331,13 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 	names_scope.AddName(
 		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
 		NamesScopeValue( static_assert_, static_assert_declaration.src_loc ) );
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin )
+{
+	// TODO
+	(void)names_scope;
+	(void)mixin;
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(
