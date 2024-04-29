@@ -1315,8 +1315,10 @@ private:
 
 	// Mixins
 	void ExpandMixins_r( NamesScope& names_scope );
-	void ExpandMixins( NamesScope& names_scope, Mixins& mixins );
-	void ExpandMixin( NamesScope& names_scope, const Synt::Mixin& mixin );
+	void ExpandClassMixins( ClassPtr class_type );
+	void ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mixin& mixin );
+	void ExpandClassMixin( NamesScope& class_members, const Synt::Mixin& mixin );
+	std::optional<llvm::StringRef> EvaluateMixinString( NamesScope& names_scope, const Synt::Mixin& mixin );
 
 	// Global things build
 
@@ -1509,7 +1511,8 @@ private:
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
 
-	std::unordered_map<MixinExpansionKey, MixinExpansionResult, MixinExpansionKeyHasher> mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, NamespaceMixinExpansionResult, MixinExpansionKeyHasher> namespace_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, ClassMixinExpansionResult, MixinExpansionKeyHasher> class_mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

@@ -28,10 +28,14 @@ struct MixinExpansionKeyHasher
 	size_t operator()( const MixinExpansionKey& k ) const { return k.Hash(); }
 };
 
-struct MixinExpansionResult
+struct NamespaceMixinExpansionResult
 {
-	// TODO - store different kind of expansion elements for mixins in different contexts.
 	Synt::ProgramElementsList program_elements;
+};
+
+struct ClassMixinExpansionResult
+{
+	Synt::ClassElementsList class_elements;
 };
 
 } // namespace U

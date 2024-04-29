@@ -141,6 +141,7 @@ public:
 	SyntaxAnalysisResult DoAnalyzis();
 	std::vector<Import> ParseImports();
 	NamespaceParsingResult ParseNamespaceElements();
+	ClassElementsParsingResult ParseClassElements();
 
 private:
 	struct ParsedMacroElement;
@@ -361,6 +362,14 @@ NamespaceParsingResult SyntaxAnalyzer::ParseNamespaceElements()
 {
 	NamespaceParsingResult result;
 	result.namespace_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
+	result.error_messages.swap( error_messages_ );
+	return result;
+}
+
+ClassElementsParsingResult SyntaxAnalyzer::ParseClassElements()
+{
+	ClassElementsParsingResult result;
+	result.class_elements= ParseClassBodyElements();
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
@@ -4477,6 +4486,21 @@ NamespaceParsingResult ParseNamespaceElements(
 		std::move(source_file_contents_hash) );
 
 	return syntax_analyzer.ParseNamespaceElements();
+}
+
+ClassElementsParsingResult ParseClassElements(
+	const Lexems& lexems,
+	MacrosByContextMap macros,
+	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
+	std::string source_file_contents_hash )
+{
+	SyntaxAnalyzer syntax_analyzer(
+		lexems,
+		std::make_shared<MacrosByContextMap>( std::move(macros) ),
+		macro_expansion_contexts,
+		std::move(source_file_contents_hash) );
+
+	return syntax_analyzer.ParseClassElements();
 }
 
 } // namespace Synt
