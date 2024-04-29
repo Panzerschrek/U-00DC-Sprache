@@ -109,7 +109,7 @@ void CodeBuilder::ExpandMixin( NamesScope& names_scope, const Synt::Mixin& mixin
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		// TODO - use different functions for mixins in different contexts.
-		Synt::SyntaxAnalysisResult synt_result=
+		Synt::NamespaceParsingResult synt_result=
 			Synt::ParseNamespaceElements(
 				lex_result.lexems,
 				Synt::MacrosByContextMap(), // TODO - use proper macros
@@ -125,7 +125,7 @@ void CodeBuilder::ExpandMixin( NamesScope& names_scope, const Synt::Mixin& mixin
 		}
 
 		// We need to preserve syntax result, because we store raw pointers to syntax elements.
-		it= mixin_expansions_.emplace( std::make_pair( key, MixinExpansionResult{ std::move(synt_result.program_elements) } ) ).first;
+		it= mixin_expansions_.emplace( std::make_pair( key, MixinExpansionResult{ std::move(synt_result.namespace_elements) } ) ).first;
 	}
 
 	MixinExpansionResult& mixin_expansion_result= it->second;

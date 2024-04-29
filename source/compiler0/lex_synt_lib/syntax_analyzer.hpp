@@ -30,6 +30,12 @@ struct SyntaxAnalysisResult
 	LexSyntErrors error_messages;
 };
 
+struct NamespaceParsingResult
+{
+	ProgramElementsList namespace_elements;
+	LexSyntErrors error_messages;
+};
+
 std::vector<Import> ParseImports( const Lexems& lexems );
 SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
@@ -37,7 +43,7 @@ SyntaxAnalysisResult SyntaxAnalysis(
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
 	std::string source_file_contents_hash );
 
-SyntaxAnalysisResult ParseNamespaceElements(
+NamespaceParsingResult ParseNamespaceElements(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
