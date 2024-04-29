@@ -37,6 +37,12 @@ SyntaxAnalysisResult SyntaxAnalysis(
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
 	std::string source_file_contents_hash );
 
+SyntaxAnalysisResult ParseNamespaceElements(
+	const Lexems& lexems,
+	MacrosByContextMap macros,
+	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
+	std::string source_file_contents_hash );
+
 } // namespace Synt
 
 } // namespace U

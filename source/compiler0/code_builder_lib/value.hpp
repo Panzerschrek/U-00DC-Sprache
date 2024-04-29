@@ -6,6 +6,7 @@
 
 #include "../lex_synt_lib/syntax_elements.hpp"
 #include "type.hpp"
+#include "mixins.hpp"
 
 
 namespace U
@@ -228,13 +229,6 @@ struct IncompleteGlobalVariable
 	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
 
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
-};
-
-struct Mixins
-{
-	// This vector should be emptied after mixins preparation.
-	// Use vector to keep mixins expansion order stable.
-	std::vector<const Synt::Mixin*> syntax_elements;
 };
 
 struct YetNotDeducedTemplateArg final

@@ -1313,6 +1313,11 @@ private:
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function );
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 
+	// Mixins
+	void ExpandMixins_r( NamesScope& names_scope );
+	void ExpandMixins( NamesScope& names_scope, Mixins& mixins );
+	void ExpandMixin( NamesScope& names_scope, const Synt::Mixin& mixin );
+
 	// Global things build
 
 	bool IsTypeComplete( const Type& type ) const;
@@ -1503,6 +1508,8 @@ private:
 
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
+
+	std::unordered_map<MixinExpansionKey, MixinExpansionResult, MixinExpansionKeyHasher> mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

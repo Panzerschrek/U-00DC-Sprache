@@ -234,6 +234,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 				GlobalThingBuildTypeAlias( names_scope, value );
 			else if( value.GetIncompleteGlobalVariable() != nullptr )
 				GlobalThingBuildVariable( names_scope, value );
+			else if( value.GetMixins() != nullptr ) {} // Nothing to do here. Mixins should be expanded earlier.
 			else U_ASSERT(false);
 		});
 }
