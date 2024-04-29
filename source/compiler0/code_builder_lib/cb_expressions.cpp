@@ -2492,7 +2492,7 @@ Value CodeBuilder::ConcatenateCharArrays(
 		{
 			// Generic path - process concatenation symbol by symbol.
 			llvm::SmallVector<llvm::Constant*, 64> constants;
-			constants.resize( result_array_type.element_count );
+			constants.resize( size_t(result_array_type.element_count) );
 
 			for( uint64_t i= 0; i < l_array_type->element_count; ++i )
 				constants[size_t(i)]= l_var->constexpr_value->getAggregateElement(uint32_t(i));
