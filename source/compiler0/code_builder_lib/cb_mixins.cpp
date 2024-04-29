@@ -99,7 +99,9 @@ void CodeBuilder::ExpandMixin( NamesScope& names_scope, const Synt::Mixin& mixin
 		// TODO - setup file index and macro expansion context.
 		if( !lex_result.errors.empty() )
 		{
-			// TODO - handle errors.
+			for( const LexSyntError& error : lex_result.errors )
+				REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), mixin.src_loc, error.text );
+
 			return;
 		}
 
@@ -116,7 +118,9 @@ void CodeBuilder::ExpandMixin( NamesScope& names_scope, const Synt::Mixin& mixin
 
 		if( !synt_result.error_messages.empty() )
 		{
-			// TODO - handle errors.
+			for( const LexSyntError& error : synt_result.error_messages )
+				REPORT_ERROR( MixinSyntaxError, names_scope.GetErrors(), mixin.src_loc, error.text );
+
 			return;
 		}
 

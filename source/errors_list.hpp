@@ -254,3 +254,7 @@ PROCESS_ERROR( ReferenceNotationForLambda, "It's not allowed to specify referenc
 PROCESS_ERROR( VariableIsNotCapturedByLambda, "Variable \"{0}\" is not captured by lambda." )
 PROCESS_ERROR( DuplicatedCapture, "Duplicated capture for variable \"{0}\"." )
 PROCESS_ERROR( UnusedCapture, "Capture \"{0}\" is not used." )
+
+// Mixins
+PROCESS_ERROR( MixinLexicalError, "Mixin lexical error: {0}" )
+PROCESS_ERROR( MixinSyntaxError, "Mixin syntax error: {0}" )

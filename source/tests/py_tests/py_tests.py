@@ -65,6 +65,7 @@ def main():
 		"macro_errors_test",
 		"macro_test",
 		"methods_generation_test",
+		"mixins_errors_test",
 		"mixins_test",
 		"multiple_inner_reference_tags_for_structs_test",
 		"multiple_inner_reference_tags_test",
