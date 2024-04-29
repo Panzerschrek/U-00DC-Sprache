@@ -33,6 +33,7 @@ def main():
 		"byte_types_test",
 		"byval_this",
 		"c_style_for_operator_test",
+		"char_arrays_concatenation_test",
 		"char_literals_test",
 		"char_test",
 		"code_builder_test",

@@ -815,6 +815,13 @@ private:
 		NamesScope& names_scope,
 		FunctionContext& function_context );
 
+	Value ConcatenateCharArrays(
+		const Synt::Expression&  left_expr,
+		const Synt::Expression& right_expr,
+		const SrcLoc& src_loc,
+		NamesScope& names_scope,
+		FunctionContext& function_context );
+
 	std::optional<Value> TryCallOverloadedUnaryOperator(
 		const VariablePtr& variable,
 		OverloadedOperator op,

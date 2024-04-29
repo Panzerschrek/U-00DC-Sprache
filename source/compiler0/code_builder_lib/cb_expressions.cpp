@@ -17,6 +17,23 @@
 namespace U
 {
 
+namespace
+{
+
+bool AreCharArraysWithSameElementType( const Type& l, const Type& r )
+{
+	if( const auto l_array= l.GetArrayType() )
+		if( const auto r_array= r.GetArrayType() )
+			if( l_array->element_type == r_array->element_type )
+				if( const auto fundamental_type= l_array->element_type.GetFundamentalType() )
+					if( IsChar( fundamental_type->fundamental_type ) )
+						return true;
+
+	return false;
+}
+
+} // namespace
+
 VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	const Synt::Expression& expression,
 	NamesScope& names_scope,
@@ -2164,6 +2181,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
+	else if( op == OverloadedOperator::Add && AreCharArraysWithSameElementType( args.front().type, args.back().type ) )
+		return ConcatenateCharArrays( left_expr, right_expr, src_loc, names_scope, function_context );
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names_scope, function_context );
 
@@ -2359,6 +2378,135 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_var->type );
 		return ErrorValue();
 	}
+}
+
+Value CodeBuilder::ConcatenateCharArrays(
+	const Synt::Expression&  left_expr,
+	const Synt::Expression& right_expr,
+	const SrcLoc& src_loc,
+	NamesScope& names_scope,
+	FunctionContext& function_context )
+{
+	const VariablePtr l_var= BuildExpressionCodeEnsureVariable(  left_expr, names_scope, function_context );
+	if( l_var->type == invalid_type_ )
+		return ErrorValue();
+
+	const VariableMutPtr l_var_lock=
+		Variable::Create(
+			l_var->type,
+			ValueType::ReferenceImut,
+			l_var->location,
+			l_var->name + " lock",
+			l_var->llvm_value );
+	function_context.variables_state.AddNode( l_var_lock );
+	function_context.variables_state.TryAddLink( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
+	function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
+
+	l_var_lock->preserve_temporary= true;
+	RegisterTemporaryVariable( function_context, l_var_lock );
+
+	const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names_scope, function_context );
+	if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, r_var->name );
+
+	function_context.variables_state.MoveNode( l_var_lock );
+
+	if( r_var->type == invalid_type_ )
+		return ErrorValue();
+
+	const auto l_array_type= l_var->type.GetArrayType();
+	const auto r_array_type= r_var->type.GetArrayType();
+	U_ASSERT( l_array_type != nullptr );
+	U_ASSERT( r_array_type != nullptr );
+	U_ASSERT( l_array_type->element_type == r_array_type->element_type );
+
+	ArrayType result_array_type;
+	// TODO - handle overflow?
+	result_array_type.element_count= l_array_type->element_count + r_array_type->element_count;
+	result_array_type.element_type= l_array_type->element_type;
+	result_array_type.llvm_type= llvm::ArrayType::get( result_array_type.element_type.GetLLVMType(), result_array_type.element_count );
+
+	const VariableMutPtr result=
+		Variable::Create(
+			result_array_type,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			std::string( OverloadedOperatorToString( OverloadedOperator::Add ) ) );
+
+	if( !function_context.is_functionless_context )
+	{
+		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( result->type.GetLLVMType() );
+		CreateLifetimeStart( function_context, result->llvm_value );
+
+		if( l_var->llvm_value != nullptr && r_var->llvm_value != nullptr )
+		{
+			const auto alignment= data_layout_.getABITypeAlignment( l_array_type->element_type.GetLLVMType() ); // TODO - is this right alignment?
+
+			const auto size_l= llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32_, llvm::APInt( 32, data_layout_.getTypeAllocSize( l_array_type->llvm_type ) ) );
+			const auto size_r= llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32_, llvm::APInt( 32, data_layout_.getTypeAllocSize( r_array_type->llvm_type ) ) );
+
+			// Copy l_var bytes into destination.
+			function_context.llvm_ir_builder.CreateMemCpy(
+				result->llvm_value, llvm::MaybeAlign(alignment),
+				l_var->llvm_value , llvm::MaybeAlign(alignment),
+				size_l );
+
+			// Copy r_var bytes into destination.
+			const auto dst_r=
+				function_context.llvm_ir_builder.CreateInBoundsGEP(
+					l_array_type->llvm_type,
+					result->llvm_value,
+					llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32_, llvm::APInt( 32, 1 ) ) );
+
+			function_context.llvm_ir_builder.CreateMemCpy(
+				dst_r, llvm::MaybeAlign(alignment),
+				r_var->llvm_value, llvm::MaybeAlign(alignment),
+				size_r );
+		}
+	}
+
+	if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
+	{
+		if( const auto l_constant_data_array= llvm::dyn_cast<llvm::ConstantDataArray>( l_var->constexpr_value ) )
+		{
+			if( const auto r_constant_data_array= llvm::dyn_cast<llvm::ConstantDataArray>( r_var->constexpr_value ) )
+			{
+				// Fast path - for constant data arrays.
+				const llvm::StringRef l_data= l_constant_data_array->getRawDataValues();
+				const llvm::StringRef r_data= r_constant_data_array->getRawDataValues();
+
+				llvm::SmallString<128> concat_result;
+				concat_result.resize( l_data.size() + r_data.size() );
+
+				U_ASSERT( concat_result.size() == data_layout_.getTypeAllocSize( result_array_type.llvm_type ) );
+
+				std::memcpy( concat_result.data(), l_data.data(), l_data.size() );
+				std::memcpy( concat_result.data() + l_data.size(), r_data.data(), r_data.size() );
+
+				result->constexpr_value=
+					llvm::ConstantDataArray::getRaw( concat_result, result_array_type.element_count, result_array_type.element_type.GetLLVMType() );
+			}
+		}
+
+		if( result->constexpr_value == nullptr )
+		{
+			// Generic path - process concatenation symbol by symbol.
+			llvm::SmallVector<llvm::Constant*, 64> constants;
+			constants.resize( size_t(result_array_type.element_count) );
+
+			for( uint64_t i= 0; i < l_array_type->element_count; ++i )
+				constants[size_t(i)]= l_var->constexpr_value->getAggregateElement(uint32_t(i));
+
+			for( uint64_t i= 0; i < r_array_type->element_count; ++i )
+				constants[size_t(i + l_array_type->element_count)]= r_var->constexpr_value->getAggregateElement(uint32_t(i));
+
+			result->constexpr_value= llvm::ConstantArray::get( result_array_type.llvm_type, constants );
+		}
+	}
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(

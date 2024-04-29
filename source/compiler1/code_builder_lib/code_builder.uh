@@ -493,6 +493,14 @@ private:
 		ust::shared_ptr_final</Synt::Expression/>& arg_r,
 		SrcLoc& src_loc ) : Value;
 
+	fn ConcatenateCharArrays(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::shared_ptr_final</Synt::Expression/>& arg_l,
+		ust::shared_ptr_final</Synt::Expression/>& arg_r,
+		SrcLoc& src_loc ) : Value;
+
 	fn TryCallOverloadedUnaryOperator(
 		mut this,
 		NamesScopePtr& names_scope,
