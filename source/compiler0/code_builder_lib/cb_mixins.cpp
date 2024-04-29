@@ -95,7 +95,7 @@ void CodeBuilder::ExpandClassMixins( const ClassPtr class_type )
 	{
 		// Avoid using iterator-based foreach, in order to handle container additions in recursive calls.
 		for( size_t i= 0; i < mixins->syntax_elements.size(); ++i )
-			ExpandClassMixin( *class_type->members, *mixins->syntax_elements[i] );
+			ExpandClassMixin( class_type, *mixins->syntax_elements[i] );
 
 		// Clear the container, since all mixins from it were already expanded.
 		mixins->syntax_elements.clear();
@@ -148,8 +148,10 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mix
 	NamesScopeFill( names_scope, it->second.program_elements );
 }
 
-void CodeBuilder::ExpandClassMixin( NamesScope& class_members, const Synt::Mixin& mixin )
+void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, const Synt::Mixin& mixin )
 {
+	NamesScope& class_members= *class_type->members;
+
 	const auto mixin_text= EvaluateMixinString( class_members, mixin );
 	if( mixin_text == std::nullopt )
 		return;
@@ -191,7 +193,19 @@ void CodeBuilder::ExpandClassMixin( NamesScope& class_members, const Synt::Mixin
 		it= class_mixin_expansions_.emplace( std::make_pair( key, ClassMixinExpansionResult{ std::move(synt_result.class_elements) } ) ).first;
 	}
 
-	//NamesScopeFill( class_members, it->second.class_elements );
+	Synt::ClassKindAttribute class_kind= Synt::ClassKindAttribute::Struct;
+	std::string_view class_name;
+	if( class_type->syntax_element != nullptr )
+	{
+		class_kind= class_type->syntax_element->kind_attribute_;
+		class_name= class_type->syntax_element->name;
+	}
+	else
+		class_name= class_members.GetThisNamespaceName();
+
+	// TODO - handle visibility label of this mixin.
+
+	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements );
 }
 
 std::optional<llvm::StringRef> CodeBuilder::EvaluateMixinString( NamesScope& names_scope, const Synt::Mixin& mixin )
