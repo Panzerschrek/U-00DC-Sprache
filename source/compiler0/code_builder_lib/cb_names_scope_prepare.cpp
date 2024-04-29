@@ -335,9 +335,20 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin )
 {
-	// TODO
-	(void)names_scope;
-	(void)mixin;
+	// Collect all mixins in a member with name equal to "mixin" keyword.
+	const auto key= Keyword( Keywords::mixin_ );
+
+	if( const auto prev_value= names_scope.GetThisScopeValue( key ) )
+	{
+		if( const auto mixins= prev_value->value.GetMixins() )
+			mixins->syntax_elements.push_back( &mixin );
+	}
+	else
+	{
+		Mixins mixins;
+		mixins.syntax_elements.push_back( &mixin );
+		names_scope.AddName( key, NamesScopeValue( std::move(mixins), mixin.src_loc ) );
+	}
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(

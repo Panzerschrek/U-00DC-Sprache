@@ -922,6 +922,7 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetMixins() != nullptr ||
 				value.GetYetNotDeducedTemplateArg() != nullptr ||
 				value.GetErrorValue() != nullptr )
 			{} // Ignore these kinds if values.
@@ -963,6 +964,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetMixins() != nullptr ||
 				value.GetYetNotDeducedTemplateArg() != nullptr ||
 				value.GetErrorValue() != nullptr )
 			{} // Ignore these kinds if values.

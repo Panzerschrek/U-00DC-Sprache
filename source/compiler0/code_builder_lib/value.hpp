@@ -230,6 +230,13 @@ struct IncompleteGlobalVariable
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
 };
 
+struct Mixins
+{
+	// This vector should be emptied after mixins preparation.
+	// Use vector to keep mixins expansion order stable.
+	std::vector<const Synt::Mixin*> syntax_elements;
+};
+
 struct YetNotDeducedTemplateArg final
 {};
 
@@ -251,6 +258,7 @@ public:
 	Value( StaticAssert static_assert_ );
 	Value( TypeAlias type_alias );
 	Value( IncompleteGlobalVariable incomplete_global_variable );
+	Value( Mixins mixins );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
@@ -282,6 +290,9 @@ public:
 	// incomplete global variable
 	IncompleteGlobalVariable* GetIncompleteGlobalVariable();
 	const IncompleteGlobalVariable* GetIncompleteGlobalVariable() const;
+	// Mixins
+	Mixins* GetMixins();
+	const Mixins* GetMixins() const;
 	// Yet not deduced template arg
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
@@ -300,6 +311,7 @@ private:
 		StaticAssert,
 		TypeAlias,
 		IncompleteGlobalVariable,
+		Mixins,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 };
