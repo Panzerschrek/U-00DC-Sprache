@@ -1320,6 +1320,7 @@ private:
 	void ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mixin& mixin );
 	void ExpandClassMixin( ClassPtr class_type, const Synt::Mixin& mixin );
 	std::optional<llvm::StringRef> EvaluateMixinString( NamesScope& names_scope, const Synt::Mixin& mixin );
+	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const Synt::Mixin& mixin, std::string_view mixin_text );
 
 	// Global things build
 

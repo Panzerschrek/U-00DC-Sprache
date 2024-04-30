@@ -113,22 +113,16 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mix
 
 	if( it == namespace_mixin_expansions_.end() )
 	{
-		const LexicalAnalysisResult lex_result= LexicalAnalysis( StringRefToStringView( *mixin_text ) );
-		// TODO - setup file index and macro expansion context.
-		if( !lex_result.errors.empty() )
-		{
-			for( const LexSyntError& error : lex_result.errors )
-				REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), mixin.src_loc, error.text );
-
+		const auto lexems= PrepareMixinLexems( names_scope, mixin, *mixin_text );
+		if( lexems == std::nullopt )
 			return;
-		}
 
 		// TODO - handle wrong file index.
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::NamespaceParsingResult synt_result=
 			Synt::ParseNamespaceElements(
-				lex_result.lexems,
+				*lexems,
 				Synt::MacrosByContextMap(), // TODO - use proper macros
 				source_graph_->macro_expansion_contexts,
 				source_graph_node.contents_hash );
@@ -161,22 +155,16 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, const Synt::Mixin
 
 	if( it == class_mixin_expansions_.end() )
 	{
-		const LexicalAnalysisResult lex_result= LexicalAnalysis( StringRefToStringView( *mixin_text ) );
-		// TODO - setup file index and macro expansion context.
-		if( !lex_result.errors.empty() )
-		{
-			for( const LexSyntError& error : lex_result.errors )
-				REPORT_ERROR( MixinLexicalError, class_members.GetErrors(), mixin.src_loc, error.text );
-
+		const auto lexems= PrepareMixinLexems( class_members, mixin, *mixin_text );
+		if( lexems == std::nullopt )
 			return;
-		}
 
 		// TODO - handle wrong file index.
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::ClassElementsParsingResult synt_result=
 			Synt::ParseClassElements(
-				lex_result.lexems,
+				*lexems,
 				Synt::MacrosByContextMap(), // TODO - use proper macros
 				source_graph_->macro_expansion_contexts,
 				source_graph_node.contents_hash );
@@ -242,6 +230,53 @@ std::optional<llvm::StringRef> CodeBuilder::EvaluateMixinString( NamesScope& nam
 	// TODO - check UTF-8 is valid.
 
 	return mixin_text;
+}
+
+std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, const Synt::Mixin& mixin, std::string_view mixin_text )
+{
+	LexicalAnalysisResult lex_result= LexicalAnalysis( mixin_text );
+
+	// Create new macro expansion context for mixin expansion.
+	const uint32_t macro_expansion_index= uint32_t(macro_expansion_contexts_->size());
+
+	{
+		Synt::MacroExpansionContext mixin_context;
+		mixin_context.macro_declaration_src_loc= mixin.src_loc;
+		mixin_context.macro_name= Keyword( Keywords::mixin_ );
+		mixin_context.src_loc= mixin.src_loc;
+
+		macro_expansion_contexts_->push_back( std::move(mixin_context) );
+	}
+
+	// Use file index of mixin.
+	const uint32_t file_index= mixin.src_loc.GetFileIndex();
+
+	// Numerate lines in mixin lexems starting with line of mixin expansion point.
+	const uint32_t line_shift= mixin.src_loc.GetLine() - 1;
+
+	for( Lexem& lexem : lex_result.lexems )
+	{
+		lexem.src_loc.SetFileIndex( file_index );
+		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
+		lexem.src_loc.SetLine( lexem.src_loc.GetLine() + line_shift );
+	}
+
+	if( !lex_result.errors.empty() )
+	{
+		for( const LexSyntError& error : lex_result.errors )
+		{
+			SrcLoc src_loc_corrected= error.src_loc;
+			src_loc_corrected.SetFileIndex( file_index );
+			src_loc_corrected.SetMacroExpansionIndex( macro_expansion_index );
+			src_loc_corrected.SetLine( src_loc_corrected.GetLine() + line_shift );
+
+			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), src_loc_corrected, error.text );
+		}
+
+		return std::nullopt;
+	}
+
+	return std::move(lex_result.lexems);
 }
 
 } // namespace U

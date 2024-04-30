@@ -42,6 +42,12 @@ uint32_t SrcLoc::GetColumn() const
 	return column_;
 }
 
+void SrcLoc::SetLine( const uint32_t line )
+{
+	U_ASSERT( line <= c_max_line );
+	line_= uint16_t(line);
+}
+
 void SrcLoc::SetFileIndex( const uint32_t file_index )
 {
 	U_ASSERT( file_index <= c_max_file_index );
