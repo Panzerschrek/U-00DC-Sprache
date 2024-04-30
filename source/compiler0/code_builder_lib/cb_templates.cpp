@@ -872,6 +872,9 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 		if( class_type == nullptr )
 			return std::nullopt;
 
+		// Expand mixins right there.
+		ExpandClassMixins( class_type );
+
 		return Type(class_type);
 	}
 	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )
