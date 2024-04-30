@@ -130,7 +130,7 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mix
 		if( !synt_result.error_messages.empty() )
 		{
 			for( const LexSyntError& error : synt_result.error_messages )
-				REPORT_ERROR( MixinSyntaxError, names_scope.GetErrors(), mixin.src_loc, error.text );
+				REPORT_ERROR( MixinSyntaxError, names_scope.GetErrors(), error.src_loc, error.text );
 
 			return;
 		}
@@ -172,7 +172,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, const Synt::Mixin
 		if( !synt_result.error_messages.empty() )
 		{
 			for( const LexSyntError& error : synt_result.error_messages )
-				REPORT_ERROR( MixinSyntaxError, class_members.GetErrors(), mixin.src_loc, error.text );
+				REPORT_ERROR( MixinSyntaxError, class_members.GetErrors(), error.src_loc, error.text );
 
 			return;
 		}

@@ -27,12 +27,14 @@ def MixinSyntaxError_Test0():
 		mixin( "auto s= " ); // statement isn't finished
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "MixinSyntaxError", 2 ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
 
 
 def MixinSyntaxError_Test1():
 	c_program_text= """
-		mixin( "fn Foo(){ lol }" ); // syntactically-incorrect function body
+		mixin( "fn Foo()\\n{\\n lol\\n }" ); // syntactically-incorrect function body
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "MixinSyntaxError", 2 ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
