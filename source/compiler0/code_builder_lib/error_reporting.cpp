@@ -1,6 +1,7 @@
 #include <sstream>
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/program_writer.hpp"
+#include "keywords.hpp"
 #include "type.hpp"
 #include "error_reporting.hpp"
 
@@ -55,7 +56,12 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 	for( const Synt::MacroExpansionContext& macro_expansion_context : macro_expanisoin_contexts )
 	{
 		CodeBuilderError macro_context_error;
-		macro_context_error.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"";
+
+		if( macro_expansion_context.macro_name == Keyword( Keywords::mixin_ ) )
+			macro_context_error.text = "in expansion of mixin";
+		else
+			macro_context_error.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"";
+
 		macro_context_error.src_loc= macro_expansion_context.src_loc;
 		macro_context_error.code= CodeBuilderErrorCode::MacroExpansionContext;
 		macro_context_error.template_context= std::make_shared<TemplateErrorsContext>();

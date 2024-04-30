@@ -31,8 +31,12 @@ void PrintErrorsGCC( const std::vector<IVfs::Path>& source_files, const CodeBuil
 		{
 			U_ASSERT( error.template_context != nullptr );
 
-			std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
-				<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
+			if( error.template_context->context_name == "mixin" )
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
+					<< "In expansion of mixin" << "\n";
+			else
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
+					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
 
 			std::cerr << source_files[ error.src_loc.GetFileIndex() ]
 				<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here: " << "\n";
@@ -70,9 +74,14 @@ void PrintErrorsMSVC( const std::vector<IVfs::Path>& source_files, const CodeBui
 		{
 			PrintErrorsMSVC( source_files, error.template_context->errors );
 
-			std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
-				<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
-				<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
+			if( error.template_context->context_name == "mixin" )
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
+					<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
+					<< "In expansion of mixin\n";
+			else
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
+					<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
+					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
 
 			std::cerr << source_files[error.src_loc.GetFileIndex() ]
 				<< "(" << error.src_loc.GetLine() << "): note: required from here\n";
