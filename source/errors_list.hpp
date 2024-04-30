@@ -256,5 +256,5 @@ PROCESS_ERROR( DuplicatedCapture, "Duplicated capture for variable \"{0}\"." )
 PROCESS_ERROR( UnusedCapture, "Capture \"{0}\" is not used." )
 
 // Mixins
-PROCESS_ERROR( MixinLexicalError, "Mixin lexical error: {0}" )
-PROCESS_ERROR( MixinSyntaxError, "Mixin syntax error: {0}" )
+PROCESS_ERROR( MixinLexicalError, "{0}" )
+PROCESS_ERROR( MixinSyntaxError, "{0}" )
