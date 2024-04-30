@@ -38,3 +38,21 @@ def MixinSyntaxError_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( errors_list[0].error_code == "MacroExpansionContext" )
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
+
+
+def ErrorInsideMixin_Test0():
+	c_program_text= """
+		mixin( "var i32 f= 0.0;" ); // Converting f64 to i32
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "TypesMismatch", 2 ) )
+
+
+def ErrorInsideMixin_Test1():
+	c_program_text= """
+		mixin( "fn Foo() : i32\\n{\\n \\n}\\n" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "NoReturnInFunctionReturningNonVoid", 5 ) )
