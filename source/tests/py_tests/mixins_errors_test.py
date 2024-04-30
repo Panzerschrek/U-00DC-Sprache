@@ -117,3 +117,68 @@ def ErrorInsideMixin_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( errors_list[0].error_code == "MacroExpansionContext" )
 	assert( HasError( errors_list[0].template_errors.errors, "NoReturnInFunctionReturningNonVoid", 5 ) )
+
+
+def MixinRedefinition_Test0():
+	c_program_text= """
+		mixin( "var i32 x= 0;" );
+		mixin( "namespace x{}" ); // Redefine one mixin name with another.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "Redefinition", 3 ) )
+
+
+def MixinRedefinition_Test1():
+	c_program_text= """
+		var i32 x= 0;
+		mixin( "namespace x{}" ); // Redefine non-mixin name with mixin name.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "Redefinition", 3 ) )
+
+
+def MixinRedefinition_Test2():
+	c_program_text= """
+		mixin( "var i32 x= 0;" ); // Redefine non-mixin name with mixin name.
+		namespace x{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "Redefinition", 2 ) )
+
+
+def MixinRedefinition_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn Foo(i32 x);
+			mixin( "fn Foo(i32& x);" ); // Overload a method defined via mixin, but such overloading isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "CouldNotOverloadFunction", 5 ) )
+
+
+def MixinRedefinition_Test4():
+	c_program_text= """
+		mixin( "var i32 x= 0;" ); // Has no collision with "x" from SubSpace.
+		namespace SubSpace
+		{
+			fn x(){} // Ok - redefine
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixinRedefinition_Test5():
+	c_program_text= """
+		auto x= 0.25;
+		namespace SubSpace
+		{
+			mixin( "var i32 x= 0;" ); // Has no collision with "x" from outside.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
