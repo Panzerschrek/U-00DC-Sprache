@@ -101,6 +101,65 @@ def MixinSyntaxError_Test1():
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
 
 
+def MixinNamesAreNotVisibleInOtherMixinExpressions_Test0():
+	c_program_text= """
+		mixin( "var [ char8, 16 ] s= zero_init;" );
+		mixin(s); // "s" is not visible, because evaluation of all mixin expressions happens before all mixins expansion.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "NameNotFound", 3 ) )
+
+
+def MixinNamesAreNotVisibleInOtherMixinExpressions_Test1():
+	c_program_text= """
+		mixin(s); // "s" is not visible, because evaluation of all mixin expressions happens before all mixins expansion.
+		mixin( "var [ char8, 16 ] s= zero_init;" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "NameNotFound", 2 ) )
+
+
+def MixinNamesAreNotVisibleInOtherMixinExpressions_Test2():
+	c_program_text= """
+		namespace Space
+		{
+			mixin( "var [ char8, 16 ] s= zero_init;" );
+		}
+		mixin(Space::s); // "Space::s" is not visible, because evaluation of all mixin expressions happens before all mixins expansion.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "NameNotFound", 6 ) )
+
+
+def MixinNamesAreNotVisibleInOtherMixinExpressions_Test3():
+	c_program_text= """
+		namespace SomeSpace
+		{
+			mixin(s); // "s" is not visible, because evaluation of all mixin expressions happens before all mixins expansion.
+		}
+		mixin( "var [ char8, 16 ] s= zero_init;" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
+
+
+def MixinNamesAreNotVisibleInOtherMixinExpressions_Test4():
+	c_program_text= """
+		template</type T/>
+		struct SomeStruct
+		{
+			mixin(s); // "s" is not visible, because evaluation of all mixin expressions happens before all mixins expansion.
+			mixin( "var [ char8, 16 ] s= zero_init;" );
+
+			T t;
+		}
+		type X= SomeStruct</i32/>;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "NameNotFound", 5 ) )
+
+
 def ErrorInsideMixin_Test0():
 	c_program_text= """
 		mixin( "var i32 f= 0.0;" ); // Converting f64 to i32
