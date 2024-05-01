@@ -45,7 +45,7 @@ void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
 {
 	// First collect mixins into a container, than expand mixins.
 	// Doing so we avoid modifying names_scope while iterating it.
-	llvm::SmallVector<Mixins*, 1> all_mixins;
+	llvm::SmallVector<Mixins, 1> all_mixins;
 
 	names_scope.ForEachValueInThisScope(
 		[&]( Value& value )
@@ -63,11 +63,11 @@ void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
 				}
 			}
 			else if( const auto mixins= value.GetMixins() )
-				all_mixins.push_back( mixins );
+				all_mixins.push_back( std::move(*mixins) ); // Move mixins, because they are not needed later.
 		} );
 
-	for( const auto mixins : all_mixins )
-		for( Mixin& mixin : *mixins )
+	for( Mixins& mixins : all_mixins )
+		for( Mixin& mixin : mixins )
 			ExpandNamespaceMixin( names_scope, mixin );
 }
 
@@ -83,12 +83,12 @@ void CodeBuilder::ExpandClassMixins_r( const ClassPtr class_type )
 {
 	// First collect mixins into a container, than expand mixins.
 	// Doing so we avoid modifying names_scope while iterating it.
-	llvm::SmallVector<Mixins*, 1> all_mixins;
+	llvm::SmallVector<Mixins, 1> all_mixins;
 
 	class_type->members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
-			 if( const Type* const type= value.GetTypeName() )
+			if( const Type* const type= value.GetTypeName() )
 			{
 				if( const ClassPtr inner_class_type= type->GetClassType() )
 				{
@@ -99,11 +99,11 @@ void CodeBuilder::ExpandClassMixins_r( const ClassPtr class_type )
 				}
 			}
 			else if( const auto mixins= value.GetMixins() )
-				all_mixins.push_back( mixins );
+				all_mixins.push_back( std::move(*mixins) ); // Move mixins, because they are not needed later.
 		} );
 
-	for( const auto mixins : all_mixins )
-		for( Mixin& mixin : *mixins )
+	for( Mixins& mixins : all_mixins )
+		for( Mixin& mixin : mixins )
 			ExpandClassMixin( class_type, mixin );
 }
 
