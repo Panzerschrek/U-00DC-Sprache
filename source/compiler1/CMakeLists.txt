@@ -75,7 +75,7 @@ set_property( DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ERRORS_LIST_FI
 
 file( READ ${ERRORS_LIST_FILE} ERRORS_LIST_CONTENT )
 
-set( ERRORS_LIST_REGEXP "PROCESS_ERROR\\( ([A-Za-z]+), (\\\"([^\\\"]|(\\\\\")|(\\\\\\n))+\\\") \\)" )
+set( ERRORS_LIST_REGEXP "PROCESS_ERROR\\( ([A-Za-z][A-Za-z0-9]*), (\\\"([^\\\"]|(\\\\\")|(\\\\\\n))+\\\") \\)" )
 
 string(
 	REGEX REPLACE
