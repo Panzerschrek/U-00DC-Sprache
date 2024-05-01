@@ -269,23 +269,26 @@ void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin
 		return;
 	}
 
-	const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( variable->constexpr_value );
-	if( constant_data == nullptr )
+	if( const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( variable->constexpr_value ) )
 	{
+		const llvm::StringRef mixin_text= constant_data->getRawDataValues();
+		if( !llvm::isLegalUTF8Sequence(
+				reinterpret_cast<const llvm::UTF8*>(mixin_text.data()),
+				reinterpret_cast<const llvm::UTF8*>(mixin_text.data()) + mixin_text.size() ) )
+		{
+			REPORT_ERROR( MixinInvalidUTF8, names_scope.GetErrors(), syntax_element.src_loc );
+			return;
+		}
+
+		mixin.string_constant= constant_data;
+	}
+	else if( llvm::isa<llvm::ConstantAggregateZero>( variable->constexpr_value ) )
+	{
+		// Ignore mixins containing zeros. Their expansion leads to nothing.
+	}
+	else
 		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), syntax_element.src_loc, "non-trivial mixin constants" );
-		return;
-	}
 
-	const llvm::StringRef mixin_text= constant_data->getRawDataValues();
-	if( !llvm::isLegalUTF8Sequence(
-			reinterpret_cast<const llvm::UTF8*>(mixin_text.data()),
-			reinterpret_cast<const llvm::UTF8*>(mixin_text.data()) + mixin_text.size() ) )
-	{
-		REPORT_ERROR( MixinInvalidUTF8, names_scope.GetErrors(), syntax_element.src_loc );
-		return;
-	}
-
-	mixin.string_constant= constant_data;
 }
 
 std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text )

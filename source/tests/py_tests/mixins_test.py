@@ -373,3 +373,28 @@ def CommentInsideMixin_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 656 )
+
+
+def MixinWithNoSyntaxElements_Test0():
+	c_program_text= """
+		// Only whitespaces.
+		mixin( " \\t  \\n \\r  " );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixinWithNoSyntaxElements_Test1():
+	c_program_text= """
+		// Empty string.
+		mixin( "" );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixinWithNoSyntaxElements_Test2():
+	c_program_text= """
+		// Zero string.
+		mixin( s );
+		var [ char8, 16 ] s= zero_init;
+	"""
+	tests_lib.build_program( c_program_text )
