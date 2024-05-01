@@ -4481,13 +4481,13 @@ SyntaxAnalysisResult SyntaxAnalysis(
 
 NamespaceParsingResult ParseNamespaceElements(
 	const Lexems& lexems,
-	MacrosByContextMap macros,
+	MacrosPtr macros,
 	const MacroExpansionContextsPtr& macro_expansion_contexts,
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
-		std::make_shared<MacrosByContextMap>( std::move(macros) ),
+		std::move(macros),
 		macro_expansion_contexts,
 		std::move(source_file_contents_hash) );
 
@@ -4496,13 +4496,13 @@ NamespaceParsingResult ParseNamespaceElements(
 
 ClassElementsParsingResult ParseClassElements(
 	const Lexems& lexems,
-	MacrosByContextMap macros,
+	MacrosPtr macros,
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
-		std::make_shared<MacrosByContextMap>( std::move(macros) ),
+		std::move(macros),
 		macro_expansion_contexts,
 		std::move(source_file_contents_hash) );
 

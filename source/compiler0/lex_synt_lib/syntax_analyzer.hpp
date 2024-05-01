@@ -51,13 +51,13 @@ SyntaxAnalysisResult SyntaxAnalysis(
 
 NamespaceParsingResult ParseNamespaceElements(
 	const Lexems& lexems,
-	MacrosByContextMap macros,
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
 	std::string source_file_contents_hash );
 
 ClassElementsParsingResult ParseClassElements(
 	const Lexems& lexems,
-	MacrosByContextMap macros,
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
 	std::string source_file_contents_hash );
 
