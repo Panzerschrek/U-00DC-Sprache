@@ -1316,7 +1316,8 @@ private:
 
 	// Mixins
 	void ProcessMixins( NamesScope& names_scope );
-	void EvaluateMixinsExpressions_r( NamesScope& names_scope );
+	// Returns total number of mixins.
+	size_t EvaluateMixinsExpressions_r( NamesScope& names_scope );
 	void ExpandNamespaceMixins_r( NamesScope& names_scope );
 	void ProcessClassMixins( ClassPtr class_type );
 	void ExpandClassMixins_r( ClassPtr class_type );

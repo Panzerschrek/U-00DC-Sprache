@@ -277,3 +277,43 @@ def MixinVisibilityLabel_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 7769 )
+
+
+def MixinWithinMixin_Test0():
+	c_program_text= """
+		mixin( mixin0_text );
+		auto mixin0_text= "mixin( mixin1_text );";
+		auto mixin1_text= " fn Foo() : i32 { return 12876; } ";
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 12876 )
+
+
+def MixinWithinMixin_Test1():
+	c_program_text= """
+		mixin( mixin0_text );
+		auto mixin0_text= "mixin( mixin1_text );";
+		auto mixin1_text= "mixin( mixin2_text );";
+		auto mixin2_text= " fn Foo() : i32 { return 7778; } ";
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 7778 )
+
+
+def MixinWithinMixin_Test2():
+	c_program_text= """
+		template</type T/>
+		struct S
+		{
+			mixin( mixin0_text );
+			auto mixin0_text= "mixin( mixin1_text );";
+			auto mixin1_text= "mixin( mixin2_text );";
+			auto mixin2_text= " fn Foo() : i32 { return 4445; } ";
+		}
+		fn Foo() : i32
+		{
+			return S</f64/>::Foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 4445 )

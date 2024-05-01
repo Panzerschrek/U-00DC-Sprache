@@ -10,19 +10,28 @@ namespace U
 
 void CodeBuilder::ProcessMixins( NamesScope& names_scope )
 {
-	// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
-	EvaluateMixinsExpressions_r( names_scope );
-	// Populate name scopes using expressions evaluated on previous step.
-	ExpandNamespaceMixins_r( names_scope );
+	// Perform several iterations in order to process mixins within mixins.
+	for( size_t i= 0; i < 10; ++i )
+	{
+		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
+		const size_t num_expressions= EvaluateMixinsExpressions_r( names_scope );
+		if(num_expressions == 0)
+			break;
+
+		// Populate name scopes using expressions evaluated on previous step.
+		ExpandNamespaceMixins_r( names_scope );
+	}
 }
 
-void CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
+size_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 {
+	size_t result= 0;
+
 	names_scope.ForEachValueInThisScope(
 		[&]( Value& value )
 		{
 			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
-				EvaluateMixinsExpressions_r( *inner_namespace );
+				result+= EvaluateMixinsExpressions_r( *inner_namespace );
 			else if( const Type* const type= value.GetTypeName() )
 			{
 				if( const ClassPtr class_type= type->GetClassType() )
@@ -30,15 +39,18 @@ void CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 					// Expand mixins only from parent namespace.
 					// Otherwise we can get loop, using type alias.
 					if( class_type->members->GetParent() == &names_scope )
-						EvaluateMixinsExpressions_r( *class_type->members );
+						result+= EvaluateMixinsExpressions_r( *class_type->members );
 				}
 			}
 			else if( const auto mixins= value.GetMixins() )
 			{
+				result+= mixins->size();
 				for( Mixin& mixin : *mixins )
 					EvaluateMixinExpression( names_scope, mixin );
 			}
 		} );
+
+	return result;
 }
 
 void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
@@ -73,10 +85,17 @@ void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
 
 void CodeBuilder::ProcessClassMixins( const ClassPtr class_type )
 {
-	// First evaluate all expressions.
-	EvaluateMixinsExpressions_r( *class_type->members );
-	// Than perform expansion.
-	ExpandClassMixins_r( class_type );
+	// Perform several iterations in order to process mixins within mixins.
+	for( size_t i= 0; i < 10; ++i )
+	{
+		// First evaluate all expressions.
+		const size_t num_expressions= EvaluateMixinsExpressions_r( *class_type->members );
+		if(num_expressions == 0)
+			break;
+
+		// Than perform expansion.
+		ExpandClassMixins_r( class_type );
+	}
 }
 
 void CodeBuilder::ExpandClassMixins_r( const ClassPtr class_type )
