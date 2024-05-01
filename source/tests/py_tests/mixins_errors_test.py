@@ -101,6 +101,39 @@ def MixinSyntaxError_Test1():
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
 
 
+def MixinSyntaxError_Test2():
+	c_program_text= """
+		mixin( "}" ); // "}" isn't expected here
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
+
+
+def MixinSyntaxError_Test3():
+	c_program_text= """
+		struct S
+		{
+			mixin( "}" ); // "}" isn't expected here
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
+def MixinSyntaxError_Test4():
+	c_program_text= """
+		namespace N
+		{
+			mixin( "}" ); // "}" isn't expected here
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
 def MixinNamesAreNotVisibleInOtherMixinExpressions_Test0():
 	c_program_text= """
 		mixin( "var [ char8, 16 ] s= zero_init;" );

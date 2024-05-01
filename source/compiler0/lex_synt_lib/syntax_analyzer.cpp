@@ -248,6 +248,7 @@ private:
 	Function ParseFunction();
 	Class ParseClass();
 	ClassElementsList ParseClassBodyElements();
+	ClassElementsList ParseClassBodyElements( Lexem::Type end_lexem );
 	Class ParseClassBody();
 
 	using TemplateVar=
@@ -369,7 +370,7 @@ NamespaceParsingResult SyntaxAnalyzer::ParseNamespaceElements()
 ClassElementsParsingResult SyntaxAnalyzer::ParseClassElements()
 {
 	ClassElementsParsingResult result;
-	result.class_elements= ParseClassBodyElements();
+	result.class_elements= ParseClassBodyElements( Lexem::Type::EndOfFile );
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
@@ -3556,11 +3557,16 @@ Class SyntaxAnalyzer::ParseClass()
 
 ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 {
+	return ParseClassBodyElements( Lexem::Type::BraceRight );
+}
+
+ClassElementsList SyntaxAnalyzer::ParseClassBodyElements( const Lexem::Type end_lexem )
+{
 	ClassElementsList::Builder result_builder;
 
 	while( NotEndOfFile() )
 	{
-		if( it_->type == Lexem::Type::BraceRight )
+		if( it_->type == end_lexem )
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
