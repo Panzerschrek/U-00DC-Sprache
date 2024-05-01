@@ -8,15 +8,21 @@
 namespace U
 {
 
-void CodeBuilder::ExpandMixins_r( NamesScope& names_scope )
+void CodeBuilder::ProcessMixins( NamesScope& names_scope )
 {
-	llvm::SmallVector<Mixins*, 1> all_mixins;
+	// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
+	EvaluateMixinsExpressions_r( names_scope );
+	// Populate name scopes using expressions evaluated on previous step.
+	ExpandNamespaceMixins_r( names_scope );
+}
 
+void CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
+{
 	names_scope.ForEachValueInThisScope(
 		[&]( Value& value )
 		{
 			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
-				ExpandMixins_r( *inner_namespace );
+				EvaluateMixinsExpressions_r( *inner_namespace );
 			else if( const Type* const type= value.GetTypeName() )
 			{
 				if( const ClassPtr class_type= type->GetClassType() )
@@ -24,96 +30,97 @@ void CodeBuilder::ExpandMixins_r( NamesScope& names_scope )
 					// Expand mixins only from parent namespace.
 					// Otherwise we can get loop, using type alias.
 					if( class_type->members->GetParent() == &names_scope )
-						ExpandClassMixins( class_type );
+						EvaluateMixinsExpressions_r( *class_type->members );
+				}
+			}
+			else if( const auto mixins= value.GetMixins() )
+			{
+				for( Mixin& mixin : *mixins )
+					EvaluateMixinExpression( names_scope, mixin );
+			}
+		} );
+}
+
+void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
+{
+	// First collect mixins into a container, than expand mixins.
+	// Doing so we avoid modifying names_scope while iterating it.
+	llvm::SmallVector<Mixins*, 1> all_mixins;
+
+	names_scope.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
+				ExpandNamespaceMixins_r( *inner_namespace );
+			else if( const Type* const type= value.GetTypeName() )
+			{
+				if( const ClassPtr class_type= type->GetClassType() )
+				{
+					// Expand mixins only from parent namespace.
+					// Otherwise we can get loop, using type alias.
+					if( class_type->members->GetParent() == &names_scope )
+						ExpandClassMixins_r( class_type );
 				}
 			}
 			else if( const auto mixins= value.GetMixins() )
 				all_mixins.push_back( mixins );
-			else if(
-				value.GetFunctionsSet() != nullptr ||
-				value.GetTypeTemplatesSet() != nullptr ||
-				value.GetClassField() != nullptr ||
-				value.GetVariable() != nullptr ||
-				value.GetErrorValue() != nullptr ||
-				value.GetStaticAssert() != nullptr ||
-				value.GetTypeAlias() != nullptr ||
-				value.GetIncompleteGlobalVariable() != nullptr )
-			{}
-			else U_ASSERT(false);
 		} );
 
-	// Expand mixins outside namespace iteration, because expansion requires namespace modification.
 	for( const auto mixins : all_mixins )
-	{
-		// Avoid using iterator-based foreach, in order to handle container additions in recursive calls.
-		for( size_t i= 0; i < mixins->syntax_elements.size(); ++i )
-			ExpandNamespaceMixin( names_scope, *mixins->syntax_elements[i] );
-
-		// Clear the container, since all mixins from it were already expanded.
-		mixins->syntax_elements.clear();
-	}
+		for( Mixin& mixin : *mixins )
+			ExpandNamespaceMixin( names_scope, mixin );
 }
 
-void CodeBuilder::ExpandClassMixins( const ClassPtr class_type )
+void CodeBuilder::ProcessClassMixins( const ClassPtr class_type )
 {
+	// First evaluate all expressions.
+	EvaluateMixinsExpressions_r( *class_type->members );
+	// Than perform expansion.
+	ExpandClassMixins_r( class_type );
+}
+
+void CodeBuilder::ExpandClassMixins_r( const ClassPtr class_type )
+{
+	// First collect mixins into a container, than expand mixins.
+	// Doing so we avoid modifying names_scope while iterating it.
 	llvm::SmallVector<Mixins*, 1> all_mixins;
 
 	class_type->members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
-			if( value.GetNamespace() != nullptr )
-			{
-				U_ASSERT(false); // Should not have namespaces inside classes.
-			}
-			else if( const Type* const type= value.GetTypeName() )
+			 if( const Type* const type= value.GetTypeName() )
 			{
 				if( const ClassPtr inner_class_type= type->GetClassType() )
 				{
 					// Expand mixins only from parent namespace.
 					// Otherwise we can get loop, using type alias.
 					if( inner_class_type->members->GetParent() == class_type->members.get() )
-						ExpandClassMixins( inner_class_type );
+						ExpandClassMixins_r( inner_class_type );
 				}
 			}
 			else if( const auto mixins= value.GetMixins() )
 				all_mixins.push_back( mixins );
-			else if(
-				value.GetFunctionsSet() != nullptr ||
-				value.GetTypeTemplatesSet() != nullptr ||
-				value.GetClassField() != nullptr ||
-				value.GetVariable() != nullptr ||
-				value.GetErrorValue() != nullptr ||
-				value.GetStaticAssert() != nullptr ||
-				value.GetTypeAlias() != nullptr ||
-				value.GetIncompleteGlobalVariable() != nullptr )
-			{}
-			else U_ASSERT(false);
 		} );
 
-	// Expand mixins outside namespace iteration, because expansion requires namespace modification.
 	for( const auto mixins : all_mixins )
-	{
-		// Avoid using iterator-based foreach, in order to handle container additions in recursive calls.
-		for( size_t i= 0; i < mixins->syntax_elements.size(); ++i )
-			ExpandClassMixin( class_type, *mixins->syntax_elements[i] );
-
-		// Clear the container, since all mixins from it were already expanded.
-		mixins->syntax_elements.clear();
-	}
+		for( Mixin& mixin : *mixins )
+			ExpandClassMixin( class_type, mixin );
 }
 
-void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mixin& mixin )
+void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 {
-	const auto mixin_text= EvaluateMixinString( names_scope, mixin );
-	if( mixin_text == std::nullopt )
+	if( mixin.string_constant == nullptr )
 		return;
 
-	const MixinExpansionKey key{ mixin.src_loc, mixin_text->str() };
+	const llvm::StringRef mixin_text= mixin.string_constant->getRawDataValues();
+	mixin.string_constant= nullptr;
+
+	const MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
 	auto it= namespace_mixin_expansions_.find(key);
 
 	if( it == namespace_mixin_expansions_.end() )
 	{
-		const auto lexems= PrepareMixinLexems( names_scope, mixin, *mixin_text );
+		const auto lexems= PrepareMixinLexems( names_scope, mixin.src_loc, mixin_text );
 		if( lexems == std::nullopt )
 			return;
 
@@ -142,20 +149,22 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mix
 	NamesScopeFill( names_scope, it->second.program_elements );
 }
 
-void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, const Synt::Mixin& mixin )
+void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 {
 	NamesScope& class_members= *class_type->members;
 
-	const auto mixin_text= EvaluateMixinString( class_members, mixin );
-	if( mixin_text == std::nullopt )
+	if( mixin.string_constant == nullptr )
 		return;
 
-	const MixinExpansionKey key{ mixin.src_loc, mixin_text->str() };
+	const llvm::StringRef mixin_text= mixin.string_constant->getRawDataValues();
+	mixin.string_constant= nullptr;
+
+	const MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
 	auto it= class_mixin_expansions_.find(key);
 
 	if( it == class_mixin_expansions_.end() )
 	{
-		const auto lexems= PrepareMixinLexems( class_members, mixin, *mixin_text );
+		const auto lexems= PrepareMixinLexems( class_members, mixin.src_loc, mixin_text );
 		if( lexems == std::nullopt )
 			return;
 
@@ -197,42 +206,47 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, const Synt::Mixin
 	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements, visibility );
 }
 
-std::optional<llvm::StringRef> CodeBuilder::EvaluateMixinString( NamesScope& names_scope, const Synt::Mixin& mixin )
+void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin )
 {
+	if( mixin.syntax_element == nullptr || mixin.string_constant != nullptr )
+		return;
+
+	const Synt::Mixin& syntax_element= *mixin.syntax_element;
+
 	VariablePtr variable;
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-		variable= BuildExpressionCodeEnsureVariable( mixin.expression, names_scope, *global_function_context_ );
+		variable= BuildExpressionCodeEnsureVariable( syntax_element.expression, names_scope, *global_function_context_ );
 	}
+
+	mixin.syntax_element= nullptr;
 
 	if( variable->constexpr_value == nullptr )
 	{
-		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), mixin.src_loc );
-		return std::nullopt;
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), syntax_element.src_loc );
+		return;
 	}
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr ||
 		array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ )  )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), mixin.src_loc, "char8 array", variable->type.ToString() );
-		return std::nullopt;
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), syntax_element.src_loc, "char8 array", variable->type.ToString() );
+		return;
 	}
 
 	const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( variable->constexpr_value );
 	if( constant_data == nullptr )
 	{
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), mixin.src_loc, "non-trivial mixin constants" );
-		return std::nullopt;
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), syntax_element.src_loc, "non-trivial mixin constants" );
+		return;
 	}
-
-	const llvm::StringRef mixin_text= constant_data->getRawDataValues();
 	// TODO - check UTF-8 is valid.
 
-	return mixin_text;
+	mixin.string_constant= constant_data;
 }
 
-std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, const Synt::Mixin& mixin, std::string_view mixin_text )
+std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text )
 {
 	LexicalAnalysisResult lex_result= LexicalAnalysis( mixin_text );
 
@@ -241,18 +255,18 @@ std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, 
 
 	{
 		Synt::MacroExpansionContext mixin_context;
-		mixin_context.macro_declaration_src_loc= mixin.src_loc;
+		mixin_context.macro_declaration_src_loc= src_loc;
 		mixin_context.macro_name= Keyword( Keywords::mixin_ );
-		mixin_context.src_loc= mixin.src_loc;
+		mixin_context.src_loc= src_loc;
 
 		macro_expansion_contexts_->push_back( std::move(mixin_context) );
 	}
 
 	// Use file index of mixin.
-	const uint32_t file_index= mixin.src_loc.GetFileIndex();
+	const uint32_t file_index= src_loc.GetFileIndex();
 
 	// Numerate lines in mixin lexems starting with line of mixin expansion point.
-	const uint32_t line_shift= mixin.src_loc.GetLine() - 1;
+	const uint32_t line_shift= src_loc.GetLine() - 1;
 
 	for( Lexem& lexem : lex_result.lexems )
 	{

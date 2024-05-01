@@ -1,16 +1,21 @@
 #pragma once
 #include "../lex_synt_lib/syntax_elements.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/IR/Constants.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 
 namespace U
 {
 
-// Mixins how they are stored in names map.
-struct Mixins
+struct Mixin
 {
-	// This vector should be emptied after mixins preparation.
-	// Use vector to keep mixins expansion order stable.
-	std::vector<const Synt::Mixin*> syntax_elements;
+	SrcLoc src_loc;
+	const Synt::Mixin* syntax_element= nullptr; // Zeroed after mixin expression evalueation
+	llvm::ConstantDataArray* string_constant= nullptr; // If non-null - it's proper constexpr string. Null if mixin is already expanded.
 };
+
+using Mixins= std::vector<Mixin>;
 
 struct MixinExpansionKey
 {

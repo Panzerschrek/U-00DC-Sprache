@@ -873,7 +873,7 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 			return std::nullopt;
 
 		// Expand mixins right there.
-		ExpandClassMixins( class_type );
+		ProcessClassMixins( class_type );
 
 		return Type(class_type);
 	}

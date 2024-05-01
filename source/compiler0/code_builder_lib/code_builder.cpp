@@ -365,7 +365,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	// Do work for this node.
 	NamesScopeFill( *result.names_map, source_graph_node.ast.program_elements );
 	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
-	ExpandMixins_r( *result.names_map );
+	ProcessMixins( *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
 	if( !skip_building_generated_functions_ )

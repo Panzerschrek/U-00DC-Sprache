@@ -1315,12 +1315,15 @@ private:
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 
 	// Mixins
-	void ExpandMixins_r( NamesScope& names_scope );
-	void ExpandClassMixins( ClassPtr class_type );
-	void ExpandNamespaceMixin( NamesScope& names_scope, const Synt::Mixin& mixin );
-	void ExpandClassMixin( ClassPtr class_type, const Synt::Mixin& mixin );
-	std::optional<llvm::StringRef> EvaluateMixinString( NamesScope& names_scope, const Synt::Mixin& mixin );
-	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const Synt::Mixin& mixin, std::string_view mixin_text );
+	void ProcessMixins( NamesScope& names_scope );
+	void EvaluateMixinsExpressions_r( NamesScope& names_scope );
+	void ExpandNamespaceMixins_r( NamesScope& names_scope );
+	void ProcessClassMixins( ClassPtr class_type );
+	void ExpandClassMixins_r( ClassPtr class_type );
+	void ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin );
+	void ExpandClassMixin( ClassPtr class_type, Mixin& mixin );
+	void EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin );
+	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text );
 
 	// Global things build
 
