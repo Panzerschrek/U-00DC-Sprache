@@ -217,6 +217,7 @@ void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
 		variable= BuildExpressionCodeEnsureVariable( syntax_element.expression, names_scope, *global_function_context_ );
+		global_function_context_->args_preevaluation_cache.clear();
 	}
 
 	mixin.syntax_element= nullptr;
