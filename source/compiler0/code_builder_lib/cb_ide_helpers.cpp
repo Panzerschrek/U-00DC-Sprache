@@ -967,6 +967,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 	if( completion_name_ref.empty() || pos != llvm::StringRef::npos )
 	{
 		if( value_name_ref.startswith( StringViewToStringRef( Keyword(Keywords::static_assert_) ) ) || // static_assert name may exist inside namespace, but we should ignore it.
+			value_name == Keyword( Keywords::mixin_ ) || // Ignore mixins, which are inserted into namespaces.
 			StringToOverloadedOperator( value_name ) != std::nullopt // Ignore all overloaded operators. There is no reason and no possibility to access overloaded operator by name.
 			// Still allow to access constructors and destructors, even if it is needed very rarely.
 			)
