@@ -495,6 +495,13 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)class_visibility_label;
 }
 
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin )
+{
+	// Complete in mixin expression.
+	BuildExpressionCode( mixin.expression, names_scope, *global_function_context_ );
+	global_function_context_->args_preevaluation_cache.clear();
+}
+
 NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template )
 {
 	const auto template_args_scope= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), type_template->parent_namespace );

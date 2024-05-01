@@ -220,6 +220,7 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
 	// May reuse value, created during previous dummy-instantiation.

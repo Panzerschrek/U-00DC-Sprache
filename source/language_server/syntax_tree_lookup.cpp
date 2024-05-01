@@ -534,6 +534,11 @@ void FindImpl( const Synt::Namespace& namespace_ )
 	prefix_.pop_back();
 }
 
+void FindImpl( const Synt::Mixin& mixin )
+{
+	FindImpl( mixin.expression );
+}
+
 void FindImpl( const Synt::ClassField& class_field )
 {
 	FindImpl( class_field.type );

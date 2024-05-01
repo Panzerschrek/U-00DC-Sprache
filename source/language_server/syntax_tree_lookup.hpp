@@ -31,7 +31,8 @@ using GlobalItem= std::variant<
 	const Synt::ClassVisibilityLabel*,
 	const Synt::Class*,
 	const Synt::TypeTemplate*,
-	const Synt::FunctionTemplate* >;
+	const Synt::FunctionTemplate*,
+	const Synt::Mixin*>;
 
 struct SyntaxTreeLookupResult
 {

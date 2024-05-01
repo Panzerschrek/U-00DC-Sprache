@@ -348,6 +348,15 @@ struct Visitor final
 		symbol.children= BuildProgramModel_r( namespace_.elements, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
+	void operator()( const Synt::Mixin& mixin )
+	{
+		Symbol symbol;
+		symbol.name= Keyword( Keywords::mixin_ );
+		symbol.range= MakeRange( mixin.src_loc, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
+		symbol.kind= SymbolKind::Namespace; // There is no for now something similar to "mixin" symbol kind.
+		result.push_back( std::move(symbol) );
+	}
 };
 
 Symbols BuildProgramModel_r(
