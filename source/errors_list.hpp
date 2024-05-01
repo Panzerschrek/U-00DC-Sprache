@@ -258,3 +258,4 @@ PROCESS_ERROR( UnusedCapture, "Capture \"{0}\" is not used." )
 // Mixins
 PROCESS_ERROR( MixinLexicalError, "{0}" )
 PROCESS_ERROR( MixinSyntaxError, "{0}" )
+PROCESS_ERROR( MixinExpansionDepthReached, "Mixin expansion depth reached. Consider not using mixins within mixins." )

@@ -241,3 +241,26 @@ def MixinRedefinition_Test5():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MixinExpansionDepthReached_Test0():
+	c_program_text= """
+		// Non-recursive deep mixin.
+		mixin( mixin0_text );
+		auto mixin0_text= "mixin( mixin1_text );";
+		auto mixin1_text= "mixin( mixin2_text );";
+		auto mixin2_text= "mixin( mixin3_text );";
+		auto mixin3_text= " fn Foo() : i32 { return 7778; } ";
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixinExpansionDepthReached", 1 ) )
+
+
+def MixinExpansionDepthReached_Test1():
+	c_program_text= """
+		// Recursive mixin.
+		mixin( mixin_text );
+		auto mixin_text= "mixin( mixin_text );";
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixinExpansionDepthReached", 1 ) )

@@ -8,15 +8,25 @@
 namespace U
 {
 
+namespace
+{
+
+constexpr size_t g_max_mixins_depth= 4;
+
+} // namespace
+
 void CodeBuilder::ProcessMixins( NamesScope& names_scope )
 {
 	// Perform several iterations in order to process mixins within mixins.
-	for( size_t i= 0; i < 10; ++i )
+	for( size_t i= 0; i < g_max_mixins_depth; ++i )
 	{
 		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
 		const size_t num_expressions= EvaluateMixinsExpressions_r( names_scope );
 		if(num_expressions == 0)
 			break;
+
+		if( i == g_max_mixins_depth - 1 )
+			REPORT_ERROR( MixinExpansionDepthReached, names_scope.GetErrors(), SrcLoc( 0, 1, 0 ) );
 
 		// Populate name scopes using expressions evaluated on previous step.
 		ExpandNamespaceMixins_r( names_scope );
@@ -86,12 +96,15 @@ void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
 void CodeBuilder::ProcessClassMixins( const ClassPtr class_type )
 {
 	// Perform several iterations in order to process mixins within mixins.
-	for( size_t i= 0; i < 10; ++i )
+	for( size_t i= 0; i < g_max_mixins_depth; ++i )
 	{
 		// First evaluate all expressions.
 		const size_t num_expressions= EvaluateMixinsExpressions_r( *class_type->members );
 		if(num_expressions == 0)
 			break;
+
+		if( i == g_max_mixins_depth - 1 )
+			REPORT_ERROR( MixinExpansionDepthReached, class_type->members->GetErrors(), SrcLoc( 0, 1, 0 ) );
 
 		// Than perform expansion.
 		ExpandClassMixins_r( class_type );
