@@ -317,3 +317,31 @@ def MixinWithinMixin_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 4445 )
+
+
+def MacroUsageInsideMixin_Test0():
+	c_program_text= """
+		?macro <? DEFINE_FUNC:namespace ?name:ident ?>  ->
+		<? fn ?name() : i32 { return 987678; } ?>
+		mixin( "DEFINE_FUNC Foo" );
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 987678 )
+
+
+def MacroUsageInsideMixin_Test1():
+	c_program_text= """
+		?macro <? DEFINE_INT_FIELD:class ?name:ident ?>  ->
+		<? i32 ?name; } ?>
+		struct S
+		{
+			mixin( "DEFINE_INT_FIELD x" );
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 787878 };
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 787878 )

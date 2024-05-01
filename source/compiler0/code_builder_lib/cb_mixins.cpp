@@ -162,7 +162,7 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 		Synt::NamespaceParsingResult synt_result=
 			Synt::ParseNamespaceElements(
 				*lexems,
-				Synt::MacrosByContextMap(), // TODO - use proper macros
+				*source_graph_node.ast.macros, // TODO - avoid taking copy.
 				source_graph_->macro_expansion_contexts,
 				source_graph_node.contents_hash );
 
@@ -206,7 +206,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 		Synt::ClassElementsParsingResult synt_result=
 			Synt::ParseClassElements(
 				*lexems,
-				Synt::MacrosByContextMap(), // TODO - use proper macros
+				*source_graph_node.ast.macros, // TODO - avoid taking copy.
 				source_graph_->macro_expansion_contexts,
 				source_graph_node.contents_hash );
 

@@ -134,6 +134,15 @@ def MixinSyntaxError_Test4():
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
 
 
+def MixinSyntaxError_Test5():
+	c_program_text= """
+		mixin( " ?macro <? Pass:expr ?e:expr ?>  ->  <? ?e ?> " ); // "Can't define a macro within mixin.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
+
+
 def MixinNamesAreNotVisibleInOtherMixinExpressions_Test0():
 	c_program_text= """
 		mixin( "var [ char8, 16 ] s= zero_init;" );
