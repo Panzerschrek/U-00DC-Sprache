@@ -11,6 +11,7 @@ namespace U
 struct Mixin
 {
 	SrcLoc src_loc;
+	Synt::ClassMemberVisibility visibility= Synt::ClassMemberVisibility::Public;
 	const Synt::Mixin* syntax_element= nullptr; // Zeroed after mixin expression evalueation
 	llvm::ConstantDataArray* string_constant= nullptr; // If non-null - it's proper constexpr string. Null if mixin is already expanded.
 };

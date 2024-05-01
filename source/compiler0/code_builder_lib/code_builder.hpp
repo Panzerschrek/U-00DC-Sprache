@@ -1307,7 +1307,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
 	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.

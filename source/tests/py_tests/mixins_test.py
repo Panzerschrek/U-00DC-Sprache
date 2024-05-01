@@ -191,3 +191,89 @@ def MixinWithinTemplate_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 66 + 15 )
+
+
+def MixinVisibilityLabel_Test0():
+	c_program_text= """
+		class C
+		{
+			mixin( "i32 x= 45;" ); // No visibility label specified - it's public.
+		}
+		fn Foo() : i32
+		{
+			var C c;
+			return c.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 45 )
+
+
+def MixinVisibilityLabel_Test1():
+	c_program_text= """
+		class C
+		{
+		private:
+			mixin( "public: i32 x= 6498;" ); // Override "private" with public.
+		}
+		fn Foo() : i32
+		{
+			var C c;
+			return c.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 6498 )
+
+
+def MixinVisibilityLabel_Test2():
+	c_program_text= """
+		class C
+		{
+		private:
+			mixin( "i32 x= 45;" ); // "Private" is used here for mixin contents.
+		}
+		fn Foo() : i32
+		{
+			var C c;
+			return c.x; // Error "x" is private.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingNonpublicClassMember", 10 ) )
+
+
+def MixinVisibilityLabel_Test3():
+	c_program_text= """
+		class C
+		{
+		public:
+			mixin( "private: i32 x= 45;" ); // Override "public" with "private".
+		}
+		fn Foo() : i32
+		{
+			var C c;
+			return c.x; // Error "x" is private.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingNonpublicClassMember", 10 ) )
+
+
+def MixinVisibilityLabel_Test4():
+	c_program_text= """
+		class C
+		{
+			mixin( "private: " ); // Visibility label within miin can't affect code outside this mixin.
+			i32 x= 7769;
+		}
+		fn Foo() : i32
+		{
+			var C c;
+			return c.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 7769 )

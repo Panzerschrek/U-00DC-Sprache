@@ -282,7 +282,7 @@ void CodeBuilder::FillClassNamesScope(
 		}
 		void operator()( const Synt::Mixin& mixin )
 		{
-			this_.NamesScopeFill( *class_type->members, mixin );
+			this_.NamesScopeFill( *class_type->members, mixin, current_visibility );
 		}
 	};
 
@@ -356,10 +356,11 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 		NamesScopeValue( static_assert_, static_assert_declaration.src_loc ) );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, const ClassMemberVisibility visibility )
 {
 	Mixin out_mixin;
 	out_mixin.src_loc= mixin.src_loc;
+	out_mixin.visibility= visibility;
 	out_mixin.syntax_element= &mixin;
 
 	// Collect all mixins in a member with name equal to "mixin" keyword.

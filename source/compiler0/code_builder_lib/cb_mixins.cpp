@@ -200,10 +200,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	else
 		class_name= class_members.GetThisNamespaceName();
 
-	// TODO - use visibility label of this mixin.
-	ClassMemberVisibility visibility= ClassMemberVisibility::Public;
-
-	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements, visibility );
+	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements, mixin.visibility );
 }
 
 void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin )
