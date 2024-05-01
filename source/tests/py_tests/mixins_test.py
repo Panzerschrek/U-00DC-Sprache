@@ -345,3 +345,31 @@ def MacroUsageInsideMixin_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 787878 )
+
+
+def CommentInsideMixin_Test0():
+	c_program_text= """
+		namespace SomeSpace
+		{
+			mixin( "// useless line comment" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CommentInsideMixin_Test1():
+	c_program_text= """
+		struct S
+		{
+			mixin( "/* useless multiline-style single-line comment */" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CommentInsideMixin_Test2():
+	c_program_text= """
+		mixin( "// comment before \\n fn Foo() : i32 { /* comment \\n inside \\n */ return 656; } // comment after " );
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 656 )
