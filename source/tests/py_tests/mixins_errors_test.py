@@ -62,6 +62,32 @@ def TypesMismatch_ForMixins_Test4():
 	assert( HasError( errors_list, "TypesMismatch", 2 ) )
 
 
+def MixinInvalidUTF8_Test0():
+	c_program_text= """
+		mixin( s );
+		var[ char8, 1 ] s[ 230c8 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixinInvalidUTF8", 2 ) )
+
+
+def MixinInvalidUTF8_Test1():
+	c_program_text= """
+		mixin( s );
+		var[ char8, 3 ] s[ 199c8, "b"c8, 177c8 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixinInvalidUTF8", 2 ) )
+
+
+def MixinInvalidUTF8_Test2():
+	c_program_text= """
+		mixin( s );
+		auto s= "\\0  \\0 \\t  \\n \\0 \\0"; // Having zeros is considered to be valid.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MixinLexicalError_Test0():
 	c_program_text= """
 		mixin( " auto s= \\"\\\\urrrr\\"; " );

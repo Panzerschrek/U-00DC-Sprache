@@ -1,3 +1,7 @@
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/ConvertUTF.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "keywords.hpp"
@@ -271,7 +275,15 @@ void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin
 		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), syntax_element.src_loc, "non-trivial mixin constants" );
 		return;
 	}
-	// TODO - check UTF-8 is valid.
+
+	const llvm::StringRef mixin_text= constant_data->getRawDataValues();
+	if( !llvm::isLegalUTF8Sequence(
+			reinterpret_cast<const llvm::UTF8*>(mixin_text.data()),
+			reinterpret_cast<const llvm::UTF8*>(mixin_text.data()) + mixin_text.size() ) )
+	{
+		REPORT_ERROR( MixinInvalidUTF8, names_scope.GetErrors(), syntax_element.src_loc );
+		return;
+	}
 
 	mixin.string_constant= constant_data;
 }
