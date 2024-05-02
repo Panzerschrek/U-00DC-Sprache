@@ -163,34 +163,48 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 
 	mixin_.string_constant= LLVMValueRef::Null;
 
-	auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
-	if( lexems.empty() )
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
+
+	auto mut prev_value_opt_ref= namespace_mixin_expansions_.find( key );
+	if( !prev_value_opt_ref.empty() )
 	{
-		return;
+		auto prev_ptr_copy= prev_value_opt_ref.try_deref();
+		move(prev_value_opt_ref);
+		NamesScopeFill( names_scope_ptr, prev_ptr_copy.deref() );
 	}
-
-	var SourceGraph& source_graph= source_graph_.try_deref();
-	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
-
-	// TODO - cache syntax result.
-
-	auto mut synt_result= Synt::ParseNamespaceElements(
-		lexems.try_deref(),
-		source_graph_node.synt_result.macros,
-		source_graph.macro_expansion_contexts,
-		source_graph_node.contents_hash );
-
-	if( !synt_result.errors.empty() )
+	else
 	{
-		foreach( & error : synt_result.errors )
+		move(prev_value_opt_ref);
+
+		auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
+		if( lexems.empty() )
 		{
-			REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
+			return;
 		}
 
-		return;
-	}
+		var SourceGraph& source_graph= source_graph_.try_deref();
+		var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
-	NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
+		auto mut synt_result= Synt::ParseNamespaceElements(
+			lexems.try_deref(),
+			source_graph_node.synt_result.macros,
+			source_graph.macro_expansion_contexts,
+			source_graph_node.contents_hash );
+
+		if( !synt_result.errors.empty() )
+		{
+			foreach( & error : synt_result.errors )
+			{
+				REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
+			}
+
+			return;
+		}
+
+		NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
+
+		namespace_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.namespace_elements) ) );
+	}
 }
 
 fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ )
@@ -209,34 +223,48 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 
 	mixin_.string_constant= LLVMValueRef::Null;
 
-	auto lexems= PrepareMixinLexems( class_members, mixin_.src_loc, mixin_text );
-	if( lexems.empty() )
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
+
+	auto mut prev_value_opt_ref= class_mixin_expansions_.find( key );
+	if( !prev_value_opt_ref.empty() )
 	{
-		return;
+		auto prev_ptr_copy= prev_value_opt_ref.try_deref();
+		move(prev_value_opt_ref);
+		NamesScopeFillClass( class_members, prev_ptr_copy.deref(), class_type, mixin_.visibility );
 	}
-
-	var SourceGraph& source_graph= source_graph_.try_deref();
-	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
-
-	// TODO - cache syntax result.
-
-	auto mut synt_result= Synt::ParseClassElements(
-		lexems.try_deref(),
-		source_graph_node.synt_result.macros,
-		source_graph.macro_expansion_contexts,
-		source_graph_node.contents_hash );
-
-	if( !synt_result.errors.empty() )
+	else
 	{
-		foreach( & error : synt_result.errors )
+		move(prev_value_opt_ref);
+
+		auto lexems= PrepareMixinLexems( class_members, mixin_.src_loc, mixin_text );
+		if( lexems.empty() )
 		{
-			REPORT_ERROR( MixinSyntaxError, class_members, error.src_loc, error.text )
+			return;
 		}
 
-		return;
-	}
+		var SourceGraph& source_graph= source_graph_.try_deref();
+		var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
-	NamesScopeFillClass( class_members, synt_result.class_elements, class_type, mixin_.visibility );
+		auto mut synt_result= Synt::ParseClassElements(
+			lexems.try_deref(),
+			source_graph_node.synt_result.macros,
+			source_graph.macro_expansion_contexts,
+			source_graph_node.contents_hash );
+
+		if( !synt_result.errors.empty() )
+		{
+			foreach( & error : synt_result.errors )
+			{
+				REPORT_ERROR( MixinSyntaxError, class_members, error.src_loc, error.text )
+			}
+
+			return;
+		}
+
+		NamesScopeFillClass( class_members, synt_result.class_elements, class_type, mixin_.visibility );
+
+		class_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.class_elements) ) );
+	}
 }
 
 fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )

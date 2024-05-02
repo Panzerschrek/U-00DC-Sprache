@@ -7,6 +7,7 @@ import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
 import "llvm_ext.uh"
+import "mixins.uh"
 import "/code_builder_errors.uh"
 
 /*
@@ -876,19 +877,6 @@ struct GlobalAutoVariable
 
 // Empty vector if all static asserts are complete.
 type GlobalStaticAssertsSet= ust::vector</ ust::shared_ptr_final</ Synt::StaticAssert /> />;
-
-struct Mixin
-{
-	SrcLoc src_loc;
-	Synt::ClassVisibility visibility= Synt::ClassVisibility::Public;
-	ust::shared_ptr_final_nullable</Synt::Mixin/> syntax_element;  // Zeroed after mixin expression evaluation.
-
-	// If non-null - it's proper constexpr string. Null if mixin is already expanded.
-	// Also is null if this mixin requires no expansion (if it is empty, for example).
-	LLVMValueRef string_constant= LLVMValueRef::Null;
-}
-
-type Mixins= ust::vector</Mixin/>;
 
 class NamesScopeValue
 {

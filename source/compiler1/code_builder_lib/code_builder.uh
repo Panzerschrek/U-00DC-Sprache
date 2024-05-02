@@ -1311,6 +1311,11 @@ private:
 
 	ust::vector</Type/> non_sync_expression_stack_;
 
+	// Store here mixin expansion results.
+	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
+	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::NamespaceElements/>/> namespace_mixin_expansions_;
+	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::ClassElements/>/> class_mixin_expansions_;
+
 	// Debug info
 	bool imut build_debug_info_;
 	ust::optional</DebugInfoBuilder/> debug_info_builder_;

@@ -1,0 +1,34 @@
+import "../lex_synt_lib/syntax_elements.uh"
+import "llvm_ext.uh"
+
+namespace U1
+{
+
+
+struct Mixin
+{
+	SrcLoc src_loc;
+	Synt::ClassVisibility visibility= Synt::ClassVisibility::Public;
+	ust::shared_ptr_final_nullable</Synt::Mixin/> syntax_element;  // Zeroed after mixin expression evaluation.
+
+	// If non-null - it's proper constexpr string. Null if mixin is already expanded.
+	// Also is null if this mixin requires no expansion (if it is empty, for example).
+	LLVMValueRef string_constant= LLVMValueRef::Null;
+}
+
+type Mixins= ust::vector</Mixin/>;
+
+struct MixinExpansionKey
+{
+	SrcLoc mixin_src_loc;
+	ust::string8 mixin_text;
+
+	type hasher= MixinExpansionKeyHasher;
+}
+
+struct MixinExpansionKeyHasher
+{
+	fn hash(MixinExpansionKey& k) : size_type;
+}
+
+} // namespace U1
