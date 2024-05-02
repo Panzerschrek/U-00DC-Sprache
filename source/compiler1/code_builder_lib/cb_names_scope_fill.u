@@ -463,7 +463,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	var Mixin mut out_mixin{ .src_loc= mixin_.deref().src_loc, .syntax_element= mixin_, .visibility= visibility };
 
 	var ust::string8 key= KeywordToString(Keyword::mixin_);
-	if_var( prev_name : names_scope_ptr.lock_imut().deref().GetThisScopeValue(key) )
+	if_var( &prev_name : names_scope_ptr.lock_imut().deref().GetThisScopeValue(key) )
 	{
 		auto prev_mixins= prev_name.Get</Mixins/>();
 		if( !prev_mixins.empty() )
@@ -476,15 +476,14 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 			REPORT_ERROR( Redefinition, names_scope_ptr, mixin_.deref().src_loc, key )
 			move(out_mixin);
 		}
+		return;
 	}
-	else
-	{
-		var Mixins mut mixins;
-		mixins.push_back( move(out_mixin) );
 
-		auto mut lock= names_scope_ptr.lock_mut();
-		lock.deref().AddName( key, move(mixins) );
-	}
+	var Mixins mut mixins;
+	mixins.push_back( move(out_mixin) );
+
+	auto mut lock= names_scope_ptr.lock_mut();
+	lock.deref().AddName( key, move(mixins) );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
