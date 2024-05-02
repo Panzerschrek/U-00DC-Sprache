@@ -1,4 +1,6 @@
 import "/keywords.uh"
+import "../lex_synt_lib/lexical_analyzer.uh"
+import "../lex_synt_lib/syntax_analyzer.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -89,8 +91,19 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 		return;
 	}
 
+	var size_type mut str_length= 0s;
+	var $(char8) str_start= unsafe( LLVMGetAsString( mixin_.string_constant, str_length ) );
+
+	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
+
+	auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
+	if( lexems.empty() )
+	{
+		return;
+	}
+
 	// TODO
-	ust::ignore_unused(names_scope_ptr);
+	// Synt::ParseNamespaceElements( lexems.try_deref() );
 }
 
 fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
@@ -135,11 +148,54 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 
 fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>
 {
-	// TODO
-	ust::ignore_unused(names_scope_ptr);
-	ust::ignore_unused(src_loc);
-	ust::ignore_unused(mixin_text);
-	return ust::null_optional;
+	auto mut lex_result= LexicalAnalysis( mixin_text );
+
+	// Create new macro expansion context for mixin expansion.
+	var u32 mut macro_expansion_index(0);
+	with( mut lock : source_graph_.try_deref().macro_expansion_contexts.lock_mut() )
+	{
+		macro_expansion_index= u32(lock.deref().size());
+
+		lock.deref().push_back(
+			Synt::MacroExpansionContext
+			{
+				.macro_name= KeywordToString( Keyword::mixin_ ),
+				.src_loc= src_loc,
+				.macro_declaration_src_loc= src_loc,
+			} );
+	}
+
+	// Use file index of the mixin for lexems in its expansion.
+	var u32 file_index= src_loc.GetFileIndex();
+
+	// Numerate lines in mixin lexems starting with line of the mixin expansion point.
+	var u32 line_shift= src_loc.GetLine() - 1u;
+
+	foreach( &mut lexem : lex_result.lexems )
+	{
+		lexem.src_loc.SetFileIndex( file_index );
+		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
+		var u32 line_corrected= lexem.src_loc.GetLine() + line_shift;
+		lexem.src_loc.SetLine( line_corrected );
+	}
+
+	if( !lex_result.errors.empty() )
+	{
+		foreach( & error : lex_result.errors )
+		{
+			var SrcLoc mut src_loc_corrected= error.src_loc;
+			src_loc_corrected.SetFileIndex( file_index );
+			src_loc_corrected.SetMacroExpansionIndex( macro_expansion_index );
+			var u32 line_corrected= src_loc_corrected.GetLine() + line_shift;
+			src_loc_corrected.SetLine( line_corrected );
+
+			REPORT_ERROR( MixinLexicalError, names_scope_ptr, src_loc_corrected, error.text )
+		}
+
+		return ust::null_optional;
+	}
+
+	return take(lex_result.lexems);
 }
 
 var u32 g_max_mixins_depth(4);
