@@ -422,29 +422,17 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"MixinExpansionDepthReached_Test0",
-		"MixinExpansionDepthReached_Test1",
 		"MixinInvalidUTF8_Test0",
 		"MixinInvalidUTF8_Test1",
 		"MixinInvalidUTF8_Test2",
-		"MixinNamesAreNotVisibleInOtherMixinExpressions_Test4",
 		"MixinRedefinition_Test3",
-		"MixinSyntaxError_Test3",
 		"MixinWithNoSyntaxElements_Test0",
 		"MixinWithNoSyntaxElements_Test1",
 		"MixinWithNoSyntaxElements_Test2",
-		"ClassMixinDeclaration_Test0",
-		"ClassMixinDeclaration_Test1",
 		"MacroUsageInsideMixin_Test1",
-		"MixinVisibilityLabel_Test0",
-		"MixinVisibilityLabel_Test1",
 		"MixinVisibilityLabel_Test2",
-		"MixinVisibilityLabel_Test3",
-		"MixinWithinMixin_Test2",
-		"MixinWithinTemplate_Test0",
 		"MixinWithinTemplate_Test1",
 		"MixinWithinTemplate_Test2",
-		"MixinWithinTemplate_Test3",
 		"MixinsFieldsOrdered_Test0",
 	};
 

@@ -38,6 +38,11 @@ fn CodeBuilder::EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scop
 		{
 			result+= EvaluateMixinsExpressions_r( nested_names_scope_ptr );
 		}
+		else if_var( &class_type : el.value().something_.get</ClassTypePtr/>() )
+		{
+			auto class_members= class_type.lock_imut().deref().members;
+			result+= EvaluateMixinsExpressions_r( class_members );
+		}
 		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
 		{
 			with( mut lock : mixins_ptr.lock_mut() )
@@ -66,6 +71,10 @@ fn CodeBuilder::ExpandNamespaceMixins_r( mut this, NamesScopeMutPtr& names_scope
 		{
 			ExpandNamespaceMixins_r( nested_names_scope_ptr );
 		}
+		else if_var( &class_type : el.value().something_.get</ClassTypePtr/>() )
+		{
+			ExpandClassMixins_r( class_type );
+		}
 		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
 		{
 			with( mut lock : mixins_ptr.lock_mut() )
@@ -80,6 +89,62 @@ fn CodeBuilder::ExpandNamespaceMixins_r( mut this, NamesScopeMutPtr& names_scope
 		foreach( &mut mixin_ : mixins )
 		{
 			ExpandNamespaceMixin( names_scope_ptr, mixin_ );
+		}
+	}
+}
+
+fn CodeBuilder::ProcessClassMixins( mut this, ClassTypePtr& class_type )
+{
+	auto class_members= class_type.lock_imut().deref().members;
+
+	// Perform several iterations in order to process mixins within mixins.
+	for( auto mut i= 0u; i < g_max_mixins_depth; ++i )
+	{
+		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
+		var u32 num_expressions= EvaluateMixinsExpressions_r( class_members );
+		if( num_expressions == 0u )
+		{
+			break;
+		}
+
+		if( i == g_max_mixins_depth - 1u )
+		{
+			REPORT_ERROR( MixinExpansionDepthReached, class_members, SrcLoc( 0u, 1u, 0u ) )
+		}
+
+		// Populate name scopes using expressions evaluated on previous step.
+		ExpandClassMixins_r( class_type );
+	}
+}
+
+fn CodeBuilder::ExpandClassMixins_r( mut this, ClassTypePtr& class_type )
+{
+	// First collect mixins into a container, than expand mixins.
+	// Doing so we avoid modifying names_scope while iterating it.
+	var ust::vector</Mixins/> mut all_mixins;
+
+	auto class_members= class_type.lock_imut().deref().members;
+
+	foreach( &el : class_members.lock_imut().deref() )
+	{
+		if_var( &inner_class_type : el.value().something_.get</ClassTypePtr/>() )
+		{
+			ExpandClassMixins_r( inner_class_type );
+		}
+		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
+		{
+			with( mut lock : mixins_ptr.lock_mut() )
+			{
+				all_mixins.push_back( take(lock.deref()) ); // Take mixins, because they are not needed later.
+			}
+		}
+	}
+
+	foreach( &mut mixins : all_mixins )
+	{
+		foreach( &mut mixin_ : mixins )
+		{
+			ExpandClassMixin( class_type, mixin_ );
 		}
 	}
 }
@@ -126,6 +191,52 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 	}
 
 	NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
+}
+
+fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ )
+{
+	if( mixin_.string_constant == LLVMValueRef::Null )
+	{
+		return;
+	}
+
+	auto class_members= class_type.lock_imut().deref().members;
+
+	var size_type mut str_length= 0s;
+	var $(char8) str_start= unsafe( LLVMGetAsString( mixin_.string_constant, str_length ) );
+
+	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
+
+	mixin_.string_constant= LLVMValueRef::Null;
+
+	auto lexems= PrepareMixinLexems( class_members, mixin_.src_loc, mixin_text );
+	if( lexems.empty() )
+	{
+		return;
+	}
+
+	var SourceGraph& source_graph= source_graph_.try_deref();
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
+
+	// TODO - cache syntax result.
+
+	auto mut synt_result= Synt::ParseClassElements(
+		lexems.try_deref(),
+		source_graph_node.synt_result.macros,
+		source_graph.macro_expansion_contexts,
+		source_graph_node.contents_hash );
+
+	if( !synt_result.errors.empty() )
+	{
+		foreach( & error : synt_result.errors )
+		{
+			REPORT_ERROR( MixinSyntaxError, class_members, error.src_loc, error.text )
+		}
+
+		return;
+	}
+
+	NamesScopeFillClass( class_members, synt_result.class_elements, class_type );
 }
 
 fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )

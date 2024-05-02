@@ -829,8 +829,15 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			return ust::null_optional;
 		}
 
+		auto class_type_non_null= class_type.try_to_non_nullable();
+
+		// Expand mixins just in class template instantiation.
+		// This is the only proper place to do so.
+		// Expanding mixins later isn't possible.
+		ProcessClassMixins( class_type_non_null );
+
 		AddNewTemplateThing( move(template_key), args_names_scope );
-		return Type( class_type.try_to_non_nullable() );
+		return Type( class_type_non_null );
 	}
 	else if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
 	{
