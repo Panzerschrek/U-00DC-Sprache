@@ -134,8 +134,8 @@ public:
 	// Input lexems must outlive this class instance!
 	SyntaxAnalyzer(
 		const Lexems& lexems,
-		const MacrosPtr& macros,
-		const MacroExpansionContextsPtr& macro_expansion_contexts,
+		MacrosPtr macros,
+		MacroExpansionContextsPtr macro_expansion_contexts,
 		std::string macro_unique_identifiers_base_name );
 
 	SyntaxAnalysisResult DoAnalyzis();
@@ -289,8 +289,8 @@ private:
 private:
 	LexSyntErrors error_messages_;
 	Lexems::const_iterator it_;
-	Lexems::const_iterator it_end_;
-	std::string macro_unique_identifiers_base_name_;
+	const Lexems::const_iterator it_end_;
+	const std::string macro_unique_identifiers_base_name_;
 
 	Lexems::const_iterator last_error_it_;
 	size_t last_error_repeats_= 0;
@@ -301,16 +301,16 @@ private:
 
 SyntaxAnalyzer::SyntaxAnalyzer(
 	const Lexems& lexems,
-	const MacrosPtr& macros,
-	const MacroExpansionContextsPtr& macro_expansion_contexts,
+	MacrosPtr macros,
+	MacroExpansionContextsPtr macro_expansion_contexts,
 	std::string macro_unique_identifiers_base_name )
 	: it_(lexems.begin())
 	, it_end_(lexems.end())
 	, macro_unique_identifiers_base_name_(std::move(macro_unique_identifiers_base_name))
 	, last_error_it_(lexems.end())
 	, last_error_repeats_(0u)
-	, macros_(macros)
-	, macro_expansion_contexts_(macro_expansion_contexts)
+	, macros_(std::move(macros))
+	, macro_expansion_contexts_(std::move(macro_expansion_contexts))
 {
 }
 
@@ -4467,28 +4467,26 @@ std::vector<Import> ParseImports( const Lexems& lexems )
 SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
-	const MacroExpansionContextsPtr& macro_expansion_contexts,
+	MacroExpansionContextsPtr macro_expansion_contexts,
 	std::string source_file_contents_hash )
 {
-	SyntaxAnalyzer syntax_analyzer(
+	return SyntaxAnalyzer(
 		lexems,
 		std::make_shared<MacrosByContextMap>( std::move(macros) ),
-		macro_expansion_contexts,
-		 std::move(source_file_contents_hash) );
-
-	return syntax_analyzer.DoAnalyzis();
+		std::move(macro_expansion_contexts),
+		std::move(source_file_contents_hash) ).DoAnalyzis();
 }
 
 NamespaceParsingResult ParseNamespaceElements(
 	const Lexems& lexems,
 	MacrosPtr macros,
-	const MacroExpansionContextsPtr& macro_expansion_contexts,
+	MacroExpansionContextsPtr macro_expansion_contexts,
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
-		macro_expansion_contexts,
+		std::move(macro_expansion_contexts),
 		std::move(source_file_contents_hash) );
 
 	return syntax_analyzer.ParseNamespaceElements();
@@ -4497,13 +4495,13 @@ NamespaceParsingResult ParseNamespaceElements(
 ClassElementsParsingResult ParseClassElements(
 	const Lexems& lexems,
 	MacrosPtr macros,
-	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
-		macro_expansion_contexts,
+		std::move(macro_expansion_contexts),
 		std::move(source_file_contents_hash) );
 
 	return syntax_analyzer.ParseClassElements();
