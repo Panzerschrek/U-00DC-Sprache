@@ -877,6 +877,19 @@ struct GlobalAutoVariable
 // Empty vector if all static asserts are complete.
 type GlobalStaticAssertsSet= ust::vector</ ust::shared_ptr_final</ Synt::StaticAssert /> />;
 
+struct Mixin
+{
+	SrcLoc src_loc;
+	Synt::ClassVisibility visibility= Synt::ClassVisibility::Public;
+	ust::shared_ptr_final_nullable</Synt::Mixin/> syntax_element;  // Zeroed after mixin expression evaluation.
+
+	// If non-null - it's proper constexpr string. Null if mixin is already expanded.
+	// Also is null if this mixin requires no expansion (if it is empty, for example).
+	LLVMValueRef string_constant= LLVMValueRef::Null;
+}
+
+type Mixins= ust::vector</Mixin/>;
+
 class NamesScopeValue
 {
 public:
@@ -927,7 +940,8 @@ public:
 		ust::shared_ptr_mut</TemplateArg/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,
-		ust::shared_ptr_mut</GlobalStaticAssertsSet/>
+		ust::shared_ptr_mut</GlobalStaticAssertsSet/>,
+		ust::shared_ptr_mut</Mixins/>
 	] /> something_;
 }
 

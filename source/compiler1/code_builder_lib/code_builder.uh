@@ -190,6 +190,7 @@ private:
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalVariable/>& global_variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Mixins/>& mixins ) : NamesScopeValue;
 
 	fn NamesScopeMergeValues(
 		NamesScopeValue& dst,
@@ -241,6 +242,7 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Mixins/>& mixins_ );
 
 	// Global things build.
 
