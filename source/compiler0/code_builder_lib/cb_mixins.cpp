@@ -58,7 +58,7 @@ uint32_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 			}
 			else if( const auto mixins= value.GetMixins() )
 			{
-				result+= mixins->size();
+				result+= uint32_t(mixins->size());
 				for( Mixin& mixin : *mixins )
 					EvaluateMixinExpression( names_scope, mixin );
 			}
