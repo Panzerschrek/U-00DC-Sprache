@@ -28,11 +28,35 @@ struct MacroExpansionContext
 type MacroExpansionContexts= ust::vector</MacroExpansionContext/>;
 type MacroExpansionContextsPtr= ust::shared_ptr_mut</MacroExpansionContexts/>;
 
+struct NamespaceParsingResult
+{
+	ProgramElements namespace_elements;
+	LexSyntErrors errors;
+}
+
+struct ClassElementsParsingResult
+{
+	ClassElements class_elements;
+	LexSyntErrors errors;
+}
+
 fn SyntaxAnalysis(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
-	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/,
+	MacrosByContextMap macros,
+	MacroExpansionContextsPtr macro_expansion_contexts /*in-out param*/,
 	ust::string8 source_file_contents_hash ) : SyntaxAnalysisResult;
+
+fn ParseNamespaceElements(
+	Lexems& lexems,
+	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	ust::string8 source_file_contents_hash ) : NamespaceParsingResult;
+
+fn ParseClassElements(
+	Lexems& lexems,
+	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	ust::string8 source_file_contents_hash ) : ClassElementsParsingResult ;
 
 fn ParseImports( Lexems& lexems ) : ImportsList;
 

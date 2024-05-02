@@ -107,6 +107,8 @@ public:
 		ust::string8 macro_unique_identifiers_base_name ) @(constructor_pollution);
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
+	fn ParseNamespaceElements( mut this ) : NamespaceParsingResult;
+	fn ParseClassElements( mut this ) : ClassElementsParsingResult;
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
@@ -213,7 +215,9 @@ private:
 	fn TryParseNonSyncTag( mut this ) : NonSyncTag;
 	fn ParseClassOrderedFlag( mut this ) : bool;
 	fn ParseClassBody( mut this ) : ClassElements;
-	fn ParseClassBodyElements( mut this ) : ClassElements;
+	fn ParseClassBodyElementsToClassEnd( mut this ) : ClassElements;
+	fn ParseClassBodyElementsPartial( mut this ) : ClassElements;
+	fn ParseClassBodyElementsImpl( mut this, Lexem::Type end_lexem ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
 
@@ -344,6 +348,24 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	{
 		res.macros= take(lock.deref());
 	}
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseNamespaceElements( mut this ) : NamespaceParsingResult
+{
+	var NamespaceParsingResult mut res;
+	res.namespace_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
+	res.errors= take(errors_);
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseClassElements( mut this ) : ClassElementsParsingResult
+{
+	var ClassElementsParsingResult mut res;
+	res.class_elements= ParseClassBodyElementsPartial();
+	res.errors= take(errors_);
 
 	return res;
 }
@@ -2945,20 +2967,30 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 {
 	ExpectLexem( Lexem::Type::BraceLeft );
 
-	auto class_elements= ParseClassBodyElements();
+	auto class_elements= ParseClassBodyElementsToClassEnd();
 
 	ExpectLexem( Lexem::Type::BraceRight );
 
 	return class_elements;
 }
 
-fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
+fn SyntaxAnalyzer::ParseClassBodyElementsToClassEnd( mut this ) : ClassElements
+{
+	return ParseClassBodyElementsImpl( Lexem::Type::BraceRight );
+}
+
+fn SyntaxAnalyzer::ParseClassBodyElementsPartial( mut this ) : ClassElements
+{
+	return ParseClassBodyElementsImpl( Lexem::Type::EndOfFile );
+}
+
+fn SyntaxAnalyzer::ParseClassBodyElementsImpl( mut this, Lexem::Type end_lexem ) : ClassElements
 {
 	var ClassElements mut class_elements;
 
 	while( NotEndOfFile() )
 	{
-		if( it_.front().lexem_type == Lexem::Type::BraceRight || it_.front().lexem_type == Lexem::Type::EndOfFile )
+		if( it_.front().lexem_type == end_lexem )
 		{
 			break;
 		}
@@ -3034,7 +3066,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 			{
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Class ) )
 				{
-					var ClassElements mut expanded_class_elements= ExpandMacro( macro, ParseClassBodyElements );
+					var ClassElements mut expanded_class_elements= ExpandMacro( macro, ParseClassBodyElementsPartial );
 					class_elements.append( expanded_class_elements );
 					continue;
 				}
@@ -4235,6 +4267,36 @@ fn SyntaxAnalysis(
 		move(source_file_contents_hash) );
 
 	return analyzer.DoAnalyzis();
+}
+
+fn ParseNamespaceElements(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : NamespaceParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseNamespaceElements();
+}
+
+fn ParseClassElements(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : ClassElementsParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseClassElements();
 }
 
 fn ParseImports( Lexems& lexems ) : ImportsList
