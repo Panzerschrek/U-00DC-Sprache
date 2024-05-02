@@ -398,3 +398,76 @@ def MixinWithNoSyntaxElements_Test2():
 		var [ char8, 16 ] s= zero_init;
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MixinsFieldsOrdered_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr GetFieldOffset( T& list, [ char8, name_size ]& name ) : size_type
+		{
+			for( &list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.offset;
+				}
+			}
+			halt;
+		}
+
+		// Mixins are processed after regular fields (they have order after them).
+		struct A ordered
+		{
+			mixin( "i32 z;" );
+			f32 x;
+			u32 y;
+		}
+		static_assert( GetFieldOffset( typeinfo</A/>.fields_list, "x" ) == 0s );
+		static_assert( GetFieldOffset( typeinfo</A/>.fields_list, "y" ) == 4s );
+		static_assert( GetFieldOffset( typeinfo</A/>.fields_list, "z" ) == 8s );
+
+		struct B ordered
+		{
+			// Mixins are ordered one relative to another.
+			mixin( "i32 z;" );
+			mixin( "f32 y;" );
+			mixin( "u32 x;" );
+		}
+		static_assert( GetFieldOffset( typeinfo</B/>.fields_list, "z" ) == 0s );
+		static_assert( GetFieldOffset( typeinfo</B/>.fields_list, "y" ) == 4s );
+		static_assert( GetFieldOffset( typeinfo</B/>.fields_list, "x" ) == 8s );
+
+		struct BAltered ordered
+		{
+			// Mixins are ordered one relative to another.
+			mixin( "u32 x;" );
+			mixin( "f32 y;" );
+			mixin( "i32 z;" );
+		}
+		static_assert( GetFieldOffset( typeinfo</BAltered/>.fields_list, "x" ) == 0s );
+		static_assert( GetFieldOffset( typeinfo</BAltered/>.fields_list, "y" ) == 4s );
+		static_assert( GetFieldOffset( typeinfo</BAltered/>.fields_list, "z" ) == 8s );
+
+		struct C ordered
+		{
+			// Nested mixins have greater order.
+			mixin( "mixin( \\"i32 x;\\" );" );
+			mixin( "u32 y;" );
+		}
+		static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "y" ) == 0s );
+		static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "x" ) == 4s );
+	"""
+	tests_lib.build_program( c_program_text )

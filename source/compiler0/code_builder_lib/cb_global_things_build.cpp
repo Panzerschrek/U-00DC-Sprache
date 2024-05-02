@@ -529,8 +529,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
 			if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
 				the_class.can_be_constexpr= false;
-
-			++the_class.field_count;
 		} );
 
 	// Determine inner references.

@@ -201,10 +201,9 @@ void CodeBuilder::FillClassNamesScope(
 	{
 		CodeBuilder& this_;
 		const Synt::ClassKindAttribute class_kind;
-		ClassPtr class_type;
+		const ClassPtr class_type;
 		const std::string_view class_name;
 		ClassMemberVisibility current_visibility;
-		uint32_t field_number= 0u;
 
 		Visitor(
 			CodeBuilder& in_this,
@@ -220,7 +219,7 @@ void CodeBuilder::FillClassNamesScope(
 		{
 			ClassField class_field;
 			class_field.syntax_element= &in_class_field;
-			class_field.original_index= field_number;
+			class_field.original_index= class_type->field_count;
 			class_field.name= in_class_field.name;
 
 			if( IsKeyword( in_class_field.name ) )
@@ -228,7 +227,7 @@ void CodeBuilder::FillClassNamesScope(
 			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field.src_loc ) ) == nullptr )
 				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc, in_class_field.name );
 
-			++field_number;
+			++class_type->field_count;
 			class_type->SetMemberVisibility( in_class_field.name, current_visibility );
 		}
 		void operator()( const Synt::Function& func )
