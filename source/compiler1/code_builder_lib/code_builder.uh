@@ -220,6 +220,8 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_ );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility  );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, u32 field_index );
 	fn NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );

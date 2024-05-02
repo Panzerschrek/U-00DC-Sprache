@@ -451,6 +451,20 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeFill( names_scope_ptr, static_asert );
 }
 
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_ )
+{
+	return NamesScopeFill( names_scope_ptr, mixin_, ust::shared_ptr_nullable_mut</ClassType/>(), Synt::ClassVisibility::Public );
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility  )
+{
+	// TODO
+	ust::ignore_unused( names_scope_ptr );
+	ust::ignore_unused( mixin_ );
+	ust::ignore_unused( class_type );
+	ust::ignore_unused( visibility );
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
 {
 	var ust::string8 name= namespace_.deref().name;

@@ -204,6 +204,7 @@ private:
 	fn ParseContinueOperator( mut this ) : ContinueOperator;
 	fn ParseWithOperator( mut this ) : WithOperator;
 	fn ParseStaticAssert( mut this ) : StaticAssert;
+	fn ParseMixin( mut this ) : Mixin;
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
@@ -418,6 +419,10 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
 			namespace_elements.push_back( ust::make_shared_ptr_final( ParseStaticAssert() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+		{
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseMixin() ) );
 		}
 		else
 		{
@@ -2853,6 +2858,20 @@ fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
 	return static_assert_;
 }
 
+fn SyntaxAnalyzer::ParseMixin( mut this ) : Mixin
+{
+	debug_assert( IsKeyword( it_.front(), Keyword::mixin_ ) );
+
+	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
+	NextLexem();
+
+	mixin_.expression= ParseExpression();
+
+	ExpectSemicolon();
+
+	return mixin_;
+}
+
 fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
 {
 	if( !IsKeyword( it_.front(), Keyword::halt_ ) )
@@ -3004,6 +3023,10 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
 			class_elements.push_back( ust::make_shared_ptr_final( ParseStaticAssert() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+		{
+			class_elements.push_back( ust::make_shared_ptr_final( ParseMixin() ) );
 		}
 		else
 		{
