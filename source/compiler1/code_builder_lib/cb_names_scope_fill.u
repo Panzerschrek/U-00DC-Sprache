@@ -6,9 +6,14 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
+fn CodeBuilder::NamesScopeFillClass(
+	mut this,
+	NamesScopeMutPtr& names_scope_ptr,
+	Synt::ClassElements& class_elements,
+	ClassTypePtr& class_type,
+	Synt::ClassVisibility start_visibility )
 {
-	auto mut current_visibility= Synt::ClassVisibility::Public;
+	auto mut current_visibility= start_visibility;
 	var bool is_struct= class_type.lock_imut().deref().syntax_element.try_deref().kind_attribute == Synt::Class::KindAttribute::Struct;
 	var u32 mut field_index= 0u;
 	foreach( & class_element : class_elements )
@@ -733,7 +738,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
 	}
 
-	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr );
+	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr, Synt::ClassVisibility::Public );
 
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )

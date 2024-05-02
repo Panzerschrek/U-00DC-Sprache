@@ -236,7 +236,7 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 		return;
 	}
 
-	NamesScopeFillClass( class_members, synt_result.class_elements, class_type );
+	NamesScopeFillClass( class_members, synt_result.class_elements, class_type, mixin_.visibility );
 }
 
 fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
