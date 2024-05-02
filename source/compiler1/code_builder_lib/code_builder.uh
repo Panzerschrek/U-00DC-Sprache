@@ -244,6 +244,18 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Mixins/>& mixins_ );
 
+	// Mixins
+	fn ProcessMixins( mut this, NamesScopeMutPtr& names_scope_ptr );
+	// Returns total number of mixins.
+	fn EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scope_ptr ) : u32;
+	fn ExpandNamespaceMixins_r( mut this, NamesScopeMutPtr& names_scope_ptr );
+	fn ProcessClassMixins( mut this, ClassTypePtr& class_type );
+	fn ExpandClassMixins_r( mut this, ClassTypePtr& class_type );
+	fn ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_ptr, Mixin &mut mixin_ );
+	fn ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ );
+	fn EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ );
+	fn PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>;
+
 	// Global things build.
 
 	fn DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool;

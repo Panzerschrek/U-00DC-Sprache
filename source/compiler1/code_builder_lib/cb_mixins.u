@@ -1,0 +1,147 @@
+import "/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::ProcessMixins( mut this, NamesScopeMutPtr& names_scope_ptr )
+{
+	// Perform several iterations in order to process mixins within mixins.
+	for( auto mut i= 0u; i < g_max_mixins_depth; ++i )
+	{
+		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
+		var u32 num_expressions= EvaluateMixinsExpressions_r( names_scope_ptr );
+		if( num_expressions == 0u )
+		{
+			break;
+		}
+
+		if( i == g_max_mixins_depth - 1u )
+		{
+			REPORT_ERROR( MixinExpansionDepthReached, names_scope_ptr, SrcLoc( 0u, 1u, 0u ) )
+		}
+
+		// Populate name scopes using expressions evaluated on previous step.
+		ExpandNamespaceMixins_r( names_scope_ptr );
+	}
+}
+
+fn CodeBuilder::EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scope_ptr ) : u32
+{
+	var u32 mut result(0);
+	foreach( &el : names_scope_ptr.lock_imut().deref() )
+	{
+		if_var( &nested_names_scope_ptr : el.value().something_.get</NamesScopeMutPtr/>() )
+		{
+			result+= EvaluateMixinsExpressions_r( nested_names_scope_ptr );
+		}
+		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
+		{
+			with( mut lock : mixins_ptr.lock_mut() )
+			{
+				result+= u32(lock.deref().size());
+				foreach( &mut mixin_ : lock.deref() )
+				{
+					EvaluateMixinExpression( names_scope_ptr, mixin_ );
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+fn CodeBuilder::ExpandNamespaceMixins_r( mut this, NamesScopeMutPtr& names_scope_ptr )
+{
+	// First collect mixins into a container, than expand mixins.
+	// Doing so we avoid modifying names_scope while iterating it.
+	var ust::vector</Mixins/> mut all_mixins;
+
+	foreach( &el : names_scope_ptr.lock_imut().deref() )
+	{
+		if_var( &nested_names_scope_ptr : el.value().something_.get</NamesScopeMutPtr/>() )
+		{
+			ExpandNamespaceMixins_r( nested_names_scope_ptr );
+		}
+		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
+		{
+			with( mut lock : mixins_ptr.lock_mut() )
+			{
+				all_mixins.push_back( take(lock.deref()) ); // Take mixins, because they are not needed later.
+			}
+		}
+	}
+
+	foreach( &mut mixins : all_mixins )
+	{
+		foreach( &mut mixin_ : mixins )
+		{
+			ExpandNamespaceMixin( names_scope_ptr, mixin_ );
+		}
+	}
+}
+
+fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_ptr, Mixin &mut mixin_ )
+{
+	if( mixin_.string_constant == LLVMValueRef::Null )
+	{
+		return;
+	}
+
+	// TODO
+	ust::ignore_unused(names_scope_ptr);
+}
+
+fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
+{
+	if( mixin_.syntax_element.empty() )
+	{
+		return;
+	}
+	auto syntax_element= mixin_.syntax_element.try_to_non_nullable();
+
+	auto mut function_context= CreateGlobalFunctionContext();
+	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, syntax_element.deref().expression ).lock_imut().deref();
+	move(function_context);
+
+	mixin_.syntax_element.reset();
+
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, syntax_element.deref().src_loc )
+		return;
+	}
+
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( array_type.element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, syntax_element.deref().src_loc, "char8 array", variable.t.ToString() )
+			return;
+		}
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope_ptr, syntax_element.deref().src_loc, "char8 array", variable.t.ToString() )
+		return;
+	}
+
+	// TODO - check UTF-8
+	// TODO - check if constant data array
+
+	mixin_.string_constant= variable.constexpr_value;
+}
+
+fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>
+{
+	// TODO
+	ust::ignore_unused(names_scope_ptr);
+	ust::ignore_unused(src_loc);
+	ust::ignore_unused(mixin_text);
+	return ust::null_optional;
+}
+
+var u32 g_max_mixins_depth(4);
+
+} // namespace U

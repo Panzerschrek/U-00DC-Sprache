@@ -379,6 +379,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	auto& program_elements= source_graph_node.synt_result.program_elements;
 	NamesScopeFill( global_names_scope, program_elements );
 	NamesScopeFillOutOfLineElements( global_names_scope, program_elements );
+	ProcessMixins( global_names_scope );
 	NamesScopeBuild( global_names_scope );
 
 	// Finalize building template things.
