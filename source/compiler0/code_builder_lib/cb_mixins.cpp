@@ -15,18 +15,18 @@ namespace U
 namespace
 {
 
-constexpr size_t g_max_mixins_depth= 4;
+constexpr uint32_t g_max_mixins_depth= 4;
 
 } // namespace
 
 void CodeBuilder::ProcessMixins( NamesScope& names_scope )
 {
 	// Perform several iterations in order to process mixins within mixins.
-	for( size_t i= 0; i < g_max_mixins_depth; ++i )
+	for( uint32_t i= 0; i < g_max_mixins_depth; ++i )
 	{
 		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
-		const size_t num_expressions= EvaluateMixinsExpressions_r( names_scope );
-		if(num_expressions == 0)
+		const uint32_t num_expressions= EvaluateMixinsExpressions_r( names_scope );
+		if( num_expressions == 0 )
 			break;
 
 		if( i == g_max_mixins_depth - 1 )
@@ -37,9 +37,9 @@ void CodeBuilder::ProcessMixins( NamesScope& names_scope )
 	}
 }
 
-size_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
+uint32_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 {
-	size_t result= 0;
+	uint32_t result= 0;
 
 	names_scope.ForEachValueInThisScope(
 		[&]( Value& value )
@@ -100,11 +100,11 @@ void CodeBuilder::ExpandNamespaceMixins_r( NamesScope& names_scope )
 void CodeBuilder::ProcessClassMixins( const ClassPtr class_type )
 {
 	// Perform several iterations in order to process mixins within mixins.
-	for( size_t i= 0; i < g_max_mixins_depth; ++i )
+	for( uint32_t i= 0; i < g_max_mixins_depth; ++i )
 	{
 		// First evaluate all expressions.
-		const size_t num_expressions= EvaluateMixinsExpressions_r( *class_type->members );
-		if(num_expressions == 0)
+		const uint32_t num_expressions= EvaluateMixinsExpressions_r( *class_type->members );
+		if( num_expressions == 0 )
 			break;
 
 		if( i == g_max_mixins_depth - 1 )
@@ -151,7 +151,7 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 	const llvm::StringRef mixin_text= mixin.string_constant->getRawDataValues();
 	mixin.string_constant= nullptr;
 
-	const MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
+	MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
 	auto it= namespace_mixin_expansions_.find(key);
 
 	if( it == namespace_mixin_expansions_.end() )
@@ -160,14 +160,14 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 		if( lexems == std::nullopt )
 			return;
 
-		// TODO - handle wrong file index.
+		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::NamespaceParsingResult synt_result=
 			Synt::ParseNamespaceElements(
 				*lexems,
-				source_graph_node.ast.macros,
-				source_graph_->macro_expansion_contexts,
+				source_graph_node.ast.macros, // Macros should not be modified.
+				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
 				source_graph_node.contents_hash );
 
 		if( !synt_result.error_messages.empty() )
@@ -179,10 +179,10 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 		}
 
 		// We need to preserve syntax result, because we store raw pointers to syntax elements.
-		it= namespace_mixin_expansions_.emplace( std::make_pair( key, NamespaceMixinExpansionResult{ std::move(synt_result.namespace_elements) } ) ).first;
+		it= namespace_mixin_expansions_.emplace( std::move(key), std::move(synt_result.namespace_elements) ).first;
 	}
 
-	NamesScopeFill( names_scope, it->second.program_elements );
+	NamesScopeFill( names_scope, it->second );
 }
 
 void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
@@ -195,7 +195,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	const llvm::StringRef mixin_text= mixin.string_constant->getRawDataValues();
 	mixin.string_constant= nullptr;
 
-	const MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
+	MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
 	auto it= class_mixin_expansions_.find(key);
 
 	if( it == class_mixin_expansions_.end() )
@@ -204,14 +204,14 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 		if( lexems == std::nullopt )
 			return;
 
-		// TODO - handle wrong file index.
+		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::ClassElementsParsingResult synt_result=
 			Synt::ParseClassElements(
 				*lexems,
-				source_graph_node.ast.macros,
-				source_graph_->macro_expansion_contexts,
+				source_graph_node.ast.macros, // Macros should not be modified.
+				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
 				source_graph_node.contents_hash );
 
 		if( !synt_result.error_messages.empty() )
@@ -223,7 +223,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 		}
 
 		// We need to preserve syntax result, because we store raw pointers to syntax elements.
-		it= class_mixin_expansions_.emplace( std::make_pair( key, ClassMixinExpansionResult{ std::move(synt_result.class_elements) } ) ).first;
+		it= class_mixin_expansions_.emplace( std::move(key), std::move(synt_result.class_elements) ).first;
 	}
 
 	Synt::ClassKindAttribute class_kind= Synt::ClassKindAttribute::Struct;
@@ -236,7 +236,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	else
 		class_name= class_members.GetThisNamespaceName();
 
-	FillClassNamesScope( class_type, class_name, class_kind, it->second.class_elements, mixin.visibility );
+	FillClassNamesScope( class_type, class_name, class_kind, it->second, mixin.visibility );
 }
 
 void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin )
@@ -288,7 +288,6 @@ void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin
 	}
 	else
 		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), syntax_element.src_loc, "non-trivial mixin constants" );
-
 }
 
 std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text )
@@ -307,10 +306,10 @@ std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, 
 		macro_expansion_contexts_->push_back( std::move(mixin_context) );
 	}
 
-	// Use file index of mixin.
+	// Use file index of the mixin for lexems in its expansion.
 	const uint32_t file_index= src_loc.GetFileIndex();
 
-	// Numerate lines in mixin lexems starting with line of mixin expansion point.
+	// Numerate lines in mixin lexems starting with line of the mixin expansion point.
 	const uint32_t line_shift= src_loc.GetLine() - 1;
 
 	for( Lexem& lexem : lex_result.lexems )

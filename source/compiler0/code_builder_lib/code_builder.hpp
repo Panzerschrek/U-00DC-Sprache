@@ -1318,7 +1318,7 @@ private:
 	// Mixins
 	void ProcessMixins( NamesScope& names_scope );
 	// Returns total number of mixins.
-	size_t EvaluateMixinsExpressions_r( NamesScope& names_scope );
+	uint32_t EvaluateMixinsExpressions_r( NamesScope& names_scope );
 	void ExpandNamespaceMixins_r( NamesScope& names_scope );
 	void ProcessClassMixins( ClassPtr class_type );
 	void ExpandClassMixins_r( ClassPtr class_type );
@@ -1518,8 +1518,10 @@ private:
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
 
-	std::unordered_map<MixinExpansionKey, NamespaceMixinExpansionResult, MixinExpansionKeyHasher> namespace_mixin_expansions_;
-	std::unordered_map<MixinExpansionKey, ClassMixinExpansionResult, MixinExpansionKeyHasher> class_mixin_expansions_;
+	// Store here mixin expansion results, because we need syntax elements to be alive, because they may be accessed during code building.
+	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
+	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

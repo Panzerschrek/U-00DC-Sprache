@@ -197,7 +197,6 @@ void CodeBuilder::FillClassNamesScope(
 	const Synt::ClassElementsList& class_elements,
 	const ClassMemberVisibility initial_visibility )
 {
-	// TODO - provide initial visibility.
 	struct Visitor final
 	{
 		CodeBuilder& this_;
