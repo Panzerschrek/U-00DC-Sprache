@@ -96,14 +96,36 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 
 	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
 
+	mixin_.string_constant= LLVMValueRef::Null;
+
 	auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
 	if( lexems.empty() )
 	{
 		return;
 	}
 
-	// TODO
-	// Synt::ParseNamespaceElements( lexems.try_deref() );
+	var SourceGraph& source_graph= source_graph_.try_deref();
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
+
+	// TODO - cache syntax result.
+
+	auto mut synt_result= Synt::ParseNamespaceElements(
+		lexems.try_deref(),
+		source_graph_node.synt_result.macros,
+		source_graph.macro_expansion_contexts,
+		source_graph_node.contents_hash );
+
+	if( !synt_result.errors.empty() )
+	{
+		foreach( & error : synt_result.errors )
+		{
+			REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
+		}
+
+		return;
+	}
+
+	NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
 }
 
 fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
