@@ -332,7 +332,7 @@ def MacroUsageInsideMixin_Test0():
 def MacroUsageInsideMixin_Test1():
 	c_program_text= """
 		?macro <? DEFINE_INT_FIELD:class ?name:ident ?>  ->
-		<? i32 ?name; } ?>
+		<? i32 ?name; ?>
 		struct S
 		{
 			mixin( "DEFINE_INT_FIELD x" );
