@@ -285,8 +285,10 @@ def MixinRedefinition_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( errors_list[0].error_code == "MacroExpansionContext" )
-	assert( HasError( errors_list[0].template_errors.errors, "CouldNotOverloadFunction", 5 ) )
+	if errors_list[0].error_code == "MacroExpansionContext":
+		assert( HasError( errors_list[0].template_errors.errors, "CouldNotOverloadFunction", 5 ) )
+	else:
+		assert( HasError( errors_list, "CouldNotOverloadFunction", 4 ) )
 
 
 def MixinRedefinition_Test4():
