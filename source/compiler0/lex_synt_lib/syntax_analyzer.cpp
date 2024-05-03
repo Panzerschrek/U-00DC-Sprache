@@ -2822,6 +2822,8 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			result_builder.Append( ParseTypeAlias() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
 			std::visit( [&]( auto el ) { result_builder.Append( std::move(el) ); }, ParseHalt() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
+			result_builder.Append( ParseMixin() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ &&
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{

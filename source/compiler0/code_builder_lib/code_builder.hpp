@@ -976,6 +976,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeAlias& type_alias );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Halt& halt );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::HaltIf& halt_if );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 
 	BlockBuildInfo BuildBlock( NamesScope& names_scope, FunctionContext& function_context, const Synt::Block& block );
 	// Build elements, withut creating separate names scope.

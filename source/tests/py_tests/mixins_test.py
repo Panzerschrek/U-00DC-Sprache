@@ -502,3 +502,15 @@ def MixinOutOfLineFunction_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_ZN4Some3FooEv" ) == 967 )
+
+
+def MixinWithinBlock_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			mixin( "   " );
+			return 54;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 54 )

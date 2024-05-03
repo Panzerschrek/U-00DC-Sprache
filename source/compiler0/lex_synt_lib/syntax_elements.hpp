@@ -261,7 +261,8 @@ using BlockElementsList= VariantLinkedList<
 	StaticAssert,
 	TypeAlias,
 	Halt,
-	HaltIf >;
+	HaltIf,
+	Mixin>;
 
 using IfAlternative= std::variant<
 	Block,
