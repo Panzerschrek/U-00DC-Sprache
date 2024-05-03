@@ -2758,11 +2758,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::Mixin& mixin )
 {
-	// TODO
-	(void)names_scope;
-	(void)function_context;
-	(void)mixin;
-	return BlockBuildInfo{};
+	const auto block_elements= ExpandBlockMixin( names_scope, function_context, mixin );
+	if( block_elements == nullptr )
+		return BlockBuildInfo{};
+
+	return BuildBlockElements( names_scope, function_context, *block_elements );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(

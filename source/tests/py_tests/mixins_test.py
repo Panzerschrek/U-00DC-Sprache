@@ -514,3 +514,83 @@ def MixinWithinBlock_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 54 )
+
+
+def MixinWithinBlock_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			mixin( "return 786;" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 786 )
+
+
+def MixinWithinBlock_Test2():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			mixin( "var i32 x= 89898;" );
+			return x; // Access a variable, declared within mixin.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 89898 )
+
+
+def MixinWithinBlock_Test3():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 x= 444555;
+			mixin( "return x;" ); // Access from a mixin a local variable.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 444555 )
+
+
+def MixinWithinBlock_Test4():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			// Declare two variables in separate mixins and access them in third mixin.
+			mixin( "var i32 x= 89898;" );
+			mixin( "var i32 y= 675;" );
+			mixin( "return x - y;" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 89898 - 675 )
+
+
+def MixinWithinBlock_Test5():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			// Several statements within mixin.
+			mixin( "var i32 x= 680; var i32 y= 4; return x / y;" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 680 / 4 )
+
+
+def MixinWithinBlock_Test5():
+	c_program_text= """
+		struct S
+		{
+			auto ret_444= "return 444;";
+			fn Foo() : i32
+			{
+				mixin( ret_444 );
+			}
+		}
+		fn Foo() : i32
+		{
+			return S::Foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 444 )

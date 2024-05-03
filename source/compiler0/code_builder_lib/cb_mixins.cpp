@@ -61,7 +61,7 @@ uint32_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 			{
 				result+= uint32_t(mixins->size());
 				for( Mixin& mixin : *mixins )
-					EvaluateMixinExpression( names_scope, mixin );
+					EvaluateMixinExpressionInGlobalContext( names_scope, mixin );
 			}
 		} );
 
@@ -241,19 +241,68 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	FillClassNamesScope( class_type, class_name, class_kind, it->second, mixin.visibility );
 }
 
-void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin )
+const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
+{
+	Mixin temp_mixin;
+	temp_mixin.syntax_element= &mixin;
+	temp_mixin.src_loc= mixin.src_loc;
+
+	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
+
+	if( temp_mixin.string_constant == nullptr )
+		return nullptr;
+
+	const std::string_view mixin_text= StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+
+	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
+	auto it= block_mixin_expansions_.find(key);
+
+	if( it == block_mixin_expansions_.end() )
+	{
+		const auto lexems= PrepareMixinLexems( names_scope, mixin.src_loc, mixin_text );
+		if( lexems == std::nullopt )
+			return nullptr;
+
+		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
+
+		Synt::BlockElementsParsingResult synt_result=
+			Synt::ParseBlockElements(
+				*lexems,
+				source_graph_node.ast.macros, // Macros should not be modified.
+				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
+				source_graph_node.contents_hash );
+
+		if( !synt_result.error_messages.empty() )
+		{
+			for( const LexSyntError& error : synt_result.error_messages )
+				REPORT_ERROR( MixinSyntaxError, names_scope.GetErrors(), error.src_loc, error.text );
+
+			return nullptr;
+		}
+
+		// We need to preserve syntax result, because we store raw pointers to syntax elements.
+		it= block_mixin_expansions_.emplace( std::move(key), std::move(synt_result.block_elements) ).first;
+	}
+
+	return &it->second;
+}
+
+void CodeBuilder::EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin )
+{
+	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
+	EvaluateMixinExpression( names_scope, *global_function_context_, mixin );
+	global_function_context_->args_preevaluation_cache.clear();
+}
+
+void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin )
 {
 	if( mixin.syntax_element == nullptr || mixin.string_constant != nullptr )
 		return;
 
 	const Synt::Mixin& syntax_element= *mixin.syntax_element;
 
-	VariablePtr variable;
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-		variable= BuildExpressionCodeEnsureVariable( syntax_element.expression, names_scope, *global_function_context_ );
-		global_function_context_->args_preevaluation_cache.clear();
-	}
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( syntax_element.expression, names_scope, function_context );
 
 	mixin.syntax_element= nullptr;
 

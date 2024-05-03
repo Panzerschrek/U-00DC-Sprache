@@ -142,6 +142,7 @@ public:
 	std::vector<Import> ParseImports();
 	NamespaceParsingResult ParseNamespaceElements();
 	ClassElementsParsingResult ParseClassElements();
+	BlockElementsParsingResult ParseBlockElements();
 
 private:
 	struct ParsedMacroElement;
@@ -232,7 +233,9 @@ private:
 	Enum ParseEnum();
 	std::variant<Halt, HaltIf> ParseHalt();
 
-	BlockElementsList ParseBlockElements();
+	BlockElementsList ParseBlockElementsToFileEnd();
+	BlockElementsList ParseBlockElementsToBlockEnd();
+	BlockElementsList ParseBlockElementsImpl( Lexem::Type end_lexem );
 	Block ParseBlock();
 
 	IfAlternativePtr TryParseIfAlternative();
@@ -371,6 +374,14 @@ ClassElementsParsingResult SyntaxAnalyzer::ParseClassElements()
 {
 	ClassElementsParsingResult result;
 	result.class_elements= ParseClassBodyElements( Lexem::Type::EndOfFile );
+	result.error_messages.swap( error_messages_ );
+	return result;
+}
+
+BlockElementsParsingResult SyntaxAnalyzer::ParseBlockElements()
+{
+	BlockElementsParsingResult result;
+	result.block_elements= ParseBlockElementsToFileEnd();
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
@@ -2780,13 +2791,23 @@ std::variant<Halt, HaltIf> SyntaxAnalyzer::ParseHalt()
 	}
 }
 
-BlockElementsList SyntaxAnalyzer::ParseBlockElements()
+BlockElementsList SyntaxAnalyzer::ParseBlockElementsToFileEnd()
+{
+	return ParseBlockElementsImpl( Lexem::Type::EndOfFile );
+}
+
+BlockElementsList SyntaxAnalyzer::ParseBlockElementsToBlockEnd()
+{
+	return ParseBlockElementsImpl( Lexem::Type::BraceRight );
+}
+
+BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_lexem )
 {
 	BlockElementsList::Builder result_builder;
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
-		if( it_->type == Lexem::Type::BraceRight )
+		if( it_->type == end_lexem )
 			break;
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			result_builder.Append( ParseVariablesDeclaration() );
@@ -2874,7 +2895,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			{
 				if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 				{
-					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements ) );
+					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElementsToFileEnd ) );
 					continue;
 				}
 			}
@@ -2945,7 +2966,7 @@ Block SyntaxAnalyzer::ParseBlock()
 
 	ExpectLexem( Lexem::Type::BraceLeft );
 
-	block.elements= ParseBlockElements();
+	block.elements= ParseBlockElementsToBlockEnd();
 	block.end_src_loc= it_->src_loc;
 
 	ExpectLexem( Lexem::Type::BraceRight );
@@ -2980,7 +3001,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	{
 		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 		{
-			BlockElementsList list= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
+			BlockElementsList list= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElementsToFileEnd );
 
 			if( list.HasTail() )
 			{
@@ -4507,6 +4528,21 @@ ClassElementsParsingResult ParseClassElements(
 		std::move(source_file_contents_hash) );
 
 	return syntax_analyzer.ParseClassElements();
+}
+
+BlockElementsParsingResult ParseBlockElements(
+	const Lexems& lexems,
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	std::string source_file_contents_hash )
+{
+	SyntaxAnalyzer syntax_analyzer(
+		lexems,
+		std::move(macros),
+		std::move(macro_expansion_contexts),
+		std::move(source_file_contents_hash) );
+
+	return syntax_analyzer.ParseBlockElements();
 }
 
 } // namespace Synt
