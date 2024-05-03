@@ -7,6 +7,7 @@ import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
 import "llvm_ext.uh"
+import "mixins.uh"
 import "/code_builder_errors.uh"
 
 /*
@@ -223,6 +224,7 @@ struct ClassType
 
 	// This class fields names ordered by offset.
 	ust::vector</tup[ust::string8, ClassFieldPtr]/> fields_order;
+	u32 field_count= 0u;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
@@ -927,7 +929,8 @@ public:
 		ust::shared_ptr_mut</TemplateArg/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,
-		ust::shared_ptr_mut</GlobalStaticAssertsSet/>
+		ust::shared_ptr_mut</GlobalStaticAssertsSet/>,
+		ust::shared_ptr_mut</Mixins/>
 	] /> something_;
 }
 

@@ -21,6 +21,8 @@ public:
 	fn GetLine(this) : u32;
 	fn GetColumn(this) : u32;
 
+	fn SetLine( mut this, u32 line );
+
 	// = max for non-macro
 	fn SetFileIndex( mut this, u32 file_index );
 	fn SetMacroExpansionIndex( mut this, u32 macro_expansion_index );

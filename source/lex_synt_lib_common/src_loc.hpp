@@ -26,6 +26,8 @@ public:
 	uint32_t GetLine() const;
 	uint32_t GetColumn() const;
 
+	void SetLine( uint32_t line );
+
 	// = max for non-macro
 	void SetFileIndex( uint32_t file_index );
 	void SetMacroExpansionIndex( uint32_t macro_expansion_index );

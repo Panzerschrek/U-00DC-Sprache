@@ -1108,6 +1108,72 @@ U_TEST( DocumentCompletion_Test30 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test31 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "static_assert(true); fn Foo(){  }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should not suggest static assert.
+	document.UpdateText( DocumentRange{ { 1, 31 }, { 1, 31 } }, "auto x= sta" );
+
+	const CompletionItemsNormalized expected_completion_result{};
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 42 } );
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test32 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "mixin(\"\"); fn Foo(){  }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should not suggest mixin.
+	document.UpdateText( DocumentRange{ { 1, 21 }, { 1, 21 } }, "auto y= xi" );
+
+	const CompletionItemsNormalized expected_completion_result{};
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 31 } );
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test33 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "auto spaced_string= \"   \"; mixin( \" \" );" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should complete names in mixin expression.
+	document.UpdateText( DocumentRange{ { 1, 34 }, { 1, 36 } }, "pac" );
+
+	const CompletionItemsNormalized expected_completion_result{ "spaced_string" };
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 37 } );
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;

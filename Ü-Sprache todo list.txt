@@ -17,6 +17,9 @@ General:
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
 *) Variable templates
+*) Mixins in function bodies
+*) Mixins in type name context
+*) Mixins in expression context
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -25,9 +28,6 @@ References:
 Templates:
 *) Default template arguments for short type template form
 *) enable_if for type templates
-*) Variadic templates
-*) Function templates with template-dependent reference and mutability modifiers for arguments. Conditional move for
-	such arguments.
 
 Lambdas:
 *) Coroutine lambdas (async, generators)

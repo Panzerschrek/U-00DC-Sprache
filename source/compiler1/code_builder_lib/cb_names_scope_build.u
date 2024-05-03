@@ -100,4 +100,11 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 	global_static_asserts_set.clear();
 }
 
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Mixins/>& mixins_ )
+{
+	// Nothing to do here - expand mixins later.
+	ust::ignore_unused( names_scope_ptr );
+	ust::ignore_unused( mixins_ );
+}
+
 } // namespace U1

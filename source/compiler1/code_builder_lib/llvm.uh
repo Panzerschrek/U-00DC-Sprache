@@ -341,6 +341,7 @@ fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) unsafe : 
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, $(char8) Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
+fn nomangle LLVMGetAsString(LLVMValueRef c, size_type &mut Length) unsafe : $(char8);
 fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe : LLVMValueRef;
 fn nomangle LLVMGetOperand(LLVMValueRef Val, u32 Index) unsafe : LLVMValueRef;
 fn nomangle LLVMGetNumOperands(LLVMValueRef Val) unsafe : i32;
@@ -354,6 +355,8 @@ fn nomangle LLVMIsAInstruction(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAConstantAggregateZero(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAConstantDataArray(LLVMValueRef Val) unsafe : LLVMValueRef;
 
 fn nomangle LLVMGetInstructionOpcode(LLVMValueRef Inst) unsafe : LLVMOpcodeType;
 fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe : LLVMBasicBlockRef;

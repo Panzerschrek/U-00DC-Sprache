@@ -42,5 +42,6 @@ Contents
    generators
    async_functions
    lambdas
+   mixins
    c_interaction
    unsafe_code_requirements

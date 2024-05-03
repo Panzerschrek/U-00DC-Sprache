@@ -1,0 +1,385 @@
+import "/keywords.uh"
+import "../lex_synt_lib/lexical_analyzer.uh"
+import "../lex_synt_lib/syntax_analyzer.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::ProcessMixins( mut this, NamesScopeMutPtr& names_scope_ptr )
+{
+	// Perform several iterations in order to process mixins within mixins.
+	for( auto mut i= 0u; i < g_max_mixins_depth; ++i )
+	{
+		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
+		var u32 num_expressions= EvaluateMixinsExpressions_r( names_scope_ptr );
+		if( num_expressions == 0u )
+		{
+			break;
+		}
+
+		if( i == g_max_mixins_depth - 1u )
+		{
+			REPORT_ERROR( MixinExpansionDepthReached, names_scope_ptr, SrcLoc( 0u, 1u, 0u ) )
+		}
+
+		// Populate name scopes using expressions evaluated on previous step.
+		ExpandNamespaceMixins_r( names_scope_ptr );
+	}
+}
+
+fn CodeBuilder::EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scope_ptr ) : u32
+{
+	var u32 mut result(0);
+	foreach( &el : names_scope_ptr.lock_imut().deref() )
+	{
+		if_var( &nested_names_scope_ptr : el.value().something_.get</NamesScopeMutPtr/>() )
+		{
+			result+= EvaluateMixinsExpressions_r( nested_names_scope_ptr );
+		}
+		else if_var( &class_type : el.value().something_.get</ClassTypePtr/>() )
+		{
+			auto class_members= class_type.lock_imut().deref().members;
+			result+= EvaluateMixinsExpressions_r( class_members );
+		}
+		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
+		{
+			with( mut lock : mixins_ptr.lock_mut() )
+			{
+				result+= u32(lock.deref().size());
+				foreach( &mut mixin_ : lock.deref() )
+				{
+					EvaluateMixinExpression( names_scope_ptr, mixin_ );
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+fn CodeBuilder::ExpandNamespaceMixins_r( mut this, NamesScopeMutPtr& names_scope_ptr )
+{
+	// First collect mixins into a container, than expand mixins.
+	// Doing so we avoid modifying names_scope while iterating it.
+	var ust::vector</Mixins/> mut all_mixins;
+
+	foreach( &el : names_scope_ptr.lock_imut().deref() )
+	{
+		if_var( &nested_names_scope_ptr : el.value().something_.get</NamesScopeMutPtr/>() )
+		{
+			ExpandNamespaceMixins_r( nested_names_scope_ptr );
+		}
+		else if_var( &class_type : el.value().something_.get</ClassTypePtr/>() )
+		{
+			ExpandClassMixins_r( class_type );
+		}
+		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
+		{
+			with( mut lock : mixins_ptr.lock_mut() )
+			{
+				all_mixins.push_back( take(lock.deref()) ); // Take mixins, because they are not needed later.
+			}
+		}
+	}
+
+	foreach( &mut mixins : all_mixins )
+	{
+		foreach( &mut mixin_ : mixins )
+		{
+			ExpandNamespaceMixin( names_scope_ptr, mixin_ );
+		}
+	}
+}
+
+fn CodeBuilder::ProcessClassMixins( mut this, ClassTypePtr& class_type )
+{
+	auto class_members= class_type.lock_imut().deref().members;
+
+	// Perform several iterations in order to process mixins within mixins.
+	for( auto mut i= 0u; i < g_max_mixins_depth; ++i )
+	{
+		// First evaluate all expressions. Doing so we prevent symbols produced in expansion of one mixin visible in expression of another.
+		var u32 num_expressions= EvaluateMixinsExpressions_r( class_members );
+		if( num_expressions == 0u )
+		{
+			break;
+		}
+
+		if( i == g_max_mixins_depth - 1u )
+		{
+			REPORT_ERROR( MixinExpansionDepthReached, class_members, SrcLoc( 0u, 1u, 0u ) )
+		}
+
+		// Populate name scopes using expressions evaluated on previous step.
+		ExpandClassMixins_r( class_type );
+	}
+}
+
+fn CodeBuilder::ExpandClassMixins_r( mut this, ClassTypePtr& class_type )
+{
+	// First collect mixins into a container, than expand mixins.
+	// Doing so we avoid modifying names_scope while iterating it.
+	var ust::vector</Mixins/> mut all_mixins;
+
+	auto class_members= class_type.lock_imut().deref().members;
+
+	foreach( &el : class_members.lock_imut().deref() )
+	{
+		if_var( &inner_class_type : el.value().something_.get</ClassTypePtr/>() )
+		{
+			ExpandClassMixins_r( inner_class_type );
+		}
+		else if_var( &mixins_ptr : el.value().something_.get</ ust::shared_ptr_mut</Mixins/> />() )
+		{
+			with( mut lock : mixins_ptr.lock_mut() )
+			{
+				all_mixins.push_back( take(lock.deref()) ); // Take mixins, because they are not needed later.
+			}
+		}
+	}
+
+	foreach( &mut mixins : all_mixins )
+	{
+		foreach( &mut mixin_ : mixins )
+		{
+			ExpandClassMixin( class_type, mixin_ );
+		}
+	}
+}
+
+fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_ptr, Mixin &mut mixin_ )
+{
+	if( mixin_.string_constant == LLVMValueRef::Null )
+	{
+		return;
+	}
+
+	var size_type mut str_length= 0s;
+	var $(char8) str_start= unsafe( LLVMGetAsString( mixin_.string_constant, str_length ) );
+
+	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
+
+	mixin_.string_constant= LLVMValueRef::Null;
+
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
+
+	auto mut prev_value_opt_ref= namespace_mixin_expansions_.find( key );
+	if( !prev_value_opt_ref.empty() )
+	{
+		auto prev_ptr_copy= prev_value_opt_ref.try_deref();
+		move(prev_value_opt_ref);
+		NamesScopeFill( names_scope_ptr, prev_ptr_copy.deref() );
+		NamesScopeFillOutOfLineElements( names_scope_ptr, prev_ptr_copy.deref() );
+	}
+	else
+	{
+		move(prev_value_opt_ref);
+
+		auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
+		if( lexems.empty() )
+		{
+			return;
+		}
+
+		var SourceGraph& source_graph= source_graph_.try_deref();
+		var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
+
+		auto mut synt_result= Synt::ParseNamespaceElements(
+			lexems.try_deref(),
+			source_graph_node.synt_result.macros,
+			source_graph.macro_expansion_contexts,
+			source_graph_node.contents_hash );
+
+		if( !synt_result.errors.empty() )
+		{
+			foreach( & error : synt_result.errors )
+			{
+				REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
+			}
+
+			return;
+		}
+
+		NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
+		NamesScopeFillOutOfLineElements( names_scope_ptr, synt_result.namespace_elements );
+
+		namespace_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.namespace_elements) ) );
+	}
+}
+
+fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ )
+{
+	if( mixin_.string_constant == LLVMValueRef::Null )
+	{
+		return;
+	}
+
+	auto class_members= class_type.lock_imut().deref().members;
+
+	var size_type mut str_length= 0s;
+	var $(char8) str_start= unsafe( LLVMGetAsString( mixin_.string_constant, str_length ) );
+
+	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
+
+	mixin_.string_constant= LLVMValueRef::Null;
+
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
+
+	auto mut prev_value_opt_ref= class_mixin_expansions_.find( key );
+	if( !prev_value_opt_ref.empty() )
+	{
+		auto prev_ptr_copy= prev_value_opt_ref.try_deref();
+		move(prev_value_opt_ref);
+		NamesScopeFillClass( class_members, prev_ptr_copy.deref(), class_type, mixin_.visibility );
+	}
+	else
+	{
+		move(prev_value_opt_ref);
+
+		auto lexems= PrepareMixinLexems( class_members, mixin_.src_loc, mixin_text );
+		if( lexems.empty() )
+		{
+			return;
+		}
+
+		var SourceGraph& source_graph= source_graph_.try_deref();
+		var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
+
+		auto mut synt_result= Synt::ParseClassElements(
+			lexems.try_deref(),
+			source_graph_node.synt_result.macros,
+			source_graph.macro_expansion_contexts,
+			source_graph_node.contents_hash );
+
+		if( !synt_result.errors.empty() )
+		{
+			foreach( & error : synt_result.errors )
+			{
+				REPORT_ERROR( MixinSyntaxError, class_members, error.src_loc, error.text )
+			}
+
+			return;
+		}
+
+		NamesScopeFillClass( class_members, synt_result.class_elements, class_type, mixin_.visibility );
+
+		class_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.class_elements) ) );
+	}
+}
+
+fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
+{
+	if( mixin_.syntax_element.empty() )
+	{
+		return;
+	}
+	auto syntax_element= mixin_.syntax_element.try_to_non_nullable();
+
+	auto mut function_context= CreateGlobalFunctionContext();
+	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, syntax_element.deref().expression ).lock_imut().deref();
+	move(function_context);
+
+	mixin_.syntax_element.reset();
+
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, syntax_element.deref().src_loc )
+		return;
+	}
+
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( array_type.element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, syntax_element.deref().src_loc, "char8 array", variable.t.ToString() )
+			return;
+		}
+	}
+	else
+	{
+		REPORT_ERROR( TypesMismatch, names_scope_ptr, syntax_element.deref().src_loc, "char8 array", variable.t.ToString() )
+		return;
+	}
+
+	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		unsafe
+		{
+			var size_type mut str_length= 0s;
+			var $(char8) str_start= unsafe( LLVMGetAsString( variable.constexpr_value, str_length ) );
+			if( !U1_IsLegalUTF8Sequence( str_start, str_length ) )
+			{
+				REPORT_ERROR( MixinInvalidUTF8, names_scope_ptr, syntax_element.deref().src_loc )
+				return;
+			}
+		}
+
+		mixin_.string_constant= variable.constexpr_value;
+	}
+	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		// Ignore mixins containing zeros. Their expansion leads to nothing.
+	}
+	else
+	{
+		REPORT_ERROR( NotImplemented, names_scope_ptr, syntax_element.deref().src_loc, "non-trivial mixin constants" )
+	}
+}
+
+fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>
+{
+	auto mut lex_result= LexicalAnalysis( mixin_text );
+
+	// Create new macro expansion context for mixin expansion.
+	var u32 mut macro_expansion_index(0);
+	with( mut lock : source_graph_.try_deref().macro_expansion_contexts.lock_mut() )
+	{
+		macro_expansion_index= u32(lock.deref().size());
+
+		lock.deref().push_back(
+			Synt::MacroExpansionContext
+			{
+				.macro_name= KeywordToString( Keyword::mixin_ ),
+				.src_loc= src_loc,
+				.macro_declaration_src_loc= src_loc,
+			} );
+	}
+
+	// Use file index of the mixin for lexems in its expansion.
+	var u32 file_index= src_loc.GetFileIndex();
+
+	// Numerate lines in mixin lexems starting with line of the mixin expansion point.
+	var u32 line_shift= src_loc.GetLine() - 1u;
+
+	foreach( &mut lexem : lex_result.lexems )
+	{
+		lexem.src_loc.SetFileIndex( file_index );
+		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
+		var u32 line_corrected= lexem.src_loc.GetLine() + line_shift;
+		lexem.src_loc.SetLine( line_corrected );
+	}
+
+	if( !lex_result.errors.empty() )
+	{
+		foreach( & error : lex_result.errors )
+		{
+			var SrcLoc mut src_loc_corrected= error.src_loc;
+			src_loc_corrected.SetFileIndex( file_index );
+			src_loc_corrected.SetMacroExpansionIndex( macro_expansion_index );
+			var u32 line_corrected= src_loc_corrected.GetLine() + line_shift;
+			src_loc_corrected.SetLine( line_corrected );
+
+			REPORT_ERROR( MixinLexicalError, names_scope_ptr, src_loc_corrected, error.text )
+		}
+
+		return ust::null_optional;
+	}
+
+	return take(lex_result.lexems);
+}
+
+var u32 g_max_mixins_depth(4);
+
+} // namespace U

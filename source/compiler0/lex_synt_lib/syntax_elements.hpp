@@ -128,6 +128,8 @@ struct TypeTemplate;
 struct FunctionTemplate;
 struct Namespace;
 
+struct Mixin; // Mixins may be used in different contexts.
+
 //
 // Variants
 //
@@ -281,7 +283,8 @@ using ClassElementsList= VariantLinkedList<
 	ClassField,
 	ClassVisibilityLabel,
 	TypeTemplate,
-	FunctionTemplate >;
+	FunctionTemplate,
+	Mixin >;
 
 using ProgramElementsList= VariantLinkedList<
 	VariablesDeclaration,
@@ -293,7 +296,8 @@ using ProgramElementsList= VariantLinkedList<
 	Class,
 	TypeTemplate,
 	FunctionTemplate,
-	Namespace >;
+	Namespace,
+	Mixin >;
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
@@ -1358,6 +1362,15 @@ struct Namespace
 	SrcLoc src_loc;
 	std::string name;
 	ProgramElementsList elements;
+};
+
+struct Mixin
+{
+	explicit Mixin( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	Expression expression;
 };
 
 struct Import

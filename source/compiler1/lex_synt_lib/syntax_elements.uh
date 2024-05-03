@@ -656,6 +656,12 @@ struct StaticAssert
 	ust::optional</ust::string8/> message;
 }
 
+struct Mixin
+{
+	SrcLoc src_loc;
+	Expression expression;
+}
+
 struct Halt
 {
 	SrcLoc src_loc;
@@ -796,7 +802,8 @@ type ClassElement= ust::variant</ tup[
 	ClassVisibilityLabel,
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
-	ust::shared_ptr_final</StaticAssert/>
+	ust::shared_ptr_final</StaticAssert/>,
+	ust::shared_ptr_final</Mixin/>
 	] />;
 
 type ClassElements= ust::vector</ClassElement/>;
@@ -903,7 +910,8 @@ type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Namespace/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
-	ust::shared_ptr_final</StaticAssert/>
+	ust::shared_ptr_final</StaticAssert/>,
+	ust::shared_ptr_final</Mixin/>
 	] />;
 
 type NamespaceElements= ust::vector</NamespaceElement/>;

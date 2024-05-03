@@ -980,6 +980,187 @@ U_TEST( UnusedNameErrorIsNotGeneratedForImportedFiles_Test0 )
 		true );
 }
 
+U_TEST( ImportMixin_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		mixin( " fn Foo() : i32 { return 342; } " );
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+
+	const auto function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(342) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportMixin_Test1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		mixin( " fn Foo() : i32;" );
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		fn Foo() : i32
+		{
+			return 1342;
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+
+	const auto function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1342) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportMixin_Test2 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		mixin( " fn Bar() : i32 { return 786; } " );
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c"
+		// Merge here two defenitions of the same function produced by a mixin.
+		fn Foo() : i32
+		{
+			return Bar();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "c", c_program_text_c },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+
+	const auto function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(786) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportMixin_Test3 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		mixin( " fn Bar() : i32 { return 786; } " );
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		mixin( " fn Baz() : i32 { return 78; } " );
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+		// Merge here two defenitions of the different functions produced by a mixin.
+		fn Foo() : i32
+		{
+			return Bar() - Baz();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+
+	const auto function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(786 - 78) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportMixin_Test4 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		namespace Some{ fn Foo() : i32; }
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		// Out of line function inside mixin.
+		mixin( " fn Some::Foo() : i32 { return 876; } " );
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+
+	const auto function= engine->FindFunctionNamed( "_ZN4Some3FooEv" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(876) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace
 
 } // namespace U

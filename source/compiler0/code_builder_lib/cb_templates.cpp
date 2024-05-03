@@ -872,6 +872,11 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 		if( class_type == nullptr )
 			return std::nullopt;
 
+		// Expand mixins just in class template instantiation.
+		// This is the only proper place to do so.
+		// Expanding mixins later isn't possible.
+		ProcessClassMixins( class_type );
+
 		return Type(class_type);
 	}
 	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )

@@ -89,6 +89,13 @@ size_t U1_ConvertUTF8ToUTF32(
 		return dst_buff_size + 1; // Size is unknown, but greater then expected.
 }
 
+bool U1_IsLegalUTF8Sequence( const char* const start, const size_t length )
+{
+	return llvm::isLegalUTF8Sequence(
+		reinterpret_cast<const llvm::UTF8*>(start),
+		reinterpret_cast<const llvm::UTF8*>(start) + length ) != 0;
+}
+
 LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data, const size_t size, const size_t element_count)
 {
 	return llvm::wrap(

@@ -179,24 +179,47 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
 	class_type->members->SetClass( class_type );
 
+	FillClassNamesScope(
+		class_type,
+		class_name,
+		class_declaration.kind_attribute_,
+		class_declaration.elements,
+		// Members are public by-default, until first visibility label.
+		ClassMemberVisibility::Public );
+
+	return class_type;
+}
+
+void CodeBuilder::FillClassNamesScope(
+	const ClassPtr class_type,
+	const std::string_view class_name,
+	const Synt::ClassKindAttribute class_kind,
+	const Synt::ClassElementsList& class_elements,
+	const ClassMemberVisibility initial_visibility )
+{
 	struct Visitor final
 	{
 		CodeBuilder& this_;
-		const Synt::Class& class_declaration;
-		ClassPtr class_type;
+		const Synt::ClassKindAttribute class_kind;
+		const ClassPtr class_type;
 		const std::string_view class_name;
-		ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
-		uint32_t field_number= 0u;
+		ClassMemberVisibility current_visibility;
 
-		Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassPtr in_class_type, const std::string_view in_class_name )
-			: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), class_name(in_class_name)
+		Visitor(
+			CodeBuilder& in_this,
+			const Synt::ClassKindAttribute
+			in_class_kind,
+			ClassPtr in_class_type,
+			const std::string_view in_class_name,
+			const ClassMemberVisibility initial_visibility )
+			: this_(in_this), class_kind(in_class_kind), class_type(in_class_type), class_name(in_class_name), current_visibility(initial_visibility)
 		{}
 
 		void operator()( const Synt::ClassField& in_class_field )
 		{
 			ClassField class_field;
 			class_field.syntax_element= &in_class_field;
-			class_field.original_index= field_number;
+			class_field.original_index= class_type->field_count;
 			class_field.name= in_class_field.name;
 
 			if( IsKeyword( in_class_field.name ) )
@@ -204,7 +227,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field.src_loc ) ) == nullptr )
 				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc, in_class_field.name );
 
-			++field_number;
+			++class_type->field_count;
 			class_type->SetMemberVisibility( in_class_field.name, current_visibility );
 		}
 		void operator()( const Synt::Function& func )
@@ -217,7 +240,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 		}
 		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 		{
-			if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+			if( class_kind == Synt::ClassKindAttribute::Struct )
 				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label.src_loc, class_name );
 			current_visibility= visibility_label.visibility;
 		}
@@ -255,11 +278,13 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 			this_.NamesScopeFill( *class_type->members, inner_class );
 			class_type->SetMemberVisibility( inner_class.name, current_visibility );
 		}
+		void operator()( const Synt::Mixin& mixin )
+		{
+			this_.NamesScopeFill( *class_type->members, mixin, current_visibility );
+		}
 	};
 
-	class_declaration.elements.Iter( Visitor( *this, class_declaration, class_type, class_name ) );
-
-	return class_type;
+	class_elements.Iter( Visitor( *this, class_kind, class_type, class_name, initial_visibility ) );
 }
 
 void CodeBuilder::NamesScopeFill(
@@ -327,6 +352,29 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 	names_scope.AddName(
 		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
 		NamesScopeValue( static_assert_, static_assert_declaration.src_loc ) );
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, const ClassMemberVisibility visibility )
+{
+	Mixin out_mixin;
+	out_mixin.src_loc= mixin.src_loc;
+	out_mixin.visibility= visibility;
+	out_mixin.syntax_element= &mixin;
+
+	// Collect all mixins in a member with name equal to "mixin" keyword.
+	const auto key= Keyword( Keywords::mixin_ );
+
+	if( const auto prev_value= names_scope.GetThisScopeValue( key ) )
+	{
+		if( const auto mixins= prev_value->value.GetMixins() )
+			mixins->push_back( std::move(out_mixin) );
+	}
+	else
+	{
+		Mixins mixins;
+		mixins.push_back( std::move(out_mixin) );
+		names_scope.AddName( key, NamesScopeValue( std::move(mixins), mixin.src_loc ) );
+	}
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(

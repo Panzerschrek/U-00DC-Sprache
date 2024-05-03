@@ -168,6 +168,13 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssert
 	return GlobalStaticAssertsSet();
 }
 
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Mixins/>& mixins ) : NamesScopeValue
+{
+	// Mixins are expanded earlier and this container should be empty. Do not bother copying it.
+	ust::ignore_unused( mixins );
+	return Mixins();
+}
+
 fn CodeBuilder::NamesScopeMergeValues(
 	NamesScopeValue& dst,
 	NamesScopeValue& src,
@@ -395,6 +402,12 @@ fn CodeBuilder::NamesScopeMergeValues(
 	}
 	{ // Static asserts. Do not merge them, just skip content.
 		if( !dst.Get</GlobalStaticAssertsSet/>().empty() )
+		{
+			return;
+		}
+	}
+	{ // Mixins. Do not merge them, just skip content.
+		if( !dst.Get</Mixins/>().empty() )
 		{
 			return;
 		}

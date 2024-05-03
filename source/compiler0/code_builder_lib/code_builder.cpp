@@ -365,6 +365,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	// Do work for this node.
 	NamesScopeFill( *result.names_map, source_graph_node.ast.program_elements );
 	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
+	ProcessMixins( *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
 	if( !skip_building_generated_functions_ )
@@ -548,6 +549,11 @@ void CodeBuilder::MergeNameScopes(
 
 					return;
 				}
+			}
+			else if( dst_member->value.GetMixins() != nullptr )
+			{
+				// Mixins are expanded earlier and no job is required to merging mixins somehow.
+				return;
 			}
 
 			if( dst_member->src_loc == src_member.src_loc )
@@ -922,6 +928,7 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetMixins() != nullptr ||
 				value.GetYetNotDeducedTemplateArg() != nullptr ||
 				value.GetErrorValue() != nullptr )
 			{} // Ignore these kinds if values.
@@ -963,6 +970,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetMixins() != nullptr ||
 				value.GetYetNotDeducedTemplateArg() != nullptr ||
 				value.GetErrorValue() != nullptr )
 			{} // Ignore these kinds if values.

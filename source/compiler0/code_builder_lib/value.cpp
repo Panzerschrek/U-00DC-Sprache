@@ -283,6 +283,11 @@ Value::Value( IncompleteGlobalVariable incomplete_global_variable )
 	something_= std::move(incomplete_global_variable);
 }
 
+Value::Value( Mixins mixins )
+{
+	something_= std::move(mixins);
+}
+
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
 {
 	something_= std::move(yet_not_deduced_template_arg);
@@ -313,6 +318,7 @@ std::string_view Value::GetKindName() const
 		std::string_view operator()( const StaticAssert& ) const { return "static assert"; }
 		std::string_view operator()( const TypeAlias& ) const { return "incomplete type alias"; }
 		std::string_view operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"; }
+		std::string_view operator()( const Mixins& ) const { return "mixins"; }
 		std::string_view operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"; }
 		std::string_view operator()( const ErrorValue& ) const { return "error value"; }
 	};
@@ -410,6 +416,16 @@ IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable()
 const IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable() const
 {
 	return std::get_if<IncompleteGlobalVariable>( &something_ );
+}
+
+Mixins* Value::GetMixins()
+{
+	return std::get_if<Mixins>( &something_ );
+}
+
+const Mixins* Value::GetMixins() const
+{
+	return std::get_if<Mixins>( &something_ );
 }
 
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()

@@ -6,11 +6,15 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
+fn CodeBuilder::NamesScopeFillClass(
+	mut this,
+	NamesScopeMutPtr& names_scope_ptr,
+	Synt::ClassElements& class_elements,
+	ClassTypePtr& class_type,
+	Synt::ClassVisibility start_visibility )
 {
-	auto mut current_visibility= Synt::ClassVisibility::Public;
+	auto mut current_visibility= start_visibility;
 	var bool is_struct= class_type.lock_imut().deref().syntax_element.try_deref().kind_attribute == Synt::Class::KindAttribute::Struct;
-	var u32 mut field_index= 0u;
 	foreach( & class_element : class_elements )
 	{
 		variant_visit( & el : class_element )
@@ -29,8 +33,13 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 			}
 			else static_if( same_type</ ElementT, ust::shared_ptr_final</Synt::ClassField/> /> )
 			{
+				var u32 mut field_index(0);
+				with( mut lock : class_type.lock_mut() )
+				{
+					field_index= lock.deref().field_count;
+					++lock.deref().field_count;
+				}
 				NamesScopeFill( names_scope_ptr, el, class_type, current_visibility, field_index );
-				++field_index;
 			}
 			else
 			{
@@ -451,6 +460,41 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeFill( names_scope_ptr, static_asert );
 }
 
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_ )
+{
+	return NamesScopeFill( names_scope_ptr, mixin_, ust::shared_ptr_nullable_mut</ClassType/>(), Synt::ClassVisibility::Public );
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility  )
+{
+	ust::ignore_unused( class_type );
+
+	var Mixin mut out_mixin{ .src_loc= mixin_.deref().src_loc, .syntax_element= mixin_, .visibility= visibility };
+
+	var ust::string8 key= KeywordToString(Keyword::mixin_);
+	if_var( &prev_name : names_scope_ptr.lock_imut().deref().GetThisScopeValue(key) )
+	{
+		auto prev_mixins= prev_name.Get</Mixins/>();
+		if( !prev_mixins.empty() )
+		{
+			auto mut lock= prev_mixins.try_lock_mut();
+			lock.deref().push_back( move(out_mixin) );
+		}
+		else
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, mixin_.deref().src_loc, key )
+			move(out_mixin);
+		}
+		return;
+	}
+
+	var Mixins mut mixins;
+	mixins.push_back( move(out_mixin) );
+
+	auto mut lock= names_scope_ptr.lock_mut();
+	lock.deref().AddName( key, move(mixins) );
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
 {
 	var ust::string8 name= namespace_.deref().name;
@@ -698,7 +742,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
 	}
 
-	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr );
+	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr, Synt::ClassVisibility::Public );
 
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )

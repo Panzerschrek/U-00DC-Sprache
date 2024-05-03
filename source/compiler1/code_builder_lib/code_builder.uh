@@ -190,6 +190,7 @@ private:
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalVariable/>& global_variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Mixins/>& mixins ) : NamesScopeValue;
 
 	fn NamesScopeMergeValues(
 		NamesScopeValue& dst,
@@ -200,7 +201,7 @@ private:
 
 	fn GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc; // Get src_loc or empty value
 
-	fn NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type );
+	fn NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type, Synt::ClassVisibility start_visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
@@ -220,6 +221,8 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_ );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility  );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, u32 field_index );
 	fn NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
@@ -239,6 +242,19 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Mixins/>& mixins_ );
+
+	// Mixins
+	fn ProcessMixins( mut this, NamesScopeMutPtr& names_scope_ptr );
+	// Returns total number of mixins.
+	fn EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scope_ptr ) : u32;
+	fn ExpandNamespaceMixins_r( mut this, NamesScopeMutPtr& names_scope_ptr );
+	fn ProcessClassMixins( mut this, ClassTypePtr& class_type );
+	fn ExpandClassMixins_r( mut this, ClassTypePtr& class_type );
+	fn ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_ptr, Mixin &mut mixin_ );
+	fn ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ );
+	fn EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ );
+	fn PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>;
 
 	// Global things build.
 
@@ -1294,6 +1310,11 @@ private:
 	GlobalThingsStackPtr global_things_stack_ptr_;
 
 	ust::vector</Type/> non_sync_expression_stack_;
+
+	// Store here mixin expansion results.
+	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
+	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::NamespaceElements/>/> namespace_mixin_expansions_;
+	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::ClassElements/>/> class_mixin_expansions_;
 
 	// Debug info
 	bool imut build_debug_info_;

@@ -49,6 +49,7 @@ void ElementWrite( const TypeTemplate& type_template, std::ostream& stream );
 void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream );
 void ElementWrite( const ClassField& class_field, std::ostream& stream );
 void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream );
+void ElementWrite( const Mixin& mixin, std::ostream& stream );
 void ElementWrite( const ClassElementsList& class_elements, std::ostream& stream );
 void ElementWrite( const ProgramElementsList& elements, std::ostream& stream );
 // Prototypes end
@@ -852,6 +853,14 @@ void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& s
 		stream << Keyword( Keywords::private_ ) << ": \n";
 		break;
 	};
+}
+
+void ElementWrite( const Mixin& mixin, std::ostream& stream )
+{
+	stream << Keyword( Keywords::mixin_ );
+	stream << "( ";
+	ElementWrite( mixin.expression, stream );
+	stream << " );";
 }
 
 void ElementWrite( const ClassElementsList& class_elements, std::ostream& stream )

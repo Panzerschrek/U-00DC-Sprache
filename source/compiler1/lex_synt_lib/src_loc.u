@@ -34,6 +34,12 @@ fn SrcLoc::GetColumn(this) : u32
 	return u32(column_);
 }
 
+fn SrcLoc::SetLine( mut this, u32 line )
+{
+	halt if( line > c_max_line );
+	line_= u16(line);
+}
+
 fn SrcLoc::SetFileIndex( mut this, u32 file_index )
 {
 	halt if( file_index > c_max_file_index );

@@ -684,6 +684,35 @@ U_TEST( DefineBodyForFunction_UsingChildClassName_Test1 )
 	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 4u ) );
 }
 
+U_TEST( MacrosOfMainFileAreNotVisibleInMixinOfImportedFile_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		mixin( "DEFINE_FUNC Foo" ); // DEFINE_FUNC macro isn't visible here.
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		?macro <? DEFINE_FUNC:namespace ?name:ident ?>  ->
+		<? fn ?name() : i32 { return 987678; } ?>
+	)";
+
+	const ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	const CodeBuilderError& error= result.errors[0];
+	U_TEST_ASSERT( error.template_context != nullptr );
+	U_TEST_ASSERT( HasError( error.template_context->errors, CodeBuilderErrorCode::MixinSyntaxError, 2u ) );
+}
+
 } // namespace
 
 } // namespace U

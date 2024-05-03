@@ -220,6 +220,7 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
 	// May reuse value, created during previous dummy-instantiation.
@@ -1302,15 +1303,29 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
+	void FillClassNamesScope( ClassPtr class_type, std::string_view class_name, Synt::ClassKindAttribute class_kind, const Synt::ClassElementsList& class_elements, ClassMemberVisibility initial_visibility );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
 	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function );
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
+
+	// Mixins
+	void ProcessMixins( NamesScope& names_scope );
+	// Returns total number of mixins.
+	uint32_t EvaluateMixinsExpressions_r( NamesScope& names_scope );
+	void ExpandNamespaceMixins_r( NamesScope& names_scope );
+	void ProcessClassMixins( ClassPtr class_type );
+	void ExpandClassMixins_r( ClassPtr class_type );
+	void ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin );
+	void ExpandClassMixin( ClassPtr class_type, Mixin& mixin );
+	void EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin );
+	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text );
 
 	// Global things build
 
@@ -1502,6 +1517,11 @@ private:
 
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
+
+	// Store here mixin expansion results, because we need syntax elements to be alive, because they may be accessed during code building.
+	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
+	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

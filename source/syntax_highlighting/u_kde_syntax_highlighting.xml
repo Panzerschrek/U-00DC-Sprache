@@ -92,6 +92,7 @@
 			<item>static</item>
 			<item>package</item>
 			<item>module</item>
+			<item>mixin</item>
 		</list>
 		<list name="Sprache_Unsafe">
 			<item>unsafe</item>

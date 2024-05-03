@@ -495,6 +495,13 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)class_visibility_label;
 }
 
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin )
+{
+	// Complete in mixin expression.
+	BuildExpressionCode( mixin.expression, names_scope, *global_function_context_ );
+	global_function_context_->args_preevaluation_cache.clear();
+}
+
 NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template )
 {
 	const auto template_args_scope= std::make_shared<NamesScope>( std::string( NamesScope::c_template_args_namespace_name ), type_template->parent_namespace );
@@ -960,6 +967,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 	if( completion_name_ref.empty() || pos != llvm::StringRef::npos )
 	{
 		if( value_name_ref.startswith( StringViewToStringRef( Keyword(Keywords::static_assert_) ) ) || // static_assert name may exist inside namespace, but we should ignore it.
+			value_name == Keyword( Keywords::mixin_ ) || // Ignore mixins, which are inserted into namespaces.
 			StringToOverloadedOperator( value_name ) != std::nullopt // Ignore all overloaded operators. There is no reason and no possibility to access overloaded operator by name.
 			// Still allow to access constructors and destructors, even if it is needed very rarely.
 			)
