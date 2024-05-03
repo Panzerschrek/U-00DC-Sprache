@@ -422,11 +422,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"MixinInvalidUTF8_Test2",
 		"MixinRedefinition_Test3",
 		"MacroUsageInsideMixin_Test1",
-		"MixinWithinTemplate_Test1",
-		"MixinWithinTemplate_Test2",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

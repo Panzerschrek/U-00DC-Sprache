@@ -10,7 +10,13 @@ fn IsWhitespace( sprache_char c ) : bool
 {
 	switch(c)
 	{
-		" "c32, "\f"c32, "\n"c32, "\r"c32, "\t"c32, sprache_char(0x1Fu), sprache_char(0x7Fu) -> { return true; },
+		" "c32,
+		// "\f"c32,
+		// "\n"c32,
+		// "\r"c32,
+		// "\t"c32,
+		... sprache_char(0x1Fu),
+		sprache_char(0x7Fu) -> { return true; },
 		default -> { return false; }
 	}
 }
