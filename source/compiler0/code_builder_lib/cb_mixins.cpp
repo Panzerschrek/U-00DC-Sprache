@@ -1,6 +1,7 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/string_ref.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
@@ -148,10 +149,10 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 	if( mixin.string_constant == nullptr )
 		return;
 
-	const llvm::StringRef mixin_text= mixin.string_constant->getRawDataValues();
+	const std::string_view mixin_text= StringRefToStringView( mixin.string_constant->getRawDataValues() );
 	mixin.string_constant= nullptr;
 
-	MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
+	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= namespace_mixin_expansions_.find(key);
 
 	if( it == namespace_mixin_expansions_.end() )
@@ -193,10 +194,10 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	if( mixin.string_constant == nullptr )
 		return;
 
-	const llvm::StringRef mixin_text= mixin.string_constant->getRawDataValues();
+	const std::string_view mixin_text= StringRefToStringView( mixin.string_constant->getRawDataValues() );
 	mixin.string_constant= nullptr;
 
-	MixinExpansionKey key{ mixin.src_loc, mixin_text.str() };
+	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= class_mixin_expansions_.find(key);
 
 	if( it == class_mixin_expansions_.end() )
