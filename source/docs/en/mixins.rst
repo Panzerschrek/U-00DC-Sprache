@@ -15,7 +15,6 @@ This allows, for example, to create a code, which isn't possible to create using
 
 ``mixin`` may be used in namespaces:
 
-
 .. code-block:: u_spr
 
    mixin( "fn Foo() : i32 { return 52; }" ); // create a global function Foo

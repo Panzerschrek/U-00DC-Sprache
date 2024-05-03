@@ -33,7 +33,7 @@ void PrintErrorsGCC( const std::vector<IVfs::Path>& source_files, const CodeBuil
 
 			if( error.template_context->context_name == "mixin" )
 				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
-					<< "In expansion of mixin" << "\n";
+					<< "In expansion of mixin\n";
 			else
 				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
 					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
