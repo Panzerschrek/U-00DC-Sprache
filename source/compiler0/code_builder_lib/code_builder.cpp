@@ -550,6 +550,11 @@ void CodeBuilder::MergeNameScopes(
 					return;
 				}
 			}
+			else if( dst_member->value.GetMixins() != nullptr )
+			{
+				// Mixins are expanded earlier and no job is required to merging mixins somehow.
+				return;
+			}
 
 			if( dst_member->src_loc == src_member.src_loc )
 				return; // All ok - things from one source.
