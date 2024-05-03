@@ -11,7 +11,7 @@ struct Mixin
 	Synt::ClassVisibility visibility= Synt::ClassVisibility::Public;
 	ust::shared_ptr_final_nullable</Synt::Mixin/> syntax_element;  // Zeroed after mixin expression evaluation.
 
-	// If non-null - it's proper constexpr string. Null if mixin is already expanded.
+	// If non-null - it's proper constexpr string of type ConstantDataArray. Null if mixin is already expanded.
 	// Also is null if this mixin requires no expansion (if it is empty, for example).
 	LLVMValueRef string_constant= LLVMValueRef::Null;
 }

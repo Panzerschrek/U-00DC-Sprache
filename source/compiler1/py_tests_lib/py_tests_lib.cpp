@@ -426,8 +426,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"MixinInvalidUTF8_Test1",
 		"MixinInvalidUTF8_Test2",
 		"MixinRedefinition_Test3",
-		"MixinWithNoSyntaxElements_Test1",
-		"MixinWithNoSyntaxElements_Test2",
 		"MacroUsageInsideMixin_Test1",
 		"MixinWithinTemplate_Test1",
 		"MixinWithinTemplate_Test2",

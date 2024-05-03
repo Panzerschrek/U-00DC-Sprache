@@ -301,10 +301,19 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 		return;
 	}
 
-	// TODO - check UTF-8
-	// TODO - check if constant data array
-
-	mixin_.string_constant= variable.constexpr_value;
+	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		// TODO - check UTF-8
+		mixin_.string_constant= variable.constexpr_value;
+	}
+	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		// Ignore mixins containing zeros. Their expansion leads to nothing.
+	}
+	else
+	{
+		REPORT_ERROR( NotImplemented, names_scope_ptr, syntax_element.deref().src_loc, "non-trivial mixin constants" )
+	}
 }
 
 fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>
