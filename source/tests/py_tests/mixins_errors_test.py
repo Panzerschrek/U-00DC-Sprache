@@ -246,6 +246,16 @@ def ErrorInsideMixin_Test1():
 	assert( HasError( errors_list[0].template_errors.errors, "NoReturnInFunctionReturningNonVoid", 5 ) )
 
 
+def ErrorInsideMixin_Test2():
+	c_program_text= """
+		namespace Some{ fn Foo(i32 x); }
+		mixin( "fn Some::Foo(f32 y) {} " );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "FunctionDeclarationOutsideItsScope", 3 ) )
+
+
 def MixinRedefinition_Test0():
 	c_program_text= """
 		mixin( "var i32 x= 0;" );

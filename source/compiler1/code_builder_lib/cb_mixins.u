@@ -171,6 +171,7 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 		auto prev_ptr_copy= prev_value_opt_ref.try_deref();
 		move(prev_value_opt_ref);
 		NamesScopeFill( names_scope_ptr, prev_ptr_copy.deref() );
+		NamesScopeFillOutOfLineElements( names_scope_ptr, prev_ptr_copy.deref() );
 	}
 	else
 	{
@@ -202,6 +203,7 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 		}
 
 		NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
+		NamesScopeFillOutOfLineElements( names_scope_ptr, synt_result.namespace_elements );
 
 		namespace_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.namespace_elements) ) );
 	}

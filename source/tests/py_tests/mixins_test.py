@@ -471,3 +471,34 @@ def MixinsFieldsOrdered_Test0():
 		static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "x" ) == 4s );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MixinOutOfLineFunction_Test0():
+	c_program_text= """
+		namespace Some
+		{
+			fn Foo() : f32;
+		}
+		// Add out of line function in mixin, that was declared previously using regular way.
+		mixin( " fn Some::Foo() : f32 { return 3.25f; } " );
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_ZN4Some3FooEv" ) == 3.25 )
+
+
+def MixinOutOfLineFunction_Test1():
+	c_program_text= """
+		// Add both declaration and out of line definition for a function.
+		mixin( " namespace Some{ fn Foo() : i32; } fn Some::Foo() : i32 { return 7023; } " );
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_ZN4Some3FooEv" ) == 7023 )
+
+
+def MixinOutOfLineFunction_Test2():
+	c_program_text= """
+		// Add both declaration and out of line definition for a function.
+		mixin( " struct Some{ fn Foo() : i32; } fn Some::Foo() : i32 { return 967; } " );
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_ZN4Some3FooEv" ) == 967 )

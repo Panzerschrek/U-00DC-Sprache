@@ -183,6 +183,7 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 	}
 
 	NamesScopeFill( names_scope, it->second );
+	NamesScopeFillOutOfLineElements( names_scope, it->second );
 }
 
 void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
