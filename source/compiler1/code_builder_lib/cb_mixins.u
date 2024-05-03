@@ -303,7 +303,17 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 
 	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != LLVMValueRef::Null )
 	{
-		// TODO - check UTF-8
+		unsafe
+		{
+			var size_type mut str_length= 0s;
+			var $(char8) str_start= unsafe( LLVMGetAsString( variable.constexpr_value, str_length ) );
+			if( !U1_IsLegalUTF8Sequence( str_start, str_length ) )
+			{
+				REPORT_ERROR( MixinInvalidUTF8, names_scope_ptr, syntax_element.deref().src_loc )
+				return;
+			}
+		}
+
 		mixin_.string_constant= variable.constexpr_value;
 	}
 	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != LLVMValueRef::Null )
