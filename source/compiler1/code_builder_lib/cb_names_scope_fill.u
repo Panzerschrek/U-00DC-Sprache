@@ -15,7 +15,6 @@ fn CodeBuilder::NamesScopeFillClass(
 {
 	auto mut current_visibility= start_visibility;
 	var bool is_struct= class_type.lock_imut().deref().syntax_element.try_deref().kind_attribute == Synt::Class::KindAttribute::Struct;
-	var u32 mut field_index= 0u;
 	foreach( & class_element : class_elements )
 	{
 		variant_visit( & el : class_element )
@@ -34,8 +33,13 @@ fn CodeBuilder::NamesScopeFillClass(
 			}
 			else static_if( same_type</ ElementT, ust::shared_ptr_final</Synt::ClassField/> /> )
 			{
+				var u32 mut field_index(0);
+				with( mut lock : class_type.lock_mut() )
+				{
+					field_index= lock.deref().field_count;
+					++lock.deref().field_count;
+				}
 				NamesScopeFill( names_scope_ptr, el, class_type, current_visibility, field_index );
-				++field_index;
 			}
 			else
 			{

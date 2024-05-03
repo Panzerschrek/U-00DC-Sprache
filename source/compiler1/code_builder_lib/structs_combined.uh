@@ -224,6 +224,7 @@ struct ClassType
 
 	// This class fields names ordered by offset.
 	ust::vector</tup[ust::string8, ClassFieldPtr]/> fields_order;
+	u32 field_count= 0u;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 

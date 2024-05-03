@@ -427,7 +427,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"MacroUsageInsideMixin_Test1",
 		"MixinWithinTemplate_Test1",
 		"MixinWithinTemplate_Test2",
-		"MixinsFieldsOrdered_Test0",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
