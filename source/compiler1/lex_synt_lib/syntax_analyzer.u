@@ -210,6 +210,7 @@ private:
 	fn ParseWithOperator( mut this ) : WithOperator;
 	fn ParseStaticAssert( mut this ) : StaticAssert;
 	fn ParseMixin( mut this ) : Mixin;
+	fn ParseExpressionMixin( mut this ) : Mixin;
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
@@ -943,6 +944,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
 		};
 	}
+	if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+	{
+		return ust::make_shared_ptr_final( ParseExpressionMixin() );
+	}
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
 		if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Expression ) )
@@ -979,6 +984,10 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
 		return ust::make_box( ParseTupleType() );
+	}
+	else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+	{
+		return ust::make_shared_ptr_final( ParseExpressionMixin() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
 	{
@@ -2916,6 +2925,18 @@ fn SyntaxAnalyzer::ParseMixin( mut this ) : Mixin
 	mixin_.expression= ParseExpression();
 
 	ExpectSemicolon();
+
+	return mixin_;
+}
+
+fn SyntaxAnalyzer::ParseExpressionMixin( mut this ) : Mixin
+{
+	debug_assert( IsKeyword( it_.front(), Keyword::mixin_ ) );
+
+	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
+	NextLexem();
+
+	mixin_.expression= ParseExpression();
 
 	return mixin_;
 }

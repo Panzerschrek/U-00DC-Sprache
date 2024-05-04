@@ -195,6 +195,15 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 }
 
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type
+{
+	// TODO
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( mixin_ );
+	return invalid_type_;
+}
+
 fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType
 {
 	var FunctionType mut res
