@@ -480,7 +480,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 
 	result.has_fractional_point= has_fraction_point;
 
-	if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
+	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 	{
 		const Lexem type_suffix= ParseIdentifier( it, it_end );
 		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
