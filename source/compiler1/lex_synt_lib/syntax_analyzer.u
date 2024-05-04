@@ -389,6 +389,12 @@ fn SyntaxAnalyzer::ParseStandaloneTypeName( mut this ) : TypeNameParsingResult
 {
 	var TypeNameParsingResult mut res;
 	res.type_name= ParseTypeName();
+
+	if( !it_.empty() && it_.front().lexem_type != Lexem::Type::EndOfFile )
+	{
+		PushErrorMessage(); // Do not allow lexems left.
+	}
+
 	res.errors= take(errors_);
 
 	return res;
@@ -398,6 +404,12 @@ fn SyntaxAnalyzer::ParseStandaloneExpression( mut this ) : ExpressionParsingResu
 {
 	var ExpressionParsingResult mut res;
 	res.expression= ParseExpression();
+
+	if( !it_.empty() && it_.front().lexem_type != Lexem::Type::EndOfFile )
+	{
+		PushErrorMessage(); // Do not allow lexems left.
+	}
+
 	res.errors= take(errors_);
 
 	return res;
