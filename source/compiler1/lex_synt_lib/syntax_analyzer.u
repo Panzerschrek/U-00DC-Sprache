@@ -110,6 +110,8 @@ public:
 	fn ParseNamespaceElements( mut this ) : NamespaceParsingResult;
 	fn ParseClassElements( mut this ) : ClassElementsParsingResult;
 	fn ParseBlockElements( mut this ) : BlockElementsParsingResult;
+	fn ParseStandaloneTypeName( mut this ) : TypeNameParsingResult;
+	fn ParseStandaloneExpression( mut this ) : ExpressionParsingResult;
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
@@ -378,6 +380,24 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElementsParsingResult
 {
 	var BlockElementsParsingResult mut res;
 	res.block_elements= ParseBlockElementsToFileEnd();
+	res.errors= take(errors_);
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseStandaloneTypeName( mut this ) : TypeNameParsingResult
+{
+	var TypeNameParsingResult mut res;
+	res.type_name= ParseTypeName();
+	res.errors= take(errors_);
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseStandaloneExpression( mut this ) : ExpressionParsingResult
+{
+	var ExpressionParsingResult mut res;
+	res.expression= ParseExpression();
 	res.errors= take(errors_);
 
 	return res;
@@ -4359,6 +4379,36 @@ fn ParseBlockElements(
 		move(source_file_contents_hash) );
 
 	return analyzer.ParseBlockElements();
+}
+
+fn ParseTypeName(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : TypeNameParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseStandaloneTypeName();
+}
+
+fn ParseExpression(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : ExpressionParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseStandaloneExpression();
 }
 
 fn ParseImports( Lexems& lexems ) : ImportsList

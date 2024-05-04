@@ -2180,11 +2180,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Value
 {
-	// TODO
-	ust::ignore_unused(names_scope);
-	ust::ignore_unused(function_context);
-	ust::ignore_unused(mixin_);
-	return ErrorValue();
+	auto expression= ExpandExpressionMixin( names_scope, function_context, mixin_ );
+	if( !expression.empty() )
+	{
+		return BuildExpressionCode( names_scope, function_context, expression.try_deref() );
+	}
+
+	return ErrorValue(); // An error should be generated earlier.
 }
 
 fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value
