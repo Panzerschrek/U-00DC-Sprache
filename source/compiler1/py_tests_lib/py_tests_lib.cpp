@@ -427,11 +427,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"MixinSyntaxError_Test10",
 		"MixinSyntaxError_Test11",
 		"MixinSyntaxError_Test13",
-		"ExpressionMixin_Test2",
-		"ExpressionMixin_Test4",
-		"TypeNameMixin_Test0",
-		"TypeNameMixin_Test4",
-		"TypeNameMixin_Test5",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

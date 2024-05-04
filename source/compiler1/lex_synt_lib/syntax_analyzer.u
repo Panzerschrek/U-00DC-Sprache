@@ -2942,7 +2942,7 @@ fn SyntaxAnalyzer::ParseMixin( mut this ) : Mixin
 	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
-	mixin_.expression= ParseExpression();
+	mixin_.expression= ParseExpressionInBrackets();
 
 	ExpectSemicolon();
 
@@ -2956,7 +2956,7 @@ fn SyntaxAnalyzer::ParseExpressionMixin( mut this ) : Mixin
 	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
-	mixin_.expression= ParseExpression();
+	mixin_.expression= ParseExpressionInBrackets();
 
 	return mixin_;
 }
