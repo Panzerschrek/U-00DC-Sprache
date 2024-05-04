@@ -50,7 +50,7 @@ fn CodeBuilder::EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scop
 				result+= u32(lock.deref().size());
 				foreach( &mut mixin_ : lock.deref() )
 				{
-					EvaluateMixinExpression( names_scope_ptr, mixin_ );
+					EvaluateMixinExpressionInGlobalContext( names_scope_ptr, mixin_ );
 				}
 			}
 		}
@@ -269,7 +269,68 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 	}
 }
 
-fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
+fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::BlockElements />
+{
+	var Mixin mut temp_mixin{ .syntax_element= mixin_, .src_loc= mixin_.deref().src_loc };
+
+	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
+
+	if( temp_mixin.string_constant == LLVMValueRef::Null )
+	{
+		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
+	}
+
+	var size_type mut str_length= 0s;
+	var $(char8) str_start= unsafe( LLVMGetAsString( temp_mixin.string_constant, str_length ) );
+
+	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
+
+	var MixinExpansionKey key{ .mixin_src_loc= temp_mixin.src_loc, .mixin_text= mixin_text };
+
+	if_var( &prev_value : block_mixin_expansions_.find( key ) )
+	{
+		// Find cached syntax elements.
+		return prev_value;
+	}
+
+	auto lexems= PrepareMixinLexems( names_scope_ptr, temp_mixin.src_loc, mixin_text );
+	if( lexems.empty() )
+	{
+		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
+	}
+
+	var SourceGraph& source_graph= source_graph_.try_deref();
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
+
+	auto mut synt_result= Synt::ParseBlockElements(
+		lexems.try_deref(),
+		source_graph_node.synt_result.macros,
+		source_graph.macro_expansion_contexts,
+		source_graph_node.contents_hash );
+
+	if( !synt_result.errors.empty() )
+	{
+		foreach( & error : synt_result.errors )
+		{
+			REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
+		}
+
+		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
+	}
+
+	// Cache syntax elements.
+	auto result_ptr= ust::make_shared_ptr_final( take( synt_result.block_elements ) );
+	block_mixin_expansions_.insert( key, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::EvaluateMixinExpressionInGlobalContext( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ )
+{
+	auto mut function_context= CreateGlobalFunctionContext();
+	EvaluateMixinExpression( names_scope_ptr, function_context, mixin_ );
+}
+
+fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Mixin &mut mixin_ )
 {
 	if( mixin_.syntax_element.empty() )
 	{
@@ -277,9 +338,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 	}
 	auto syntax_element= mixin_.syntax_element.try_to_non_nullable();
 
-	auto mut function_context= CreateGlobalFunctionContext();
 	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, syntax_element.deref().expression ).lock_imut().deref();
-	move(function_context);
 
 	mixin_.syntax_element.reset();
 

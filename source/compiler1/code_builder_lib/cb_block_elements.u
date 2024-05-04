@@ -3006,12 +3006,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
 {
-	// TODO
-	ust::ignore_unused( names_scope );
-	ust::ignore_unused( function_context );
-	ust::ignore_unused( mixin_ );
+	auto block_elements= ExpandBlockMixin( names_scope, function_context, mixin_ );
+	if( !block_elements.empty() )
+	{
+		return BuildBlockElements( names_scope, function_context, block_elements.try_deref().range() );
+	}
+
 	return BlockElementBuildInfo();
 }
 

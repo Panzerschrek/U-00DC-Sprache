@@ -253,7 +253,9 @@ private:
 	fn ExpandClassMixins_r( mut this, ClassTypePtr& class_type );
 	fn ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_ptr, Mixin &mut mixin_ );
 	fn ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ );
-	fn EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ );
+	fn ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::BlockElements />;
+	fn EvaluateMixinExpressionInGlobalContext( mut this, NamesScopePtr& names_scope_ptr, Mixin &mut mixin_ );
+	fn EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Mixin &mut mixin_ );
 	fn PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>;
 
 	// Global things build.
@@ -398,7 +400,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
-	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo;
 
 	fn BuildEmptyReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
@@ -1316,6 +1318,7 @@ private:
 	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::NamespaceElements/>/> namespace_mixin_expansions_;
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::ClassElements/>/> class_mixin_expansions_;
+	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::BlockElements/>/> block_mixin_expansions_;
 
 	// Debug info
 	bool imut build_debug_info_;
