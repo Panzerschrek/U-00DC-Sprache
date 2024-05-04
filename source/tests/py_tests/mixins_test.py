@@ -636,13 +636,91 @@ def MixinWithinBlock_Test8():
 
 def TypeNameMixin_Test0():
 	c_program_text= """
-		fn Foo() : mixin( "i32" )
+		fn Foo() : mixin( "i32" ) // Mixin as return type name.
 		{
 			return 65005;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 65005 )
+
+
+def TypeNameMixin_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var mixin( " [ i32, 3 ] " ) arr[ 7, 3, 11 ]; // Mixin as variable type name.
+			return arr[0] * arr[1] + arr[2];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 7 * 3 + 11 )
+
+
+def TypeNameMixin_Test2():
+	c_program_text= """
+		struct S
+		{
+			( mixin( "fn() : i32" ) ) ptr; // Mixin as field type name.
+		}
+		fn Bar() : i32 { return 6765; }
+		fn Foo() : i32
+		{
+			var S s{ .ptr= Bar };
+			return s.ptr();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 6765 )
+
+
+def TypeNameMixin_Test3():
+	c_program_text= """
+		type T= mixin( "f32" ); // Mixin in type alias.
+		fn Foo() : T
+		{
+			return 3.25f;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 3.25 )
+
+
+def TypeNameMixin_Test4():
+	c_program_text= """
+		namespace NN{ type T= i32; }
+		fn Foo() : mixin( "NN::T" ) // Access namespace in type name mixin.
+		{
+			return 88876;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 88876 )
+
+
+def TypeNameMixin_Test5():
+	c_program_text= """
+		auto mixin_text= "i32";
+		fn Foo() : mixin( mixin_text ) // Access global variable in type name mixin expression.
+		{
+			return 8923;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 8923 )
+
+
+def TypeNameMixin_Test6():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto& mixin_text= "i32";
+			var mixin( mixin_text ) ret= 8234; // Access local variable in type name mixin expression.
+			return ret;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 8234 )
 
 
 def ExpressionMixin_Test0():

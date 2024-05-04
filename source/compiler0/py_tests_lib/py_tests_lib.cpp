@@ -455,6 +455,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
 		"MixinSyntaxError_Test11",
+		"MixinSyntaxError_Test13",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )
