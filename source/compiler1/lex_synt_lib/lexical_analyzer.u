@@ -727,7 +727,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		}
 	}
 
-	result.lexems.push_back( Lexem{ .src_loc( 0u, line, column ), .text= "EOF" } );
+	result.lexems.push_back( Lexem{ .src_loc( 0u, line, column ), .lexem_type= Lexem::Type::EndOfFile, .text= "EOF" } );
 
 	return result;
 }
