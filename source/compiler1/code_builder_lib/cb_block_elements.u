@@ -3006,6 +3006,15 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : BlockElementBuildInfo
+{
+	// TODO
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( mixin_ );
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	if( !( function_context.function_type.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )

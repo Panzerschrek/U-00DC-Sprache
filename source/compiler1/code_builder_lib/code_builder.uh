@@ -398,6 +398,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : BlockElementBuildInfo;
 
 	fn BuildEmptyReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 

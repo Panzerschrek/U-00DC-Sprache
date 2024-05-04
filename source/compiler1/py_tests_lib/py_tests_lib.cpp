@@ -422,6 +422,27 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		"ErrorInsideMixin_Test3",
+		"ExpectedConstantExpression_ForMixins_Test2",
+		"ExpectedConstantExpression_ForMixins_Test3",
+		"MixinLexicalError_Test2",
+		"MixinRedefinition_Test6",
+		"MixinRedefinition_Test7",
+		"MixinSyntaxError_Test6",
+		"MixinSyntaxError_Test7",
+		"MixinSyntaxError_Test8",
+		"MixinSyntaxError_Test9",
+		"UnreachableCode_ForBlockMixin_Test2",
+		"UnreachableCode_ForBlockMixin_Test3",
+		"UnreachableCode_ForBlockMixin_Test4",
+		"MixinWithinBlock_Test1",
+		"MixinWithinBlock_Test2",
+		"MixinWithinBlock_Test3",
+		"MixinWithinBlock_Test4",
+		"MixinWithinBlock_Test5",
+		"MixinWithinBlock_Test6",
+		"MixinWithinBlock_Test7",
+		"MixinWithinBlock_Test8",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

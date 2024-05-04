@@ -2109,6 +2109,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		{
 			block_elements.push_back( ParseHalt() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+		{
+			block_elements.push_back( ParseMixin() );
+		}
 		else if( it_.front().lexem_type == Lexem::Type::Increment )
 		{
 			var IncrementOperator mut increment_operator{ .src_loc= it_.front().src_loc };
