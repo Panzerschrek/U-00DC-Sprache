@@ -49,6 +49,22 @@ It's also possible to use ``mixin`` in structs and classes:
        mixin( " return 123; " );
    }
 
+``mixin`` in type name:
+
+.. code-block:: u_spr
+
+   type T= mixin(mixin_text);
+   auto mixin_text= "[ i32, 4 ]";
+
+``mixin`` as expression:
+
+.. code-block:: u_spr
+
+   fn Foo( i32 x, i32 y ) : i32
+   {
+       return mixin( "x + y" ) * 2;
+   }
+
 
 ********************
 *mixins limitations*

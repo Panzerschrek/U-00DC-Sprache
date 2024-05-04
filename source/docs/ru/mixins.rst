@@ -48,6 +48,22 @@
        mixin( " return 123; " );
    }
 
+``mixin`` в имени типа:
+
+.. code-block:: u_spr
+
+   type T= mixin(mixin_text);
+   auto mixin_text= "[ i32, 4 ]";
+
+``mixin`` в качесве выражения:
+
+.. code-block:: u_spr
+
+   fn Foo( i32 x, i32 y ) : i32
+   {
+       return mixin( "x + y" ) * 2;
+   }
+
 
 *******************
 *Ограничения mixin*
