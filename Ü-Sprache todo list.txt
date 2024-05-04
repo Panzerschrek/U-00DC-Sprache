@@ -17,7 +17,6 @@ General:
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
 *) Variable templates
-*) Mixins in function bodies
 *) Mixins in type name context
 *) Mixins in expression context
 
