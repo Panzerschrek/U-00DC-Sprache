@@ -289,7 +289,7 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 
 	if_var( &prev_value : block_mixin_expansions_.find( key ) )
 	{
-		// Find cached syntax elements.
+		// Use cached syntax element.
 		return prev_value;
 	}
 
@@ -318,7 +318,7 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
 	}
 
-	// Cache syntax elements.
+	// Cache the syntax element.
 	auto result_ptr= ust::make_shared_ptr_final( take( synt_result.block_elements ) );
 	block_mixin_expansions_.insert( key, result_ptr );
 	return result_ptr;
@@ -343,7 +343,7 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 
 	if_var( &prev_value : type_name_mixin_expansions_.find( key ) )
 	{
-		// Find cached syntax elements.
+		// Use cached syntax element.
 		return prev_value;
 	}
 
@@ -372,7 +372,7 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 		return ust::shared_ptr_final_nullable</Synt::TypeName/>();
 	}
 
-	// Cache syntax elements.
+	// Cache the syntax element.
 	auto result_ptr= ust::make_shared_ptr_final( take( synt_result.type_name ) );
 	type_name_mixin_expansions_.insert( key, result_ptr );
 	return result_ptr;

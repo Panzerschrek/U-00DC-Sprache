@@ -82,7 +82,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::TupleType& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::RawPointerType>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::CoroutineType>& ) { return true; }
-		// Reasonable assume expression mixins are useless.
+		// Reasonably assume expression mixins are useless.
 		bool operator()( const std::unique_ptr<const Synt::Mixin>& ) { return true; }
 	};
 

@@ -395,7 +395,7 @@ TypeNameParsingResult SyntaxAnalyzer::ParseStandaloneTypeName()
 	result.type_name= ParseTypeName();
 
 	if( it_ != it_end_ && it_->type != Lexem::Type::EndOfFile )
-		PushErrorMessage(); // Do not allow lexems left.
+		PushErrorMessage(); // Require parsing until the end.
 
 	result.error_messages.swap( error_messages_ );
 	return result;
@@ -407,7 +407,7 @@ ExpressionParsingResult SyntaxAnalyzer::ParseStandaloneExpression()
 	result.expression= ParseExpression();
 
 	if( it_ != it_end_ && it_->type != Lexem::Type::EndOfFile )
-		PushErrorMessage(); // Do not allow lexems left.
+		PushErrorMessage(); // Require parsing until the end.
 
 	result.error_messages.swap( error_messages_ );
 	return result;
@@ -1230,7 +1230,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return std::move(expr);
 		}
 		if( it_->text == Keywords::mixin_ )
-			return std::make_unique<const Mixin>( ParseExpressionMixin() );
+			return std::make_unique<Mixin>( ParseExpressionMixin() );
 		if( it_->text == Keywords::fn_ ||
 			it_->text == Keywords::typeof_ ||
 			it_->text == Keywords::tup_ ||
@@ -4576,8 +4576,8 @@ ClassElementsParsingResult ParseClassElements(
 
 BlockElementsParsingResult ParseBlockElements(
 	const Lexems& lexems,
-	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
-	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	MacrosPtr macros,
+	MacroExpansionContextsPtr macro_expansion_contexts,
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
@@ -4591,8 +4591,8 @@ BlockElementsParsingResult ParseBlockElements(
 
 TypeNameParsingResult ParseTypeName(
 	const Lexems& lexems,
-	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
-	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	MacrosPtr macros,
+	MacroExpansionContextsPtr macro_expansion_contexts,
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
@@ -4606,8 +4606,8 @@ TypeNameParsingResult ParseTypeName(
 
 ExpressionParsingResult ParseExpression(
 	const Lexems& lexems,
-	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
-	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	MacrosPtr macros,
+	MacroExpansionContextsPtr macro_expansion_contexts,
 	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
