@@ -164,7 +164,8 @@ using TypeName= std::variant<
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
-	std::unique_ptr<const CoroutineType>
+	std::unique_ptr<const CoroutineType>,
+	std::unique_ptr<const Mixin>
 	>;
 
 using Expression= std::variant<
@@ -214,7 +215,8 @@ using Expression= std::variant<
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
-	std::unique_ptr<const CoroutineType>
+	std::unique_ptr<const CoroutineType>,
+	std::unique_ptr<const Mixin>
 	>;
 
 using Initializer= std::variant<

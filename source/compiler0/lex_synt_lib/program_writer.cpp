@@ -559,6 +559,13 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( *coroutine_type, stream );
 		}
+		void operator()( const std::unique_ptr<const Mixin>& mixin ) const
+		{
+			stream << Keyword( Keywords::mixin_ );
+			stream << "( ";
+			ElementWrite( mixin->expression, stream );
+			stream << " )";
+		}
 
 	private:
 		std::ostream& stream;

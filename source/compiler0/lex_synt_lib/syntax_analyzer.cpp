@@ -262,6 +262,7 @@ private:
 	TemplateVar ParseTemplate();
 
 	Mixin ParseMixin();
+	Mixin ParseExpressionMixin();
 
 	const Macro* FetchMacro( const std::string& macro_name, const Macro::Context context );
 
@@ -1202,6 +1203,8 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(expr);
 		}
+		if( it_->text == Keywords::mixin_ )
+			return std::make_unique<const Mixin>( ParseExpressionMixin() );
 		if( it_->text == Keywords::fn_ ||
 			it_->text == Keywords::typeof_ ||
 			it_->text == Keywords::tup_ ||
@@ -1700,6 +1703,8 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return std::make_unique<FunctionType>( ParseFunctionType() );
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
+		return std::make_unique<Mixin>( ParseExpressionMixin() );
 	else
 		return ComplexNameToTypeName( ParseComplexName() );
 }
@@ -3994,6 +3999,19 @@ Mixin SyntaxAnalyzer::ParseMixin()
 
 	mixin.expression= ParseExpressionInBrackets();
 	ExpectSemicolon();
+
+	return mixin;
+}
+
+Mixin SyntaxAnalyzer::ParseExpressionMixin()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ );
+
+	Mixin mixin( it_->src_loc );
+
+	NextLexem();
+
+	mixin.expression= ParseExpressionInBrackets();
 
 	return mixin;
 }

@@ -203,6 +203,15 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
 
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin_type_name )
+{
+	// TODO
+	(void)names_scope;
+	(void)function_context;
+	(void)mixin_type_name;
+	return invalid_type_;
+}
+
 Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
 {
 	if( const Type* const type= value.GetTypeName() )

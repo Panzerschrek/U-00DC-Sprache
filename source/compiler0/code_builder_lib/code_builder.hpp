@@ -297,6 +297,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin_type_name );
 	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionType PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, ClassPtr class_= nullptr );
@@ -781,6 +782,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& type_name );

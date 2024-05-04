@@ -1893,6 +1893,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::Mixin& mixin )
+{
+	// TODO
+	(void)names_scope;
+	(void)function_context;
+	(void)mixin;
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
 	return PrepareTypeImpl( names_scope, function_context, type_name );
