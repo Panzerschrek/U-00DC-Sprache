@@ -165,9 +165,9 @@ def MixinLexicalError_Test2():
 
 def MixinLexicalError_Test3():
 	c_program_text= """
-		fn Foo() : i32
+		fn Foo()
 		{
-			return mixin( " auto s= \\"\\\\urrrr\\"; " );
+			take( mixin( " auto s= \\"\\\\urrrr\\"; " ) );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -294,9 +294,9 @@ def MixinSyntaxError_Test9():
 
 def MixinSyntaxError_Test10():
 	c_program_text= """
-		fn Foo() : i32
+		fn Foo()
 		{
-			return mixin( "}" ); // unexpected }
+			take( mixin( "}" ) ); // unexpected }
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -306,9 +306,9 @@ def MixinSyntaxError_Test10():
 
 def MixinSyntaxError_Test11():
 	c_program_text= """
-		fn Foo() : i32
+		fn Foo()
 		{
-			return mixin( "suka blat" ); // meaningless expression
+			take( mixin( "abyr valg" ) ); // meaningless expression
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -500,7 +500,7 @@ def ErrorInsideMixin_Test4():
 	c_program_text= """
 		fn Foo()
 		{
-			return mixin( "unknown_variable" );
+			take( mixin( "unknown_variable" ) );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
