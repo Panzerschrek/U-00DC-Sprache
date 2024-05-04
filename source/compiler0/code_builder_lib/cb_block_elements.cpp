@@ -2753,6 +2753,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	return block_info;
 }
 
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::Mixin& mixin )
+{
+	const auto block_elements= ExpandBlockMixin( names_scope, function_context, mixin );
+	if( block_elements == nullptr )
+		return BlockBuildInfo{};
+
+	return BuildBlockElements( names_scope, function_context, *block_elements );
+}
+
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	NamesScope& names_scope,
 	FunctionContext& function_context,

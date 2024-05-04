@@ -502,3 +502,133 @@ def MixinOutOfLineFunction_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_ZN4Some3FooEv" ) == 967 )
+
+
+def MixinWithinBlock_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			mixin( "   " );
+			return 54;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 54 )
+
+
+def MixinWithinBlock_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			mixin( "return 786;" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 786 )
+
+
+def MixinWithinBlock_Test2():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			mixin( "var i32 x= 89898;" );
+			return x; // Access a variable, declared within mixin.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 89898 )
+
+
+def MixinWithinBlock_Test3():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 x= 444555;
+			mixin( "return x;" ); // Access from a mixin a local variable.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 444555 )
+
+
+def MixinWithinBlock_Test4():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			// Declare two variables in separate mixins and access them in third mixin.
+			mixin( "var i32 x= 89898;" );
+			mixin( "var i32 y= 675;" );
+			mixin( "return x - y;" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 89898 - 675 )
+
+
+def MixinWithinBlock_Test5():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			// Several statements within mixin.
+			mixin( "var i32 x= 680; var i32 y= 4; return x / y;" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 680 / 4 )
+
+
+def MixinWithinBlock_Test5():
+	c_program_text= """
+		struct S
+		{
+			auto ret_444= "return 444;";
+			fn Foo() : i32
+			{
+				mixin( ret_444 );
+			}
+		}
+		fn Foo() : i32
+		{
+			return S::Foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 444 )
+
+
+def MixinWithinBlock_Test6():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto& mixin_text= "return 787564;";
+			mixin( mixin_text ); // Use local constexpr reference-variable for block mixin expression.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 787564 )
+
+
+def MixinWithinBlock_Test7():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var [ char8, 12 ] mixin_text= "return 1786;";
+			mixin( mixin_text ); // Use local constexpr variable for block mixin expression.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 1786 )
+
+
+def MixinWithinBlock_Test8():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto& declare_var_start= "var i32 ";
+			auto& declare_var_end= "= 905;";
+			mixin( declare_var_start + "ght" + declare_var_end ); // Char arrays concatenation result as block mixin expression.
+			return ght;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 905 )

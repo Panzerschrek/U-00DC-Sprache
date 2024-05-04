@@ -367,7 +367,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	result.value_int+= fractional_part_corrected;
 	result.has_fractional_point= has_fraction_point;
 
-	if( IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+	if( !it.empty() && IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
 	{
 		auto max_size= typeinfo</ typeof(result.type_suffix) />.element_count;
 		var Lexem type_suffix= ParseIdentifier( it );

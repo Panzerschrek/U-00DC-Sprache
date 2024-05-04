@@ -109,6 +109,7 @@ public:
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 	fn ParseNamespaceElements( mut this ) : NamespaceParsingResult;
 	fn ParseClassElements( mut this ) : ClassElementsParsingResult;
+	fn ParseBlockElements( mut this ) : BlockElementsParsingResult;
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
@@ -185,7 +186,9 @@ private:
 	fn ParseVariableInitializer( mut this ) : Initializer;
 
 	fn ParseBlock( mut this ) : Block;
-	fn ParseBlockElements( mut this ) : BlockElements;
+	fn ParseBlockElementsToFileEnd( mut this ) : BlockElements;
+	fn ParseBlockElementsToBlockEnd( mut this ) : BlockElements;
+	fn ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : BlockElements;
 	fn TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
 	fn ParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
@@ -365,6 +368,15 @@ fn SyntaxAnalyzer::ParseClassElements( mut this ) : ClassElementsParsingResult
 {
 	var ClassElementsParsingResult mut res;
 	res.class_elements= ParseClassBodyElementsPartial();
+	res.errors= take(errors_);
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElementsParsingResult
+{
+	var BlockElementsParsingResult mut res;
+	res.block_elements= ParseBlockElementsToFileEnd();
 	res.errors= take(errors_);
 
 	return res;
@@ -2002,7 +2014,7 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 
 	NextLexem(); // {
 
-	block.elements= ParseBlockElements();
+	block.elements= ParseBlockElementsToBlockEnd();
 
 	block.end_src_loc= it_.front().src_loc;
 
@@ -2018,11 +2030,21 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 	return block;
 }
 
-fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
+fn SyntaxAnalyzer::ParseBlockElementsToFileEnd( mut this ) : BlockElements
+{
+	return ParseBlockElementsImpl( Lexem::Type::EndOfFile );
+}
+
+fn SyntaxAnalyzer::ParseBlockElementsToBlockEnd( mut this ) : BlockElements
+{
+	return ParseBlockElementsImpl( Lexem::Type::BraceRight );
+}
+
+fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : BlockElements
 {
 	var BlockElements mut block_elements;
 
-	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight && it_.front().lexem_type != Lexem::Type::EndOfFile )
+	while( NotEndOfFile() && it_.front().lexem_type != end_lexem )
 	{
 		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 		{
@@ -2109,6 +2131,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		{
 			block_elements.push_back( ParseHalt() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+		{
+			block_elements.push_back( ust::make_shared_ptr_final( ParseMixin() ) );
+		}
 		else if( it_.front().lexem_type == Lexem::Type::Increment )
 		{
 			var IncrementOperator mut increment_operator{ .src_loc= it_.front().src_loc };
@@ -2135,7 +2161,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 			{
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Block ) )
 				{
-					var BlockElements mut expanded_block_elements= ExpandMacro( macro, ParseBlockElements );
+					var BlockElements mut expanded_block_elements= ExpandMacro( macro, ParseBlockElementsToFileEnd );
 					block_elements.append( expanded_block_elements );
 					continue;
 				}
@@ -2214,7 +2240,7 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 	{
 		if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Block ) )
 		{
-			var BlockElements mut expanded_block_elements= ExpandMacro( macro, ParseBlockElements );
+			var BlockElements mut expanded_block_elements= ExpandMacro( macro, ParseBlockElementsToFileEnd );
 			if( expanded_block_elements.size() == 1s )
 			{
 				var BlockElement mut block_element= expanded_block_elements.pop_back();
@@ -4297,6 +4323,21 @@ fn ParseClassElements(
 		move(source_file_contents_hash) );
 
 	return analyzer.ParseClassElements();
+}
+
+fn ParseBlockElements(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : BlockElementsParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseBlockElements();
 }
 
 fn ParseImports( Lexems& lexems ) : ImportsList

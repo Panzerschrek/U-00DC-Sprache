@@ -40,6 +40,12 @@ struct ClassElementsParsingResult
 	LexSyntErrors errors;
 }
 
+struct BlockElementsParsingResult
+{
+	BlockElements block_elements;
+	LexSyntErrors errors;
+}
+
 fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosByContextMap macros,
@@ -56,7 +62,13 @@ fn ParseClassElements(
 	Lexems& lexems,
 	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	ust::string8 source_file_contents_hash ) : ClassElementsParsingResult ;
+	ust::string8 source_file_contents_hash ) : ClassElementsParsingResult;
+
+fn ParseBlockElements(
+	Lexems& lexems,
+	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	ust::string8 source_file_contents_hash ) : BlockElementsParsingResult;
 
 fn ParseImports( Lexems& lexems ) : ImportsList;
 

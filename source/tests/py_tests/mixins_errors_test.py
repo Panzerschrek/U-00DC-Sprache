@@ -19,6 +19,29 @@ def ExpectedConstantExpression_ForMixins_Test1():
 	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )
 
 
+def ExpectedConstantExpression_ForMixins_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ char8, 16 ] mut s= zero_init;
+			mixin( s ); // Given string isn't constant, but mutable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 5 ) )
+
+
+def ExpectedConstantExpression_ForMixins_Test3():
+	c_program_text= """
+		fn Foo( [ char8, 16 ]& s )
+		{
+			mixin( s ); // Given string isn't constant, but is function argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 4 ) )
+
+
 def TypesMismatch_ForMixins_Test0():
 	c_program_text= """
 		mixin( "var i32 x= 0;"u16 ); // For now support only UTF-8 strings.
@@ -109,6 +132,18 @@ def MixinLexicalError_Test1():
 	assert( HasError( errors_list[0].template_errors.errors, "MixinLexicalError", 7 ) )
 
 
+def MixinLexicalError_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( " auto s= \\"\\\\urrrr\\"; " );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinLexicalError", 4 ) )
+
+
 def MixinSyntaxError_Test0():
 	c_program_text= """
 		mixin( "auto s= " ); // statement isn't finished
@@ -167,6 +202,54 @@ def MixinSyntaxError_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( errors_list[0].error_code == "MacroExpansionContext" )
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
+
+
+def MixinSyntaxError_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "auto x= 0" ); // missing ;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
+def MixinSyntaxError_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "lol what" ); // broken syntax
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
+def MixinSyntaxError_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "}" ); // unexpected }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
+def MixinSyntaxError_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( " if(true){}\\n}" ); // unexpected }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
 
 
 def MixinNamesAreNotVisibleInOtherMixinExpressions_Test0():
@@ -256,6 +339,18 @@ def ErrorInsideMixin_Test2():
 	assert( HasError( errors_list[0].template_errors.errors, "FunctionDeclarationOutsideItsScope", 3 ) )
 
 
+def ErrorInsideMixin_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "return unknown_variable;" );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "NameNotFound", 4 ) )
+
+
 def MixinRedefinition_Test0():
 	c_program_text= """
 		mixin( "var i32 x= 0;" );
@@ -323,6 +418,31 @@ def MixinRedefinition_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def MixinRedefinition_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			mixin( "auto x= 5;" ); // Redefine local variable in block mixin.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "Redefinition", 5 ) )
+
+
+def MixinRedefinition_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "auto x= 5;" );
+			var i32 x= 0; // Redefine local variable declared previously in block mixin.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "Redefinition", 5 ) )
+
+
 def MixinExpansionDepthReached_Test0():
 	c_program_text= """
 		// Non-recursive deep mixin.
@@ -344,3 +464,63 @@ def MixinExpansionDepthReached_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "MixinExpansionDepthReached", 1 ) )
+
+
+def UnreachableCode_ForBlockMixin_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			return 42;
+			mixin( "auto x= 5;" ); // Code inside mixin is unreachable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "UnreachableCode", 5 ) )
+
+
+def UnreachableCode_ForBlockMixin_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			return 42;
+			mixin( "" ); // Even empty mixin is not reachable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "UnreachableCode", 5 ) )
+
+
+def UnreachableCode_ForBlockMixin_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "return 67;" );
+			if( true ) { Foo(); }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "UnreachableCode", 5 ) )
+
+
+def UnreachableCode_ForBlockMixin_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( " return 42; var i32 x= 0; " ); // Code in second mixin statement isn't reachable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "UnreachableCode", 4 ) )
+
+
+def UnreachableCode_ForBlockMixin_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			mixin( "return 37;" );
+			mixin( "" ); // Code in second mixin expansion isn't reachable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "UnreachableCode", 5 ) )

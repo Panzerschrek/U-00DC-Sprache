@@ -698,7 +698,8 @@ type BlockElement = ust::variant</ tup[
 	StaticAssert,
 	ust::shared_ptr_final</TypeAlias/>,
 	Halt,
-	HaltIf
+	HaltIf,
+	ust::shared_ptr_final</Mixin/>
 	] />;
 
 type BlockElements= ust::vector</BlockElement/>;

@@ -976,6 +976,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeAlias& type_alias );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Halt& halt );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::HaltIf& halt_if );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 
 	BlockBuildInfo BuildBlock( NamesScope& names_scope, FunctionContext& function_context, const Synt::Block& block );
 	// Build elements, withut creating separate names scope.
@@ -1324,7 +1325,10 @@ private:
 	void ExpandClassMixins_r( ClassPtr class_type );
 	void ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin );
 	void ExpandClassMixin( ClassPtr class_type, Mixin& mixin );
-	void EvaluateMixinExpression( NamesScope& names_scope, Mixin& mixin );
+	const Synt::BlockElementsList* ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
+	void EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin );
+	void EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin );
+
 	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text );
 
 	// Global things build
@@ -1522,6 +1526,7 @@ private:
 	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
 	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, Synt::BlockElementsList, MixinExpansionKeyHasher> block_mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.
