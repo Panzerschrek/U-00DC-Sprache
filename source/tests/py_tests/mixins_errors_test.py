@@ -334,6 +334,69 @@ def MixinSyntaxError_Test13():
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
 
 
+def MixinSyntaxError_Test14():
+	c_program_text= """
+		type T= mixin( " " ); // Only whitespaces.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
+
+
+def MixinSyntaxError_Test15():
+	c_program_text= """
+		fn Foo()
+		{
+			type T= typeof( mixin( " \\t  \\n" ) ); // Only whitespaces.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
+
+
+def MixinSyntaxError_Test16():
+	c_program_text= """
+		type T= mixin( "" ); // Empty string.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
+
+
+def MixinSyntaxError_Test17():
+	c_program_text= """
+		fn Foo()
+		{
+			type T= typeof( mixin( "" ) ); // Empty string.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
+def MixinSyntaxError_Test18():
+	c_program_text= """
+		type T= mixin( "\\0\\0\\0" ); // Zeros string.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 2 ) )
+
+
+def MixinSyntaxError_Test19():
+	c_program_text= """
+		fn Foo()
+		{
+			type T= typeof( mixin( "\\0\\0\\0\\0" ) ); // Zeros string.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
 def MixinNamesAreNotVisibleInOtherMixinExpressions_Test0():
 	c_program_text= """
 		mixin( "var [ char8, 16 ] s= zero_init;" );

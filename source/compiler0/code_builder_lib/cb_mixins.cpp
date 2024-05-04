@@ -296,10 +296,10 @@ const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope,
 
 	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
 
-	if( temp_mixin.string_constant == nullptr )
-		return nullptr;
-
-	const std::string_view mixin_text= StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+	const std::string_view mixin_text=
+		temp_mixin.string_constant == nullptr
+			? std::string_view()
+			: StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= type_name_mixin_expansions_.find(key);
@@ -343,10 +343,10 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 
 	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
 
-	if( temp_mixin.string_constant == nullptr )
-		return nullptr;
-
-	const std::string_view mixin_text= StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+	const std::string_view mixin_text=
+		temp_mixin.string_constant == nullptr
+			? std::string_view()
+			: StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= expression_mixin_expansions_.find(key);
