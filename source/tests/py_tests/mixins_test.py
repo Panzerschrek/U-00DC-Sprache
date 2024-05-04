@@ -643,3 +643,122 @@ def ExpressionMixin_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 778898 )
+
+
+def ExpressionMixin_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 x= 10;
+			return 2 * mixin( "x - 3" ); // Access local variable. Mixin is assumed to produce expression in ().
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 14 )
+
+
+def ExpressionMixin_Test2():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto& mixin_text= "17 / 2";
+			return mixin( mixin_text ) + 5;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 13 )
+
+
+def ExpressionMixin_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 some_field= 67;
+		}
+		fn Foo() : i32
+		{
+			var S mut s;
+			// Access struct field via mixin and string, synthesized via char arrays concatenation.
+			auto res= mixin( "s." + typeinfo</S/>.fields_list[0].name );
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 67 )
+
+
+def ExpressionMixin_Test4():
+	c_program_text= """
+		fn Bar() : i32 { return 67012; }
+		fn Foo() : i32
+		{
+			return mixin( "Bar" )(); // Evaluate function name in mixin.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 67012 )
+
+
+def ExpressionMixin_Test5():
+	c_program_text= """
+		fn Square( i32 x ) : i32 { return x * x; }
+		fn Foo( i32 arg ) : i32
+		{
+			return Square( mixin( "arg - 1" ) ); // Mixin expression as function argument.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooi", 7 ) == 36 )
+
+
+def ExpressionMixin_Test6():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 mut x= 78765;
+			++mixin( "x" ); // Mixin for incremend.
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 78766 )
+
+
+def ExpressionMixin_Test7():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			return - mixin( "-77" ); // Prefix "-" for mixin.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 77 )
+
+
+def ExpressionMixin_Test8():
+	c_program_text= """
+		struct S
+		{
+			i32 x= mixin( "7854" ); // Mixin for field initializer.
+		}
+		fn Foo() : i32
+		{
+			var S s{};
+			static_assert( s.x == 7854 );
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 7854 )
+
+
+def ExpressionMixin_Test9():
+	c_program_text= """
+		var [ i32, 2 ] arr[ zero_init, ( mixin("16u") ) ]; // Mixin inside initializer of an array.
+		fn Foo() : i32
+		{
+			return arr[1];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 16 )

@@ -42,6 +42,17 @@ def ExpectedConstantExpression_ForMixins_Test3():
 	assert( HasError( errors_list, "ExpectedConstantExpression", 4 ) )
 
 
+def ExpectedConstantExpression_ForMixins_Test4():
+	c_program_text= """
+		fn Foo( [ char8, 16 ]& s ) : i32
+		{
+			return mixin( s ); // Given string isn't constant, but is function argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 4 ) )
+
+
 def TypesMismatch_ForMixins_Test0():
 	c_program_text= """
 		mixin( "var i32 x= 0;"u16 ); // For now support only UTF-8 strings.
@@ -137,6 +148,18 @@ def MixinLexicalError_Test2():
 		fn Foo()
 		{
 			mixin( " auto s= \\"\\\\urrrr\\"; " );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinLexicalError", 4 ) )
+
+
+def MixinLexicalError_Test3():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			return mixin( " auto s= \\"\\\\urrrr\\"; " );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -252,6 +275,30 @@ def MixinSyntaxError_Test9():
 	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 5 ) )
 
 
+def MixinSyntaxError_Test10():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			return mixin( "}" ); // unexpected }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
+def MixinSyntaxError_Test11():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			return mixin( "suka blat" ); // meaningless expression
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "MixinSyntaxError", 4 ) )
+
+
 def MixinNamesAreNotVisibleInOtherMixinExpressions_Test0():
 	c_program_text= """
 		mixin( "var [ char8, 16 ] s= zero_init;" );
@@ -344,6 +391,18 @@ def ErrorInsideMixin_Test3():
 		fn Foo()
 		{
 			mixin( "return unknown_variable;" );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "NameNotFound", 4 ) )
+
+
+def ErrorInsideMixin_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			return mixin( "unknown_variable" );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
