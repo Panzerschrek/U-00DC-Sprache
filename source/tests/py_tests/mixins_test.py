@@ -594,3 +594,41 @@ def MixinWithinBlock_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 444 )
+
+
+def MixinWithinBlock_Test6():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto& mixin_text= "return 787564;";
+			mixin( mixin_text ); // Use local constexpr reference-variable for block mixin expression.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 787564 )
+
+
+def MixinWithinBlock_Test7():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var [ char8, 12 ] mixin_text= "return 1786;";
+			mixin( mixin_text ); // Use local constexpr variable for block mixin expression.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 1786 )
+
+
+def MixinWithinBlock_Test8():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto& declare_var_start= "var i32 ";
+			auto& declare_var_end= "= 905;";
+			mixin( declare_var_start + "ght" + declare_var_end ); // Char arrays concatenation result as block mixin expression.
+			return ght;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 905 )
