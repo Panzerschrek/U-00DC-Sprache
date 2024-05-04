@@ -205,10 +205,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin_type_name )
 {
-	// TODO
-	(void)names_scope;
-	(void)function_context;
-	(void)mixin_type_name;
+	if( const auto type_name= ExpandTypeNameMixin( names_scope, function_context, mixin_type_name ) )
+		return PrepareType( *type_name, names_scope, function_context );
 	return invalid_type_;
 }
 
