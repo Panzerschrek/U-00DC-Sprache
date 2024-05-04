@@ -632,3 +632,14 @@ def MixinWithinBlock_Test8():
 	"""
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foov" ) == 905 )
+
+
+def ExpressionMixin_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			return mixin( "778898" );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foov" ) == 778898 )

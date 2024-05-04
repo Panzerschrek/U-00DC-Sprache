@@ -143,6 +143,7 @@ public:
 	NamespaceParsingResult ParseNamespaceElements();
 	ClassElementsParsingResult ParseClassElements();
 	BlockElementsParsingResult ParseBlockElements();
+	ExpressionParsingResult ParseStandaloneExpression();
 
 private:
 	struct ParsedMacroElement;
@@ -383,6 +384,14 @@ BlockElementsParsingResult SyntaxAnalyzer::ParseBlockElements()
 {
 	BlockElementsParsingResult result;
 	result.block_elements= ParseBlockElementsToFileEnd();
+	result.error_messages.swap( error_messages_ );
+	return result;
+}
+
+ExpressionParsingResult SyntaxAnalyzer::ParseStandaloneExpression()
+{
+	ExpressionParsingResult result;
+	result.expression= ParseExpression();
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
@@ -4561,6 +4570,21 @@ BlockElementsParsingResult ParseBlockElements(
 		std::move(source_file_contents_hash) );
 
 	return syntax_analyzer.ParseBlockElements();
+}
+
+ExpressionParsingResult ParseExpression(
+	const Lexems& lexems,
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	std::string source_file_contents_hash )
+{
+	SyntaxAnalyzer syntax_analyzer(
+		lexems,
+		std::move(macros),
+		std::move(macro_expansion_contexts),
+		std::move(source_file_contents_hash) );
+
+	return syntax_analyzer.ParseStandaloneExpression();
 }
 
 } // namespace Synt

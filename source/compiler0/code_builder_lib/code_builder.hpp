@@ -1328,6 +1328,7 @@ private:
 	void ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin );
 	void ExpandClassMixin( ClassPtr class_type, Mixin& mixin );
 	const Synt::BlockElementsList* ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
+	const Synt::Expression* ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	void EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin );
 	void EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin );
 
@@ -1529,6 +1530,7 @@ private:
 	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::BlockElementsList, MixinExpansionKeyHasher> block_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, Synt::Expression, MixinExpansionKeyHasher> expression_mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.
