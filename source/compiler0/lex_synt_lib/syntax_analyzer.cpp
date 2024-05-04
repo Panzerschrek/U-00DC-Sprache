@@ -393,6 +393,10 @@ TypeNameParsingResult SyntaxAnalyzer::ParseStandaloneTypeName()
 {
 	TypeNameParsingResult result;
 	result.type_name= ParseTypeName();
+
+	if( it_ != it_end_ && it_->type != Lexem::Type::EndOfFile )
+		PushErrorMessage(); // Do not allow lexems left.
+
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
@@ -401,6 +405,10 @@ ExpressionParsingResult SyntaxAnalyzer::ParseStandaloneExpression()
 {
 	ExpressionParsingResult result;
 	result.expression= ParseExpression();
+
+	if( it_ != it_end_ && it_->type != Lexem::Type::EndOfFile )
+		PushErrorMessage(); // Do not allow lexems left.
+
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
