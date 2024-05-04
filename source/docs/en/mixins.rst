@@ -40,6 +40,15 @@ It's also possible to use ``mixin`` in structs and classes:
        s.Foo();
    }
 
+``mixin`` within blocks is possible too:
+
+.. code-block:: u_spr
+
+   fn Foo() : i32
+   {
+       mixin( " return 123; " );
+   }
+
 
 ********************
 *mixins limitations*
