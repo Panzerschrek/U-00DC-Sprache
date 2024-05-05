@@ -35,12 +35,14 @@ fn LoadSourceGraph(
 			lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
 		}
 
+		auto mut contents_hash= source_file_contents_hashing_function( prelude_code );
+
 		var Synt::SyntaxAnalysisResult mut synt_result=
 			Synt::SyntaxAnalysis(
 				lex_result.lexems,
 				Synt::MacrosPtr( Synt::MacrosByContextMap() ), // Prelude macros list is empty.
 				source_graph.macro_expansion_contexts,
-				source_file_contents_hashing_function( prelude_code ) );
+				contents_hash );
 
 		// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
 		// There is no reason to import prelude in all modules.
@@ -55,8 +57,9 @@ fn LoadSourceGraph(
 		source_graph.nodes.push_back(
 			SourceGraph::Node
 			{
+				.file_path_normalized= "compiler_generated_prelude",
+				.contents_hash= move(contents_hash),
 				.synt_result= move(synt_result),
-				.file_path_normalized= "compiler_generated_prelude"
 			} );
 	}
 
