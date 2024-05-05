@@ -1,3 +1,5 @@
+import "mixin_utils.u"
+
 namespace ust
 {
 
@@ -149,5 +151,34 @@ template</type T/> type homogeneous_tuple</T, 5s/> = tup[ T, T, T, T, T ];
 template</type T/> type homogeneous_tuple</T, 6s/> = tup[ T, T, T, T, T, T ];
 template</type T/> type homogeneous_tuple</T, 7s/> = tup[ T, T, T, T, T, T, T ];
 template</type T/> type homogeneous_tuple</T, 8s/> = tup[ T, T, T, T, T, T, T, T ];
+
+// General variant of homogenous tuple - use a mixin to generate it.
+template</type T, size_type size/>
+type homogeneous_tuple</T, size/> = mixin( composite_impl::homogeneous_tuple_gen</size/>() );
+
+namespace composite_impl
+{
+
+// Generate a tuple type name like "tup[T,T,T,T,T]"
+template</size_type size/>
+fn constexpr homogeneous_tuple_gen() : [ char8, 5s + 2s * size ]
+{
+	var mixin_utils::static_string</ 5s + 2s * size /> mut s;
+	s+= "tup[";
+
+	for( auto mut i= 0s; i < size; ++i )
+	{
+		s+= "T";
+		if( i != size - 1s )
+		{
+			s+= ",";
+		}
+	}
+	s+= "]";
+
+	return s.buffer;
+}
+
+} // namespace composite_impl
 
 } // namespace ust
