@@ -15,7 +15,7 @@ struct SyntaxAnalysisResult
 	ImportsList imports_list;
 	ProgramElements program_elements;
 	LexSyntErrors errors;
-	MacrosByContextMap macros;
+	MacrosPtr macros;
 }
 
 struct MacroExpansionContext
@@ -60,37 +60,37 @@ struct ExpressionParsingResult
 
 fn SyntaxAnalysis(
 	Lexems& lexems,
-	MacrosByContextMap macros,
+	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts /*in-out param*/,
 	ust::string8 source_file_contents_hash ) : SyntaxAnalysisResult;
 
 fn ParseNamespaceElements(
 	Lexems& lexems,
-	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	ust::string8 source_file_contents_hash ) : NamespaceParsingResult;
 
 fn ParseClassElements(
 	Lexems& lexems,
-	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	ust::string8 source_file_contents_hash ) : ClassElementsParsingResult;
 
 fn ParseBlockElements(
 	Lexems& lexems,
-	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	ust::string8 source_file_contents_hash ) : BlockElementsParsingResult;
 
 fn ParseTypeName(
 	Lexems& lexems,
-	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	ust::string8 source_file_contents_hash ) : TypeNameParsingResult;
 
 fn ParseExpression(
 	Lexems& lexems,
-	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	ust::string8 source_file_contents_hash ) : ExpressionParsingResult;
 

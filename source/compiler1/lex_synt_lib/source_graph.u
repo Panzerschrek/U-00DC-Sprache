@@ -35,12 +35,14 @@ fn LoadSourceGraph(
 			lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
 		}
 
+		auto mut contents_hash= source_file_contents_hashing_function( prelude_code );
+
 		var Synt::SyntaxAnalysisResult mut synt_result=
 			Synt::SyntaxAnalysis(
 				lex_result.lexems,
-				Synt::MacrosByContextMap(),
+				Synt::MacrosPtr( Synt::MacrosByContextMap() ), // Prelude macros list is empty.
 				source_graph.macro_expansion_contexts,
-				source_file_contents_hashing_function( prelude_code ) );
+				contents_hash );
 
 		// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
 		// There is no reason to import prelude in all modules.
@@ -55,8 +57,9 @@ fn LoadSourceGraph(
 		source_graph.nodes.push_back(
 			SourceGraph::Node
 			{
+				.file_path_normalized= "compiler_generated_prelude",
+				.contents_hash= move(contents_hash),
 				.synt_result= move(synt_result),
-				.file_path_normalized= "compiler_generated_prelude"
 			} );
 	}
 
@@ -115,9 +118,16 @@ fn LoadSourceGraph_r(
 
 	auto file_content_view= file_content_opt.try_deref().range();
 
+	var Synt::MacrosPtr node_macros_ptr( Synt::MacrosByContextMap() );
+
 	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();
-	source_graph.nodes.push_back( SourceGraph::Node{ .file_path_normalized= file_path_normalized } );
+	source_graph.nodes.push_back(
+		SourceGraph::Node
+		{
+			.file_path_normalized= file_path_normalized,
+			.synt_result{ .macros= node_macros_ptr }
+		} );
 
 	auto mut lex_result= LexicalAnalysis( file_content_view );
 
@@ -128,13 +138,9 @@ fn LoadSourceGraph_r(
 		lexem.src_loc.SetFileIndex( u32(node_index) );
 	}
 
-	var SourceGraph::Node mut node
-	{
-		.file_path_normalized= file_path_normalized,
-		.contents_hash= source_file_contents_hashing_function( file_content_view ),
-	};
-
 	// Recursively load imports.
+	var ust::vector</size_type/> mut node_children;
+
 	var Synt::ImportsList imports= Synt::ParseImports( lex_result.lexems );
 
 	imports_stack.push_back( file_path_normalized );
@@ -151,55 +157,67 @@ fn LoadSourceGraph_r(
 				imports_stack );
 		if( child != ~0s )
 		{
-			node.children.push_back(child);
+			node_children.push_back(child);
 		}
 	}
 	imports_stack.pop_back();
 
-	// Merge macroses
-	var Synt::MacrosByContextMap mut macros;
-	foreach( &child_index : node.children )
+	// Merge macros.
+	with( mut lock : node_macros_ptr.lock_mut() )
 	{
-		var SourceGraph::Node& src_node= source_graph.nodes[child_index];
-		foreach( &context_and_macro : src_node.synt_result.macros )
+		var Synt::MacrosByContextMap &mut macros= lock.deref();
+		foreach( &child_index : node_children )
 		{
-			if( macros.find( context_and_macro.key() ).empty() )
+			var SourceGraph::Node& src_node= source_graph.nodes[child_index];
+			foreach( &context_and_macro : src_node.synt_result.macros.lock_imut().deref() )
 			{
-				macros.insert( context_and_macro.key(), context_and_macro.value() );
-				continue;
-			}
-
-			var Synt::MacroMap &mut dst_map= macros[context_and_macro.key()];
-			foreach( &macro : context_and_macro.value() )
-			{
-				if( dst_map.find( macro.key() ).empty() )
+				if( macros.find( context_and_macro.key() ).empty() )
 				{
-					dst_map.insert( macro.key(), macro.value() );
+					macros.insert( context_and_macro.key(), context_and_macro.value() );
+					continue;
 				}
-				else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
+
+				var Synt::MacroMap &mut dst_map= macros[context_and_macro.key()];
+				foreach( &macro : context_and_macro.value() )
 				{
-					source_graph.errors.push_back( LexSyntError(
-						macro.value().deref().src_loc ,
-						"Macro \"" + macro.key() + "\" redefinition." ) );
+					if( dst_map.find( macro.key() ).empty() )
+					{
+						dst_map.insert( macro.key(), macro.value() );
+					}
+					else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
+					{
+						source_graph.errors.push_back( LexSyntError(
+							macro.value().deref().src_loc ,
+							"Macro \"" + macro.key() + "\" redefinition." ) );
+					}
 				}
 			}
 		}
 	}
 
+	auto mut contents_hash= source_file_contents_hashing_function( file_content_view );
+
 	auto mut synt_result=
 		Synt::SyntaxAnalysis(
 			lex_result.lexems,
-			move(macros),
+			node_macros_ptr,
 			source_graph.macro_expansion_contexts,
-			node.contents_hash );
+			contents_hash );
 
 	foreach( &error : synt_result.errors )
 	{
 		source_graph.errors.push_back( error );
 	}
-	node.synt_result= move(synt_result);
 
-	source_graph.nodes[node_index]= move(node);
+	source_graph.nodes[node_index]=
+		SourceGraph::Node
+		{
+			.file_path_normalized= file_path_normalized,
+			.children= move(node_children),
+			.contents_hash= move(contents_hash),
+			.synt_result= move(synt_result)
+		};
+
 	return node_index;
 }
 

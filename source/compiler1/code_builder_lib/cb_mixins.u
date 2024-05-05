@@ -188,7 +188,7 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 
 		auto mut synt_result= Synt::ParseNamespaceElements(
 			lexems.try_deref(),
-			source_graph_node.synt_result.macros,
+			source_graph_node.synt_result.macros, // Macros should not be modified.
 			source_graph.macro_expansion_contexts,
 			source_graph_node.contents_hash );
 
@@ -249,7 +249,7 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 
 		auto mut synt_result= Synt::ParseClassElements(
 			lexems.try_deref(),
-			source_graph_node.synt_result.macros,
+			source_graph_node.synt_result.macros, // Macros should not be modified.
 			source_graph.macro_expansion_contexts,
 			source_graph_node.contents_hash );
 
@@ -304,7 +304,7 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 
 	auto mut synt_result= Synt::ParseBlockElements(
 		lexems.try_deref(),
-		source_graph_node.synt_result.macros,
+		source_graph_node.synt_result.macros, // Macros should not be modified.
 		source_graph.macro_expansion_contexts,
 		source_graph_node.contents_hash );
 
@@ -358,7 +358,7 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 
 	auto mut synt_result= Synt::ParseTypeName(
 		lexems.try_deref(),
-		source_graph_node.synt_result.macros,
+		source_graph_node.synt_result.macros, // Macros should not be modified.
 		source_graph.macro_expansion_contexts,
 		source_graph_node.contents_hash );
 
@@ -412,7 +412,7 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 
 	auto mut synt_result= Synt::ParseExpression(
 		lexems.try_deref(),
-		source_graph_node.synt_result.macros,
+		source_graph_node.synt_result.macros, // Macros should not be modified.
 		source_graph.macro_expansion_contexts,
 		source_graph_node.contents_hash );
 

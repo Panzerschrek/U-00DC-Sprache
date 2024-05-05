@@ -169,12 +169,14 @@ SourceGraph LoadSourceGraph(
 		for( Lexem& lexem :lex_result.lexems )
 			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
+		auto contents_hash= source_file_contents_hashing_function( prelude_code );
+
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
 				lex_result.lexems,
 				Synt::MacrosByContextMap(),
 				result.macro_expansion_contexts,
-				source_file_contents_hashing_function( prelude_code ) );
+				contents_hash );
 
 		result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
@@ -185,8 +187,10 @@ SourceGraph LoadSourceGraph(
 				other_node.child_nodes_indeces.push_back( prelude_node_index );
 
 		SourceGraph::Node prelude_node;
-		prelude_node.ast= std::move(synt_result);
 		prelude_node.file_path= "compiler_generated_prelude";
+		prelude_node.contents_hash= std::move(contents_hash);
+		prelude_node.ast= std::move(synt_result);
+
 		result.nodes_storage.push_back( std::move(prelude_node) );
 	}
 
