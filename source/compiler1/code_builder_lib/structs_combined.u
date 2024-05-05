@@ -690,6 +690,18 @@ fn Type::ToString( this ) : ust::string8
 	halt;
 }
 
+template</type T/>
+fn TypeEqualImpl( T& l, T& r ) : bool
+{
+	return l == r;
+}
+
+template</type T, bool is_nullable/>
+fn TypeEqualImpl( ust::shared_ptr_final_base</T, is_nullable/>& l, ust::shared_ptr_final_base</T, is_nullable/>& r ) : bool
+{
+	return l.deref() == r.deref();
+}
+
 op Type::==( Type& l, Type& r ) : bool
 {
 	if( l.something_.index() != r.something_.index() )
@@ -700,18 +712,7 @@ op Type::==( Type& l, Type& r ) : bool
 	variant_visit( &l_t : l.something_ )
 	{
 		type LeftT= typeof(l_t);
-		static_if(
-			same_type</ LeftT, ust::shared_ptr_final</ArrayType/> /> ||
-			same_type</ LeftT, ust::shared_ptr_final</TupleType/> /> ||
-			same_type</ LeftT, ust::shared_ptr_final</RawPointerType/> /> ||
-			same_type</ LeftT, ust::shared_ptr_final</FunctionPointerType/> /> )
-		{
-			return l_t.deref() == r.something_.try_get</ LeftT />().deref();
-		}
-		else
-		{
-			return l_t == r.something_.try_get</ LeftT />();
-		}
+		return TypeEqualImpl( l_t, r.something_.try_get</ LeftT />() );
 	}
 
 	halt;
