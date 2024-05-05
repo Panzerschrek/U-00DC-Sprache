@@ -140,9 +140,9 @@ public:
 
 	SyntaxAnalysisResult DoAnalyzis();
 	std::vector<Import> ParseImports();
-	NamespaceParsingResult ParseNamespaceElements();
-	ClassElementsParsingResult ParseClassElements();
-	BlockElementsParsingResult ParseBlockElements();
+	NamespaceParsingResult ParseStandaloneNamespaceElements();
+	ClassElementsParsingResult ParseStandaloneClassElements();
+	BlockElementsParsingResult ParseStandaloneBlockElements();
 	TypeNameParsingResult ParseStandaloneTypeName();
 	ExpressionParsingResult ParseStandaloneExpression();
 
@@ -177,8 +177,9 @@ private:
 	Macro::MatchElements ParseMacroMatchBlock();
 	Macro::ResultElements ParseMacroResultBlock();
 
-	ProgramElementsList ParseNamespaceBody() { return ParseNamespaceBody( Lexem::Type::BraceRight ); }
-	ProgramElementsList ParseNamespaceBody( Lexem::Type end_lexem );
+	ProgramElementsList ParseNamespaceBodyToFileEnd();
+	ProgramElementsList ParseNamespaceBodyToNamespaceEnd();
+	ProgramElementsList ParseNamespaceBodyImpl( Lexem::Type end_lexem );
 
 	NumericConstant ParseNumericConstant();
 
@@ -252,8 +253,9 @@ private:
 	TypeAlias ParseTypeAliasBody();
 	Function ParseFunction();
 	Class ParseClass();
-	ClassElementsList ParseClassBodyElements();
-	ClassElementsList ParseClassBodyElements( Lexem::Type end_lexem );
+	ClassElementsList ParseClassBodyElementsToFileEnd();
+	ClassElementsList ParseClassBodyElementsToClassEnd();
+	ClassElementsList ParseClassBodyElementsImpl( Lexem::Type end_lexem );
 	Class ParseClassBody();
 
 	using TemplateVar=
@@ -333,7 +335,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis()
 		ParseMacro();
 	}
 
-	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
+	result.program_elements= ParseNamespaceBodyToFileEnd();
 	result.error_messages.swap( error_messages_ );
 	result.macros= macros_;
 	return result;
@@ -365,23 +367,23 @@ std::vector<Import> SyntaxAnalyzer::ParseImports()
 	return imports;
 }
 
-NamespaceParsingResult SyntaxAnalyzer::ParseNamespaceElements()
+NamespaceParsingResult SyntaxAnalyzer::ParseStandaloneNamespaceElements()
 {
 	NamespaceParsingResult result;
-	result.namespace_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
+	result.namespace_elements= ParseNamespaceBodyToFileEnd();
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
 
-ClassElementsParsingResult SyntaxAnalyzer::ParseClassElements()
+ClassElementsParsingResult SyntaxAnalyzer::ParseStandaloneClassElements()
 {
 	ClassElementsParsingResult result;
-	result.class_elements= ParseClassBodyElements( Lexem::Type::EndOfFile );
+	result.class_elements= ParseClassBodyElementsToFileEnd();
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
 
-BlockElementsParsingResult SyntaxAnalyzer::ParseBlockElements()
+BlockElementsParsingResult SyntaxAnalyzer::ParseStandaloneBlockElements()
 {
 	BlockElementsParsingResult result;
 	result.block_elements= ParseBlockElementsToFileEnd();
@@ -728,7 +730,17 @@ Macro::ResultElements SyntaxAnalyzer::ParseMacroResultBlock()
 	return result;
 }
 
-ProgramElementsList SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem )
+ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyToFileEnd()
+{
+	return ParseNamespaceBodyImpl( Lexem::Type::EndOfFile );
+}
+
+ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyToNamespaceEnd()
+{
+	return ParseNamespaceBodyImpl( Lexem::Type::BraceRight );
+}
+
+ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type end_lexem )
 {
 	ProgramElementsList::Builder result_builder;
 
@@ -805,7 +817,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_le
 			}
 
 			namespace_.name= std::move(name);
-			namespace_.elements= ParseNamespaceBody( Lexem::Type::BraceRight );
+			namespace_.elements= ParseNamespaceBodyToNamespaceEnd();
 
 			ExpectLexem( Lexem::Type::BraceRight );
 
@@ -822,7 +834,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_le
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Namespace ) )
 				{
-					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBody ) );
+					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBodyToFileEnd ) );
 					continue;
 				}
 			}
@@ -3609,12 +3621,17 @@ Class SyntaxAnalyzer::ParseClass()
 	return result;
 }
 
-ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
+ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsToFileEnd()
 {
-	return ParseClassBodyElements( Lexem::Type::BraceRight );
+	return ParseClassBodyElementsImpl( Lexem::Type::EndOfFile );
 }
 
-ClassElementsList SyntaxAnalyzer::ParseClassBodyElements( const Lexem::Type end_lexem )
+ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsToClassEnd()
+{
+	return ParseClassBodyElementsImpl( Lexem::Type::BraceRight );
+}
+
+ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type end_lexem )
 {
 	ClassElementsList::Builder result_builder;
 
@@ -3690,7 +3707,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElements( const Lexem::Type end_
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Class ) )
 				{
-					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElements ) );
+					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElementsToFileEnd ) );
 					continue;
 				}
 			}
@@ -3799,7 +3816,7 @@ Class SyntaxAnalyzer::ParseClassBody()
 		return result;
 	}
 
-	result.elements= ParseClassBodyElements();
+	result.elements= ParseClassBodyElementsToClassEnd();
 
 	ExpectLexem( Lexem::Type::BraceRight );
 
@@ -4556,7 +4573,7 @@ NamespaceParsingResult ParseNamespaceElements(
 		std::move(macro_expansion_contexts),
 		std::move(source_file_contents_hash) );
 
-	return syntax_analyzer.ParseNamespaceElements();
+	return syntax_analyzer.ParseStandaloneNamespaceElements();
 }
 
 ClassElementsParsingResult ParseClassElements(
@@ -4571,7 +4588,7 @@ ClassElementsParsingResult ParseClassElements(
 		std::move(macro_expansion_contexts),
 		std::move(source_file_contents_hash) );
 
-	return syntax_analyzer.ParseClassElements();
+	return syntax_analyzer.ParseStandaloneClassElements();
 }
 
 BlockElementsParsingResult ParseBlockElements(
@@ -4586,7 +4603,7 @@ BlockElementsParsingResult ParseBlockElements(
 		std::move(macro_expansion_contexts),
 		std::move(source_file_contents_hash) );
 
-	return syntax_analyzer.ParseBlockElements();
+	return syntax_analyzer.ParseStandaloneBlockElements();
 }
 
 TypeNameParsingResult ParseTypeName(
