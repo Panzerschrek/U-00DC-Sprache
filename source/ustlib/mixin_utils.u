@@ -29,7 +29,7 @@ struct static_string
 	// Append decimal number.
 	// Negative sign may be written, but no type suffix is added.
 	template</type int_type/>
-	fn append_decimal_number( mut this, int_type n )
+	fn constexpr append_decimal_number( mut this, int_type n )
 	{
 		static_assert( typeinfo</int_type/>.is_integer );
 
@@ -51,7 +51,7 @@ struct static_string
 		}
 	}
 
-	fn append_decimal_number( mut this, u64 n )
+	fn constexpr append_decimal_number( mut this, u64 n )
 	{
 		auto constexpr zero_char= "0"c8;
 

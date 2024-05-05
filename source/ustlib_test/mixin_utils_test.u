@@ -88,5 +88,21 @@ fn nomangle main() : i32
 		s.append_decimal_number( 34u16 );
 		halt if( s != "yyU534" );
 	}
+
+	// static_string methods are constexpr.
+	static_assert( NumToStringConstexpr(0u) == "0u" );
+	static_assert( NumToStringConstexpr(1u) == "1u" );
+	static_assert( NumToStringConstexpr(10u) == "10u" );
+	static_assert( NumToStringConstexpr(12345u) == "12345u" );
+	static_assert( NumToStringConstexpr(9876u) == "9876u" );
+
 	return 0;
+}
+
+fn constexpr NumToStringConstexpr( u32 x ) : ust::mixin_utils::static_string</32s/>
+{
+	var ust::mixin_utils::static_string</32s/> mut s;
+	s.append_decimal_number(x);
+	s+= "u";
+	return s;
 }
