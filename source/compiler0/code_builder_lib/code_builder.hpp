@@ -1526,8 +1526,10 @@ private:
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
 
-	// Store here mixin expansion results, because we need syntax elements to be alive, because they may be accessed during code building.
+	// Store here mixin expansion results, because we need syntax elements to be alive, because they may be accessed during code building via raw pointers.
 	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
+	// Important note: unordered_map doesn't invalidate pointers/references to elements after new elements are inserted.
+	// This makes it safe to store somewhere pointers to elements of this container, assuming no elements are deleted.
 	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::BlockElementsList, MixinExpansionKeyHasher> block_mixin_expansions_;
