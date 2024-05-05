@@ -338,24 +338,20 @@ fn SyntaxAnalyzer::constructor(
 
 fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 {
-	var SyntaxAnalysisResult mut res;
-
-	res.imports_list= ParseImports();
+	auto mut imports= ParseImports();
 
 	while( NotEndOfFile() && it_.front().lexem_type == Lexem::Type::MacroIdentifier && it_.front().text == "macro" )
 	{
 		ParseMacro();
 	}
 
-	res.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
-	res.errors= take(errors_);
-
-	with( mut lock: macros_.lock_mut() )
+	return SyntaxAnalysisResult
 	{
-		res.macros= take(lock.deref());
-	}
-
-	return res;
+		.imports_list= move(imports),
+		.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile ),
+		.macros= macros_,
+		.errors= take(errors_),
+	};
 }
 
 fn SyntaxAnalyzer::ParseNamespaceElements( mut this ) : NamespaceParsingResult
@@ -4335,13 +4331,13 @@ fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string
 
 fn SyntaxAnalysis(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
+	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/,
 	ust::string8 mut source_file_contents_hash ) : SyntaxAnalysisResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
-		MacrosPtr( move(macros) ),
+		move(macros),
 		move(macro_expansion_contexts),
 		move(source_file_contents_hash) );
 
@@ -4350,7 +4346,7 @@ fn SyntaxAnalysis(
 
 fn ParseNamespaceElements(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
+	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut source_file_contents_hash ) : NamespaceParsingResult
 {
@@ -4365,13 +4361,13 @@ fn ParseNamespaceElements(
 
 fn ParseClassElements(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
+	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut source_file_contents_hash ) : ClassElementsParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
-		MacrosPtr( move(macros) ),
+		move(macros),
 		move(macro_expansion_contexts),
 		move(source_file_contents_hash) );
 
@@ -4380,13 +4376,13 @@ fn ParseClassElements(
 
 fn ParseBlockElements(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
+	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut source_file_contents_hash ) : BlockElementsParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
-		MacrosPtr( move(macros) ),
+		move(macros),
 		move(macro_expansion_contexts),
 		move(source_file_contents_hash) );
 
@@ -4395,13 +4391,13 @@ fn ParseBlockElements(
 
 fn ParseTypeName(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
+	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut source_file_contents_hash ) : TypeNameParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
-		MacrosPtr( move(macros) ),
+		move(macros),
 		move(macro_expansion_contexts),
 		move(source_file_contents_hash) );
 
@@ -4410,13 +4406,13 @@ fn ParseTypeName(
 
 fn ParseExpression(
 	Lexems& lexems,
-	MacrosByContextMap mut macros,
+	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut source_file_contents_hash ) : ExpressionParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
-		MacrosPtr( move(macros) ),
+		move(macros),
 		move(macro_expansion_contexts),
 		move(source_file_contents_hash) );
 
