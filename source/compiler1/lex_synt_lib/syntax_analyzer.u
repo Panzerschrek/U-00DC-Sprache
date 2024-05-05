@@ -110,6 +110,8 @@ public:
 	fn ParseNamespaceElements( mut this ) : NamespaceParsingResult;
 	fn ParseClassElements( mut this ) : ClassElementsParsingResult;
 	fn ParseBlockElements( mut this ) : BlockElementsParsingResult;
+	fn ParseStandaloneTypeName( mut this ) : TypeNameParsingResult;
+	fn ParseStandaloneExpression( mut this ) : ExpressionParsingResult;
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
@@ -210,6 +212,7 @@ private:
 	fn ParseWithOperator( mut this ) : WithOperator;
 	fn ParseStaticAssert( mut this ) : StaticAssert;
 	fn ParseMixin( mut this ) : Mixin;
+	fn ParseExpressionMixin( mut this ) : Mixin;
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
@@ -377,6 +380,36 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElementsParsingResult
 {
 	var BlockElementsParsingResult mut res;
 	res.block_elements= ParseBlockElementsToFileEnd();
+	res.errors= take(errors_);
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseStandaloneTypeName( mut this ) : TypeNameParsingResult
+{
+	var TypeNameParsingResult mut res;
+	res.type_name= ParseTypeName();
+
+	if( !it_.empty() && it_.front().lexem_type != Lexem::Type::EndOfFile )
+	{
+		PushErrorMessage(); // Require parsing until the end.
+	}
+
+	res.errors= take(errors_);
+
+	return res;
+}
+
+fn SyntaxAnalyzer::ParseStandaloneExpression( mut this ) : ExpressionParsingResult
+{
+	var ExpressionParsingResult mut res;
+	res.expression= ParseExpression();
+
+	if( !it_.empty() && it_.front().lexem_type != Lexem::Type::EndOfFile )
+	{
+		PushErrorMessage(); // Require parsing until the end.
+	}
+
 	res.errors= take(errors_);
 
 	return res;
@@ -943,6 +976,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
 		};
 	}
+	if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+	{
+		return ust::make_shared_ptr_final( ParseExpressionMixin() );
+	}
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
 		if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Expression ) )
@@ -979,6 +1016,10 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
 		return ust::make_box( ParseTupleType() );
+	}
+	else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
+	{
+		return ust::make_shared_ptr_final( ParseExpressionMixin() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
 	{
@@ -2913,9 +2954,21 @@ fn SyntaxAnalyzer::ParseMixin( mut this ) : Mixin
 	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
-	mixin_.expression= ParseExpression();
+	mixin_.expression= ParseExpressionInBrackets();
 
 	ExpectSemicolon();
+
+	return mixin_;
+}
+
+fn SyntaxAnalyzer::ParseExpressionMixin( mut this ) : Mixin
+{
+	debug_assert( IsKeyword( it_.front(), Keyword::mixin_ ) );
+
+	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
+	NextLexem();
+
+	mixin_.expression= ParseExpressionInBrackets();
 
 	return mixin_;
 }
@@ -4338,6 +4391,36 @@ fn ParseBlockElements(
 		move(source_file_contents_hash) );
 
 	return analyzer.ParseBlockElements();
+}
+
+fn ParseTypeName(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : TypeNameParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseStandaloneTypeName();
+}
+
+fn ParseExpression(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut source_file_contents_hash ) : ExpressionParsingResult
+{
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
+	return analyzer.ParseStandaloneExpression();
 }
 
 fn ParseImports( Lexems& lexems ) : ImportsList

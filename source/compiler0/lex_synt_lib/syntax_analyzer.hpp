@@ -48,6 +48,18 @@ struct BlockElementsParsingResult
 	LexSyntErrors error_messages;
 };
 
+struct TypeNameParsingResult
+{
+	TypeName type_name;
+	LexSyntErrors error_messages;
+};
+
+struct ExpressionParsingResult
+{
+	Expression expression;
+	LexSyntErrors error_messages;
+};
+
 std::vector<Import> ParseImports( const Lexems& lexems );
 SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
@@ -68,6 +80,18 @@ ClassElementsParsingResult ParseClassElements(
 	std::string source_file_contents_hash );
 
 BlockElementsParsingResult ParseBlockElements(
+	const Lexems& lexems,
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	std::string source_file_contents_hash );
+
+TypeNameParsingResult ParseTypeName(
+	const Lexems& lexems,
+	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	std::string source_file_contents_hash );
+
+ExpressionParsingResult ParseExpression(
 	const Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */

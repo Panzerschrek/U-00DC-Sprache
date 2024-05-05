@@ -288,6 +288,100 @@ const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_
 	return &it->second;
 }
 
+const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
+{
+	Mixin temp_mixin;
+	temp_mixin.syntax_element= &mixin;
+	temp_mixin.src_loc= mixin.src_loc;
+
+	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
+
+	const std::string_view mixin_text=
+		temp_mixin.string_constant == nullptr
+			? std::string_view()
+			: StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+
+	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
+	auto it= type_name_mixin_expansions_.find(key);
+
+	if( it == type_name_mixin_expansions_.end() )
+	{
+		const auto lexems= PrepareMixinLexems( names_scope, mixin.src_loc, mixin_text );
+		if( lexems == std::nullopt )
+			return nullptr;
+
+		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
+
+		Synt::TypeNameParsingResult synt_result=
+			Synt::ParseTypeName(
+				*lexems,
+				source_graph_node.ast.macros, // Macros should not be modified.
+				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
+				source_graph_node.contents_hash );
+
+		if( !synt_result.error_messages.empty() )
+		{
+			for( const LexSyntError& error : synt_result.error_messages )
+				REPORT_ERROR( MixinSyntaxError, names_scope.GetErrors(), error.src_loc, error.text );
+
+			return nullptr;
+		}
+
+		// We need to preserve syntax result, because we store raw pointers to syntax elements.
+		it= type_name_mixin_expansions_.emplace( std::move(key), std::move(synt_result.type_name) ).first;
+	}
+
+	return &it->second;
+}
+
+const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
+{
+	Mixin temp_mixin;
+	temp_mixin.syntax_element= &mixin;
+	temp_mixin.src_loc= mixin.src_loc;
+
+	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
+
+	const std::string_view mixin_text=
+		temp_mixin.string_constant == nullptr
+			? std::string_view()
+			: StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+
+	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
+	auto it= expression_mixin_expansions_.find(key);
+
+	if( it == expression_mixin_expansions_.end() )
+	{
+		const auto lexems= PrepareMixinLexems( names_scope, mixin.src_loc, mixin_text );
+		if( lexems == std::nullopt )
+			return nullptr;
+
+		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
+
+		Synt::ExpressionParsingResult synt_result=
+			Synt::ParseExpression(
+				*lexems,
+				source_graph_node.ast.macros, // Macros should not be modified.
+				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
+				source_graph_node.contents_hash );
+
+		if( !synt_result.error_messages.empty() )
+		{
+			for( const LexSyntError& error : synt_result.error_messages )
+				REPORT_ERROR( MixinSyntaxError, names_scope.GetErrors(), error.src_loc, error.text );
+
+			return nullptr;
+		}
+
+		// We need to preserve syntax result, because we store raw pointers to syntax elements.
+		it= expression_mixin_expansions_.emplace( std::move(key), std::move(synt_result.expression) ).first;
+	}
+
+	return &it->second;
+}
+
 void CodeBuilder::EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin )
 {
 	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );

@@ -195,6 +195,17 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 }
 
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type
+{
+	auto type_name= ExpandTypeNameMixin( names_scope, function_context, mixin_ );
+	if( !type_name.empty() )
+	{
+		return PrepareType( names_scope, function_context, type_name.try_deref() );
+	}
+
+	return invalid_type_; // An error should be generated earlier.
+}
+
 fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType
 {
 	var FunctionType mut res

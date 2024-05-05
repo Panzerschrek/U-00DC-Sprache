@@ -1893,6 +1893,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::Mixin& mixin )
+{
+	if( const auto expression= ExpandExpressionMixin( names_scope, function_context, mixin ) )
+		return BuildExpressionCode( *expression, names_scope, function_context );
+	return ErrorValue(); // Error should be generated prior to this.
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
 	return PrepareTypeImpl( names_scope, function_context, type_name );

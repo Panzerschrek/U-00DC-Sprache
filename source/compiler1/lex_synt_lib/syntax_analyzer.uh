@@ -46,6 +46,18 @@ struct BlockElementsParsingResult
 	LexSyntErrors errors;
 }
 
+struct TypeNameParsingResult
+{
+	TypeName type_name;
+	LexSyntErrors errors;
+}
+
+struct ExpressionParsingResult
+{
+	Expression expression;
+	LexSyntErrors errors;
+}
+
 fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosByContextMap macros,
@@ -69,6 +81,18 @@ fn ParseBlockElements(
 	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
 	ust::string8 source_file_contents_hash ) : BlockElementsParsingResult;
+
+fn ParseTypeName(
+	Lexems& lexems,
+	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	ust::string8 source_file_contents_hash ) : TypeNameParsingResult;
+
+fn ParseExpression(
+	Lexems& lexems,
+	MacrosByContextMap macros, // Contents does not changed, because no macros can be parsed.
+	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
+	ust::string8 source_file_contents_hash ) : ExpressionParsingResult;
 
 fn ParseImports( Lexems& lexems ) : ImportsList;
 

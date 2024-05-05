@@ -303,7 +303,8 @@ type Expression= ust::variant</ tup[
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>,
-	ust::box</CoroutineType/>
+	ust::box</CoroutineType/>,
+	ust::shared_ptr_final</Mixin/>
 	] />;
 
 struct ArrayType
@@ -378,7 +379,8 @@ type TypeName= ust::variant</ tup[
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>,
-	ust::box</CoroutineType/>
+	ust::box</CoroutineType/>,
+	ust::shared_ptr_final</Mixin/>
 	] />;
 
 struct SequenceInitializer

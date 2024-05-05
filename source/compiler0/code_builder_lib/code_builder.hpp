@@ -297,6 +297,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin_type_name );
 	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionType PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, ClassPtr class_= nullptr );
@@ -781,6 +782,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& type_name );
@@ -1326,6 +1328,8 @@ private:
 	void ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin );
 	void ExpandClassMixin( ClassPtr class_type, Mixin& mixin );
 	const Synt::BlockElementsList* ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
+	const Synt::TypeName* ExpandTypeNameMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
+	const Synt::Expression* ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	void EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin );
 	void EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin );
 
@@ -1527,6 +1531,8 @@ private:
 	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::BlockElementsList, MixinExpansionKeyHasher> block_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, Synt::TypeName, MixinExpansionKeyHasher> type_name_mixin_expansions_;
+	std::unordered_map<MixinExpansionKey, Synt::Expression, MixinExpansionKeyHasher> expression_mixin_expansions_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

@@ -17,8 +17,6 @@ General:
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
 *) Variable templates
-*) Mixins in type name context
-*) Mixins in expression context
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -54,6 +52,7 @@ Compiler:
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Speed-up references graph code
+*) Find a way to detect recursive mixins in blocks, type names, expressions
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
