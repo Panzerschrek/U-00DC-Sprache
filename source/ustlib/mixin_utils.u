@@ -26,6 +26,61 @@ struct static_string
 		current_size+= src_size;
 	}
 
+	// Append decimal number.
+	// Negative sign may be written, but no type suffix is added.
+	template</type int_type/>
+	fn append_decimal_number( mut this, int_type n )
+	{
+		static_assert( typeinfo</int_type/>.is_integer );
+
+		static_if( typeinfo</int_type/>.is_signed_integer )
+		{
+			if( n < int_type(0) )
+			{
+				this += "-";
+				this.append_decimal_number( u64( -n ) );
+			}
+			else
+			{
+				this.append_decimal_number( u64( n ) );
+			}
+		}
+		else
+		{
+			this.append_decimal_number( u64(n) );
+		}
+	}
+
+	fn append_decimal_number( mut this, u64 n )
+	{
+		auto constexpr zero_char= "0"c8;
+
+		if( n == 0u64 )
+		{
+			buffer[ current_size ]= zero_char;
+			++current_size;
+		}
+		else
+		{
+			var u64 mut div= 10000000000000000000u64;
+			while( div > n )
+			{
+				div/= 10u64;
+			}
+
+			var u64 mut rem= n;
+			while( div > 0u64 )
+			{
+				auto digit= rem / div;
+				rem-= digit * div;
+				div/= 10u64;
+
+				buffer[ current_size ]= char8( digit + u64(zero_char) );
+				++current_size;
+			}
+		}
+	}
+
 	// Compare agains char array.
 	template</size_type other_size />
 	op constexpr == ( this, [ char8, other_size ]& other ) : bool
