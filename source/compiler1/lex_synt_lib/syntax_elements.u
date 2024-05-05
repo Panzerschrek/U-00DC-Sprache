@@ -22,108 +22,58 @@ fn FunctionType::IsAutoReturn( this ) : bool
 	return false;
 }
 
-fn GetSrcLoc( Initializer& initializer ) : SrcLoc
+fn GetSrcLocImpl( EmptyVariant& e ) : SrcLoc
 {
-	variant_visit( &el : initializer )
+	ust::ignore_unused(e);
+	return SrcLoc();
+}
+
+template</type T/>
+fn GetSrcLocImpl( T& t ) : SrcLoc
+{
+	return t.src_loc;
+}
+
+template</type T/>
+fn GetSrcLocImpl( ust::box</T/>& t ) : SrcLoc
+{
+	return Synt::GetSrcLocImpl(t.deref());
+}
+
+template</type T, bool is_nullable/>
+fn GetSrcLocImpl( ust::shared_ptr_final_base</T, is_nullable/>& t ) : SrcLoc
+{
+	return Synt::GetSrcLocImpl(t.deref());
+}
+
+template</type Tup/>
+fn GetSrcLocImpl( ust::variant</Tup/>& t ) : SrcLoc
+{
+	variant_visit( &el : t )
 	{
-		type ElementT= typeof(el);
-		static_if( same_type</ ElementT, EmptyVariant /> )
-		{
-			return SrcLoc();
-		}
-		else static_if( same_type</ ElementT, Expression /> )
-		{
-			return GetSrcLoc(el);
-		}
-		else
-		{
-			return el.src_loc;
-		}
+		return Synt::GetSrcLocImpl(el);
 	}
 	halt;
+}
+
+fn GetSrcLoc( Initializer& initializer ) : SrcLoc
+{
+	return GetSrcLocImpl(initializer);
 }
 
 fn GetSrcLoc( ComplexName& complex_name ) : SrcLoc
 {
-	variant_visit( &el : complex_name )
-	{
-		return el.src_loc;
-	}
-	halt;
+	return GetSrcLocImpl(complex_name);
 }
 
 fn GetSrcLoc( Expression& expression ) : SrcLoc
 {
-	variant_visit( &el : expression )
-	{
-		type ElementT= typeof(el);
-		static_if( same_type</ ElementT, EmptyVariant /> )
-		{
-			return SrcLoc();
-		}
-		else static_if( same_type</ ElementT, ust::box</ArrayType/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::box</FunctionType/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::box</TupleType/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::box</RawPointerType/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::box</CoroutineType/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::shared_ptr_final</Mixin/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ComplexName /> )
-		{
-			return GetSrcLoc( el );
-		}
-		else
-		{
-			return el.src_loc;
-		}
-	}
-	halt;
+	return GetSrcLocImpl(expression);
 }
 
 fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 {
-	variant_visit( &el : block_element )
-	{
-		type ElementT= typeof(el);
-		static_if( same_type</ ElementT, Expression /> )
-		{
-			return GetSrcLoc(el);
-		}
-		else static_if( same_type</ ElementT, ust::box</ScopeBlock/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::shared_ptr_final</TypeAlias/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else static_if( same_type</ ElementT, ust::shared_ptr_final</Mixin/> /> )
-		{
-			return el.deref().src_loc;
-		}
-		else
-		{
-			return el.src_loc;
-		}
-	}
-	halt;
+	return GetSrcLocImpl(block_element);
 }
 
 } // namespace Synt
