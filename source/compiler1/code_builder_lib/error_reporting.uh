@@ -51,30 +51,33 @@ fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1
 template</type T/>
 fn PreprocessErrorArg( T& x ) : ust::string8
 {
-	static_if( same_type</T, ust::string8/> )
-	{
-		return x;
-	}
-	else static_if( same_type</T, Type/> )
-	{
-		return x.ToString();
-	}
-	else static_if( typeinfo</T/>.is_array )
-	{
-		return ust::string8(x);
-	}
-	else static_if( same_type</ T, ust::string_view8 /> )
-	{
-		return ust::string8(x);
-	}
-	else static_if( same_type</ T, Synt::ComplexName /> )
-	{
-		return ComplexNameToString(x);
-	}
-	else
-	{
-		return ust::to_string8(x);
-	}
+	return ust::to_string8(x);
+}
+
+template</size_type s/>
+fn PreprocessErrorArg( [char8, s]& str ) : ust::string8
+{
+	return str;
+}
+
+fn PreprocessErrorArg( Type& t ) : ust::string8
+{
+	return t.ToString();
+}
+
+fn PreprocessErrorArg( ust::string8 s ) : ust::string8
+{
+	return s;
+}
+
+fn PreprocessErrorArg( ust::string_view8 s ) : ust::string8
+{
+	return s;
+}
+
+fn PreprocessErrorArg( Synt::ComplexName& name ) : ust::string8
+{
+	return ComplexNameToString(name);
 }
 
 fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string8/> format_args ) : CodeBuilderError;
