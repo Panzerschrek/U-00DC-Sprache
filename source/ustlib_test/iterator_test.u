@@ -10,6 +10,9 @@ import "../ustlib/unordered_set.u"
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
 
+type FloatRangeMut = ust::random_access_range_mut </f32/>;
+type FloatRangeImut= ust::random_access_range_imut</f32/>;
+
 class NonCopyable
 {
 	i32 x;
@@ -837,13 +840,40 @@ fn nomangle main() : i32
 		var [ tup[ i32, f32 ], 3 ] expected_result[ [ 5, -1.0f ], [ 25, -2.0f ], [ 125, -3.0f ] ];
 
 		auto mut i= 0u;
-		foreach( el : IntRangeImut(ints).iter().zip( ust::random_access_range_imut</f32/>(floats).iter() ) )
+		foreach( el : IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
 		{
 			halt if( el.first != expected_result[i][0] );
 			halt if( el.second != expected_result[i][1] );
 			++i;
 		}
 		halt if( i != 3u );
+	}
+	// "zip" iterator has 0 iterations for empty first sequence.
+	{
+		var [ f32, 3 ] floats[ -1.0f, -2.0f, -3.0f ];
+
+		auto count= IntRangeImut().iter().zip( FloatRangeImut(floats).iter() ).count();
+		halt if( count != 0s );
+	}
+	// "zip" iterator has 0 iterations for empty second sequence.
+	{
+		var [ i32, 4 ] ints[ 5, 25, 125, 625 ];
+		auto count= IntRangeImut(ints).iter().zip( FloatRangeImut().iter() ).count();
+		halt if( count != 0s );
+	}
+	// "zip" iterator with size limited by first sequence.
+	{
+		var [ i32, 25 ] ints= zero_init;
+		var [ f32, 10 ] floats= zero_init;
+
+		halt if( IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ).count() != 10s );
+	}
+	// "zip" iterator with size limited by second sequence.
+	{
+		var [ i32, 15 ] ints= zero_init;
+		var [ f32, 34 ] floats= zero_init;
+
+		halt if( IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ).count() != 15s );
 	}
 
 	return 0;
