@@ -278,6 +278,18 @@ public: // Methods returning iterators.
 		return this;
 	}
 
+	// Creates iterator that iterates over bot this and given iterator.
+	// Iteration stops when at least one of them stops.
+	template</type Iterator1/>
+	fn zip( byval mut this, Iterator1 mut iterator1 ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::zip_raw_iterator</ this_type, Iterator1 />(
+					move(this),
+					move(iterator1) ) );
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 
@@ -343,6 +355,66 @@ private:
 private:
 	BaseIterator0 @(c_base0_iterator_tags) base_iterator0_;
 	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
+}
+
+template</type BaseIterator0, type BaseIterator1/>
+class zip_raw_iterator
+{
+public:
+	fn constructor( BaseIterator0 mut base_iterator0, BaseIterator1 mut base_iterator1 ) @(c_constructor_pollution)
+		( base_iterator0_( move(base_iterator0) ), base_iterator1_( move(base_iterator1) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator0/>.is_copy_constructible && typeinfo</BaseIterator1/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator0/>.is_copy_assignable && typeinfo</BaseIterator1/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		auto mut next0= base_iterator0_.next();
+		auto mut next1= base_iterator1_.next();
+
+		type Pair= zip_iterator_pair</ typeof(next0.try_deref()), typeof(next1.try_deref()) />;
+		type PairOpt= ust::optional</Pair/>;
+		if( next0.empty() || next1.empty() )
+		{
+			return PairOpt();
+		}
+
+		return PairOpt( Pair{ .first= next0.try_take(), .second= next1.try_take() } );
+	}
+
+private:
+	type this_type= zip_raw_iterator</BaseIterator0, BaseIterator1/>;
+
+private:
+	var size_type c_base_iterator0_num_tags= typeinfo</BaseIterator0/>.reference_tag_count;
+	var size_type c_base_iterator1_num_tags= typeinfo</BaseIterator1/>.reference_tag_count;
+
+	var size_type c_base_iterator0_tags_offset= 0s;
+	var size_type c_base_iterator1_tags_offset= c_base_iterator0_num_tags;
+
+	auto c_base0_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator0_num_tags />( c_base_iterator0_tags_offset );
+	auto c_base1_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator1_num_tags />( c_base_iterator1_tags_offset );
+
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator0_num_tags />( 0u8, 1u8, c_base_iterator0_tags_offset ),
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator1_num_tags />( 0u8, 2u8, c_base_iterator1_tags_offset ) );
+
+private:
+	BaseIterator0 @(c_base0_iterator_tags) base_iterator0_;
+	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
+}
+
+template</type FirstType, type SecondType/>
+struct zip_iterator_pair
+{
+	FirstType first;
+	SecondType second;
 }
 
 template</type BaseIterator, type Func/>

@@ -830,6 +830,21 @@ fn nomangle main() : i32
 		auto el= CSequenceIteratorCreator().iter().nth(100500s);
 		halt if( !el.empty() );
 	}
+	// "zip" iterator.
+	{
+		var [ i32, 4 ] ints[ 5, 25, 125, 625 ];
+		var [ f32, 3 ] floats[ -1.0f, -2.0f, -3.0f ];
+		var [ tup[ i32, f32 ], 3 ] expected_result[ [ 5, -1.0f ], [ 25, -2.0f ], [ 125, -3.0f ] ];
+
+		auto mut i= 0u;
+		foreach( el : IntRangeImut(ints).iter().zip( ust::random_access_range_imut</f32/>(floats).iter() ) )
+		{
+			halt if( el.first != expected_result[i][0] );
+			halt if( el.second != expected_result[i][1] );
+			++i;
+		}
+		halt if( i != 3u );
+	}
 
 	return 0;
 }
