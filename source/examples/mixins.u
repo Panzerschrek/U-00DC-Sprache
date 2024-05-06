@@ -1,0 +1,156 @@
+// This example demonstraits usage of mixins.
+
+import "/assert.u"
+import "/mixin_utils.u"
+
+fn nomangle main() : i32
+{
+	// Call functions, generated via a global mixin.
+	assert( Ret0() == 0 );
+	assert( Ret1() == 1 );
+	assert( Ret2() == 2 );
+	assert( Ret3() == 3 );
+	assert( Ret4() == 4 );
+	assert( Ret5() == 5 );
+	assert( Ret6() == 6 );
+	assert( Ret7() == 7 );
+	assert( Ret8() == 8 );
+	assert( Ret9() == 9 );
+
+	{
+		// Using a block mixin generate several local variables.
+		mixin( gen_n_int_vars</4u/>("abc") ); // Expands to "var i32 abc0=0,abc1=1,abc2=2,abc3=3;"
+		assert( abc0 == 0 );
+		assert( abc1 == 1 );
+		assert( abc2 == 2 );
+		assert( abc3 == 3 );
+	}
+	{
+		// Using a block mixin generate several statements for x doubling.
+		var i32 mut x= 3;
+		auto& double_x= "x *= 2;";
+		mixin( double_x + double_x + double_x + double_x );
+		assert( x == 3 * 16 );
+	}
+	{
+		var S s{ .x= 13, .unsigned_field= 789u, .double_field= 567.5, .short_field(11) };
+		auto sum= GetFieldsSum(s); // Calculate sum of fields using a template function, which can read all fields.
+		assert( sum == 13.0 + 789.0 + 567.5 + 11.0 );
+	}
+	{
+		// Produce a different struct with the same fields.
+		var CloneStruct</S/> clone{ .x= -55, .unsigned_field= 56u, .double_field= -56.7, .short_field= 30656i16 };
+
+		// It is not the same struct type as original.
+		static_assert( !same_type</ typeof(clone), S /> );
+
+		// Additional method, generated for such struct clone, should be available.
+		assert( clone.IsClone() );
+	}
+
+	return 0;
+}
+
+// Using a mixin in a namespace generate 10 functions like "fn Ret4() : i32 { return 4; }"
+mixin( gen_ret_n_funcs() );
+
+fn constexpr gen_ret_n_funcs() : [ char8, 512 ]
+{
+	// Use special helper class to generate static mixin string.
+	var ust::mixin_utils::static_string</ 512s /> mut s;
+
+	for( auto mut i= 0u; i < 10u; ++i )
+	{
+		s+= "fn Ret";
+		s.append_decimal_number(i);
+		s+= "() : i32";
+		s+= "{";
+		s+= "return ";
+		s.append_decimal_number(i);
+		s+= ";";
+		s+= "}";
+	}
+
+	return s.buffer;
+}
+
+template</u32 N, size_type S/>
+fn constexpr gen_n_int_vars( [char8, S]& base_name ) : [ char8, 256 ]
+{
+	var ust::mixin_utils::static_string</ 256s /> mut s;
+
+	s+= "var i32 ";
+	for( auto mut i= 0u; i < N; ++i )
+	{
+		s+= base_name;
+		s.append_decimal_number(i);
+		s+= "=";
+		s.append_decimal_number(i);
+		if( i != N - 1u )
+		{
+			s+= ",";
+		}
+	}
+	s+= ";";
+
+	return s.buffer;
+}
+
+struct S
+{
+	i32 x;
+	u32 unsigned_field;
+	f64 double_field;
+	i16 short_field;
+}
+
+// With help of mixin calculate sum of all given struct fields.
+// This works for any struct, because field names are extracted via "typeinfo".
+template</type T/>
+fn GetFieldsSum( T& t ) : f64
+{
+	var f64 mut sum= 0.0;
+	for( &field_info : typeinfo</T/>.fields_list )
+	{
+		// Use mixin in expression context to access a field with name calculated in compile-time (not hardcoded).
+		auto& field= mixin( "t." + field_info.name );
+		sum+= f64( field );
+	}
+	return sum;
+}
+
+// With help of mixins generate for this template struct fields based on fields of given struct.
+template</type Base/>
+struct CloneStruct
+{
+	// Use mixin in struct to add struct elements, like fields and methods.
+	mixin( gen_fields_and_methods() );
+
+	// Caution! result buffer should be large enough for result mixin text.
+	// It's recommended to calculate this size based on some params, instead of hardcoding it.
+	auto mixin_bufer_size= 1024s;
+
+	fn constexpr gen_fields_and_methods() : [ char8, mixin_bufer_size ]
+	{
+		var ust::mixin_utils::static_string</ mixin_bufer_size /> mut s;
+
+		var u32 mut i= 0u;
+		for( &field_info : typeinfo</Base/>.fields_list )
+		{
+			// Generate field declaration like "typeof(typeinfo</Base/>.fields_list[3])::src_type field_name;".
+
+			s+= "typeof(typeinfo</Base/>.fields_list[";
+			s.append_decimal_number( i );
+			s+= "].type)::src_type ";
+			s+= field_info.name;
+			s+= ";";
+
+			++i;
+		}
+
+		// Add additional method.
+		s+= "fn IsClone(this) : bool { return true; }";
+
+		return s.buffer;
+	}
+}

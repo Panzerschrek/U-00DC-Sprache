@@ -1,0 +1,112 @@
+namespace ust
+{
+
+namespace mixin_utils
+{
+
+// Special helper struct, used for mixins text generation.
+// Is struct because classes can't be constexpr.
+template</size_type size/>
+struct static_string
+{
+	type this_type= static_string</size/>;
+
+	[ char8, size ] buffer= zero_init;
+	size_type current_size= 0s;
+
+	// Append a char array.
+	// Halts if no space is left.
+	template</size_type src_size />
+	op constexpr +=( mut this, [ char8, src_size ]& src )
+	{
+		for( auto mut i= 0s; i < src_size; ++i )
+		{
+			buffer[ i + current_size ]= src[i];
+		}
+		current_size+= src_size;
+	}
+
+	// Append decimal number.
+	// Negative sign may be written, but no type suffix is added.
+	template</type int_type/>
+	fn constexpr append_decimal_number( mut this, int_type n )
+	{
+		static_assert( typeinfo</int_type/>.is_integer );
+
+		static_if( typeinfo</int_type/>.is_signed_integer )
+		{
+			if( n < int_type(0) )
+			{
+				this += "-";
+				this.append_decimal_number( u64( -n ) );
+			}
+			else
+			{
+				this.append_decimal_number( u64( n ) );
+			}
+		}
+		else
+		{
+			this.append_decimal_number( u64(n) );
+		}
+	}
+
+	fn constexpr append_decimal_number( mut this, u64 n )
+	{
+		auto constexpr zero_char= "0"c8;
+
+		if( n == 0u64 )
+		{
+			buffer[ current_size ]= zero_char;
+			++current_size;
+		}
+		else
+		{
+			var u64 mut div= 10000000000000000000u64;
+			while( div > n )
+			{
+				div/= 10u64;
+			}
+
+			var u64 mut rem= n;
+			while( div > 0u64 )
+			{
+				auto digit= rem / div;
+				rem-= digit * div;
+				div/= 10u64;
+
+				buffer[ current_size ]= char8( digit + u64(zero_char) );
+				++current_size;
+			}
+		}
+	}
+
+	// Compare agains char array.
+	template</size_type other_size />
+	op constexpr == ( this, [ char8, other_size ]& other ) : bool
+	{
+		if( current_size != other_size )
+		{
+			return false;
+		}
+		for( auto mut i= 0s; i < other_size; ++i )
+		{
+			if( buffer[i] != other[i] )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// Compare a char array against this class.
+	template</size_type other_size />
+	op constexpr == ( [ char8, other_size ]& other, this_type& r ) : bool
+	{
+		return r == other;
+	}
+}
+
+} // namespace mixin_utils
+
+} // namespace ust
