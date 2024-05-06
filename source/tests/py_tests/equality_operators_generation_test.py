@@ -489,7 +489,7 @@ def EqualityOperatorIsNotGenerated_Test7():
 		class C {}
 		struct S
 		{
-			op==( S& l, S& r ) : bool = default; // Can't generate generator - one of fileds is not equality-comparable.
+			op==( S& l, S& r ) : bool = default; // Can't generate generator - one of fields is not equality-comparable.
 			C c;
 		}
 	"""

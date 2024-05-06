@@ -128,7 +128,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 	};
 
-	const auto add_reference_notation_filed=
+	const auto add_reference_notation_field=
 	[&]( const std::string_view name, const ReferenceNotationConstant& reference_notation )
 	{
 		typeinfo_class->members->AddName(
@@ -270,9 +270,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_bool_field( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut );
 		add_bool_field( "unsafe"                   , function_type.unsafe );
 
-		add_reference_notation_filed( "return_references", GetReturnReferencesConstant( function_type.return_references ) );
-		add_reference_notation_filed( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) );
-		add_reference_notation_filed( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) );
+		add_reference_notation_field( "return_references", GetReturnReferencesConstant( function_type.return_references ) );
+		add_reference_notation_field( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) );
+		add_reference_notation_field( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) );
 	}
 	else U_ASSERT(false);
 

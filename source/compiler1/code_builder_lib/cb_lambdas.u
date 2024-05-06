@@ -115,16 +115,16 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 		else
 		{
 			// No capture list - initialize lambda fields in natural order.
-			foreach( &filed_pair : class_type.fields_order )
+			foreach( &field_pair : class_type.fields_order )
 			{
 				// Since field names are the same as captured variable names, use field name to perform variable lookup.
-				if_var( &lookup_result : LookupName( names_scope, function_context, filed_pair[0], lambda_.src_loc ) )
+				if_var( &lookup_result : LookupName( names_scope, function_context, field_pair[0], lambda_.src_loc ) )
 				{
 					auto variable_nullable= lookup_result[1].Get</Variable/>();
 					if( !variable_nullable.empty() )
 					{
 						var VariablePtr variable= variable_nullable.try_to_non_nullable();
-						with( &field : filed_pair[1].lock_imut().deref() )
+						with( &field : field_pair[1].lock_imut().deref() )
 						{
 							auto constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc )[1];
 							if( class_type.can_be_constexpr && constant != LLVMValueRef::Null )
