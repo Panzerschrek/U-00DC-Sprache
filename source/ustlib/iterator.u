@@ -190,7 +190,7 @@ public: // Helper methods.
 	// Find first element using given function, which sould return bool.
 	// Return index of this element
 	template</type Func/>
-	fn position( byval mut this, Func mut func ) : ust::optional</size_type/>
+	fn position( byval mut this, Func mut func ) : optional</size_type/>
 	{
 		var size_type mut p= 0s;
 		loop
@@ -198,7 +198,7 @@ public: // Helper methods.
 			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
-				return ust::null_optional;
+				return null_optional;
 			}
 			if( func( next_res.try_take() ) )
 			{
@@ -378,7 +378,7 @@ public:
 		auto mut next1= base_iterator1_.next();
 
 		type Pair= zip_iterator_pair</ typeof(next0.try_deref()), typeof(next1.try_deref()) />;
-		type PairOpt= ust::optional</Pair/>;
+		type PairOpt= optional</Pair/>;
 		if( next0.empty() || next1.empty() )
 		{
 			return PairOpt();
