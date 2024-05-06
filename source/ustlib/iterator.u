@@ -1,4 +1,5 @@
 import "composite.u"
+import "mixin_utils.u"
 import "optional.u"
 import "optional_ref.u"
 import "reference_notation.u"
@@ -429,13 +430,47 @@ private:
 	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
 }
 
+// A class which represents result of "zip" iterator "next" method.
 template</
 	type FirstType , bool first_is_reference , bool first_is_mutable ,
 	type SecondType, bool second_is_reference, bool second_is_mutable/>
 struct zip_iterator_pair
 {
-	FirstType first;
-	SecondType second;
+	// Since fields of this struct have variable refrence and mutability modifiers, generate them using mixins.
+	mixin( gen_fields() );
+
+	fn constexpr gen_fields() : [ char8, 512 ]
+	{
+		var mixin_utils::static_string</ 512s /> mut s;
+
+		// Generate a field like "FirstType &mut first;".
+
+		s+= "FirstType ";
+		if( first_is_reference )
+		{
+			// s+= "&";
+		}
+		if( first_is_mutable )
+		{
+			s+= "mut";
+		}
+		s+= " first;";
+
+		// Generate a field like "SecondType &mut second;".
+
+		s+= "SecondType ";
+		if( second_is_reference )
+		{
+			// s+= "&";
+		}
+		if( second_is_mutable )
+		{
+			s+= "mut";
+		}
+		s+= " second;";
+
+		return s.buffer;
+	}
 }
 
 template</type BaseIterator, type Func/>
