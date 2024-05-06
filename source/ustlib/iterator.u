@@ -460,13 +460,25 @@ struct zip_iterator_pair
 		}
 		else
 		{
+			first_num_reference_tags= typeinfo</FirstType/>.reference_tag_count;
+
+			if( first_num_reference_tags > 0s )
+			{
+				// Add inner reference tags.
+				s+= "@(\"";
+				for( auto mut i= 0s; i < first_num_reference_tags; ++i )
+				{
+					var [ char8, 1 ] mut reference_tag= zero_init;
+					reference_tag[0]= char8( size_type("a"c8) + i );
+					s+= reference_tag;
+				}
+				s+= "\")";
+			}
+
 			if( first_is_mutable )
 			{
 				s+= " mut";
 			}
-
-			first_num_reference_tags= typeinfo</FirstType/>.reference_tag_count;
-			// TODO - add inner reference tags.
 		}
 
 		s+= " first;";
@@ -492,12 +504,24 @@ struct zip_iterator_pair
 		}
 		else
 		{
+			auto second_num_reference_tags= typeinfo</SecondType/>.reference_tag_count;
+			if( second_num_reference_tags > 0s )
+			{
+				// Add inner reference tags starting from first tag after "first" field tags.
+				s+= "@(\"";
+				for( auto mut i= 0s; i < second_num_reference_tags; ++i )
+				{
+					var [ char8, 1 ] mut reference_tag= zero_init;
+					reference_tag[0]= char8( size_type("a"c8) + i + first_num_reference_tags );
+					s+= reference_tag;
+				}
+				s+= "\")";
+			}
+
 			if( second_is_mutable )
 			{
 				s+= " mut";
 			}
-
-			// TODO - add inner reference tags.
 		}
 
 		s+= " second;";
