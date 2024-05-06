@@ -377,7 +377,26 @@ public:
 		auto mut next0= base_iterator0_.next();
 		auto mut next1= base_iterator1_.next();
 
-		type Pair= zip_iterator_pair</ typeof(next0.try_deref()), typeof(next1.try_deref()) />;
+		type next0_type= typeof(next0);
+		type next1_type= typeof(next1);
+
+		auto constexpr first_is_optional= is_optional</next0_type/>::value;
+		auto constexpr first_is_optional_ref_mut = is_optional_ref_mut </next0_type/>::value;
+		auto constexpr first_is_optional_ref_imut= is_optional_ref_imut</next0_type/>::value;
+		auto constexpr first_is_reference= !first_is_optional;
+		auto constexpr first_is_mutable= first_is_optional || first_is_optional_ref_mut;
+
+		auto constexpr second_is_optional= is_optional</next1_type/>::value;
+		auto constexpr second_is_optional_ref_mut = is_optional_ref_mut </next1_type/>::value;
+		auto constexpr second_is_optional_ref_imut= is_optional_ref_imut</next1_type/>::value;
+		auto constexpr second_is_reference= !second_is_optional;
+		auto constexpr second_is_mutable= second_is_optional || second_is_optional_ref_mut;
+
+		type Pair=
+			zip_iterator_pair</
+			typeof(next0.try_deref()), first_is_reference , first_is_mutable ,
+			typeof(next1.try_deref()), second_is_reference, second_is_mutable />;
+
 		type PairOpt= optional</Pair/>;
 		if( next0.empty() || next1.empty() )
 		{
@@ -410,7 +429,9 @@ private:
 	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
 }
 
-template</type FirstType, type SecondType/>
+template</
+	type FirstType , bool first_is_reference , bool first_is_mutable ,
+	type SecondType, bool second_is_reference, bool second_is_mutable/>
 struct zip_iterator_pair
 {
 	FirstType first;
@@ -650,6 +671,17 @@ private:
 	BaseIterator @(c_base_iterator_tags) base_iterator_;
 	Func @(c_func_tags) func_;
 }
+
+// Use template overloading and template signature params matching to detect if given type is optional or optional_ref.
+
+template</type T/> struct is_optional</ optional</T/> /> { var bool value= true; }
+template</type T/> struct is_optional</T/> { var bool value= false; }
+
+template</type T/> struct is_optional_ref_mut </ optional_ref</T, true /> /> { var bool value= true; }
+template</type T/> struct is_optional_ref_mut </T/> { var bool value= false; }
+
+template</type T/> struct is_optional_ref_imut</ optional_ref</T, false/> /> { var bool value= true; }
+template</type T/> struct is_optional_ref_imut</T/> { var bool value= false; }
 
 } // namespace iterator_impl
 
