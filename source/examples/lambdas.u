@@ -18,7 +18,7 @@ fn nomangle main() : i32
 		assert( x == 124u / 5u * 2u );
 	}
 
-	// Lambda with capure by copy.
+	// Lambda with capture by copy.
 	{
 		var i32 mut x= 15, mut y= 7;
 		auto f= lambda[=]( i32 a ) : i32 { return a * x + y; };

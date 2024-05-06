@@ -8,7 +8,7 @@ fn nomangle main() : i32
 	// Create generator object via call to generator function.
 	auto mut gen= FibonacciGen();
 	// Retrieve values from a generator until it isn't finished.
-	// Note that this is possible for some generators to return never and always produce new results..
+	// Note that this is possible for some generators to return never and always produce new results.
 	auto mut index= 0u;
 	loop
 	{

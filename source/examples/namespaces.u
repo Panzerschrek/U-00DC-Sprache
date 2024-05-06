@@ -59,7 +59,7 @@ fn Bar()
 
 } // namespace Qwerty
 
-// Extern already existing namespace.
+// Extend already existing namespace.
 namespace Abc
 {
 

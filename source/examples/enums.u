@@ -5,7 +5,7 @@ import "/stdout.u"
 
 fn nomangle main() : i32
 {
-	// "zero_init" for an enum variable initializes it with the firts value.
+	// "zero_init" for an enum variable initializes it with the first value.
 	var TrafficLight mut light= zero_init;
 	// "==" works fine for enum values.
 	assert( light == TrafficLight::Red );

@@ -21,7 +21,7 @@ fn GetFibNumber( u32 index ) : u32
 	{
 		return 1u;
 	}
-	// Note - recursive Fibonacci bumbers calculation is ineffective. Use iterative approach instead.
+	// Note - recursive Fibonacci numbers calculation is ineffective. Use iterative approach instead.
 	return GetFibNumber( index - 1u ) + GetFibNumber( index - 2u );
 }
 

@@ -22,7 +22,7 @@ fn nomangle main() : i32
 }
 
 //
-// It's allowed to define many functions with the same name, until number of params and/or param types (adn mutability modifiers for reference-params) are different.
+// It's allowed to define many functions with the same name, until number of params and/or param types (and mutability modifiers for reference-params) are different.
 //
 
 fn Foo()

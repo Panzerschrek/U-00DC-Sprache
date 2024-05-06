@@ -42,7 +42,7 @@ fn nomangle main() : i32
 
 	var [ i32, 8 ] mut arr[ 7, 34, 16, 867, 43, 1, 6, 32 ];
 	GetMaxArrayElementRef( arr )= 0; // Obtain a mutable reference to max element and zero it.
-	assert( arr[3] == 0 ); // Passed array should be chanhed.
+	assert( arr[3] == 0 ); // Passed array should be changed.
 
 	return 0;
 }
