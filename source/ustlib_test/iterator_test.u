@@ -875,6 +875,27 @@ fn nomangle main() : i32
 
 		halt if( IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ).count() != 15s );
 	}
+	// "zip" iterator - mutate both values.
+	{
+		var [ i32, 4 ] mut ints[ 5, 25, 125, 625 ];
+		var [ f32, 3 ] mut floats[ -1.0f, -2.0f, -3.0f ];
+
+		auto mut i= 0u;
+		foreach( el : IntRangeMut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
+		{
+			el.first*= 2;
+			el.second *= -1.0f;
+			++i;
+		}
+		halt if( i != 3u );
+		halt if( ints[0] != 10 );
+		halt if( ints[1] != 50 );
+		halt if( ints[2] != 250 );
+		halt if( ints[3] != 625 );
+		halt if( floats[0] != 1.0f );
+		halt if( floats[1] != 2.0f );
+		halt if( floats[2] != 3.0f );
+	}
 
 	return 0;
 }

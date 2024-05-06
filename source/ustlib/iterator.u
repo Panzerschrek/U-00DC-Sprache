@@ -443,30 +443,63 @@ struct zip_iterator_pair
 	{
 		var mixin_utils::static_string</ 512s /> mut s;
 
-		// Generate a field like "FirstType &mut first;".
+		var size_type mut first_num_reference_tags= 0s;
 
+		// Generate a field like "FirstType &mut first;".
 		s+= "FirstType ";
 		if( first_is_reference )
 		{
-			// s+= "&";
+			s+= "&";
+			if( first_is_mutable )
+			{
+				s+= "mut";
+			}
+
+			s+= "@(\"a\"c8)"; // Add single reference tag "a".
+			first_num_reference_tags= 1s;
 		}
-		if( first_is_mutable )
+		else
 		{
-			s+= "mut";
+			if( first_is_mutable )
+			{
+				s+= " mut";
+			}
+
+			first_num_reference_tags= typeinfo</FirstType/>.reference_tag_count;
+			// TODO - add inner reference tags.
 		}
+
 		s+= " first;";
 
 		// Generate a field like "SecondType &mut second;".
-
 		s+= "SecondType ";
 		if( second_is_reference )
 		{
-			// s+= "&";
+			s+= "&";
+			if( second_is_mutable )
+			{
+				s+= "mut";
+			}
+
+			s+= "@(\"";
+
+			// Add single reference tag - next after "first" field tags.
+			var [ char8, 1 ] mut reference_tag= zero_init;
+			reference_tag[0]= char8( size_type("a"c8) + first_num_reference_tags );
+			s+= reference_tag;
+
+			s+= "\"c8)";
 		}
-		if( second_is_mutable )
+		else
 		{
-			s+= "mut";
+			if( second_is_mutable )
+			{
+				s+= " mut";
+			}
+
+			// TODO - add inner reference tags.
 		}
+
 		s+= " second;";
 
 		return s.buffer;
