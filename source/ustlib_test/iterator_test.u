@@ -896,6 +896,57 @@ fn nomangle main() : i32
 		halt if( floats[1] != 2.0f );
 		halt if( floats[2] != 3.0f );
 	}
+	// "zip" iterator - mutate first sequence.
+	{
+		var [ i32, 3 ] mut ints= zero_init;
+		var [ f32, 3 ] floats[ 2.0f, 4.0f, 8.0f ];
+
+		auto mut i= 0u;
+		foreach( el : IntRangeMut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
+		{
+			el.first= i32( el.second );
+			++i;
+		}
+		halt if( i != 3u );
+		halt if( ints[0] != 2 );
+		halt if( ints[1] != 4 );
+		halt if( ints[2] != 8 );
+	}
+	// "zip" iterator - mutate second sequence.
+	{
+		var [ i32, 3 ] ints[ 5, 25, 125 ];
+		var [ f32, 3 ] mut floats= zero_init;
+
+		auto mut i= 0u;
+		foreach( el : IntRangeImut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
+		{
+			el.second= f32(el.first);
+			++i;
+		}
+		halt if( i != 3u );
+		halt if( floats[0] != 5.0f );
+		halt if( floats[1] != 25.0f );
+		halt if( floats[2] != 125.0f );
+	}
+	// "zip" iterator for both value-sequences.
+	{
+		auto mut i= 0;
+		auto mut it= CSequenceIteratorCreator().iter().zip( CSequenceIteratorCreator().iter() );
+		loop
+		{
+			if_var( &el : it.next() )
+			{
+				halt if( el.first.x != i );
+				halt if( el.second.x != i );
+				++i;
+			}
+			else
+			{
+				break;
+			}
+		}
+		halt if( i != 10 );
+	}
 
 	return 0;
 }
