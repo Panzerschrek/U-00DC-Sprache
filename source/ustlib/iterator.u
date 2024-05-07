@@ -279,7 +279,7 @@ public: // Methods returning iterators.
 		return this;
 	}
 
-	// Creates iterator that iterates over bot this and given iterator.
+	// Creates iterator that iterates over both this and given iterator.
 	// Iteration stops when at least one of them stops.
 	template</type Iterator1/>
 	fn zip( byval mut this, Iterator1 mut iterator1 ) : auto
@@ -381,6 +381,11 @@ public:
 		type next0_type= typeof(next0);
 		type next1_type= typeof(next1);
 
+		// Normally "next" method of "zip" iterator should return something like a tuple with two elements.
+		// But it's not possible in Ü, since tuples can't contain references.
+		// So, use special struct type instead with fields "first" and "second".
+		// Since base iterator results may be values, mutable or immutable references, these fields are also may be values or mutable/immutable references.
+
 		auto constexpr first_is_optional= is_optional</next0_type/>::value;
 		auto constexpr first_is_optional_ref_mut = is_optional_ref_mut </next0_type/>::value;
 		// auto constexpr first_is_optional_ref_imut= is_optional_ref_imut</next0_type/>::value;
@@ -395,8 +400,8 @@ public:
 
 		type Pair=
 			zip_iterator_pair</
-			typeof(next0.try_deref()), first_is_reference , first_is_mutable ,
-			typeof(next1.try_deref()), second_is_reference, second_is_mutable />;
+				typeof(next0.try_deref()), first_is_reference , first_is_mutable ,
+				typeof(next1.try_deref()), second_is_reference, second_is_mutable />;
 
 		type PairOpt= optional</Pair/>;
 		if( next0.empty() || next1.empty() )
@@ -436,7 +441,7 @@ template</
 	type SecondType, bool second_is_reference, bool second_is_mutable/>
 struct zip_iterator_pair
 {
-	// Since fields of this struct have variable refrence and mutability modifiers, generate them using mixins.
+	// Since fields of this struct have template args-dependent refrence and mutability modifiers, generate them using a mixin.
 	mixin( gen_fields() );
 
 	fn constexpr gen_fields() : [ char8, 512 ]
@@ -480,7 +485,6 @@ struct zip_iterator_pair
 				s+= " mut";
 			}
 		}
-
 		s+= " first;";
 
 		// Generate a field like "SecondType &mut second;".
@@ -523,7 +527,6 @@ struct zip_iterator_pair
 				s+= " mut";
 			}
 		}
-
 		s+= " second;";
 
 		return s.buffer;
