@@ -383,13 +383,13 @@ public:
 
 		auto constexpr first_is_optional= is_optional</next0_type/>::value;
 		auto constexpr first_is_optional_ref_mut = is_optional_ref_mut </next0_type/>::value;
-		auto constexpr first_is_optional_ref_imut= is_optional_ref_imut</next0_type/>::value;
+		// auto constexpr first_is_optional_ref_imut= is_optional_ref_imut</next0_type/>::value;
 		auto constexpr first_is_reference= !first_is_optional;
 		auto constexpr first_is_mutable= first_is_optional || first_is_optional_ref_mut;
 
 		auto constexpr second_is_optional= is_optional</next1_type/>::value;
 		auto constexpr second_is_optional_ref_mut = is_optional_ref_mut </next1_type/>::value;
-		auto constexpr second_is_optional_ref_imut= is_optional_ref_imut</next1_type/>::value;
+		// auto constexpr second_is_optional_ref_imut= is_optional_ref_imut</next1_type/>::value;
 		auto constexpr second_is_reference= !second_is_optional;
 		auto constexpr second_is_mutable= second_is_optional || second_is_optional_ref_mut;
 
