@@ -840,10 +840,12 @@ fn nomangle main() : i32
 		var [ tup[ i32, f32 ], 3 ] expected_result[ [ 5, -1.0f ], [ 25, -2.0f ], [ 125, -3.0f ] ];
 
 		auto mut i= 0u;
-		foreach( el : IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
+		foreach( pair : IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
 		{
-			halt if( el.first != expected_result[i][0] );
-			halt if( el.second != expected_result[i][1] );
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, false, f32, true, false /> /> );
+
+			halt if( pair.first != expected_result[i][0] );
+			halt if( pair.second != expected_result[i][1] );
 			++i;
 		}
 		halt if( i != 3u );
@@ -881,10 +883,11 @@ fn nomangle main() : i32
 		var [ f32, 3 ] mut floats[ -1.0f, -2.0f, -3.0f ];
 
 		auto mut i= 0u;
-		foreach( el : IntRangeMut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
+		foreach( pair : IntRangeMut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
 		{
-			el.first*= 2;
-			el.second *= -1.0f;
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, true, f32, true, true /> /> );
+			pair.first*= 2;
+			pair.second *= -1.0f;
 			++i;
 		}
 		halt if( i != 3u );
@@ -902,9 +905,10 @@ fn nomangle main() : i32
 		var [ f32, 3 ] floats[ 2.0f, 4.0f, 8.0f ];
 
 		auto mut i= 0u;
-		foreach( el : IntRangeMut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
+		foreach( pair : IntRangeMut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
 		{
-			el.first= i32( el.second );
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, true, f32, true, false /> /> );
+			pair.first= i32( pair.second );
 			++i;
 		}
 		halt if( i != 3u );
@@ -918,9 +922,10 @@ fn nomangle main() : i32
 		var [ f32, 3 ] mut floats= zero_init;
 
 		auto mut i= 0u;
-		foreach( el : IntRangeImut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
+		foreach( pair : IntRangeImut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
 		{
-			el.second= f32(el.first);
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, false, f32, true, true /> /> );
+			pair.second= f32(pair.first);
 			++i;
 		}
 		halt if( i != 3u );
@@ -934,10 +939,11 @@ fn nomangle main() : i32
 		auto mut it= CSequenceIteratorCreator().iter().zip( CSequenceIteratorCreator().iter() );
 		loop
 		{
-			if_var( &el : it.next() )
+			if_var( &pair : it.next() )
 			{
-				halt if( el.first.x != i );
-				halt if( el.second.x != i );
+				static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ C, false, true, C, false, true /> /> );
+				halt if( pair.first.x != i );
+				halt if( pair.second.x != i );
 				++i;
 			}
 			else
