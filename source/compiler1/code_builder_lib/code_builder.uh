@@ -105,9 +105,8 @@ private:
 
 		auto result= move(func)( this, function_context );
 
-		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
+		foreach( &variable : function_context.variables_frames.back() )
 		{
-			var VariablePtr variable= function_context.variables_frames.back()[i];
 			function_context.references_graph.RemoveNode( variable );
 		}
 		function_context.variables_frames.drop_back();

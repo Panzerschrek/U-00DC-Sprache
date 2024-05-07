@@ -822,23 +822,19 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 	{
 		with( &inner_references : async_func_variable_ptr.lock_imut().deref().inner_reference_nodes )
 		{
-			with( &variable_inner_references : result_ptr.lock_imut().deref().inner_reference_nodes )
+			foreach( pair : result_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
 			{
-				for( auto mut i= 0s; i < ust::min( variable_inner_references.size(), coroutine_type_description.return_inner_references.size() ); ++i )
+				foreach( &param_reference : pair.second )
 				{
-					var VariablePtr& variable_inner_reference= variable_inner_references[i];
-					foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
+					debug_assert( param_reference.param_index == 0u8 );
+					debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+					if( size_type(param_reference.reference_index) < inner_references.size() )
 					{
-						debug_assert( param_reference.param_index == 0u8 );
-						debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
-						if( size_type(param_reference.reference_index) < inner_references.size() )
-						{
-							function_context.references_graph.TryAddLink(
-								inner_references[ size_type(param_reference.reference_index) ],
-								variable_inner_reference,
-								names_scope,
-								src_loc );
-						}
+						function_context.references_graph.TryAddLink(
+							inner_references[ size_type(param_reference.reference_index) ],
+							pair.first,
+							names_scope,
+							src_loc );
 					}
 				}
 			}

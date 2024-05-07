@@ -10,6 +10,9 @@ import "../ustlib/unordered_set.u"
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
 
+type FloatRangeMut = ust::random_access_range_mut </f32/>;
+type FloatRangeImut= ust::random_access_range_imut</f32/>;
+
 class NonCopyable
 {
 	i32 x;
@@ -829,6 +832,126 @@ fn nomangle main() : i32
 	{ // "nth" method for values sequence - out of range.
 		auto el= CSequenceIteratorCreator().iter().nth(100500s);
 		halt if( !el.empty() );
+	}
+	// "zip" iterator.
+	{
+		var [ i32, 4 ] ints[ 5, 25, 125, 625 ];
+		var [ f32, 3 ] floats[ -1.0f, -2.0f, -3.0f ];
+		var [ tup[ i32, f32 ], 3 ] expected_result[ [ 5, -1.0f ], [ 25, -2.0f ], [ 125, -3.0f ] ];
+
+		auto mut i= 0u;
+		foreach( pair : IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
+		{
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, false, f32, true, false /> /> );
+
+			halt if( pair.first != expected_result[i][0] );
+			halt if( pair.second != expected_result[i][1] );
+			++i;
+		}
+		halt if( i != 3u );
+	}
+	// "zip" iterator has 0 iterations for empty first sequence.
+	{
+		var [ f32, 3 ] floats[ -1.0f, -2.0f, -3.0f ];
+
+		auto count= IntRangeImut().iter().zip( FloatRangeImut(floats).iter() ).count();
+		halt if( count != 0s );
+	}
+	// "zip" iterator has 0 iterations for empty second sequence.
+	{
+		var [ i32, 4 ] ints[ 5, 25, 125, 625 ];
+		auto count= IntRangeImut(ints).iter().zip( FloatRangeImut().iter() ).count();
+		halt if( count != 0s );
+	}
+	// "zip" iterator with size limited by first sequence.
+	{
+		var [ i32, 25 ] ints= zero_init;
+		var [ f32, 10 ] floats= zero_init;
+
+		halt if( IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ).count() != 10s );
+	}
+	// "zip" iterator with size limited by second sequence.
+	{
+		var [ i32, 15 ] ints= zero_init;
+		var [ f32, 34 ] floats= zero_init;
+
+		halt if( IntRangeImut(ints).iter().zip( FloatRangeImut(floats).iter() ).count() != 15s );
+	}
+	// "zip" iterator - mutate both values.
+	{
+		var [ i32, 4 ] mut ints[ 5, 25, 125, 625 ];
+		var [ f32, 3 ] mut floats[ -1.0f, -2.0f, -3.0f ];
+
+		auto mut i= 0u;
+		foreach( pair : IntRangeMut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
+		{
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, true, f32, true, true /> /> );
+			pair.first*= 2;
+			pair.second *= -1.0f;
+			++i;
+		}
+		halt if( i != 3u );
+		halt if( ints[0] != 10 );
+		halt if( ints[1] != 50 );
+		halt if( ints[2] != 250 );
+		halt if( ints[3] != 625 );
+		halt if( floats[0] != 1.0f );
+		halt if( floats[1] != 2.0f );
+		halt if( floats[2] != 3.0f );
+	}
+	// "zip" iterator - mutate first sequence.
+	{
+		var [ i32, 3 ] mut ints= zero_init;
+		var [ f32, 3 ] floats[ 2.0f, 4.0f, 8.0f ];
+
+		auto mut i= 0u;
+		foreach( pair : IntRangeMut(ints).iter().zip( FloatRangeImut(floats).iter() ) )
+		{
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, true, f32, true, false /> /> );
+			pair.first= i32( pair.second );
+			++i;
+		}
+		halt if( i != 3u );
+		halt if( ints[0] != 2 );
+		halt if( ints[1] != 4 );
+		halt if( ints[2] != 8 );
+	}
+	// "zip" iterator - mutate second sequence.
+	{
+		var [ i32, 3 ] ints[ 5, 25, 125 ];
+		var [ f32, 3 ] mut floats= zero_init;
+
+		auto mut i= 0u;
+		foreach( pair : IntRangeImut(ints).iter().zip( FloatRangeMut(floats).iter() ) )
+		{
+			static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ i32, true, false, f32, true, true /> /> );
+			pair.second= f32(pair.first);
+			++i;
+		}
+		halt if( i != 3u );
+		halt if( floats[0] != 5.0f );
+		halt if( floats[1] != 25.0f );
+		halt if( floats[2] != 125.0f );
+	}
+	// "zip" iterator for both value-sequences.
+	{
+		auto mut i= 0;
+		auto mut it= CSequenceIteratorCreator().iter().zip( CSequenceIteratorCreator().iter() );
+		loop
+		{
+			if_var( &pair : it.next() )
+			{
+				static_assert( same_type</ typeof(pair), ust::iterator_impl::zip_iterator_pair</ C, false, true, C, false, true /> /> );
+				halt if( pair.first.x != i );
+				halt if( pair.second.x != i );
+				++i;
+			}
+			else
+			{
+				break;
+			}
+		}
+		halt if( i != 10 );
 	}
 
 	return 0;

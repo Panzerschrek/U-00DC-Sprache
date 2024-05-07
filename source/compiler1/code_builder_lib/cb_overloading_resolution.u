@@ -259,9 +259,9 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			}
 
 			auto mut result= ConversionsCompareResult::Same;
-			for( auto mut i= 0s; i < l_tuple_type.element_types.size(); ++i )
+			foreach( pair : l_tuple_type.element_types.iter().zip( r_tuple_type.element_types.iter() ) )
 			{
-				auto param_result= CompareTemplateSpecialization( l_tuple_type.element_types[i], r_tuple_type.element_types[i] );
+				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
 				if( param_result == ConversionsCompareResult::Incomparable )
 				{
 					return ConversionsCompareResult::Incomparable;
@@ -311,9 +311,9 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			halt if( l_function_type.params.size() != r_function_type.params.size() );
 
 			auto mut result= CompareTemplateSpecialization( l_function_type.return_type, r_function_type.return_type );
-			for( auto mut i= 0s; i < l_function_type.params.size(); ++i )
+			foreach( pair : l_function_type.params.iter().zip( r_function_type.params.iter() ) )
 			{
-				auto param_result= CompareTemplateSpecialization( l_function_type.params[i].t, r_function_type.params[i].t );
+				auto param_result= CompareTemplateSpecialization( pair.first.t, pair.second.t );
 				if( param_result == ConversionsCompareResult::Incomparable )
 				{
 					return ConversionsCompareResult::Incomparable;
@@ -375,9 +375,9 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			}
 
 			auto mut result= ConversionsCompareResult::Same;
-			for( auto mut i= 0s; i < l_specialized_template.params.size(); ++i )
+			foreach( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
 			{
-				auto param_result= CompareTemplateSpecialization( l_specialized_template.params[i], r_specialized_template.params[i] );
+				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
 				if( param_result == ConversionsCompareResult::Incomparable )
 				{
 					return ConversionsCompareResult::Incomparable;
@@ -480,10 +480,10 @@ fn CodeBuilder::ApplyOverloadedFunction(
 			}
 
 			auto mut arg_is_same_count= 0s;
-			for( auto mut i= 0s; i < function_type.params.size(); ++i )
+			foreach( pair : function_type.params.iter().zip( set_function_type.params.iter() ) )
 			{
-				auto& param= function_type.params[i];
-				auto& set_param= set_function_type.params[i];
+				auto& param= pair.first;
+				auto& set_param= pair.second;
 				if( param.t == set_param.t && GetArgOverloadingClass( param ) == GetArgOverloadingClass( set_param ) )
 				{
 					++arg_is_same_count;

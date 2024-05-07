@@ -1,4 +1,5 @@
 import "composite.u"
+import "mixin_utils.u"
 import "optional.u"
 import "optional_ref.u"
 import "reference_notation.u"
@@ -190,7 +191,7 @@ public: // Helper methods.
 	// Find first element using given function, which sould return bool.
 	// Return index of this element
 	template</type Func/>
-	fn position( byval mut this, Func mut func ) : ust::optional</size_type/>
+	fn position( byval mut this, Func mut func ) : optional</size_type/>
 	{
 		var size_type mut p= 0s;
 		loop
@@ -198,7 +199,7 @@ public: // Helper methods.
 			auto mut next_res= impl_.next();
 			if( next_res.empty() )
 			{
-				return ust::null_optional;
+				return null_optional;
 			}
 			if( func( next_res.try_take() ) )
 			{
@@ -278,6 +279,18 @@ public: // Methods returning iterators.
 		return this;
 	}
 
+	// Creates iterator that iterates over both this and given iterator.
+	// Iteration stops when at least one of them stops.
+	template</type Iterator1/>
+	fn zip( byval mut this, Iterator1 mut iterator1 ) : auto
+	{
+		return
+			wrap_raw_iterator(
+				iterator_impl::zip_raw_iterator</ this_type, Iterator1 />(
+					move(this),
+					move(iterator1) ) );
+	}
+
 private:
 	auto c_reference_tag_count= typeinfo</RawIterator/>.reference_tag_count;
 
@@ -343,6 +356,181 @@ private:
 private:
 	BaseIterator0 @(c_base0_iterator_tags) base_iterator0_;
 	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
+}
+
+template</type BaseIterator0, type BaseIterator1/>
+class zip_raw_iterator
+{
+public:
+	fn constructor( BaseIterator0 mut base_iterator0, BaseIterator1 mut base_iterator1 ) @(c_constructor_pollution)
+		( base_iterator0_( move(base_iterator0) ), base_iterator1_( move(base_iterator1) ) )
+	{}
+
+	// This iterator is copyable if fields are copyable.
+	fn enable_if( typeinfo</BaseIterator0/>.is_copy_constructible && typeinfo</BaseIterator1/>.is_copy_constructible )
+	constructor( mut this, this_type& other )= default;
+
+	op enable_if( typeinfo</BaseIterator0/>.is_copy_assignable && typeinfo</BaseIterator1/>.is_copy_assignable )
+	=( mut this, this_type& other )= default;
+
+	fn next( mut this ) : auto
+	{
+		auto mut next0= base_iterator0_.next();
+		auto mut next1= base_iterator1_.next();
+
+		type next0_type= typeof(next0);
+		type next1_type= typeof(next1);
+
+		// Normally "next" method of "zip" iterator should return something like a tuple with two elements.
+		// But it's not possible in Ü, since tuples can't contain references.
+		// So, use special struct type instead with fields "first" and "second".
+		// Since base iterator results may be values, mutable or immutable references, these fields are also may be values or mutable/immutable references.
+
+		auto constexpr first_is_optional= is_optional</next0_type/>::value;
+		auto constexpr first_is_optional_ref_mut = is_optional_ref_mut </next0_type/>::value;
+		// auto constexpr first_is_optional_ref_imut= is_optional_ref_imut</next0_type/>::value;
+		auto constexpr first_is_reference= !first_is_optional;
+		auto constexpr first_is_mutable= first_is_optional || first_is_optional_ref_mut;
+
+		auto constexpr second_is_optional= is_optional</next1_type/>::value;
+		auto constexpr second_is_optional_ref_mut = is_optional_ref_mut </next1_type/>::value;
+		// auto constexpr second_is_optional_ref_imut= is_optional_ref_imut</next1_type/>::value;
+		auto constexpr second_is_reference= !second_is_optional;
+		auto constexpr second_is_mutable= second_is_optional || second_is_optional_ref_mut;
+
+		type Pair=
+			zip_iterator_pair</
+				typeof(next0.try_deref()), first_is_reference , first_is_mutable ,
+				typeof(next1.try_deref()), second_is_reference, second_is_mutable />;
+
+		type PairOpt= optional</Pair/>;
+		if( next0.empty() || next1.empty() )
+		{
+			return PairOpt();
+		}
+
+		return PairOpt( Pair{ .first= next0.try_take(), .second= next1.try_take() } );
+	}
+
+private:
+	type this_type= zip_raw_iterator</BaseIterator0, BaseIterator1/>;
+
+private:
+	var size_type c_base_iterator0_num_tags= typeinfo</BaseIterator0/>.reference_tag_count;
+	var size_type c_base_iterator1_num_tags= typeinfo</BaseIterator1/>.reference_tag_count;
+
+	var size_type c_base_iterator0_tags_offset= 0s;
+	var size_type c_base_iterator1_tags_offset= c_base_iterator0_num_tags;
+
+	auto c_base0_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator0_num_tags />( c_base_iterator0_tags_offset );
+	auto c_base1_iterator_tags= reference_notation::field_tags::get_sequential_tags</ c_base_iterator1_num_tags />( c_base_iterator1_tags_offset );
+
+	auto c_constructor_pollution=
+		reference_notation::pollution::pollution_list_concat(
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator0_num_tags />( 0u8, 1u8, c_base_iterator0_tags_offset ),
+		reference_notation::pollution::param_n_with_sequential_tags_of_param_m_with_dst_offset</ c_base_iterator1_num_tags />( 0u8, 2u8, c_base_iterator1_tags_offset ) );
+
+private:
+	BaseIterator0 @(c_base0_iterator_tags) base_iterator0_;
+	BaseIterator1 @(c_base1_iterator_tags) base_iterator1_;
+}
+
+// A class which represents result of "zip" iterator "next" method.
+template</
+	type FirstType , bool first_is_reference , bool first_is_mutable ,
+	type SecondType, bool second_is_reference, bool second_is_mutable/>
+struct zip_iterator_pair
+{
+	// Since fields of this struct have template args-dependent refrence and mutability modifiers, generate them using a mixin.
+	mixin( gen_fields() );
+
+	fn constexpr gen_fields() : [ char8, 512 ]
+	{
+		var mixin_utils::static_string</ 512s /> mut s;
+
+		var size_type mut first_num_reference_tags= 0s;
+
+		// Generate a field like "FirstType &mut first;".
+		s+= "FirstType ";
+		if( first_is_reference )
+		{
+			s+= "&";
+			if( first_is_mutable )
+			{
+				s+= "mut";
+			}
+
+			s+= "@(\"a\"c8)"; // Add single reference tag "a".
+			first_num_reference_tags= 1s;
+		}
+		else
+		{
+			first_num_reference_tags= typeinfo</FirstType/>.reference_tag_count;
+
+			if( first_num_reference_tags > 0s )
+			{
+				// Add inner reference tags.
+				s+= "@(\"";
+				for( auto mut i= 0s; i < first_num_reference_tags; ++i )
+				{
+					var [ char8, 1 ] mut reference_tag= zero_init;
+					reference_tag[0]= char8( size_type("a"c8) + i );
+					s+= reference_tag;
+				}
+				s+= "\")";
+			}
+
+			if( first_is_mutable )
+			{
+				s+= " mut";
+			}
+		}
+		s+= " first;";
+
+		// Generate a field like "SecondType &mut second;".
+		s+= "SecondType ";
+		if( second_is_reference )
+		{
+			s+= "&";
+			if( second_is_mutable )
+			{
+				s+= "mut";
+			}
+
+			s+= "@(\"";
+
+			// Add single reference tag - next after "first" field tags.
+			var [ char8, 1 ] mut reference_tag= zero_init;
+			reference_tag[0]= char8( size_type("a"c8) + first_num_reference_tags );
+			s+= reference_tag;
+
+			s+= "\"c8)";
+		}
+		else
+		{
+			auto second_num_reference_tags= typeinfo</SecondType/>.reference_tag_count;
+			if( second_num_reference_tags > 0s )
+			{
+				// Add inner reference tags starting from first tag after "first" field tags.
+				s+= "@(\"";
+				for( auto mut i= 0s; i < second_num_reference_tags; ++i )
+				{
+					var [ char8, 1 ] mut reference_tag= zero_init;
+					reference_tag[0]= char8( size_type("a"c8) + i + first_num_reference_tags );
+					s+= reference_tag;
+				}
+				s+= "\")";
+			}
+
+			if( second_is_mutable )
+			{
+				s+= " mut";
+			}
+		}
+		s+= " second;";
+
+		return s.buffer;
+	}
 }
 
 template</type BaseIterator, type Func/>
@@ -578,6 +766,17 @@ private:
 	BaseIterator @(c_base_iterator_tags) base_iterator_;
 	Func @(c_func_tags) func_;
 }
+
+// Use template overloading and template signature params matching to detect if given type is optional or optional_ref.
+
+template</type T/> struct is_optional</ optional</T/> /> { var bool value= true; }
+template</type T/> struct is_optional</T/> { var bool value= false; }
+
+template</type T/> struct is_optional_ref_mut </ optional_ref</T, true /> /> { var bool value= true; }
+template</type T/> struct is_optional_ref_mut </T/> { var bool value= false; }
+
+template</type T/> struct is_optional_ref_imut</ optional_ref</T, false/> /> { var bool value= true; }
+template</type T/> struct is_optional_ref_imut</T/> { var bool value= false; }
 
 } // namespace iterator_impl
 

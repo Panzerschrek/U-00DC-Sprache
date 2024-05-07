@@ -742,10 +742,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				{
 					auto s= ust::max( class_.inner_references.size(), parent_class.inner_references.size() );
 					class_.inner_references.resize( s, InnerReferenceKind::Imut );
-					for( auto mut i= 0s; i < parent_class.inner_references.size(); ++i )
+					foreach( pair : class_.inner_references.iter().zip( parent_class.inner_references.iter() ) )
 					{
-						auto& mut t= class_.inner_references[i];
-						t= ust::max( t, parent_class.inner_references[i] );
+						auto& mut t= pair.first;
+						t= ust::max( t, pair.second );
 					}
 				}
 			}
