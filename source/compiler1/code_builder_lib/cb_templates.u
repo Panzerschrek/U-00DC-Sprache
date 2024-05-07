@@ -1424,9 +1424,9 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			for( auto mut i= 0s; i < given_tuple_type.element_types.size(); ++i )
+			foreach( piar : tuple_type_param.element_types.iter().zip( given_tuple_type.element_types.iter() ) )
 			{
-				if( !MatchTemplateArgument( names_scope, template_, tuple_type_param.element_types[i], given_tuple_type.element_types[i] ) )
+				if( !MatchTemplateArgument( names_scope, template_, piar.first, piar.second ) )
 				{
 					return false;
 				}
@@ -1486,10 +1486,10 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			for( auto mut i= 0s; i < function_type_param.params.size(); ++i )
+			foreach( pair : function_type_param.params.iter().zip( given_function_type.params.iter() ) )
 			{
-				auto& expected_param= function_type_param.params[i];
-				auto& given_arg= given_function_type.params[i];
+				auto& expected_param= pair.first;
+				auto& given_arg= pair.second;
 
 				if( expected_param.value_type != given_arg.value_type )
 				{
@@ -1568,9 +1568,9 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				{
 					return false;
 				}
-				for( auto mut i= 0s; i < specialized_template_param.params.size(); ++i )
+				foreach( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
 				{
-					if( !MatchTemplateArgument( names_scope, template_, specialized_template_param.params[i], base_template.signature_args[i] ) )
+					if( !MatchTemplateArgument( names_scope, template_, pair.first, pair.second ) )
 					{
 						return false;
 					}

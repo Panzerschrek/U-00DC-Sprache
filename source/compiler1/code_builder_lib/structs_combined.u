@@ -253,10 +253,10 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		}
 	}
 
-	for( auto mut i= 0s; i < params.size(); ++i )
+	foreach( pair : params.iter().zip( dst.params.iter() ) )
 	{
-		auto& this_param= this.params[i];
-		auto& dst_param= dst.params[i];
+		auto& this_param= pair.first;
+		auto& dst_param= pair.second;
 		if( this_param.t != dst_param.t ||
 			( this_param.value_type == ValueType::Value ) != ( dst_param.value_type == ValueType::Value ) ||
 			this_param.value_type == ValueType::ReferenceMut && dst_param.value_type == ValueType::ReferenceImut ) // Allow mutability conversions, except mut->imut
@@ -1074,11 +1074,10 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		return false;
 	}
 
-	for( auto mut i= 1s; i < tl.params.size(); ++i )
+	// Compare all args except "this" normally.
+	foreach( pair : tl.params.iter().zip( tr.params.iter() ).skip( 1s ) )
 	{
-		auto& param_l= tl.params[i];
-		auto& param_r= tr.params[i];
-		if( param_l != param_r )
+		if( pair.first != pair.second )
 		{
 			return false;
 		}
@@ -1322,9 +1321,9 @@ fn TemplateArgsEquals( TemplateArgsFinished& l, TemplateArgsFinished& r ) : bool
 		return false;
 	}
 
-	for( var size_type mut i= 0s; i < l.size(); ++i )
+	foreach( pair : l.iter().zip( r.iter() ) )
 	{
-		if( !TemplateArgEquals( l[i], r[i] ) )
+		if( !TemplateArgEquals( pair.first, pair.second ) )
 		{
 			return false;
 		}

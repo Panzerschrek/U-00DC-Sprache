@@ -200,15 +200,9 @@ fn CodeBuilder::InitializeLambdaField(
 	else
 	{
 		// Link references (before performing potential move).
-		auto reference_tag_count= size_type( field.t.ReferenceTagCount() );
-		auto result_lock= result.lock_imut();
-		for( auto mut i= 0s; i < reference_tag_count; ++i )
+		foreach( pair : v.inner_reference_nodes.iter().zip( result.lock_imut().deref().inner_reference_nodes.iter() ) )
 		{
-			function_context.references_graph.TryAddLink(
-				v.inner_reference_nodes[i],
-				result_lock.deref().inner_reference_nodes[i],
-				names_scope,
-				src_loc );
+			function_context.references_graph.TryAddLink( pair.first, pair.second, names_scope, src_loc );
 		}
 
 		if(
@@ -731,13 +725,13 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			return_inner_references.resize( lambda_preprocessing_context_result.captured_variables_return_inner_references.size() );
 		}
 
-		for( auto mut i= 0s; i < lambda_preprocessing_context_result.captured_variables_return_inner_references.size(); ++i )
+		foreach( pair : return_inner_references.iter().zip( lambda_preprocessing_context_result.captured_variables_return_inner_references.iter() ) )
 		{
-			foreach( &captured_variable_return_inner_reference : lambda_preprocessing_context_result.captured_variables_return_inner_references[i] )
+			foreach( &captured_variable_return_inner_reference : pair.second )
 			{
 				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_inner_reference ) )
 				{
-					return_inner_references[i].push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
+					pair.first.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
 				}
 			}
 		}

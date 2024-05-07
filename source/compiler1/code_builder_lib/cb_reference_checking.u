@@ -699,15 +699,10 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 		return;
 	}
 
-	auto src_lock= src_node.lock_imut();
-	auto dst_lock= dst_node.lock_imut();
-	for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
+	foreach( pair : src_node.lock_imut().deref().inner_reference_nodes.iter().zip( dst_node.lock_imut().deref().inner_reference_nodes.iter() ) )
 	{
 		function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
-			src_lock.deref().inner_reference_nodes[i],
-			dst_lock.deref().inner_reference_nodes[i],
-			names_scope,
-			src_loc );
+			pair.first, pair.second, names_scope, src_loc );
 	}
 }
 
