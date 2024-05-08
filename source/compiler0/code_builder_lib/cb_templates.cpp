@@ -536,6 +536,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 						{
 							if( const auto dst_template_param= single_type_template->signature_params[i].GetTemplateParam() )
 							{
+								// Template param in signature param. Build mapping for it and check if possible repetitions of this param produce the same result.
 								bool& known= params_known_flags[ dst_template_param->index ];
 								if( !known )
 								{
@@ -548,10 +549,26 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 										has_same_param_mismatch= true;
 								}
 							}
+							else if( const auto dst_type= single_type_template->signature_params[i].GetType() )
+							{
+								// Trivial type in signature param.
+								if( const auto src_type= specialized_template_params[i].GetType() )
+									params_matching_ok= *src_type == *dst_type;
+								else
+									params_matching_ok= false;
+							}
+							else if( const auto dst_variable= single_type_template->signature_params[i].GetVariable() )
+							{
+								// Trivial variable in signature param.
+								if( const auto src_variable= specialized_template_params[i].GetVariable() )
+									params_matching_ok= *src_variable == *dst_variable;
+								else
+									params_matching_ok= false;
+							}
 							else
 							{
-								// For now we support only trivial type alias templates - with all signature params just template params.
-								// TODO - perform more complex matching here.
+								// For now we support only trivial type alias templates.
+								// Avoid performing deep matching.
 								params_matching_ok= false;
 							}
 						}
