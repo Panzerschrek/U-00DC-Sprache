@@ -1,3 +1,4 @@
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "template_signature_param.hpp"
 
 namespace U
@@ -185,6 +186,110 @@ const TemplateSignatureParam::SpecializedTemplateParam* TemplateSignatureParam::
 bool TemplateSignatureParam::operator==( const TemplateSignatureParam& other ) const
 {
 	return this->something_ == other.something_;
+}
+
+namespace
+{
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::TypeParam& param )
+{
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::VariableParam& param )
+{
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::TemplateParam& param )
+{
+	U_ASSERT( param.index < mapping.size() );
+	return mapping[param.index];
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::ArrayParam& param )
+{
+	TemplateSignatureParam::ArrayParam out_param;
+	out_param.element_count= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_count ) );
+	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::TupleParam& param )
+{
+	TemplateSignatureParam::TupleParam out_param;
+	out_param.element_types.reserve( param.element_types.size() );
+
+	for( const auto& element_type_param : param.element_types )
+		out_param.element_types.push_back( MapTemplateParamsToSignatureParams( mapping, element_type_param ) );
+
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::RawPointerParam& param )
+{
+	TemplateSignatureParam::RawPointerParam out_param;
+	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::FunctionParam& param )
+{
+	TemplateSignatureParam::FunctionParam out_param= param;
+	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
+
+	for( TemplateSignatureParam::FunctionParam::Param& function_param : out_param.params )
+		function_param.type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *function_param.type ) );
+
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::CoroutineParam& param )
+{
+	TemplateSignatureParam::CoroutineParam out_param= param;
+	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::SpecializedTemplateParam& param )
+{
+	TemplateSignatureParam::SpecializedTemplateParam out_param;
+	out_param.type_templates= param.type_templates;
+
+	out_param.params.reserve( param.params.size() );
+	for( const TemplateSignatureParam& template_param : param.params )
+		out_param.params.push_back( MapTemplateParamsToSignatureParams( mapping, template_param ) );
+
+	return out_param;
+}
+
+} // namespace
+
+TemplateSignatureParam MapTemplateParamsToSignatureParams(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam& param )
+{
+	return param.Visit( [&]( const auto& el ) { return MapTemplateParamsToSignatureParamsImpl( mapping, el ); } );
 }
 
 } // namespace U

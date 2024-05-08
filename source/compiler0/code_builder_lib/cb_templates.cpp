@@ -15,95 +15,6 @@
 namespace U
 {
 
-namespace
-{
-
-// Mapping of template params 0-N to signature params.
-using SrcToDstTemplateParamsMappingRef= llvm::ArrayRef<TemplateSignatureParam>;
-
-TemplateSignatureParam MapTemplateParamsToSignatureParams( SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam& param );
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::TypeParam& param )
-{
-	U_UNUSED(mapping);
-	return param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::VariableParam& param )
-{
-	U_UNUSED(mapping);
-	return param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::TemplateParam& param )
-{
-	U_ASSERT( param.index < mapping.size() );
-	return mapping[param.index];
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::ArrayParam& param )
-{
-	TemplateSignatureParam::ArrayParam out_param;
-	out_param.element_count= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_count ) );
-	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
-	return out_param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::TupleParam& param )
-{
-	TemplateSignatureParam::TupleParam out_param;
-	out_param.element_types.reserve( param.element_types.size() );
-
-	for( const auto& element_type_param : param.element_types )
-		out_param.element_types.push_back( MapTemplateParamsToSignatureParams( mapping, element_type_param ) );
-
-	return out_param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::RawPointerParam& param )
-{
-	TemplateSignatureParam::RawPointerParam out_param;
-	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
-	return out_param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::FunctionParam& param )
-{
-	TemplateSignatureParam::FunctionParam out_param= param;
-	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
-
-	for( TemplateSignatureParam::FunctionParam::Param& function_param : out_param.params )
-		function_param.type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *function_param.type ) );
-
-	return out_param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::CoroutineParam& param )
-{
-	TemplateSignatureParam::CoroutineParam out_param= param;
-	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
-	return out_param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam::SpecializedTemplateParam& param )
-{
-	TemplateSignatureParam::SpecializedTemplateParam out_param;
-	out_param.type_templates= param.type_templates;
-
-	out_param.params.reserve( param.params.size() );
-	for( const TemplateSignatureParam& template_param : param.params )
-		out_param.params.push_back( MapTemplateParamsToSignatureParams( mapping, template_param ) );
-
-	return out_param;
-}
-
-TemplateSignatureParam MapTemplateParamsToSignatureParams( const SrcToDstTemplateParamsMappingRef mapping, const TemplateSignatureParam& param )
-{
-	return param.Visit( [&]( const auto& el ) { return MapTemplateParamsToSignatureParamsImpl( mapping, el ); } );
-}
-
-} // namespace
-
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplate& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -523,7 +434,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 				{
 					if( single_type_template->signature_params.size() == specialized_template_params.size() )
 					{
-						// Try to match this type alias params against given signature args.
+						// Try to match this type alias params against given signature params.
 						llvm::SmallVector<TemplateSignatureParam, 4> alias_template_params_to_signature_params_mapping;
 						alias_template_params_to_signature_params_mapping.resize( single_type_template->template_params.size(), TemplateSignatureParam() );
 
@@ -534,33 +445,35 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 						for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
 						{
-							if( const auto dst_template_param= single_type_template->signature_params[i].GetTemplateParam() )
+							const TemplateSignatureParam& dst_param= single_type_template->signature_params[i];
+							const TemplateSignatureParam& src_param= specialized_template_params[i];
+							if( const auto dst_template_param= dst_param.GetTemplateParam() )
 							{
 								// Template param in signature param. Build mapping for it and check if possible repetitions of this param produce the same result.
 								bool& known= params_known_flags[ dst_template_param->index ];
 								if( !known )
 								{
-									alias_template_params_to_signature_params_mapping[ dst_template_param->index ]= specialized_template_params[i];
+									alias_template_params_to_signature_params_mapping[ dst_template_param->index ]= src_param;
 									known= true;
 								}
 								else
 								{
-									if( alias_template_params_to_signature_params_mapping[ dst_template_param->index ] != specialized_template_params[i] )
+									if( alias_template_params_to_signature_params_mapping[ dst_template_param->index ] != src_param )
 										has_same_param_mismatch= true;
 								}
 							}
-							else if( const auto dst_type= single_type_template->signature_params[i].GetType() )
+							else if( const auto dst_type= dst_param.GetType() )
 							{
 								// Trivial type in signature param.
-								if( const auto src_type= specialized_template_params[i].GetType() )
+								if( const auto src_type= src_param.GetType() )
 									params_matching_ok= *src_type == *dst_type;
 								else
 									params_matching_ok= false;
 							}
-							else if( const auto dst_variable= single_type_template->signature_params[i].GetVariable() )
+							else if( const auto dst_variable= dst_param.GetVariable() )
 							{
 								// Trivial variable in signature param.
-								if( const auto src_variable= specialized_template_params[i].GetVariable() )
+								if( const auto src_variable= src_param.GetVariable() )
 									params_matching_ok= *src_variable == *dst_variable;
 								else
 									params_matching_ok= false;

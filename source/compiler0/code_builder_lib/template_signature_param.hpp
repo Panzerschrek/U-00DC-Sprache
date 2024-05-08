@@ -147,4 +147,12 @@ private:
 		SpecializedTemplateParam> something_;
 };
 
+// Mapping of template params 0-N to signature params.
+using TemplateParamsToSignatureParamsMappingRef= llvm::ArrayRef<TemplateSignatureParam>;
+
+// Replace all template params with given signature params.
+TemplateSignatureParam MapTemplateParamsToSignatureParams(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam& param );
+
 } // namespace U
