@@ -343,10 +343,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parameterization.base_.deref() ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 		{
-			var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
-			{
-				.type_templates_set= type_templates_set_ptr,
-			};
+			var ust::vector</ TemplateSignatureParam /> mut specialized_template_params;
 
 			auto mut all_params_are_known= true;
 			foreach( &arg : template_parameterization.template_args.deref() )
@@ -355,7 +352,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 				all_params_are_known&= !out_param.GetTypeParam().empty() || !out_param.GetVariableParam().empty();
 
-				specialized_template_param.params.push_back(move(out_param));
+				specialized_template_params.push_back(move(out_param));
 			}
 
 			if( all_params_are_known )
@@ -367,7 +364,107 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				}
 			}
 
-			return specialized_template_param;
+			if( type_templates_set_ptr.lock_imut().deref().type_templates.size() == 1s )
+			{
+				auto single_type_template= type_templates_set_ptr.lock_imut().deref().type_templates.front();
+				auto syntax_element= single_type_template.lock_imut().deref().syntax_element;
+				if_var( &type_alias_ptr : syntax_element.deref().something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
+				{
+					// Process a case with single trivial type alias.
+					// Expand it, if it's possible.
+					auto single_type_template_num_signature_params= single_type_template.lock_imut().deref().signature_params.size();
+					if( single_type_template_num_signature_params == specialized_template_params.size() )
+					{
+						auto type_alias_template_params= single_type_template.lock_imut().deref().params;
+
+						// Try to match this type alias params against given signature params.
+
+						var ust::vector</TemplateSignatureParam/> mut alias_template_params_to_signature_params_mapping;
+						alias_template_params_to_signature_params_mapping.resize( type_alias_template_params.size(), TemplateSignatureParam::TypeParam() );
+
+						var ust::vector</bool/> mut params_known_flags( type_alias_template_params.size(), false );
+						var bool mut params_matching_ok= true;
+
+						foreach( pair : single_type_template.lock_imut().deref().signature_params.iter().zip( specialized_template_params.iter() ) )
+						{
+							var TemplateSignatureParam& dst_param= pair.first;
+							var TemplateSignatureParam& src_param= pair.second;
+							if_var( &dst_template_param : dst_param.GetTemplateParam() )
+							{
+								// Template param in signature param. Build mapping for it and check if possible repetitions of this param produce the same result.
+								auto index= size_type(dst_template_param.index);
+								var bool &mut known= params_known_flags[index];
+								if( !known )
+								{
+									alias_template_params_to_signature_params_mapping[index]= src_param;
+									known= true;
+								}
+								else
+								{
+									params_matching_ok&= alias_template_params_to_signature_params_mapping[index] == src_param;
+								}
+							}
+							else if_var( &dst_type : dst_param.GetTypeParam() )
+							{
+								// Trivial type in signature param.
+								if_var( &src_type : src_param.GetTypeParam() )
+								{
+									params_matching_ok&= src_type == dst_type;
+								}
+								else
+								{
+									params_matching_ok= false;
+								}
+							}
+							else if_var( &dst_variable : dst_param.GetVariableParam() )
+							{
+								// Trivial variable in signature param.
+								if_var( &src_variable : src_param.GetVariableParam() )
+								{
+									params_matching_ok&= src_variable == dst_variable;
+								}
+								else
+								{
+									params_matching_ok= false;
+								}
+							}
+							else
+							{
+								// For now we support only trivial type alias templates.
+								// Avoid performing deep matching.
+								params_matching_ok= false;
+							}
+						}
+
+						foreach( known : params_known_flags )
+						{
+							params_matching_ok&= known;
+						}
+
+						if( params_matching_ok )
+						{
+							auto type_alias_scope= single_type_template.lock_imut().deref().parent_names_scope.lock().try_to_non_nullable();
+							var ust::vector</bool/> mut alias_template_parameters_usage_flags( type_alias_template_params.size(), false );
+
+							var TemplateSignatureParam alias_body_signature_param=
+								CreateTemplateSignatureParam(
+									type_alias_scope,
+									function_context,
+									type_alias_template_params.range(),
+									type_alias_ptr.deref().type_name,
+									alias_template_parameters_usage_flags.range() );
+
+							return MapTemplateParamsToSignatureParams( alias_template_params_to_signature_params_mapping.range(), alias_body_signature_param );
+						}
+					}
+				}
+			}
+
+			return TemplateSignatureParam::SpecializedTemplateParam
+			{
+				.type_templates_set= type_templates_set_ptr,
+				.params= move(specialized_template_params)
+			};
 		}
 	}
 

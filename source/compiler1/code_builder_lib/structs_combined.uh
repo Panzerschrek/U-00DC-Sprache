@@ -825,6 +825,14 @@ private:
 	Container something_;
 }
 
+// Mapping of template params 0-N to signature params.
+type TemplateParamsToSignatureParamsMappingRef= ust::array_view_imut</TemplateSignatureParam/>;
+
+// Replace all template params with given signature params.
+fn MapTemplateParamsToSignatureParams(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam& param ) : TemplateSignatureParam;
+
 struct TemplateKey
 {
 	ust::shared_ptr_imut</ TemplateBase /> template_;
