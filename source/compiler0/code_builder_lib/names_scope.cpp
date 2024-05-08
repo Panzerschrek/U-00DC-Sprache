@@ -24,6 +24,11 @@ std::string NamesScope::ToString() const
 		return "";
 	if( parent_->parent_ == nullptr )
 		return name_;
+
+	// Process template class namespaces specially.
+	if( class_ != nullptr && std::holds_alternative<Class::BaseTemplate>(class_->generated_class_data) )
+		return Type(class_).ToString();
+
 	return parent_->ToString() + "::" + name_;
 }
 
