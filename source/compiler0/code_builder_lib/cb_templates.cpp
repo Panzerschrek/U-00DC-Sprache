@@ -15,6 +15,95 @@
 namespace U
 {
 
+namespace
+{
+
+using SrcToDstTemplateParamsMapping= llvm::ArrayRef<size_t>;
+
+TemplateSignatureParam MapTemplateParamSrcToDst( SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam& param );
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::TypeParam& param )
+{
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::VariableParam& param )
+{
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::TemplateParam& param )
+{
+	U_ASSERT( param.index < mapping.size() );
+
+	TemplateSignatureParam::TemplateParam out_param;
+	out_param.index= mapping[param.index];
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::ArrayParam& param )
+{
+	TemplateSignatureParam::ArrayParam out_param;
+	out_param.element_count= std::make_shared<TemplateSignatureParam>( MapTemplateParamSrcToDst( mapping, *param.element_count ) );
+	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamSrcToDst( mapping, *param.element_type ) );
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::TupleParam& param )
+{
+	TemplateSignatureParam::TupleParam out_param;
+	out_param.element_types.reserve( param.element_types.size() );
+
+	for( const auto& element_type_param : param.element_types )
+		out_param.element_types.push_back( MapTemplateParamSrcToDst( mapping, element_type_param ) );
+
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::RawPointerParam& param )
+{
+	TemplateSignatureParam::RawPointerParam out_param;
+	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamSrcToDst( mapping, *param.element_type ) );
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::FunctionParam& param )
+{
+	// TODO
+	U_ASSERT(false);
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::CoroutineParam& param )
+{
+	// TODO
+	U_ASSERT(false);
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::SpecializedTemplateParam& param )
+{
+	TemplateSignatureParam::SpecializedTemplateParam out_param;
+	out_param.type_templates= param.type_templates;
+
+	out_param.params.reserve( param.params.size() );
+	for( const TemplateSignatureParam& template_param : param.params )
+		out_param.params.push_back( MapTemplateParamSrcToDst( mapping, template_param ) );
+
+	return out_param;
+}
+
+TemplateSignatureParam MapTemplateParamSrcToDst( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam& param )
+{
+	return param.Visit( [&]( const auto& el ) { return MapTemplateParamSrcToDstImpl( mapping, el ); } );
+}
+
+} // namespace
+
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplate& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -436,8 +525,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 				if( single_type_template->signature_params.size() == specialized_template.params.size() )
 				{
-					std::vector<size_t> params_mapping;
-					params_mapping.resize( single_type_template->signature_params.size(), ~size_t(0) );
+					llvm::SmallVector<size_t, 8> params_src_to_dst_mapping;
+					params_src_to_dst_mapping.resize( single_type_template->template_params.size(), ~size_t(0) );
 					size_t matched_params= 0;
 
 					for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
@@ -446,13 +535,13 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 						{
 							if( const auto dst_template_param= single_type_template->signature_params[i].GetTemplateParam() )
 							{
-								params_mapping[ this_template_param->index ]= dst_template_param->index;
+								params_src_to_dst_mapping[ dst_template_param->index ]= this_template_param->index;
 								++matched_params;
 							}
 						}
 					}
 
-					if( matched_params == params_mapping.size() )
+					if( matched_params == params_src_to_dst_mapping.size() )
 					{
 						llvm::SmallVector<bool, 32> alias_template_parameters_usage_flags;
 						alias_template_parameters_usage_flags.resize( single_type_template->template_params.size(), false );
@@ -466,7 +555,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 								alias_template_parameters_usage_flags,
 								alias_syntax_element.value );
 
-						// TODO - crate signature param with mapping - replace alias template params with out template params.
+						const TemplateSignatureParam param_mapped= MapTemplateParamSrcToDst( params_src_to_dst_mapping, alias_body_signature_param );
+						return param_mapped;
 					}
 				}
 			}
