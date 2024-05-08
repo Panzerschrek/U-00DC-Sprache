@@ -425,6 +425,53 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		if( all_args_are_known )
 			return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parameterization ), names_scope, template_parameterization.src_loc );
 
+		if( type_templates_set->type_templates.size() == 1 )
+		{
+			// Process a case with trivial alias.
+			const TypeTemplatePtr single_type_template= type_templates_set->type_templates.front();
+			if( single_type_template->syntax_element != nullptr &&
+				std::holds_alternative< std::unique_ptr<const Synt::TypeAlias> >( single_type_template->syntax_element->something ) )
+			{
+				const Synt::TypeAlias& alias_syntax_element= **std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &single_type_template->syntax_element->something );
+
+				if( single_type_template->signature_params.size() == specialized_template.params.size() )
+				{
+					std::vector<size_t> params_mapping;
+					params_mapping.resize( single_type_template->signature_params.size(), ~size_t(0) );
+					size_t matched_params= 0;
+
+					for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
+					{
+						if( const auto this_template_param= specialized_template.params[i].GetTemplateParam() )
+						{
+							if( const auto dst_template_param= single_type_template->signature_params[i].GetTemplateParam() )
+							{
+								params_mapping[ this_template_param->index ]= dst_template_param->index;
+								++matched_params;
+							}
+						}
+					}
+
+					if( matched_params == params_mapping.size() )
+					{
+						llvm::SmallVector<bool, 32> alias_template_parameters_usage_flags;
+						alias_template_parameters_usage_flags.resize( single_type_template->template_params.size(), false );
+
+						// TODO - check proper namespace is used.
+						const TemplateSignatureParam alias_body_signature_param=
+							CreateTemplateSignatureParameter(
+								*single_type_template->parent_namespace,
+								*global_function_context_,
+								single_type_template->template_params,
+								alias_template_parameters_usage_flags,
+								alias_syntax_element.value );
+
+						// TODO - crate signature param with mapping - replace alias template params with out template params.
+					}
+				}
+			}
+		}
+
 		specialized_template.type_templates= type_templates_set->type_templates;
 
 		return specialized_template;
