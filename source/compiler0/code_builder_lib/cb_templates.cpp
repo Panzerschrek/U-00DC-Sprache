@@ -440,7 +440,6 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 						llvm::SmallVector<bool, 32> params_known_flags;
 						params_known_flags.resize( single_type_template->template_params.size(), false );
-						bool has_same_param_mismatch= false;
 						bool params_matching_ok= true;
 
 						for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
@@ -457,10 +456,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 									known= true;
 								}
 								else
-								{
-									if( alias_template_params_to_signature_params_mapping[ dst_template_param->index ] != src_param )
-										has_same_param_mismatch= true;
-								}
+									params_matching_ok&= alias_template_params_to_signature_params_mapping[ dst_template_param->index ] == src_param;
 							}
 							else if( const auto dst_type= dst_param.GetType() )
 							{
@@ -486,11 +482,9 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 							}
 						}
 
-						params_matching_ok&= !has_same_param_mismatch;
 						for( const bool& known : params_known_flags )
 							params_matching_ok &= known;
 
-						// If we have signature param for each template param of this type alias - use it.
 						if( params_matching_ok )
 						{
 							llvm::SmallVector<bool, 32> alias_template_parameters_usage_flags;

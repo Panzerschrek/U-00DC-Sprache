@@ -372,15 +372,15 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				{
 					// Process a case with single trivial type alias.
 					// Expand it, if it's possible.
-					auto single_type_template_num_signature_params= single_type_template.lock_imut().deref().signature_params.size();
-					if( single_type_template_num_signature_params == specialized_template_params.size() )
+					if( single_type_template.lock_imut().deref().signature_params.size() == specialized_template_params.size() )
 					{
 						auto type_alias_template_params= single_type_template.lock_imut().deref().params;
 
 						// Try to match this type alias params against given signature params.
 
-						var ust::vector</TemplateSignatureParam/> mut alias_template_params_to_signature_params_mapping;
-						alias_template_params_to_signature_params_mapping.resize( type_alias_template_params.size(), TemplateSignatureParam::TypeParam() );
+						var ust::vector</TemplateSignatureParam/> mut alias_template_params_to_signature_params_mapping(
+							type_alias_template_params.size(),
+							TemplateSignatureParam::TypeParam() );
 
 						var ust::vector</bool/> mut params_known_flags( type_alias_template_params.size(), false );
 						var bool mut params_matching_ok= true;
@@ -443,12 +443,11 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 						if( params_matching_ok )
 						{
-							auto type_alias_scope= single_type_template.lock_imut().deref().parent_names_scope.lock().try_to_non_nullable();
 							var ust::vector</bool/> mut alias_template_parameters_usage_flags( type_alias_template_params.size(), false );
 
 							var TemplateSignatureParam alias_body_signature_param=
 								CreateTemplateSignatureParam(
-									type_alias_scope,
+									single_type_template.lock_imut().deref().parent_names_scope.lock().try_to_non_nullable(), // Use namespace of type alias to access proper names.
 									function_context,
 									type_alias_template_params.range(),
 									type_alias_ptr.deref().type_name,
