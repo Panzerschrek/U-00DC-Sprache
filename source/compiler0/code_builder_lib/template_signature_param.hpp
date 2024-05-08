@@ -131,7 +131,8 @@ public:
 		return std::visit( func, something_ );
 	}
 
-	bool operator==( const TemplateSignatureParam& other )const;
+	bool operator==( const TemplateSignatureParam& other ) const;
+	bool operator!=( const TemplateSignatureParam& other ) const { return !(*this == other); }
 
 private:
 	std::variant<
