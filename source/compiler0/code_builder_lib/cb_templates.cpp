@@ -18,7 +18,7 @@ namespace U
 namespace
 {
 
-using SrcToDstTemplateParamsMapping= llvm::ArrayRef<size_t>;
+using SrcToDstTemplateParamsMapping= llvm::ArrayRef<TemplateSignatureParam>;
 
 TemplateSignatureParam MapTemplateParamSrcToDst( SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam& param );
 
@@ -38,9 +38,7 @@ TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParam
 {
 	U_ASSERT( param.index < mapping.size() );
 
-	TemplateSignatureParam::TemplateParam out_param;
-	out_param.index= mapping[param.index];
-	return out_param;
+	return mapping[param.index];
 }
 
 TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::ArrayParam& param )
@@ -525,19 +523,16 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 				if( single_type_template->signature_params.size() == specialized_template.params.size() )
 				{
-					llvm::SmallVector<size_t, 8> params_src_to_dst_mapping;
-					params_src_to_dst_mapping.resize( single_type_template->template_params.size(), ~size_t(0) );
+					llvm::SmallVector<TemplateSignatureParam, 4> params_src_to_dst_mapping;
+					params_src_to_dst_mapping.resize( single_type_template->template_params.size(), TemplateSignatureParam() );
 					size_t matched_params= 0;
 
 					for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
 					{
-						if( const auto this_template_param= specialized_template.params[i].GetTemplateParam() )
+						if( const auto dst_template_param= single_type_template->signature_params[i].GetTemplateParam() )
 						{
-							if( const auto dst_template_param= single_type_template->signature_params[i].GetTemplateParam() )
-							{
-								params_src_to_dst_mapping[ dst_template_param->index ]= this_template_param->index;
-								++matched_params;
-							}
+							params_src_to_dst_mapping[ dst_template_param->index ]= specialized_template.params[i];
+							++matched_params;
 						}
 					}
 

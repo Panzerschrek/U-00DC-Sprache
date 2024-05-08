@@ -129,3 +129,32 @@ def TypeAliasTemplateInAnotherTemplateSignature_Test7():
 		static_assert( !FloatArrayUnwrapper</ MyArray</ i32, 2s /> />::is_float_array );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignature_Test8():
+	c_program_text= """
+		template</type T, size_type S/> type MyArray= [ T, S ];
+		template</type X/> struct SingleElementArrayUnwrapper</ MyArray</ X, 1s /> /> { auto is_single_element_array= true; }
+		template</type X/> struct SingleElementArrayUnwrapper{ auto is_single_element_array= false; }
+		static_assert(  SingleElementArrayUnwrapper</ MyArray</ i32, 1s /> />::is_single_element_array );
+		static_assert(  SingleElementArrayUnwrapper</ MyArray</ u64, 1s /> />::is_single_element_array );
+		static_assert( !SingleElementArrayUnwrapper</ MyArray</ i32, 2s /> />::is_single_element_array );
+		static_assert( !SingleElementArrayUnwrapper</ MyArray</ f32, 0s /> />::is_single_element_array );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignature_Test9():
+	c_program_text= """
+		template</type T, size_type S/> type MyArray= [ T, S ];
+		template</size_type S/> struct FloatArrayUnwrapper</ MyArray</ f32, S /> /> { auto is_float_array= true; }
+		template</type X/> struct FloatArrayUnwrapper{ auto is_float_array= false; }
+		static_assert(  FloatArrayUnwrapper</ MyArray</ f32, 1s /> />::is_float_array );
+		static_assert(  FloatArrayUnwrapper</ MyArray</ f32, 2s /> />::is_float_array );
+		static_assert(  FloatArrayUnwrapper</ MyArray</ f32, 9s /> />::is_float_array );
+		static_assert(  FloatArrayUnwrapper</ MyArray</ f32, 0s /> />::is_float_array );
+		static_assert( !FloatArrayUnwrapper</ MyArray</ i32, 0s /> />::is_float_array );
+		static_assert( !FloatArrayUnwrapper</ MyArray</ i32, 1s /> />::is_float_array );
+		static_assert( !FloatArrayUnwrapper</ MyArray</ i32, 2s /> />::is_float_array );
+	"""
+	tests_lib.build_program( c_program_text )
