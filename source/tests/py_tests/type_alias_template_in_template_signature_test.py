@@ -186,3 +186,57 @@ def TypeAliasTemplateInAnotherTemplateSignature_Test11():
 		static_assert( !LongIntGeneratorUnwrapper</ generator : i32 />::is_long_int_generator );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignature_Test12():
+	c_program_text= """
+		namespace NN
+		{
+			template</type T/> struct Box { T t; }
+			template</type T/> type BoxAlias= Box</T/>;
+		}
+		// Should use proper namespace where "BoxAlias" is declared when expanding "NN::BoxAlias</T/>" into "Box</T/>".
+		template</type T/> struct CheckBox</ NN::BoxAlias</T/> /> { auto is_box= true; }
+		template</type T/> struct CheckBox { auto is_box= false; }
+		type IntBox= NN::Box</i32/>;
+		static_assert(  CheckBox</ IntBox />::is_box );
+		static_assert( !CheckBox</ i32 />::is_box );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignatureFail_Test0():
+	c_program_text= """
+		template</type T/> type HomogeneousTuple</T, 0s/> = tup[];
+		template</type T/> type HomogeneousTuple</T, 1s/> = tup[ T ];
+		 // For now can't process such type alias, because it is overloaded.
+		template</type T/> struct SingleElementTupleUnwrapper</ HomogeneousTuple</ T, 1s /> /> { auto is_single_element_tuple= true; }
+		template</type T/> struct SingleElementTupleUnwrapper</ T /> { auto is_single_element_tuple= false; }
+
+		static_assert( !SingleElementTupleUnwrapper</ tup[] />::is_single_element_tuple );
+		static_assert( !SingleElementTupleUnwrapper</ tup[ i32 ] />::is_single_element_tuple ); // This should be logocally "true", but expansion doesn't work properly.
+		static_assert( !SingleElementTupleUnwrapper</ tup[ i32, i32 ] />::is_single_element_tuple );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignatureFail_Test1():
+	c_program_text= """
+		template</type T/> type AliasWithUselessTwo</T, 2s/> = T;
+		// Can't process such type alias, because it has non-trivial signature params (just numeric constant and not template param).
+		template</type T/> struct Unwrapper</ AliasWithUselessTwo</ T, 2s /> /> { auto unwrapped= true; }
+		template</type T/> struct Unwrapper</ T /> { auto unwrapped= false; }
+		static_assert( !Unwrapper</ f32 />::unwrapped ); // Should be "true", but for now it's not possible.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignatureFail_Test2():
+	c_program_text= """
+		template</type T/> type AliasWithUselessInt</T, i32/> = T;
+		// Can't process such type alias, because it has non-trivial signature params (just type and not template param).
+		template</type T/> struct Unwrapper</ AliasWithUselessInt</ T, i32 /> /> { auto unwrapped= true; }
+		template</type T/> struct Unwrapper</ T /> { auto unwrapped= false; }
+		static_assert( !Unwrapper</ f32 />::unwrapped ); // Should be "true", but for now it's not possible.
+	"""
+	tests_lib.build_program( c_program_text )
