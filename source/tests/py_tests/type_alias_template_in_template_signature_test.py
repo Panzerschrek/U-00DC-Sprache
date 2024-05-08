@@ -158,3 +158,31 @@ def TypeAliasTemplateInAnotherTemplateSignature_Test9():
 		static_assert( !FloatArrayUnwrapper</ MyArray</ i32, 2s /> />::is_float_array );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignature_Test10():
+	c_program_text= """
+		template</type In, type Out/> type MappingFunc= fn( In x ) : Out;
+		template</type T/> struct FloatResultMappingUnwrapper</ MappingFunc</ T, f32 /> /> { auto is_float_result= true; }
+		template</type T/> struct FloatResultMappingUnwrapper{ auto is_float_result= false; }
+		static_assert(  FloatResultMappingUnwrapper</ (fn(i32 x) : f32) />::is_float_result );
+		static_assert(  FloatResultMappingUnwrapper</ (fn(f32 x) : f32) />::is_float_result );
+		static_assert(  FloatResultMappingUnwrapper</ (fn(u64 x) : f32) />::is_float_result );
+		static_assert( !FloatResultMappingUnwrapper</ (fn(i32 x) : u32) />::is_float_result );
+		static_assert( !FloatResultMappingUnwrapper</ (fn(f32 x) : i32) />::is_float_result );
+		static_assert( !FloatResultMappingUnwrapper</ (fn(u64 x) : u16) />::is_float_result );
+		static_assert( !FloatResultMappingUnwrapper</ (fn(i32& x) : f32) />::is_float_result ); // Signature contains reference and check fails.
+		static_assert( !FloatResultMappingUnwrapper</ (fn(f32 x) : f32&) />::is_float_result ); // Function returns referenceand check fails.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeAliasTemplateInAnotherTemplateSignature_Test11():
+	c_program_text= """
+		template</type T/> type MyGenerator= generator : T;
+		template<//> struct LongIntGeneratorUnwrapper</ MyGenerator</ u64 /> /> { auto is_long_int_generator= true; }
+		template</type T/> struct LongIntGeneratorUnwrapper{ auto is_long_int_generator= false; }
+		static_assert(  LongIntGeneratorUnwrapper</ generator : u64 />::is_long_int_generator );
+		static_assert( !LongIntGeneratorUnwrapper</ generator : i32 />::is_long_int_generator );
+	"""
+	tests_lib.build_program( c_program_text )

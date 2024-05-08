@@ -37,7 +37,6 @@ TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParam
 TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::TemplateParam& param )
 {
 	U_ASSERT( param.index < mapping.size() );
-
 	return mapping[param.index];
 }
 
@@ -69,18 +68,20 @@ TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParam
 
 TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::FunctionParam& param )
 {
-	// TODO
-	U_ASSERT(false);
-	U_UNUSED(mapping);
-	return param;
+	TemplateSignatureParam::FunctionParam out_param= param;
+	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamSrcToDst( mapping, *param.return_type ) );
+
+	for( TemplateSignatureParam::FunctionParam::Param& function_param : out_param.params )
+		function_param.type= std::make_shared<TemplateSignatureParam>( MapTemplateParamSrcToDst( mapping, *function_param.type ) );
+
+	return out_param;
 }
 
 TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::CoroutineParam& param )
 {
-	// TODO
-	U_ASSERT(false);
-	U_UNUSED(mapping);
-	return param;
+	TemplateSignatureParam::CoroutineParam out_param= param;
+	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamSrcToDst( mapping, *param.return_type ) );
+	return out_param;
 }
 
 TemplateSignatureParam MapTemplateParamSrcToDstImpl( const SrcToDstTemplateParamsMapping mapping, const TemplateSignatureParam::SpecializedTemplateParam& param )
