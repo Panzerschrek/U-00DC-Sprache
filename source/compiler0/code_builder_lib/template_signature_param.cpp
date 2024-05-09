@@ -195,6 +195,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
 	const TemplateSignatureParam::TypeParam& param )
 {
+	// Return type params as is.
 	U_UNUSED(mapping);
 	return param;
 }
@@ -203,6 +204,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
 	const TemplateSignatureParam::VariableParam& param )
 {
+	// Return variable params as is.
 	U_UNUSED(mapping);
 	return param;
 }
@@ -211,6 +213,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
 	const TemplateSignatureParam::TemplateParam& param )
 {
+	// Map this template param.
 	U_ASSERT( param.index < mapping.size() );
 	return mapping[param.index];
 }
@@ -232,7 +235,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	TemplateSignatureParam::TupleParam out_param;
 	out_param.element_types.reserve( param.element_types.size() );
 
-	for( const auto& element_type_param : param.element_types )
+	for( const TemplateSignatureParam& element_type_param : param.element_types )
 		out_param.element_types.push_back( MapTemplateParamsToSignatureParams( mapping, element_type_param ) );
 
 	return out_param;

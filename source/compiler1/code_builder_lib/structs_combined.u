@@ -1343,6 +1343,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
 	TemplateSignatureParam::TemplateParam& param ) : TemplateSignatureParam
 {
+	// Map this template param.
 	return mapping[ size_type(param.index) ];
 }
 
@@ -1351,6 +1352,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateSignatureParam::TypeParam& param ) : TemplateSignatureParam
 {
 	ust::ignore_unused(mapping);
+	// Return type params as is.
 	return param;
 }
 
@@ -1359,6 +1361,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateSignatureParam::VariableParam& param ) : TemplateSignatureParam
 {
 	ust::ignore_unused(mapping);
+	// Return variable params as is.
 	return param;
 }
 
@@ -1392,7 +1395,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 {
 	return TemplateSignatureParam::RawPointerTypeParam
 	{
-		.element_type= MapTemplateParamsToSignatureParams(mapping, param.element_type)
+		.element_type= MapTemplateParamsToSignatureParams( mapping, param.element_type )
 	};
 }
 

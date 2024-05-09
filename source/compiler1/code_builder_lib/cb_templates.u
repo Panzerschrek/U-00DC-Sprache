@@ -382,7 +382,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 							type_alias_template_params.size(),
 							TemplateSignatureParam::TypeParam() );
 
-						var ust::vector</bool/> mut params_known_flags( type_alias_template_params.size(), false );
+						var ust::vector</bool/> mut param_known_flags( type_alias_template_params.size(), false );
 						var bool mut params_matching_ok= true;
 
 						foreach( pair : single_type_template.lock_imut().deref().signature_params.iter().zip( specialized_template_params.iter() ) )
@@ -393,7 +393,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 							{
 								// Template param in signature param. Build mapping for it and check if possible repetitions of this param produce the same result.
 								auto index= size_type(dst_template_param.index);
-								var bool &mut known= params_known_flags[index];
+								var bool &mut known= param_known_flags[index];
 								if( !known )
 								{
 									alias_template_params_to_signature_params_mapping[index]= src_param;
@@ -436,7 +436,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 							}
 						}
 
-						foreach( known : params_known_flags )
+						foreach( known : param_known_flags )
 						{
 							params_matching_ok&= known;
 						}

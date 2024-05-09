@@ -438,8 +438,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 						llvm::SmallVector<TemplateSignatureParam, 4> alias_template_params_to_signature_params_mapping;
 						alias_template_params_to_signature_params_mapping.resize( single_type_template->template_params.size(), TemplateSignatureParam() );
 
-						llvm::SmallVector<bool, 32> params_known_flags;
-						params_known_flags.resize( single_type_template->template_params.size(), false );
+						llvm::SmallVector<bool, 32> param_known_flags;
+						param_known_flags.resize( single_type_template->template_params.size(), false );
 						bool params_matching_ok= true;
 
 						for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
@@ -449,7 +449,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 							if( const auto dst_template_param= dst_param.GetTemplateParam() )
 							{
 								// Template param in signature param. Build mapping for it and check if possible repetitions of this param produce the same result.
-								bool& known= params_known_flags[ dst_template_param->index ];
+								bool& known= param_known_flags[ dst_template_param->index ];
 								if( !known )
 								{
 									alias_template_params_to_signature_params_mapping[ dst_template_param->index ]= src_param;
@@ -482,7 +482,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 							}
 						}
 
-						for( const bool& known : params_known_flags )
+						for( const bool& known : param_known_flags )
 							params_matching_ok &= known;
 
 						if( params_matching_ok )
