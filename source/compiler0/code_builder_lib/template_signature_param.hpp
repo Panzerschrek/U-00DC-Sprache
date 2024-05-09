@@ -131,7 +131,8 @@ public:
 		return std::visit( func, something_ );
 	}
 
-	bool operator==( const TemplateSignatureParam& other )const;
+	bool operator==( const TemplateSignatureParam& other ) const;
+	bool operator!=( const TemplateSignatureParam& other ) const { return !(*this == other); }
 
 private:
 	std::variant<
@@ -145,5 +146,13 @@ private:
 		CoroutineParam,
 		SpecializedTemplateParam> something_;
 };
+
+// Mapping of template params 0-N to signature params.
+using TemplateParamsToSignatureParamsMappingRef= llvm::ArrayRef<TemplateSignatureParam>;
+
+// Replace all template params with given signature params.
+TemplateSignatureParam MapTemplateParamsToSignatureParams(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam& param );
 
 } // namespace U

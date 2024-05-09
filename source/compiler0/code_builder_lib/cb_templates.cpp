@@ -408,26 +408,104 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::TemplateParameterization& template_parameterization )
 {
-	const Value base_value= ResolveValue( names_scope, *global_function_context_, template_parameterization.base );
-	global_function_context_->args_preevaluation_cache.clear();
+	const Value base_value= ResolveValue( names_scope, function_context, template_parameterization.base );
 
 	if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
 	{
-		TemplateSignatureParam::SpecializedTemplateParam specialized_template;
-
-		bool all_args_are_known= true;
+		std::vector<TemplateSignatureParam> specialized_template_params;
+		bool all_params_are_known= true;
 		for( const Synt::Expression& template_arg : template_parameterization.template_args )
 		{
-			specialized_template.params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
-			all_args_are_known&= specialized_template.params.back().IsType() || specialized_template.params.back().IsVariable();
+			specialized_template_params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
+			all_params_are_known&= specialized_template_params.back().IsType() || specialized_template_params.back().IsVariable();
 		}
 
-		if( all_args_are_known )
+		if( all_params_are_known )
 			return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parameterization ), names_scope, template_parameterization.src_loc );
 
-		specialized_template.type_templates= type_templates_set->type_templates;
+		if( type_templates_set->type_templates.size() == 1 )
+		{
+			const TypeTemplatePtr single_type_template= type_templates_set->type_templates.front();
+			if( single_type_template->syntax_element != nullptr )
+			{
+				// Process a case with single trivial type alias.
+				// Expand it, if it's possible.
+				if( const auto type_alias_ptr= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &single_type_template->syntax_element->something ) )
+				{
+					if( single_type_template->signature_params.size() == specialized_template_params.size() )
+					{
+						// Try to match this type alias params against given signature params.
+						llvm::SmallVector<TemplateSignatureParam, 4> alias_template_params_to_signature_params_mapping;
+						alias_template_params_to_signature_params_mapping.resize( single_type_template->template_params.size(), TemplateSignatureParam() );
 
-		return specialized_template;
+						llvm::SmallVector<bool, 32> param_known_flags;
+						param_known_flags.resize( single_type_template->template_params.size(), false );
+						bool params_matching_ok= true;
+
+						for( size_t i= 0; i < single_type_template->signature_params.size(); ++i )
+						{
+							const TemplateSignatureParam& dst_param= single_type_template->signature_params[i];
+							const TemplateSignatureParam& src_param= specialized_template_params[i];
+							if( const auto dst_template_param= dst_param.GetTemplateParam() )
+							{
+								// Template param in signature param. Build mapping for it and check if possible repetitions of this param produce the same result.
+								bool& known= param_known_flags[ dst_template_param->index ];
+								if( !known )
+								{
+									alias_template_params_to_signature_params_mapping[ dst_template_param->index ]= src_param;
+									known= true;
+								}
+								else
+									params_matching_ok&= alias_template_params_to_signature_params_mapping[ dst_template_param->index ] == src_param;
+							}
+							else if( const auto dst_type= dst_param.GetType() )
+							{
+								// Trivial type in signature param.
+								if( const auto src_type= src_param.GetType() )
+									params_matching_ok= *src_type == *dst_type;
+								else
+									params_matching_ok= false;
+							}
+							else if( const auto dst_variable= dst_param.GetVariable() )
+							{
+								// Trivial variable in signature param.
+								if( const auto src_variable= src_param.GetVariable() )
+									params_matching_ok= *src_variable == *dst_variable;
+								else
+									params_matching_ok= false;
+							}
+							else
+							{
+								// For now we support only trivial type alias templates.
+								// Avoid performing deep matching.
+								params_matching_ok= false;
+							}
+						}
+
+						for( const bool& known : param_known_flags )
+							params_matching_ok &= known;
+
+						if( params_matching_ok )
+						{
+							llvm::SmallVector<bool, 32> alias_template_parameters_usage_flags;
+							alias_template_parameters_usage_flags.resize( single_type_template->template_params.size(), false );
+
+							const TemplateSignatureParam alias_body_signature_param=
+								CreateTemplateSignatureParameter(
+									*single_type_template->parent_namespace, // Use namespace of type alias to access proper names.
+									function_context,
+									single_type_template->template_params,
+									alias_template_parameters_usage_flags,
+									(*type_alias_ptr)->value );
+
+							return MapTemplateParamsToSignatureParams( alias_template_params_to_signature_params_mapping, alias_body_signature_param );
+						}
+					}
+				}
+			}
+		}
+
+		return TemplateSignatureParam::SpecializedTemplateParam{ type_templates_set->type_templates, std::move(specialized_template_params) };
 	}
 
 	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parameterization ), names_scope, template_parameterization.src_loc );

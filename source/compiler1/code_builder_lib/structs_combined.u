@@ -19,7 +19,7 @@ namespace ToStringHelper
 {
 
 template</type T/>
-fn ToString( ust::shared_ptr_final_base</T, false/>& b ) : ust::string8
+fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
 {
 	return ToStringHelper::ToString( b.deref() );
 }
@@ -696,8 +696,8 @@ fn TypeEqualImpl( T& l, T& r ) : bool
 	return l == r;
 }
 
-template</type T, bool is_nullable/>
-fn TypeEqualImpl( ust::shared_ptr_final_base</T, is_nullable/>& l, ust::shared_ptr_final_base</T, is_nullable/>& r ) : bool
+template</type T/>
+fn TypeEqualImpl( ust::shared_ptr_final</T/>& l, ust::shared_ptr_final</T/>& r ) : bool
 {
 	return l.deref() == r.deref();
 }
@@ -1272,8 +1272,8 @@ fn TemplateSignatureParamEqualImpl( T& l, T& r ) : bool
 	return l == r;
 }
 
-template</type T, bool is_nullable/>
-fn TemplateSignatureParamEqualImpl( ust::shared_ptr_final_base</T, is_nullable/>& l, ust::shared_ptr_final_base</T, is_nullable/>& r ) : bool
+template</type T/>
+fn TemplateSignatureParamEqualImpl( ust::shared_ptr_final</T/>& l, ust::shared_ptr_final</T/>& r ) : bool
 {
 	return l.deref() == r.deref();
 }
@@ -1293,6 +1293,150 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 
 	halt;
 }
+
+fn MapTemplateParamsToSignatureParams(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam& param ) : TemplateSignatureParam
+{
+	if_var( &template_param : param.GetTemplateParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, template_param );
+	}
+	if_var( &type_param : param.GetTypeParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, type_param );
+	}
+	if_var( &variable_param : param.GetVariableParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, variable_param );
+	}
+	if_var( &array_type_param : param.GetArrayTypeParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, array_type_param );
+	}
+	if_var( &tuple_type_param : param.GetTupleTypeParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, tuple_type_param );
+	}
+	if_var( &raw_pointer_type_param : param.GetRawPointerTypeParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, raw_pointer_type_param );
+	}
+	if_var( &function_type_param : param.GetFunctionTypeParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, function_type_param );
+	}
+	if_var( &coroutine_type_param : param.GetCoroutineTypeParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, coroutine_type_param );
+	}
+	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, specialized_template_param );
+	}
+
+	halt;
+}
+
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::TemplateParam& param ) : TemplateSignatureParam
+{
+	// Map this template param.
+	return mapping[ size_type(param.index) ];
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::TypeParam& param ) : TemplateSignatureParam
+{
+	ust::ignore_unused(mapping);
+	// Return type params as is.
+	return param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::VariableParam& param ) : TemplateSignatureParam
+{
+	ust::ignore_unused(mapping);
+	// Return variable params as is.
+	return param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::ArrayTypeParam& param ) : TemplateSignatureParam
+{
+	return TemplateSignatureParam::ArrayTypeParam
+	{
+		.element_type= MapTemplateParamsToSignatureParams( mapping, param.element_type ),
+		.element_count= MapTemplateParamsToSignatureParams( mapping, param.element_count ),
+	};
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::TupleTypeParam& param ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam::TupleTypeParam mut out_param;
+	foreach( &element_type : param.element_types )
+	{
+		out_param.element_types.push_back( MapTemplateParamsToSignatureParams( mapping, element_type ) );
+	}
+
+	return out_param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::RawPointerTypeParam& param ) : TemplateSignatureParam
+{
+	return TemplateSignatureParam::RawPointerTypeParam
+	{
+		.element_type= MapTemplateParamsToSignatureParams( mapping, param.element_type )
+	};
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::FunctionTypeParam& param ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam::FunctionTypeParam mut out_param= param;
+	out_param.return_type= MapTemplateParamsToSignatureParams( mapping, param.return_type );
+
+	foreach( &mut function_param : out_param.params )
+	{
+		function_param.t= MapTemplateParamsToSignatureParams( mapping, function_param.t );
+	}
+
+	return out_param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::CoroutineTypeParam& param ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam::CoroutineTypeParam mut out_param= param;
+	out_param.return_type= MapTemplateParamsToSignatureParams( mapping, param.return_type );
+	return out_param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::SpecializedTemplateParam& param ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam::SpecializedTemplateParam mut out_param{ .type_templates_set= param.type_templates_set };
+	foreach( &template_param : param.params )
+	{
+		out_param.params.push_back( MapTemplateParamsToSignatureParams( mapping, template_param ) );
+	}
+
+	return out_param;
+}
+
+// TemplateKey
 
 op TemplateKey::==( TemplateKey& l, TemplateKey& r ) : bool
 {
