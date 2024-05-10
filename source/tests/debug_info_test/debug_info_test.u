@@ -363,6 +363,15 @@ fn LambdasTest()
 	f(5u);
 }
 
+fn MixinsTest()
+{
+	auto mut res= MixinFunction(78);
+	mixin( "++res; res-= 3;" );
+	auto res_doubled= mixin( "res * 2" );
+}
+
+mixin( "fn MixinFunction( i32 x ) : i32 { return x * x + x; }" );
+
 fn nomangle main() : i32
 {
 	FundamentalTypesTest();
@@ -389,5 +398,6 @@ fn nomangle main() : i32
 	WithOperatorTest();
 	GeneratorsTest();
 	LambdasTest();
+	MixinsTest();
 	return 0;
 }
