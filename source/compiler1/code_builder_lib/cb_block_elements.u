@@ -1070,22 +1070,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	var BlockElementBuildInfo mut block_element_build_info;
 
-	if( if_operator.alternative.empty() )
-	{
-		if( !if_block_build_info.has_terminal_instruction_inside )
-		{
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
-			references_graphs.push_back( function_context.references_graph );
-		}
-
-		references_graphs.push_back( move(references_graph_before_branching) );
-
-		block_element_build_info.has_terminal_instruction_inside= false;
-
-		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
-		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
-	}
-	else
+	if_var( &alternative : if_operator.alternative )
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
@@ -1100,7 +1085,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
 
 		function_context.references_graph= move(references_graph_before_branching);
-		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_operator.alternative.try_deref() );
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
@@ -1121,6 +1106,21 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
 			unsafe( LLVMDeleteBasicBlock( block_after_if ) );
 		}
+	}
+	else
+	{
+		if( !if_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		references_graphs.push_back( move(references_graph_before_branching) );
+
+		block_element_build_info.has_terminal_instruction_inside= false;
+
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
 	}
 
 	if( !references_graphs.empty() )
@@ -1464,25 +1464,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	var BlockElementBuildInfo mut block_element_build_info;
 
-	if( if_coro_advance_operator.alternative.empty() )
-	{
-		if( !if_block_build_info.has_terminal_instruction_inside )
-		{
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
-			references_graphs.push_back( function_context.references_graph );
-		}
-
-		references_graphs.push_back( move(references_graph_before_branching) );
-
-		block_element_build_info.has_terminal_instruction_inside= false;
-
-		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
-		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
-
-		// Destroy temporarie in coroutine expression.
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
-	}
-	else
+	if_var( &alternative : if_coro_advance_operator.alternative )
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "after_if_coro_advance\0"[0] ) );
 
@@ -1504,7 +1486,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		// Destroy temporarie in coroutine expression.
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
 
-		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_coro_advance_operator.alternative.try_deref() );
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
@@ -1525,6 +1507,24 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
 			unsafe( LLVMDeleteBasicBlock( block_after_if ) );
 		}
+	}
+	else
+	{
+		if( !if_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		references_graphs.push_back( move(references_graph_before_branching) );
+
+		block_element_build_info.has_terminal_instruction_inside= false;
+
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
+
+		// Destroy temporarie in coroutine expression.
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
 	}
 
 	if( !references_graphs.empty() )
@@ -2258,10 +2258,8 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 	function_context.variables_frames.back().push_back( sequence_lock_node );
 
-	if( !sequence_expression.t.GetTupleType().empty() )
+	if_var( &tuple_type : sequence_expression.t.GetTupleType() )
 	{
-		var TupleType& tuple_type= sequence_expression.t.GetTupleType().try_deref();
-
 		auto mut finish_basic_block= LLVMBasicBlockRef::Null;
 		if( !tuple_type.element_types.empty() )
 		{
@@ -3008,10 +3006,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
 {
-	auto block_elements= ExpandBlockMixin( names_scope, function_context, mixin_ );
-	if( !block_elements.empty() )
+	if_var( &block_elements : ExpandBlockMixin( names_scope, function_context, mixin_ ) )
 	{
-		return BuildBlockElements( names_scope, function_context, block_elements.try_deref().range() );
+		return BuildBlockElements( names_scope, function_context, block_elements.range() );
 	}
 
 	return BlockElementBuildInfo();
@@ -3181,10 +3178,10 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		}
 	}
 
-	if( !variable.t.GetFundamentalType().empty() )
+	if_var( &fundamental_type : variable.t.GetFundamentalType() )
 	{
 		// Process operator for fundamental type.
-		if( !IsInteger( variable.t.GetFundamentalType().try_deref().fundamental_type ) )
+		if( !IsInteger( fundamental_type.fundamental_type ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
 			return;
@@ -3200,9 +3197,9 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
 		}
 	}
-	else if( !variable.t.GetRawPointerType().empty() )
+	else if_var( &pointer_type : variable.t.GetRawPointerType() )
 	{
-		var Type& element_type= variable.t.GetRawPointerType().try_deref().element_type;
+		var Type& element_type= pointer_type.element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{
 			// Complete types required for pointer arithmetic.

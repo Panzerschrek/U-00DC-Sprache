@@ -125,7 +125,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 	NamesScope& parent_scope,
 	ust::string_view8 name,
 	FunctionType& function_type,
-	ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8
+	ust::optional_ref_imut</TemplateArgsFinished/> template_args_opt ) : ust::string8
 {
 	// For class methods do not encode stuff like access labels, or methods-related stuff.
 	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
@@ -136,7 +136,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 
 	auto op_name= DecodeOperator( name );
 
-	if( !template_args.empty() )
+	if_var( &template_args : template_args_opt )
 	{
 		// Use separate backreferences table.
 		var ManglerState mut template_mangler_state;
@@ -150,7 +150,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 			{
 				template_mangler_state.EncodeName( name );
 			}
-			EncodeTemplateArgs( template_mangler_state, template_args.try_deref() );
+			EncodeTemplateArgs( template_mangler_state, template_args );
 		}
 		// Do not create backreference for template name, just push template name instead.
 		mangler_state.PushElement( template_mangler_state.TakeRes().range() );

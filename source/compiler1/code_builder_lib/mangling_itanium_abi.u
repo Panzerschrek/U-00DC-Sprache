@@ -111,7 +111,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 	NamesScope& parent_scope,
 	ust::string_view8 name,
 	FunctionType& function_type,
-	ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8
+	ust::optional_ref_imut</TemplateArgsFinished/> template_args_opt ) : ust::string8
 {
 	state_.Push( "_Z" );
 
@@ -122,7 +122,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 		name_prefixed+= name;
 	}
 
-	if( !template_args.empty() )
+	if_var( &template_args : template_args_opt )
 	{
 		ADD_NODE( state_ )
 		{
@@ -135,7 +135,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 					state_.Push( name_prefixed.range() );
 				}
 
-				EncodeTemplateArgs( state_, template_args.try_deref() );
+				EncodeTemplateArgs( state_, template_args );
 				state_.Push( "Ev" );
 			}
 			else
@@ -145,7 +145,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 					state_.Push( name_prefixed.range() );
 				}
 
-				EncodeTemplateArgs( state_, template_args.try_deref() );
+				EncodeTemplateArgs( state_, template_args );
 				state_.Push( "v" );
 			}
 		}

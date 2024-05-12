@@ -505,17 +505,17 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( AutoForVirtualMethod, names_scope_ptr, function_declaration.src_loc )
 		}
-		if( !function_declaration.function_type.return_value_reference_expression.empty() )
+		if_var( &el : function_declaration.function_type.return_value_reference_expression )
 		{
-			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_reference_expression.try_deref() ) )
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( el ) )
 		}
-		if( !function_declaration.function_type.return_value_inner_references_expression.empty() )
+		if_var( &el : function_declaration.function_type.return_value_inner_references_expression )
 		{
-			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.return_value_inner_references_expression.try_deref() ) )
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( el ) )
 		}
-		if( !function_declaration.function_type.references_pollution_expression.empty() )
+		if_var( &el : function_declaration.function_type.references_pollution_expression )
 		{
-			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( function_declaration.function_type.references_pollution_expression.try_deref() ) )
+			REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope_ptr, Synt::GetSrcLoc( el ) )
 		}
 	}
 
@@ -1467,12 +1467,12 @@ fn CodeBuilder::BuildFuncCode(
 				function_context,
 				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 				{
-					if( !body_syntax_element.constructor_initializer_list.empty() )
+					if_var( &initializer : body_syntax_element.constructor_initializer_list )
 					{
 						self.BuildConstructorInitialization(
 							args_names_scope_ptr,
 							function_context,
-							body_syntax_element.constructor_initializer_list.try_deref() );
+							initializer );
 					}
 					else
 					{
@@ -1706,14 +1706,14 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope 
 				foreach( &function : functions_set.functions )
 				{
 					var SrcLoc mut body_src_loc, mut prototye_src_loc;
-					if( !function.prototype_syntax_element.empty() )
+					if_var( &el : function.prototype_syntax_element )
 					{
-						body_src_loc= function.prototype_syntax_element.try_deref().src_loc;
+						body_src_loc= el.src_loc;
 						prototye_src_loc= body_src_loc;
 					}
-					if( !function.body_syntax_element.empty() )
+					if_var( &el : function.body_syntax_element )
 					{
-						body_src_loc= function.body_syntax_element.try_deref().src_loc;
+						body_src_loc= el.src_loc;
 					}
 
 					if( !function.llvm_function.lock_imut().deref().referenced &&

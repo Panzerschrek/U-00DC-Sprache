@@ -197,10 +197,9 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type
 {
-	auto type_name= ExpandTypeNameMixin( names_scope, function_context, mixin_ );
-	if( !type_name.empty() )
+	if_var( &type_name : ExpandTypeNameMixin( names_scope, function_context, mixin_ ) )
 	{
-		return PrepareType( names_scope, function_context, type_name.try_deref() );
+		return PrepareType( names_scope, function_context, type_name );
 	}
 
 	return invalid_type_; // An error should be generated earlier.

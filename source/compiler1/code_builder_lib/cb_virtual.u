@@ -262,9 +262,9 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			}
 			else
 			{
-				if( !function.body_syntax_element.empty() )
+				if_var( &el : function.body_syntax_element )
 				{
-					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, function.body_syntax_element.try_deref().src_loc, function_name )
+					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, el.src_loc, function_name )
 				}
 				if( function_name == KeywordToString( Keyword::destructor_ ) )
 				{

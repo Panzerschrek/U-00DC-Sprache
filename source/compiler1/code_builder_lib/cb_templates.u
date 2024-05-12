@@ -601,10 +601,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	auto mut all_types_are_known= true;
-	if( !signature_param.return_type.empty() )
+	if_var( &return_type : signature_param.return_type )
 	{
 		function_type_param.return_type=
-			CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type.try_deref(), template_params_usage_flags );
+			CreateTemplateSignatureParam( names_scope, function_context, template_params, return_type, template_params_usage_flags );
 		all_types_are_known &= !function_type_param.return_type.GetTypeParam().empty();
 	}
 	else
@@ -1341,8 +1341,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	auto mut template_arg_lock= template_arg_ptr.try_lock_mut();
 	auto &mut template_arg= template_arg_lock.deref();
 
-	auto& param_type= template_.params[ size_type(template_param.index) ].t;
-	if( !param_type.empty() )
+	if_var( &param_type : template_.params[ size_type(template_param.index) ].t )
 	{
 		// Value param
 		if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
@@ -1356,7 +1355,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, param_type.try_deref(), given_variable.t ) )
+			if( !MatchTemplateArgument( names_scope, template_, param_type, given_variable.t ) )
 			{
 				return false;
 			}

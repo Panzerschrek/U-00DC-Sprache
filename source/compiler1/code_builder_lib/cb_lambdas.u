@@ -54,7 +54,13 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 						with( &field : field_ptr.try_lock_imut().deref() )
 						{
 							var tup[ LLVMValueRef, LLVMValueRef ] mut init_value= zero_init;
-							if( capture.expression.empty() )
+							if_var( &capture_expression : capture.expression )
+							{
+								// Capture with expression specified.
+								var VariablePtr variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, capture_expression );
+								init_value= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc );
+							}
+							else
 							{
 								// Simple capture - lookup variable for it by name.
 								if_var( &lookup_result : LookupName( names_scope, function_context, capture.name, lambda_.src_loc ) )
@@ -65,12 +71,6 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 										init_value= InitializeLambdaField( names_scope, function_context, field, variable_nullable.try_to_non_nullable(), result, lambda_.src_loc );
 									}
 								}
-							}
-							else
-							{
-								// Capture with expression specified.
-								var VariablePtr variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
-								init_value= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc );
 							}
 
 							if( class_type.can_be_constexpr && init_value[1] != LLVMValueRef::Null )
@@ -382,17 +382,17 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 	with( &ft : lambda_.function.deref().function_type )
 	{
-		if( !ft.return_value_reference_expression.empty() )
+		if_var( &e : ft.return_value_reference_expression )
 		{
-			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( ft.return_value_reference_expression.try_deref() ) )
+			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( e ) )
 		}
-		if( !ft.return_value_inner_references_expression.empty() )
+		if_var( &e : ft.return_value_inner_references_expression )
 		{
-			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( ft.return_value_inner_references_expression.try_deref() ) )
+			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( e ) )
 		}
-		if( !ft.references_pollution_expression.empty() )
+		if_var( &e : ft.references_pollution_expression )
 		{
-			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( ft.references_pollution_expression.try_deref() ) )
+			REPORT_ERROR( ReferenceNotationForLambda, names_scope, Synt::GetSrcLoc( e ) )
 		}
 	}
 
@@ -429,47 +429,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			var LambdaPreprocessingContext::ExplicitCaptures mut explicit_captures;
 			foreach( &capture : capture_list )
 			{
-				if( capture.expression.empty() )
-				{
-					// Simple capture with only name.
-					if( capture.name == KeywordToString( Keyword::this_ ) || capture.name == KeywordToString( Keyword::base_ ) )
-					{
-						if( function_context.this_.empty() )
-						{
-							REPORT_ERROR( ThisUnavailable, names_scope, capture.src_loc )
-						}
-						else
-						{
-							// Do not allow to capture "this" even via capture list.
-							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, capture.name )
-						}
-					}
-					else if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
-					{
-						auto variable_ptr_nullable= name[1].Get</Variable/>();
-						if( !variable_ptr_nullable.empty() )
-						{
-							var VariablePtr variable_ptr= variable_ptr_nullable.try_to_non_nullable();
-							if( !explicit_captures.find( variable_ptr ).empty() )
-							{
-								REPORT_ERROR( DuplicatedCapture, names_scope, capture.src_loc, capture.name )
-							}
-							else if( !lambda_preprocessing_context.external_variables.exists( variable_ptr ) )
-							{
-								REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "non-local variable" )
-							}
-							else
-							{
-								explicit_captures.insert( variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
-							}
-						}
-						else
-						{
-							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "some non-variable value" )
-						}
-					}
-				}
-				else
+				if_var( &capture_expression : capture.expression )
 				{
 					// Capture with initializer expression.
 
@@ -488,7 +448,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							auto state= SaveFunctionContextState( function_context );
 
 							// Do not need to use preevaluation cache here, since lambda preprocessing itself is cached.
-							auto result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, capture.expression.try_deref() );
+							auto result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, capture_expression );
 
 							RestoreFunctionContextState( function_context, state );
 							function_context.is_functionless_context= prev_is_functionless_context;
@@ -536,6 +496,46 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 						lambda_preprocessing_context.external_variables.insert( captured_variable_ptr );
 
 						explicit_captures.insert( captured_variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
+					}
+				}
+				else
+				{
+					// Simple capture with only name.
+					if( capture.name == KeywordToString( Keyword::this_ ) || capture.name == KeywordToString( Keyword::base_ ) )
+					{
+						if( function_context.this_.empty() )
+						{
+							REPORT_ERROR( ThisUnavailable, names_scope, capture.src_loc )
+						}
+						else
+						{
+							// Do not allow to capture "this" even via capture list.
+							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, capture.name )
+						}
+					}
+					else if_var( name : LookupName( names_scope, function_context, capture.name, capture.src_loc ) )
+					{
+						auto variable_ptr_nullable= name[1].Get</Variable/>();
+						if( !variable_ptr_nullable.empty() )
+						{
+							var VariablePtr variable_ptr= variable_ptr_nullable.try_to_non_nullable();
+							if( !explicit_captures.find( variable_ptr ).empty() )
+							{
+								REPORT_ERROR( DuplicatedCapture, names_scope, capture.src_loc, capture.name )
+							}
+							else if( !lambda_preprocessing_context.external_variables.exists( variable_ptr ) )
+							{
+								REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "non-local variable" )
+							}
+							else
+							{
+								explicit_captures.insert( variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
+							}
+						}
+						else
+						{
+							REPORT_ERROR( ExpectedVariable, names_scope, capture.src_loc, "some non-variable value" )
+						}
 					}
 				}
 			}

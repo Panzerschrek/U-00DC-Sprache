@@ -465,11 +465,12 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			template_parameterization.template_args.deref(),
 			template_parameterization.src_loc );
 
-		if( generated_type.empty() )
+		if_var( &t : generated_type )
 		{
-			return ust::null_optional;
+			return NamesScopeValue( t );
 		}
-		return NamesScopeValue( generated_type.try_deref() );
+
+		return ust::null_optional;
 	}
 	else if( !functions_set.empty() )
 	{

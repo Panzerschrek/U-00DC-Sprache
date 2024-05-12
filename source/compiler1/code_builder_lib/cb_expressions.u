@@ -104,10 +104,9 @@ fn CodeBuilder::BuildExpressionCodeForValueReturn(
 			}
 			else
 			{
-				auto name_lookup_result= LookupName( names_scope, function_context, name_lookup.name, name_lookup.src_loc );
-				if( !name_lookup_result.empty() )
+				if_var( &name_lookup_result : LookupName( names_scope, function_context, name_lookup.name, name_lookup.src_loc ) )
 				{
-					variable_opt= name_lookup_result.try_deref()[1].Get</Variable/>();
+					variable_opt= name_lookup_result[1].Get</Variable/>();
 
 					if( !variable_opt.empty() && !function_context.lambda_preprocessing_context.empty() )
 					{
@@ -1605,16 +1604,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	else if_var( &tuple_type : variable.t.GetTupleType() )
 	{
-		var ust::optional</VariableLite/> mut index_opt;
 		 // Create new stack frame to prevent deletion of variable during index calculation.
-		WithVariablesFrame(
+		var VariableLite index= WithVariablesFrame(
 			function_context,
-			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
 			{
-				index_opt= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() ).lock_imut().deref();
+				auto result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() );
 				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, indexation_operator.src_loc );
+				return result.lock_imut().deref();
 			} );
-		var VariableLite& index= index_opt.try_deref();
 
 		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
 		{
@@ -1879,7 +1877,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		var FunctionsSetPtr functions_set_non_null= functions_set_ptr.try_to_non_nullable();
 		PrepareFunctionsSetAndBuildConstexprBodies( class_member[2], functions_set_non_null );
 
-		if( !member_access_operator.template_args.empty() )
+		if_var( &template_args : member_access_operator.template_args )
 		{
 			if( functions_set_non_null.lock_imut().deref().function_templates.empty() )
 			{
@@ -1904,7 +1902,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				names_scope,
 				function_context,
 				functions_set_non_null,
-				member_access_operator.template_args.try_deref(),
+				template_args,
 				member_access_operator.src_loc );
 
 			function_context.references_graph.RemoveNode( variable_lock_node );
@@ -2022,6 +2020,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.src_loc, variable.t )
 		return ErrorValue();
 	}
+	var U_FundamentalType t= fundamental_type.try_deref().fundamental_type;
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 	DestroyUnusedTemporaryVariables( names_scope, function_context, unary_minus.src_loc );
@@ -2034,14 +2033,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.name= "-",
 	};
 
-	if( IsInteger( fundamental_type.try_deref().fundamental_type ) )
+	if( IsInteger( t ) )
 	{
 		if( value_in_register != LLVMValueRef::Null )
 		{
 			result.llvm_value= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
 		}
 	}
-	else if( IsFloatingPoint( fundamental_type.try_deref().fundamental_type ) )
+	else if( IsFloatingPoint( t ) )
 	{
 		if( value_in_register != LLVMValueRef::Null )
 		{
@@ -2180,10 +2179,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Value
 {
-	auto expression= ExpandExpressionMixin( names_scope, function_context, mixin_ );
-	if( !expression.empty() )
+	if_var( &expression : ExpandExpressionMixin( names_scope, function_context, mixin_ ) )
 	{
-		return BuildExpressionCode( names_scope, function_context, expression.try_deref() );
+		return BuildExpressionCode( names_scope, function_context, expression );
 	}
 
 	return ErrorValue(); // An error should be generated earlier.
@@ -2504,9 +2502,9 @@ fn CodeBuilder::BuildBinaryOperator(
 		is_signed= IsSignedInteger(t);
 		is_void= t == U_FundamentalType::void_;
 	}
-	else if( !l_enum_type.empty() )
+	else if_var( &enum_type : l_enum_type )
 	{
-		is_signed= IsSignedInteger( l_enum_type.try_deref().lock_imut().deref().underlying_type.fundamental_type );
+		is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
 	}
 
 	var Variable mut result
@@ -2540,7 +2538,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 			int_type= r_fundamental_type.try_deref().fundamental_type;
-			int_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type );
+			int_size= GetFundamentalTypeSize( int_type );
 
 			result.t= l_type;
 			ptr_value= l_in_register;
@@ -2554,7 +2552,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 			int_type= l_fundamental_type.try_deref().fundamental_type;
-			int_size= GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type );
+			int_size= GetFundamentalTypeSize( int_type );
 
 			result.t= r_type;
 			ptr_value= r_in_register;
@@ -2624,7 +2622,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		unsafe
 		{
-			var u64 element_size= LLVMABISizeOfType( data_layout_, l_raw_pointer_type.try_deref().element_type.GetLLVMType() );
+			var u64 element_size= LLVMABISizeOfType( data_layout_, element_type.GetLLVMType() );
 
 			if( element_size == 0u64 )
 			{

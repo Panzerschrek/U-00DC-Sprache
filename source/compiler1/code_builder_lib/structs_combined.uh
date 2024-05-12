@@ -912,12 +912,11 @@ public:
 	template</type T/>
 	fn Get( imut this ) : ust::shared_ptr_nullable_mut</T/>
 	{
-		auto x= something_.get</ ust::shared_ptr_mut</T/> />();
-		if( x.empty() )
+		if_var( & x : something_.get</ ust::shared_ptr_mut</T/> />() )
 		{
-			return ust::shared_ptr_nullable_mut</T/>();
+			return ust::shared_ptr_nullable_mut</T/>(x);
 		}
-		return ust::shared_ptr_nullable_mut</T/>(x.try_deref());
+		return ust::shared_ptr_nullable_mut</T/>();
 	}
 
 	// Compare shared pointers

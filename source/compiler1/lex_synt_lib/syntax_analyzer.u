@@ -4194,16 +4194,17 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 		}
 		else if( result_element.kind == Macro::ResultElementKind::VariableElement )
 		{
-			auto variable_opt= FetchMacroVariable( macro_variables_maps_stack, result_element.name );
-			if( variable_opt.empty() )
+			if_var( &variable : FetchMacroVariable( macro_variables_maps_stack, result_element.name ) )
+			{
+				foreach( &lexem : variable.lexems )
+				{
+					lexems_expanded.push_back( lexem );
+				}
+			}
+			else
 			{
 				PushMacroErrorMessage( expansion_src_loc, "\"" + result_element.name + "\" - not found" );
 				continue;
-			}
-
-			foreach( &lexem : variable_opt.try_deref().lexems )
-			{
-				lexems_expanded.push_back( lexem );
 			}
 		}
 		else if( result_element.kind == Macro::ResultElementKind::VariableElementWithMacroBlock )

@@ -693,7 +693,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		llvm_function,
 		function_variable.t );
 
-	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
+	auto src_loc= GetClassSrcLoc(class_type);
 
 	unsafe
 	{
@@ -1176,12 +1176,9 @@ fn CodeBuilder::BuildMembersDestructors( mut this, FunctionContext &mut function
 
 fn GetClassSrcLoc( ClassTypePtr& class_type_ptr ) : SrcLoc
 {
-	with( &syntax_element_ptr : class_type_ptr.lock_imut().deref().syntax_element )
+	if_var( &syntax_element : class_type_ptr.lock_imut().deref().syntax_element )
 	{
-		if( !syntax_element_ptr.empty() )
-		{
-			return syntax_element_ptr.try_deref().src_loc;
-		}
+		return syntax_element.src_loc;
 	}
 
 	// TODO - save some SrcLoc in the class for such case.

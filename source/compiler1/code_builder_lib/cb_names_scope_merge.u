@@ -228,13 +228,13 @@ fn CodeBuilder::NamesScopeMergeValues(
 			foreach( &function : src.functions )
 			{
 				var SrcLoc mut func_src_loc;
-				if( !function.prototype_syntax_element.empty() )
+				if_var( &el :function.prototype_syntax_element )
 				{
-					func_src_loc= function.prototype_syntax_element.try_deref().src_loc;
+					func_src_loc= el.src_loc;
 				}
-				if( !function.body_syntax_element.empty() )
+				if_var( &el : function.body_syntax_element )
 				{
-					func_src_loc= function.body_syntax_element.try_deref().src_loc;
+					func_src_loc= el.src_loc;
 				}
 
 				if_var( &mut prev_function : GetFunctionWithSameType( dst, function.t ) )
@@ -500,9 +500,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 		auto class_type_ptr= value.Get</ClassType/>();
 		if( !class_type_ptr.empty() )
 		{
-			auto class_lock= class_type_ptr.try_lock_imut();
-			auto& class_= class_lock.deref();
-			return class_.syntax_element.try_deref().src_loc;
+			return class_type_ptr.try_lock_imut().deref().syntax_element.try_deref().src_loc;
 		}
 	}
 	{

@@ -544,13 +544,13 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 						}
 					}
 
-					if( !src_param_reference.empty() )
+					if_var( &src : src_param_reference )
 					{
 						reference_notation_deduction_context.references_pollution.push_back(
 							FunctionType::ReferencePollution
 							{
 								.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
-								.src= src_param_reference.try_deref(),
+								.src= src,
 							} );
 					}
 
@@ -653,17 +653,15 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 						}
 					}
 
-					if( src_param_reference.empty() )
+					if_var( &src : src_param_reference )
 					{
-						continue;
+						lambda_preprocessing_context.references_pollution.push_back(
+							LambdaPreprocessingContext::ReferencePollution
+							{
+								.dst= dst_node,
+								.src= src,
+							} );
 					}
-
-					lambda_preprocessing_context.references_pollution.push_back(
-						LambdaPreprocessingContext::ReferencePollution
-						{
-							.dst= dst_node,
-							.src= src_param_reference.try_deref(),
-						} );
 				}
 			}
 		}
