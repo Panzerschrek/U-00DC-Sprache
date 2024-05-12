@@ -671,7 +671,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			TemplateVariableArg size_variable;
 			size_variable.type= size_type_;
 			size_variable.constexpr_value=
-				llvm::ConstantInt::get( size_type_.GetLLVMType(), given_array_type->element_count, false );
+				llvm::ConstantInt::get( fundamental_llvm_types_.size_type_, given_array_type->element_count, false );
 
 			return MatchTemplateArg( template_, args_names_scope, size_variable, *template_param.element_count );
 		}

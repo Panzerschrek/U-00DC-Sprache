@@ -3218,7 +3218,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		unsafe
 		{
 			var LLVMValueRef
-				mut delta_value= LLVMConstInt( size_type_.GetLLVMType(), u64(i64(delta)), LLVMBool::True ),
+				mut delta_value= LLVMConstInt( fundamental_llvm_types_.size_type_, u64(i64(delta)), LLVMBool::True ),
 				result_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), pointer_value, $<(delta_value), 1u, op_name[0] );
 			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
 		}

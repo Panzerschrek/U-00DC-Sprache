@@ -1490,7 +1490,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				.location= Variable::Location::LLVMRegister,
 				.name= "array_size",
 			};
-			size_var.constexpr_value= unsafe( LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False ) );
+			size_var.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.size_type_, given_array_type.element_count, LLVMBool::False ) );
 			size_var.llvm_value= size_var.constexpr_value;
 
 			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, VariablePtr( move(size_var) ) ) )

@@ -109,11 +109,11 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		typeinfo_class->members->AddName(
 			name,
 			NamesScopeValue( std::make_shared<ClassField>( std::string(name), typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-		fields_llvm_types.push_back( size_type_.GetLLVMType() );
+		fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
 		fields_initializers.push_back(
 			llvm::Constant::getIntegerValue(
-				size_type_.GetLLVMType(),
-				llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), value ) ) );
+				fundamental_llvm_types_.size_type_,
+				llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), value ) ) );
 	};
 
 	const auto add_typeinfo_field=
@@ -599,8 +599,8 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type
 				node_type_class.members->AddName(
 					"offset",
 					NamesScopeValue( std::make_shared<ClassField>( "offset", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-				fields_llvm_types.push_back( size_type_.GetLLVMType() );
-				fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
+				fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), offset ) ) );
 			}
 
 			node_type_class.members->AddName(
@@ -780,8 +780,8 @@ VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_typ
 		node_type_class.members->AddName(
 			"offset",
 			NamesScopeValue( std::make_shared<ClassField>( "offset", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-		fields_llvm_types.push_back( size_type_.GetLLVMType() );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), parent_field_offset ) ) );
+		fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
+		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), parent_field_offset ) ) );
 
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
@@ -864,16 +864,16 @@ VariablePtr CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type
 			node_type_class.members->AddName(
 				"index",
 				NamesScopeValue( std::make_shared<ClassField>( "index", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-			fields_llvm_types.push_back( size_type_.GetLLVMType() );
-			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), element_index ) ) );
+			fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
+			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), element_index ) ) );
 		}
 		{
 			const auto offset= struct_layout->getElementOffset( uint32_t(element_index) );
 			node_type_class.members->AddName(
 				"offset",
 				NamesScopeValue( std::make_shared<ClassField>( "offset", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
-			fields_llvm_types.push_back( size_type_.GetLLVMType() );
-			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
+			fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
+			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), offset ) ) );
 		}
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 

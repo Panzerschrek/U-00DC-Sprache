@@ -333,14 +333,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const uint64_t index_size= GetFundamentalTypeSize( index_fundamental_type->fundamental_type );
 			const uint64_t size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
 			if( index_size > size_type_size )
-				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
+				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, fundamental_llvm_types_.size_type_ );
 			else if( index_size < size_type_size )
-				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
+				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.size_type_ );
 
 			llvm::Value* const condition=
 				function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
 					index_value,
-					llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->element_count ) ) );
+					llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), array_type->element_count ) ) );
 
 			llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
 			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );

@@ -2582,7 +2582,7 @@ fn CodeBuilder::BuildBinaryOperator(
 		{
 			if( int_size < pointer_size )
 			{
-				var LLVMTypeRef dst_type= size_type_.GetLLVMType();
+				var LLVMTypeRef dst_type= fundamental_llvm_types_.size_type_;
 				if( IsSignedInteger( int_type ) )
 				{
 					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, dst_type, g_null_string );
@@ -2685,7 +2685,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			var LLVMValueRef mut sub_value= r_in_register;
 			if( int_size < pointer_size )
 			{
-				var LLVMTypeRef dst_type= size_type_.GetLLVMType();
+				var LLVMTypeRef dst_type= fundamental_llvm_types_.size_type_;
 				if( IsSignedInteger( int_type ) )
 				{
 					sub_value= LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, dst_type, g_null_string );
