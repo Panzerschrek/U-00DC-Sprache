@@ -233,7 +233,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	else if( type_suffix == ust::string8("s") )
 	{
-		t= size_type_.GetFundamentalType().try_deref().fundamental_type;
+		t= U_FundamentalType::size_type_;
 	}
 	else if( type_suffix == ust::string8("f") )
 	{

@@ -1206,7 +1206,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		type= U_FundamentalType::u32_;
 	// Suffix for size_type
 	else if( type_suffix == "s" )
-		type= size_type_.GetFundamentalType()->fundamental_type;
+		type= U_FundamentalType::size_type_;
 	// Simple "f" suffix for 32bit floats.
 	else if( type_suffix == "f" )
 		type= U_FundamentalType::f32_;
