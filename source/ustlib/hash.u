@@ -20,6 +20,8 @@ fn constexpr hash( u128 x ) : size_type { return size_type(x); }
 fn constexpr hash( char8  x ) : size_type { return size_type(x); }
 fn constexpr hash( char16 x ) : size_type { return size_type(x); }
 fn constexpr hash( char32 x ) : size_type { return size_type(x); }
+fn constexpr hash( size_type  x ) : size_type { return x; }
+fn constexpr hash( ssize_type x ) : size_type { return size_type(x); }
 
 // Hash byte-types as unsigned integers of same size.
 fn constexpr hash( byte8   x ) : size_type { return hash(u8  (x)); }
