@@ -69,5 +69,18 @@ op SrcLoc::<=>( SrcLoc& l, SrcLoc& r ) : i32
 	return l.column_ <=> r.column_;
 }
 
+fn SrcLoc::Hash( this ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of >= 8s )
+	{
+		// Can pack all into hash.
+		return (size_type(file_index_) << 48u) | (size_type(macro_expansion_index_) << 32u) | (size_type(line_) << 16u) | size_type(column_);
+	}
+	else
+	{
+		// xor low and high parts.
+		return ( (size_type(file_index_) << 16u) | size_type(macro_expansion_index_) ) ^ ( (size_type(line_) << 16u) | size_type(column_) );
+	}
+}
 
 } // namespace U1

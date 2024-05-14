@@ -874,13 +874,7 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 
 fn LambdaKeyHasher::hash( LambdaKey& k ) : size_type
 {
-	auto mut hash= ust::default_hasher::hash( k.parent_scope );
-
-	// TODO - create separate function for src_loc hashing.
-	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetFileIndex() ) );
-	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetLine() ) );
-	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetColumn() ) );
-	hash= TypeHasher::hash_combine( hash, size_type( k.src_loc.GetMacroExpansionIndex() ) );
+	auto mut hash= TypeHasher::hash_combine( ust::default_hasher::hash( k.parent_scope ), k.src_loc.Hash() );
 
 	foreach( index : k.tuple_for_indices )
 	{

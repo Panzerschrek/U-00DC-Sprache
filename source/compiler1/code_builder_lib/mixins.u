@@ -5,15 +5,7 @@ namespace U1
 
 fn MixinExpansionKeyHasher::hash(MixinExpansionKey& k) : size_type
 {
-	auto mut hash= ust::default_hasher::hash( k.mixin_text );
-
-	// TODO - create separate function for src_loc hashing.
-	hash= TypeHasher::hash_combine( hash, size_type( k.mixin_src_loc.GetFileIndex() ) );
-	hash= TypeHasher::hash_combine( hash, size_type( k.mixin_src_loc.GetLine() ) );
-	hash= TypeHasher::hash_combine( hash, size_type( k.mixin_src_loc.GetColumn() ) );
-	hash= TypeHasher::hash_combine( hash, size_type( k.mixin_src_loc.GetMacroExpansionIndex() ) );
-
-	return hash;
+	return TypeHasher::hash_combine( ust::default_hasher::hash( k.mixin_text ), k.mixin_src_loc.Hash() );
 }
 
 } // namespace U1

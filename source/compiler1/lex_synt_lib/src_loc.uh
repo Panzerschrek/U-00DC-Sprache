@@ -30,6 +30,8 @@ public:
 	op==( SrcLoc& l, SrcLoc& r ) : bool = default;
 	op<=>( SrcLoc& l, SrcLoc& r ) : i32;
 
+	fn Hash( this ) : size_type;
+
 private:
 	u16 file_index_(0);
 	u16 macro_expansion_index_(c_max_macro_expanison_index);
