@@ -106,7 +106,7 @@ enum class InputFileType{ Source, BC, LL };
 cl::opt< InputFileType > input_files_type(
 	"input-filetype",
 	cl::init(InputFileType::Source),
-	cl::desc("Choose a input files type:"),
+	cl::desc("Choose an input files type:"),
 	cl::values(
 		clEnumValN( InputFileType::Source, "source", "Reead Ü source files" ),
 		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" ),
@@ -136,7 +136,7 @@ cl::opt<bool> override_data_layout(
 
 cl::opt<bool> override_target_triple(
 	"override-target-triple",
-	cl::desc("Override data layout of input LL or BC module."),
+	cl::desc("Override target triple of input LL or BC module."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -198,7 +198,7 @@ cl::opt<std::string> dep_file_name(
 
 cl::opt<bool> deps_tracking(
 	"deps-tracking",
-	cl::desc("Create dependency file for output file, do not rebuild output file if input files listed in output dependency file not changed"),
+	cl::desc("Create dependency file for output file, do not rebuild output file if input files listed in output dependency file are not changed."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -234,7 +234,7 @@ cl::opt< HaltMode > halt_mode(
 		clEnumValN( HaltMode::Trap, "trap", "Produce trap instruction (default)." ),
 		clEnumValN( HaltMode::Abort, "abort", "Call C \"abort\" function." ),
 		clEnumValN( HaltMode::ConfigurableHandler, "configurable_handler", "Produce call to configurable \"_U_halt_handler\" function." ),
-		clEnumValN( HaltMode::Unreachable, "unreachable", "Treat \"halt\" as unreachable instruction. Behavior is undefined if \"halt\" happens." ) ),
+		clEnumValN( HaltMode::Unreachable, "unreachable", "Treat \"halt\" as unreachable instruction. behavior is undefined if \"halt\" happens." ) ),
 	cl::cat(options_category) );
 
 cl::opt<bool> no_libc_alloc(
@@ -283,7 +283,7 @@ cl::opt< LTOMode > lto_mode(
 cl::list<std::string> linker_args(
 	"Wl",
 	cl::value_desc("linker args"),
-	cl::desc("Pass a comma-separated list of arguments to the internal linker (LLD). used only if the internal linker is used (for executable of shared library output)."),
+	cl::desc("Pass a comma-separated list of arguments to the internal linker (LLD). Used only if the internal linker is used (for executable or shared library output)."),
 	cl::ZeroOrMore,
 	cl::Prefix,
 	cl::CommaSeparated,
