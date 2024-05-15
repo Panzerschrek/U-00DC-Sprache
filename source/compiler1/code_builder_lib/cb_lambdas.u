@@ -165,7 +165,7 @@ fn CodeBuilder::InitializeLambdaField(
 
 	debug_assert( v.t == field.t );
 
-	var VariableLite r= result.lock_imut().deref();
+	var VariableLite r= result;
 	auto field_address= CreateClassFieldGEP( function_context, r, field );
 
 	if( field.is_reference )

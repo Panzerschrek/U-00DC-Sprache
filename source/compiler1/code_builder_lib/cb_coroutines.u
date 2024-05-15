@@ -482,7 +482,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 
 				CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
 
-				var VariableLite expr= expr_ptr.lock_imut().deref();
+				var VariableLite expr= expr_ptr;
 				if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
 				{
 					// Process composite value.
@@ -521,7 +521,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			}
 			else
 			{
-				var VariableLite expr= expr_ptr.lock_imut().deref();
+				var VariableLite expr= expr_ptr;
 				if(!expr.t.ReferenceIsConvertibleTo( yield_type ) )
 				{
 					REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr.t )
@@ -603,7 +603,7 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 		CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
 		function_context.references_graph.TryAddInnerLinks( expr_ptr, return_node, names_scope, src_loc );
 
-		var VariableLite expr= expr_ptr.lock_imut().deref();
+		var VariableLite expr= expr_ptr;
 		if( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() )
 		{
 			// Process composite value.
@@ -642,8 +642,8 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 	}
 	else
 	{
-		var VariableLite expr= expr_ptr.lock_imut().deref();
-		if(!expr.t.ReferenceIsConvertibleTo( return_type ) )
+		var VariableLite expr= expr_ptr;
+		if( !expr.t.ReferenceIsConvertibleTo( return_type ) )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, return_type, expr.t )
 			function_context.references_graph.RemoveNode( return_node );
@@ -681,7 +681,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 {
 	var VariablePtr async_func_variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 
-	var VariableLite async_func_variable= async_func_variable_ptr.lock_imut().deref();
+	var VariableLite async_func_variable= async_func_variable_ptr;
 	if( async_func_variable.t == invalid_type_ )
 	{
 		return ErrorValue();

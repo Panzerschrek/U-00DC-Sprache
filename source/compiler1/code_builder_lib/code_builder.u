@@ -1559,12 +1559,12 @@ fn CodeBuilder::BuildFuncCode(
 		debug_info_builder_.try_deref().SetCurrentLocation( function_context, block.end_src_loc );
 		unsafe
 		{
-			if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && ! function_context.this_.empty() )
+			if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && !function_context.this_.empty() )
 			{
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.destructor_end_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.destructor_end_block );
 
-				var VariableLite this_copy= function_context.this_.try_lock_imut().deref();
+				var VariableLite this_copy= function_context.this_.try_to_non_nullable();
 				if_var( &class_type : this_copy.t.GetClassType() )
 				{
 					BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );

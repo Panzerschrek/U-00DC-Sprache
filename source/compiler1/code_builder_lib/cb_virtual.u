@@ -628,7 +628,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 	// TODO - check reference conversion possibility.
 
-	var VariableLite this_= this_ptr.lock_imut().deref();
+	var VariableLite this_= this_ptr;
 	// Cast "this" into type of class, where this virtual function is declared.
 	// This is needed to perform (possible) pointer correction later.
 	var Variable mut this_casted

@@ -412,6 +412,19 @@ struct VariableLite
 		( t= move(in_t), value_type= in_value_type, location= in_location, llvm_value= in_llvm_value, constexpr_value= in_constexpr_value )
 	{}
 
+	fn conversion_constructor( mut this, VariablePtr& v_ptr )
+		( value_type= zero_init, location= zero_init, llvm_value= zero_init, constexpr_value= zero_init )
+	{
+		with( &v : v_ptr.lock_imut().deref() )
+		{
+			t= v.t;
+			value_type= v.value_type;
+			location= v.location;
+			llvm_value= v.llvm_value;
+			constexpr_value= v.constexpr_value;
+		}
+	}
+
 	fn conversion_constructor( mut this, Variable& v )
 		( t= v.t, value_type= v.value_type, location= v.location, llvm_value= v.llvm_value, constexpr_value= v.constexpr_value )
 	{}

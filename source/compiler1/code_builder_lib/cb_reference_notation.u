@@ -251,7 +251,7 @@ fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& na
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
 		{
-			return self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+			return self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 		} );
 }
 

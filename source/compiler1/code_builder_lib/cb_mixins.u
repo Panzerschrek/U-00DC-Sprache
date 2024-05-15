@@ -446,7 +446,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 	}
 	auto syntax_element= mixin_.syntax_element.try_to_non_nullable();
 
-	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, syntax_element.deref().expression ).lock_imut().deref();
+	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, syntax_element.deref().expression );
 
 	mixin_.syntax_element.reset();
 
