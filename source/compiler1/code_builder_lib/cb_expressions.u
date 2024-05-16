@@ -2525,7 +2525,6 @@ fn CodeBuilder::BuildBinaryOperator(
 		}
 
 		var u32 pointer_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
-		var u32 mut int_size(0);
 
 		var LLVMValueRef mut ptr_value= LLVMValueRef::Null, mut index_value= LLVMValueRef::Null;
 		var U_FundamentalType mut int_type= U_FundamentalType::InvalidType;
@@ -2538,7 +2537,6 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 			int_type= r_fundamental_type.try_deref().fundamental_type;
-			int_size= GetFundamentalTypeSize( int_type );
 
 			result.t= l_type;
 			ptr_value= l_in_register;
@@ -2552,7 +2550,6 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 			int_type= l_fundamental_type.try_deref().fundamental_type;
-			int_size= GetFundamentalTypeSize( int_type );
 
 			result.t= r_type;
 			ptr_value= r_in_register;
@@ -2563,6 +2560,8 @@ fn CodeBuilder::BuildBinaryOperator(
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
+
+		auto int_size= GetFundamentalTypeSize( int_type );
 
 		var Type element_type= result.t.GetRawPointerType().try_deref().element_type;
 		if( !EnsureTypeComplete( element_type ) )
@@ -2582,14 +2581,13 @@ fn CodeBuilder::BuildBinaryOperator(
 		{
 			if( int_size < pointer_size )
 			{
-				var LLVMTypeRef dst_type= fundamental_llvm_types_.size_type_;
 				if( IsSignedInteger( int_type ) )
 				{
-					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, dst_type, g_null_string );
+					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string );
 				}
 				else
 				{
-					index_value= LLVMBuildZExt( function_context.llvm_ir_builder, index_value, dst_type, g_null_string );
+					index_value= LLVMBuildZExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string );
 				}
 			}
 

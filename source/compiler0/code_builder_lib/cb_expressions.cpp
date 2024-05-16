@@ -3079,7 +3079,6 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	if( binary_operator == BinaryOperatorType::Add )
 	{
 		const uint64_t ptr_size= fundamental_llvm_types_.size_type_->getIntegerBitWidth() / 8;
-		uint64_t int_size= 0u;
 		U_FundamentalType int_type= U_FundamentalType::InvalidType;
 
 		llvm::Value* ptr_value= nullptr;
@@ -3087,7 +3086,6 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 		if( const auto l_fundamental_type= l_var.type.GetFundamentalType() )
 		{
-			int_size= GetFundamentalTypeSize( l_fundamental_type->fundamental_type );
 			int_type= l_fundamental_type->fundamental_type;
 			index_value= l_value_for_op;
 
@@ -3097,7 +3095,6 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 		}
 		else if( const auto r_fundamental_type= r_var.type.GetFundamentalType() )
 		{
-			int_size= GetFundamentalTypeSize( r_fundamental_type->fundamental_type );
 			int_type= r_fundamental_type->fundamental_type;
 			index_value= r_value_for_op;
 
@@ -3110,6 +3107,8 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_var.type );
 			return ErrorValue();
 		}
+
+		const uint64_t int_size= GetFundamentalTypeSize( int_type );
 
 		const Type& element_type= result->type.GetRawPointerType()->element_type;
 		if( !EnsureTypeComplete( element_type ) )
