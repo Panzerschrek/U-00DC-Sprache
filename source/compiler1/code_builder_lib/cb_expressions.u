@@ -2577,24 +2577,21 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		unsafe
+		if( !function_context.is_functionless_context )
 		{
 			if( int_size < pointer_size )
 			{
 				if( IsSignedInteger( int_type ) )
 				{
-					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string );
+					index_value= unsafe( LLVMBuildSExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string ) );
 				}
 				else
 				{
-					index_value= LLVMBuildZExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string );
+					index_value= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string ) );
 				}
 			}
 
-			if( !function_context.is_functionless_context )
-			{
-				result.llvm_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
-			}
+			result.llvm_value= unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] ) );
 		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
@@ -2678,27 +2675,23 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		result.t= l_type;
 
-		unsafe
+		if( !function_context.is_functionless_context )
 		{
 			var LLVMValueRef mut sub_value= r_in_register;
 			if( int_size < pointer_size )
 			{
-				var LLVMTypeRef dst_type= fundamental_llvm_types_.size_type_;
 				if( IsSignedInteger( int_type ) )
 				{
-					sub_value= LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, dst_type, g_null_string );
+					sub_value= unsafe( LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, fundamental_llvm_types_.size_type_, g_null_string ) );
 				}
 				else
 				{
-					sub_value= LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, dst_type, g_null_string );
+					sub_value= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, fundamental_llvm_types_.size_type_, g_null_string ) );
 				}
 			}
-			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, g_null_string );
+			auto mut index_negative= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, g_null_string ) );
 
-			if( !function_context.is_functionless_context )
-			{
-				result.llvm_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
-			}
+			result.llvm_value= unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] ) );
 		}
 	}
 	else if(
