@@ -540,7 +540,7 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 	{
 		// These kinds of types have no lists.
 	}
-	else if_var( enum_type : source_type.GetEnumType() )
+	else if_var( &enum_type : source_type.GetEnumType() )
 	{
 		if( name == "elements_list" )
 		{
@@ -564,7 +564,7 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 			return cache_element.elements_list;
 		}
 	}
-	else if_var( class_type : source_type.GetClassType() )
+	else if_var( &class_type : source_type.GetClassType() )
 	{
 		if( name == "fields_list" )
 		{
@@ -603,7 +603,7 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 			return cache_element.parents_list;
 		}
 	}
-	else if_var( function_pointer_type : source_type.GetFunctionPointerType() )
+	else if_var( &function_pointer_type : source_type.GetFunctionPointerType() )
 	{
 		if( name == "params_list" )
 		{
