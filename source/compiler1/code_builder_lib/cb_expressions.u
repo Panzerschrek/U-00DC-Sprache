@@ -1850,7 +1850,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	auto& class_member= class_member_opt.try_deref();
 
-	if( u32( names_scope.lock_imut().deref().GetAccessFor( class_type ) ) < u32( class_member[1] ) )
+	if( names_scope.lock_imut().deref().GetAccessFor( class_type ) < class_member[1] )
 	{
 		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.src_loc, member_access_operator.member_name, variable.t.ToString() )
 	}

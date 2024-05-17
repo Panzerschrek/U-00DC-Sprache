@@ -381,7 +381,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 		auto class_non_null= class_.try_to_non_nullable();
 		if_var( &class_value : ResolveClassValue( class_non_null, names_scope_fetch.name ) )
 		{
-			if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value[1] ) )
+			if( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) < class_value[1] )
 			{
 				REPORT_ERROR( AccessingNonpublicClassMember, names_scope, names_scope_fetch.src_loc, names_scope_fetch.name, Type(class_non_null).ToString() )
 			}
@@ -575,7 +575,7 @@ fn CodeBuilder::LookupName( mut this, NamesScopePtr& names_scope, FunctionContex
 			auto class_non_null= class_.try_to_non_nullable();
 			if_var( &class_value : ResolveClassValue( class_non_null, name ) )
 			{
-				if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value[1] ) )
+				if( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) <  class_value[1] )
 				{
 					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, name, Type(class_non_null).ToString() )
 				}
