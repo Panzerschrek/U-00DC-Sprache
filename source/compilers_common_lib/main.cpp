@@ -30,6 +30,7 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/Internalize.h>
+#include <polly/RegisterPasses.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
@@ -419,6 +420,7 @@ int Main( int argc, const char* argv[] )
 		llvm::initializeAnalysis(registry);
 		llvm::initializeCodeGen(registry);
 		llvm::initializeTarget(registry);
+		polly::initializePollyPasses(registry);
 	}
 
 	// Prepare target machine.
@@ -715,6 +717,8 @@ int Main( int argc, const char* argv[] )
 		tuning_options.MergeFunctions= optimization_level.getSpeedupLevel() > 0 || optimization_level.getSizeLevel() > 0;
 
 		llvm::PassBuilder pass_builder( target_machine.get(), tuning_options );
+
+		polly::registerPollyPasses(pass_builder);
 
 		// Register all the basic analyses with the managers.
 		llvm::LoopAnalysisManager loop_analysis_manager;
