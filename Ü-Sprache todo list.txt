@@ -13,10 +13,12 @@ General:
 *) thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
 	(in expression context)
-*) "nodiscard" for types (and/or) functions
+*) "nodiscard" for types and/or functions
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
+*) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)
 *) Variable templates
+*) An operator for compile-time embedding of a file contents as constant byte array
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -32,9 +34,9 @@ Lambdas:
 *) Conversion of lambdas with zero captures into function pointers
 
 Standart library:
-*) Compilation speed-up - avoid generating some helper classes/functions
 *) Improve/fix unordered_map
 *) Support types with references inside in some containers (variant, result, unordered_map)
+*) Make clear separation between standard library and some intrinsics built-in into the compiler
 *) switch-like macro for variant
 *) Associative containers - map, set, string_map
 *) More algorithms
@@ -47,6 +49,10 @@ Standart library:
 *) Formatting library
 *) More type traits
 *) More math functions
+*) "result"-like container for reference results
+*) Try to optimize random_access_range - use start + end pointers instead of start + size
+*) Reference-counting immutable string class
+*) Small string optimization
 
 Compiler:
 *) Investigate optimization possibility - avoid mangling private functions
@@ -69,6 +75,7 @@ Compiler:
 *) Precompiled modules
 *) More calling conventions (including platform-dependent)
 *) Generate errors about unused function templates
+*) Built-in compiler optimization hints ("assume", "likely", "unlikely", etc.)
 
 Interpreter:
 *) Support entry point with args and add possibility to provide such args (argc, argv?)
