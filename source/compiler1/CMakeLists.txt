@@ -12,7 +12,7 @@ endif()
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
 else()
-	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
+	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 -polly )
 endif()
 
 # Build rule for "Ü" files.
