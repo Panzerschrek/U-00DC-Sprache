@@ -1,6 +1,13 @@
 message( STATUS "Build compiler ${NEXT_COMPILER_GENERATION}")
 
-option( U_COMPILER1_LTO "Use LTO for Compiler1" NO )
+# Build Compiler1 without LTO. Build later generations with LTO.
+if( ${NEXT_COMPILER_GENERATION} STREQUAL "1" )
+	set( COMPILER1_LTO NO )
+	message( "build Compiler${NEXT_COMPILER_GENERATION} with no LTO" )
+else()
+	set( COMPILER1_LTO YES )
+	message( "build Compiler${NEXT_COMPILER_GENERATION} with LTO" )
+endif()
 
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
@@ -13,7 +20,7 @@ function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
 	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
 
-	if( U_COMPILER1_LTO )
+	if( COMPILER1_LTO )
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.bc
 			DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
@@ -128,7 +135,7 @@ file( GLOB LAUNCHERS_COMMON_CPP_SOURCES "launchers_common/*.cpp" )
 file( GLOB LAUNCHERS_COMMON_CPP_HEADERS "launchers_common/*.hpp" )
 CompileUSources( LAUNCHERS_COMMON_SOURCES LAUNCHERS_COMMON_OBJECTS )
 
-if( U_COMPILER1_LTO )
+if( COMPILER1_LTO )
 	set( CODE_BUILDER_LIB_BC ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib.bc )
 	set( CODE_BUILDER_LIB_O ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib.bc.o )
 
