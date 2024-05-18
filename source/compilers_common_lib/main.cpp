@@ -731,25 +731,37 @@ int Main( int argc, const char* argv[] )
 			cg_analysis_manager,
 			module_analysis_manager);
 
-		// Add callbacks for early passes creation.
-		pass_builder.registerPipelineStartEPCallback(
-			[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel )
-		{
-			// Internalize (if needed).
-			if( Options::internalize )
-				module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
-		} );
+		auto internalize_callback=
+				[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel )
+				{
+					// Internalize (if needed).
+					if( Options::internalize )
+						module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
+				};
 
 		// Create the pass manager.
 		llvm::ModulePassManager module_pass_manager;
 		if( optimization_level == llvm::OptimizationLevel::O0 )
+		{
+			pass_builder.registerPipelineStartEPCallback( internalize_callback );
 			module_pass_manager= pass_builder.buildO0DefaultPipeline( optimization_level );
+		}
 		else if( Options::lto_mode == Options::LTOMode::PreLink )
+		{
+			pass_builder.registerPipelineStartEPCallback( internalize_callback );
 			module_pass_manager= pass_builder.buildLTOPreLinkDefaultPipeline( optimization_level );
+		}
 		else if( Options::lto_mode == Options::LTOMode::Link )
+		{
+			// LTO pipeline uses different callbacks at start.
+			pass_builder.registerFullLinkTimeOptimizationEarlyEPCallback( internalize_callback );
 			module_pass_manager= pass_builder.buildLTODefaultPipeline( optimization_level, nullptr );
+		}
 		else
+		{
+			pass_builder.registerPipelineStartEPCallback( internalize_callback );
 			module_pass_manager= pass_builder.buildPerModuleDefaultPipeline( optimization_level );
+		}
 
 		// Optimize the IR!
 		module_pass_manager.run( *result_module, module_analysis_manager );
