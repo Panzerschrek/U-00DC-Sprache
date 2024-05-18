@@ -1,12 +1,12 @@
 message( STATUS "Build compiler ${NEXT_COMPILER_GENERATION}")
 
-# Build Compiler1 without LTO. Build later generations with LTO.
-if( ${NEXT_COMPILER_GENERATION} STREQUAL "1" )
+# Build Compiler1 without LTO. Build later generations with LTO, but only in release mode.
+if( ${NEXT_COMPILER_GENERATION} STREQUAL "1" OR ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( COMPILER1_LTO NO )
-	message( "build Compiler${NEXT_COMPILER_GENERATION} with no LTO" )
+	message( STATUS "build Compiler${NEXT_COMPILER_GENERATION} with no LTO" )
 else()
 	set( COMPILER1_LTO YES )
-	message( "build Compiler${NEXT_COMPILER_GENERATION} with LTO" )
+	message( STATUS "build Compiler${NEXT_COMPILER_GENERATION} with LTO" )
 endif()
 
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
