@@ -7,13 +7,13 @@ namespace ust
 template</type T/>
 fn sort( random_access_range</T, true/> range )
 {
-	unsafe{  sort_impl::do_sort( range.data(), range.data() + range.size(), sort_impl::default_compare</T/>() );  }
+	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), sort_impl::default_compare</T/>() ) );
 }
 
 template</type T, type Compare/>
 fn sort( random_access_range</T, true/> range, Compare& comp )
 {
-	unsafe{  sort_impl::do_sort( range.data(), range.data() + range.size(), comp );  }
+	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), comp ) );
 }
 
 namespace sort_impl
@@ -56,7 +56,7 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 
 				if( !safe( comp( cast_imut(l), cast_imut(r) ) ) )
 				{
-					swap( l, r ); // TODO - make sure it isn't possible to swap an element with itself.
+					swap( l, r );
 				}
 			}
 			return;
@@ -65,35 +65,42 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 		unsafe
 		{
 			// Assuming the middle element is at the end.
-			// Compare all elements against it.
+			// Compare all elements against it and place them at left or right range part.
 			// TODO - select somehow good enough middle element and put it at end.
 
 			// Perform operations with raw pointers, because it seems to be the fastest way to do so.
-			auto mut last= end - 1s;
-			auto mut lo= start;
-			auto mut hi= last;
+			var $(T) last= end - 1s, mut lo= start, mut hi= last;
 
-			while( lo < hi )
+			loop
 			{
-				var bool mut c= false;
-
 				if( safe( comp( cast_imut( unsafe( $>(lo) ) ), cast_imut( unsafe( $>(last) ) ) ) ) )
 				{
 					++lo;
+					if( lo == hi )
+					{
+						break;
+					}
 				}
 				else
 				{
 					--hi;
-					swap( $>(lo), $>(hi) ); // TODO - make sure it isn't possible to swap an element with itself.
+					if( lo == hi )
+					{
+						break;
+					}
+
+					swap( $>(lo), $>(hi) );
 				}
 			}
 
-			if( hi < last )
+			// At end put the middle element at split position.
+			if( hi != last )
 			{
-				swap( $>(hi), $>(last) );  // TODO - make sure it isn't possible to swap an element with itself.
+				swap( $>(hi), $>(last) );
 			}
 
 			// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
+			// In both cases process subranges excluding "hi" position, since it now contains the middle element.
 			auto hi1= hi + 1s;
 			if( hi - start < end - hi1 )
 			{
