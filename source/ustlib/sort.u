@@ -1,3 +1,4 @@
+import "assert.u"
 import "random_access_range.u"
 
 namespace ust
@@ -6,13 +7,13 @@ namespace ust
 template</type T/>
 fn sort( random_access_range</T, true/> range )
 {
-	unsafe{  sort_impl::do_sort( range.data(), range.size(), sort_impl::default_compare</T/>() );  }
+	unsafe{  sort_impl::do_sort( range.data(), range.data() + range.size(), sort_impl::default_compare</T/>() );  }
 }
 
 template</type T, type Compare/>
 fn sort( random_access_range</T, true/> range, Compare& comp )
 {
-	unsafe{  sort_impl::do_sort( range.data(), range.size(), comp );  }
+	unsafe{  sort_impl::do_sort( range.data(), range.data() + range.size(), comp );  }
 }
 
 namespace sort_impl
@@ -27,20 +28,6 @@ struct default_compare
 	}
 }
 
-template</type T/>
-fn swap( $(T) ptr0, $(T) ptr1 ) unsafe
-{
-	unsafe
-	{
-		auto c_element_size= typeinfo</T/>.size_of;
-		auto c_element_alignment= typeinfo</T/>.align_of;
-		var aligned_storage</ c_element_size, typeinfo</T/>.align_of /> mut temp= uninitialized;
-		memory_copy_aligned( c_element_alignment, cast_ref_unsafe</void/>( temp )    , cast_ref_unsafe</void/>( $>(ptr0) ), c_element_size );
-		memory_copy_aligned( c_element_alignment, cast_ref_unsafe</void/>( $>(ptr0) ), cast_ref_unsafe</void/>( $>(ptr1) ), c_element_size );
-		memory_copy_aligned( c_element_alignment, cast_ref_unsafe</void/>( $>(ptr1) ), cast_ref_unsafe</void/>( temp )    , c_element_size );
-	}
-}
-
 /*
 Simple quicksort implementation. Average complexity - O(log(n)), worst case complexity - O(n^2).
  TODO:
@@ -49,72 +36,75 @@ Simple quicksort implementation. Average complexity - O(log(n)), worst case comp
 */
 
 template</type T, type Compare/>
-fn do_sort( $(T) mut start, size_type mut size, Compare& comp ) unsafe
+fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 {
-	while(true)
+	loop
 	{
-		if( size <= 1s )
+		debug_assert( start <= end );
+		auto size= end - start;
+
+		if( size <= ssize_type(1) )
 		{
 			return;
 		}
-		if( size == 2s )
+		if( size == ssize_type(2) )
 		{
-			var bool mut c= false;
 			unsafe
 			{
-				var T& l= $>(start);
-				var T& r= $>(start + 1);
-				safe{  c= comp( l, r );  }
-			}
-			if( !c )
-			{
-				unsafe{  swap( start, start + 1 );  }
+				var T &mut l= $>(start);
+				var T &mut r= $>(start + 1);
+
+				if( !safe( comp( cast_imut(l), cast_imut(r) ) ) )
+				{
+					swap( l, r ); // TODO - make sure it isn't possible to swap an element with itself.
+				}
 			}
 			return;
 		}
 
-		var size_type last= size - 1s, mut lo= 0s, mut hi= last;
-
-		while( lo < hi )
+		unsafe
 		{
-			var bool mut c= false;
-			unsafe
+			// Assuming the middle element is at the end.
+			// Compare all elements against it.
+			// TODO - select somehow good enough middle element and put it at end.
+
+			// Perform operations with raw pointers, because it seems to be the fastest way to do so.
+			auto mut last= end - 1s;
+			auto mut lo= start;
+			auto mut hi= last;
+
+			while( lo < hi )
 			{
-				var T& l= $>(start + lo);
-				var T& r= $>(start + last);
-				safe{  c= comp( l, r );  }
+				var bool mut c= false;
+
+				if( safe( comp( cast_imut( unsafe( $>(lo) ) ), cast_imut( unsafe( $>(last) ) ) ) ) )
+				{
+					++lo;
+				}
+				else
+				{
+					--hi;
+					swap( $>(lo), $>(hi) ); // TODO - make sure it isn't possible to swap an element with itself.
+				}
 			}
 
-			if( c )
+			if( hi < last )
 			{
-				++lo;
+				swap( $>(hi), $>(last) );  // TODO - make sure it isn't possible to swap an element with itself.
+			}
+
+			// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
+			auto hi1= hi + 1s;
+			if( hi - start < end - hi1 )
+			{
+				do_sort( start, hi, comp );
+				start= hi1;
 			}
 			else
 			{
-				--hi;
-				unsafe{  swap( start + lo, start + hi );  }
+				do_sort( hi1, end, comp );
+				end= hi;
 			}
-		}
-
-		if( hi < last )
-		{
-			unsafe{  swap( start + hi, start + last );  }
-		}
-
-		// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
-		auto hi1= hi + 1s;
-		auto size_lo= hi;
-		auto size_hi= size - hi1;
-		if( size_lo < size_hi )
-		{
-			unsafe{  do_sort( start, hi, comp );  }
-			start+= hi1;
-			size-= hi1;
-		}
-		else
-		{
-			unsafe{  do_sort( start + hi1, size_hi, comp );  }
-			size= size_lo;
 		}
 	}
 }
