@@ -34,14 +34,14 @@ Simple quicksort implementation. Average complexity - O(log(n)), worst case comp
  * Use more simple sorting algorithm for small number of elements.
  * Select median element wisely.
 */
-
+// Input pointers should be part of the same memory region (array, vector, etc.). start <= end.
 template</type T, type Compare/>
 fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 {
 	loop
 	{
 		debug_assert( start <= end );
-		auto size= end - start;
+		auto size= unsafe( end - start );
 
 		if( size <= ssize_type(1) )
 		{
