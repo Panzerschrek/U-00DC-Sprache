@@ -64,9 +64,36 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 
 		unsafe
 		{
-			// Assuming the middle element is at the end.
+			if( size >= ssize_type(8) )
+			{
+				// Try to select middle element trying first, last, middle. Put such middle element at the last position.
+				// Doing so we fix quadratic complexity for sorted, almost sorted, reverse-sorted arrays.
+				var T &mut first= $>(start);
+				var T &mut last= $>(end - 1s);
+				var T &mut middle= $>( start + ((end - start) >> 1s) );
+
+				var bool fl= safe( comp( cast_imut(first), cast_imut(last  ) ) );
+				var bool lm= safe( comp( cast_imut(last ), cast_imut(middle) ) );
+				var bool fm= safe( comp( cast_imut(first), cast_imut(middle) ) );
+
+				if( (fm && !lm) || (!fm && lm) )
+				{
+					// "middle" is middle.
+					swap( last, middle );
+				}
+				else if( (fl && !fm) || (!fl && fm) )
+				{
+					// "first" is middle.
+					swap( last, first );
+				}
+				else
+				{
+					// "last" is middle.
+				}
+			}
+
+			// Assuming the middle element is at the last position.
 			// Compare all elements against it and place them at left or right range part.
-			// TODO - select somehow good enough middle element and put it at end.
 
 			// Perform operations with raw pointers, because it seems to be the fastest way to do so.
 			var $(T) last= end - 1s, mut lo= start, mut hi= last;
@@ -98,6 +125,9 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 			{
 				swap( $>(hi), $>(last) );
 			}
+
+			// TODO - expand middle subrange by cheking if all element are the same.
+			// This should speed-up cases with ranges containing a lot of identical elements.
 
 			// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
 			// In both cases process subranges excluding "hi" position, since it now contains the middle element.

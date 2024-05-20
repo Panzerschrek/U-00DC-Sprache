@@ -304,7 +304,7 @@ fn nomangle main() : i32
 	}
 	{ // Test for complexity. Sort already sorted array.
 		var ust::vector</i32/> mut vec;
-		vec.resize( 1024s * 64s, 0 );
+		vec.resize( 1024s * 256s, 0 );
 
 		{
 			auto mut n= 0;
@@ -320,7 +320,7 @@ fn nomangle main() : i32
 	}
 	{ // Test for complexity. Sort reverse-sorted array.
 		var ust::vector</i32/> mut vec;
-		vec.resize( 1024s * 64s, 0 );
+		vec.resize( 1024s * 256s, 0 );
 
 		{
 			auto mut n= i32(vec.size());
