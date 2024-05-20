@@ -2602,6 +2602,12 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
 		var Type& element_type= l_raw_pointer_type.try_deref().element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{

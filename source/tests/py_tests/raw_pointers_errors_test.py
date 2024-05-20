@@ -153,6 +153,17 @@ def RawPointerArithmeticOutsideUnsafeBlock_Test2():
 	assert( HasError( errors_list, "RawPointerArithmeticOutsideUnsafeBlock", 4 ) )
 
 
+def RawPointerArithmeticOutsideUnsafeBlock_Test3():
+	c_program_text= """
+		fn Foo( $(u64) a, $(u64) b )
+		{
+			a - b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "RawPointerArithmeticOutsideUnsafeBlock", 4 ) )
+
+
 def ValueIsNotPointer_Test0():
 	c_program_text= """
 		fn Foo()
