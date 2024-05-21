@@ -406,7 +406,7 @@ U_TEST( OperatorsPriorityTest10 )
 	[]( const std::vector<float>& args ) -> float
 	{
 		U_TEST_ASSERT( args.size() == 3u );
-		if( ( args[0] > 0.0f ) & ( args[0] > args[1] + args[2] ) ) return 1.0f;
+		if( ( args[0] > 0.0f ) and ( args[0] > args[1] + args[2] ) ) return 1.0f;
 		return 0.0f;
 	};
 
@@ -436,7 +436,7 @@ U_TEST( OperatorsPriorityTest11 )
 	[]( const std::vector<float>& args ) -> float
 	{
 		U_TEST_ASSERT( args.size() == 3u );
-		if( ( args[0] > 0.0f ) & ( args[0] * args[1] > args[2] ) ) return 1.0f;
+		if( ( args[0] > 0.0f ) and ( args[0] * args[1] > args[2] ) ) return 1.0f;
 		return 0.0f;
 	};
 
