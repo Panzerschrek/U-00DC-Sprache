@@ -1,3 +1,4 @@
+import "assert.u"
 import "random_access_range.u"
 
 namespace ust
@@ -6,13 +7,13 @@ namespace ust
 template</type T/>
 fn sort( random_access_range</T, true/> range )
 {
-	sort_impl::do_sort( range, sort_impl::default_compare</T/>() );
+	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), sort_impl::default_compare</T/>() ) );
 }
 
 template</type T, type Compare/>
 fn sort( random_access_range</T, true/> range, Compare& comp )
 {
-	sort_impl::do_sort( range, comp );
+	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), comp ) );
 }
 
 namespace sort_impl
@@ -30,62 +31,119 @@ struct default_compare
 /*
 Simple quicksort implementation. Average complexity - O(log(n)), worst case complexity - O(n^2).
  TODO:
- * Use raw pointers instead of random_access_range.
- * Remove unnecessary bounds checks (inside "swap" and "[]" methods).
  * Use more simple sorting algorithm for small number of elements.
- * Select median element smartely.
- * Prevent stack overflow in worst case (O(n^2)) and large number of elements.
+ * Select median element wisely.
 */
-
+// Input pointers should be part of the same memory region (array, vector, etc.). start <= end.
 template</type T, type Compare/>
-fn do_sort( random_access_range</T, true/> range, Compare& comp )
+fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 {
-	if( range.size() <= 1s )
+	loop
 	{
-		return;
+		debug_assert( start <= end );
+		auto size= unsafe( end - start );
+
+		if( size <= ssize_type(1) )
+		{
+			return;
+		}
+		if( size == ssize_type(2) )
+		{
+			unsafe
+			{
+				var T &mut l= $>(start);
+				var T &mut r= $>(start + 1);
+
+				if( !safe( comp( cast_imut(l), cast_imut(r) ) ) )
+				{
+					swap( l, r );
+				}
+			}
+			return;
+		}
+
+		unsafe
+		{
+			if( size >= ssize_type(8) )
+			{
+				// Try to select middle element trying first, last, middle. Put such middle element at the last position.
+				// Doing so we fix quadratic complexity for sorted, almost sorted, reverse-sorted arrays.
+				var T &mut first= $>(start);
+				var T &mut last= $>(end - 1s);
+				var T &mut middle= $>( start + ((end - start) >> 1s) );
+
+				var bool fl= safe( comp( cast_imut(first), cast_imut(last  ) ) );
+				var bool lm= safe( comp( cast_imut(last ), cast_imut(middle) ) );
+				var bool fm= safe( comp( cast_imut(first), cast_imut(middle) ) );
+
+				if( (fm && !lm) || (!fm && lm) )
+				{
+					// "middle" is middle.
+					swap( last, middle );
+				}
+				else if( (fl && !fm) || (!fl && fm) )
+				{
+					// "first" is middle.
+					swap( last, first );
+				}
+				else
+				{
+					// "last" is middle.
+				}
+			}
+
+			// Assuming the middle element is at the last position.
+			// Compare all elements against it and place them at left or right range part.
+
+			// Perform operations with raw pointers, because it seems to be the fastest way to do so.
+			var $(T) last= end - 1s, mut lo= start, mut hi= last;
+
+			loop
+			{
+				if( safe( comp( cast_imut( unsafe( $>(lo) ) ), cast_imut( unsafe( $>(last) ) ) ) ) )
+				{
+					++lo;
+					if( lo == hi )
+					{
+						break;
+					}
+				}
+				else
+				{
+					--hi;
+					if( lo == hi )
+					{
+						break;
+					}
+
+					swap( $>(lo), $>(hi) );
+				}
+			}
+
+			// At end put the middle element at split position.
+			if( hi != last )
+			{
+				swap( $>(hi), $>(last) );
+			}
+
+			// TODO - expand middle subrange by cheking if all element are the same.
+			// This should speed-up cases with ranges containing a lot of identical elements.
+
+			// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
+			// In both cases process subranges excluding "hi" position, since it now contains the middle element.
+			auto hi1= hi + 1s;
+			if( hi - start < end - hi1 )
+			{
+				do_sort( start, hi, comp );
+				start= hi1;
+			}
+			else
+			{
+				do_sort( hi1, end, comp );
+				end= hi;
+			}
+		}
 	}
-	if( range.size() == 2s )
-	{
-		var bool mut c= false;
-		{
-			var random_access_range_imut</T/> range_copy= range;
-			c= comp( range_copy.front(), range_copy.back() );
-		}
-		if( !c )
-		{
-			range.swap( 0s, 1s );
-		}
-		return;
-	}
-
-	var size_type s= range.size(), last= s - 1s, mut lo= 0s, mut hi= last;
-
-	while( lo < hi )
-	{
-		var bool mut c= false;
-		{
-			var random_access_range_imut</T/> range_copy= range;
-			c= comp( range_copy[lo], range_copy[last] );
-		}
-
-		if( c )
-		{
-			++lo;
-		}
-		else
-		{
-			--hi;
-			range.swap( lo, hi );
-		}
-	}
-
-	if( hi < last )
-	{
-		range.swap( hi, last );
-	}
-
-	do_sort( range.subrange( 0s, hi ), comp );
-	do_sort( range.subrange( hi + 1s, s ), comp );
 }
 
 } // namespace sort_impl
