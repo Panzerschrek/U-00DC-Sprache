@@ -2206,7 +2206,7 @@ llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function
 		return function_context.llvm_ir_builder.CreateInBoundsGEP( type, value, { GetZeroGEPIndex(), index_value } );
 	}
 
-	const auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index_value } );
+	const auto gep= llvm::GetElementPtrInst::CreateInBounds( type, value, { GetZeroGEPIndex(), index_value } );
 
 	// Try to insert "GEP" instruction with constant index directly after of value calculation.
 	// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
