@@ -31,11 +31,6 @@ class Document
 public:
 	Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, Logger& log );
 
-	Document( const Document& )= delete;
-	Document( Document&& )= default;
-	Document& operator=( const Document& )= delete;
-	Document& operator=( Document&& )= default;
-
 public: // Document text stuff.
 	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
