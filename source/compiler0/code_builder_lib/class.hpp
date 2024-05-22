@@ -8,7 +8,7 @@
 namespace U
 {
 
-class Class final
+class Class
 {
 public:
 	static const std::string_view c_template_class_name; // Each template class has the same name.

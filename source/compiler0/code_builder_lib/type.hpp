@@ -44,7 +44,7 @@ using ClassPtr= Class*;
 // Enum itself stored in enum table.
 using EnumPtr= Enum*;
 
-struct FundamentalType final
+struct FundamentalType
 {
 	U_FundamentalType fundamental_type;
 	llvm::Type* llvm_type;
@@ -55,7 +55,7 @@ struct FundamentalType final
 bool operator==( const FundamentalType& l, const FundamentalType& r );
 inline bool operator!=( const FundamentalType& l, const FundamentalType& r ) { return !( l == r ); }
 
-struct TupleType final
+struct TupleType
 {
 	std::vector<Type> element_types;
 	llvm::StructType* llvm_type= nullptr;
@@ -64,7 +64,7 @@ struct TupleType final
 bool operator==( const TupleType& l, const TupleType& r );
 inline bool operator!=( const TupleType& l, const TupleType& r ) { return !( l == r ); }
 
-class Type final
+class Type
 {
 public:
 	Type()= default;
@@ -137,7 +137,7 @@ private:
 bool operator==( const Type& l, const Type& r );
 inline bool operator!=( const Type& l, const Type& r ) { return !( l == r ); }
 
-struct ArrayType final
+struct ArrayType
 {
 	Type element_type;
 	uint64_t element_count= 0u;
@@ -148,7 +148,7 @@ struct ArrayType final
 bool operator==( const ArrayType& r, const ArrayType& l );
 inline bool operator!=( const ArrayType& l, const ArrayType& r ) { return !( l == r ); }
 
-struct RawPointerType final
+struct RawPointerType
 {
 	Type element_type;
 	llvm::PointerType* llvm_type= nullptr;
@@ -157,7 +157,7 @@ struct RawPointerType final
 bool operator==( const RawPointerType& r, const RawPointerType& l );
 inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { return !( l == r ); }
 
-struct FunctionType final
+struct FunctionType
 {
 public:
 	struct Param

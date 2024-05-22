@@ -197,7 +197,7 @@ void CodeBuilder::FillClassNamesScope(
 	const Synt::ClassElementsList& class_elements,
 	const ClassMemberVisibility initial_visibility )
 {
-	struct Visitor final
+	struct Visitor
 	{
 		CodeBuilder& this_;
 		const Synt::ClassKindAttribute class_kind;

@@ -222,7 +222,7 @@ Symbols BuildProgramModel_r(
 	const Synt::ProgramElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
-struct Visitor final
+struct Visitor
 {
 	explicit Visitor( const SrcLocToRangeMappingFunction& in_src_loc_to_range_mapping_function )
 		: src_loc_to_range_mapping_function(in_src_loc_to_range_mapping_function)

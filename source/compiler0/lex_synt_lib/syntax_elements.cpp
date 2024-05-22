@@ -27,7 +27,7 @@ bool FunctionType::IsAutoReturn() const
 	return false;
 }
 
-struct GetSrcLocVisitor final
+struct GetSrcLocVisitor
 {
 	SrcLoc operator()( const EmptyVariant& ) const
 	{

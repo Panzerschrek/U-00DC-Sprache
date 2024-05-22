@@ -20,7 +20,7 @@ public:
 };
 
 // Directed acyclic graph of sources.
-struct SourceGraph final
+struct SourceGraph
 {
 	struct Node
 	{

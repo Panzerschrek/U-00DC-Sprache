@@ -54,7 +54,7 @@ void ElementWrite( const ClassElementsList& class_elements, std::ostream& stream
 void ElementWrite( const ProgramElementsList& elements, std::ostream& stream );
 // Prototypes end
 
-class UniversalVisitor final
+class UniversalVisitor
 {
 public:
 	explicit UniversalVisitor( std::ostream& in_stream ) : stream(in_stream) {}
@@ -247,7 +247,7 @@ void ElementWrite( const TypeName& type_name, std::ostream& stream )
 
 void ElementWrite( const Expression& expression, std::ostream& stream )
 {
-	class Visitor final
+	class Visitor
 	{
 	public:
 		explicit Visitor( std::ostream& in_stream ) : stream(in_stream) {}

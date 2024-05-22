@@ -34,7 +34,7 @@ struct LazyLLVMFunction
 
 using LazyLLVMFunctionPtr= std::shared_ptr<LazyLLVMFunction>;
 
-struct FunctionVariable final
+struct FunctionVariable
 {
 	enum class ConstexprKind : uint8_t
 	{
@@ -110,7 +110,7 @@ using VariablePtr= std::shared_ptr<const Variable>;
 using VariableMutPtr= std::shared_ptr<Variable>;
 using VariableWeakPtr= std::weak_ptr<const Variable>;
 
-struct Variable final
+struct Variable
 {
 public:
 	enum class Location : uint8_t
@@ -186,7 +186,7 @@ public:
 struct TemplateVariableArg;
 std::string ConstantVariableToString( const TemplateVariableArg& variable );
 
-struct ClassField final
+struct ClassField
 {
 	Type type;
 	ClassPtr class_= nullptr;
@@ -206,7 +206,7 @@ struct ClassField final
 using ClassFieldPtr= std::shared_ptr<ClassField>;
 
 // "this" + functions set of class of "this"
-struct ThisOverloadedMethodsSet final
+struct ThisOverloadedMethodsSet
 {
 	VariablePtr this_;
 	OverloadedFunctionsSetPtr overloaded_methods_set;
@@ -231,13 +231,13 @@ struct IncompleteGlobalVariable
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
 };
 
-struct YetNotDeducedTemplateArg final
+struct YetNotDeducedTemplateArg
 {};
 
-struct ErrorValue final
+struct ErrorValue
 {};
 
-class Value final
+class Value
 {
 public:
 	Value() = default;

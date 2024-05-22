@@ -128,7 +128,7 @@ std::optional<BinaryOperatorType> GetAdditiveAssignmentOperator( const Lexem& le
 }
 
 // By declaring this class and all its methods locally( using anonymous namespace ) we allow complier to optimize methods of this class aggressively (using inlining where it is possible).
-class SyntaxAnalyzer final
+class SyntaxAnalyzer
 {
 public:
 	// Input lexems must outlive this class instance!

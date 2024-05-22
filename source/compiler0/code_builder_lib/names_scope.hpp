@@ -10,7 +10,7 @@ namespace U
 
 using Synt::ClassMemberVisibility;
 
-class NamesScope final
+class NamesScope
 {
 public:
 	NamesScope( std::string name, NamesScope* parent );

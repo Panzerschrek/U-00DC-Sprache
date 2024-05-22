@@ -397,7 +397,7 @@ llvm::Type* Type::GetLLVMType() const
 
 std::string Type::ToString() const
 {
-	struct Visitor final
+	struct Visitor
 	{
 		std::string operator()( const FundamentalType& fundamental ) const
 		{
@@ -567,7 +567,7 @@ std::string Type::ToString() const
 
 size_t Type::Hash() const
 {
-	struct Visitor final
+	struct Visitor
 	{
 		size_t operator()( const FundamentalType& fundamental ) const
 		{

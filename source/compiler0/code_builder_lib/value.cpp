@@ -305,7 +305,7 @@ size_t Value::GetKindIndex() const
 
 std::string_view Value::GetKindName() const
 {
-	struct Visitor final
+	struct Visitor
 	{
 		std::string_view operator()( const VariablePtr& ) const { return "variable"; }
 		std::string_view operator()( const FunctionVariable& ) const { return "function variable"; }

@@ -29,7 +29,7 @@ namespace U
 	External memory access is not supported.
 */
 
-class Interpreter final
+class Interpreter
 {
 public:
 	struct ResultConstexpr

@@ -20,7 +20,7 @@ void AddAncestorsAccessRights_r( Class& the_class, const ClassPtr ancestor_class
 // Globals loops detecting
 //
 
-class GlobalsLoopsDetectorGuard final
+class GlobalsLoopsDetectorGuard
 {
 public:
 	GlobalsLoopsDetectorGuard( std::function<void()> function ) : function_(std::move(function)) {}

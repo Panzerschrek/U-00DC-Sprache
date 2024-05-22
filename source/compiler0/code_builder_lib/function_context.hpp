@@ -13,7 +13,7 @@ struct FunctionContext;
 
 // Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
 // But you still need call "CallDestructors" manually.
-struct StackVariablesStorage final
+struct StackVariablesStorage
 {
 public:
 	StackVariablesStorage( FunctionContext& function_context );
@@ -26,7 +26,7 @@ public:
 	std::vector<VariablePtr> variables_;
 };
 
-struct LoopFrame final
+struct LoopFrame
 {
 	llvm::BasicBlock* block_for_break= nullptr;
 	llvm::BasicBlock* block_for_continue= nullptr;
