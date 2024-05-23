@@ -2272,7 +2272,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( default_branch_synt_block != nullptr && !has_gaps )
 			REPORT_ERROR(
-				SwithcUnreachableDefaultBranch,
+				SwitchUnreachableDefaultBranch,
 				names_scope.GetErrors(),
 				default_branch_synt_block->src_loc );
 	}

@@ -1933,7 +1933,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( !default_branch_synt_block.empty() && !has_gaps )
 		{
 			REPORT_ERROR(
-				SwithcUnreachableDefaultBranch,
+				SwitchUnreachableDefaultBranch,
 				names_scope,
 				default_branch_synt_block.try_deref().src_loc )
 		}

@@ -518,7 +518,7 @@ def SwitchUndhandledRange_Test4():
 	assert( HasError( errors_list, "SwitchUndhandledRange", 5 ) )
 
 
-def SwithcUnreachableDefaultBranch_Test0():
+def SwitchUnreachableDefaultBranch_Test0():
 	c_program_text= """
 		enum E{ A, B }
 		fn Foo( E e )
@@ -533,10 +533,10 @@ def SwithcUnreachableDefaultBranch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "SwithcUnreachableDefaultBranch", 9 ) )
+	assert( HasError( errors_list, "SwitchUnreachableDefaultBranch", 9 ) )
 
 
-def SwithcUnreachableDefaultBranch_Test1():
+def SwitchUnreachableDefaultBranch_Test1():
 	c_program_text= """
 		fn Foo( i32 x )
 		{
@@ -551,10 +551,10 @@ def SwithcUnreachableDefaultBranch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "SwithcUnreachableDefaultBranch", 6 ) )
+	assert( HasError( errors_list, "SwitchUnreachableDefaultBranch", 6 ) )
 
 
-def SwithcUnreachableDefaultBranch_Test2():
+def SwitchUnreachableDefaultBranch_Test2():
 	c_program_text= """
 		fn Foo( char16 c )
 		{
@@ -567,4 +567,4 @@ def SwithcUnreachableDefaultBranch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "SwithcUnreachableDefaultBranch", 7 ) )
+	assert( HasError( errors_list, "SwitchUnreachableDefaultBranch", 7 ) )
