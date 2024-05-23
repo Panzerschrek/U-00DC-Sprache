@@ -56,7 +56,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_UserHandle data ) unsafe;
 
 fn nomangle U1_BuildMultisourceProgram(
-	U1_SourceFile& source_files,
+	$(U1_SourceFile) source_files,
 	size_type source_file_count,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
@@ -64,7 +64,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef;
 
 fn nomangle U1_BuildMultisourceProgramWithErrors(
-	U1_SourceFile& source_files,
+	$(U1_SourceFile) source_files,
 	size_type source_file_count,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
