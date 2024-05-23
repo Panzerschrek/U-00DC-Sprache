@@ -568,3 +568,19 @@ def SwitchUnreachableDefaultBranch_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "SwitchUnreachableDefaultBranch", 7 ) )
+
+
+def NoBreakForSwitch_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				0 ... -> { break; },
+				default -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "BreakOutsideLoop", 6 ) )
