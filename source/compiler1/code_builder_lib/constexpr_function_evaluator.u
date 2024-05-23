@@ -8,14 +8,8 @@ fn ErrorHandlerFunc( byte8 &mut user_data, $(char8) error_text_start, size_type 
 {
 	unsafe
 	{
-		var ust::string8 mut error;
-		for( auto mut i= 0s; i < error_text_size; ++i )
-		{
-			error.push_back( $>(error_text_start + i) );
-		}
-
 		auto &mut errors_container= cast_ref_unsafe</ ust::vector</ ust::string8 /> />(user_data);
-		errors_container.push_back( move(error) );
+		errors_container.push_back( ust::string_view8( error_text_start, error_text_size ) );
 	}
 }
 
