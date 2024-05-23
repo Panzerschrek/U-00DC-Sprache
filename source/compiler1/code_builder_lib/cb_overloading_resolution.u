@@ -771,7 +771,7 @@ fn CodeBuilder::SelectOverloadedFunction(
 			{
 				for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
 				{
-					var OverloadingResolutionItem& r_function= cast_imut(matched_functions)[func_n];
+					var OverloadingResolutionItem& r_function= matched_functions[func_n];
 
 					auto mut r_arg_n= arg_n;
 					if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(r_function) )
