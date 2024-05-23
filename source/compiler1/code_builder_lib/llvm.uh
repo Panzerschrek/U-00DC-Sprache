@@ -292,7 +292,7 @@ fn nomangle LLVMSetTarget(LLVMModuleRef M, NullTerminatedString& Triple) unsafe;
 fn nomangle LLVMABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe : u64;
 fn nomangle LLVMABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe : u32;
 fn nomangle LLVMOffsetOfElement(LLVMTargetDataRef TD, LLVMTypeRef StructTy, u32 Element) unsafe : u64;
-fn nomangle LLVMPointerSize(LLVMTargetDataRef TD) : u32;
+fn nomangle LLVMPointerSize(LLVMTargetDataRef TD) unsafe : u32;
 
 // Type
 fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
@@ -433,7 +433,7 @@ fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, 
 fn nomangle LLVMConstStructInContext(LLVMContextRef C, $(LLVMValueRef) ConstantVals, u32 Count, LLVMBool Packed) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, $(LLVMValueRef) ConstantVals, u32 Count) unsafe : LLVMValueRef;
 fn nomangle LLVMConstStringInContext(LLVMContextRef C, $(char8) Str, u32 Length, LLVMBool DontNullTerminate) unsafe : LLVMValueRef;
-fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) : LLVMValueRef;
+fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) unsafe : LLVMValueRef;
 
 // Instructions
 

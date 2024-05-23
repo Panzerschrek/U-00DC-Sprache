@@ -11,7 +11,7 @@ fn CreateMangler(ManglingScheme scheme, LLVMTargetDataRef data_layout) : ust::bo
 	switch(scheme)
 	{
 		ManglingScheme::ItaniumABI -> { return CreateManglerItaniumABI(); },
-		ManglingScheme::MSVC -> { return CreateManglerMSVC( LLVMPointerSize( data_layout ) == 4u ); },
+		ManglingScheme::MSVC -> { return CreateManglerMSVC( unsafe( LLVMPointerSize( data_layout ) ) == 4u ); },
 		ManglingScheme::MSVC32 -> { return CreateManglerMSVC(true); },
 		ManglingScheme::MSVC64 -> { return CreateManglerMSVC(false); },
 	}
