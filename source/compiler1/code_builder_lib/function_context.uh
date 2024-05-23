@@ -99,9 +99,9 @@ public:
 	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
 
-	// For reference checking. TODO - use single vector.
-	ust::vector</ VariableNullablePtr /> mut args_nodes; // Contains only variable nodes (not reference nodes).
-	ust::vector</ ust::vector</VariablePtr /> /> mut args_inner_variable_nodes; // Contains inner variable nodes.
+	// For reference checks.
+	// arg variable node + inner reference nodes.
+	ust::vector</ tup[ VariablePtr, ust::vector</VariablePtr /> ] /> args_nodes;
 
 	LLVMValueRef s_ret= LLVMValueRef::Null; // Also promise for coroutines
 

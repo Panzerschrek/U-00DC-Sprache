@@ -141,14 +141,14 @@ fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_con
 {
 	foreach( &return_reference : function_context.function_type.return_references )
 	{
-		auto i= size_type(return_reference.param_index);
+		auto& arg_nodes= function_context.args_nodes[ size_type(return_reference.param_index) ];
 		if( return_reference.reference_index == FunctionType::c_param_reference_number &&
-			variable_node == function_context.args_nodes[i] )
+			variable_node == arg_nodes[0] )
 		{
 			return true;
 		}
-		if( size_type(return_reference.reference_index) < function_context.args_inner_variable_nodes[i].size() &&
-			variable_node == function_context.args_inner_variable_nodes[i][size_type(return_reference.reference_index)] )
+		if( size_type(return_reference.reference_index) < arg_nodes[1].size() &&
+			variable_node == arg_nodes[1][size_type(return_reference.reference_index)] )
 		{
 			return true;
 		}
@@ -182,14 +182,14 @@ fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& functio
 	}
 	foreach( &return_reference : function_context.function_type.return_inner_references[index] )
 	{
-		auto param_n= size_type(return_reference.param_index);
+		auto& arg_nodes= function_context.args_nodes[ size_type(return_reference.param_index) ];
 		if( return_reference.reference_index == FunctionType::c_param_reference_number &&
-			variable_node == function_context.args_nodes[param_n] )
+			variable_node == arg_nodes[0] )
 		{
 			return true;
 		}
-		if( size_type(return_reference.reference_index) < function_context.args_inner_variable_nodes[param_n].size() &&
-			variable_node == function_context.args_inner_variable_nodes[param_n][ size_type(return_reference.reference_index) ] )
+		if( size_type(return_reference.reference_index) < arg_nodes[1].size() &&
+			variable_node == arg_nodes[1][ size_type(return_reference.reference_index) ] )
 		{
 			return true;
 		}
@@ -271,10 +271,11 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 	for( var size_type mut i= 0s; i < function_context.function_type.params.size(); ++i )
 	{
 		var FunctionType::Param& param= function_context.function_type.params[i];
+		auto& arg_nodes= function_context.args_nodes[i];
 
 		if( param.value_type == ValueType::Value )
 		{
-			auto& inner_nodes= function_context.args_inner_variable_nodes[i];
+			auto& inner_nodes= arg_nodes[1];
 			for( var size_type mut j= 0s; j < inner_nodes.size(); ++j )
 			{
 				if( node == inner_nodes[j] )
@@ -287,7 +288,7 @@ fn CodeBuilder::GetCoroutineInnerReferenceForParamNode( FunctionContext& functio
 		}
 		else
 		{
-			if( node == function_context.args_nodes[i] )
+			if( node == arg_nodes[0] )
 			{
 				return FunctionType::ParamReference{ .param_index= 0u8, .reference_index= u8(coroutine_inner_reference_index) };
 			}
@@ -309,14 +310,14 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 		{
 			continue;
 		}
-		with( &inner_reference_nodes : function_context.args_nodes[param_i].try_lock_imut().deref().inner_reference_nodes )
+		with( &inner_reference_nodes : function_context.args_nodes[param_i][0].lock_imut().deref().inner_reference_nodes )
 		{
 			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++tag_i )
 			{
 				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
 				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
-					if( accessible_variable_node == function_context.args_inner_variable_nodes[param_i][tag_i] )
+					if( accessible_variable_node == function_context.args_nodes[param_i][1][tag_i] )
 					{
 						continue;
 					}
@@ -324,13 +325,13 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 					var ust::optional</FunctionType::ParamReference/> mut param_reference;
 					for( auto mut j= 0s; j < params.size(); ++j )
 					{
-						if( accessible_variable_node == function_context.args_nodes[j] )
+						if( accessible_variable_node == function_context.args_nodes[j][0] )
 						{
 							param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
-						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
+						for( auto mut tag_j= 0s; tag_j < function_context.args_nodes[j][1].size(); ++tag_j )
 						{
-							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
+							if( accessible_variable_node == function_context.args_nodes[j][1][tag_j] )
 							{
 								param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
@@ -380,18 +381,14 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 	{
 		for( auto mut arg_n= 0s; arg_n < function_context.args_nodes.size(); ++arg_n )
 		{
-			if( variable_node == function_context.args_nodes[arg_n] )
+			if( variable_node == function_context.args_nodes[arg_n][0] )
 			{
 				reference_notation_deduction_context.return_references.push_back(
 					FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 			}
-		}
-
-		for( auto mut arg_n= 0s; arg_n < function_context.args_inner_variable_nodes.size(); ++arg_n )
-		{
-			for( auto mut tag_n= 0s; tag_n < function_context.args_inner_variable_nodes[arg_n].size(); ++tag_n )
+			for( auto mut tag_n= 0s; tag_n < function_context.args_nodes[arg_n][1].size(); ++tag_n )
 			{
-				if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
+				if( variable_node == function_context.args_nodes[arg_n][1][tag_n] )
 				{
 					reference_notation_deduction_context.return_references.push_back(
 						FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
@@ -444,25 +441,20 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 			{
 				for( auto mut arg_n= 0s; arg_n < function_context.args_nodes.size(); ++arg_n )
 				{
-					if( variable_node == function_context.args_nodes[arg_n] )
+					if( variable_node == function_context.args_nodes[arg_n][0] )
 					{
 						reference_notation_deduction_context.return_inner_references[i].push_back(
 							FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 					}
-				}
-
-				for( auto mut arg_n= 0s; arg_n < function_context.args_inner_variable_nodes.size(); ++arg_n )
-				{
-					for( auto mut tag_n= 0s; tag_n < function_context.args_inner_variable_nodes[arg_n].size(); ++tag_n )
+					for( auto mut tag_n= 0s; tag_n < function_context.args_nodes[arg_n][1].size(); ++tag_n )
 					{
-						if( variable_node == function_context.args_inner_variable_nodes[arg_n][tag_n] )
+						if( variable_node == function_context.args_nodes[arg_n][1][tag_n] )
 						{
 							reference_notation_deduction_context.return_inner_references[i].push_back(
 								FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 						}
 					}
 				}
-
 
 				if( !lambda_preprocessing_context_ptr.empty() )
 				{
@@ -514,14 +506,14 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 		{
 			continue;
 		}
-		with( &inner_reference_nodes : function_context.args_nodes[param_i].try_lock_imut().deref().inner_reference_nodes )
+		with( &inner_reference_nodes : function_context.args_nodes[param_i][0].lock_imut().deref().inner_reference_nodes )
 		{
 			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++tag_i )
 			{
 				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
-				foreach( &accessible_variable_node : cast_imut(function_context).references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
+				foreach( &accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
-					if( accessible_variable_node == function_context.args_inner_variable_nodes[param_i][tag_i] )
+					if( accessible_variable_node == cast_imut(function_context).args_nodes[param_i][1][tag_i] )
 					{
 						continue;
 					}
@@ -531,13 +523,13 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					// Process args sources.
 					for( auto mut j= 0s; j < params.size(); ++j )
 					{
-						if( accessible_variable_node == cast_imut(function_context).args_nodes[j] )
+						if( accessible_variable_node == cast_imut(function_context).args_nodes[j][0] )
 						{
 							src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
-						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
+						for( auto mut tag_j= 0s; tag_j < cast_imut(function_context).args_nodes[j][1].size(); ++tag_j )
 						{
-							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
+							if( accessible_variable_node == cast_imut(function_context).args_nodes[j][1][tag_j] )
 							{
 								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
@@ -623,13 +615,13 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					// Process args sources.
 					for( auto mut j= 0s; j < params.size(); ++j )
 					{
-						if( accessible_variable_node == function_context.args_nodes[j] )
+						if( accessible_variable_node == function_context.args_nodes[j][0] )
 						{
 							src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
-						for( auto mut tag_j= 0s; tag_j < function_context.args_inner_variable_nodes[j].size(); ++tag_j )
+						for( auto mut tag_j= 0s; tag_j < function_context.args_nodes[j][1].size(); ++tag_j )
 						{
-							if( accessible_variable_node == function_context.args_inner_variable_nodes[j][tag_j] )
+							if( accessible_variable_node == function_context.args_nodes[j][1][tag_j] )
 							{
 								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}

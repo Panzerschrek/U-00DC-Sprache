@@ -1195,8 +1195,6 @@ fn CodeBuilder::BuildFuncCode(
 		}
 
 		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
-		function_context.args_nodes.resize( func_variable.t.params.size() );
-		function_context.args_inner_variable_nodes.resize( func_variable.t.params.size() );
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
 			auto& in_param= body_syntax_element.function_type.params[arg_n];
@@ -1284,7 +1282,7 @@ fn CodeBuilder::BuildFuncCode(
 			function_context.references_graph.AddNode( variable_reference_ptr );
 			function_context.references_graph.AddLink( variable_ptr, variable_reference_ptr );
 
-			function_context.args_nodes[arg_n]= variable_ptr;
+			var tup[ VariablePtr, ust::vector</VariablePtr /> ] mut arg_nodes[ variable_ptr, () ];
 
 			auto reference_tag_count= type_param.t.ReferenceTagCount();
 			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
@@ -1306,8 +1304,10 @@ fn CodeBuilder::BuildFuncCode(
 
 				function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
 
-				function_context.args_inner_variable_nodes[arg_n].push_back( accesible_variable_ptr );
+				arg_nodes[1].push_back( accesible_variable_ptr );
 			}
+
+			function_context.args_nodes.push_back( move(arg_nodes) );
 
 			// Register arg for destruction and reference checking.
 			if( type_param.value_type == ValueType::Value )
