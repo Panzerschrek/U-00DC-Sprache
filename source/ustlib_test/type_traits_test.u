@@ -32,6 +32,17 @@ class LargeClassWithMethods
 }
 
 //
+// type_select
+//
+
+static_assert( same_type</ ust::type_select</ true, i32, bool />, i32 /> );
+static_assert( same_type</ ust::type_select</ false, i32, bool />, bool /> );
+auto val_true= true;
+auto val_false= false;
+static_assert( same_type</ ust::type_select</ val_true, tup[f32, f64], [ i32, 2 ] />, tup[f32, f64] /> );
+static_assert( same_type</ ust::type_select</ val_false, tup[f32, f64], [ i32, 2 ] />, [ i32, 2 ] /> );
+
+//
 // is_parent_for
 //
 

@@ -16,6 +16,11 @@ template<//> type get_unsigned_type</  i64 /> =  u64;
 template<//> type get_unsigned_type</ i128 /> = u128;
 template<//> type get_unsigned_type</ ssize_type /> = size_type;
 
+// A helper template to select one of two given types based on condition (first template parameter).
+// It works similar to "select" language operator.
+template</ type A, type B /> type type_select</true , A, B/> = A;
+template</ type A, type B /> type type_select</false, A, B/> = B;
+
 template</ type A, type B />
 fn is_parent_for() : bool
 {
