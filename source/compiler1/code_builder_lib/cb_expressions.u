@@ -4420,10 +4420,10 @@ fn CodeBuilder::DoCallFunction(
 	}
 	with( &result_inner_reference_nodes : result_ptr.lock_imut().deref().inner_reference_nodes )
 	{
-		for( auto mut inner_tag_n= 0s; inner_tag_n < ust::min( function_type.return_inner_references.size(), result_inner_reference_nodes.size() ); ++inner_tag_n )
+		foreach( pair : result_inner_reference_nodes.iter().zip( function_type.return_inner_references.iter() ) )
 		{
-			var VariablePtr& result_inner_reference_node= result_inner_reference_nodes[inner_tag_n];
-			foreach( &param_reference : function_type.return_inner_references[inner_tag_n] )
+			var VariablePtr& result_inner_reference_node= pair.first;
+			foreach( &param_reference : pair.second )
 			{
 				var size_type i(param_reference.param_index);
 				if( i >= args_nodes.size() || args_nodes[i].empty() )

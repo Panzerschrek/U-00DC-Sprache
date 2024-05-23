@@ -1088,11 +1088,11 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	var Synt::Function& function_syntax_element= template_syntax_element.function.deref();
 
 	var TemplateArgsFinished mut result_template_args;
+	with( &result_names_scope_val : result_names_scope.lock_imut().deref() )
 	{
-		auto mut result_names_scope_lock= result_names_scope.lock_imut();
-		for( auto mut i= 0s; i < function_template.params.size(); ++i )
+		foreach( &param : function_template.params )
 		{
-			auto arg_value= result_names_scope_lock.deref().GetThisScopeValue( function_template.params[i].name ).try_deref();
+			auto arg_value= result_names_scope_val.GetThisScopeValue( param.name ).try_deref();
 			auto template_arg_ptr= arg_value.Get</TemplateArg/>();
 
 			auto template_arg_lock= template_arg_ptr.try_lock_imut();

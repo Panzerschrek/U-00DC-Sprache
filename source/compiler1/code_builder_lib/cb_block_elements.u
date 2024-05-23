@@ -1333,23 +1333,20 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 				with( &inner_references : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
 				{
-					with( &variable_inner_references : variable_ptr.lock_imut().deref().inner_reference_nodes )
+					foreach( pair : variable_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
 					{
-						for( auto mut i= 0s; i < ust::min( variable_inner_references.size(), coroutine_type_description.return_inner_references.size() ); ++i )
+						var VariablePtr& variable_inner_reference= pair.first;
+						foreach( &param_reference : pair.second )
 						{
-							var VariablePtr& variable_inner_reference= variable_inner_references[i];
-							foreach( &param_reference : coroutine_type_description.return_inner_references[i] )
+							debug_assert( param_reference.param_index == 0u8 );
+							debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+							if( size_type(param_reference.reference_index) < inner_references.size() )
 							{
-								debug_assert( param_reference.param_index == 0u8 );
-								debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
-								if( size_type(param_reference.reference_index) < inner_references.size() )
-								{
-									function_context.references_graph.TryAddLink(
-										inner_references[ size_type(param_reference.reference_index) ],
-										variable_inner_reference,
-										names_scope,
-										if_coro_advance_operator.src_loc );
-								}
+								function_context.references_graph.TryAddLink(
+									inner_references[ size_type(param_reference.reference_index) ],
+									variable_inner_reference,
+									names_scope,
+									if_coro_advance_operator.src_loc );
 							}
 						}
 					}
@@ -1949,9 +1946,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var bool mut all_branches_are_terminal= true;
 
 	var LLVMTypeRef switch_llvm_type= switch_type.GetLLVMType();
-	for( auto mut i= 0s; i < switch_operator.cases.size(); ++i )
+	foreach( pair : switch_operator.cases.iter().zip( branches_ranges.iter() ) )
 	{
-		var Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
+		var Synt::SwitchOperator::Case& case_= pair.first;
 		if( case_.values.has</Synt::SwitchOperator::DefaultPlaceholder/>() )
 		{
 			// Default branch - handle it later.
@@ -1961,7 +1958,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		var LLVMBasicBlockRef case_handle_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 		next_case_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
-		var SwitchCaseValues& case_values= branches_ranges[i];
+		var SwitchCaseValues& case_values= pair.second;
 		debug_assert( !case_values.empty() );
 		var LLVMValueRef mut value_equals= LLVMValueRef::Null;
 		foreach( & case_range : case_values )
