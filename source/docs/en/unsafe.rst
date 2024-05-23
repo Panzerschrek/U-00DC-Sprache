@@ -8,6 +8,7 @@ Unsafe code
 * Explicit constructors and destructors access
 * Accessing global mutable variables
 * Raw pointer dereference
+* Raw pointer arithmetic operations
 * ``cast_ref_unsafe`` operator
 * ``cast_mut`` operator
 * ``ununitialized`` initializer
