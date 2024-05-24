@@ -968,3 +968,113 @@ def OperatorsWithNodeLock_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "AccessingMovedVariable", 5 ) )
+
+
+def MoveAssignmentForDestinationWithReferences_Test0():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			var S mut s;
+			auto& s_ref= s;
+			s= S(); // Move-assign value to "s" here. Can't do this, because "s" has an immutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def MoveAssignmentForDestinationWithReferences_Test1():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		fn GetS() : S;
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			auto &mut s_ref= s;
+			s= GetS(); // Move-assign value to "s" here. Can't do this, because "s" has a mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def MoveAssignmentForDestinationWithReferences_Test2():
+	c_program_text= """
+		fn GetT() : tup[ f32 ];
+		fn Foo()
+		{
+			var tup[ f32 ] mut t= zero_init;
+			auto &imut t_ref= t;
+			t= GetT(); // Move-assign value to "t" here. Can't do this, because "t" has an immutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def MoveAssignmentForDestinationWithReferences_Test3():
+	c_program_text= """
+		struct S
+		{
+			[ i32, 4 ]& r;
+		}
+		fn GetA() : [ i32, 4 ];
+		fn Foo()
+		{
+			var [ i32, 4 ] mut a= zero_init;
+			var S s{ .r= a };
+			a= GetA(); // Move-assign value to "a" here. Can't do this, because "a" has an immutable reference inside "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def MoveAssignmentForDestinationWithReferences_Test4():
+	c_program_text= """
+		struct S{}
+		struct T{ S s; }
+		fn GetT() : T;
+		fn Foo()
+		{
+			var T mut t= zero_init;
+			var S& s_ref= t.s;
+			t= GetT(); // Move-assign value to "t" here. Can't do this, because "t" has an immutable reference to its field "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def CompositeAssignmentForDestinationWithReferences_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 4 ] mut a= zero_init, b= zero_init;
+			auto& a_ref= a;
+			a= b; // Error, can't assign to "a", because there is an immutable reference to it.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def CompositeAssignmentForDestinationWithReferences_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ f32, i64, bool ] mut a= zero_init, b= zero_init;
+			auto &mut a_ref= a[1];
+			a= b; // Error, can't assign to "a", because there is a mutable reference to its element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )

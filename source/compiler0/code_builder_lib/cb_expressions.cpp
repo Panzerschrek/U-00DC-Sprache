@@ -2174,6 +2174,9 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names_scope, function_context ).GetVariable();
 
+		if( function_context.variables_state.HasOutgoingLinks( l_var_real ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var_real->name );
+
 		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_lock, names_scope.GetErrors(), src_loc );
 
 		function_context.variables_state.MoveNode( r_var_lock );

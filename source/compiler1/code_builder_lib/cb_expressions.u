@@ -3358,6 +3358,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr;
 
+		if( function_context.references_graph.HasOutgoingLinks( l_var_ptr ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, l_var_ptr.lock_imut().deref().name )
+		}
+
 		function_context.references_graph.MoveNode( r_var_lock_node );
 
 		if( l_var.t.HasDestructor() )

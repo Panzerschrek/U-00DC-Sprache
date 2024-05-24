@@ -196,10 +196,12 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 		var Type mut element_type= t;
 		loop
 		{
-			if_var( &element_type_as_array_type : element_type.GetArrayType() )
+			auto mut array_type_opt= element_type.GetArrayType();
+			if( !array_type_opt.empty() )
 			{
-				dimensions.push_back( element_type_as_array_type.element_count );
-				auto mut t= element_type_as_array_type.element_type;
+				dimensions.push_back( array_type_opt.try_deref().element_count );
+				auto mut t= array_type_opt.try_deref().element_type;
+				move(array_type_opt);
 				element_type= move(t);
 			}
 			else
