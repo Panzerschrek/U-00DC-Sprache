@@ -401,6 +401,27 @@ fn nomangle main() : i32
 		halt if( v0[5s] != 69 );
 		halt if( v0[6s] != 710 );
 	}
+	{ // Append with iterator.
+		var I32Vec mut v0, mut v1;
+		v0.push_back( 14 );
+		v0.push_back( 25 );
+		v0.push_back( 36 );
+		halt if( v0.size() != 3s );
+
+		v1.push_back( 17 );
+		v1.push_back( 34 );
+		v1.push_back( 89 );
+		v1.push_back( 17 );
+
+		v0.append( v1.iter().skip(2s) );
+
+		halt if( v0.size() != 5s );
+		halt if( v0[0s] != 14 );
+		halt if( v0[1s] != 25 );
+		halt if( v0[2s] != 36 );
+		halt if( v0[3s] != 89 );
+		halt if( v0[4s] != 17 );
+	}
 	{ // ==
 		static_assert( typeinfo</I32Vec/>.is_equality_comparable );
 		var I32Vec mut v0, mut v1, mut v2, mut v3, mut v4, mut v5, mut v6;

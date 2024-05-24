@@ -283,6 +283,22 @@ public:
 		// Do not need to call any destructors here, since values are just moved from one container into another.
 	}
 
+	// Append contents of an iterator.
+	template</type RawIterator/>
+	fn append( mut this, iterator</RawIterator/> mut it )
+	{
+		// TODO - if possible, reserve place before this loop.
+		loop
+		{
+			auto mut r= it.next();
+			if( r.empty() )
+			{
+				return;
+			}
+			push_back( r.try_take() );
+		}
+	}
+
 	fn swap( mut this, size_type i0, size_type i1 )
 	{
 		halt if( i0 >= size_ );
