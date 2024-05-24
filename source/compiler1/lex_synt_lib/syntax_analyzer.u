@@ -4138,10 +4138,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 
 		auto range_after= it_;
 		auto range_size= range_before.size() - range_after.size();
-		foreach( &lexem : range_before.subrange( 0s, range_size ) )
-		{
-			element.lexems.push_back( lexem );
-		}
+		element.lexems.append( range_before.subrange( 0s, range_size ).iter() );
 
 		// Redefinition checked before, while parsing macro itself.
 		macro_variables_map.insert( match_element.name, move(element) );
@@ -4193,10 +4190,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 		{
 			if_var( &variable : FetchMacroVariable( macro_variables_maps_stack, result_element.name ) )
 			{
-				foreach( &lexem : variable.lexems )
-				{
-					lexems_expanded.push_back( lexem );
-				}
+				lexems_expanded.append( variable.lexems.iter() );
 			}
 			else
 			{

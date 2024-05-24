@@ -1771,10 +1771,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		var SwitchCaseValues mut all_ranges;
 		foreach( &case_ranges : branches_ranges )
 		{
-			foreach( &range : case_ranges )
-			{
-				all_ranges.push_back(range);
-			}
+			all_ranges.append( case_ranges.iter() );
 		}
 
 		// Sort by low. Use comparator depending on switch type signness.

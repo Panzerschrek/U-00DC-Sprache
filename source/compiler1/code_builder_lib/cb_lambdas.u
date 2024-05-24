@@ -329,10 +329,10 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				named_template_args.range(),
 				lambda( NamedTemplateArg& l, NamedTemplateArg& r ) : bool { return l[0] < r[0]; } );
 
-			foreach( &mut named_template_arg : named_template_args )
-			{
-				template_args.push_back( take( named_template_arg[1] ) );
-			}
+			template_args=
+				named_template_args.iter().map(
+					lambda( NamedTemplateArg &mut a ) : TemplateArgFinished { return take( a[1] ); } )
+				.collect</TemplateArgsFinished/>();
 		}
 	}
 

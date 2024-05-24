@@ -204,10 +204,7 @@ fn LoadSourceGraph_r(
 			source_graph.macro_expansion_contexts,
 			contents_hash );
 
-	foreach( &error : synt_result.errors )
-	{
-		source_graph.errors.push_back( error );
-	}
+	source_graph.errors.append( synt_result.errors.iter() );
 
 	source_graph.nodes[node_index]=
 		SourceGraph::Node
