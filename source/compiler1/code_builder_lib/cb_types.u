@@ -168,16 +168,19 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
+		.inner_references=
+			coroutine_type.inner_reference_tags.iter()
+			.map(
+				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
+				{
+					return select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				} )
+			.collect</ ust::vector</InnerReferenceKind/> />()
 	};
 
 	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type.src_loc  ) )
 	{
 		REPORT_ERROR( CoroutineNonSyncRequired, names_scope, coroutine_type.src_loc )
-	}
-
-	foreach( &m : coroutine_type.inner_reference_tags )
-	{
-		coroutine_type_description.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 	}
 
 	auto num_params= 1s;

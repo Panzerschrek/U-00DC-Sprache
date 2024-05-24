@@ -2296,8 +2296,7 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 					}
 					else
 					{
-						var LexSyntError mut error( it_.front().src_loc, "Syntax error - expected block without safety modifiers and labels for \"if\" alternative." );
-						errors_.push_back( move(error) );
+						errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - expected block without safety modifiers and labels for \"if\" alternative." ) );
 						return IfAlternativeNullablePtr();
 					}
 				}
@@ -2314,14 +2313,12 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 					return IfAlternativeNullablePtr( move(block_element).try_move</IfCoroAdvanceOperator/>() );
 				}
 
-				var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." );
-				errors_.push_back( move(error) );
+				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." ) );
 				return IfAlternativeNullablePtr();
 			}
 			else
 			{
-				var LexSyntError mut error( it_.front().src_loc, "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative." );
-				errors_.push_back( move(error) );
+				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative." ) );
 				return IfAlternativeNullablePtr();
 			}
 		}
@@ -4179,13 +4176,13 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 					unique_macro_indentifiers_map.insert( result_element.lexem.text, move(name) );
 				}
 
-				var Lexem mut result_lexem
-				{
-					.lexem_type= Lexem::Type::Identifier,
-					.src_loc= result_element.lexem.src_loc,
-					.text= unique_macro_indentifiers_map[ result_element.lexem.text ],
-				};
-				lexems_expanded.push_back( move(result_lexem) );
+				lexems_expanded.push_back(
+					Lexem
+					{
+						.lexem_type= Lexem::Type::Identifier,
+						.src_loc= result_element.lexem.src_loc,
+						.text= unique_macro_indentifiers_map[ result_element.lexem.text ],
+					} );
 			}
 			else
 			{
@@ -4308,8 +4305,7 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
 	if( errors_.empty() || errors_.back().src_loc != it_.front().src_loc )
 	{
-		var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" );
-		errors_.push_back( move(error) );
+		errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" ) );
 	}
 
 	// HACK! Advance current position if we report about error in current position multiple times.

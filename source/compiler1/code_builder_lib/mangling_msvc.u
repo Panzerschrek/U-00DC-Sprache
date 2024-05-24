@@ -196,7 +196,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 		var Type mut element_type= t;
 		loop
 		{
-			if_var( element_type_as_array_type : element_type.GetArrayType() )
+			if_var( &element_type_as_array_type : element_type.GetArrayType() )
 			{
 				dimensions.push_back( element_type_as_array_type.element_count );
 				auto mut t= element_type_as_array_type.element_type;
@@ -219,11 +219,10 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
-		var TemplateArgsFinished mut template_args;
-		foreach( &element_type : tuple_type.element_types )
-		{
-			template_args.push_back( element_type );
-		}
+		auto template_args=
+			tuple_type.element_types.iter()
+			.map( lambda( Type& t ) : TemplateArgFinished { return t; } )
+			.collect</TemplateArgsFinished/>();
 
 		mangler_state.PushElement( g_class_type_prefix );
 

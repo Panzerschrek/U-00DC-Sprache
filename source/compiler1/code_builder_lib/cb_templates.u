@@ -665,12 +665,15 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
+		.inner_references=
+			signature_param.inner_reference_tags.iter()
+			.map(
+				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
+				{
+					return select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				} )
+			.collect</ ust::vector</InnerReferenceKind/> />()
 	};
-
-	foreach( &m : signature_param.inner_reference_tags )
-	{
-		coroutine_type_param.inner_references.push_back( select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
-	}
 
 	auto num_params= 1s;
 	if_var( &return_value_reference_expression : signature_param.return_value_reference_expression )
