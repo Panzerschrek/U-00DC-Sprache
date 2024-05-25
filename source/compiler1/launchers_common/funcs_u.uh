@@ -24,16 +24,16 @@ struct U1_ErrorsHandlingCallbacks ordered
 
 struct U1_IVfsInterface ordered
 {
-	type FillStringCallback= fn( U1_UserHandle user_data, U1_StringView& result_path_normalized );
+	type FillStringCallback= fn( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe;
 
 	U1_UserHandle this_;
-	( fn( U1_UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data ) ) normalize_path_function;
-	( fn( U1_UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data ) : bool ) load_file_content_function;
+	( fn( U1_UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data ) unsafe ) normalize_path_function;
+	( fn( U1_UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data ) unsafe : bool ) load_file_content_function;
 }
 
-type U1_SourceFilePathCallback= fn( U1_UserHandle data, U1_StringView& file_path_normalized );
+type U1_SourceFilePathCallback= fn( U1_UserHandle data, U1_StringView& file_path_normalized ) unsafe;
 
-type U1_LexSyntErrorCallback= fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& text );
+type U1_LexSyntErrorCallback= fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& text ) unsafe;
 
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,
@@ -99,4 +99,4 @@ fn nomangle U1_BuildProgramUsingVFS(
 	U1_LexSyntErrorCallback lex_synt_error_callback,
 	U1_UserHandle lex_synt_error_callback_data,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data ) : LLVMModuleRef;
+	U1_UserHandle error_processing_data ) unsafe : LLVMModuleRef;

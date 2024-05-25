@@ -118,7 +118,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 	U1_LexSyntErrorCallback lex_synt_error_callback,
 	U1_UserHandle lex_synt_error_callback_data,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data ) : LLVMModuleRef
+	U1_UserHandle error_processing_data ) unsafe : LLVMModuleRef
 {
 	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
 
