@@ -11,34 +11,26 @@ fn nomangle U1_BuildProgram(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
-	unsafe
+	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+
+	U1::PrintLexSyntErrors( source_graph );
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
-
-		safe
-		{
-			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
-
-			U1::PrintLexSyntErrors( source_graph );
-			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
-			{
-				return LLVMModuleRef::Null;
-			}
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
-			auto code_builder_res= code_builder.BuildProgram( source_graph );
-
-			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
-			if( !code_builder_res.errors.empty() )
-			{
-				unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-				return LLVMModuleRef::Null;
-			}
-
-			return code_builder_res.llvm_module;
-		}
+		return LLVMModuleRef::Null;
 	}
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+	if( !code_builder_res.errors.empty() )
+	{
+		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
+		return LLVMModuleRef::Null;
+	}
+
+	return code_builder_res.llvm_module;
 }
 
 fn nomangle U1_BuildProgramWithErrors(
@@ -49,29 +41,21 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe : bool
 {
-	unsafe
+	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+
+	U1::PrintLexSyntErrors( source_graph );
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
-
-		safe
-		{
-			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
-
-			U1::PrintLexSyntErrors( source_graph );
-			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
-			{
-				return false;
-			}
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
-			auto code_builder_res= code_builder.BuildProgram( source_graph );
-
-			unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-
-			U1::ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
-		}
+		return false;
 	}
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
+
+	unsafe( U1::ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors ) );
 
 	return true;
 }
@@ -81,22 +65,17 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe
 {
-	unsafe
+	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+
+	foreach( &node : source_graph.nodes )
 	{
-		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
-
-		var U1::TestVfs mut test_vfs( program_text );
-		auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
-
-		foreach( &node : source_graph.nodes )
+		foreach( &err : node.synt_result.errors )
 		{
-			foreach( &err : node.synt_result.errors )
+			unsafe
 			{
-				unsafe
-				{
-					var U1_StringView text_view{ .data= cast_mut(err.text).data(), .size= err.text.size() };
-					errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
-				}
+				var U1_StringView text_view{ .data= cast_mut(err.text).data(), .size= err.text.size() };
+				errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
 			}
 		}
 	}
@@ -122,60 +101,58 @@ fn nomangle U1_BuildProgramUsingVFS(
 {
 	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
 
-	unsafe
+	auto source_graph=
+		U1::LoadSourceGraph(
+			vfs,
+			U1::CalculateSourceFileContentsHash,
+			unsafe( U1::StringToArrayView( root_file_path ) ),
+			unsafe( U1::StringToArrayView( prelude_code ) ) );
+
+	foreach( &node : source_graph.nodes )
 	{
-		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
-		auto prelude_code= U1::StringToArrayView( prelude_code.data, prelude_code.size );
-
-		auto source_graph= U1::LoadSourceGraph( vfs, U1::g_calculate_source_file_contents_hash_ptr, path, prelude_code );
-
-		foreach( &node : source_graph.nodes )
+		unsafe
 		{
-			unsafe
-			{
-				var U1_StringView path_view{ .data= cast_mut(node.file_path_normalized).data(), .size= node.file_path_normalized.size() };
-				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
-			}
+			var U1_StringView path_view{ .data= cast_mut(node.file_path_normalized).data(), .size= node.file_path_normalized.size() };
+			result_source_file_path_callback( result_source_file_path_processing_data, path_view );
 		}
-
-		foreach( &err : source_graph.errors )
-		{
-			unsafe
-			{
-				var U1_StringView text{ .data= cast_mut(err.text).data(), .size= err.text.size() };
-				lex_synt_error_callback( lex_synt_error_callback_data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), text );
-			}
-		}
-
-		if( !source_graph.errors.empty() || source_graph.nodes.empty() )
-		{
-			return LLVMModuleRef::Null;
-		}
-
-		var ust::string8 mut target_triple= U1::StringToArrayView( target_triple_str.data, target_triple_str.size );
-		target_triple+= "\0";
-
-		var U1::CodeBuilderOptions options
-		{
-			.build_debug_info= build_debug_info,
-			.mangling_scheme= mangling_scheme,
-			.generate_tbaa_metadata= generate_tbaa_metadata,
-			.report_about_unused_names= !allow_unused_names,
-		};
-
-		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options );
-		auto code_builder_res= code_builder.BuildProgram( source_graph );
-
-		U1::ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
-
-		if( !code_builder_res.errors.empty() )
-		{
-			LLVMDisposeModule( code_builder_res.llvm_module );
-			return LLVMModuleRef::Null;
-		}
-
-		return code_builder_res.llvm_module;
 	}
+
+	foreach( &err : source_graph.errors )
+	{
+		unsafe
+		{
+			var U1_StringView text{ .data= cast_mut(err.text).data(), .size= err.text.size() };
+			lex_synt_error_callback( lex_synt_error_callback_data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), text );
+		}
+	}
+
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
+	{
+		return LLVMModuleRef::Null;
+	}
+
+	var ust::string8 mut target_triple= unsafe( U1::StringToArrayView( target_triple_str ) );
+	target_triple+= "\0";
+
+	var U1::CodeBuilderOptions options
+	{
+		.build_debug_info= build_debug_info,
+		.mangling_scheme= mangling_scheme,
+		.generate_tbaa_metadata= generate_tbaa_metadata,
+		.report_about_unused_names= !allow_unused_names,
+	};
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	if( !code_builder_res.errors.empty() )
+	{
+		unsafe( U1::ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors ) );
+		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
+		return LLVMModuleRef::Null;
+	}
+
+	return code_builder_res.llvm_module;
 }
 
 fn nomangle U1_BuildMultisourceProgram(
@@ -186,10 +163,13 @@ fn nomangle U1_BuildMultisourceProgram(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
-	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
-
 	var U1::TestVfs mut test_vfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str, "" );
+	auto source_graph=
+		U1::LoadSourceGraph(
+			test_vfs,
+			U1::CalculateSourceFileContentsHash,
+			unsafe( U1::StringToArrayView( root_file_path ) ),
+			"" );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
@@ -218,10 +198,13 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe : bool
 {
-	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
-
 	var U1::TestVfs mut test_vfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str, "" );
+	auto source_graph=
+		U1::LoadSourceGraph(
+			test_vfs,
+			U1::CalculateSourceFileContentsHash,
+			unsafe( U1::StringToArrayView( root_file_path ) ),
+			"" );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
@@ -233,7 +216,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 
 	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 
-	U1::ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
+	unsafe( U1::ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors ) );
 
 	return true;
 }
@@ -244,42 +227,34 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
-	unsafe
+	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+
+	U1::PrintLexSyntErrors( source_graph );
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
-
-		safe
-		{
-			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
-
-			U1::PrintLexSyntErrors( source_graph );
-			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
-			{
-				return LLVMModuleRef::Null;
-			}
-
-			var U1::CodeBuilderOptions options
-			{
-				.build_debug_info= true,
-				.create_lifetimes= true,
-				.generate_lifetime_start_end_debug_calls= true,
-				.report_about_unused_names= enable_unsed_name_errors
-			};
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
-			auto code_builder_res= code_builder.BuildProgram( source_graph );
-
-			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
-			if( !code_builder_res.errors.empty() )
-			{
-				unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-				return LLVMModuleRef::Null;
-			}
-
-			return code_builder_res.llvm_module;
-		}
+		return LLVMModuleRef::Null;
 	}
+
+	var U1::CodeBuilderOptions options
+	{
+		.build_debug_info= true,
+		.create_lifetimes= true,
+		.generate_lifetime_start_end_debug_calls= true,
+		.report_about_unused_names= enable_unsed_name_errors
+	};
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+	if( !code_builder_res.errors.empty() )
+	{
+		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
+		return LLVMModuleRef::Null;
+	}
+
+	return code_builder_res.llvm_module;
 }
 
 fn nomangle U1_BuildProgramForMSVCManglingTest(
@@ -287,41 +262,33 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
-	unsafe
+	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+
+	U1::PrintLexSyntErrors( source_graph );
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
-
-		safe
-		{
-			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
-
-			U1::PrintLexSyntErrors( source_graph );
-			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
-			{
-				return LLVMModuleRef::Null;
-			}
-
-			var U1::CodeBuilderOptions options
-			{
-				.build_debug_info= true,
-				.mangling_scheme= U1::ManglingScheme::MSVC64,
-				.report_about_unused_names= false
-			};
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
-			auto code_builder_res= code_builder.BuildProgram( source_graph );
-
-			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
-			if( !code_builder_res.errors.empty() )
-			{
-				unsafe(LLVMDisposeModule( code_builder_res.llvm_module ) );
-				return LLVMModuleRef::Null;
-			}
-
-			return code_builder_res.llvm_module;
-		}
+		return LLVMModuleRef::Null;
 	}
+
+	var U1::CodeBuilderOptions options
+	{
+		.build_debug_info= true,
+		.mangling_scheme= U1::ManglingScheme::MSVC64,
+		.report_about_unused_names= false
+	};
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+	if( !code_builder_res.errors.empty() )
+	{
+		unsafe(LLVMDisposeModule( code_builder_res.llvm_module ) );
+		return LLVMModuleRef::Null;
+	}
+
+	return code_builder_res.llvm_module;
 }
 
 namespace U1
@@ -336,7 +303,7 @@ fn GetTestsTargetTripleStr() : ust::string8
 fn ProcessCodeBuilderErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data,
-	U1::ErrorsContainer& errors )
+	U1::ErrorsContainer& errors ) unsafe
 {
 	foreach( & err : errors )
 	{
@@ -379,9 +346,9 @@ fn GetCodeBuilderOptionsForTests(bool enable_unsed_name_errors) : CodeBuilderOpt
 	return options;
 }
 
-fn StringToArrayView( $(char8) string_start, size_type string_size ) unsafe : ust::string_view8
+fn StringToArrayView( U1_StringView& string_view ) unsafe : ust::string_view8
 {
-	return unsafe( ust::string_view8( string_start, string_size ) );
+	return unsafe( ust::string_view8( string_view.data, string_view.size ) );
 }
 
 fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_count ) unsafe : TestVfs::SourceEntries
@@ -392,8 +359,8 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 			{
 				return U1::TestVfs::SourceEntry
 				{
-					.file_path= unsafe( StringToArrayView( source_file.file_path.data, source_file.file_path.size ) ),
-					.file_content= unsafe( StringToArrayView( source_file.file_content.data, source_file.file_content.size ) ),
+					.file_path= unsafe( StringToArrayView( source_file.file_path ) ),
+					.file_content= unsafe( StringToArrayView( source_file.file_content ) ),
 				};
 			} ).collect</TestVfs::SourceEntries/>();
 }
@@ -444,8 +411,6 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 	}
 }
 
-var SourceFileContentsHashigFunction g_calculate_source_file_contents_hash_ptr(CalculateSourceFileContentsHash);
-
 fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : ust::string8
 {
 	unsafe
@@ -458,7 +423,7 @@ fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : u
 
 		U1_CalculateSourceFileContentsHash(
 			source_file_contents_view,
-			U1_CalculateSourceFileContentsHashCallback( CalculateSourceFileContentsHashCallbackFunc ),
+			CalculateSourceFileContentsHashCallbackFunc,
 			result_handle );
 
 		return result;
@@ -471,7 +436,7 @@ fn CalculateSourceFileContentsHashCallbackFunc( U1_UserHandle data, U1_StringVie
 	{
 		auto result_ptr= cast_ref_unsafe</$(ust::string8)/>(data);
 		var ust::string8 &mut result_ref= cast_ref_unsafe</ust::string8/>( $>(result_ptr) );
-		result_ref= StringToArrayView( hash.data, hash.size );
+		result_ref= StringToArrayView( hash );
 	}
 }
 
@@ -577,7 +542,7 @@ private:
 		unsafe
 		{
 			auto &mut str= cast_mut( ust::int_to_ref</ust::string8/>(user_data) );
-			str= U1::StringToArrayView( result_path_normalized.data, result_path_normalized.size );
+			str= U1::StringToArrayView( result_path_normalized );
 		}
 	}
 
