@@ -148,9 +148,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	return result;
 }
 
-uint32_t GetCompilerGeneration()
-{
-	return U_COMPILER_GENERATION;
-}
+extern const uint32_t c_compiler_generation= U_COMPILER_GENERATION;
 
 } // namespace U

@@ -34,6 +34,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	ManglingScheme mangling_scheme,
 	std::string_view prelude_code );
 
-uint32_t GetCompilerGeneration();
+// Contains value of current compiler generation (0, 1, 2, etc.).
+// Is constant, but not "constexpr", because this constant is defined outside this header.
+extern const uint32_t c_compiler_generation;
 
 } // namespace U

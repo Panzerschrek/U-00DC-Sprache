@@ -502,7 +502,7 @@ int Main( int argc, const char* argv[] )
 				target_machine->getTargetCPU(),
 				Options::optimization_level,
 				Options::generate_debug_info,
-				GetCompilerGeneration() );
+				c_compiler_generation );
 
 		if( Options::print_prelude_code )
 			std::cout << prelude_code << std::endl;
@@ -576,7 +576,7 @@ int Main( int argc, const char* argv[] )
 			const auto constant=
 				llvm::ConstantInt::get(
 					llvm::IntegerType::getInt32Ty(llvm_context),
-					uint64_t(GetCompilerGeneration()), false );
+					uint64_t(c_compiler_generation), false );
 			result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler generation", constant );
 			AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_generation" );
 		}
