@@ -75,6 +75,18 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest2 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
 }
 
+U_TEST( InvalidTypeOfTemplateVariableArgumentTest3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T, T Val/> struct S</ Val />{}
+		type X= S</ 13.5f />; // Pass invalid type variable in template instantiation.
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 3u ) );
+}
+
 U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 {
 	static const char c_program_text[]=
