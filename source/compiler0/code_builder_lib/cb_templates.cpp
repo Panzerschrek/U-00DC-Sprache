@@ -201,6 +201,10 @@ void CodeBuilder::ProcessTemplateParams(
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), template_parameters[i].src_loc, type_param->t );
 		}
 		else if( template_parameters[i].type->IsTemplateParam() ) {}
+		else if(
+			template_parameters[i].type->GetArray() != nullptr ||
+			template_parameters[i].type->GetTuple() != nullptr )
+		{}
 		else
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
 	}
