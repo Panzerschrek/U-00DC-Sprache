@@ -195,19 +195,35 @@ void CodeBuilder::ProcessTemplateParams(
 				*params[i].param_type );
 		global_function_context_->args_preevaluation_cache.clear();
 
-		if( const auto type_param= template_parameters[i].type->GetType() )
-		{
-			if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), template_parameters[i].src_loc, type_param->t );
-		}
-		else if( template_parameters[i].type->IsTemplateParam() ) {}
-		else if(
-			template_parameters[i].type->GetArray() != nullptr ||
-			template_parameters[i].type->GetTuple() != nullptr )
-		{}
-		else
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
+		CheckSignatureParamIsValidForTemplateValueArgumentType(
+			*template_parameters[i].type,
+			names_scope,
+			params[i].name,
+			template_parameters[i].src_loc );
 	}
+}
+
+void CodeBuilder::CheckSignatureParamIsValidForTemplateValueArgumentType(
+	const TemplateSignatureParam& param,
+	NamesScope& names_scope,
+	const std::string_view param_name,
+	const SrcLoc& src_loc )
+{
+	if( const auto type_param= param.GetType() )
+	{
+		if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, type_param->t );
+	}
+	else if( param.IsTemplateParam() ) {}
+	else if( const auto array_param= param.GetArray() )
+		CheckSignatureParamIsValidForTemplateValueArgumentType( *array_param->element_type, names_scope, param_name, src_loc );
+	else if( const auto tuple_param= param.GetTuple() )
+	{
+		for( const auto& element_param : tuple_param->element_types )
+			CheckSignatureParamIsValidForTemplateValueArgumentType( element_param, names_scope, param_name, src_loc );
+	}
+	else
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, param_name );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(

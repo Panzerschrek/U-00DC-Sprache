@@ -372,6 +372,12 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
+	void CheckSignatureParamIsValidForTemplateValueArgumentType(
+		const TemplateSignatureParam& param,
+		NamesScope& names_scope,
+		std::string_view param_name,
+		const SrcLoc& src_loc );
+
 	// Handler for ComplexName/TypeName/Expression.
 	template< typename ... VariantArgs >
 	TemplateSignatureParam CreateTemplateSignatureParameter(

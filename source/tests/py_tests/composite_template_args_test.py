@@ -266,3 +266,77 @@ def FunctionTemplateCompositeArg_Test3():
 		static_assert( CalcSum</arr1/>() == 63u + 12u + 5u );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test0():
+	c_program_text= """
+		template</ [ f32, 4 ] arr /> // Error - "f32" isn't valid for template argument type.
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test1():
+	c_program_text= """
+		template</ [ [ SomeStruct, 2 ], 4 ] arr /> // Error - structs for now aren't valid for template argument type.
+		struct S{}
+		struct SomeStruct{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test2():
+	c_program_text= """
+		template</ tup[ void ] v /> // Error - "void" isn't valid for template argument type.
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test3():
+	c_program_text= """
+		template</ tup[ [ tup[ i32, f64 ], 2 ] ] v /> // Error - "f64" for isn't valid for template argument type.
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test4():
+	c_program_text= """
+		template</ size_type S, [ f32, S ] arr /> // "f32" isn't valid for value arg.
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test5():
+	c_program_text= """
+		template</ type A, type C, tup[ A, f64, C ] arr /> // "f64" isn't valid for value arg.
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test6():
+	c_program_text= """
+		template</ type A, type C, tup[ A, f64, C ] arr /> // "f64" isn't valid for value arg.
+		fn Foo(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForCompositeTemplateArgument_Test7():
+	c_program_text= """
+		template</ [ SomeStruct, 16 ] arr /> // Error - structs for now aren't valid for template argument type.
+		fn Foo(){}
+		struct SomeStruct{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeOfTemplateVariableArgument", 2 ) )
