@@ -196,6 +196,19 @@ void EncodeConstexprValue(  ManglerState& mangler_state, const Type& type, llvm:
 
 		mangler_state.Push( "E" );
 	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		// Encode tuple type as C++ expression like "type_name{ el0, el1, el2 }".
+		// Use "tl" instead of "il" to distinguish arrays and tuples.
+		mangler_state.Push( "tl" );
+
+		EncodeTypeName( mangler_state, type );
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+			EncodeConstexprValue( mangler_state, tuple_type->element_types[i], constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+		mangler_state.Push( "E" );
+	}
 	else
 	{
 		// Encode simple numeric constant.

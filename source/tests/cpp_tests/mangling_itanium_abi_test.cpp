@@ -881,6 +881,66 @@ U_TEST( CompositeTemplateArgMangling_Test1 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_A3_jtlS0_Lj4ELj8ELj15EEtlS0_Lj16ELj23ELj42EEEEEeqERKS2_S4_" ) != nullptr );
 }
 
+U_TEST( CompositeTemplateArgMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ tup [] tup_arg /> struct MyStruct {}
+		var tup[] t;
+		type S_alias= MyStruct</ t />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIEEEE10destructorERS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIEEEEaSERS2_RKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIEEEEeqERKS2_S4_" ) != nullptr );
+}
+
+U_TEST( CompositeTemplateArgMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ tup[ u64 ] tup_arg /> struct MyStruct {}
+		var tup[ u64 ] t[ 8678u64 ];
+		type S_alias= MyStruct</ t />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIyELy8678EEEE10destructorERS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIyELy8678EEEEaSERS2_RKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIyELy8678EEEEeqERKS2_S4_" ) != nullptr );
+}
+
+U_TEST( CompositeTemplateArgMangling_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type A, type B, tup[ A, B ] tup_arg /> struct MyStruct</ tup_arg /> {}
+		var tup[ i32, char8 ] t[ 642, "Q"c8 ];
+		type S_alias= MyStruct</ t />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIicELi642ELc81EEEE10destructorERS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIicELi642ELc81EEEEaSERS2_RKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupIicELi642ELc81EEEEeqERKS2_S4_" ) != nullptr );
+}
+
+U_TEST( CompositeTemplateArgMangling_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type A, type B, tup[ A, i32, B ] tup_arg /> struct MyStruct</ tup_arg /> {}
+		var tup[ u16, i32, char16 ] t[ 75u16, -5636321, "z"c16 ];
+		type S_alias= MyStruct</ t />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupItiDsELt75ELin5636321ELDs122EEEE10destructorERS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupItiDsELt75ELin5636321ELDs122EEEEaSERS2_RKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtl3tupItiDsELt75ELin5636321ELDs122EEEEeqERKS2_S4_" ) != nullptr );
+}
+
 U_TEST( CoroutinesMangling_Test0 )
 {
 	// Coroutine type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
