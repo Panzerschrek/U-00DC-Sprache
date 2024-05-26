@@ -1320,7 +1320,7 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
-		// Typles are allowed, as long as element types are valid.
+		// Tuples are allowed, as long as element types are valid.
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( element_type ) )
@@ -1328,7 +1328,6 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 		}
 		return true;
 	}
-
 
 	return false;
 }

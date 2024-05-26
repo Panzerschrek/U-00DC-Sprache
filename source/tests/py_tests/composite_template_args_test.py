@@ -73,3 +73,54 @@ def ArrayTemplateArg_Test5():
 		static_assert( S</ "Qwerty"u32 />::str_val == "Qwerty"u32 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArg_Test0():
+	c_program_text= """
+		type MyTup= tup[ i32, byte32 ];
+		template</ MyTup tup_arg />
+		struct S
+		{
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArg_Test1():
+	c_program_text= """
+		template</ tup[ char16, bool, [ i32, 3 ] ] tuple_arg />
+		struct S
+		{
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArg_Test2():
+	c_program_text= """
+		template</ tup[ i32, u64, bool ] tup_arg />
+		struct S
+		{
+			static_assert( tup_arg[0] == 427 );
+			static_assert( tup_arg[1] == 14u64 );
+			static_assert( tup_arg[2] == true );
+		}
+		var tup[ i32, u64, bool ] t[ 427, 14u64, true ];
+		type S_alias= S</ t />;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArg_Test3():
+	c_program_text= """
+		template</ type A, type B, tup[ A, B ] tup_arg />
+		struct S</ tup_arg /> // Deduce "A", "B", "tup_arg" based on "tup_arg".
+		{
+			auto val= tup_arg;
+		}
+		var tup[ char8, u32 ] t0[ "T"c8, 8765u ];
+		static_assert( S</ t0 />::val == t0 );
+		var tup[ i32, i16 ] t1[ 78, -5i16 ];
+		static_assert( S</ t1 />::val == t1 );
+	"""
+	tests_lib.build_program( c_program_text )
