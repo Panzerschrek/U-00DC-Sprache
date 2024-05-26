@@ -851,6 +851,36 @@ U_TEST( FunctionTemplatesMangling_Test3 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashI9OuterTypeEEvRKS2_" ) != nullptr );
 }
 
+U_TEST( CompositeTemplateArgMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ [ i32, 2 ] arr_arg /> struct MyStruct {}
+		var [ i32, 2 ] arr[ 8975, 351 ];
+		type S_alias= MyStruct</ arr />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_iLi8975ELi351EEEE10destructorERS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_iLi8975ELi351EEEEaSERS1_RKS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_iLi8975ELi351EEEEeqERKS1_S3_" ) != nullptr );
+}
+
+U_TEST( CompositeTemplateArgMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ [ [ u32, 3 ], 2 ] arr_arg /> struct MyStruct {}
+		var [ [ u32, 3 ], 2 ] arr[ [ 4u, 8u, 15u ], [ 16u, 23u, 42u ] ];
+		type S_alias= MyStruct</ arr />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_A3_jtlS0_Lj4ELj8ELj15EEtlS0_Lj16ELj23ELj42EEEEE10destructorERS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_A3_jtlS0_Lj4ELj8ELj15EEtlS0_Lj16ELj23ELj42EEEEEaSERS2_RKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN8MyStructIXtlA2_A3_jtlS0_Lj4ELj8ELj15EEtlS0_Lj16ELj23ELj42EEEEEeqERKS2_S4_" ) != nullptr );
+}
+
 U_TEST( CoroutinesMangling_Test0 )
 {
 	// Coroutine type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
