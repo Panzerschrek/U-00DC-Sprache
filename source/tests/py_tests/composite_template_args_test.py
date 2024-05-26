@@ -11,3 +11,12 @@ def ArrayTemplateArg_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 
+
+def ArrayTemplateArg_Test1():
+	c_program_text= """
+		template</ [ u32, 3] arr_arg />
+		struct S
+		{
+		}
+	"""
+	tests_lib.build_program( c_program_text )

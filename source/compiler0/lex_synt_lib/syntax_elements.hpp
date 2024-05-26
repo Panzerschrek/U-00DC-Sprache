@@ -1320,7 +1320,7 @@ struct TemplateBase
 	struct Param
 	{
 		SrcLoc src_loc;
-		std::optional<ComplexName> param_type; // For variable params.
+		std::optional<TypeName> param_type; // For variable params.
 		std::string name;
 	};
 
