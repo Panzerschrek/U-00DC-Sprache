@@ -1304,11 +1304,27 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 			IsByte( fundamental->fundamental_type ) ||
 			fundamental->fundamental_type == U_FundamentalType::bool_;
 	}
-	if( const auto enum_type= type.GetEnumType() )
+	else if( const auto enum_type= type.GetEnumType() )
 	{
 		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlying_type ) );
 		return true;
 	}
+	else if( const auto array_type= type.GetArrayType() )
+	{
+		// Arrays are allowed, as long as element types are valid.
+		return TypeIsValidForTemplateVariableArgument( array_type->element_type );
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		// Typles are allowed, as long as element types are valid.
+		for( const Type& element_type : tuple_type->element_types )
+		{
+			if( !TypeIsValidForTemplateVariableArgument( element_type ) )
+				return false;
+		}
+		return true;
+	}
+
 
 	return false;
 }
