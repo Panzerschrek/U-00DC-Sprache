@@ -40,7 +40,8 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 	U_ASSERT( r.constexpr_value != nullptr );
 	return
 		l.type == r.type &&
-		l.constexpr_value->getUniqueInteger() == r.constexpr_value->getUniqueInteger();
+		// LLVM constants are deduplicated, so, comparing pointers should work.
+		l.constexpr_value == r.constexpr_value;
 }
 
 size_t TemplateKey::Hash() const

@@ -579,7 +579,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		return
 			given_variable->type == template_param.type &&
-			given_variable->constexpr_value->getUniqueInteger() == template_param.constexpr_value->getUniqueInteger();
+			// LLVM constants are deduplicated, so, comparing pointers should work.
+			given_variable->constexpr_value == template_param.constexpr_value;
 	}
 
 	return false;
@@ -648,7 +649,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		{
 			return
 				given_variable->type == prev_variable->type &&
-				given_variable->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
+				// LLVM constants are deduplicated, so, comparing pointers should work.
+				given_variable->constexpr_value == prev_variable->constexpr_value;
 		}
 	}
 
