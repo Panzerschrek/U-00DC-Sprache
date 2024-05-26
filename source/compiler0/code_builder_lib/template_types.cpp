@@ -16,8 +16,13 @@ size_t TemplateArgHashImpl( const TemplateVariableArg& template_variable_arg )
 	size_t hash= template_variable_arg.type.Hash();
 
 	U_ASSERT( template_variable_arg.constexpr_value != nullptr );
-	// TODO - handle large constants. For now hash only lower bits of constants.
-	hash= llvm::hash_combine( hash, size_t( template_variable_arg.constexpr_value->getUniqueInteger().getLimitedValue() ) );
+
+	// For now hash only integer constants. Produce empty hash for other constants kinds (arrays, structs, etc.).
+	if( template_variable_arg.constexpr_value->getType()->isIntegerTy() )
+	{
+		// TODO - handle large constants.
+		hash= llvm::hash_combine( hash, size_t( template_variable_arg.constexpr_value->getUniqueInteger().getLimitedValue() ) );
+	}
 
 	return hash;
 }

@@ -1085,7 +1085,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	if( condition->constexpr_value != nullptr )
-		result->constexpr_value= condition->constexpr_value->getUniqueInteger().getLimitedValue() != 0u ? branches_constexpr_values[0] : branches_constexpr_values[1];
+		result->constexpr_value= condition->constexpr_value->isAllOnesValue() != 0u ? branches_constexpr_values[0] : branches_constexpr_values[1];
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
