@@ -224,3 +224,45 @@ def FunctionTemplateCompositeArg_Test1():
 		static_assert( AccessField</ "second", 6s, S />(s) == 0.25f );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def FunctionTemplateCompositeArg_Test2():
+	c_program_text= """
+		template</ [ char8, S ] field_name, size_type S, type T />
+		fn AccessField( T& t ) : auto
+		{
+			return mixin( "t." + field_name );
+		}
+		struct S
+		{
+			u32 erste;
+			char8 zweite;
+		}
+		var S constexpr s{ .erste= 89u, .zweite="R"c8 };
+		// Deduce also "S" template argument based on first composite value argument.
+		static_assert( AccessField</ "erste" />(s) == 89u );
+		static_assert( AccessField</ "zweite" />(s) == "R"c8 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionTemplateCompositeArg_Test3():
+	c_program_text= """
+		template</ [ T, S ] arr, type T, size_type S />
+		fn CalcSum() : T
+		{
+			var T mut sum(0);
+			for( auto mut i= 0s; i < S; ++i )
+			{
+				sum+= arr[i];
+			}
+			return sum;
+		}
+
+		var [ i32, 2 ] arr0[ 78, -11 ];
+		var [ u32, 3 ] arr1[ 63u, 12u, 5u ];
+		// Deduce also element type and array size during instantiation.
+		static_assert( CalcSum</arr0/>() == 78 - 11 );
+		static_assert( CalcSum</arr1/>() == 63u + 12u + 5u );
+	"""
+	tests_lib.build_program( c_program_text )

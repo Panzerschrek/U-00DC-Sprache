@@ -1234,6 +1234,20 @@ OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 		new_template->parent= function_template_ptr;
 		new_template->known_template_args.insert( new_template->known_template_args.end(), arguments_calculated.begin(), arguments_calculated.end() );
 
+		// Add some later args, which was calculated indirectly.
+		for( size_t i= new_template->known_template_args.size(); i < function_template.template_params.size(); ++i )
+		{
+			if( const auto val= args_names_scope.GetThisScopeValue( function_template.template_params[i].name ) )
+			{
+				if( const auto type= val->value.GetTypeName() )
+					new_template->known_template_args.push_back( *type );
+				else if( const auto variable= val->value.GetVariable() )
+					new_template->known_template_args.push_back( TemplateVariableArg( *variable ) );
+				else
+					break; // End at first yet not known argument.
+			}
+		}
+
 		result->template_functions.push_back( new_template );
 	} // for function templates
 

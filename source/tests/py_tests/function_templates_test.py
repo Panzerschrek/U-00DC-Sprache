@@ -789,6 +789,18 @@ def Specialization_Test14():
 	assert( call_result == 999 )
 
 
+def Specialization_Test15():
+	c_program_text= """
+		template</ T val, type T/>
+		fn Square() : T { return val * val; }
+		// Deduce arg #1 based on type of value-arg #0.
+		static_assert( Square</ 7 />() == 49 );
+		static_assert( Square</ 734u />() == 734u * 734u );
+		static_assert( Square</ -58875i64 />() == 58875i64 * 58875i64 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DirectFunctionTemplateParametersSet_Test0():
 	c_program_text= """
 		template</ type T />
