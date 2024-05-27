@@ -220,6 +220,9 @@ private:
 	void EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
 	void EncodeFunctionParams( ManglerState& mangler_state, llvm::ArrayRef<FunctionType::Param> params ) const;
 	void EncodeTemplateArgs( ManglerState& mangler_state, llvm::ArrayRef<TemplateArg> template_args ) const;
+	void EncodeTemplateArgImpl( ManglerState& mangler_state, const Type& type ) const;
+	void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableArg& variable ) const;
+	void EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* constexpr_value ) const;
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& names_scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& names_scope ) const;
 	void EncodeTemplateClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
@@ -555,43 +558,94 @@ void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const llvm:
 void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args ) const
 {
 	for( const TemplateArg& template_arg : template_args )
-	{
-		if( const auto type= std::get_if<Type>(&template_arg) )
-		{
-			if( type->GetArrayType() != nullptr )
-				mangler_state.PushElement( "$$B" );
-
-			EncodeType( mangler_state, *type );
-		}
-		else if( const auto variable= std::get_if<TemplateVariableArg>(&template_arg) )
-		{
-			// HACK!
-			// This is not how C++ compiler encodes value template args.
-			// In C++ this is just numbers.
-			// In Ü it's possible to create several type templates with same name and single value template param
-			// but with different param type.
-			// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
-			// So, we need to distinguish between such template types.
-			// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
-			EncodeType( mangler_state, variable->type );
-
-			mangler_state.PushElement( g_numeric_template_arg_prefix );
-
-			bool is_signed= false;
-			if( const auto fundamental_type= variable->type.GetFundamentalType() )
-				is_signed= IsSignedInteger( fundamental_type->fundamental_type );
-			else if( const auto enum_type= variable->type.GetEnumType() )
-				is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
-			else U_ASSERT(false);
-
-			U_ASSERT( variable->constexpr_value != nullptr );
-			EncodeNumber( mangler_state, variable->constexpr_value->getUniqueInteger(), is_signed );
-		}
-		else U_ASSERT(false);
-	}
+		std::visit( [&]( const auto& el ) { EncodeTemplateArgImpl( mangler_state, el ); }, template_arg );
 
 	// Finish list of arguments.
 	mangler_state.PushElement( g_terminator );
+}
+
+void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const Type& type ) const
+{
+	if( type.GetArrayType() != nullptr )
+		mangler_state.PushElement( "$$B" );
+
+	EncodeType( mangler_state, type );
+}
+
+void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableArg& variable ) const
+{
+	if( variable.type.GetArrayType() != nullptr || variable.type.GetTupleType() != nullptr )
+	{
+		mangler_state.PushElement( "$" );
+		EncodeConstexprValue( mangler_state, variable.type, variable.constexpr_value );
+	}
+	else
+	{
+		// HACK!
+		// This is not how C++ compiler encodes value template args.
+		// In C++ this is just numbers.
+		// In Ü it's possible to create several type templates with same name and single value template param
+		// but with different param type.
+		// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
+		// So, we need to distinguish between such template types.
+		// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
+		EncodeType( mangler_state, variable.type );
+
+		mangler_state.PushElement( g_numeric_template_arg_prefix );
+
+		bool is_signed= false;
+		if( const auto fundamental_type= variable.type.GetFundamentalType() )
+			is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+		else if( const auto enum_type= variable.type.GetEnumType() )
+			is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
+		else U_ASSERT(false);
+
+		U_ASSERT( variable.constexpr_value != nullptr );
+		EncodeNumber( mangler_state, variable.constexpr_value->getUniqueInteger(), is_signed );
+	}
+}
+
+void ManglerMSVC::EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value ) const
+{
+	if( const auto array_type= type.GetArrayType() )
+	{
+		mangler_state.PushElement( "2" );
+
+		mangler_state.PushElement( "$$B" ); // Prefix array type names in templates.
+		EncodeType( mangler_state, type );
+
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
+			EncodeConstexprValue( mangler_state, array_type->element_type, constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+		mangler_state.PushElement( g_terminator );
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		mangler_state.PushElement( "2" );
+
+		EncodeType( mangler_state, type );
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+			EncodeConstexprValue( mangler_state, tuple_type->element_types[i], constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+		mangler_state.PushElement( g_terminator );
+	}
+	else
+	{
+		EncodeType( mangler_state, type );
+
+		mangler_state.PushElement( '0' );
+
+		bool is_signed= false;
+		if( const auto fundamental_type= type.GetFundamentalType() )
+			is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+		else if( const auto enum_type= type.GetEnumType() )
+			is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
+		else U_ASSERT(false);
+
+		U_ASSERT( constexpr_value != nullptr );
+		EncodeNumber( mangler_state, constexpr_value->getUniqueInteger(), is_signed );
+	}
 }
 
 void ManglerMSVC::EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& names_scope ) const
