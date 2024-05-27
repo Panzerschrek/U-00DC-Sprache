@@ -13,18 +13,11 @@ namespace
 
 size_t TemplateArgHashImpl( const TemplateVariableArg& template_variable_arg )
 {
-	size_t hash= template_variable_arg.type.Hash();
-
-	U_ASSERT( template_variable_arg.constexpr_value != nullptr );
-
-	// For now hash only integer constants. Produce empty hash for other constants kinds (arrays, structs, etc.).
-	if( template_variable_arg.constexpr_value->getType()->isIntegerTy() )
-	{
-		// TODO - handle large constants.
-		hash= llvm::hash_combine( hash, size_t( template_variable_arg.constexpr_value->getUniqueInteger().getLimitedValue() ) );
-	}
-
-	return hash;
+	return
+		llvm::hash_combine(
+			template_variable_arg.type.Hash(),
+			// LLVM constants are deduplicated, so, hashing pointers should work.
+			template_variable_arg.constexpr_value );
 }
 
 size_t TemplateArgHashImpl( const Type& template_type_arg )
