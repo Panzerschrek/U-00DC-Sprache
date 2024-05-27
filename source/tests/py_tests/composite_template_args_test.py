@@ -106,6 +106,19 @@ def ArrayTemplateArg_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def ArrayTemplateArg_Test8():
+	c_program_text= """
+		template</ [ size_type, 2 ] arr_arg /> struct S{}
+		var [ size_type, 2 ] a0[ 0s, 0s ], a1[ 2s, 3s ], a2[ 3s, 2s ], a3[ 0s, 0s ], a4[ 2s, 3s ];
+		static_assert( !same_type</ S</a0/>, S</a1/> /> );
+		static_assert( !same_type</ S</a0/>, S</a2/> /> );
+		static_assert( !same_type</ S</a1/>, S</a2/> /> );
+		static_assert(  same_type</ S</a0/>, S</a3/> /> );
+		static_assert(  same_type</ S</a4/>, S</a1/> /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TupleTemplateArg_Test0():
 	c_program_text= """
 		type MyTup= tup[ i32, byte32 ];
@@ -184,6 +197,19 @@ def TupleTemplateArg_Test5():
 		}
 		var tup[ [ i32, 2 ], [ u32, 3 ] ] t[ [ 48, -3 ], [ 78u, 12467u, 1u  ] ];
 		static_assert( S</ t />::val == t );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArg_Test6():
+	c_program_text= """
+		template</ tup[ i32, u32 ] tup_arg /> struct S{}
+		var tup[ i32, u32 ] t0[ 1, 1u ], t1[ 7, 84u ], t2[ 84, 7u ], t3[ 1, 1u ], t4[ 84, 7u ];
+		static_assert( !same_type</ S</t0/>, S</t1/> /> );
+		static_assert( !same_type</ S</t0/>, S</t2/> /> );
+		static_assert( !same_type</ S</t1/>, S</t2/> /> );
+		static_assert(  same_type</ S</t0/>, S</t3/> /> );
+		static_assert(  same_type</ S</t2/>, S</t4/> /> );
 	"""
 	tests_lib.build_program( c_program_text )
 
