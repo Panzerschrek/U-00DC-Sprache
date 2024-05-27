@@ -263,16 +263,15 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 
 	for( auto mut i= 0s; i < in_params.size(); ++i )
 	{
-		auto& template_param= in_params[i];
-		if( !template_param.t.has</Synt::EmptyVariant/>() )
+		if_var( &t : in_params[i].t )
 		{
 			var TemplateSignatureParam mut param=
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, t, template_params_usage_flags );
 			if_var( &type_param : param.GetTypeParam() )
 			{
 				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
 				{
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetSrcLoc(template_param.t), type_param.t )
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetSrcLoc(t), type_param.t )
 				}
 			}
 			template_params[i].t= move(param);

@@ -3419,7 +3419,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		}
 		else
 		{
-			param.t= ParseComplexName();
+			param.t= ParseTypeName();
 		}
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )

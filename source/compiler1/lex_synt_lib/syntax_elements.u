@@ -61,6 +61,11 @@ fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 	return GetSrcLocImpl(initializer);
 }
 
+fn GetSrcLoc( TypeName& type_name ) : SrcLoc
+{
+	return GetSrcLocImpl(type_name);
+}
+
 fn GetSrcLoc( ComplexName& complex_name ) : SrcLoc
 {
 	return GetSrcLocImpl(complex_name);
