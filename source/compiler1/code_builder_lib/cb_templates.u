@@ -267,15 +267,37 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 		{
 			var TemplateSignatureParam mut param=
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, t, template_params_usage_flags );
-			if_var( &type_param : param.GetTypeParam() )
-			{
-				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
-				{
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetSrcLoc(t), type_param.t )
-				}
-			}
-			template_params[i].t= move(param);
 
+			CheckSignatureParamIsValidForTemplateValueArgumentType( param, names_scope, in_params[i].name.range(), in_params[i].src_loc );
+
+			template_params[i].t= move(param);
+		}
+	}
+}
+
+fn CodeBuilder::CheckSignatureParamIsValidForTemplateValueArgumentType(
+	mut this,
+	TemplateSignatureParam& param,
+	NamesScopePtr& names_scope,
+	ust::string_view8 param_name,
+	SrcLoc& src_loc )
+{
+	if_var( &type_param : param.GetTypeParam() )
+	{
+		if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
+		{
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, type_param.t )
+		}
+	}
+	else if_var( &array_param : param.GetArrayTypeParam() )
+	{
+		CheckSignatureParamIsValidForTemplateValueArgumentType( array_param.element_type, names_scope, param_name, src_loc );
+	}
+	else if_var( &tuple_param : param.GetTupleTypeParam() )
+	{
+		foreach( &element_type_param : tuple_param.element_types )
+		{
+			CheckSignatureParamIsValidForTemplateValueArgumentType( element_type_param, names_scope, param_name, src_loc );
 		}
 	}
 }

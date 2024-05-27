@@ -626,6 +626,13 @@ private:
 		ust::array_view_mut</TemplateBase::Param/> template_params,
 		ust::array_view_mut</bool/> template_params_usage_flags );
 
+	fn CheckSignatureParamIsValidForTemplateValueArgumentType(
+		mut this,
+		TemplateSignatureParam& param,
+		NamesScopePtr& names_scope,
+		ust::string_view8 param_name,
+		SrcLoc& src_loc );
+
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
