@@ -1769,14 +1769,21 @@ fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
 		// All enums are valid.
 		return true;
 	}
-
-	if_var( &fundamental_type : t.GetFundamentalType() )
+	else if_var( &fundamental_type : t.GetFundamentalType() )
 	{
 		return
 			IsInteger( fundamental_type.fundamental_type ) ||
 			IsChar( fundamental_type.fundamental_type ) ||
 			IsByte( fundamental_type.fundamental_type ) ||
 			fundamental_type.fundamental_type == U_FundamentalType::bool_;
+	}
+	else if_var( &array_type : t.GetArrayType() )
+	{
+		return TypeIsValidForTemplateVariableArgument( array_type.element_type );
+	}
+	else if_var( &tuple_type : t.GetTupleType() )
+	{
+		return tuple_type.element_types.iter().all( TypeIsValidForTemplateVariableArgument );
 	}
 
 	return false;

@@ -472,6 +472,11 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, Templ
 			{
 				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
 			}
+			else if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+			{
+				// TODO
+				return;
+			}
 
 			if( is_signed )
 			{

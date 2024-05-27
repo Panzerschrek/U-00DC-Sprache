@@ -928,6 +928,11 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 			{
 				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
 			}
+			else if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+			{
+				// TODO
+				return;
+			}
 
 			if( v.constexpr_value != LLVMValueRef::Null )
 			{
