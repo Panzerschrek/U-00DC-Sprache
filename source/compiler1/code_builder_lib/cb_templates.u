@@ -1382,19 +1382,10 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				auto lock= v_ptr.lock_imut();
 				var Variable& v= lock.deref();
 
-				if( given_variable.t != v.t )
-				{
-					return false;
-				}
-
-				if( given_variable.constexpr_value == LLVMValueRef::Null || v.constexpr_value == LLVMValueRef::Null )
-				{
-					return false;
-				}
-
-				return unsafe(
-					LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-					LLVMConstIntGetZExtValue( v.constexpr_value ) );
+				return
+					given_variable.t == v.t &&
+					// LLVM constants are deduplicated, so, comparing pointers should work.
+					given_variable.constexpr_value == v.constexpr_value;
 			}
 		}
 	}
@@ -1450,20 +1441,10 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		auto given_variable_lock= given_variable_ptr.lock_imut();
 		auto& given_variable= given_variable_lock.deref();
 
-		if( given_variable.t != variable_param.t )
-		{
-			return false;
-		}
-
-		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.constexpr_value == LLVMValueRef::Null )
-		{
-			// May be in case of error.
-			return false;
-		}
-
-		return unsafe(
-			LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-			LLVMConstIntGetZExtValue( variable_param.constexpr_value ) );
+		return
+			given_variable.t == variable_param.t &&
+			// LLVM constants are deduplicated, so, comparing pointers should work.
+			given_variable.constexpr_value == variable_param.constexpr_value;
 	}
 
 	return false;

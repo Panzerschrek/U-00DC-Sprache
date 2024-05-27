@@ -1031,7 +1031,8 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 	{
 		foreach( &element : enum_type.lock_imut().deref().elements )
 		{
-			if( unsafe( LLVMConstIntGetZExtValue( constant_value ) == LLVMConstIntGetZExtValue( element.value().constexpr_value ) ) )
+			// LLVM constants are deduplicated, so, comparing pointers should work.
+			if( constant_value == element.value().constexpr_value  )
 			{
 				var ust::string8 mut res;
 				res+= t.ToString();
@@ -1257,7 +1258,10 @@ fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref
 
 op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r) : bool
 {
-	return l.t == r.t && unsafe( LLVMConstIntGetZExtValue(l.constexpr_value) == LLVMConstIntGetZExtValue(r.constexpr_value) );
+	return
+		l.t == r.t &&
+		// LLVM constants are deduplicated, so, comparing pointers should work.
+		l.constexpr_value == r.constexpr_value;
 }
 
 template</type T/>
@@ -1490,16 +1494,10 @@ fn TemplateArgEquals( TemplateArgFinished& l, TemplateArgFinished& r ) : bool
 			{
 				with( &r_variable : r_variable_ptr.lock_imut().deref() )
 				{
-					if( l_variable.t != r_variable.t )
-					{
-						return false;
-					}
-
-					if( l_variable.constexpr_value == LLVMValueRef::Null || r_variable.constexpr_value == LLVMValueRef::Null )
-					{
-						return false;
-					}
-					return unsafe( LLVMConstIntGetZExtValue( l_variable.constexpr_value ) ) == unsafe( LLVMConstIntGetZExtValue( r_variable.constexpr_value ) );
+					return
+						l_variable.t == r_variable.t &&
+						// LLVM constants are deduplicated, so, comparing pointers should work.
+						l_variable.constexpr_value == r_variable.constexpr_value;
 				}
 			}
 		}
@@ -1518,12 +1516,12 @@ fn HashTemplateArg( TemplateArgFinished& arg ) : size_type
 	{
 		with( & variable : varible_ptr.lock_imut().deref() )
 		{
-			if( variable.constexpr_value != LLVMValueRef::Null )
-			{
-				return size_type( unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) ) );
-			}
+			return
+				TypeHasher::hash_combine(
+					TypeHasher::hash(variable.t),
+					// LLVM constants are deduplicated, so, hashing pointers should work.
+					unsafe( cast_ref_unsafe</size_type/>( variable.constexpr_value ) ) );
 		}
-		return 0s;
 	}
 	else{ halt; }
 }
