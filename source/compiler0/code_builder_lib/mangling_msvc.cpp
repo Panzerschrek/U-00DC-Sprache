@@ -14,11 +14,13 @@ constexpr char g_name_prefix= '?'; // All names (function, variables) should sta
 constexpr char g_terminator= '@';
 constexpr char g_template_prefix[]= "?$";
 constexpr char g_numeric_template_arg_prefix[]= "$0";
+constexpr char g_array_type_name_in_templates_prefix[]= "$$B";
 constexpr char g_class_type_prefix = 'U';
 constexpr char g_reference_prefix = 'A';
 constexpr char g_pointer_prefix = 'P';
 constexpr char g_mut_prefix= 'A';
 constexpr char g_imut_prefix= 'B';
+
 
 std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 {
@@ -567,7 +569,7 @@ void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const llvm::A
 void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const Type& type ) const
 {
 	if( type.GetArrayType() != nullptr )
-		mangler_state.PushElement( "$$B" );
+		mangler_state.PushElement( g_array_type_name_in_templates_prefix );
 
 	EncodeType( mangler_state, type );
 }
@@ -611,7 +613,7 @@ void ManglerMSVC::EncodeConstexprValue( ManglerState& mangler_state, const Type&
 	{
 		mangler_state.PushElement( "2" );
 
-		mangler_state.PushElement( "$$B" ); // Prefix array type names in templates.
+		mangler_state.PushElement( g_array_type_name_in_templates_prefix ); // Prefix array type names in templates.
 		EncodeType( mangler_state, type );
 
 		for( uint64_t i= 0; i < array_type->element_count; ++i )
@@ -839,7 +841,8 @@ void ManglerMSVC::EncodeReferencePollution( ManglerState& mangler_state, const F
 
 		template_mangler_state.PushElement( "$" );
 		template_mangler_state.PushElement( "2" );
-		template_mangler_state.PushElement( "$$BY2" );
+		template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+		template_mangler_state.PushElement( "Y2" );
 		EncodeNumber( template_mangler_state, llvm::APInt( 64, references_pollution.size() ), false );
 		EncodeNumber( template_mangler_state, llvm::APInt( 64, 2 ), false );
 		EncodeNumber( template_mangler_state, llvm::APInt( 64, 2 ), false );
@@ -848,7 +851,8 @@ void ManglerMSVC::EncodeReferencePollution( ManglerState& mangler_state, const F
 		for( const auto& pollution_element : references_pollution )
 		{
 			template_mangler_state.PushElement( "2" );
-			template_mangler_state.PushElement( "$$BY1" );
+			template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+			template_mangler_state.PushElement( "Y1" );
 			EncodeNumber( template_mangler_state, llvm::APInt( 64, 2 ), false );
 			EncodeNumber( template_mangler_state, llvm::APInt( 64, 2 ), false );
 			template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
@@ -885,7 +889,8 @@ void ManglerMSVC::EncodeReturnReferences( ManglerState& mangler_state, const Fun
 
 		template_mangler_state.PushElement( "$" );
 		template_mangler_state.PushElement( "2" );
-		template_mangler_state.PushElement( "$$BY1" );
+		template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+		template_mangler_state.PushElement( "Y1" );
 		EncodeNumber( template_mangler_state, llvm::APInt( 64, return_references.size() ), false );
 		EncodeNumber( template_mangler_state, llvm::APInt( 64, 2 ), false );
 		template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
@@ -929,7 +934,8 @@ void ManglerMSVC::EncodeReturnInnerReferences( ManglerState& mangler_state, cons
 		for( const auto& return_references : return_inner_references )
 		{
 			template_mangler_state.PushElement( "2" );
-			template_mangler_state.PushElement( "$$BY1" );
+			template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+			template_mangler_state.PushElement( "Y1" );
 			EncodeNumber( template_mangler_state, llvm::APInt( 64, return_references.size() ), false );
 			EncodeNumber( template_mangler_state, llvm::APInt( 64, 2 ), false );
 			template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
@@ -954,7 +960,8 @@ void ManglerMSVC::EncodeParamReference( ManglerState& mangler_state, const Funct
 {
 	// HACK! Use encoding as for structs, instead as for arrays, because old versions of "undname.exe" can't parse arrays.
 	mangler_state.PushElement( "2" );
-	mangler_state.PushElement( "$$BY0" );
+	mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+	mangler_state.PushElement( "Y0" );
 	EncodeNumber( mangler_state, llvm::APInt( 64, 2 ), false );
 	mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::char8_ ) );
 
