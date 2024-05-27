@@ -1262,10 +1262,38 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 			continue;
 		}
 
+		auto mut known_args= template_args_finished;
+
+		// Add some later args, which was calculated indirectly.
+		for( auto mut i= known_args.size(); i < function_template.params.size(); ++i )
+		{
+			if_var( & val : result_names_scope.lock_imut().deref().GetThisScopeValue( function_template.params[i].name ) )
+			{
+				auto template_arg_ptr= val.Get</TemplateArg/>();
+				if( !template_arg_ptr.empty() )
+				{
+					auto template_arg_lock= template_arg_ptr.try_lock_imut();
+					auto& something= template_arg_lock.deref().something;
+					if_var( &t : something.get</Type/>() )
+					{
+						known_args.push_back(t);
+					}
+					else if_var( &v_ptr : something.get</VariablePtr/>() )
+					{
+						known_args.push_back( v_ptr );
+					}
+					else
+					{
+						break; // End at first yet not known argument.
+					}
+				}
+			}
+		}
+
 		result_functions_set.parameterized_function_templates.push_back(
 			ParameterizedFunctionTemplate
 			{
-				.known_args= template_args_finished,
+				.known_args= move(known_args),
 				.base_template= function_template_ptr,
 				.instantiation_point_names_scope= args_names_scope,
 			} );
