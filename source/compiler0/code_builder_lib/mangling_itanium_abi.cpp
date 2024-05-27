@@ -181,7 +181,7 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
 void EncodeCoroutineType( ManglerState& mangler_state, ClassPtr class_type );
 
-void EncodeConstexprValue(  ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value )
+void EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value )
 {
 	if( const auto array_type= type.GetArrayType() )
 	{

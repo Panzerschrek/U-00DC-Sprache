@@ -907,59 +907,108 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 
 	foreach( &arg : template_args )
 	{
-		if_var( &t : arg.get</Type/>() )
+		variant_visit( &el : arg )
 		{
-			EncodeTypeName( mangler_state, t );
-		}
-		else if_var( &v_ptr : arg.get</VariablePtr/>() )
-		{
-			auto lock= v_ptr.lock_imut();
-			auto& v= lock.deref();
-
-			mangler_state.Push( "L" );
-			EncodeTypeName( mangler_state, v.t );
-
-			auto mut is_signed= false;
-			if_var( fundamental_type : v.t.GetFundamentalType() )
-			{
-				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
-			}
-			else if_var( enum_type : v.t.GetEnumType() )
-			{
-				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
-			}
-			else if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
-			{
-				// TODO
-				return;
-			}
-
-			if( v.constexpr_value != LLVMValueRef::Null )
-			{
-				if( is_signed )
-				{
-					auto num= unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) );
-					if( num >= 0i64 )
-					{
-						mangler_state.PushDecimalNumber( u64(num) );
-					}
-					else
-					{
-						mangler_state.Push( "n" );
-						mangler_state.PushDecimalNumber( u64(-num) );
-					}
-				}
-				else
-				{
-					mangler_state.PushDecimalNumber( unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
-				}
-			}
-
-			mangler_state.Push( "E" );
+			EncodeTemplateArgImpl( mangler_state, el );
 		}
 	}
 
 	mangler_state.Push( "E" );
+}
+
+fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, Type& t )
+{
+	EncodeTypeName( mangler_state, t );
+}
+
+fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, VariablePtr& v_ptr )
+{
+	with( &v : v_ptr.lock_imut().deref() )
+	{
+		if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+		{
+			// Encode composite template args as expressions.
+			mangler_state.Push( "X" );
+			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+			mangler_state.Push( "E" );
+		}
+		else
+		{
+			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+		}
+	}
+}
+
+fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )
+{
+	if_var( &array_type : t.GetArrayType() )
+	{
+		// Encode array type as C++ expression like "type_name{ el0, el1, el2 }".
+		// Use "tl" instead of "il" to distinguish arrays and tuples.
+		mangler_state.Push( "tl" );
+
+		EncodeTypeName( mangler_state, t );
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			EncodeConstexprValue( mangler_state, array_type.element_type, unsafe( LLVMGetAggregateElement( constexpr_value, u32(i) ) ) );
+		}
+
+		mangler_state.Push( "E" );
+	}
+	else if_var( &tuple_type : t.GetTupleType() )
+	{
+		// Encode tuple type as C++ expression like "type_name{ el0, el1, el2 }".
+		// Use "tl" instead of "il" to distinguish arrays and tuples.
+		mangler_state.Push( "tl" );
+
+		EncodeTypeName( mangler_state, t );
+
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			EncodeConstexprValue( mangler_state, tuple_type.element_types[i], unsafe( LLVMGetAggregateElement( constexpr_value, u32(i) ) ) );
+		}
+
+		mangler_state.Push( "E" );
+	}
+	else
+	{
+		mangler_state.Push( "L" );
+		EncodeTypeName( mangler_state, t );
+
+		auto mut is_signed= false;
+		if_var( fundamental_type : t.GetFundamentalType() )
+		{
+			is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+		}
+		else if_var( enum_type : t.GetEnumType() )
+		{
+			is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
+		}
+
+		if( constexpr_value != LLVMValueRef::Null )
+		{
+			if( is_signed )
+			{
+				auto num= unsafe( LLVMConstIntGetSExtValue( constexpr_value ) );
+				if( num >= 0i64 )
+				{
+					mangler_state.PushDecimalNumber( u64(num) );
+				}
+				else
+				{
+					mangler_state.Push( "n" );
+					mangler_state.PushDecimalNumber( u64(-num) );
+				}
+			}
+			else
+			{
+				mangler_state.PushDecimalNumber( unsafe( LLVMConstIntGetZExtValue( constexpr_value ) ) );
+			}
+		}
+
+		mangler_state.Push( "E" );
+	}
 }
 
 fn DecodeOperator( ust::string_view8 o ) : ust::string_view8
