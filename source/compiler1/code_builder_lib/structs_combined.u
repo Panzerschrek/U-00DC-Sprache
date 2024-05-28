@@ -582,6 +582,33 @@ fn Type::IsAbstract( this ) : bool
 	return false;
 }
 
+fn Type::IsValidForTemplateVariableArgument( this ) : bool
+{
+	if( !GetEnumType().empty() )
+	{
+		// All enums are valid.
+		return true;
+	}
+	else if_var( &fundamental_type : GetFundamentalType() )
+	{
+		return
+			IsInteger( fundamental_type.fundamental_type ) ||
+			IsChar( fundamental_type.fundamental_type ) ||
+			IsByte( fundamental_type.fundamental_type ) ||
+			fundamental_type.fundamental_type == U_FundamentalType::bool_;
+	}
+	else if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.IsValidForTemplateVariableArgument();
+	}
+	else if_var( &tuple_type : GetTupleType() )
+	{
+		return tuple_type.element_types.iter().all( IsValidForTemplateVariableArgument );
+	}
+
+	return false;
+}
+
 fn Type::ReferenceTagCount( this ) : u32
 {
 	if_var( &array_type : GetArrayType() )

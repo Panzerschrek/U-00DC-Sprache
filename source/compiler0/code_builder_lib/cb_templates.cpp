@@ -211,7 +211,7 @@ void CodeBuilder::CheckSignatureParamIsValidForTemplateValueArgumentType(
 {
 	if( const auto type_param= param.GetType() )
 	{
-		if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
+		if( !type_param->t.IsValidForTemplateVariableArgument() )
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, type_param->t );
 	}
 	else if( param.IsTemplateParam() ) {}
@@ -538,7 +538,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 
 	if( const auto variable= value.GetVariable() )
 	{
-		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+		if( !variable->type.IsValidForTemplateVariableArgument() )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, variable->type );
 			return TemplateSignatureParam::TypeParam{ invalid_type_ };
@@ -634,7 +634,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !is_variable_param )
 				return false;
 
-			if( !TypeIsValidForTemplateVariableArgument( given_variable->type ) || given_variable->constexpr_value == nullptr )
+			if( !given_variable->type.IsValidForTemplateVariableArgument() || given_variable->constexpr_value == nullptr )
 			{
 				// May be in case of error.
 				return false;
@@ -1311,7 +1311,7 @@ std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, 
 
 	if( const auto variable= value.GetVariable() )
 	{
-		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+		if( !variable->type.IsValidForTemplateVariableArgument() )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors, src_loc, variable->type );
 			return std::nullopt;
@@ -1326,40 +1326,6 @@ std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, 
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, errors, src_loc, value.GetKindName() );
 	return std::nullopt;
-}
-
-bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
-{
-	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
-	{
-		return
-			IsInteger( fundamental->fundamental_type ) ||
-			IsChar( fundamental->fundamental_type ) ||
-			IsByte( fundamental->fundamental_type ) ||
-			fundamental->fundamental_type == U_FundamentalType::bool_;
-	}
-	else if( const auto enum_type= type.GetEnumType() )
-	{
-		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlying_type ) );
-		return true;
-	}
-	else if( const auto array_type= type.GetArrayType() )
-	{
-		// Arrays are allowed, as long as element types are valid.
-		return TypeIsValidForTemplateVariableArgument( array_type->element_type );
-	}
-	else if( const auto tuple_type= type.GetTupleType() )
-	{
-		// Tuples are allowed, as long as element types are valid.
-		for( const Type& element_type : tuple_type->element_types )
-		{
-			if( !TypeIsValidForTemplateVariableArgument( element_type ) )
-				return false;
-		}
-		return true;
-	}
-
-	return false;
 }
 
 void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(

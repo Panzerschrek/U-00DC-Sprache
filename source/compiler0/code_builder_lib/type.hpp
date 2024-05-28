@@ -101,6 +101,7 @@ public:
 	bool HasDestructor() const;
 	bool CanBeConstexpr() const;
 	bool IsAbstract() const;
+	bool IsValidForTemplateVariableArgument() const;
 
 	size_t ReferenceTagCount() const;
 	InnerReferenceKind GetInnerReferenceKind(size_t index) const;

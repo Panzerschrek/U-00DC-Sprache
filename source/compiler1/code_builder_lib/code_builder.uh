@@ -849,8 +849,6 @@ private:
 
 	fn AddNewTemplateThing( mut this, TemplateKey key, NamesScopePtr thing );
 
-	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
-
 	// Typeinfo
 	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
 	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;

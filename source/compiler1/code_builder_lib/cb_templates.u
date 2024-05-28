@@ -284,7 +284,7 @@ fn CodeBuilder::CheckSignatureParamIsValidForTemplateValueArgumentType(
 {
 	if_var( &type_param : param.GetTypeParam() )
 	{
-		if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
+		if( !type_param.t.IsValidForTemplateVariableArgument() )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, type_param.t )
 		}
@@ -719,7 +719,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	{
 		with( &v : v_ptr.lock_imut().deref() )
 		{
-			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
+			if( !v.t.IsValidForTemplateVariableArgument() )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
@@ -1401,7 +1401,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			auto given_variable_lock= given_variable_ptr.lock_imut();
 			var Variable& given_variable= given_variable_lock.deref();
 
-			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) || given_variable.constexpr_value == LLVMValueRef::Null )
+			if( !given_variable.t.IsValidForTemplateVariableArgument() || given_variable.constexpr_value == LLVMValueRef::Null )
 			{
 				// May be in case of error.
 				return false;
@@ -1744,7 +1744,7 @@ fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc,
 	{
 		with( &v : v_ptr.lock_imut().deref() )
 		{
-			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
+			if( !v.t.IsValidForTemplateVariableArgument() )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				return ust::null_optional;
@@ -1810,33 +1810,6 @@ fn CodeBuilder::AddNewTemplateThing( mut this, TemplateKey mut key, NamesScopePt
 {
 	generated_template_things_.insert( key, move(thing) );
 	generated_template_things_sequence_.push_back( move(key) );
-}
-
-fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
-{
-	if( !t.GetEnumType().empty() )
-	{
-		// All enums are valid.
-		return true;
-	}
-	else if_var( &fundamental_type : t.GetFundamentalType() )
-	{
-		return
-			IsInteger( fundamental_type.fundamental_type ) ||
-			IsChar( fundamental_type.fundamental_type ) ||
-			IsByte( fundamental_type.fundamental_type ) ||
-			fundamental_type.fundamental_type == U_FundamentalType::bool_;
-	}
-	else if_var( &array_type : t.GetArrayType() )
-	{
-		return TypeIsValidForTemplateVariableArgument( array_type.element_type );
-	}
-	else if_var( &tuple_type : t.GetTupleType() )
-	{
-		return tuple_type.element_types.iter().all( TypeIsValidForTemplateVariableArgument );
-	}
-
-	return false;
 }
 
 } // namespace U1
