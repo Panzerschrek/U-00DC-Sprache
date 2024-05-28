@@ -1042,6 +1042,44 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 			}
 		}
 	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		// For now we have no special syntax for array literals. So, use just a comma-separated list in [].
+		var ust::string8 mut res;
+		res+= t.ToString();
+		res+= "[ ";
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			res+= ConstantVariableToString( array_type.element_type, unsafe( LLVMGetAggregateElement( constant_value, u32(i) ) ) );
+			if( i + 1u64 < array_type.element_count )
+			{
+				res+= ", ";
+			}
+		}
+
+		res+= "]";
+		return res;
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		// For now we have no special syntax for tuple literals. So, use just a comma-separated list in [].
+		var ust::string8 mut res;
+		res+= t.ToString();
+		res+= "[ ";
+
+		for(auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			res+= ConstantVariableToString( tuple_type.element_types[i], unsafe( LLVMGetAggregateElement( constant_value, u32(i) ) ) );
+			if( i + 1s < tuple_type.element_types.size() )
+			{
+				res+= ", ";
+			}
+		}
+
+		res+= "]";
+		return res;
+	}
 
 	return "";
 }

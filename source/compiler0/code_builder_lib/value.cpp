@@ -208,6 +208,46 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 		res+= enum_member_name;
 		return res;
 	}
+	else if( const auto array_type= variable.type.GetArrayType() )
+	{
+		// For now we have no special syntax for array literals. So, use just a comma-separated list in [].
+		std::string res;
+		res+= variable.type.ToString();
+		res+= "[ ";
+
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
+		{
+			TemplateVariableArg element;
+			element.type= array_type->element_type;
+			element.constexpr_value= variable.constexpr_value->getAggregateElement( uint32_t(i) );
+			res+= ConstantVariableToString( element );
+			if( i + 1 < array_type->element_count )
+				res+= ", ";
+		}
+
+		res+= "]";
+		return res;
+	}
+	else if( const auto tuple_type= variable.type.GetTupleType() )
+	{
+		// For now we have no special syntax for tuple literals. So, use just a comma-separated list in [].
+		std::string res;
+		res+= variable.type.ToString();
+		res+= "[ ";
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+		{
+			TemplateVariableArg element;
+			element.type= tuple_type->element_types[i];
+			element.constexpr_value= variable.constexpr_value->getAggregateElement( uint32_t(i) );
+			res+= ConstantVariableToString( element );
+			if( i + 1 < tuple_type->element_types.size() )
+				res+= ", ";
+		}
+
+		res+= "]";
+		return res;
+	}
 
 	return "";
 }
