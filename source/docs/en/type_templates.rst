@@ -104,6 +104,27 @@ Specialization rules are the following: a specific type is better than an array,
    static_assert( S</ i32 />::x == 2 );
    static_assert( S</ [ f32, 64s ] />::x == 1 );
 
+**************************
+*Template value arguments*
+**************************
+
+As mentioned above, value template arguments are also possible (not only type arguments).
+These values should be of one of the allowed types - ``bool``, integer types, character types, ``byte``-types.
+Arrays and tuples are also possible, if their element types are types, listed above.
+
+.. code-block:: u_spr
+
+   enum E { A, B, C }
+   type ArgType= tup[ [ i32, 2 ], char8, bool, E ];
+
+   // Struct template with composite value parameter.
+   template</ ArgType arg /> struct S {}
+
+   var ArgType constexpr my_arg[ [ 7, -5 ], "y"c8, true, E::B ];
+
+   // Parameterize the template with a composite value.
+   type MyS= S</ my_arg />;
+
 **********************
 *Type alias templates*
 **********************
