@@ -21,7 +21,6 @@ constexpr char g_pointer_prefix = 'P';
 constexpr char g_mut_prefix= 'A';
 constexpr char g_imut_prefix= 'B';
 
-
 std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 {
 	switch( t )
