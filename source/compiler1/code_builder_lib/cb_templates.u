@@ -275,8 +275,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 	}
 }
 
-fn CodeBuilder::CheckSignatureParamIsValidForTemplateValueArgumentType(
-	mut this,
+fn CheckSignatureParamIsValidForTemplateValueArgumentType(
 	TemplateSignatureParam& param,
 	NamesScopePtr& names_scope,
 	ust::string_view8 param_name,

@@ -15,6 +15,34 @@
 namespace U
 {
 
+namespace
+{
+
+void CheckSignatureParamIsValidForTemplateValueArgumentType(
+	const TemplateSignatureParam& param,
+	NamesScope& names_scope,
+	const std::string_view param_name,
+	const SrcLoc& src_loc )
+{
+	if( const auto type_param= param.GetType() )
+	{
+		if( !type_param->t.IsValidForTemplateVariableArgument() )
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, type_param->t );
+	}
+	else if( param.IsTemplateParam() ) {}
+	else if( const auto array_param= param.GetArray() )
+		CheckSignatureParamIsValidForTemplateValueArgumentType( *array_param->element_type, names_scope, param_name, src_loc );
+	else if( const auto tuple_param= param.GetTuple() )
+	{
+		for( const auto& element_param : tuple_param->element_types )
+			CheckSignatureParamIsValidForTemplateValueArgumentType( element_param, names_scope, param_name, src_loc );
+	}
+	else
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, param_name );
+}
+
+} // namespace
+
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplate& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -201,29 +229,6 @@ void CodeBuilder::ProcessTemplateParams(
 			params[i].name,
 			template_parameters[i].src_loc );
 	}
-}
-
-void CodeBuilder::CheckSignatureParamIsValidForTemplateValueArgumentType(
-	const TemplateSignatureParam& param,
-	NamesScope& names_scope,
-	const std::string_view param_name,
-	const SrcLoc& src_loc )
-{
-	if( const auto type_param= param.GetType() )
-	{
-		if( !type_param->t.IsValidForTemplateVariableArgument() )
-			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, type_param->t );
-	}
-	else if( param.IsTemplateParam() ) {}
-	else if( const auto array_param= param.GetArray() )
-		CheckSignatureParamIsValidForTemplateValueArgumentType( *array_param->element_type, names_scope, param_name, src_loc );
-	else if( const auto tuple_param= param.GetTuple() )
-	{
-		for( const auto& element_param : tuple_param->element_types )
-			CheckSignatureParamIsValidForTemplateValueArgumentType( element_param, names_scope, param_name, src_loc );
-	}
-	else
-		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, param_name );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
