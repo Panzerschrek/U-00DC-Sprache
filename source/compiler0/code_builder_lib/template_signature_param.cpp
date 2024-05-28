@@ -13,7 +13,8 @@ bool TemplateSignatureParam::VariableParam::operator==( const VariableParam& oth
 {
 	return
 		this->type == other.type &&
-		this->constexpr_value->getUniqueInteger().getLimitedValue() == other.constexpr_value->getUniqueInteger().getLimitedValue();
+		// LLVM constants are deduplicated, so, comparing pointers should work.
+		this->constexpr_value == other.constexpr_value;
 }
 
 bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& other ) const

@@ -44,6 +44,9 @@ private:
 	fn EncodeFunctionType( this, ManglerState &mut mangler_state, FunctionType& function_type, bool encode_full_type );
 	fn EncodeFunctionParams( this, ManglerState &mut mangler_state, ust::vector</FunctionType::Param/>& params );
 	fn EncodeTemplateArgs( this, ManglerState &mut mangler_state, TemplateArgsFinished& template_args );
+	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Type& t );
+	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, VariablePtr& v_ptr );
+	fn EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value );
 	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state, NamesScope& scope );
 	fn EncodeTemplateClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
@@ -437,55 +440,128 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, Templ
 {
 	foreach( &template_arg : template_args )
 	{
-		if_var( &t : template_arg.get</Type/>() )
+		variant_visit( &el : template_arg )
 		{
-			if( !t.GetArrayType().empty() )
-			{
-				mangler_state.PushElement( "$$B" );
-			}
-
-			EncodeType( mangler_state, t );
-		}
-		else if_var( &v_ptr : template_arg.get</VariablePtr/>() )
-		{
-			auto lock= v_ptr.lock_imut();
-			auto& v= lock.deref();
-
-			// HACK!
-			// This is not how C++ compiler encodes value template args.
-			// In C++ this is just numbers.
-			// In Ü it's possible to create several type templates with same name and single value template param
-			// but with different param type.
-			// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
-			// So, we need to distinguish between such template types.
-			// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
-			EncodeType( mangler_state, v.t );
-
-			mangler_state.PushElement( g_numeric_template_arg_prefix );
-
-			auto mut is_signed= false;
-			if_var( fundamental_type : v.t.GetFundamentalType() )
-			{
-				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
-			}
-			else if_var( enum_type : v.t.GetEnumType() )
-			{
-				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
-			}
-
-			if( is_signed )
-			{
-				EncodeNumber( mangler_state, unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) ) );
-			}
-			else
-			{
-				EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
-			}
+			EncodeTemplateArgImpl( mangler_state, el );
 		}
 	}
 
 	// Finish list of arguments.
 	mangler_state.PushElement( g_terminator );
+}
+
+fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Type& t )
+{
+	if( !t.GetArrayType().empty() )
+	{
+		mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+	}
+
+	EncodeType( mangler_state, t );
+}
+
+fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, VariablePtr& v_ptr )
+{
+	auto lock= v_ptr.lock_imut();
+	auto& v= lock.deref();
+
+	if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+	{
+		mangler_state.PushElement( "$" );
+		EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+	}
+	else
+	{
+
+		// HACK!
+		// This is not how C++ compiler encodes value template args.
+		// In C++ this is just numbers.
+		// In Ü it's possible to create several type templates with same name and single value template param
+		// but with different param type.
+		// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
+		// So, we need to distinguish between such template types.
+		// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
+		EncodeType( mangler_state, v.t );
+
+		mangler_state.PushElement( g_numeric_template_arg_prefix );
+
+		auto mut is_signed= false;
+		if_var( fundamental_type : v.t.GetFundamentalType() )
+		{
+			is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+		}
+		else if_var( enum_type : v.t.GetEnumType() )
+		{
+			is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
+		}
+		else{ halt; }
+
+		if( is_signed )
+		{
+			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) ) );
+		}
+		else
+		{
+			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
+		}
+	}
+}
+
+fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )
+{
+	if_var( &array_type : t.GetArrayType() )
+	{
+		mangler_state.PushElement( "2" );
+
+		mangler_state.PushElement( g_array_type_name_in_templates_prefix ); // Prefix array type names in templates.
+		EncodeType( mangler_state, t );
+
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		{
+			EncodeConstexprValue( mangler_state, array_type.element_type, unsafe( LLVMGetAggregateElement( constexpr_value, u32(i) ) ) );
+		}
+
+		mangler_state.PushElement( g_terminator );
+	}
+	else if_var( &tuple_type : t.GetTupleType() )
+	{
+		mangler_state.PushElement( "2" );
+
+		EncodeType( mangler_state, t );
+
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			EncodeConstexprValue( mangler_state, tuple_type.element_types[i], unsafe( LLVMGetAggregateElement( constexpr_value, u32(i) ) ) );
+		}
+
+		mangler_state.PushElement( g_terminator );
+	}
+	else
+	{
+		EncodeType( mangler_state, t );
+
+		mangler_state.PushElement( "0" );
+
+		auto mut is_signed= false;
+		if_var( fundamental_type : t.GetFundamentalType() )
+		{
+			is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+		}
+		else if_var( enum_type : t.GetEnumType() )
+		{
+			is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
+		}
+		else{ halt; }
+
+		if( is_signed )
+		{
+			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetSExtValue( constexpr_value ) ) );
+		}
+		else
+		{
+			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( constexpr_value ) ) );
+		}
+	}
 }
 
 fn ManglerMSVC::EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope )
@@ -683,7 +759,8 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 
 		template_mangler_state.PushElement( "$" );
 		template_mangler_state.PushElement( "2" );
-		template_mangler_state.PushElement( "$$BY2" );
+		template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+		template_mangler_state.PushElement( "Y2" );
 		EncodeNumber( template_mangler_state, u64( references_pollution.size() ) );
 		EncodeNumber( template_mangler_state, 2u64 );
 		EncodeNumber( template_mangler_state, 2u64 );
@@ -692,7 +769,8 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 		foreach( &pollution_element : references_pollution )
 		{
 			template_mangler_state.PushElement( "2" );
-			template_mangler_state.PushElement( "$$BY1" );
+			template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+			template_mangler_state.PushElement( "Y1" );
 			EncodeNumber( template_mangler_state, 2u64 );
 			EncodeNumber( template_mangler_state, 2u64 );
 			template_mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
@@ -729,7 +807,8 @@ fn ManglerMSVC::EncodeReturnReferences( this, ManglerState &mut mangler_state, F
 
 		template_mangler_state.PushElement( "$" );
 		template_mangler_state.PushElement( "2" );
-		template_mangler_state.PushElement( "$$BY1" );
+		template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+		template_mangler_state.PushElement( "Y1" );
 		EncodeNumber( template_mangler_state, u64(return_references.size()) );
 		EncodeNumber( template_mangler_state, 2u64 );
 		template_mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
@@ -775,7 +854,8 @@ fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_sta
 		foreach( &return_references : return_inner_references )
 		{
 			template_mangler_state.PushElement( "2" );
-			template_mangler_state.PushElement( "$$BY1" );
+			template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+			template_mangler_state.PushElement( "Y1" );
 			EncodeNumber( template_mangler_state, u64(return_references.size()) );
 			EncodeNumber( template_mangler_state, 2u64 );
 			template_mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
@@ -803,7 +883,8 @@ fn ManglerMSVC::EncodeParamReference( this, ManglerState &mut mangler_state, Fun
 {
 	// HACK! Use encoding as for structs, instead as for arrays, because old versions of "undname.exe" can't parse arrays.
 	mangler_state.PushElement( "2" );
-	mangler_state.PushElement( "$$BY0" );
+	mangler_state.PushElement( g_array_type_name_in_templates_prefix );
+	mangler_state.PushElement( "Y0" );
 	EncodeNumber( mangler_state, 2u64 );
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 
@@ -997,6 +1078,7 @@ auto g_name_prefix= "?"c8; // All names (function, variables) should start with 
 auto g_terminator= "@"c8;
 auto& g_template_prefix= "?$";
 auto& g_numeric_template_arg_prefix= "$0";
+auto& g_array_type_name_in_templates_prefix= "$$B";
 auto g_class_type_prefix = "U"c8;
 auto g_reference_prefix = "A"c8;
 auto g_pointer_prefix = "P"c8;

@@ -586,8 +586,6 @@ private:
 
 	std::optional<TemplateArg> ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 
-	bool TypeIsValidForTemplateVariableArgument( const Type& type );
-
 	void FillKnownFunctionTemplateArgsIntoNamespace(
 		const FunctionTemplate& function_template,
 		NamesScope& target_namespace );

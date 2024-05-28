@@ -13,13 +13,11 @@ namespace
 
 size_t TemplateArgHashImpl( const TemplateVariableArg& template_variable_arg )
 {
-	size_t hash= template_variable_arg.type.Hash();
-
-	U_ASSERT( template_variable_arg.constexpr_value != nullptr );
-	// TODO - handle large constants. For now hash only lower bits of constants.
-	hash= llvm::hash_combine( hash, size_t( template_variable_arg.constexpr_value->getUniqueInteger().getLimitedValue() ) );
-
-	return hash;
+	return
+		llvm::hash_combine(
+			template_variable_arg.type.Hash(),
+			// LLVM constants are deduplicated, so, hashing pointers should work.
+			template_variable_arg.constexpr_value );
 }
 
 size_t TemplateArgHashImpl( const Type& template_type_arg )
@@ -40,7 +38,8 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 	U_ASSERT( r.constexpr_value != nullptr );
 	return
 		l.type == r.type &&
-		l.constexpr_value->getUniqueInteger() == r.constexpr_value->getUniqueInteger();
+		// LLVM constants are deduplicated, so, comparing pointers should work.
+		l.constexpr_value == r.constexpr_value;
 }
 
 size_t TemplateKey::Hash() const

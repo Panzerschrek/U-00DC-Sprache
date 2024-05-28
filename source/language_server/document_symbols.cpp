@@ -92,7 +92,7 @@ void WriteTemplateParams( const std::vector<Synt::TypeTemplate::Param>& params, 
 	for( const Synt::TypeTemplate::Param& param : params )
 	{
 		if( param.param_type != std::nullopt )
-			Synt::WriteProgramElement( *param.param_type, stream );
+			Synt::WriteTypeName( *param.param_type, stream );
 		else
 			stream << Keyword( Keywords::type_ );
 

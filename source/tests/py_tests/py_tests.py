@@ -37,6 +37,7 @@ def main():
 		"char_literals_test",
 		"char_test",
 		"code_builder_test",
+		"composite_template_args_test",
 		"constexpr_for_generated_methods_test",
 		"constexpr_functions_errors_test",
 		"constexpr_functions_test",

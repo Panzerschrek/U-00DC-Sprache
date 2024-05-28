@@ -318,6 +318,37 @@ bool Type::IsAbstract() const
 	return false;
 }
 
+bool Type::IsValidForTemplateVariableArgument() const
+{
+	if( const FundamentalType* const fundamental= GetFundamentalType() )
+	{
+		return
+			IsInteger( fundamental->fundamental_type ) ||
+			IsChar( fundamental->fundamental_type ) ||
+			IsByte( fundamental->fundamental_type ) ||
+			fundamental->fundamental_type == U_FundamentalType::bool_;
+	}
+	else if( GetEnumType() != nullptr )
+		return true; // Assuming floats aren't possible for enums underlying types.
+	else if( const auto array_type= GetArrayType() )
+	{
+		// Arrays are allowed, as long as element types are valid.
+		return array_type->element_type.IsValidForTemplateVariableArgument();
+	}
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		// Tuples are allowed, as long as element types are valid.
+		for( const Type& element_type : tuple_type->element_types )
+		{
+			if( !element_type.IsValidForTemplateVariableArgument() )
+				return false;
+		}
+		return true;
+	}
+
+	return false;
+}
+
 size_t Type::ReferenceTagCount() const
 {
 	if( const auto class_type= GetClassType() )

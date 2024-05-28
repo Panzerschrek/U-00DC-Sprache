@@ -27,6 +27,7 @@ References:
 Templates:
 *) Default template arguments for short type template form
 *) enable_if for type templates
+*) Allow template value arguments of some struct types
 
 Lambdas:
 *) Coroutine lambdas (async, generators)

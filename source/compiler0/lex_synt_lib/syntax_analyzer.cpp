@@ -3847,7 +3847,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 			NextLexem();
 		else
-			params.back().param_type= ParseComplexName();
+			params.back().param_type= ParseTypeName();
 
 		if( it_->type != Lexem::Type::Identifier )
 		{

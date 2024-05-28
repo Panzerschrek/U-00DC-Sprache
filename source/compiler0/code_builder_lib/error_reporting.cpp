@@ -148,6 +148,15 @@ std::string PreprocessArg( const Synt::ComplexName& name )
 	return ss.str();
 }
 
+std::string PreprocessArg( const Synt::TypeName& name )
+{
+	std::stringstream ss;
+
+	WriteTypeName( name, ss );
+
+	return ss.str();
+}
+
 } // namespace ErrorReportingImpl
 
 } // namespace U

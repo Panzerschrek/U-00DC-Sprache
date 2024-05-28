@@ -854,7 +854,7 @@ struct Enum
 struct TemplateParam
 {
 	SrcLoc src_loc;
-	Expression t; // Actually, only ComplexName. Empty if type parameter.
+	ust::optional</TypeName/> t;
 	ust::string8 name;
 }
 
@@ -923,6 +923,7 @@ type ProgramElement= NamespaceElement;
 type ProgramElements= ust::vector</ProgramElement/>;
 
 fn GetSrcLoc( Initializer& initializer ) : SrcLoc;
+fn GetSrcLoc( TypeName& type_name ) : SrcLoc;
 fn GetSrcLoc( Expression& expression ) : SrcLoc;
 fn GetSrcLoc( ComplexName& complex_name ) : SrcLoc;
 fn GetSrcLoc( BlockElement& block_element ) : SrcLoc;

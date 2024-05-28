@@ -15,6 +15,34 @@
 namespace U
 {
 
+namespace
+{
+
+void CheckSignatureParamIsValidForTemplateValueArgumentType(
+	const TemplateSignatureParam& param,
+	NamesScope& names_scope,
+	const std::string_view param_name,
+	const SrcLoc& src_loc )
+{
+	if( const auto type_param= param.GetType() )
+	{
+		if( !type_param->t.IsValidForTemplateVariableArgument() )
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, type_param->t );
+	}
+	else if( param.IsTemplateParam() ) {}
+	else if( const auto array_param= param.GetArray() )
+		CheckSignatureParamIsValidForTemplateValueArgumentType( *array_param->element_type, names_scope, param_name, src_loc );
+	else if( const auto tuple_param= param.GetTuple() )
+	{
+		for( const auto& element_param : tuple_param->element_types )
+			CheckSignatureParamIsValidForTemplateValueArgumentType( element_param, names_scope, param_name, src_loc );
+	}
+	else
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, param_name );
+}
+
+} // namespace
+
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplate& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -195,14 +223,11 @@ void CodeBuilder::ProcessTemplateParams(
 				*params[i].param_type );
 		global_function_context_->args_preevaluation_cache.clear();
 
-		if( const auto type_param= template_parameters[i].type->GetType() )
-		{
-			if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), template_parameters[i].src_loc, type_param->t );
-		}
-		else if( template_parameters[i].type->IsTemplateParam() ) {}
-		else
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
+		CheckSignatureParamIsValidForTemplateValueArgumentType(
+			*template_parameters[i].type,
+			names_scope,
+			params[i].name,
+			template_parameters[i].src_loc );
 	}
 }
 
@@ -518,7 +543,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 
 	if( const auto variable= value.GetVariable() )
 	{
-		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+		if( !variable->type.IsValidForTemplateVariableArgument() )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, variable->type );
 			return TemplateSignatureParam::TypeParam{ invalid_type_ };
@@ -579,7 +604,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		return
 			given_variable->type == template_param.type &&
-			given_variable->constexpr_value->getUniqueInteger() == template_param.constexpr_value->getUniqueInteger();
+			// LLVM constants are deduplicated, so, comparing pointers should work.
+			given_variable->constexpr_value == template_param.constexpr_value;
 	}
 
 	return false;
@@ -613,7 +639,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !is_variable_param )
 				return false;
 
-			if( !TypeIsValidForTemplateVariableArgument( given_variable->type ) || given_variable->constexpr_value == nullptr )
+			if( !given_variable->type.IsValidForTemplateVariableArgument() || given_variable->constexpr_value == nullptr )
 			{
 				// May be in case of error.
 				return false;
@@ -648,7 +674,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		{
 			return
 				given_variable->type == prev_variable->type &&
-				given_variable->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
+				// LLVM constants are deduplicated, so, comparing pointers should work.
+				given_variable->constexpr_value == prev_variable->constexpr_value;
 		}
 	}
 
@@ -1228,6 +1255,20 @@ OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 		new_template->parent= function_template_ptr;
 		new_template->known_template_args.insert( new_template->known_template_args.end(), arguments_calculated.begin(), arguments_calculated.end() );
 
+		// Try to add further args, which was calculated indirectly.
+		for( size_t i= new_template->known_template_args.size(); i < function_template.template_params.size(); ++i )
+		{
+			if( const auto val= args_names_scope.GetThisScopeValue( function_template.template_params[i].name ) )
+			{
+				if( const auto type= val->value.GetTypeName() )
+					new_template->known_template_args.push_back( *type );
+				else if( const auto variable= val->value.GetVariable() )
+					new_template->known_template_args.push_back( TemplateVariableArg( *variable ) );
+				else
+					break; // End at first yet not known argument.
+			}
+		}
+
 		result->template_functions.push_back( new_template );
 	} // for function templates
 
@@ -1275,7 +1316,7 @@ std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, 
 
 	if( const auto variable= value.GetVariable() )
 	{
-		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+		if( !variable->type.IsValidForTemplateVariableArgument() )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors, src_loc, variable->type );
 			return std::nullopt;
@@ -1290,25 +1331,6 @@ std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, 
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, errors, src_loc, value.GetKindName() );
 	return std::nullopt;
-}
-
-bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
-{
-	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
-	{
-		return
-			IsInteger( fundamental->fundamental_type ) ||
-			IsChar( fundamental->fundamental_type ) ||
-			IsByte( fundamental->fundamental_type ) ||
-			fundamental->fundamental_type == U_FundamentalType::bool_;
-	}
-	if( const auto enum_type= type.GetEnumType() )
-	{
-		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlying_type ) );
-		return true;
-	}
-
-	return false;
 }
 
 void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(

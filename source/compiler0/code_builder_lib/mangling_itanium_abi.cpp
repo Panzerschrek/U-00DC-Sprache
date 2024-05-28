@@ -181,47 +181,93 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
 void EncodeCoroutineType( ManglerState& mangler_state, ClassPtr class_type );
 
+void EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value )
+{
+	if( const auto array_type= type.GetArrayType() )
+	{
+		// Encode array type as C++ expression like "type_name{ el0, el1, el2 }".
+		// Use "tl" instead of "il" to distinguish arrays and tuples.
+		mangler_state.Push( "tl" );
+
+		EncodeTypeName( mangler_state, type );
+
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
+			EncodeConstexprValue( mangler_state, array_type->element_type, constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+		mangler_state.Push( "E" );
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		// Encode tuple type as C++ expression like "type_name{ el0, el1, el2 }".
+		// Use "tl" instead of "il" to distinguish arrays and tuples.
+		mangler_state.Push( "tl" );
+
+		EncodeTypeName( mangler_state, type );
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+			EncodeConstexprValue( mangler_state, tuple_type->element_types[i], constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+		mangler_state.Push( "E" );
+	}
+	else
+	{
+		// Encode simple numeric constant.
+
+		mangler_state.Push( "L" );
+
+		EncodeTypeName( mangler_state, type );
+
+		bool is_signed= false;
+		if( const auto fundamental_type= type.GetFundamentalType() )
+			is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+		else if( const auto enum_type= type.GetEnumType() )
+			is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
+		else U_ASSERT(false);
+
+		const llvm::APInt arg_value= constexpr_value->getUniqueInteger();
+		if( is_signed )
+		{
+			const int64_t value_signed= arg_value.getSExtValue();
+			if( value_signed >= 0 )
+				mangler_state.Push( std::to_string( value_signed ) );
+			else
+			{
+				mangler_state.Push( "n" );
+				mangler_state.Push( std::to_string( -value_signed ) );
+			}
+		}
+		else
+			mangler_state.Push( std::to_string( arg_value.getZExtValue() ) );
+
+		mangler_state.Push( "E" );
+	}
+}
+
+void EncodeTemplateArgImpl( ManglerState& mangler_state, const Type& t )
+{
+	EncodeTypeName( mangler_state, t );
+}
+
+void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableArg& variable )
+{
+	U_ASSERT( variable.constexpr_value != nullptr );
+	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
+		EncodeConstexprValue( mangler_state, variable.type, variable.constexpr_value );
+	else
+	{
+		// Encode composite template args as expressions.
+		mangler_state.Push( "X" );
+		EncodeConstexprValue( mangler_state, variable.type, variable.constexpr_value );
+		mangler_state.Push( "E" );
+	}
+}
+
 void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args )
 {
 	mangler_state.Push( "I" );
 
 	for( const TemplateArg& template_arg : template_args )
-	{
-		if( const auto type= std::get_if<Type>( &template_arg ) )
-			EncodeTypeName( mangler_state, *type );
-		else if( const auto variable= std::get_if<TemplateVariableArg>( &template_arg ) )
-		{
-			mangler_state.Push( "L" );
-
-			EncodeTypeName( mangler_state, variable->type );
-
-			bool is_signed= false;
-			if( const auto fundamental_type= variable->type.GetFundamentalType() )
-				is_signed= IsSignedInteger( fundamental_type->fundamental_type );
-			else if( const auto enum_type= variable->type.GetEnumType() )
-				is_signed= IsSignedInteger( enum_type->underlying_type.fundamental_type );
-			else U_ASSERT(false);
-
-			U_ASSERT( variable->constexpr_value != nullptr );
-			const llvm::APInt arg_value= variable->constexpr_value->getUniqueInteger();
-			if( is_signed )
-			{
-				const int64_t value_signed= arg_value.getSExtValue();
-				if( value_signed >= 0 )
-					mangler_state.Push( std::to_string( value_signed ) );
-				else
-				{
-					mangler_state.Push( "n" );
-					mangler_state.Push( std::to_string( -value_signed ) );
-				}
-			}
-			else
-				mangler_state.Push( std::to_string( arg_value.getZExtValue() ) );
-
-			mangler_state.Push( "E" );
-		}
-		else U_ASSERT(false);
-	}
+		std::visit( [&]( const auto& el ) { EncodeTemplateArgImpl( mangler_state, el ); }, template_arg );
 
 	mangler_state.Push( "E" );
 }

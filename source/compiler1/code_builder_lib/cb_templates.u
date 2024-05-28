@@ -263,20 +263,40 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 
 	for( auto mut i= 0s; i < in_params.size(); ++i )
 	{
-		auto& template_param= in_params[i];
-		if( !template_param.t.has</Synt::EmptyVariant/>() )
+		if_var( &t : in_params[i].t )
 		{
 			var TemplateSignatureParam mut param=
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
-			if_var( &type_param : param.GetTypeParam() )
-			{
-				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
-				{
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetSrcLoc(template_param.t), type_param.t )
-				}
-			}
-			template_params[i].t= move(param);
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, t, template_params_usage_flags );
 
+			CheckSignatureParamIsValidForTemplateValueArgumentType( param, names_scope, in_params[i].name.range(), in_params[i].src_loc );
+
+			template_params[i].t= move(param);
+		}
+	}
+}
+
+fn CheckSignatureParamIsValidForTemplateValueArgumentType(
+	TemplateSignatureParam& param,
+	NamesScopePtr& names_scope,
+	ust::string_view8 param_name,
+	SrcLoc& src_loc )
+{
+	if_var( &type_param : param.GetTypeParam() )
+	{
+		if( !type_param.t.IsValidForTemplateVariableArgument() )
+		{
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, type_param.t )
+		}
+	}
+	else if_var( &array_param : param.GetArrayTypeParam() )
+	{
+		CheckSignatureParamIsValidForTemplateValueArgumentType( array_param.element_type, names_scope, param_name, src_loc );
+	}
+	else if_var( &tuple_param : param.GetTupleTypeParam() )
+	{
+		foreach( &element_type_param : tuple_param.element_types )
+		{
+			CheckSignatureParamIsValidForTemplateValueArgumentType( element_type_param, names_scope, param_name, src_loc );
 		}
 	}
 }
@@ -698,7 +718,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	{
 		with( &v : v_ptr.lock_imut().deref() )
 		{
-			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
+			if( !v.t.IsValidForTemplateVariableArgument() )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
@@ -1263,10 +1283,38 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 			continue;
 		}
 
+		auto mut known_args= template_args_finished;
+
+		// Try to add further args, which was calculated indirectly.
+		for( auto mut i= known_args.size(); i < function_template.params.size(); ++i )
+		{
+			if_var( & val : result_names_scope.lock_imut().deref().GetThisScopeValue( function_template.params[i].name ) )
+			{
+				auto template_arg_ptr= val.Get</TemplateArg/>();
+				if( !template_arg_ptr.empty() )
+				{
+					auto template_arg_lock= template_arg_ptr.try_lock_imut();
+					auto& something= template_arg_lock.deref().something;
+					if_var( &t : something.get</Type/>() )
+					{
+						known_args.push_back(t);
+					}
+					else if_var( &v_ptr : something.get</VariablePtr/>() )
+					{
+						known_args.push_back( v_ptr );
+					}
+					else
+					{
+						break; // End at first yet not known argument.
+					}
+				}
+			}
+		}
+
 		result_functions_set.parameterized_function_templates.push_back(
 			ParameterizedFunctionTemplate
 			{
-				.known_args= template_args_finished,
+				.known_args= move(known_args),
 				.base_template= function_template_ptr,
 				.instantiation_point_names_scope= args_names_scope,
 			} );
@@ -1352,7 +1400,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			auto given_variable_lock= given_variable_ptr.lock_imut();
 			var Variable& given_variable= given_variable_lock.deref();
 
-			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) || given_variable.constexpr_value == LLVMValueRef::Null )
+			if( !given_variable.t.IsValidForTemplateVariableArgument() || given_variable.constexpr_value == LLVMValueRef::Null )
 			{
 				// May be in case of error.
 				return false;
@@ -1383,19 +1431,10 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				auto lock= v_ptr.lock_imut();
 				var Variable& v= lock.deref();
 
-				if( given_variable.t != v.t )
-				{
-					return false;
-				}
-
-				if( given_variable.constexpr_value == LLVMValueRef::Null || v.constexpr_value == LLVMValueRef::Null )
-				{
-					return false;
-				}
-
-				return unsafe(
-					LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-					LLVMConstIntGetZExtValue( v.constexpr_value ) );
+				return
+					given_variable.t == v.t &&
+					// LLVM constants are deduplicated, so, comparing pointers should work.
+					given_variable.constexpr_value == v.constexpr_value;
 			}
 		}
 	}
@@ -1451,20 +1490,10 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		auto given_variable_lock= given_variable_ptr.lock_imut();
 		auto& given_variable= given_variable_lock.deref();
 
-		if( given_variable.t != variable_param.t )
-		{
-			return false;
-		}
-
-		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.constexpr_value == LLVMValueRef::Null )
-		{
-			// May be in case of error.
-			return false;
-		}
-
-		return unsafe(
-			LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-			LLVMConstIntGetZExtValue( variable_param.constexpr_value ) );
+		return
+			given_variable.t == variable_param.t &&
+			// LLVM constants are deduplicated, so, comparing pointers should work.
+			given_variable.constexpr_value == variable_param.constexpr_value;
 	}
 
 	return false;
@@ -1714,7 +1743,7 @@ fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc,
 	{
 		with( &v : v_ptr.lock_imut().deref() )
 		{
-			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
+			if( !v.t.IsValidForTemplateVariableArgument() )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				return ust::null_optional;
@@ -1780,26 +1809,6 @@ fn CodeBuilder::AddNewTemplateThing( mut this, TemplateKey mut key, NamesScopePt
 {
 	generated_template_things_.insert( key, move(thing) );
 	generated_template_things_sequence_.push_back( move(key) );
-}
-
-fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
-{
-	if( !t.GetEnumType().empty() )
-	{
-		// All enums are valid.
-		return true;
-	}
-
-	if_var( &fundamental_type : t.GetFundamentalType() )
-	{
-		return
-			IsInteger( fundamental_type.fundamental_type ) ||
-			IsChar( fundamental_type.fundamental_type ) ||
-			IsByte( fundamental_type.fundamental_type ) ||
-			fundamental_type.fundamental_type == U_FundamentalType::bool_;
-	}
-
-	return false;
 }
 
 } // namespace U1
