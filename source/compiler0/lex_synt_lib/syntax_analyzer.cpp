@@ -2456,7 +2456,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 			}
 			else
 			{
-				SingleExpressionOperator single_expression_operator( GetExpressionSrcLoc( expression_l ) );
+				SingleExpressionOperator single_expression_operator( GetSrcLoc( expression_l ) );
 				single_expression_operator.expression= std::move(expression_l);
 
 				iteration_part_elements_list_builder.Append( std::move(single_expression_operator) );

@@ -1062,7 +1062,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( c_style_for_operator.loop_condition, loop_names_scope, function_context );
 
-		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( c_style_for_operator.loop_condition );
+		const SrcLoc condition_src_loc= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
 		if( condition_expression->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
@@ -1165,7 +1165,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition, names_scope, function_context );
 
-		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( while_operator.condition );
+		const SrcLoc condition_src_loc= Synt::GetSrcLoc( while_operator.condition );
 		if( condition_expression->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), condition_src_loc, bool_type_, condition_expression->type );
@@ -1502,7 +1502,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			REPORT_ERROR( TypesMismatch,
 				names_scope.GetErrors(),
-				Synt::GetExpressionSrcLoc( if_operator.condition ),
+				Synt::GetSrcLoc( if_operator.condition ),
 				bool_type_,
 				condition_expression->type );
 
@@ -1512,7 +1512,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
-			CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetExpressionSrcLoc( if_operator.condition ) );
+			CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( if_operator.condition ) );
 
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, if_block, alternative_block );
 		}
@@ -1971,7 +1971,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 			type_ok= false;
 
-		const SrcLoc src_loc= Synt::GetExpressionSrcLoc( switch_operator.value );
+		const SrcLoc src_loc= Synt::GetSrcLoc( switch_operator.value );
 
 		if( !type_ok )
 		{
@@ -2043,7 +2043,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					if( const auto single_value= std::get_if<Synt::Expression>( &value ) )
 					{
 						const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( *single_value, names_scope, function_context );
-						const auto src_loc= Synt::GetExpressionSrcLoc( *single_value );
+						const auto src_loc= Synt::GetSrcLoc( *single_value );
 						if( expression_variable->type != switch_type )
 						{
 							REPORT_ERROR(
@@ -2079,7 +2079,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 								REPORT_ERROR(
 									TypesMismatch,
 									names_scope.GetErrors(),
-									Synt::GetExpressionSrcLoc( expression ),
+									Synt::GetSrcLoc( expression ),
 									switch_type,
 									expression_variable->type );
 								all_cases_are_ok= false;
@@ -2087,7 +2087,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 							}
 							if( expression_variable->constexpr_value == nullptr )
 							{
-								REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+								REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetSrcLoc( expression ) );
 								all_cases_are_ok= false;
 								continue;
 							}
@@ -2430,7 +2430,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( SingleExpressionIsUseless( single_expression_operator.expression ) &&
 			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
-			REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression ) );
+			REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ) );
 	}
 	else if(
 		value.GetFunctionsSet() != nullptr ||
@@ -2439,7 +2439,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		value.GetThisOverloadedMethodsSet() != nullptr ||
 		value.GetNamespace() != nullptr ||
 		value.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression ) );
+		REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ) );
 
 	return BlockBuildInfo();
 }
@@ -2725,7 +2725,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names_scope, function_context );
-	const SrcLoc condition_expression_src_loc= Synt::GetExpressionSrcLoc( halt_if.condition );
+	const SrcLoc condition_expression_src_loc= Synt::GetSrcLoc( halt_if.condition );
 	if( condition_expression->type!= bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch,

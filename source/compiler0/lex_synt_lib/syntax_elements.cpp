@@ -9,6 +9,34 @@ namespace U
 namespace Synt
 {
 
+namespace
+{
+
+SrcLoc GetSrcLocImpl( const EmptyVariant& )
+{
+	return SrcLoc();
+}
+
+template<typename T>
+SrcLoc GetSrcLocImpl( const T& e )
+{
+	return e.src_loc;
+}
+
+template<typename T>
+SrcLoc GetSrcLocImpl( const std::unique_ptr<T>& e )
+{
+	return GetSrcLocImpl(*e);
+}
+
+template<typename ... Args>
+SrcLoc GetSrcLocImpl( const std::variant<Args...>& v )
+{
+	return std::visit( [](const auto& el ){ return GetSrcLocImpl(el); }, v );
+}
+
+} // namespace
+
 // Sizes for x86-64.
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
 SIZE_ASSERT( ComplexName, 48u )
@@ -27,44 +55,19 @@ bool FunctionType::IsAutoReturn() const
 	return false;
 }
 
-struct GetSrcLocVisitor
+SrcLoc GetSrcLoc( const ComplexName& complex_name )
 {
-	SrcLoc operator()( const EmptyVariant& ) const
-	{
-		return SrcLoc();
-	}
-
-	SrcLoc operator()( const Expression& expression ) const
-	{
-		return GetExpressionSrcLoc(expression);
-	}
-
-	template<typename T>
-	SrcLoc operator()( const T& element ) const
-	{
-		return element.src_loc;
-	}
-
-	template<typename T>
-	SrcLoc operator()( const std::unique_ptr<T>& element ) const
-	{
-		return (*this)(*element);
-	}
-};
-
-SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name )
-{
-	return std::visit( GetSrcLocVisitor(), complex_name );
+	return GetSrcLocImpl( complex_name );
 }
 
-SrcLoc GetExpressionSrcLoc( const Expression& expression )
+SrcLoc GetSrcLoc( const Expression& expression )
 {
-	return std::visit( GetSrcLocVisitor(), expression );
+	return GetSrcLocImpl( expression );
 }
 
-SrcLoc GetInitializerSrcLoc( const Initializer& initializer )
+SrcLoc GetSrcLoc( const Initializer& initializer )
 {
-	return std::visit( GetSrcLocVisitor(), initializer );
+	return GetSrcLocImpl( initializer );
 }
 
 } // namespace Synt

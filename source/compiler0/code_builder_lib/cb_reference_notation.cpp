@@ -48,7 +48,7 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
 	global_function_context_->args_preevaluation_cache.clear();
-	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
+	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const Type expected_type= FundamentalType( U_FundamentalType::char8_ );
 	if( variable->type != expected_type )
@@ -76,7 +76,7 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
 	global_function_context_->args_preevaluation_cache.clear();
-	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
+	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr )
@@ -121,7 +121,7 @@ FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollutio
 	FunctionType::ReferencesPollution result;
 
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
-	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
+	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr )
@@ -178,7 +178,7 @@ FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 	FunctionType::ReturnReferences result;
 
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
-	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
+	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr )
@@ -215,7 +215,7 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 	FunctionType::ReturnInnerReferences result;
 
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
-	const SrcLoc src_loc= Synt::GetExpressionSrcLoc( expression );
+	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const auto tuple_type= variable->type.GetTupleType();
 	if( tuple_type == nullptr )

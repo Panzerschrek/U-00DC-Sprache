@@ -393,7 +393,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	FunctionContext& function_context,
 	const Synt::Expression& initializer )
 {
-	const SrcLoc src_loc= Synt::GetExpressionSrcLoc(initializer);
+	const SrcLoc src_loc= Synt::GetSrcLoc(initializer);
 
 	if( variable->type.GetFundamentalType() != nullptr ||
 		variable->type.GetRawPointerType() != nullptr ||
@@ -1246,7 +1246,7 @@ void CodeBuilder::BuildConstructorInitialization(
 					CreateClassFieldGEP( function_context, *this_, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
-			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), Synt::GetInitializerSrcLoc(field_initializer.initializer) );
+			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), Synt::GetSrcLoc(field_initializer.initializer) );
 			function_context.variables_state.TryAddInnerLinksForClassField( this_, field_variable, *field, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
@@ -1282,7 +1282,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	U_ASSERT( variable->type.GetClassType() != nullptr );
 	U_ASSERT( variable->type.GetClassType() == field.class_ );
 
-	const SrcLoc initializer_src_loc= Synt::GetInitializerSrcLoc( initializer );
+	const SrcLoc initializer_src_loc= Synt::GetSrcLoc( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
 	if( const auto expression_initializer= std::get_if<Synt::Expression>( &initializer ) )
 		initializer_expression= expression_initializer;
@@ -1303,7 +1303,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	const VariablePtr initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-	const SrcLoc initializer_expression_src_loc= Synt::GetExpressionSrcLoc( *initializer_expression );
+	const SrcLoc initializer_expression_src_loc= Synt::GetSrcLoc( *initializer_expression );
 	if( !ReferenceIsConvertible( initializer_variable->type, field.type, names_scope.GetErrors(), initializer_expression_src_loc ) )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), initializer_expression_src_loc, field.type, initializer_variable->type );
@@ -1358,7 +1358,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 {
 	U_ASSERT( variable->type.GetFunctionPointerType() != nullptr );
 
-	const SrcLoc initializer_expression_src_loc= Synt::GetExpressionSrcLoc( initializer_expression );
+	const SrcLoc initializer_expression_src_loc= Synt::GetSrcLoc( initializer_expression );
 	const FunctionPointerType& function_pointer_type= *variable->type.GetFunctionPointerType();
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, names_scope, function_context );
@@ -1452,7 +1452,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	{
 		SrcLoc value_src_loc;
 		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &initializer_expression ) )
-			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parameterization)->base );
+			value_src_loc= Synt::GetSrcLoc( (*template_parameterization)->base );
 		else
 			value_src_loc= initializer_expression_src_loc;
 		CollectFunctionDefinition( *function_variable, value_src_loc );

@@ -920,7 +920,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, *global_function_context_ );
 			global_function_context_->args_preevaluation_cache.clear();
 
-			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetSrcLoc(expr) );
 			if( template_arg_opt != std::nullopt )
 				out_signature_arg= std::move( *template_arg_opt );
 		}
@@ -1300,7 +1300,7 @@ void CodeBuilder::EvaluateTemplateArgs(
 	for( const Synt::Expression& expr : template_arguments )
 	{
 		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
-		auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+		auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetSrcLoc(expr) );
 		if( template_arg_opt != std::nullopt )
 			out_args.push_back( std::move( *template_arg_opt ) );
 	}

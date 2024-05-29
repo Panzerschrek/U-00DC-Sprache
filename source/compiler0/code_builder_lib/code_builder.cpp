@@ -1058,11 +1058,11 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( AutoForVirtualMethod, names_scope.GetErrors(), func.src_loc );
 
 			if( func.type.return_value_reference_expression != nullptr )
-				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_reference_expression ) );
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetSrcLoc( *func.type.return_value_reference_expression ) );
 			if( func.type.return_value_inner_references_expression != nullptr )
-				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.return_value_inner_references_expression ) );
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetSrcLoc( *func.type.return_value_inner_references_expression ) );
 			if( func.type.references_pollution_expression != nullptr )
-				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *func.type.references_pollution_expression ) );
+				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetSrcLoc( *func.type.references_pollution_expression ) );
 		}
 
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );

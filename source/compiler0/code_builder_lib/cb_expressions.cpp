@@ -77,7 +77,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 	}
 
 	if( result.GetErrorValue() == nullptr )
-		REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), result.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), Synt::GetSrcLoc( expression ), result.GetKindName() );
 
 	const VariablePtr dummy_result=
 		Variable::Create(
@@ -228,9 +228,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// But this also may be call to template function with provided template args.
 		// In such case extract underlying name.
 		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &call_operator.expression ) )
-			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parameterization)->base );
+			value_src_loc= Synt::GetSrcLoc( (*template_parameterization)->base );
 		else
-			value_src_loc= Synt::GetExpressionSrcLoc(call_operator.expression);
+			value_src_loc= Synt::GetSrcLoc(call_operator.expression);
 	}
 
 	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, value_src_loc, names_scope, function_context );
@@ -1056,7 +1056,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context.variables_state.TryAddLink( branch_result, result, names_scope.GetErrors(), ternary_operator.src_loc );
 			}
 
-			CallDestructors( branch_temp_variables_storage, names_scope, function_context, Synt::GetExpressionSrcLoc( ternary_operator.branches[i] ) );
+			CallDestructors( branch_temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( ternary_operator.branches[i] ) );
 
 			if( !function_context.is_functionless_context )
 				function_context.llvm_ir_builder.CreateBr( result_block );
@@ -3627,7 +3627,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			expr= BuildExpressionCodeEnsureVariable( *args[ arg_number - preevaluated_args.size() ], names_scope, function_context );
-			src_loc= Synt::GetExpressionSrcLoc( *args[ arg_number - preevaluated_args.size() ] );
+			src_loc= Synt::GetSrcLoc( *args[ arg_number - preevaluated_args.size() ] );
 		}
 
 		if( param.value_type != ValueType::Value )
@@ -4162,12 +4162,12 @@ bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names_scope, Funct
 	const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( v->type != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( expression ), bool_type_, v->type );
 		return false;
 	}
 	if( v->constexpr_value == nullptr )
 	{
-		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetSrcLoc( expression ) );
 		return false;
 	}
 
@@ -4182,7 +4182,7 @@ FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& express
 	{
 		const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 		function_context.args_preevaluation_cache.emplace( &expression, GetArgExtendedType(*v) );
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), Synt::GetSrcLoc( expression ) );
 
 	}
 	return function_context.args_preevaluation_cache[&expression];

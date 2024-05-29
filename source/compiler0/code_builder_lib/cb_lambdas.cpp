@@ -305,11 +305,11 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 	// Do not allow to specify reference notation - reference affects are calculated automatically during lambda preprocessing.
 	if( lambda.function.type.references_pollution_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.references_pollution_expression ) );
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function.type.references_pollution_expression ) );
 	if( lambda.function.type.return_value_reference_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_reference_expression ) );
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function.type.return_value_reference_expression ) );
 	if( lambda.function.type.return_value_inner_references_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( *lambda.function.type.return_value_inner_references_expression ) );
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function.type.return_value_inner_references_expression ) );
 
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 

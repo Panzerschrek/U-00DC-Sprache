@@ -76,7 +76,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	array_type.element_type= PrepareType( array_type_name.element_type, names_scope, function_context );
 
 	const Synt::Expression& num= array_type_name.size;
-	const SrcLoc num_src_loc= Synt::GetExpressionSrcLoc( num );
+	const SrcLoc num_src_loc= Synt::GetSrcLoc( num );
 
 	VariablePtr size_variable;
 	{
