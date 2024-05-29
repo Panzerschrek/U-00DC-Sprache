@@ -224,10 +224,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
-		auto template_args=
-			tuple_type.element_types.iter()
-			.map( lambda( Type& t ) : TemplateArgFinished { return t; } )
-			.collect</TemplateArgsFinished/>();
+		auto template_args= tuple_type.element_types.iter().collect</TemplateArgsFinished/>();
 
 		mangler_state.PushElement( g_class_type_prefix );
 

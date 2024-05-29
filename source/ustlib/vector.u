@@ -17,9 +17,11 @@ public:
 	type hasher= range_hasher;
 
 public:
+
 	// Factory method for creating vector from given iterator.
-	template</type Iterator/>
-	fn from_iterator( Iterator mut it ) : auto
+	// Input iterator should produce elements equal to "T" or convertible to it.
+	template</type RawIterator/>
+	fn from_iterator( iterator</RawIterator/> mut it ) : auto
 	{
 		var this_type mut result;
 		loop
@@ -29,7 +31,7 @@ public:
 			{
 				break;
 			}
-			result.push_back( next_result.try_take() );
+			result.push_back( next_result.try_take() ); // Type conversion is possible here.
 		}
 		return result;
 	}

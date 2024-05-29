@@ -361,6 +361,14 @@ fn nomangle main() : i32
 		auto str= ust::string_view8( "Gott muss ein Arschloch sein" ).iter().collect</ ust::string8 />();
 		halt if( str != "Gott muss ein Arschloch sein" );
 	}
+	{ // Collect with type conversion.
+		var [ [ char8, 3 ], 3 ] arrays[ "foo", "bar", "Baz" ];
+		var ust::vector</ ust::string8 /> strings= ust::array_view_imut</ [ char8, 3 ] />(arrays).iter().collect</ ust::vector</ ust::string8 /> />();
+		halt if( strings.size() != 3s );
+		halt if( strings[0s] != "foo" );
+		halt if( strings[1s] != "bar" );
+		halt if( strings[2s] != "Baz" );
+	}
 	{ // "all" method.
 		var [ i32, 4 ] ints[ 5, -3, 77, 11 ];
 		var i32 zero= 0;
