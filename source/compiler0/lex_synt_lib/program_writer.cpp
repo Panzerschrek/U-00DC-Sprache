@@ -417,6 +417,12 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( cast_mut->expression, stream );
 			stream << " )";
 		}
+		void operator()( const std::unique_ptr<const Embed>& embed ) const
+		{
+			stream << Keyword( Keywords::embed_ ) << "( ";
+			ElementWrite( embed->expression, stream );
+			stream << " )";
+		}
 		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
 		{
 			stream << "</ ";

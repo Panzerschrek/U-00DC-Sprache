@@ -1196,6 +1196,14 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(cast);
 		}
+		if( it_->text == Keywords::embed_ )
+		{
+			auto embed= std::make_unique<Embed>( it_->src_loc );
+			NextLexem();
+			embed->expression= ParseExpressionInBrackets();
+
+			return std::move(embed);
+		}
 		if( it_->text == Keywords::typeinfo_ )
 		{
 			auto typeinfo_= std::make_unique<TypeInfo>(it_->src_loc );
