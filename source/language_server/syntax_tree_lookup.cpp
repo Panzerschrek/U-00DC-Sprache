@@ -245,6 +245,11 @@ void FindImpl( const Synt::CastRefUnsafe& cast_ref_unsafe )
 	FindImpl( cast_ref_unsafe.expression );
 }
 
+void FindImpl( const Synt::Embed& embed )
+{
+	FindImpl( embed.expression );
+}
+
 void FindImpl( const Synt::TypeInfo& type_info )
 {
 	FindImpl( type_info.type );
