@@ -1415,7 +1415,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
 	var NamesScope& class_members= class_members_lock.deref();
-	auto base_class= class_type.lock_imut().deref().base_class;
+	auto base_class= class_type.read_field</"base_class"/>();
 
 	// Check for errors, build list of initialized fields.
 	var ust::vector</bool/> mut initialized_fields;

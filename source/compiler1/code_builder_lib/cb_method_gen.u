@@ -8,7 +8,7 @@ namespace U1
 
 fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().deref().members;
+	auto class_members_ptr= class_type.read_field</"members"/>();
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.deref();
 
@@ -958,7 +958,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	}
 	else if_var( &class_type : t.GetClassType() )
 	{
-		if( !class_type.lock_imut().deref().is_copy_assignable )
+		if( !class_type.read_field</"is_copy_assignable"/>() )
 		{
 			// TODO - maybe generate error here?
 			return;

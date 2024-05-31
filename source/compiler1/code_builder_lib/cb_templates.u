@@ -842,7 +842,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		debug_assert( result_signature_template_args.size() == template_args.size(), "Wrong args count!" );
 	}
 
-	auto syntax_element_ptr= type_template_ptr.lock_imut().deref().syntax_element;
+	auto syntax_element_ptr= type_template_ptr.read_field</"syntax_element"/>();
 	var Synt::TypeTemplate& syntax_element= syntax_element_ptr.deref();
 
 	// Evaluate and match default args (if needed).

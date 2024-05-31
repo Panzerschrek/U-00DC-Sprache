@@ -200,6 +200,16 @@ public:
 		return unsafe( lock_imut_t( value_, counter_ ) );
 	}
 
+	// Assuming contained value is structure or class read given field from it and returns its copy.
+	// Given field name should be valid and should have public visibility.
+	// Halts if there is a mutable lock to this shared_ptr.
+	template</ [ char8, S ] field_name, size_type S />
+	fn enable_if(!is_nullable) read_field( this ) : auto
+	{
+		halt if( unsafe( $>(counter_).lock_count ) < 0 ); // halt if have mutable locks
+		return mixin( "unsafe( $>(value_) )." + field_name );
+	}
+
 	// Compare.
 
 	op==( this_type& l, this_type& r ) : bool

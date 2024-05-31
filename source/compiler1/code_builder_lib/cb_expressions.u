@@ -576,7 +576,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			auto base_field_index= 0s;
 			if( ( base_field_index < function_context.initialized_this_fields.size() && !function_context.initialized_this_fields[ base_field_index ] ) ||
-				base_class_non_null.lock_imut().deref().kind == ClassType::Kind::Abstract )
+				base_class_non_null.read_field</"kind"/>() == ClassType::Kind::Abstract )
 			{
 				REPORT_ERROR( FieldIsNotInitializedYet, names_scope,src_loc, KeywordToString( Keyword::base_ ) )
 				return ErrorValue();
