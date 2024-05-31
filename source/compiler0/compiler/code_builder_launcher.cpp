@@ -8,7 +8,7 @@ namespace U
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	IVfs& vfs,
+	const IVfsSharedPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -20,7 +20,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 {
 	CodeBuilderLaunchResult result;
 
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
 
 	result.dependent_files.reserve( source_graph.nodes_storage.size() );
 	for( const SourceGraph::Node& node : source_graph.nodes_storage )
@@ -42,7 +42,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			data_layout,
 			target_triple,
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
 
 	result.code_builder_errors= std::move( build_result.errors );
 	result.llvm_module= std::move( build_result.module );

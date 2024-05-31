@@ -103,7 +103,7 @@ llvm::ThreadPool g_tests_thread_pool;
 U_TEST( DocumentSetText_Test0 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
@@ -132,7 +132,7 @@ U_TEST( DocumentSetText_Test0 )
 U_TEST( DocumentUpdateText_Test0 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
@@ -177,7 +177,7 @@ U_TEST( DocumentUpdateText_Test0 )
 U_TEST( DocumentRebuild_Test0 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -194,7 +194,7 @@ U_TEST( DocumentRebuild_Test0 )
 U_TEST( DocumentRebuild_Test1 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -222,7 +222,7 @@ U_TEST( DocumentRebuild_Test1 )
 U_TEST( DocumentRebuild_Test2 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -247,7 +247,7 @@ U_TEST( DocumentRebuild_Test2 )
 U_TEST( DocumentCompletion_Test0 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -280,7 +280,7 @@ U_TEST( DocumentCompletion_Test0 )
 U_TEST( DocumentCompletion_Test1 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -303,7 +303,7 @@ U_TEST( DocumentCompletion_Test1 )
 U_TEST( DocumentCompletion_Test2 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -325,7 +325,7 @@ U_TEST( DocumentCompletion_Test2 )
 U_TEST( DocumentCompletion_Test3 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -347,7 +347,7 @@ U_TEST( DocumentCompletion_Test3 )
 U_TEST( DocumentCompletion_Test4 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -383,7 +383,7 @@ U_TEST( DocumentCompletion_Test4 )
 U_TEST( DocumentCompletion_Test5 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -405,7 +405,7 @@ U_TEST( DocumentCompletion_Test5 )
 U_TEST( DocumentCompletion_Test6 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -463,7 +463,7 @@ U_TEST( DocumentCompletion_Test6 )
 U_TEST( DocumentCompletion_Test7 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -496,7 +496,7 @@ U_TEST( DocumentCompletion_Test7 )
 U_TEST( DocumentCompletion_Test8 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -529,7 +529,7 @@ U_TEST( DocumentCompletion_Test8 )
 U_TEST( DocumentCompletion_Test9 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -551,7 +551,7 @@ U_TEST( DocumentCompletion_Test9 )
 U_TEST( DocumentCompletion_Test10 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -591,7 +591,7 @@ fn Foo()
 U_TEST( DocumentCompletion_Test11 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -637,7 +637,7 @@ U_TEST( DocumentCompletion_Test11 )
 U_TEST( DocumentCompletion_Test12 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -685,7 +685,7 @@ auto lol_4= 0;
 U_TEST( DocumentCompletion_Test13 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -706,7 +706,7 @@ U_TEST( DocumentCompletion_Test13 )
 U_TEST( DocumentCompletion_Test14 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -727,7 +727,7 @@ U_TEST( DocumentCompletion_Test14 )
 U_TEST( DocumentCompletion_Test15 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -748,7 +748,7 @@ U_TEST( DocumentCompletion_Test15 )
 U_TEST( DocumentCompletion_Test16 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -804,7 +804,7 @@ namespace Abc
 U_TEST( DocumentCompletion_Test17 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -825,7 +825,7 @@ U_TEST( DocumentCompletion_Test17 )
 U_TEST( DocumentCompletion_Test18 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -846,7 +846,7 @@ U_TEST( DocumentCompletion_Test18 )
 U_TEST( DocumentCompletion_Test19 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -867,7 +867,7 @@ U_TEST( DocumentCompletion_Test19 )
 U_TEST( DocumentCompletion_Test20 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -888,7 +888,7 @@ U_TEST( DocumentCompletion_Test20 )
 U_TEST( DocumentCompletion_Test21 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -909,7 +909,7 @@ U_TEST( DocumentCompletion_Test21 )
 U_TEST( DocumentCompletion_Test22 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -930,7 +930,7 @@ U_TEST( DocumentCompletion_Test22 )
 U_TEST( DocumentCompletion_Test23 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -954,7 +954,7 @@ U_TEST( DocumentCompletion_Test23 )
 U_TEST( DocumentCompletion_Test24 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -979,7 +979,7 @@ U_TEST( DocumentCompletion_Test24 )
 U_TEST( DocumentCompletion_Test25 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1001,7 +1001,7 @@ U_TEST( DocumentCompletion_Test25 )
 U_TEST( DocumentCompletion_Test26 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1023,7 +1023,7 @@ U_TEST( DocumentCompletion_Test26 )
 U_TEST( DocumentCompletion_Test27 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1045,7 +1045,7 @@ U_TEST( DocumentCompletion_Test27 )
 U_TEST( DocumentCompletion_Test28 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1067,7 +1067,7 @@ U_TEST( DocumentCompletion_Test28 )
 U_TEST( DocumentCompletion_Test29 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1089,7 +1089,7 @@ U_TEST( DocumentCompletion_Test29 )
 U_TEST( DocumentCompletion_Test30 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1111,7 +1111,7 @@ U_TEST( DocumentCompletion_Test30 )
 U_TEST( DocumentCompletion_Test31 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1133,7 +1133,7 @@ U_TEST( DocumentCompletion_Test31 )
 U_TEST( DocumentCompletion_Test32 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1155,7 +1155,7 @@ U_TEST( DocumentCompletion_Test32 )
 U_TEST( DocumentCompletion_Test33 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1177,7 +1177,7 @@ U_TEST( DocumentCompletion_Test33 )
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1198,7 +1198,7 @@ U_TEST( DocumentSignatureHelp_Test0 )
 U_TEST( DocumentSignatureHelp_Test1 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1219,7 +1219,7 @@ U_TEST( DocumentSignatureHelp_Test1 )
 U_TEST( DocumentSignatureHelp_Test2 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1240,7 +1240,7 @@ U_TEST( DocumentSignatureHelp_Test2 )
 U_TEST( DocumentSignatureHelp_Test3 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1261,7 +1261,7 @@ U_TEST( DocumentSignatureHelp_Test3 )
 U_TEST( DocumentSignatureHelp_Test4 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1282,7 +1282,7 @@ U_TEST( DocumentSignatureHelp_Test4 )
 U_TEST( DocumentSignatureHelp_Test5 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1303,7 +1303,7 @@ U_TEST( DocumentSignatureHelp_Test5 )
 U_TEST( DocumentSignatureHelp_Test6 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1324,7 +1324,7 @@ U_TEST( DocumentSignatureHelp_Test6 )
 U_TEST( DocumentSignatureHelp_Test7 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1345,7 +1345,7 @@ U_TEST( DocumentSignatureHelp_Test7 )
 U_TEST( DocumentSignatureHelp_Test8 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1366,7 +1366,7 @@ U_TEST( DocumentSignatureHelp_Test8 )
 U_TEST( DocumentSignatureHelp_Test9 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1387,7 +1387,7 @@ U_TEST( DocumentSignatureHelp_Test9 )
 U_TEST( DocumentSignatureHelp_Test10 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1408,7 +1408,7 @@ U_TEST( DocumentSignatureHelp_Test10 )
 U_TEST( DocumentSignatureHelp_Test11 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1429,7 +1429,7 @@ U_TEST( DocumentSignatureHelp_Test11 )
 U_TEST( DocumentSignatureHelp_Test12 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1450,7 +1450,7 @@ U_TEST( DocumentSignatureHelp_Test12 )
 U_TEST( DocumentSignatureHelp_Test13 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1471,7 +1471,7 @@ U_TEST( DocumentSignatureHelp_Test13 )
 U_TEST( DocumentSignatureHelp_Test14 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1492,7 +1492,7 @@ U_TEST( DocumentSignatureHelp_Test14 )
 U_TEST( DocumentSignatureHelp_Test15 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1513,7 +1513,7 @@ U_TEST( DocumentSignatureHelp_Test15 )
 U_TEST( DocumentSignatureHelp_Test16 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1534,7 +1534,7 @@ U_TEST( DocumentSignatureHelp_Test16 )
 U_TEST( DocumentSignatureHelp_Test17 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1555,7 +1555,7 @@ U_TEST( DocumentSignatureHelp_Test17 )
 U_TEST( DocumentSignatureHelp_Test18 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1576,7 +1576,7 @@ U_TEST( DocumentSignatureHelp_Test18 )
 U_TEST( DocumentSignatureHelp_Test19 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1597,7 +1597,7 @@ U_TEST( DocumentSignatureHelp_Test19 )
 U_TEST( Document_GetFileForImportPoint_Test0 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1618,7 +1618,7 @@ U_TEST( Document_GetFileForImportPoint_Test0 )
 U_TEST( Document_GetFileForImportPoint_Test1 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1641,7 +1641,7 @@ U_TEST( Document_GetFileForImportPoint_Test1 )
 U_TEST( Document_GetFileForImportPoint_Test2 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1659,7 +1659,7 @@ U_TEST( Document_GetFileForImportPoint_Test2 )
 U_TEST( Document_GetFileForImportPoint_Test3 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
@@ -1682,7 +1682,7 @@ U_TEST( Document_GetFileForImportPoint_Test3 )
 U_TEST( Document_GetFileForImportPoint_Test4 )
 {
 	DocumentsContainer documents;
-	TestVfs vfs(documents);
+	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;

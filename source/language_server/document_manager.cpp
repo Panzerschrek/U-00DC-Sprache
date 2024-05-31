@@ -118,7 +118,7 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
 	// TODO - use individual VFS for different files.
-	, vfs_( *this, log_ )
+	, vfs_( std::make_shared<DocumentManagerVfs>( *this, log_ ) )
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
 {}

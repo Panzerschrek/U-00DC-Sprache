@@ -74,7 +74,7 @@ private:
 
 private:
 	Logger& log_;
-	DocumentManagerVfs vfs_;
+	const std::shared_ptr<DocumentManagerVfs> vfs_;
 	const DocumentBuildOptions build_options_;
 	// TODO - use unordered map.
 	std::map<Uri, Document> documents_;

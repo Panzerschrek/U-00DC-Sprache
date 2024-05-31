@@ -24,7 +24,7 @@ struct CodeBuilderLaunchResult
 // There are different implementations of this function for different implementations of CodeBuilderLib.
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	IVfs& vfs,
+	const IVfsSharedPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,

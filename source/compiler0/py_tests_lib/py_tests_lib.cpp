@@ -56,7 +56,7 @@ void PrintLexSyntErrors( const SourceGraph& source_graph )
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, SourceGraph source_graph )
+CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, IVfsSharedPtr vfs, SourceGraph source_graph )
 {
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
@@ -70,21 +70,22 @@ CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, S
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			std::move(vfs) );
 }
 
 std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bool enable_unsed_name_errors )
 {
 	const std::string file_path= "_";
-	SingeFileVfs vfs( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<SingeFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 
 	if( !source_graph.errors.empty() )
 		return nullptr;
 
-	CodeBuilder::BuildResult build_result= RunCodeBuilder( enable_unsed_name_errors, std::move(source_graph) );
+	CodeBuilder::BuildResult build_result= RunCodeBuilder( enable_unsed_name_errors, vfs, std::move(source_graph) );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cerr << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << " " << error.text << "\n";
@@ -394,8 +395,8 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		return nullptr; // Parse will raise
 
 	const std::string file_path= "_";
-	SingeFileVfs vfs( file_path, program_text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<SingeFileVfs>( file_path, program_text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 
@@ -405,7 +406,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( RunCodeBuilder( enable_unused_variable_errors != 0, std::move(source_graph) ).errors );
+	PyObject* const list= BuildErrorsList( RunCodeBuilder( enable_unused_variable_errors != 0, vfs, std::move(source_graph) ).errors );
 	llvm::llvm_shutdown();
 
 	return list;

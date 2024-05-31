@@ -91,7 +91,8 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraphPtr& source_graph );
+		const SourceGraphPtr& source_graph,
+		IVfsSharedPtr vfs );
 
 	// Build program, but leave internal state and LLVM module.
 	// Use this for expecting program after its building (in IDE language server, for example).
@@ -100,7 +101,8 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraphPtr& source_graph );
+		const SourceGraphPtr& source_graph,
+		IVfsSharedPtr vfs );
 
 public: // IDE helpers.
 	CodeBuilderErrorsContainer TakeErrors();
@@ -154,7 +156,8 @@ private:
 		llvm::LLVMContext& llvm_context,
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
-		const CodeBuilderOptions& options );
+		const CodeBuilderOptions& options,
+		IVfsSharedPtr vfs );
 
 	// This function may be called exactly once.
 	void BuildProgramInternal( const SourceGraphPtr& source_graph );
@@ -1421,6 +1424,8 @@ private:
 	const bool report_about_unused_names_;
 	const bool collect_definition_points_;
 	bool skip_building_generated_functions_;
+
+	const IVfsSharedPtr vfs_;
 
 	struct
 	{
