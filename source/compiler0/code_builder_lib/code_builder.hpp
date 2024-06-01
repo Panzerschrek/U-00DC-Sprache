@@ -1540,6 +1540,9 @@ private:
 	std::unordered_map<MixinExpansionKey, Synt::TypeName, MixinExpansionKeyHasher> type_name_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::Expression, MixinExpansionKeyHasher> expression_mixin_expansions_;
 
+	// Full file path to file contents map.
+	std::unordered_map<IVfs::Path, std::optional<IVfs::FileContent>> embed_files_cache_;
+
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.
 	struct DefinitionPoint

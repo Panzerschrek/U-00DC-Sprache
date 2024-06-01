@@ -112,6 +112,42 @@ U_TEST( Embed_Test4 )
 		"root" );
 }
 
+U_TEST( Embed_Test5 )
+{
+	static const char c_program_text_embed[]={ 0x11, 0x22, 0x33, 0x55 };
+
+	static const char c_program_text_root[]=
+	R"(
+		// Embed the same file twice. Should get the same result.
+		auto& res0= embed( "embed.bin" );
+		auto& res1= embed( "embed.bin" );
+		fn Foo()
+		{
+			// Should have exactly the same address for contents of the same embedded file.
+			unsafe
+			{
+				auto mut ptr0= $<( cast_mut(res0) );
+				auto mut ptr1= $<( cast_mut(res1) );
+				halt if( ptr0 != ptr1 );
+			}
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "embed.bin", MakeStringView(c_program_text_embed) },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
 U_TEST( TypesMismatch_ForEmbed_Test0 )
 {
 	static const char c_program_text[]=

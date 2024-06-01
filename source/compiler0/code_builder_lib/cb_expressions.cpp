@@ -1734,9 +1734,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	U_ASSERT( file_index < source_graph_->nodes_storage.size() );
 	const IVfs::Path& parent_file_path= source_graph_->nodes_storage[file_index].file_path;
 
-	const IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
+	// Load file contents. Use caching in order to avoid loading same file contents more than once.
+	IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
 
-	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
+	auto cache_it= embed_files_cache_.find( full_file_path );
+	if( cache_it == embed_files_cache_.end() )
+	{
+		std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
+		cache_it= embed_files_cache_.emplace( std::move(full_file_path), std::move(loaded_file) ).first;
+	}
+
+	const std::optional<IVfs::FileContent> loaded_file= cache_it->second;
 	if( loaded_file == std::nullopt )
 	{
 		REPORT_ERROR( EmbedFileNotFound, names_scope.GetErrors(), embed.src_loc, file_path );
