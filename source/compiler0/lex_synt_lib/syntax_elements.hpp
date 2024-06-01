@@ -792,6 +792,7 @@ struct Embed
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
+	std::optional<ComplexName> element_type;
 	Expression expression;
 };
 

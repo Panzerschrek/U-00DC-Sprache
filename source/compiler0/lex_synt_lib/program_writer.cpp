@@ -419,7 +419,16 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const Embed>& embed ) const
 		{
-			stream << Keyword( Keywords::embed_ ) << "( ";
+			stream << Keyword( Keywords::embed_ );
+
+			if( embed->element_type != std::nullopt )
+			{
+				stream << "</";
+				ElementWrite( *embed->element_type, stream );
+				stream << "/>";
+			}
+
+			stream << "( ";
 			ElementWrite( embed->expression, stream );
 			stream << " )";
 		}

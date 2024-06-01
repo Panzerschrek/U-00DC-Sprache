@@ -247,6 +247,9 @@ void FindImpl( const Synt::CastRefUnsafe& cast_ref_unsafe )
 
 void FindImpl( const Synt::Embed& embed )
 {
+	if( embed.element_type != std::nullopt )
+		FindImpl( *embed.element_type );
+
 	FindImpl( embed.expression );
 }
 

@@ -1200,6 +1200,14 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		{
 			auto embed= std::make_unique<Embed>( it_->src_loc );
 			NextLexem();
+
+			if( it_->type == Lexem::Type::TemplateBracketLeft )
+			{
+				NextLexem();
+				embed->element_type= ParseComplexName();
+				ExpectLexem( Lexem::Type::TemplateBracketRight );
+			}
+
 			embed->expression= ParseExpressionInBrackets();
 
 			return std::move(embed);
