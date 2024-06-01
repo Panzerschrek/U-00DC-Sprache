@@ -7,6 +7,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "keywords.hpp"
 #include "error_reporting.hpp"
 
@@ -1766,9 +1767,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		std::move(result_array_type),
 		ValueType::ReferenceImut,
 		Variable::Location::Pointer,
-		"embed_string",
+		"",
 		nullptr,
 		initializer );
+
+	// Use contents hash-based names for embed arrays.
+	result->name= "_embed_array_" + CalculateSourceFileContentsHash( *loaded_file );
 
 	result->llvm_value= CreateGlobalConstantVariable( result->type, result->name, result->constexpr_value );
 
