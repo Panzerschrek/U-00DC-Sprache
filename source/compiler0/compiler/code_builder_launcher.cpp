@@ -48,6 +48,10 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	result.code_builder_errors= std::move( build_result.errors );
 	result.llvm_module= std::move( build_result.module );
 
+	// Add embedded files into the list of dependencies.
+	for( IVfs::Path& path : build_result.embedded_files )
+		result.dependent_files.push_back( std::move(path) );
+
 	return result;
 }
 

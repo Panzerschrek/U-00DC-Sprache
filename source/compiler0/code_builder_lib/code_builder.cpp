@@ -54,7 +54,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	code_builder.BuildProgramInternal( source_graph );
 	code_builder.FinalizeProgram();
 
-	return BuildResult{ code_builder.TakeErrors(), std::move(code_builder.module_) };
+	std::vector<IVfs::Path> embedded_files;
+	embedded_files.reserve( code_builder.embed_files_cache_.size() );
+	for( const auto& pair : code_builder.embed_files_cache_ )
+		embedded_files.push_back( pair.first );
+
+	return BuildResult{ code_builder.TakeErrors(), std::move(code_builder.module_), std::move(embedded_files) };
 }
 
 std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(

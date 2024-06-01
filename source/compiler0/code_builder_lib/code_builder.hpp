@@ -48,6 +48,7 @@ public:
 	{
 		std::vector<CodeBuilderError> errors;
 		std::unique_ptr<llvm::Module> module;
+		std::vector<IVfs::Path> embedded_files;
 	};
 
 	using CompletionRequestPrefixComponent= std::variant<
