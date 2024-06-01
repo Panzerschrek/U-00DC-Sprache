@@ -1,0 +1,15 @@
+import "inc/a.uh"
+import "/b.uh"
+
+static_assert( warcraft == "Умру за одру!\n" );
+
+// Embed a file in root compilation unit.
+static_assert( embed</char8/>( "a.txt" ) == "some\ntext in\nthis_file\n" );
+
+// Embed a file using absolute path.
+static_assert( embed</char8/>( "/doom.number" ) == "666" );
+
+fn nomangle main() : i32
+{
+	return 0;
+}

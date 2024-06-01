@@ -401,7 +401,6 @@ U_TEST( NameIsNotTypeName_ForEmbedElementType_Test1 )
 	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 2u ) );
 }
 
-
 U_TEST( TypesMismatch_ForEmbedElementType_Test0 )
 {
 	static const char c_program_text_root[]=

@@ -1,0 +1,2 @@
+// Embed a file using relative path to this file.
+auto& warcraft= embed</char8/>("inc_absolute.txt");
