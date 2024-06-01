@@ -1754,7 +1754,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const Type* const t= v.GetTypeName();
 		if( t == nullptr )
 		{
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), embed.src_loc, *t );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), embed.src_loc, v.GetKindName() );
 			return ErrorValue();
 		}
 

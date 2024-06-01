@@ -361,6 +361,164 @@ U_TEST( EmbedFileNotFound_Test1 )
 	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::EmbedFileNotFound, 3u ) );
 }
 
+U_TEST( NameIsNotTypeName_ForEmbedElementType_Test0 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</Foo/>( "test.txt" );
+		fn Foo(){}
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 2u ) );
+}
+
+U_TEST( NameIsNotTypeName_ForEmbedElementType_Test1 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</x/>( "test.txt" );
+		var u8 x= zero_init;
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 2u ) );
+}
+
+
+U_TEST( TypesMismatch_ForEmbedElementType_Test0 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</u16/>( "test.txt" ); // Can't embed as 16-bit integer.
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypesMismatch, 2u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbedElementType_Test1 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</i32/>( "test.txt" ); // Can't embed as 32-bit integer.
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypesMismatch, 2u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbedElementType_Test2 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</f64/>( "test.txt" ); // Can't embed as f64.
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypesMismatch, 2u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbedElementType_Test3 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</S/>( "test.txt" ); // Can't embed as struct type.
+		struct S{ i8 x; }
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypesMismatch, 2u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbedElementType_Test4 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</A/>( "test.txt" ); // Can't embed as array type.
+		type A= [ char8, 1 ];
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypesMismatch, 2u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbedElementType_Test5 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed</E/>( "test.txt" ); // Can't embed as enum type.
+		enum E{ A, B, C }
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "test.txt", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypesMismatch, 2u ) );
+}
+
 } // namespace
 
 } // namespace U
