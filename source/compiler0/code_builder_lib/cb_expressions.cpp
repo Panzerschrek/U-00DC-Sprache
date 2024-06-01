@@ -1702,13 +1702,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 
 	const auto array_type= variable->type.GetArrayType();
-	if( array_type == nullptr )
-	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "char8 array", variable->type.ToString() );
-		return ErrorValue();
-	}
-
-	if( array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
+	if( array_type == nullptr ||
+		array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "char8 array", variable->type.ToString() );
 		return ErrorValue();
@@ -1753,10 +1748,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const U_FundamentalType element_type= U_FundamentalType::byte8_;
-	const auto element_llvm_type= GetFundamentalLLVMType( element_type );
-
-	llvm::Constant* const initializer=
-		llvm::ConstantDataArray::getString( llvm_context_, *loaded_file, false /* not null terminated */ );
+	llvm::Type* const element_llvm_type= GetFundamentalLLVMType( element_type );
 
 	ArrayType result_array_type;
 	result_array_type.element_type= FundamentalType( element_type, element_llvm_type );
@@ -1769,7 +1761,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		Variable::Location::Pointer,
 		"",
 		nullptr,
-		initializer );
+		llvm::ConstantDataArray::getString( llvm_context_, *loaded_file, false /* not null terminated */ ) );
 
 	// Use contents hash-based names for embed arrays.
 	result->name= "_embed_array_" + CalculateSourceFileContentsHash( *loaded_file );
