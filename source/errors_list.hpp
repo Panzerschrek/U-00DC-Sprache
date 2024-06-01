@@ -262,4 +262,4 @@ PROCESS_ERROR( MixinExpansionDepthReached, "Mixin expansion depth reached. Consi
 PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence." )
 
 // Embed
-PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"\" for embedding." )
+PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
