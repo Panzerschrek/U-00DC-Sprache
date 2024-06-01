@@ -28,8 +28,8 @@ public:
 		: sources_(std::move(sources))
 	{}
 
-	MultiFileVfs( std::string file_path, const char* text )
-		: sources_( { SourceEntry{ file_path, text } } )
+	MultiFileVfs( std::string file_path, std::string_view text )
+		: sources_( { SourceEntry{ std::move(file_path), text } } )
 	{}
 
 	virtual std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
@@ -37,7 +37,7 @@ public:
 		for( const SourceEntry& source_entry : sources_ )
 		{
 			if( full_file_path == source_entry.file_path )
-				return source_entry.text;
+				return std::string(source_entry.text);
 		}
 		return std::nullopt;
 	}
@@ -96,7 +96,7 @@ static CodeBuilderOptions GetCodeBuilderOptionsForTests()
 	return options;
 }
 
-std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgram( const std::string_view text )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
@@ -120,7 +120,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::move( build_result.module );
 }
 
-ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
+ErrorTestBuildResult BuildProgramWithErrors( const std::string_view text )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
@@ -183,7 +183,7 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 			vfs ).errors };
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const std::string_view text )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
@@ -210,7 +210,7 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	return std::move( build_result.module );
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text )
+std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string_view text )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
@@ -237,7 +237,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	return std::move( build_result.module );
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const std::string_view text )
 {
 	auto module= BuildProgram( text );
 	if( module == nullptr )
@@ -258,7 +258,7 @@ bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErr
 	return false;
 }
 
-std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const text, const bool allow_errors )
+std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const std::string_view text, const bool allow_errors )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
