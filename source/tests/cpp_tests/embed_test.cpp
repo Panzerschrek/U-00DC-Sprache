@@ -190,6 +190,81 @@ U_TEST( Embed_Test7 )
 		"root" );
 }
 
+U_TEST( Embed_WithType_Test0 )
+{
+	static const char c_program_text_a[]= "fn Foo(){}";
+
+	static const char c_program_text_root[]=
+	R"(
+		auto& import_contents= embed</char8/>( "a.u" ); // Embed as char8 array.
+		static_assert( import_contents == "fn Foo(){}" );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a.u", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_WithType_Test1 )
+{
+	static const char c_program_text_embed[]={ 0x37, 0x01, char(0xA6), char(0x8E) };
+
+	static const char c_program_text_root[]=
+	R"(
+		auto& embed_result= embed</u8/>( "embed.bin" ); // Embed as u8.
+		var [ u8, 4 ] expected_result[ (0x37), (0x01), (0xA6), (0x8E) ];
+		static_assert( embed_result == expected_result );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "embed.bin", MakeStringView(c_program_text_embed) },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_WithType_Test2 )
+{
+	static const char c_program_text_embed[]={ 0x55, 0x66, 0x77 };
+
+	static const char c_program_text_root[]=
+	R"(
+		auto& embed_result= embed</i8/>( "embed.bin" ); // Embed as i8.
+		var [ i8, 3 ] expected_result[ (0x55), (0x66), (0x77) ];
+		static_assert( embed_result == expected_result );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "embed.bin", MakeStringView(c_program_text_embed) },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_WithType_Test3 )
+{
+	static const char c_program_text_embed[]= "wieso?";
+
+	static const char c_program_text_root[]=
+	R"(
+		namespace NN{ type CharAlias= char8; }
+		auto& import_contents= embed</NN::CharAlias/>( "test.txt" ); // Embed as char8 array, using type alias.
+		static_assert( import_contents == "wieso?" );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "test.txt", c_program_text_embed },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 U_TEST( TypesMismatch_ForEmbed_Test0 )
 {
 	static const char c_program_text[]=

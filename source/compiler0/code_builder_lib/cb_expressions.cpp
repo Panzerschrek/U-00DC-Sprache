@@ -1747,7 +1747,29 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	const U_FundamentalType element_type= U_FundamentalType::byte8_;
+	U_FundamentalType element_type= U_FundamentalType::byte8_;
+	if( embed.element_type != std::nullopt )
+	{
+		const Value v= ResolveValue( names_scope, function_context, *embed.element_type );
+		const Type* const t= v.GetTypeName();
+		if( t == nullptr )
+		{
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), embed.src_loc, *t );
+			return ErrorValue();
+		}
+
+		const auto fundamental_type= t->GetFundamentalType();
+		if( fundamental_type == nullptr || GetFundamentalTypeSize( fundamental_type->fundamental_type ) != 1 )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "any fundamental 8-bit type", t->ToString() );
+			return ErrorValue();
+		}
+
+		element_type= fundamental_type->fundamental_type;
+
+		// TODO - check utf-8 is valid for char8?
+	}
+
 	llvm::Type* const element_llvm_type= GetFundamentalLLVMType( element_type );
 
 	ArrayType result_array_type;
