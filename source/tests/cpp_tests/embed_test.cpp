@@ -148,6 +148,48 @@ U_TEST( Embed_Test5 )
 	engine->runFunction( function, {} );
 }
 
+U_TEST( Embed_Test6 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& empty= embed( "empty.bin" );
+		static_assert( typeinfo</ typeof(empty) />.element_count == 0s );
+
+		auto& single_element= embed( "single_element.bin" );
+		static_assert( typeinfo</ typeof(single_element) />.element_count == 1s );
+
+		auto& two_elements= embed( "two_elements.bin" );
+		static_assert( typeinfo</ typeof(two_elements) />.element_count == 2s );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "empty.bin", std::string_view() },
+			{ "single_element.bin", "Q" },
+			{ "two_elements.bin", "Cd" },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_Test7 )
+{
+	static const char c_program_text_a[]= "fn Foo(){}";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a.u"
+		auto& import_contents= embed( "a.u" ); // Embed contents of a file, which was imported previously.
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a.u", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 U_TEST( TypesMismatch_ForEmbed_Test0 )
 {
 	static const char c_program_text[]=
