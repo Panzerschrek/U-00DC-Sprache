@@ -1739,7 +1739,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		REPORT_ERROR( EmbedFileNotFound, names_scope.GetErrors(), embed.src_loc, full_file_path );
+		REPORT_ERROR( EmbedFileNotFound, names_scope.GetErrors(), embed.src_loc, file_path );
 		return ErrorValue();
 	}
 

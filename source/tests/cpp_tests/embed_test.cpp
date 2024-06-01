@@ -56,6 +56,62 @@ U_TEST( Embed_Test1 )
 		"root" );
 }
 
+U_TEST( Embed_Test2 )
+{
+	static const char c_program_text_embed[]={ 0x22, 0x3C, char(0xE6) };
+
+	static const char c_program_text_root[]=
+	R"(
+		auto& extension= ".bin";
+
+		// Embed result is contexpr reference to byte8 array.
+		// Arbitrary expression for file path is allowed, as soon as it evaluates to contstexpr char array.
+		auto& constexpr embed_result= embed( "embed" + extension );
+
+		var [ byte8, 3 ] expected_result[ (u8(0x22)), (u8(0x3C)), (u8(0xE6)) ];
+		static_assert( embed_result == expected_result );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "embed.bin", MakeStringView(c_program_text_embed) },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_Test3 )
+{
+	// Embed itself.
+	static const char c_program_text_root[]= "auto& embed_result= embed(\"root\");";
+
+	BuildMultisourceProgram(
+		{
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_Test4 )
+{
+	static const char c_program_text_embed[]={ 0x11, 0x22, 0x33, 0x44, 0x55 };
+
+	static const char c_program_text_root[]=
+	R"(
+		// Embed the same file twice. Should get the same result.
+		auto& res0= embed( "embed.bin" );
+		auto& res1= embed( "embed.bin" );
+		static_assert( res0 == res1 );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "embed.bin", MakeStringView(c_program_text_embed) },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 U_TEST( TypesMismatch_ForEmbed_Test0 )
 {
 	static const char c_program_text[]=
