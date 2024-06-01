@@ -1737,6 +1737,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
 
 	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
+	if( loaded_file == std::nullopt )
+	{
+		REPORT_ERROR( EmbedFileNotFound, names_scope.GetErrors(), embed.src_loc, full_file_path );
+		return ErrorValue();
+	}
 
 	const U_FundamentalType element_type= U_FundamentalType::byte8_;
 	const auto element_llvm_type= GetFundamentalLLVMType( element_type );

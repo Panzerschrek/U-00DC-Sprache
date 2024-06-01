@@ -56,6 +56,101 @@ U_TEST( Embed_Test1 )
 		"root" );
 }
 
+U_TEST( TypesMismatch_ForEmbed_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			embed( 42 ); // Expected char8 array, got integer
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 4u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbed_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( tup[ char8, char8 ]& t)
+		{
+			embed( t ); // Expected char8 array, got tuple
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 4u ) );
+}
+
+U_TEST( TypesMismatch_ForEmbed_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			embed( "file.txt"u16 ); // Expected char8 array, got char16 array
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 4u ) );
+}
+
+U_TEST( ExpectedConstantExpression_ForEmbed_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto mut f= "file.txt";
+			embed( f ); // Given value isn't constant.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 5u ) );
+}
+
+U_TEST( EmbedFileNotFound_Test0 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& f= embed( "cot" ); // can't find this file.
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "cat", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::EmbedFileNotFound, 2u ) );
+}
+
+U_TEST( EmbedFileNotFound_Test1 )
+{
+	static const char c_program_text_root[]=
+	R"(
+		auto& file_name= "qwwrty";
+		auto& f= embed( file_name ); // can't find this file.
+	)";
+
+	ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "qwerty", "contents" },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::EmbedFileNotFound, 3u ) );
+}
 
 } // namespace
 

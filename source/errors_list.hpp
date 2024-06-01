@@ -260,3 +260,6 @@ PROCESS_ERROR( MixinLexicalError, "{0}" )
 PROCESS_ERROR( MixinSyntaxError, "{0}" )
 PROCESS_ERROR( MixinExpansionDepthReached, "Mixin expansion depth reached. Consider not using mixins within mixins." )
 PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence." )
+
+// Embed
+PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"\" for embedding." )
