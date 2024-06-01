@@ -298,7 +298,7 @@ int Main( int argc, const char* argv[] )
 	else
 		data_layout= llvm::DataLayout( GetTestsDataLayout() );
 
-	const auto vfs= CreateVfsOverSystemFS( include_dir );
+	const IVfsSharedPtr vfs= CreateVfsOverSystemFS( include_dir );
 	if( vfs == nullptr )
 		return 1u;
 
@@ -340,7 +340,8 @@ int Main( int argc, const char* argv[] )
 				data_layout,
 				target_triple,
 				CodeBuilderOptions(),
-				std::make_shared<SourceGraph>( std::move(source_graph) ) );
+				std::make_shared<SourceGraph>( std::move(source_graph) ),
+				vfs );
 
 		PrintErrors( dependent_files, build_result.errors, errors_format );
 
