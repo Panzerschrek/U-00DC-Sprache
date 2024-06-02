@@ -756,6 +756,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return result_ptr;
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Embed& embed_ ) : Value
+{
+	// TODO
+	return BuildExpressionCodeEnsureVariable( names_scope, function_context, embed_.expression.deref() );
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
 {
 	auto prev_unsafe= function_context.is_in_unsafe_block;
