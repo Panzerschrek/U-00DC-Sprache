@@ -190,6 +190,36 @@ U_TEST( Embed_Test7 )
 		"root" );
 }
 
+U_TEST( Embed_Test8 )
+{
+	static const char c_program_text_a[]= "some contents";
+
+	static const char c_program_text_root[]=
+	R"(
+		// "embed" in argument expression.
+		auto sum= Sum( embed( "a.txt" ) );
+
+		template</type T, size_type S />
+		fn Sum( [ T, S ]& arr ) : u32
+		{
+			auto mut r= 0u;
+			for( auto mut i= 0s; i < S; ++i )
+			{
+				r+= u32( u8( arr[i] ) );
+			}
+			return r;
+		}
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a.txt", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+
 U_TEST( Embed_WithType_Test0 )
 {
 	static const char c_program_text_a[]= "fn Foo(){}";
@@ -260,6 +290,27 @@ U_TEST( Embed_WithType_Test3 )
 	BuildMultisourceProgram(
 		{
 			{ "test.txt", c_program_text_embed },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( Embed_WithType_Test4 )
+{
+	static const char c_program_text_a[]= "fn Bar(){}";
+
+	static const char c_program_text_root[]=
+	R"(
+		fn Foo()
+		{
+			Bar(); // This function should be available.
+		}
+		mixin( embed</char8/>( "a.u" ) ); // use embed contents for mixin.
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a.u", c_program_text_a },
 			{ "root", c_program_text_root }
 		},
 		"root" );
