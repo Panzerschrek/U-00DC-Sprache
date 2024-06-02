@@ -5,6 +5,18 @@ namespace U1
 {
 
 fn LoadSourceGraph(
+	IVfsSharedPtr& vfs_ptr,
+	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	ust::string8& root_file_path,
+	ust::string_view8 prelude_code ) : SourceGraph
+{
+	with( mut vfs_lock : vfs_ptr.lock_mut() )
+	{
+		return LoadSourceGraph( vfs_lock.deref(), source_file_contents_hashing_function, root_file_path, prelude_code );
+	}
+}
+
+fn LoadSourceGraph(
 	IVfs &mut vfs,
 	SourceFileContentsHashigFunction source_file_contents_hashing_function,
 	ust::string8& root_file_path,

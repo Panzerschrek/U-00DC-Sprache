@@ -11,7 +11,7 @@ fn nomangle U1_BuildProgram(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
@@ -20,7 +20,7 @@ fn nomangle U1_BuildProgram(
 		return LLVMModuleRef::Null;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors), test_vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -41,7 +41,7 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe : bool
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
@@ -50,7 +50,7 @@ fn nomangle U1_BuildProgramWithErrors(
 		return false;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors), test_vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
@@ -65,7 +65,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
 
 	foreach( &node : source_graph.nodes )
@@ -99,7 +99,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle error_processing_data ) unsafe : LLVMModuleRef
 {
-	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
+	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( U1::ExternalVfsWrapper( vfs_interface ) );
 
 	auto source_graph=
 		U1::LoadSourceGraph(
@@ -142,7 +142,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 		.report_about_unused_names= !allow_unused_names,
 	};
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options, vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	if( !code_builder_res.errors.empty() )
@@ -163,7 +163,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) ) );
 	auto source_graph=
 		U1::LoadSourceGraph(
 			test_vfs,
@@ -176,7 +176,7 @@ fn nomangle U1_BuildMultisourceProgram(
 		return LLVMModuleRef::Null;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors), test_vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -198,7 +198,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe : bool
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) ) );
 	auto source_graph=
 		U1::LoadSourceGraph(
 			test_vfs,
@@ -211,7 +211,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 		return false;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(false) );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(false), test_vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
@@ -227,7 +227,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
@@ -244,7 +244,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 		.report_about_unused_names= enable_unsed_name_errors
 	};
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options, test_vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -262,7 +262,7 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
-	var U1::TestVfs mut test_vfs( unsafe( U1::StringToArrayView( program_text ) ) );
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
@@ -278,7 +278,7 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 		.report_about_unused_names= false
 	};
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options, test_vfs );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );

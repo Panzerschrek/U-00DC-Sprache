@@ -13,6 +13,8 @@ class IVfs interface
 	fn virtual pure LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>;
 }
 
+type IVfsSharedPtr= ust::shared_ptr_mut</IVfs/>;
+
 struct SourceGraph
 {
 	struct Node
@@ -31,7 +33,7 @@ struct SourceGraph
 type SourceFileContentsHashigFunction= fn( ust::string_view8 source_file_contents ) : ust::string8;
 
 fn LoadSourceGraph(
-	IVfs &mut vfs,
+	IVfsSharedPtr& vfs,
 	SourceFileContentsHashigFunction source_file_contents_hashing_function,
 	ust::string8& root_file_path,
 	ust::string_view8 prelude_code ) : SourceGraph;

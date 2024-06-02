@@ -40,7 +40,8 @@ public:
 		LLVMContextRef llvm_context,
 		LLVMTargetDataRef data_layout,
 		ust::string8 target_triple_str, // should be null-terminated
-		CodeBuilderOptions& options );
+		CodeBuilderOptions& options,
+		IVfsSharedPtr vfs );
 
 	struct BuildResult
 	{
@@ -1217,6 +1218,7 @@ private:
 	bool imut report_about_unused_names_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
+	IVfsSharedPtr imut vfs_;
 
 	struct FundamentalLLVMTypes
 	{
