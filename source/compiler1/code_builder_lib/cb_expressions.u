@@ -801,12 +801,26 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var ust::string8 mut full_file_path;
 	var ust::optional</ust::string8/> mut loaded_file;
+
 	with( mut lock : vfs_.lock_mut() )
 	{
 		var IVfs &mut vfs= lock.deref();
 
 		full_file_path= vfs.NormalizeFilePath( file_path, parent_file_path );
-		loaded_file= vfs.LoadFile( full_file_path );
+
+		// Cache result.
+		auto mut prev_cache_value= embed_cache_.find( full_file_path );
+		if( prev_cache_value.empty() )
+		{
+			move(prev_cache_value);
+			loaded_file= vfs.LoadFile( full_file_path );
+			embed_cache_.insert( full_file_path, loaded_file );
+		}
+		else
+		{
+			loaded_file= prev_cache_value.try_deref();
+			move(prev_cache_value);
+		}
 	}
 
 	if( loaded_file.empty() )

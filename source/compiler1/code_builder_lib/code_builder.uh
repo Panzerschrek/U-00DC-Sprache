@@ -47,6 +47,7 @@ public:
 	{
 		ust::vector</CodeBuilderError/> errors;
 		LLVMModuleRef llvm_module;
+		ust::vector</ust::string8/> embedded_files;
 	}
 
 	fn BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult;
@@ -1325,6 +1326,9 @@ private:
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::BlockElements/>/> block_mixin_expansions_;
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::TypeName/>/> type_name_mixin_expansions_;
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::Expression/>/> expression_mixin_expansions_;
+
+	// Normalized file path to contents mapping.
+	ust::unordered_map</ ust::string8, ust::optional</ust::string8/> /> embed_cache_;
 
 	// Debug info
 	bool imut build_debug_info_;

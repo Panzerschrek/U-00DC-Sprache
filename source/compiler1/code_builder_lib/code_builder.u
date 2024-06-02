@@ -326,10 +326,18 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 	macro_expansion_contexts_.reset();
 	source_graph_.reset();
 
+	var ust::vector</ust::string8/> mut embedded_files;
+	foreach( & pair : embed_cache_ )
+	{
+		embedded_files.push_back( pair.key() );
+	}
+	embed_cache_.clear();
+
 	var BuildResult mut res
 	{
 		.llvm_module= module_,
 		.errors= root_errors_container_.try_lock_imut().deref(),
+		.embedded_files= move(embedded_files),
 	 };
 
 	NormalizeErrors( res.errors, source_graph.macro_expansion_contexts.lock_imut().deref() );

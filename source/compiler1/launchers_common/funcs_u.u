@@ -152,6 +152,15 @@ fn nomangle U1_BuildProgramUsingVFS(
 		return LLVMModuleRef::Null;
 	}
 
+	foreach( &embedded_file : code_builder_res.embedded_files )
+	{
+		unsafe
+		{
+			var U1_StringView path_view{ .data= cast_mut(embedded_file).data(), .size= embedded_file.size() };
+			result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+		}
+	}
+
 	return code_builder_res.llvm_module;
 }
 
