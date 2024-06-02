@@ -758,8 +758,91 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Embed& embed_ ) : Value
 {
-	// TODO
-	return BuildExpressionCodeEnsureVariable( names_scope, function_context, embed_.expression.deref() );
+	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, embed_.expression.deref() );
+	if( variable.t == invalid_type_ )
+	{
+		return ErrorValue();
+	}
+
+	auto array_type= variable.t.GetArrayType();
+	if( array_type.empty() || array_type.try_deref().element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, embed_.src_loc, "char8 array", variable.t.ToString() )
+		return ErrorValue();
+	}
+
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, embed_.src_loc )
+		return ErrorValue();
+	}
+
+	var ust::string8 mut file_path;
+	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		unsafe
+		{
+			var size_type mut str_length= 0s;
+			var $(char8) str_start= unsafe( LLVMGetAsString( variable.constexpr_value, str_length ) );
+			file_path= ust::string_view8( str_start, str_length );
+		}
+	}
+	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		file_path= "";
+	}
+	else
+	{
+		REPORT_ERROR( NotImplemented, names_scope, embed_.src_loc, "non-trivial embed file name constants" )
+		return ErrorValue();
+	}
+
+	var ust::string8& parent_file_path= source_graph_.try_deref().nodes[ size_type( embed_.src_loc.GetFileIndex() ) ].file_path_normalized;
+
+	var ust::string8 mut full_file_path;
+	var ust::optional</ust::string8/> mut loaded_file;
+	with( mut lock : vfs_.lock_mut() )
+	{
+		var IVfs &mut vfs= lock.deref();
+
+		full_file_path= vfs.NormalizeFilePath( file_path, parent_file_path );
+		loaded_file= vfs.LoadFile( full_file_path );
+	}
+
+	if( loaded_file.empty() )
+	{
+		REPORT_ERROR( EmbedFileNotFound, names_scope, embed_.src_loc, file_path )
+		return ErrorValue();
+	}
+
+	var U_FundamentalType mut element_type= U_FundamentalType::byte8_;
+
+	var u64 array_size( loaded_file.try_deref().size() );
+	var LLVMTypeRef element_llvm_type= GetFundamentalLLVMType( element_type );
+
+	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, loaded_file.try_deref().data(), u32(array_size), LLVMBool::True ) );
+	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( "embed\0", LLVMTypeOf( constexpr_value ), constexpr_value ) );
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t=
+				ArrayType
+				{
+					.element_type= FundamentalType( element_type, element_llvm_type ),
+					.element_count= array_size,
+					.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( array_size ) ) ),
+				},
+			.location= Variable::Location::Pointer,
+			.value_type= ValueType::ReferenceImut,
+			.llvm_value= global_value,
+			.constexpr_value= constexpr_value,
+			.name= "embed",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
