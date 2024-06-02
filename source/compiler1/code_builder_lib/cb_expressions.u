@@ -816,6 +816,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	var U_FundamentalType mut element_type= U_FundamentalType::byte8_;
+	if_var( &element_type_name : embed_.element_type )
+	{
+		var Type t= PrepareType( names_scope, function_context, element_type_name );
+		auto fundamental_type= t.GetFundamentalType();
+		if( fundamental_type.empty() || GetFundamentalTypeSize( fundamental_type.try_deref().fundamental_type ) != 1u )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, embed_.src_loc, "any fundamental 8-bit type", t.ToString() )
+			return ErrorValue();
+		}
+
+		element_type= fundamental_type.try_deref().fundamental_type;
+	}
 
 	var u64 array_size( loaded_file.try_deref().size() );
 	var LLVMTypeRef element_llvm_type= GetFundamentalLLVMType( element_type );
