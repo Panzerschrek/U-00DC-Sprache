@@ -219,6 +219,25 @@ U_TEST( Embed_Test8 )
 		"root" );
 }
 
+U_TEST( Embed_Test9 )
+{
+	static const char c_program_text_a[]= "some contents";
+
+	static const char c_program_text_root[]=
+	R"(
+		// Assign embed contents to an auto-variable.
+		auto contents0= embed( "a.txt" );
+		// Assign embed contents to a variable with explicit type.
+		var[ byte8, 13 ] contents1= embed( "a.txt" );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a.txt", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
 
 U_TEST( Embed_WithType_Test0 )
 {
