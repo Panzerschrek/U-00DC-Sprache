@@ -1,8 +1,8 @@
 import "/string_conversions.u"
 import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
+import "../code_builder_lib/source_file_contents_hash_wrapper.uh"
 import "print.uh"
-import "source_file_contents_hash_wrapper.uh"
 import "funcs_u.uh"
 
 fn nomangle U1_BuildProgram(
@@ -417,35 +417,6 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 		str+= err.text;
 		str+= "\n\0";
 		unsafe( U1_PrintStr( U1_GetCerr(), str.front() ) );
-	}
-}
-
-fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : ust::string8
-{
-	unsafe
-	{
-		var U1_StringView source_file_contents_view{ .data= source_file_contents.data(), .size= source_file_contents.size() };
-
-		var ust::string8 mut result;
-		var $(ust::string8) result_ptr= $<(result);
-		auto result_handle= cast_ref_unsafe</U1_UserHandle/>(result_ptr);
-
-		U1_CalculateSourceFileContentsHash(
-			source_file_contents_view,
-			CalculateSourceFileContentsHashCallbackFunc,
-			result_handle );
-
-		return result;
-	}
-}
-
-fn CalculateSourceFileContentsHashCallbackFunc( U1_UserHandle data, U1_StringView& hash )
-{
-	unsafe
-	{
-		auto result_ptr= cast_ref_unsafe</$(ust::string8)/>(data);
-		var ust::string8 &mut result_ref= cast_ref_unsafe</ust::string8/>( $>(result_ptr) );
-		result_ref= StringToArrayView( hash );
 	}
 }
 

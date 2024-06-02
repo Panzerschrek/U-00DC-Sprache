@@ -1,0 +1,46 @@
+import "source_file_contents_hash_wrapper.uh"
+
+// If contents of this file changed, source_file_contents_hash_wrapper.cpp must be changed too!
+
+type UserHandle= size_type;
+
+type U1_CalculateSourceFileContentsHashCallback= fn( UserHandle data, $(char8) hash_data, size_type hash_size );
+
+fn nomangle U1_CalculateSourceFileContentsHash(
+	$(char8) data,
+	size_type size,
+	U1_CalculateSourceFileContentsHashCallback callback,
+	UserHandle callback_data ) unsafe;
+
+namespace U1
+{
+
+fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, $(char8) hash_data, size_type hash_size )
+{
+	unsafe
+	{
+		auto result_ptr= cast_ref_unsafe</$(ust::string8)/>(data);
+		var ust::string8 &mut result_ref= cast_ref_unsafe</ust::string8/>( $>(result_ptr) );
+		result_ref= ust::string_view8( hash_data, hash_size );
+	}
+}
+
+fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : ust::string8
+{
+	unsafe
+	{
+		var ust::string8 mut result;
+		var $(ust::string8) result_ptr= $<(result);
+		auto result_handle= cast_ref_unsafe</UserHandle/>(result_ptr);
+
+		U1_CalculateSourceFileContentsHash(
+			source_file_contents.data(),
+			source_file_contents.size(),
+			CalculateSourceFileContentsHashCallbackFunc,
+			result_handle );
+
+		return result;
+	}
+}
+
+} // namespace U1

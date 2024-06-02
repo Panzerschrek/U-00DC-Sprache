@@ -2,6 +2,7 @@ import "/assert.u"
 import "/helpers.u"
 import "/keywords.uh"
 import "error_reporting.uh"
+import "source_file_contents_hash_wrapper.uh"
 import "code_builder.uh"
 
 namespace U1
@@ -800,7 +801,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var ust::string8& parent_file_path= source_graph_.try_deref().nodes[ size_type( embed_.src_loc.GetFileIndex() ) ].file_path_normalized;
 
 	var ust::string8 mut full_file_path;
-	var ust::optional</ust::string8/> mut loaded_file;
+	var ust::optional</ust::string8/> mut loaded_file_opt;
 
 	with( mut lock : vfs_.lock_mut() )
 	{
@@ -813,21 +814,22 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		if( prev_cache_value.empty() )
 		{
 			move(prev_cache_value);
-			loaded_file= vfs.LoadFile( full_file_path );
-			embed_cache_.insert( full_file_path, loaded_file );
+			loaded_file_opt= vfs.LoadFile( full_file_path );
+			embed_cache_.insert( full_file_path, loaded_file_opt );
 		}
 		else
 		{
-			loaded_file= prev_cache_value.try_deref();
+			loaded_file_opt= prev_cache_value.try_deref();
 			move(prev_cache_value);
 		}
 	}
 
-	if( loaded_file.empty() )
+	if( loaded_file_opt.empty() )
 	{
 		REPORT_ERROR( EmbedFileNotFound, names_scope, embed_.src_loc, file_path )
 		return ErrorValue();
 	}
+	var ust::string8& loaded_file= loaded_file_opt.try_deref();
 
 	var U_FundamentalType mut element_type= U_FundamentalType::byte8_;
 	if_var( &element_type_name : embed_.element_type )
@@ -843,11 +845,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		element_type= fundamental_type.try_deref().fundamental_type;
 	}
 
-	var u64 array_size( loaded_file.try_deref().size() );
+	var u64 array_size( loaded_file.size() );
 	var LLVMTypeRef element_llvm_type= GetFundamentalLLVMType( element_type );
 
-	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, loaded_file.try_deref().data(), u32(array_size), LLVMBool::True ) );
-	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( "embed\0", LLVMTypeOf( constexpr_value ), constexpr_value ) );
+	// Use contents hash-based names for embed arrays.
+	var ust::string8 mut name= "_embed_array_" + CalculateSourceFileContentsHash( loaded_file.range() );
+	name.push_back( "\0"c8 );
+
+	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
+	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name.range(), LLVMTypeOf( constexpr_value ), constexpr_value ) );
+
+	name.pop_back();
 
 	var VariablePtr result_ptr=
 		Variable
@@ -863,7 +871,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.value_type= ValueType::ReferenceImut,
 			.llvm_value= global_value,
 			.constexpr_value= constexpr_value,
-			.name= "embed",
+			.name= move(name),
 		}.CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
