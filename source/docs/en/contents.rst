@@ -43,5 +43,6 @@ Contents
    async_functions
    lambdas
    mixins
+   embed
    c_interaction
    unsafe_code_requirements
