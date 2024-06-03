@@ -143,7 +143,7 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 
 DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
-	// Base vfs is used also in bacground threads to load embedded files. So, make it thread-safe.
+	// Base vfs is used also in background threads to load embedded files. So, make it thread-safe.
 	, base_vfs_( std::make_unique<ThreadSafeVfsWrapper>( CreateBaseVfs( log ) ) )
 	// TODO - use individual VFS for different files.
 	, vfs_( *this )

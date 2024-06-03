@@ -838,11 +838,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		auto fundamental_type= t.GetFundamentalType();
 		if( fundamental_type.empty() || GetFundamentalTypeSize( fundamental_type.try_deref().fundamental_type ) != 1u )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, embed_.src_loc, "any fundamental 8-bit type", t.ToString() )
+			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( element_type_name ), "any fundamental 8-bit type", t.ToString() )
 			return ErrorValue();
 		}
 
 		element_type= fundamental_type.try_deref().fundamental_type;
+
+		// Do not care if in case of char8 element embedded file contents isn't valid UTF-8.
 	}
 
 	var u64 array_size( loaded_file.size() );

@@ -73,7 +73,7 @@ private:
 
 private:
 	Logger& log_;
-	const std::shared_ptr<IVfs> base_vfs_; // Thread-safe.
+	const IVfsSharedPtr base_vfs_; // Thread-safe.
 	DocumentManagerVfs vfs_;
 	const DocumentBuildOptions build_options_;
 	// TODO - use unordered map.

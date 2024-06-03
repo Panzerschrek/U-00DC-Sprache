@@ -1761,13 +1761,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const auto fundamental_type= t->GetFundamentalType();
 		if( fundamental_type == nullptr || GetFundamentalTypeSize( fundamental_type->fundamental_type ) != 1 )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "any fundamental 8-bit type", t->ToString() );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( *embed.element_type ), "any fundamental 8-bit type", t->ToString() );
 			return ErrorValue();
 		}
 
 		element_type= fundamental_type->fundamental_type;
 
-		// TODO - check utf-8 is valid for char8?
+		// Do not care if in case of char8 element embedded file contents isn't valid UTF-8.
 	}
 
 	llvm::Type* const element_llvm_type= GetFundamentalLLVMType( element_type );
@@ -1781,12 +1781,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		std::move(result_array_type),
 		ValueType::ReferenceImut,
 		Variable::Location::Pointer,
-		"",
+		// Use contents hash-based names for embed arrays.
+		"_embed_array_" + CalculateSourceFileContentsHash( *loaded_file ),
 		nullptr,
 		llvm::ConstantDataArray::getString( llvm_context_, *loaded_file, false /* not null terminated */ ) );
-
-	// Use contents hash-based names for embed arrays.
-	result->name= "_embed_array_" + CalculateSourceFileContentsHash( *loaded_file );
 
 	result->llvm_value= CreateGlobalConstantVariable( result->type, result->name, result->constexpr_value );
 

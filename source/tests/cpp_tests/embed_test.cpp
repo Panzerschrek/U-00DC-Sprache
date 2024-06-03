@@ -64,8 +64,8 @@ U_TEST( Embed_Test2 )
 	R"(
 		auto& extension= ".bin";
 
-		// Embed result is contexpr reference to byte8 array.
-		// Arbitrary expression for file path is allowed, as soon as it evaluates to contstexpr char array.
+		// Embed result is constexpr reference to byte8 array.
+		// Arbitrary expression for file path is allowed, as soon as it evaluates to constexpr char array.
 		auto& constexpr embed_result= embed( "embed" + extension );
 
 		var [ byte8, 3 ] expected_result[ (u8(0x22)), (u8(0x3C)), (u8(0xE6)) ];
@@ -353,7 +353,7 @@ U_TEST( TypesMismatch_ForEmbed_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( tup[ char8, char8 ]& t)
+		fn Foo( tup[ char8, char8 ]& t )
 		{
 			embed( t ); // Expected char8 array, got tuple
 		}

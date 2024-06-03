@@ -125,7 +125,7 @@ private:
 	const IVfs::Path path_;
 	const DocumentBuildOptions build_options_;
 	IVfs& vfs_;
-	const IVfsSharedPtr code_builder_vfs_; // Mut be thread-safe.
+	const IVfsSharedPtr code_builder_vfs_; // Must be thread-safe.
 	Logger& log_;
 
 	std::string text_;
