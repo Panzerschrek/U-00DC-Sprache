@@ -148,8 +148,17 @@ Synt::MacrosByContextMap TakeMacrosFromImports( const SourceGraph& source_graph 
 
 } // namespace
 
-Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfsSharedPtr vfs, Logger& log )
-	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(std::move(vfs)), log_(log)
+Document::Document(
+	IVfs::Path path,
+	DocumentBuildOptions build_options,
+	IVfs& vfs,
+	IVfsSharedPtr code_builder_vfs, // Must be thread-safe. Used for embedding files.
+	Logger& log )
+	: path_(std::move(path))
+	, build_options_(std::move(build_options))
+	, vfs_(vfs)
+	, code_builder_vfs_(std::move(code_builder_vfs))
+	, log_(log)
 {
 	SetText("");
 }
@@ -323,7 +332,7 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 	if( str == std::nullopt )
 		return std::nullopt;
 
-	const IVfs::Path path= vfs_->GetFullFilePath( *str, path_ );
+	const IVfs::Path path= vfs_.GetFullFilePath( *str, path_ );
 	if( path.empty() )
 		return std::nullopt;
 
@@ -441,7 +450,7 @@ Symbols Document::GetSymbols()
 
 	// Backup for cases when document is not compiled yet.
 	// Since first document build may be delayed we need to provide symbols just after document was opened.
-	const SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	const SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
 
 	if( source_graph.nodes_storage.empty() )
 		return {};
@@ -789,7 +798,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 
 	U_ASSERT( !in_rebuild_call_ );
 	in_rebuild_call_= true;
-	SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
 	in_rebuild_call_= false;
 
 	if( !source_graph.errors.empty() )
@@ -841,9 +850,9 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 		[
 			num_text_changes_at_compilation_task_start,
 			text= text_,
-			vfs= vfs_,
+			code_builder_vfs= code_builder_vfs_, // The only thing which may be mutated in bacground thread. So, it should be thread-safe.
 			line_to_linear_position_index= line_to_linear_position_index_,
-			source_graph= std::make_shared<SourceGraph>( std::move(source_graph) ),
+			source_graph= std::make_shared<const SourceGraph>( std::move(source_graph) ),
 			build_options= build_options_ // Capture copy of build options in case this update func outlives this class instance.
 		]
 		() mutable // Mutable in order to move captured variables.
@@ -871,7 +880,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 					build_options.target_triple,
 					options,
 					source_graph,
-					std::move(vfs) );
+					std::move(code_builder_vfs) );
 
 			// Reduce a bit memory footprint.
 			code_builder->DeleteFunctionsBodies();
