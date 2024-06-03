@@ -1832,10 +1832,10 @@ void CodeBuilder::BuildFuncCode(
 
 		// For auto-constexpr functions we do not force type completeness. If function is really-constexpr, it must already make complete using types.
 
-		const bool auto_contexpr= func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprAuto;
+		const bool auto_constexpr= func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprAuto;
 		bool can_be_constexpr= true;
 
-		if( !auto_contexpr && !EnsureTypeComplete( function_type.return_type ) )
+		if( !auto_constexpr && !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, function_type.return_type ); // Completeness required for constexpr possibility check.
 
 		if( function_type.unsafe ||
@@ -1855,7 +1855,7 @@ void CodeBuilder::BuildFuncCode(
 
 		for( const FunctionType::Param& param : function_type.params )
 		{
-			if( !auto_contexpr && !EnsureTypeComplete( param.type ) )
+			if( !auto_constexpr && !EnsureTypeComplete( param.type ) )
 				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, param.type ); // Completeness required for constexpr possibility check.
 
 			if( !param.type.CanBeConstexpr() || // Allowed only constexpr types. Incomplete types are not constexpr.
@@ -1866,7 +1866,7 @@ void CodeBuilder::BuildFuncCode(
 			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not be used for constexpr variables initialization.
 		}
 
-		if( auto_contexpr )
+		if( auto_constexpr )
 		{
 			if( can_be_constexpr && !function_context.has_non_constexpr_operations_inside )
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;

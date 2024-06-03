@@ -153,7 +153,7 @@ def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test2():
 
 def VariableInitializerIsNotConstantExpression_ForGlobalMutableVariable_Test0():
 	c_program_text= """
-		auto mut x= Foo(); // Initializer is result of non-contexpr function call.
+		auto mut x= Foo(); // Initializer is result of non-constexpr function call.
 		fn Foo() : u32;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -214,30 +214,30 @@ def GlobalMutableVariableIsNotConstexpr_Test2():
 	assert( HasError( errors_list, "ExpectedConstantExpression", 5 ) )
 
 
-def GobalMutableVariableShoudHaveContexprType_Test0():
+def GobalMutableVariableShoudHaveConstexprType_Test0():
 	c_program_text= """
 		struct S
 		{
 			fn destructor(){}
 		}
-		var S mut s= zero_init; // Type with explicit destructor declaration is not "contexpr"
+		var S mut s= zero_init; // Type with explicit destructor declaration is not "constexpr"
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
 
 
-def GobalMutableVariableShoudHaveContexprType_Test1():
+def GobalMutableVariableShoudHaveConstexprType_Test1():
 	c_program_text= """
 		class C{ }
-		var C mut c; // Class is not "contexpr".
+		var C mut c; // Class is not "constexpr".
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
 
 
-def GobalMutableVariableShoudHaveContexprType_Test2():
+def GobalMutableVariableShoudHaveConstexprType_Test2():
 	c_program_text= """
-		// Raw pointer type is not "contexpr" type.
+		// Raw pointer type is not "constexpr" type.
 		// So, now it's not possible to use raw pointers in global variables.
 		var $(i32) mut ptr= zero_init;
 	"""

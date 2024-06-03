@@ -24,7 +24,7 @@ inline cl::opt<std::string> log_file_path(
 
 inline cl::opt<uint32_t> num_threads(
 	"num-threads",
-	cl::desc("Number of threads for bacground tasts. Use 0 to create threads for all awailable CPU cores."),
+	cl::desc("Number of threads for background tasks. Use 0 to create threads for all awailable CPU cores."),
 	cl::value_desc("non-negative whole number"),
 	cl::Optional,
 	cl::cat(options_category) );
@@ -35,7 +35,7 @@ inline cl::opt<uint32_t> num_threads(
 inline cl::list<std::string> include_dir(
 	"include-dir",
 	cl::Prefix,
-	cl::desc("Add directory for search of \"import\" files. This affects all files, opended within this instance of the LanguageServer."),
+	cl::desc("Add directory for search of \"import\" files. This affects all files, opened within this instance of the LanguageServer."),
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
