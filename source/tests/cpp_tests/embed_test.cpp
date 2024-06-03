@@ -229,6 +229,8 @@ U_TEST( Embed_Test9 )
 		auto contents0= embed( "a.txt" );
 		// Assign embed contents to a variable with explicit type.
 		var[ byte8, 13 ] contents1= embed( "a.txt" );
+
+		static_assert( contents0 == contents1 );
 	)";
 
 	BuildMultisourceProgram(
