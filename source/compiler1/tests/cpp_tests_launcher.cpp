@@ -73,9 +73,9 @@ bool FilterTest( const std::string& test_name )
 
 } // namespace
 
-std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgram( const std::string_view text )
 {
-	const U1_StringView text_view{ text, std::strlen(text) };
+	const U1_StringView text_view{ text.data(), text.size() };
 
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
@@ -92,9 +92,9 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
-ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
+ErrorTestBuildResult BuildProgramWithErrors( const std::string_view text )
 {
-	const U1_StringView text_view{ text, std::strlen(text) };
+	const U1_StringView text_view{ text.data(), text.size() };
 
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
@@ -124,8 +124,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 		U1_SourceFile f{};
 		f.file_path.data= entry.file_path.data();
 		f.file_path.size= entry.file_path.size();
-		f.file_content.data= entry.text;
-		f.file_content.size= std::strlen(entry.text);
+		f.file_content.data= entry.text.data();
+		f.file_content.size= entry.text.size();
 		source_files.push_back(f);
 	}
 
@@ -156,8 +156,8 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 		U1_SourceFile f{};
 		f.file_path.data= entry.file_path.data();
 		f.file_path.size= entry.file_path.size();
-		f.file_content.data= entry.text;
-		f.file_content.size= std::strlen(entry.text);
+		f.file_content.data= entry.text.data();
+		f.file_content.size= entry.text.size();
 		source_files.push_back(f);
 	}
 
@@ -182,9 +182,9 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 	return build_result;
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const std::string_view text )
 {
-	const U1_StringView text_view{ text, std::strlen(text) };
+	const U1_StringView text_view{ text.data(), text.size() };
 
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
@@ -201,9 +201,9 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text )
+std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string_view text )
 {
-	const U1_StringView text_view{ text, std::strlen(text) };
+	const U1_StringView text_view{ text.data(), text.size() };
 
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
@@ -219,7 +219,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const std::string_view text )
 {
 	auto module= BuildProgram( text );
 	if( module == nullptr )

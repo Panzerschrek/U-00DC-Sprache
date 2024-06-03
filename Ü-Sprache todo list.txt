@@ -18,7 +18,6 @@ General:
 *) Provide calling convention in typeinfo for function types
 *) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)
 *) Variable templates
-*) An operator for compile-time embedding of a file contents as constant byte array
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index

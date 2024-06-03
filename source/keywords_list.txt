@@ -112,6 +112,7 @@ as
 is
 import
 export
+embed
 default
 delete
 for

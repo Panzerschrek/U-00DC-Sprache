@@ -17,6 +17,33 @@ namespace LangServer
 namespace
 {
 
+// A wrapper which prevents unsynchronized VFS access.
+// All methods are thread-safe.
+class ThreadSafeVfsWrapper final : public IVfs
+{
+public:
+	explicit ThreadSafeVfsWrapper( std::unique_ptr<IVfs> base )
+		: base_( std::move(base) )
+	{}
+
+public:
+	std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		return base_->LoadFileContent( full_file_path );
+	}
+
+	Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		return base_->GetFullFilePath( file_path, full_parent_file_path );
+	}
+
+private:
+	std::mutex mutex_;
+	const std::unique_ptr<IVfs> base_;
+};
+
 std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 {
 	auto vfs_with_includes= CreateVfsOverSystemFS( Options::include_dir );
@@ -70,9 +97,8 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 
 } // namespace
 
-DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager, Logger& log )
+DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager )
 	: document_manager_(document_manager)
-	, base_vfs_( CreateBaseVfs( log ) )
 {
 }
 
@@ -95,7 +121,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 
 	std::optional<UnmanagedFile>& unmanaged_file= document_manager_.unmanaged_files_[file_uri];
 
-	std::optional<IVfs::FileContent> content= base_vfs_->LoadFileContent( full_file_path );
+	std::optional<IVfs::FileContent> content= document_manager_.base_vfs_->LoadFileContent( full_file_path );
 
 	if( content == std::nullopt )
 	{
@@ -112,13 +138,15 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 
 IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )
 {
-	return base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
+	return document_manager_.base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
 }
 
 DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
+	// Base vfs is used also in background threads to load embedded files. So, make it thread-safe.
+	, base_vfs_( std::make_unique<ThreadSafeVfsWrapper>( CreateBaseVfs( log ) ) )
 	// TODO - use individual VFS for different files.
-	, vfs_( *this, log_ )
+	, vfs_( *this )
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
 {}
@@ -139,7 +167,16 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 		documents_.insert(
 			std::make_pair(
 				uri,
-				Document( std::move( *file_path ), build_options_, vfs_, log_ ) ) );
+				Document(
+					std::move( *file_path ),
+					build_options_,
+					vfs_,
+					// Pass base VFS for CodeBuilder VFS, because we require here thread-safe VFS class instance.
+					// This isn't ideal, because no managed files can be loaded in such cases.
+					// There is also no caching.
+					// But it is good enough, because eliminates complicated synchronization issues.
+					base_vfs_,
+					log_ ) ) );
 
 	Document& document= it_bool_pair.first->second;
 	document.SetText( std::move(text) );

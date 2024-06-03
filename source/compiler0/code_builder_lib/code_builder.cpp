@@ -41,18 +41,25 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options,
-	const SourceGraphPtr& source_graph )
+	const SourceGraphPtr& source_graph,
+	IVfsSharedPtr vfs )
 {
 	CodeBuilder code_builder(
 		llvm_context,
 		data_layout,
 		target_triple,
-		options );
+		options,
+		std::move(vfs) );
 
 	code_builder.BuildProgramInternal( source_graph );
 	code_builder.FinalizeProgram();
 
-	return BuildResult{ code_builder.TakeErrors(), std::move(code_builder.module_) };
+	std::vector<IVfs::Path> embedded_files;
+	embedded_files.reserve( code_builder.embed_files_cache_.size() );
+	for( const auto& pair : code_builder.embed_files_cache_ )
+		embedded_files.push_back( pair.first );
+
+	return BuildResult{ code_builder.TakeErrors(), std::move(code_builder.module_), std::move(embedded_files) };
 }
 
 std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
@@ -60,14 +67,16 @@ std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options,
-	const SourceGraphPtr& source_graph )
+	const SourceGraphPtr& source_graph,
+	IVfsSharedPtr vfs )
 {
 	std::unique_ptr<CodeBuilder> instance(
 		new CodeBuilder(
 			llvm_context,
 			data_layout,
 			target_triple,
-			options ) );
+			options,
+			std::move(vfs) ) );
 
 	instance->BuildProgramInternal( source_graph );
 	// Do not finalize program - save some time.
@@ -89,7 +98,8 @@ CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
-	const CodeBuilderOptions& options )
+	const CodeBuilderOptions& options,
+	IVfsSharedPtr vfs )
 	: llvm_context_( llvm_context )
 	, data_layout_(data_layout)
 	, target_triple_(target_triple)
@@ -100,6 +110,7 @@ CodeBuilder::CodeBuilder(
 	, report_about_unused_names_( options.report_about_unused_names )
 	, collect_definition_points_( options.collect_definition_points )
 	, skip_building_generated_functions_( options.skip_building_generated_functions )
+	, vfs_( std::move(vfs) )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )

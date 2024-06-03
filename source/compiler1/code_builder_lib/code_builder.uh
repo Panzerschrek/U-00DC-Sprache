@@ -40,12 +40,14 @@ public:
 		LLVMContextRef llvm_context,
 		LLVMTargetDataRef data_layout,
 		ust::string8 target_triple_str, // should be null-terminated
-		CodeBuilderOptions& options );
+		CodeBuilderOptions& options,
+		IVfsSharedPtr vfs );
 
 	struct BuildResult
 	{
 		ust::vector</CodeBuilderError/> errors;
 		LLVMModuleRef llvm_module;
+		ust::vector</ust::string8/> embedded_files;
 	}
 
 	fn BuildProgram( mut this, SourceGraph& source_graph ) @( ust::reference_notation::pollution::param0_param_1_reference ) : BuildResult;
@@ -441,6 +443,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRefUnsafe& cast_ref_unsafe_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastImut& cast_imut_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastMut& cast_mut_ ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Embed& embed_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnsafeExpression& unsafe_expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value;
@@ -1216,6 +1219,7 @@ private:
 	bool imut report_about_unused_names_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
+	IVfsSharedPtr imut vfs_;
 
 	struct FundamentalLLVMTypes
 	{
@@ -1322,6 +1326,9 @@ private:
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::BlockElements/>/> block_mixin_expansions_;
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::TypeName/>/> type_name_mixin_expansions_;
 	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::Expression/>/> expression_mixin_expansions_;
+
+	// Normalized file path to contents mapping.
+	ust::unordered_map</ ust::string8, ust::optional</ust::string8/> /> embed_cache_;
 
 	// Debug info
 	bool imut build_debug_info_;

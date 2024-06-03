@@ -109,7 +109,7 @@ void LexSyntErrorProcessingFunction(
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	IVfs& vfs,
+	const IVfsSharedPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -123,7 +123,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 	const LLVMModuleRef llvm_module=
 		U1_BuildProgramUsingVFS(
-			U1_IVfsInterface{ reinterpret_cast<U1_UserHandle>(&vfs), GetFullFilePath, LoadFileContent },
+			U1_IVfsInterface{ reinterpret_cast<U1_UserHandle>(vfs.get()), GetFullFilePath, LoadFileContent },
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),

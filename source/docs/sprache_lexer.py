@@ -136,6 +136,7 @@ class SpracheLexer(RegexLexer):
 			(r'is(?![a-zA-Z_0-9])', token.Keyword),
 			(r'import(?![a-zA-Z_0-9])', token.Keyword),
 			(r'export(?![a-zA-Z_0-9])', token.Keyword),
+			(r'embed(?![a-zA-Z_0-9])', token.Keyword),
 			(r'default(?![a-zA-Z_0-9])', token.Keyword),
 			(r'delete(?![a-zA-Z_0-9])', token.Keyword),
 			(r'for(?![a-zA-Z_0-9])', token.Keyword),

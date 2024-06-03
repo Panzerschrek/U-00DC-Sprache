@@ -60,7 +60,7 @@ private:
 	class DocumentManagerVfs final : public IVfs
 	{
 	public:
-		DocumentManagerVfs( DocumentManager& document_manager, Logger& log );
+		explicit DocumentManagerVfs( DocumentManager& document_manager );
 
 		std::optional<IVfs::FileContent> LoadFileContent( const Path& full_file_path ) override;
 
@@ -69,11 +69,11 @@ private:
 
 	private:
 		DocumentManager& document_manager_;
-		const std::unique_ptr<IVfs> base_vfs_;
 	};
 
 private:
 	Logger& log_;
+	const IVfsSharedPtr base_vfs_; // Thread-safe.
 	DocumentManagerVfs vfs_;
 	const DocumentBuildOptions build_options_;
 	// TODO - use unordered map.

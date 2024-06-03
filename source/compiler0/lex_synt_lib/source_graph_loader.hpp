@@ -19,6 +19,8 @@ public:
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
 };
 
+using IVfsSharedPtr= std::shared_ptr<IVfs>;
+
 // Directed acyclic graph of sources.
 struct SourceGraph
 {

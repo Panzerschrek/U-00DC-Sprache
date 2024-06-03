@@ -69,6 +69,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::CastImut>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::CastRef>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::CastRefUnsafe>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::Embed>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::TypeInfo>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::SameType>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::NonSyncExpression>& ) { return true; }

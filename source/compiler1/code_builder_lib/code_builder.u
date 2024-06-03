@@ -33,7 +33,8 @@ fn CodeBuilder::constructor(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	ust::string8 mut target_triple_str,
-	CodeBuilderOptions& options )
+	CodeBuilderOptions& options,
+	IVfsSharedPtr mut vfs )
 	(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
@@ -47,6 +48,7 @@ fn CodeBuilder::constructor(
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info),
 		mangler_(CreateMangler(options.mangling_scheme, data_layout)),
+		vfs_= move(vfs),
 		fundamental_llvm_types_
 		{
 			.i8_  = unsafe( LLVMInt8TypeInContext  ( llvm_context_ ) ),
@@ -324,10 +326,18 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 	macro_expansion_contexts_.reset();
 	source_graph_.reset();
 
+	var ust::vector</ust::string8/> mut embedded_files;
+	foreach( & pair : embed_cache_ )
+	{
+		embedded_files.push_back( pair.key() );
+	}
+	embed_cache_.clear();
+
 	var BuildResult mut res
 	{
 		.llvm_module= module_,
 		.errors= root_errors_container_.try_lock_imut().deref(),
+		.embedded_files= move(embedded_files),
 	 };
 
 	NormalizeErrors( res.errors, source_graph.macro_expansion_contexts.lock_imut().deref() );

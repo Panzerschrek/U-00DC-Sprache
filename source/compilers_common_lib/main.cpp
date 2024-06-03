@@ -528,7 +528,7 @@ int Main( int argc, const char* argv[] )
 	{
 		// Compile multiple input files and link them together.
 
-		const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
+		const IVfsSharedPtr vfs= CreateVfsOverSystemFS( Options::include_dir );
 		if( vfs == nullptr )
 			return 1u;
 
@@ -551,7 +551,7 @@ int Main( int argc, const char* argv[] )
 			CodeBuilderLaunchResult code_builder_launch_result=
 				LaunchCodeBuilder(
 					input_file,
-					*vfs,
+					vfs,
 					llvm_context,
 					data_layout,
 					target_triple,

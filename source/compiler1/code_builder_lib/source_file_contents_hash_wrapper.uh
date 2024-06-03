@@ -1,0 +1,8 @@
+import "/string.u"
+
+namespace U1
+{
+
+fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : ust::string8;
+
+} // namespace U1

@@ -48,6 +48,7 @@ public:
 	{
 		std::vector<CodeBuilderError> errors;
 		std::unique_ptr<llvm::Module> module;
+		std::vector<IVfs::Path> embedded_files;
 	};
 
 	using CompletionRequestPrefixComponent= std::variant<
@@ -91,7 +92,8 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraphPtr& source_graph );
+		const SourceGraphPtr& source_graph,
+		IVfsSharedPtr vfs );
 
 	// Build program, but leave internal state and LLVM module.
 	// Use this for expecting program after its building (in IDE language server, for example).
@@ -100,7 +102,8 @@ public:
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options,
-		const SourceGraphPtr& source_graph );
+		const SourceGraphPtr& source_graph,
+		IVfsSharedPtr vfs );
 
 public: // IDE helpers.
 	CodeBuilderErrorsContainer TakeErrors();
@@ -154,7 +157,8 @@ private:
 		llvm::LLVMContext& llvm_context,
 		const llvm::DataLayout& data_layout,
 		const llvm::Triple& target_triple,
-		const CodeBuilderOptions& options );
+		const CodeBuilderOptions& options,
+		IVfsSharedPtr vfs );
 
 	// This function may be called exactly once.
 	void BuildProgramInternal( const SourceGraphPtr& source_graph );
@@ -767,6 +771,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastImut& cast_imut );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastRef& cast_ref );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastRefUnsafe& cast_ref_unsafe );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Embed& embed );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeInfo& typeinfo );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SameType& same_type );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncExpression& non_sync_expression );
@@ -1421,6 +1426,8 @@ private:
 	const bool collect_definition_points_;
 	bool skip_building_generated_functions_;
 
+	const IVfsSharedPtr vfs_;
+
 	struct
 	{
 		llvm::Type* invalid_type_;
@@ -1533,6 +1540,9 @@ private:
 	std::unordered_map<MixinExpansionKey, Synt::BlockElementsList, MixinExpansionKeyHasher> block_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::TypeName, MixinExpansionKeyHasher> type_name_mixin_expansions_;
 	std::unordered_map<MixinExpansionKey, Synt::Expression, MixinExpansionKeyHasher> expression_mixin_expansions_;
+
+	// Full file path to file contents map.
+	std::unordered_map<IVfs::Path, std::optional<IVfs::FileContent>> embed_files_cache_;
 
 	// Definition points. Collected during code building (if it is required).
 	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.

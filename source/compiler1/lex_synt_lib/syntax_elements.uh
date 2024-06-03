@@ -142,6 +142,13 @@ struct CastMut
 	ust::box</Expression/> expression;
 }
 
+struct Embed
+{
+	SrcLoc src_loc;
+	ust::box_nullable</ComplexName/> element_type;
+	ust::box</Expression/> expression;
+}
+
 struct SafeExpression
 {
 	SrcLoc src_loc;
@@ -282,6 +289,7 @@ type Expression= ust::variant</ tup[
 	CastRefUnsafe,
 	CastImut,
 	CastMut,
+	Embed,
 	SafeExpression,
 	UnsafeExpression,
 	MoveOperator,

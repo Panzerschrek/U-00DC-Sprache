@@ -28,8 +28,8 @@ public:
 		: sources_(std::move(sources))
 	{}
 
-	MultiFileVfs( std::string file_path, const char* text )
-		: sources_( { SourceEntry{ file_path, text } } )
+	MultiFileVfs( std::string file_path, std::string_view text )
+		: sources_( { SourceEntry{ std::move(file_path), text } } )
 	{}
 
 	virtual std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
@@ -37,7 +37,7 @@ public:
 		for( const SourceEntry& source_entry : sources_ )
 		{
 			if( full_file_path == source_entry.file_path )
-				return source_entry.text;
+				return std::string(source_entry.text);
 		}
 		return std::nullopt;
 	}
@@ -96,11 +96,11 @@ static CodeBuilderOptions GetCodeBuilderOptionsForTests()
 	return options;
 }
 
-std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgram( const std::string_view text )
 {
 	const std::string file_path= "_";
-	MultiFileVfs vfs( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -111,7 +111,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests(),
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -119,11 +120,11 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::move( build_result.module );
 }
 
-ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
+ErrorTestBuildResult BuildProgramWithErrors( const std::string_view text )
 {
 	const std::string file_path= "_";
-	MultiFileVfs vfs( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -134,13 +135,14 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests(),
-			std::make_shared<SourceGraph>( std::move(source_graph) ) ).errors };
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
 {
-	MultiFileVfs vfs( std::move(sources) );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, root_file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( std::move(sources) );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, root_file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -154,7 +156,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -164,8 +167,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 
 ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
-	MultiFileVfs vfs( std::move(sources) );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, root_file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( std::move(sources) );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, root_file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -176,14 +179,15 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests(),
-			std::make_shared<SourceGraph>( std::move(source_graph) ) ).errors };
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs ).errors };
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const std::string_view text )
 {
 	const std::string file_path= "_";
-	MultiFileVfs vfs( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -197,7 +201,8 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -205,11 +210,11 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	return std::move( build_result.module );
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text )
+std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string_view text )
 {
 	const std::string file_path= "_";
-	MultiFileVfs vfs( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -223,7 +228,8 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -231,7 +237,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	return std::move( build_result.module );
 }
 
-std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const std::string_view text )
 {
 	auto module= BuildProgram( text );
 	if( module == nullptr )
@@ -252,11 +258,11 @@ bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErr
 	return false;
 }
 
-std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const text, const bool allow_errors )
+std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const std::string_view text, const bool allow_errors )
 {
 	const std::string file_path= "_";
-	MultiFileVfs vfs( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -274,7 +280,8 @@ std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const te
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ) );
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
 
 	if( !allow_errors )
 	{

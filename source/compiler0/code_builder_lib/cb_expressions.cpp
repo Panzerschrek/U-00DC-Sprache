@@ -7,6 +7,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "keywords.hpp"
 #include "error_reporting.hpp"
 
@@ -1689,6 +1690,108 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names_scope.GetErrors(), cast_ref_unsafe.src_loc );
 
 	return DoReferenceCast( cast_ref_unsafe.src_loc, cast_ref_unsafe.type, cast_ref_unsafe.expression, true, names_scope, function_context );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::Embed& embed )
+{
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( embed.expression, names_scope, function_context );
+	if( variable->type == invalid_type_ )
+		return ErrorValue();
+
+	const auto array_type= variable->type.GetArrayType();
+	if( array_type == nullptr ||
+		array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "char8 array", variable->type.ToString() );
+		return ErrorValue();
+	}
+
+	if( variable->constexpr_value == nullptr )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), embed.src_loc );
+		return ErrorValue();
+	}
+
+	std::string file_path;
+	if( const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( variable->constexpr_value ) )
+		file_path= constant_data->getRawDataValues().str();
+	else if( llvm::isa<llvm::ConstantAggregateZero>( variable->constexpr_value ) )
+		file_path= "";
+	else
+	{
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), embed.src_loc, "non-trivial embed file name constants" );
+		return ErrorValue();
+	}
+
+	const auto file_index= embed.src_loc.GetFileIndex();
+	U_ASSERT( file_index < source_graph_->nodes_storage.size() );
+	const IVfs::Path& parent_file_path= source_graph_->nodes_storage[file_index].file_path;
+
+	// Load file contents. Use caching in order to avoid loading same file contents more than once.
+	IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
+
+	auto cache_it= embed_files_cache_.find( full_file_path );
+	if( cache_it == embed_files_cache_.end() )
+	{
+		std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
+		cache_it= embed_files_cache_.emplace( std::move(full_file_path), std::move(loaded_file) ).first;
+	}
+
+	const std::optional<IVfs::FileContent> loaded_file= cache_it->second;
+	if( loaded_file == std::nullopt )
+	{
+		REPORT_ERROR( EmbedFileNotFound, names_scope.GetErrors(), embed.src_loc, file_path );
+		return ErrorValue();
+	}
+
+	U_FundamentalType element_type= U_FundamentalType::byte8_;
+	if( embed.element_type != std::nullopt )
+	{
+		const Value v= ResolveValue( names_scope, function_context, *embed.element_type );
+		const Type* const t= v.GetTypeName();
+		if( t == nullptr )
+		{
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), embed.src_loc, v.GetKindName() );
+			return ErrorValue();
+		}
+
+		const auto fundamental_type= t->GetFundamentalType();
+		if( fundamental_type == nullptr || GetFundamentalTypeSize( fundamental_type->fundamental_type ) != 1 )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( *embed.element_type ), "any fundamental 8-bit type", t->ToString() );
+			return ErrorValue();
+		}
+
+		element_type= fundamental_type->fundamental_type;
+
+		// Do not care if in case of char8 element embedded file contents isn't valid UTF-8.
+	}
+
+	llvm::Type* const element_llvm_type= GetFundamentalLLVMType( element_type );
+
+	ArrayType result_array_type;
+	result_array_type.element_type= FundamentalType( element_type, element_llvm_type );
+	result_array_type.element_count= loaded_file->size();
+	result_array_type.llvm_type= llvm::ArrayType::get( element_llvm_type, result_array_type.element_count );
+
+	const auto result= Variable::Create(
+		std::move(result_array_type),
+		ValueType::ReferenceImut,
+		Variable::Location::Pointer,
+		// Use contents hash-based names for embed arrays.
+		"_embed_array_" + CalculateSourceFileContentsHash( *loaded_file ),
+		nullptr,
+		llvm::ConstantDataArray::getString( llvm_context_, *loaded_file, false /* not null terminated */ ) );
+
+	result->llvm_value= CreateGlobalConstantVariable( result->type, result->name, result->constexpr_value );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(

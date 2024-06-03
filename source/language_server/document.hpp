@@ -29,7 +29,14 @@ using DocumentClock= std::chrono::steady_clock;
 class Document
 {
 public:
-	Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, Logger& log );
+	Document(
+		IVfs::Path path,
+		DocumentBuildOptions build_options,
+		// Shouldn't be thread-safe. Used only synchroniously to load source graph.
+		IVfs& vfs,
+		// Must be thread-safe. Used for embedding files.
+		IVfsSharedPtr code_builder_vfs,
+		Logger& log );
 
 public: // Document text stuff.
 	void UpdateText( const DocumentRange& range, std::string_view new_text );
@@ -118,6 +125,7 @@ private:
 	const IVfs::Path path_;
 	const DocumentBuildOptions build_options_;
 	IVfs& vfs_;
+	const IVfsSharedPtr code_builder_vfs_; // Must be thread-safe.
 	Logger& log_;
 
 	std::string text_;
