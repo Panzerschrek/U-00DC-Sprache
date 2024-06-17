@@ -164,7 +164,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		{
 			const auto class_value= ResolveClassValue( class_, names_scope_fetch.name );
 			if( names_scope.GetAccessFor( class_ ) < class_value.second )
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name, class_->members->GetThisNamespaceName() );
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name, class_->members->ToString() );
 
 			if( ( names_scope_fetch.name == Keywords::constructor_ || names_scope_fetch.name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
 				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name );

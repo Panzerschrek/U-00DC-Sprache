@@ -1208,7 +1208,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
 		const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
-		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc, base_variable, names_scope, function_context );
+		ApplyEmptyInitializer( base_class.base_class->members->ToString(), constructor_initialization_list.src_loc, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
 	}
 

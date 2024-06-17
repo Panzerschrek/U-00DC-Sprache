@@ -541,7 +541,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), member_access_operator.src_loc,  member_access_operator.member_name );
 
 	if( names_scope.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
-		REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, class_type->members->GetThisNamespaceName() );
+		REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, class_type->members->ToString() );
 
 	if( const OverloadedFunctionsSetPtr functions_set= class_member->value.GetFunctionsSet() )
 	{
