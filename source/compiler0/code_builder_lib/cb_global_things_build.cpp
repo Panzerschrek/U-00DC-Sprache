@@ -376,7 +376,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 	if( class_type->parents_list_prepared || class_type->syntax_element == nullptr )
 		return;
 
-	DETECT_GLOBALS_LOOP( &class_type, class_type->members->GetThisNamespaceName(), class_type->src_loc );
+	DETECT_GLOBALS_LOOP( &class_type, class_type->members->ToString(), class_type->src_loc );
 
 	const Synt::Class& class_declaration= *class_type->syntax_element;
 
@@ -441,7 +441,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const std::string& class_name= class_declaration.name;
 
-	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.src_loc );
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members->ToString(), the_class.src_loc );
 
 	NamesScope& class_parent_namespace= *the_class.members->GetParent();
 	// Perform remaining check of parents.
