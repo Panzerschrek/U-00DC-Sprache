@@ -9,6 +9,7 @@ enum Keyword
 }
 
 fn IsKeyword( ust::string8& str ) : bool;
+fn IsKeyword( ust::string_view8& str ) : bool;
 fn KeywordToString( Keyword k ) : ust::string_view8;
 
 } // namespace U1
