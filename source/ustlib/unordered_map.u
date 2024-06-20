@@ -36,7 +36,7 @@ public:
 		{
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
-				auto &mut table_value= $>(other.table_ + i);
+				auto& table_value= $>(other.table_ + i);
 				if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
 					this.insert( table_value.key_storage, table_value.value_storage );
@@ -366,7 +366,9 @@ public:
 		fn enable_if( is_mutable )
 		constructor( this_type & mut m ) @( reference_notation::pollution::param0_param_1_reference )
 			( table_(m.table_), capacity_(m.capacity_) )
-		{}
+		{
+			mark_as_mutated(m);
+		}
 
 		fn enable_if( !is_mutable )
 		constructor( this_type &imut m ) @( reference_notation::pollution::param0_param_1_reference )

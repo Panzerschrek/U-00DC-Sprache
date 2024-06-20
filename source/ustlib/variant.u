@@ -55,6 +55,8 @@ public:
 		( index_(other.index_), storage_= unsafe(get_uninitialized_value</storage_type/>()) )
 	{
 		auto mut cur_index= 0s;
+		cur_index+= 0s; // Prevent possible MutableVariableIsNotMutated error.
+
 		for( & element : typeinfo</Y/>.elements_list )
 		{
 			if( cur_index == size_type(other.index_) )
@@ -77,6 +79,8 @@ public:
 		( index_(0), storage_= unsafe(get_uninitialized_value</storage_type/>()) )
 	{
 		auto mut cur_index= 0s;
+		cur_index+= 0s; // Prevent possible MutableVariableIsNotMutated error.
+
 		for( & element : typeinfo</Y/>.elements_list )
 		{
 			static_if( same_type</ typeof(element.type)::src_type, T /> )

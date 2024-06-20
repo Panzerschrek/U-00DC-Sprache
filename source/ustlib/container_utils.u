@@ -54,7 +54,7 @@ fn call_destructor( T&mut t ) unsafe
 		typeinfo</T/>.is_enum )
 	{
 		// Destructor for these types kind is trivial.
-		ignore_unused(t);
+		mark_as_mutated(t);
 	}
 	else
 	{
