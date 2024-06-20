@@ -181,13 +181,17 @@ fn constexpr param0_all_inner_references() : homogeneous_tuple</ references_list
 template</size_type S/>
 fn constexpr param_n_all_inner_references( u8 n ) :  homogeneous_tuple</ references_list</1s/>, S />
 {
-	var homogeneous_tuple</ references_list</1s/>, S /> mut result= zero_init;
 	static_if( S == 0s )
 	{
 		ignore_unused(n);
+
+		var homogeneous_tuple</ references_list</1s/>, 0s /> result;
+		return result;
 	}
 	else
 	{
+		var homogeneous_tuple</ references_list</1s/>, S /> mut result= zero_init;
+
 		auto mut i= 0s;
 		for( &mut el : result )
 		{
@@ -195,9 +199,9 @@ fn constexpr param_n_all_inner_references( u8 n ) :  homogeneous_tuple</ referen
 			el[0][1]= char8( size_type("a"c8) + i );
 			++i;
 		}
-	}
 
-	return result;
+		return result;
+	}
 }
 
 } // return_inner_references

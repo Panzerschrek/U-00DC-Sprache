@@ -312,6 +312,7 @@ public:
 			auto mut r= it.next();
 			if( r.empty() )
 			{
+				move(r);
 				return;
 			}
 			push_back( r.try_take() );

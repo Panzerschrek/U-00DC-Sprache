@@ -419,6 +419,8 @@ public:
 		type PairOpt= optional</Pair/>;
 		if( next0.empty() || next1.empty() )
 		{
+			move(next0);
+			move(next1);
 			return PairOpt();
 		}
 

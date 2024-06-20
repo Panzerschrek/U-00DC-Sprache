@@ -12,4 +12,11 @@ fn ignore_unused(T& t)
 template</type T/>
 fn constexpr ignore_unused_impl(){}
 
+template</type T/>
+fn mark_as_mutated(T &mut t)
+{
+	auto ptr= $<(t); // For now this is the only way to mark a variable as mutable - to take a raw pointer to it.
+	ignore_unused(ptr);
+}
+
 } // namespace ust

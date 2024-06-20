@@ -61,6 +61,7 @@
 				if( ??next_res.empty() )
 				{
 					// End iteration if "next" call result is empty.
+					move(??next_res);
 					break;
 				}
 				// Unwrap "optional" or "optional_ref".
