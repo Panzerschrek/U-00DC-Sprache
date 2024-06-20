@@ -941,10 +941,17 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 	names_scope.ForEachInThisScope(
 		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
 		{
+			const Value& value= names_scope_value.value;
+
+			if( const auto variable= value.GetVariable() )
+			{
+				if( variable->value_type == ValueType::ReferenceMut && !variable->mutated )
+					REPORT_ERROR( MutableVariableIsNotMutated, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+
 			if( names_scope_value.referenced )
 				return; // Value is referenced.
 
-			const Value& value= names_scope_value.value;
 			if( value.GetVariable() != nullptr )
 			{
 				// Variable with side-effects of their existence should be marked as referenced before.

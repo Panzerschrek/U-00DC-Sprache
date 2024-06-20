@@ -147,6 +147,10 @@ public:
 	// If true - this is a temporary variable that should not be deleted even if it has no outgoing links.
 	bool preserve_temporary= false;
 
+	// True if mutable references were created.
+	// Used only for errors generation.
+	mutable bool mutated= false;
+
 private:
 	Variable(
 		Type in_type,
