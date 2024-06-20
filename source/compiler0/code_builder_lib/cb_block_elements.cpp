@@ -2508,6 +2508,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), assignment_operator.src_loc, l_var->type );
 			return BlockBuildInfo();
 		}
+
+		if( !l_var->mutated )
+			l_var->mutated= true;
 	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( temp_variables_storage, names_scope, function_context, assignment_operator.src_loc );
@@ -2603,6 +2606,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		U_ASSERT( l_var->location == Variable::Location::Pointer );
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
 		CreateTypedStore( function_context, r_var->type, value_in_register, l_var->llvm_value );
+
+		if( !l_var->mutated )
+			l_var->mutated= true;
 	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( temp_variables_storage, names_scope, function_context, additive_assignment_operator.src_loc );
@@ -2990,6 +2996,9 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, variable->type );
 		return;
 	}
+
+	if( !variable->mutated )
+		variable->mutated= true;
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 }

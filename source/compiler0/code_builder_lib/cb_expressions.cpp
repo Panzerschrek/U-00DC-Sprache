@@ -1112,6 +1112,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	U_ASSERT( v->location == Variable::Location::Pointer );
 
+	if( !v->mutated )
+		v->mutated= true;
+
 	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
 	function_context.has_non_constexpr_operations_inside= true;
 
@@ -1512,6 +1515,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Move both reference node and variable node.
 	function_context.variables_state.MoveNode( resolved_variable );
 	function_context.variables_state.MoveNode( variable_for_move );
+
+	if( !resolved_variable->mutated )
+		resolved_variable->mutated= true;
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;

@@ -69,6 +69,9 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 			return;
 	}
 	links_.push_back( std::move(link) );
+
+	if( to->value_type == ValueType::ReferenceMut && !from->mutated )
+		from->mutated= true;
 }
 
 void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
