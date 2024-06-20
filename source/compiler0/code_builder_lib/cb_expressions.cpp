@@ -2299,6 +2299,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CreateLifetimeEnd( function_context, r_var_real->llvm_value );
 		}
 
+		l_var_real->MarkAsMutated();
+
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
 	else if( op == OverloadedOperator::Add && AreCharArraysWithSameElementType( args.front().type, args.back().type ) )
@@ -2369,6 +2371,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var->name );
+
+		l_var->MarkAsMutated();
 
 		function_context.variables_state.MoveNode( r_var_lock );
 
