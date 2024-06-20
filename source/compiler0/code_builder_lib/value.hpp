@@ -184,6 +184,8 @@ public:
 		std::string name= "",
 		llvm::Value* llvm_value= nullptr,
 		llvm::Constant* constexpr_value= nullptr );
+
+	void MarkAsMutated() const;
 };
 
 // Used for displaying of template args.

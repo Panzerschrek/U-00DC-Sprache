@@ -115,6 +115,14 @@ VariableMutPtr Variable::CreateChildNode(
 	return result;
 }
 
+void Variable::MarkAsMutated() const
+{
+	mutated= true;
+
+	if( const auto p= parent.lock() )
+		p->MarkAsMutated();
+}
+
 std::string ConstantVariableToString( const TemplateVariableArg& variable )
 {
 	if( variable.constexpr_value == nullptr )

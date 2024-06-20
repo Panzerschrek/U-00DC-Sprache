@@ -71,17 +71,7 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 	links_.push_back( std::move(link) );
 
 	if( to->value_type == ValueType::ReferenceMut )
-	{
-		// Mark as mutated source variable and all its parents.
-		VariablePtr cur= from;
-		while( cur != nullptr )
-		{
-			if( !cur->mutated )
-				cur->mutated= true;
-
-			cur= cur->parent.lock();
-		}
-	}
+		from->MarkAsMutated(); // Mark as mutated source variable.
 }
 
 void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
