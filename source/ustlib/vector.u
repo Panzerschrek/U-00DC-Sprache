@@ -97,6 +97,23 @@ public:
 		}
 	}
 
+	// Constructor from array. Moves contents of given array into vector.
+	template</size_type S/>
+	fn conversion_constructor( [ T, S ] mut arr )  @( c_param1_pollution )
+		( size_(S) )
+	{
+		if( size_ == 0s ) { return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, size_ );
+			// Multiplication overflow check is needed here.
+			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+
+			move_into_uninitialized( cast_ref_unsafe</ [ T, S ] />( $>(ptr_) ), move(arr) );
+		}
+	}
+
 	// Copy assignment operator.
 	op enable_if( typeinfo</T/>.is_copy_constructible & typeinfo</T/>.is_copy_assignable ) =( mut this, this_type& other )
 	{

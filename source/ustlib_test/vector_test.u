@@ -1,4 +1,5 @@
 //##success_test
+import "../ustlib/string.u"
 import "../ustlib/vector.u"
 
 struct A {} // Default-constructible, empty
@@ -327,6 +328,22 @@ fn nomangle main() : i32
 			halt if( v[i].x != 666 );
 			++i;
 		}
+	}
+	{ // Constructor from an array.
+		var [ ust::string8, 3 ] mut a[ "qw", "ert", "y" ];
+
+		var ust::vector</ust::string8/> v= move(a); // Use implicit conversion gere.
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "qw" );
+		halt if( v[1s] != "ert" );
+		halt if( v[2s] != "y" );
+	}
+	{ // Construct from an empty array.
+		var [ i32, 0 ] a;
+		var I32Vec v(a);
+
+		halt if( !v.empty() );
 	}
 	{ // Can push back multiple values and drop multiple values.
 		var I32Vec mut v;
