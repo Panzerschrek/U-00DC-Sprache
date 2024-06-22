@@ -80,9 +80,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				for( auto mut i= 0u; i < reference_tag_count; ++i )
 				{
 					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
-
-					coroutine_return_inner_ferences.push_back(
-						FunctionType::ParamReferences( 1s, FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
+					coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
 				}
 			}
 		}
@@ -93,10 +91,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back( select( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
-			coroutine_return_inner_ferences.push_back(
-				FunctionType::ParamReferences(
-					1s,
-					FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
+			coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
 	}
 
@@ -271,9 +266,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 
 		with( mut lock : class_members_ptr.lock_mut() )
 		{
-			var FunctionsSet mut functions_set{ .class_= class_type_ptr };
-			functions_set.functions.push_back( move(function_variable) );
-			lock.deref().AddName( op_name, move(functions_set) );
+			lock.deref().AddName( op_name, FunctionsSet{ .class_= class_type_ptr, .functions= ust::make_array( move(function_variable) ) } );
 		}
 	}
 

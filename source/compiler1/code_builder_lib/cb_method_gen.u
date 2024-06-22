@@ -292,13 +292,14 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	if( constructor_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type{ .return_type( void_type_ ), .return_value_type= ValueType::Value };
-
-		function_type.params.push_back(
-			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } );
-
-		function_type.params.push_back(
-			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } );
+		var FunctionType mut function_type
+		{
+			.return_type( void_type_ ),
+			.return_value_type= ValueType::Value,
+			.params= ust::make_array(
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut },
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } )
+		};
 
 		{
 			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
@@ -463,13 +464,14 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	if( operator_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type{ .return_type( void_type_ ), .return_value_type= ValueType::Value };
-
-		function_type.params.push_back(
-			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } );
-
-		function_type.params.push_back(
-			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } );
+		var FunctionType mut function_type
+		{
+			.return_type( void_type_ ),
+			.return_value_type= ValueType::Value,
+			.params= ust::make_array(
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut },
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } )
+		};
 
 		{
 			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();

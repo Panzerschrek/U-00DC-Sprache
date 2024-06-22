@@ -741,8 +741,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				}
 				ADD_NODE( mangler_state )
 				{
-					var TemplateArgsFinished mut typeinfo_args;
-					typeinfo_args.push_back( typeinfo_class_description.source_type );
+					var TemplateArgsFinished typeinfo_args= ust::make_array( TemplateArgFinished( typeinfo_class_description.source_type ) );
 					EncodeTemplateArgs( mangler_state, typeinfo_args );
 				}
 			}

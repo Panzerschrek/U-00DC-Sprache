@@ -132,7 +132,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	names_scope.AddName( func_name, FunctionsSet{ .class_= class_type, .syntax_elements( 1s, function) } );
+	names_scope.AddName( func_name, FunctionsSet{ .class_= class_type, .syntax_elements= ust::make_array(function) } );
 
 	if( !class_type.empty() )
 	{
@@ -198,7 +198,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	names_scope.AddName( func_name, FunctionsSet{ .class_= class_type, .function_templates_syntax_elements( 1s, function_template ) } );
+	names_scope.AddName( func_name, FunctionsSet{ .class_= class_type, .function_templates_syntax_elements= ust::make_array( function_template ) } );
 
 	if( !class_type.empty() )
 	{
@@ -478,11 +478,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var Mixins mut mixins;
-	mixins.push_back( move(out_mixin) );
-
 	auto mut lock= names_scope_ptr.lock_mut();
-	lock.deref().AddName( key, move(mixins) );
+	lock.deref().AddName( key, Mixins( ust::make_array( move(out_mixin) ) ) );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )

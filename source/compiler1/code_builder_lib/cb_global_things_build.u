@@ -953,8 +953,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						(  field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Imut ) ||
 						( !field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Mut ) )
 					{
-						var ust::string8 mut s;
-						s.push_back( char8( size_type( "a"c8 ) + size_type(field.reference_tag) ) );
+						var ust::string8 s( 1s, char8( size_type( "a"c8 ) + size_type(field.reference_tag) ) );
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 					}
 				}
@@ -966,8 +965,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 					if( class_.inner_references[ size_type(tag) ] != field.t.GetInnerReferenceKind(i) )
 					{
-						var ust::string8 mut s;
-						s.push_back( char8( size_type( "a"c8 ) + size_type(tag) ) );
+						var ust::string8 s( 1s, char8( size_type( "a"c8 ) + size_type(tag) ) );
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 					}
 				}
@@ -977,8 +975,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			{
 				if( !reference_tags_usage_flags[i] )
 				{
-					var ust::string8 mut s;
-					s.push_back( char8( size_type( "a"c8 ) + i ) );
+					var ust::string8 s( 1s, char8( size_type( "a"c8 ) + i ) );
 					REPORT_ERROR( UnusedReferenceTag, class_.members, syntax_element.src_loc, s )
 				}
 			}

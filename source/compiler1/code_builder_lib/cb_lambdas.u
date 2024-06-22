@@ -866,12 +866,9 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext />() );
 		}
 
-		var FunctionsSet mut functions_set;
-		functions_set.functions.push_back( move(function_variable) );
-
 		with( mut members_lock : class_members.lock_mut() )
 		{
-			members_lock.deref().AddName( call_op_name, NamesScopeValue( move(functions_set) ) );
+			members_lock.deref().AddName( call_op_name, FunctionsSet{ .functions= ust::make_array( move(function_variable) ) } );
 		}
 	}
 
