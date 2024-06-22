@@ -10,6 +10,7 @@ fn FunctionContext::constructor(
 	(
 		llvm_function(in_llvm_function),
 		function_type(move(in_function_type)),
+		variables_frames( 1s ) // Always create at least one variables frame.
 	)
 {
 	unsafe
@@ -24,9 +25,6 @@ fn FunctionContext::constructor(
 
 		current_debug_info_scope= LLVMGetSubprogram( llvm_function );
 	}
-
-	// Always create at least one variables frame.
-	variables_frames.push_back( FunctionContext::VariablesFrame() );
 }
 
 fn FunctionContext::destructor()

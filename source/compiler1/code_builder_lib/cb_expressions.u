@@ -3907,9 +3907,8 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 {
 	var VariableLite variable= variable_ptr;
 
-	var ust::vector</ VariableTypeExtended /> mut args;
-
-	args.push_back( VariableTypeExtended{ .t(variable.t), .value_type= variable.value_type } );
+	var ust::vector</ VariableTypeExtended /> mut args(
+		1s, VariableTypeExtended{ .t(variable.t), .value_type= variable.value_type } );
 
 	WithVariablesFrame(
 		function_context,

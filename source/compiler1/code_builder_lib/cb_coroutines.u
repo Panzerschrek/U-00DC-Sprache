@@ -81,9 +81,8 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				{
 					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
 
-					var FunctionType::ParamReferences mut param_references;
-					param_references.push_back( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } );
-					coroutine_return_inner_ferences.push_back( move(param_references) );
+					coroutine_return_inner_ferences.push_back(
+						FunctionType::ParamReferences( 1s, FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
 				}
 			}
 		}
@@ -94,9 +93,10 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back( select( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
-			var FunctionType::ParamReferences mut param_references;
-			param_references.push_back( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } );
-			coroutine_return_inner_ferences.push_back( move(param_references) );
+			coroutine_return_inner_ferences.push_back(
+				FunctionType::ParamReferences(
+					1s,
+					FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
 	}
 
@@ -231,12 +231,12 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 	{ // Generate == operator
 
 		// Prepare function type.
-		var FunctionType mut function_type{ .return_type( bool_type_ ), .return_value_type= ValueType::Value };
-		for( auto mut i= 0s; i < 2s; ++i )
+		var FunctionType mut function_type
 		{
-			function_type.params.push_back(
-				FunctionType::Param{ .t( class_type_ptr ), .value_type= ValueType::ReferenceImut } );
-		}
+			.return_type( bool_type_ ),
+			.return_value_type= ValueType::Value,
+			.params( 2s, FunctionType::Param{ .t( class_type_ptr ), .value_type= ValueType::ReferenceImut } )
+		};
 
 		auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 

@@ -91,10 +91,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	if( constructor_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type{ .return_type( void_type_ ), .return_value_type= ValueType::Value };
-
-		function_type.params.push_back(
-			FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } );
+		var FunctionType mut function_type
+		{
+			.return_type( void_type_ ),
+			.return_value_type= ValueType::Value,
+			.params( 1s, FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut } )
+		};
 
 		// Prepare function variable.
 
@@ -660,13 +662,12 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	if( operator_index == ~0s )
 	{
 		// Prepare function type.
-		var FunctionType mut function_type{ .return_type( bool_type_ ), .return_value_type= ValueType::Value };
-
-		for( auto mut i= 0s; i < 2s; ++i )
+		var FunctionType mut function_type
 		{
-			function_type.params.push_back(
-				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } );
-		}
+			.return_type( bool_type_ ),
+			.return_value_type= ValueType::Value,
+			.params( 2s, FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } )
+		};
 
 		// Prepare function variable.
 		operator_index= operators.functions.size();
@@ -769,10 +770,8 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 	{
 		.return_type( void_type_ ),
 		.return_value_type= ValueType::Value,
+		.params( 1s, FunctionType::Param{ .t( Type( class_type ) ), .value_type= ValueType::ReferenceMut } )
 	};
-
-	function_type.params.push_back(
-		FunctionType::Param{ .t( Type( class_type ) ), .value_type= ValueType::ReferenceMut } );
 
 	// Prepare function variable.
 	destructors.functions.push_back(

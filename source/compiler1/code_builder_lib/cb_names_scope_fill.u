@@ -132,12 +132,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var FunctionsSet mut functions_set;
-
-	functions_set.class_= class_type;
-	functions_set.syntax_elements.push_back( function );
-
-	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
+	names_scope.AddName( func_name, FunctionsSet{ .class_= class_type, .syntax_elements( 1s, function) } );
 
 	if( !class_type.empty() )
 	{
@@ -203,12 +198,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var FunctionsSet mut functions_set;
-
-	functions_set.class_= class_type;
-	functions_set.function_templates_syntax_elements.push_back( function_template );
-
-	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
+	names_scope.AddName( func_name, FunctionsSet{ .class_= class_type, .function_templates_syntax_elements( 1s, function_template ) } );
 
 	if( !class_type.empty() )
 	{
