@@ -807,7 +807,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				NextLexem();
 			}
 
-			return string_literal;
+			return ust::make_box( move(string_literal) );
 		},
 		Lexem::Type::SquareBracketLeft ->
 		{
