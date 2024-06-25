@@ -36,8 +36,7 @@ type TemplateArgs= ust::vector</Expression/>;
 struct Typeof
 {
 	SrcLoc src_loc;
-
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
 type ComplexName= ust::variant</ tup[
@@ -45,7 +44,7 @@ type ComplexName= ust::variant</ tup[
 	RootNamespaceNameLookup,
 	NamesScopeNameFetch,
 	TemplateParameterization,
-	Typeof
+	ust::box</Typeof/>
 	] />;
 
 struct NameLookup

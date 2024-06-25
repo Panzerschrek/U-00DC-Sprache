@@ -595,7 +595,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 			var SrcLoc src_loc= it_.front().src_loc;
 			NextLexem();
 			var Typeof mut typeof_type_name{ .src_loc= src_loc, .expr(ParseExpressionInBrackets()) };
-			return ParseComplexNameTail( move( typeof_type_name ) );
+			return ParseComplexNameTail( ust::make_box( move( typeof_type_name ) ) );
 		}
 		else
 		{
