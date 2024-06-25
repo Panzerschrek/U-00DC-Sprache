@@ -11,6 +11,8 @@ namespace Synt
 static_assert( typeinfo</ComplexName/>.size_of <= 40s );
 static_assert( typeinfo</TypeName/>.size_of <= 48s );
 static_assert( typeinfo</Expression/>.size_of <= 48s );
+static_assert( typeinfo</Initializer/>.size_of <= 56s );
+static_assert( typeinfo</BlockElement/>.size_of <= 96s );
 
 fn FunctionType::IsAutoReturn( this ) : bool
 {

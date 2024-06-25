@@ -526,7 +526,7 @@ struct IfOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
-	ust::box</Block/> block;
+	Block block;
 	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
 }
@@ -535,7 +535,7 @@ struct StaticIfOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
-	ust::box</Block/> block;
+	Block block;
 	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
 }
@@ -547,7 +547,7 @@ struct IfCoroAdvanceOperator
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 variable_name;
 	Expression expression;
-	ust::box</Block/> block;
+	Block block;
 	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
 }
@@ -571,7 +571,7 @@ struct SwitchOperator
 	struct Case
 	{
 		CaseValues values;
-		ust::box</Block/> block;
+		Block block;
 	}
 
 	SrcLoc src_loc;
@@ -591,14 +591,14 @@ struct WhileOperator
 	SrcLoc src_loc;
 	Expression condition;
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct LoopOperator
 {
 	SrcLoc src_loc;
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct RangeForOperator
@@ -609,7 +609,7 @@ struct RangeForOperator
 	ust::string8 loop_variable_name;
 	Expression sequence;
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct CStyleForOperator
@@ -636,7 +636,7 @@ struct CStyleForOperator
 	iteration_part_elements;
 
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct BreakOperator
@@ -658,7 +658,7 @@ struct WithOperator
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 variable_name;
 	Expression expression;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct StaticAssert
@@ -696,17 +696,17 @@ type BlockElement = ust::variant</ tup[
 	IncrementOperator,
 	DecrementOperator,
 	Expression,
-	IfOperator,
-	StaticIfOperator,
-	IfCoroAdvanceOperator,
-	SwitchOperator,
-	WhileOperator,
-	LoopOperator,
-	RangeForOperator,
-	CStyleForOperator,
+	ust::box</IfOperator/>,
+	ust::box</StaticIfOperator/>,
+	ust::box</IfCoroAdvanceOperator/>,
+	ust::box</SwitchOperator/>,
+	ust::box</WhileOperator/>,
+	ust::box</LoopOperator/>,
+	ust::box</RangeForOperator/>,
+	ust::box</CStyleForOperator/>,
 	BreakOperator,
 	ContinueOperator,
-	WithOperator,
+	ust::box</WithOperator/>,
 	StaticAssert,
 	ust::shared_ptr_final</TypeAlias/>,
 	Halt,
@@ -719,9 +719,9 @@ type BlockElements= ust::vector</BlockElement/>;
 type IfAlternative=
 	ust::variant</ tup[
 		Block,
-		IfOperator,
-		StaticIfOperator,
-		IfCoroAdvanceOperator
+		ust::box</IfOperator/>,
+		ust::box</StaticIfOperator/>,
+		ust::box</IfCoroAdvanceOperator/>
 	] />;
 
 type IfAlternativeNullablePtr= ust::box_nullable</IfAlternative/>;

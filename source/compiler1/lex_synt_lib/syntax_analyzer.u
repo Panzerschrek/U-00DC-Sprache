@@ -2140,27 +2140,27 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		}
 		else if( IsKeyword( it_.front(), Keyword::if_ ) )
 		{
-			block_elements.push_back( ParseIfOperator() );
+			block_elements.push_back( ust::make_box( ParseIfOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_if_ ) )
 		{
-			block_elements.push_back( ParseStaticIfOperator() );
+			block_elements.push_back( ust::make_box( ParseStaticIfOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::if_coro_advance_ ) )
 		{
-			block_elements.push_back( ParseIfCoroAdvanceOperator() );
+			block_elements.push_back( ust::make_box( ParseIfCoroAdvanceOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::switch_ ) )
 		{
-			block_elements.push_back( ParseSwitchOperator() );
+			block_elements.push_back( ust::make_box( ParseSwitchOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::while_ ) )
 		{
-			block_elements.push_back( ParseWhileOperator() );
+			block_elements.push_back( ust::make_box( ParseWhileOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::loop_ ) )
 		{
-			block_elements.push_back( ParseLoopOperator() );
+			block_elements.push_back( ust::make_box( ParseLoopOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::for_ ) )
 		{
@@ -2176,7 +2176,7 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		}
 		else if( IsKeyword( it_.front(), Keyword::with_ ) )
 		{
-			block_elements.push_back( ParseWithOperator() );
+			block_elements.push_back( ust::make_box( ParseWithOperator() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
@@ -2280,15 +2280,15 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 {
 	if( IsKeyword( it_.front(), Keyword::if_ ) )
 	{
-		return IfAlternativeNullablePtr( ParseIfOperator() );
+		return IfAlternativeNullablePtr( ust::make_box( ParseIfOperator() ) );
 	}
 	if( IsKeyword( it_.front(), Keyword::static_if_ ) )
 	{
-		return IfAlternativeNullablePtr( ParseStaticIfOperator() );
+		return IfAlternativeNullablePtr( ust::make_box( ParseStaticIfOperator() ) );
 	}
 	if( IsKeyword( it_.front(), Keyword::if_coro_advance_ ) )
 	{
-		return IfAlternativeNullablePtr( ParseIfCoroAdvanceOperator() );
+		return IfAlternativeNullablePtr( ust::make_box( ParseIfCoroAdvanceOperator() ) );
 	}
 	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 	{
@@ -2316,17 +2316,17 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 						return IfAlternativeNullablePtr();
 					}
 				}
-				if( block_element.has</IfOperator/>() )
+				if( block_element.has</ust::box</IfOperator/>/>() )
 				{
-					return IfAlternativeNullablePtr( move(block_element).try_move</IfOperator/>() );
+					return IfAlternativeNullablePtr( move(block_element).try_move</ust::box</IfOperator/>/>() );
 				}
-				if( block_element.has</StaticIfOperator/>() )
+				if( block_element.has</ust::box</StaticIfOperator/>/>() )
 				{
-					return IfAlternativeNullablePtr( move(block_element).try_move</StaticIfOperator/>() );
+					return IfAlternativeNullablePtr( move(block_element).try_move</ust::box</StaticIfOperator/>/>() );
 				}
-				if( block_element.has</IfCoroAdvanceOperator/>() )
+				if( block_element.has</ust::box</IfCoroAdvanceOperator/>/>() )
 				{
-					return IfAlternativeNullablePtr( move(block_element).try_move</IfCoroAdvanceOperator/>() );
+					return IfAlternativeNullablePtr( move(block_element).try_move</ust::box</IfCoroAdvanceOperator/>/>() );
 				}
 
 				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." ) );
@@ -2558,7 +2558,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	if_coro_advance_operator.block.deref()= ParseBlock();
+	if_coro_advance_operator.block= ParseBlock();
 	if_coro_advance_operator.alternative= TryParseIfAlternative();
 	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 
@@ -2706,11 +2706,11 @@ fn SyntaxAnalyzer::ParseForOperator( mut this ) : BlockElement
 		var Lexem& next_lexem= it_[2s];
 		if( IsKeyword( next_lexem, Keyword::var_ ) || IsKeyword( next_lexem, Keyword::auto_ ) || next_lexem.lexem_type == Lexem::Type::Semicolon )
 		{
-			return ParseCStyleForOperator();
+			return ust::make_box( ParseCStyleForOperator() );
 		}
 	}
 
-	return ParseRangeForOperator();
+	return ust::make_box( ParseRangeForOperator() );
 }
 
 fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
@@ -2751,7 +2751,7 @@ fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 
 	for_operator.label_= TryParseLabel();
 
-	for_operator.block.deref()= ParseBlock();
+	for_operator.block= ParseBlock();
 
 	return for_operator;
 }
@@ -2860,7 +2860,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 
 	for_operator.label_= TryParseLabel();
 
-	for_operator.block.deref()= ParseBlock();
+	for_operator.block= ParseBlock();
 
 	return for_operator;
 }
@@ -2925,7 +2925,7 @@ fn SyntaxAnalyzer::ParseWithOperator( mut this ) : WithOperator
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	with_operator.block.deref()= ParseBlock();
+	with_operator.block= ParseBlock();
 
 	return with_operator;
 }
