@@ -120,26 +120,26 @@ struct CastRef
 {
 	SrcLoc src_loc;
 	TypeName t;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct CastRefUnsafe
 {
 	SrcLoc src_loc;
 	TypeName t;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct CastImut
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct CastMut
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct Embed
@@ -285,10 +285,10 @@ type Expression= ust::variant</ tup[
 	Typeinfo,
 	ust::box</SameType/>,
 	NonSyncExpression,
-	CastRef,
-	CastRefUnsafe,
-	CastImut,
-	CastMut,
+	ust::box</CastRef/>,
+	ust::box</CastRefUnsafe/>,
+	ust::box</CastImut/>,
+	ust::box</CastMut/>,
 	Embed,
 	SafeExpression,
 	UnsafeExpression,

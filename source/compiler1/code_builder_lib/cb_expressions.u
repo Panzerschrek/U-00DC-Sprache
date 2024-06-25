@@ -665,7 +665,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
 {
-	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression.deref(), cast_ref_.src_loc, false );
+	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression, cast_ref_.src_loc, false );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRefUnsafe& cast_ref_unsafe_ ) : Value
@@ -674,12 +674,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names_scope, cast_ref_unsafe_.src_loc )
 	}
-	return DoReferenceCast( names_scope, function_context, cast_ref_unsafe_.t, cast_ref_unsafe_.expression.deref(), cast_ref_unsafe_.src_loc, true );
+	return DoReferenceCast( names_scope, function_context, cast_ref_unsafe_.t, cast_ref_unsafe_.expression, cast_ref_unsafe_.src_loc, true );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastImut& cast_imut_ ) : Value
 {
-	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_imut_.expression.deref() );
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_imut_.expression );
 	auto v_lock= v_ptr.lock_imut();
 	var Variable& v= v_lock.deref();
 
@@ -722,7 +722,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names_scope, cast_mut_.src_loc )
 	}
 
-	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_mut_.expression.deref() );
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_mut_.expression );
 	auto v_lock= v_ptr.lock_imut();
 	var Variable& v= v_lock.deref();
 

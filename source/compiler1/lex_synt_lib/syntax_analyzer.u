@@ -893,25 +893,25 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return CastRef{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( CastRef{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_ref_unsafe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return CastRefUnsafe{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( CastRefUnsafe{ .src_loc= src_loc, .t(ParseTypeNameInTemplateBrackets()), .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_imut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return CastImut{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( CastImut{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_mut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return CastMut{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( CastMut{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::embed_ ) )
 	{

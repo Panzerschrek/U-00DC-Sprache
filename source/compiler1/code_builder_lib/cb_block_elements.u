@@ -3266,10 +3266,10 @@ fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_u
 // It's dumm to define lambda and do not use it.
 fn SingleExpressionIsUselessImpl( ust::box</Synt::Lambda/>& e ) : bool { ust::ignore_unused(e); return true; }
 // Casts have no side effects.
-fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastRef& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::CastMut/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::CastImut/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::CastRef/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::CastRefUnsafe/>& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::Embed& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::Typeinfo& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::box</Synt::SameType/>& e ) : bool { ust::ignore_unused(e); return true; }
