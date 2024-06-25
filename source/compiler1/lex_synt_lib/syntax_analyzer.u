@@ -717,7 +717,7 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 				};
 				NextLexem();
 
-				return TryParseBinaryOperatorComponentPostfixOperator(move(await_operator));
+				return TryParseBinaryOperatorComponentPostfixOperator( ust::make_box( move(await_operator) ) );
 			}
 			else
 			{
@@ -739,7 +739,7 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 					member_access_operator.template_args.reset( ParseTemplateArgs() );
 				}
 
-				return TryParseBinaryOperatorComponentPostfixOperator(move(member_access_operator));
+				return TryParseBinaryOperatorComponentPostfixOperator( ust::make_box( move(member_access_operator) ) );
 			}
 		},
 		Lexem::Type::BraceLeft ->
@@ -750,7 +750,7 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 				.type_name(move(expr)),
 				.initializer(ParseInitializer(false)),
 			};
-			return TryParseBinaryOperatorComponentPostfixOperator(move(variable_initialization));
+			return TryParseBinaryOperatorComponentPostfixOperator( ust::make_box( move(variable_initialization) ) );
 		},
 		default -> { return expr; },
 	}
@@ -764,22 +764,22 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		{
 			var UnaryMinus mut unary_minus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
-			unary_minus.expr.deref()= ParseBinaryOperatorComponent();
-			return unary_minus;
+			unary_minus.expr= ParseBinaryOperatorComponent();
+			return ust::make_box( move(unary_minus) );
 		},
 		Lexem::Type::Not ->
 		{
 			var LogicalNot mut logical_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
-			logical_not.expr.deref()= ParseBinaryOperatorComponent();
-			return logical_not;
+			logical_not.expr= ParseBinaryOperatorComponent();
+			return ust::make_box( move(logical_not) );
 		},
 		Lexem::Type::Tilda ->
 		{
 			var BitwiseNot mut bitwise_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
-			bitwise_not.expr.deref()= ParseBinaryOperatorComponent();
-			return bitwise_not;
+			bitwise_not.expr= ParseBinaryOperatorComponent();
+			return ust::make_box( move(bitwise_not) );
 		},
 		Lexem::Type::Number ->
 		{
@@ -821,13 +821,13 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		{
 			auto src_loc= it_.front().src_loc;
 			NextLexem();
-			return ReferenceToRawPointerOperator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+			return ust::make_box( ReferenceToRawPointerOperator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 		},
 		Lexem::Type::PointerToReference ->
 		{
 			auto src_loc= it_.front().src_loc;
 			NextLexem();
-			return RawPointerToReferenceOperator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+			return ust::make_box( RawPointerToReferenceOperator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 		},
 		Lexem::Type::Scope ->
 		{
@@ -918,7 +918,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		var ust::box_nullable</ComplexName/> mut element_type;
+		var ust::optional</ComplexName/> mut element_type;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
 			NextLexem();
@@ -926,19 +926,19 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			ExpectLexem( Lexem::Type::TemplateBracketRight );
 		}
 
-		return Embed{ .src_loc= src_loc, .element_type= move(element_type), .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( Embed{ .src_loc= src_loc, .element_type= move(element_type), .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::safe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return SafeExpression{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( SafeExpression{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return UnsafeExpression{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( UnsafeExpression{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::move_ ) )
 	{
@@ -964,7 +964,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		return TakeOperator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+		return ust::make_box( TakeOperator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::lambda_ ) )
 	{
@@ -986,12 +986,13 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 		ExpectLexem( Lexem::Type::BracketRight );
 
-		return TernaryOperator
-		{
-			.src_loc= src_loc,
-			.condition( move(condition) ),
-			.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
-		};
+		return ust::make_box(
+			TernaryOperator
+			{
+				.src_loc= src_loc,
+				.condition( move(condition) ),
+				.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
+			} );
 	}
 	if( IsKeyword( it_.front(), Keyword::mixin_ ) )
 	{

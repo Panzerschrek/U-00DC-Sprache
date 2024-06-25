@@ -3279,8 +3279,8 @@ fn SingleExpressionIsUselessImpl( ust::box</Synt::SameType/>& e ) : bool { ust::
 fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& e ) : bool { ust::ignore_unused(e); return true; }
 // safe/unsafe expressions needs to be visited deeply.
 // safe/unsafe expression can't be discarded, because it has meaning.
-fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression.deref() ); }
-fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression.deref() ); }
+fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
+fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
 // Type names have no side-effects.
 fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& e ) : bool { ust::ignore_unused(e); return true; }

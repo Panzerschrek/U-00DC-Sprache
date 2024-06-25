@@ -145,20 +145,20 @@ struct CastMut
 struct Embed
 {
 	SrcLoc src_loc;
-	ust::box_nullable</ComplexName/> element_type;
-	ust::box</Expression/> expression;
+	ust::optional</ComplexName/> element_type;
+	Expression expression;
 }
 
 struct SafeExpression
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct UnsafeExpression
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct MoveOperator
@@ -170,7 +170,7 @@ struct MoveOperator
 struct TakeOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct Lambda
@@ -199,20 +199,20 @@ struct Lambda
 struct TernaryOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> condition;
-	[ ust::box</Expression/>, 2 ] branches;
+	Expression condition;
+	[ Expression, 2 ] branches;
 }
 
 struct ReferenceToRawPointerOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct RawPointerToReferenceOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct BinaryOperator
@@ -240,7 +240,7 @@ struct CallOperator
 struct MemberAccessOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> value;
+	Expression value;
 	ust::string8 member_name;
 	ust::box_nullable</TemplateArgs/> template_args;
 }
@@ -248,34 +248,36 @@ struct MemberAccessOperator
 struct VariableInitialization
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> type_name;
-	ust::box</Initializer/> initializer;
+	Expression type_name;
+	Initializer initializer;
 }
 
 struct AwaitOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> value;
+	Expression value;
 }
 
 struct UnaryMinus
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
 struct LogicalNot
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
 struct BitwiseNot
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
+// Use "box" for nodes, which may contain "Expression" inside.
+// Make exceptions for nodes, where an expression is stored in "shared_ptr_final" for some reasons.
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
@@ -289,24 +291,24 @@ type Expression= ust::variant</ tup[
 	ust::box</CastRefUnsafe/>,
 	ust::box</CastImut/>,
 	ust::box</CastMut/>,
-	Embed,
-	SafeExpression,
-	UnsafeExpression,
+	ust::box</Embed/>,
+	ust::box</SafeExpression/>,
+	ust::box</UnsafeExpression/>,
 	MoveOperator,
-	TakeOperator,
+	ust::box</TakeOperator/>,
 	ust::box</Lambda/>,
-	TernaryOperator,
-	ReferenceToRawPointerOperator,
-	RawPointerToReferenceOperator,
+	ust::box</TernaryOperator/>,
+	ust::box</ReferenceToRawPointerOperator/>,
+	ust::box</RawPointerToReferenceOperator/>,
 	BinaryOperator,
 	IndexationOperator,
 	CallOperator,
-	MemberAccessOperator,
-	VariableInitialization,
-	AwaitOperator,
-	UnaryMinus,
-	LogicalNot,
-	BitwiseNot,
+	ust::box</MemberAccessOperator/>,
+	ust::box</VariableInitialization/>,
+	ust::box</AwaitOperator/>,
+	ust::box</UnaryMinus/>,
+	ust::box</LogicalNot/>,
+	ust::box</BitwiseNot/>,
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
