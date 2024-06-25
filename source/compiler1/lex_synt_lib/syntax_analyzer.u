@@ -1855,8 +1855,8 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 				};
 				NextLexem();
 
-				member_initializer.initializer.deref()= ParseVariableInitializer();
-				if( member_initializer.initializer.deref().has</EmptyVariant/>() )
+				member_initializer.initializer= ParseVariableInitializer();
+				if( member_initializer.initializer.has</EmptyVariant/>() )
 				{
 					PushErrorMessage();
 				}
@@ -1936,7 +1936,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::SquareBracketRight )
 		{
-			sequence_initializer.elements_initializers.push_back( ust::make_box( ParseInitializer( true ) ) );
+			sequence_initializer.elements_initializers.push_back( ParseInitializer( true ) );
 			if( it_.front().lexem_type == Lexem::Type::Comma )
 			{
 				NextLexem();
@@ -1945,11 +1945,10 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 			{
 				break;
 			}
-			// TODO - parse continious flag here
 		}
 		ExpectLexem( Lexem::Type::SquareBracketRight );
 
-		return sequence_initializer;
+		return ust::make_box( move(sequence_initializer) );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
@@ -2003,7 +2002,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 		}
 		ExpectLexem( Lexem::Type::BraceRight );
 
-		return struct_named_initializer;
+		return ust::make_box( move(struct_named_initializer) );
 	}
 	else if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
 	{

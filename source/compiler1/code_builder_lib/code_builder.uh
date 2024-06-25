@@ -334,6 +334,12 @@ private:
 	fn GetSingleScalarType( LLVMTypeRef t ) : LLVMTypeRef;
 
 	// Returns constant value if initializer is contant
+	template</type T/>
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::box</T/>& t ) : LLVMValueRef
+	{
+		return this.BuildInitializer( names_scope, function_context, variable_ptr, t.deref() );
+	}
+
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef;

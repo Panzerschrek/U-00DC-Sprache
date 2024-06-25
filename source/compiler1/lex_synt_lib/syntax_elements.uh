@@ -396,7 +396,7 @@ type TypeName= ust::variant</ tup[
 struct SequenceInitializer
 {
 	SrcLoc src_loc;
-	ust::vector</ ust::box</ Initializer /> /> elements_initializers;
+	ust::vector</ Initializer /> elements_initializers;
 }
 
 struct StructNamedInitializer
@@ -407,7 +407,7 @@ struct StructNamedInitializer
 	{
 		SrcLoc src_loc;
 		ust::string8 name;
-		ust::box</ Initializer /> initializer;
+		Initializer initializer;
 	}
 
 	ust::vector</ Member /> members_initializers;
@@ -432,8 +432,9 @@ struct UninitializedInitializer
 type Initializer= ust::variant</ tup [
 	EmptyVariant,
 	Expression,
-	SequenceInitializer,
-	StructNamedInitializer,
+	// Non-terminals.
+	ust::box</SequenceInitializer/>,
+	ust::box</StructNamedInitializer/>,
 	ConstructorInitializer,
 	ZeroInitializer,
 	UninitializedInitializer

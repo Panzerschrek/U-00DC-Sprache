@@ -197,7 +197,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, sequence_initializer.src_loc );
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, element_initializer.deref() );
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, element_initializer );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 
@@ -284,7 +284,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, sequence_initializer.src_loc );
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i].deref() );
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i] );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 
@@ -413,7 +413,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( class_field.is_reference )
 		{
-			auto initializer= InitializeReferenceField( names_scope, function_context, variable_ptr, class_field, member_initializer.initializer.deref() );
+			auto initializer= InitializeReferenceField( names_scope, function_context, variable_ptr, class_field, member_initializer.initializer );
 			if( initializer == LLVMValueRef::Null )
 			{
 				is_constexpr= false;
@@ -442,7 +442,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, class_field, names_scope, member_initializer.src_loc );
 
-			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer.deref() );
+			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer );
 
 			function_context.references_graph.RemoveNode( member_variable_ptr );
 
@@ -1595,7 +1595,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
 		{
 			var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
-			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer.deref() );
+			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer );
 
 			function_context.initialized_this_fields[ base_field_index ]= true;
 			continue;
@@ -1608,7 +1608,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.is_reference )
 		{
-			InitializeReferenceField( names_scope, function_context, this_ptr, class_field, member_initializer.initializer.deref() );
+			InitializeReferenceField( names_scope, function_context, this_ptr, class_field, member_initializer.initializer );
 		}
 		else if( !class_field.is_mutable )
 		{
@@ -1628,14 +1628,14 @@ fn CodeBuilder::BuildConstructorInitialization(
 			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
-			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
+			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
 
 			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 		else
 		{
 			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, member_initializer.name, member_initializer.src_loc );
-			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
+			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
 		}
 
 		function_context.initialized_this_fields[ size_type(class_field.index) ]= true;
