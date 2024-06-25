@@ -868,7 +868,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return Typeinfo{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()};
+		return ust::make_box( Typeinfo{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()} );
 	}
 	if( IsKeyword( it_.front(), Keyword::same_type_ ) )
 	{
@@ -887,7 +887,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-		return NonSyncExpression{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets() };
+		return ust::make_box( NonSyncExpression{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets() } );
 	}
 	if( IsKeyword( it_.front(), Keyword::cast_ref_ ) )
 	{
