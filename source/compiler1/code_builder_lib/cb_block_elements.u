@@ -3267,26 +3267,26 @@ fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_
 fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
 fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }
 // It's dumm to define lambda and do not use it.
-fn SingleExpressionIsUselessImpl( ust::box</Synt::Lambda/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::Lambda& e ) : bool { ust::ignore_unused(e); return true; }
 // Casts have no side effects.
-fn SingleExpressionIsUselessImpl( ust::box</Synt::CastMut/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::CastImut/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::CastRef/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::CastRefUnsafe/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRef& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::Embed& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::Typeinfo& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::SameType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::SameType& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& e ) : bool { ust::ignore_unused(e); return true; }
 // safe/unsafe expressions needs to be visited deeply.
 // safe/unsafe expression can't be discarded, because it has meaning.
 fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
 fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
 // Type names have no side-effects.
-fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::TupleType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::RawPointerType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::CoroutineType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::ArrayType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::FunctionType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::TupleType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::RawPointerType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CoroutineType& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::shared_ptr_final</Synt::Mixin/>& e ) : bool { ust::ignore_unused(e); return true; }
 
 fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::optional_ref_imut</ Synt::Block /> @( ust::reference_notation::return_inner_references::param0 )
