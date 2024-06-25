@@ -635,7 +635,7 @@ fn SyntaxAnalyzer::ParseComplexNameTail( mut this, ComplexName mut base_ ) : Com
 	names_scope_fetch.name= it_.front().text;
 	NextLexem();
 
-	return TryParseComplexNameTailWithTemplateArgs( move(names_scope_fetch) );
+	return TryParseComplexNameTailWithTemplateArgs( ust::make_box( move(names_scope_fetch) ) );
 }
 
 fn SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( mut this, ComplexName mut base_ ) : ComplexName
@@ -649,7 +649,7 @@ fn SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( mut this, ComplexNam
 			.template_args(ParseTemplateArgs())
 		};
 
-		return ParseComplexNameTail( move(template_parameterization) );
+		return ParseComplexNameTail( ust::make_box( move(template_parameterization) ) );
 	}
 	else
 	{

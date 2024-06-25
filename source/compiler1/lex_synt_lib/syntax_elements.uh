@@ -42,8 +42,9 @@ struct Typeof
 type ComplexName= ust::variant</ tup[
 	NameLookup,
 	RootNamespaceNameLookup,
-	NamesScopeNameFetch,
-	TemplateParameterization,
+	// Non-terminal nodes (that contain ComplexName inside).
+	ust::box</NamesScopeNameFetch/>,
+	ust::box</TemplateParameterization/>,
 	ust::box</Typeof/>
 	] />;
 
@@ -65,16 +66,16 @@ struct NamesScopeNameFetch
 {
 	SrcLoc src_loc;
 
+	ComplexName base_;
 	ust::string8 name;
-	ust::box</ComplexName/> base_;
 }
 
 struct TemplateParameterization
 {
 	SrcLoc src_loc;
 
-	ust::box</TemplateArgs/> template_args;
-	ust::box</ComplexName/> base_;
+	ComplexName base_;
+	TemplateArgs template_args;
 }
 
 struct NumericConstant

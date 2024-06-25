@@ -308,7 +308,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NamesScopeNameFetch& names_scope_fetch ) : ust::optional</NamesScopeValue/>
 {
-	var ust::optional</NamesScopeValue/> base_opt= ResolveValueInternal( names_scope, function_context, names_scope_fetch.base_.deref() );
+	var ust::optional</NamesScopeValue/> base_opt= ResolveValueInternal( names_scope, function_context, names_scope_fetch.base_ );
 	if( base_opt.empty() )
 	{
 		return ust::null_optional;
@@ -437,7 +437,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	}
 	else if( !type_templates_set.empty() )
 	{
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, names_scope_fetch.src_loc, names_scope_fetch.base_.deref() )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, names_scope_fetch.src_loc, names_scope_fetch.base_ )
 		return ust::null_optional;
 	}
 
@@ -447,7 +447,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TemplateParameterization& template_parameterization ) : ust::optional</NamesScopeValue/>
 {
-	var ust::optional</NamesScopeValue/> base_opt= ResolveValueInternal( names_scope, function_context, template_parameterization.base_.deref() );
+	var ust::optional</NamesScopeValue/> base_opt= ResolveValueInternal( names_scope, function_context, template_parameterization.base_ );
 	if( base_opt.empty() )
 	{
 		return ust::null_optional;
@@ -462,7 +462,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			names_scope,
 			function_context,
 			type_templates_set.try_to_non_nullable(),
-			template_parameterization.template_args.deref(),
+			template_parameterization.template_args,
 			template_parameterization.src_loc );
 
 		if_var( &t : generated_type )
@@ -487,7 +487,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 				names_scope,
 				function_context,
 				functions_set_non_null,
-				template_parameterization.template_args.deref(),
+				template_parameterization.template_args,
 				template_parameterization.src_loc );
 
 		if( parameterization_result.empty() )
