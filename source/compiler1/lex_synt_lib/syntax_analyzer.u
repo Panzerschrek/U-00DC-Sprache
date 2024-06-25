@@ -881,7 +881,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		var TypeName mut r= ParseTypeName();
 		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-		return SameType{ .src_loc= src_loc, .l= move(l), .r= move(r) };
+		return ust::make_box( SameType{ .src_loc= src_loc, .l= move(l), .r= move(r) } );
 	}
 	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
@@ -968,7 +968,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	}
 	if( IsKeyword( it_.front(), Keyword::lambda_ ) )
 	{
-		return ParseLambda();
+		return ust::make_box( ParseLambda() );
 	}
 	if( IsKeyword( it_.front(), Keyword::select_ ) )
 	{
