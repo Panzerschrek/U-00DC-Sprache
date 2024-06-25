@@ -192,8 +192,8 @@ private:
 	fn ParseBlockElementsToFileEnd( mut this ) : BlockElements;
 	fn ParseBlockElementsToBlockEnd( mut this ) : BlockElements;
 	fn ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : BlockElements;
-	fn TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
-	fn ParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
+	fn TryParseIfAlternative( mut this ) : IfAlternativeOpt;
+	fn ParseIfAlternative( mut this ) : IfAlternativeOpt;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
@@ -2264,7 +2264,7 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 	return block_elements;
 }
 
-fn SyntaxAnalyzer::TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr
+fn SyntaxAnalyzer::TryParseIfAlternative( mut this ) : IfAlternativeOpt
 {
 	if( IsKeyword( it_.front(), Keyword::else_ ) )
 	{
@@ -2272,26 +2272,26 @@ fn SyntaxAnalyzer::TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 		return ParseIfAlternative();
 	}
 
-	return IfAlternativeNullablePtr();
+	return ust::null_optional;
 }
 
-fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
+fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeOpt
 {
 	if( IsKeyword( it_.front(), Keyword::if_ ) )
 	{
-		return IfAlternativeNullablePtr( ust::make_box( ParseIfOperator() ) );
+		return IfAlternative( ust::make_box( ParseIfOperator() ) );
 	}
 	if( IsKeyword( it_.front(), Keyword::static_if_ ) )
 	{
-		return IfAlternativeNullablePtr( ust::make_box( ParseStaticIfOperator() ) );
+		return IfAlternative( ust::make_box( ParseStaticIfOperator() ) );
 	}
 	if( IsKeyword( it_.front(), Keyword::if_coro_advance_ ) )
 	{
-		return IfAlternativeNullablePtr( ust::make_box( ParseIfCoroAdvanceOperator() ) );
+		return IfAlternative( ust::make_box( ParseIfCoroAdvanceOperator() ) );
 	}
 	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 	{
-		return IfAlternativeNullablePtr( ParseBlock() );
+		return IfAlternative( ParseBlock() );
 	}
 
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
@@ -2307,40 +2307,40 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 					var ScopeBlock &mut scope_block= scope_block_ptr.deref();
 					if( scope_block.safety == ScopeBlock::Safety::None && scope_block.label_.empty() )
 					{
-						return IfAlternativeNullablePtr( take( scope_block.block ) );
+						return IfAlternative( take( scope_block.block ) );
 					}
 					else
 					{
 						errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - expected block without safety modifiers and labels for \"if\" alternative." ) );
-						return IfAlternativeNullablePtr();
+						return ust::null_optional;
 					}
 				}
 				if( block_element.has</ust::box</IfOperator/>/>() )
 				{
-					return IfAlternativeNullablePtr( move(block_element).try_move</ust::box</IfOperator/>/>() );
+					return IfAlternative( move(block_element).try_move</ust::box</IfOperator/>/>() );
 				}
 				if( block_element.has</ust::box</StaticIfOperator/>/>() )
 				{
-					return IfAlternativeNullablePtr( move(block_element).try_move</ust::box</StaticIfOperator/>/>() );
+					return IfAlternative( move(block_element).try_move</ust::box</StaticIfOperator/>/>() );
 				}
 				if( block_element.has</ust::box</IfCoroAdvanceOperator/>/>() )
 				{
-					return IfAlternativeNullablePtr( move(block_element).try_move</ust::box</IfCoroAdvanceOperator/>/>() );
+					return IfAlternative( move(block_element).try_move</ust::box</IfCoroAdvanceOperator/>/>() );
 				}
 
 				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." ) );
-				return IfAlternativeNullablePtr();
+				return ust::null_optional;
 			}
 			else
 			{
 				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative." ) );
-				return IfAlternativeNullablePtr();
+				return ust::null_optional;
 			}
 		}
 	}
 
 	PushErrorMessage();
-	return IfAlternativeNullablePtr();
+	return ust::null_optional;
 }
 
 fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration

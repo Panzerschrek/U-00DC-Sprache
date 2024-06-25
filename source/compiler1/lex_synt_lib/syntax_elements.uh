@@ -528,7 +528,7 @@ struct IfOperator
 	SrcLoc src_loc;
 	Expression condition;
 	Block block;
-	IfAlternativeNullablePtr alternative;
+	IfAlternativeOpt alternative;
 	SrcLoc end_src_loc;
 }
 
@@ -537,7 +537,7 @@ struct StaticIfOperator
 	SrcLoc src_loc;
 	Expression condition;
 	Block block;
-	IfAlternativeNullablePtr alternative;
+	IfAlternativeOpt alternative;
 	SrcLoc end_src_loc;
 }
 
@@ -549,7 +549,7 @@ struct IfCoroAdvanceOperator
 	ust::string8 variable_name;
 	Expression expression;
 	Block block;
-	IfAlternativeNullablePtr alternative;
+	IfAlternativeOpt alternative;
 	SrcLoc end_src_loc;
 }
 
@@ -725,7 +725,7 @@ type IfAlternative=
 		ust::box</IfCoroAdvanceOperator/>
 	] />;
 
-type IfAlternativeNullablePtr= ust::box_nullable</IfAlternative/>;
+type IfAlternativeOpt= ust::optional</IfAlternative/>;
 
 struct Function
 {
