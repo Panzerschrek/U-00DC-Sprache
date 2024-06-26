@@ -6,16 +6,16 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	variant_visit( &i : initializer )
 	{
-		return BuildInitializer( names_scope, function_context, variable_ptr, i );
+		return ApplyInitializerImpl( names_scope, function_context, variable_ptr, i );
 	}
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
 {
 	ust::ignore_unused( names_scope );
 	ust::ignore_unused( function_context );
@@ -24,7 +24,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
 	auto src_loc= Synt::GetSrcLoc(expression_initializer);
 	var VariableLite variable= variable_ptr;
@@ -156,7 +156,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr;
 	if_var( &array_type : variable.t.GetArrayType() )
@@ -197,7 +197,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, sequence_initializer.src_loc );
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, element_initializer );
+			auto element_constant= ApplyInitializer( names_scope, function_context, element_variable_ptr, element_initializer );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 
@@ -284,7 +284,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, sequence_initializer.src_loc );
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i] );
+			auto element_constant= ApplyInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i] );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 
@@ -336,7 +336,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr;
 
@@ -442,7 +442,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, class_field, names_scope, member_initializer.src_loc );
 
-			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer );
+			auto initializer= ApplyInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer );
 
 			function_context.references_graph.RemoveNode( member_variable_ptr );
 
@@ -522,7 +522,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			}
 			else
 			{
-				constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
+				constexpr_initializer= ApplyEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
 			}
 		}
 		else
@@ -533,7 +533,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			}
 			else
 			{
-				constexpr_initializer= BuildInitializer( class_members_initial, function_context, member_variable_ptr, initializer );
+				constexpr_initializer= ApplyInitializer( class_members_initial, function_context, member_variable_ptr, initializer );
 			}
 		}
 
@@ -559,12 +559,12 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
-	return BuildConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args.range(), constructor_initializer.src_loc );
+	return ApplyConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args.range(), constructor_initializer.src_loc );
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr;
 
@@ -602,7 +602,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, zero_initializer.src_loc );
 
-				self.BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+				self.ApplyInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
 				function_context.references_graph.RemoveNode( element_variable_ptr );
 			} );
@@ -631,7 +631,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, zero_initializer.src_loc );
 
-			BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+			ApplyInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 		}
@@ -682,7 +682,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, zero_initializer.src_loc );
 
-			BuildInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
+			ApplyInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
 
 			function_context.references_graph.RemoveNode( member_variable_ptr );
 		}
@@ -697,7 +697,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
 	ust::ignore_unused( variable_ptr );
 
@@ -708,7 +708,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
+fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr;
 
@@ -748,7 +748,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, src_loc );
 
-				constant_initializer= self.BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+				constant_initializer= self.ApplyEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
 				function_context.references_graph.RemoveNode( element_variable_ptr );
 			} );
@@ -781,7 +781,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, src_loc );
 
-			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+			var LLVMValueRef constant_initializer= ApplyEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 
@@ -827,7 +827,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	halt;
 }
 
-fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef
+fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr;
 
@@ -1494,7 +1494,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	if( !base_class.empty() && !base_initialized )
 	{
 		var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
-		BuildEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
+		ApplyEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
 		function_context.initialized_this_fields[ base_field_index ]= true;
 	}
 
@@ -1541,14 +1541,14 @@ fn CodeBuilder::BuildConstructorInitialization(
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
-				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+				ApplyEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 
 				function_context.references_graph.RemoveNode( field_variable_ptr );
 			}
 			else
 			{
 				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
-				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+				ApplyEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 			}
 		}
 		else
@@ -1575,14 +1575,14 @@ fn CodeBuilder::BuildConstructorInitialization(
 				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
-				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
+				ApplyInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 
 				function_context.references_graph.RemoveNode( field_variable_ptr );
 			}
 			else
 			{
 				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
-				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
+				ApplyInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
 
@@ -1595,7 +1595,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
 		{
 			var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
-			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer );
+			ApplyInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer );
 
 			function_context.initialized_this_fields[ base_field_index ]= true;
 			continue;
@@ -1628,14 +1628,14 @@ fn CodeBuilder::BuildConstructorInitialization(
 			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 			function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
 
-			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
+			ApplyInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
 
 			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 		else
 		{
 			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, member_initializer.name, member_initializer.src_loc );
-			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
+			ApplyInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
 		}
 
 		function_context.initialized_this_fields[ size_type(class_field.index) ]= true;
@@ -1693,7 +1693,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 			function_context.references_graph.AddNode( field_variable_ptr );
 
-			BuildInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
+			ApplyInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
 
 			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}

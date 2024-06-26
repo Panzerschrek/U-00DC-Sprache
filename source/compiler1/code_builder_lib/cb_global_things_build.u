@@ -389,7 +389,7 @@ fn CodeBuilder::PrepareClassParentsList( mut this, ClassTypePtr& class_type )
 
 		foreach( &parent_name : syntax_element.parents )
 		{
-			auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
+			auto parent_type= PrepareTypeImpl( names_scope_ptr, global_function_context, parent_name );
 			if( parent_type.GetClassType().empty() )
 			{
 				REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
@@ -1468,7 +1468,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 	if_var( &underlying_type_name : enum_declaration.underlying_type )
 	{
 		var FunctionContext mut function_context= CreateGlobalFunctionContext();
-		auto t= PrepareType( names_scope_ptr, function_context, underlying_type_name );
+		auto t= PrepareTypeImpl( names_scope_ptr, function_context, underlying_type_name );
 
 		auto fundamental_type= t.GetFundamentalType();
 		if( fundamental_type.empty() || !IsInteger( fundamental_type.try_deref().fundamental_type ) )
@@ -1638,11 +1638,11 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 			if( variable_declaration.initializer.has</Synt::EmptyVariant/>() )
 			{
-				constexpr_value= BuildEmptyInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.name, variable_declaration.src_loc );
+				constexpr_value= ApplyEmptyInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.name, variable_declaration.src_loc );
 			}
 			else
 			{
-				constexpr_value= BuildInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.initializer );
+				constexpr_value= ApplyInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.initializer );
 			}
 
 			function_context.references_graph.RemoveNode( variable_for_initialization_ptr );

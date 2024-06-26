@@ -488,7 +488,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	// Nothing special - process as regular expression
-	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
+	auto expression_value= BuildExpressionCodeImpl( names_scope, function_context, param );
 	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(param) );
 }
 
@@ -546,7 +546,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( !array_type_param.element_type.GetTypeParam().empty() && !array_type_param.element_count.GetVariableParam().empty() )
 	{
 		// All params are known types/variables, so, this is just a type.
-		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, param ) };
+		return TemplateSignatureParam::TypeParam{ .t= PrepareTypeImpl( names_scope, function_context, param ) };
 	}
 	return array_type_param;
 }
@@ -572,7 +572,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( all_types_are_known )
 	{
 		// All params are known types, so, this is just a type.
-		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
+		return TemplateSignatureParam::TypeParam{ .t= PrepareTypeImpl( names_scope, function_context, signature_param ) };
 	}
 
 	return tuple_type_param;
@@ -593,7 +593,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( !raw_pointer_type_param.element_type.GetTypeParam().empty() )
 	{
-		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
+		return TemplateSignatureParam::TypeParam{ .t= PrepareTypeImpl( names_scope, function_context, signature_param ) };
 	}
 
 	return raw_pointer_type_param;
@@ -652,7 +652,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( all_types_are_known )
 	{
-		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
+		return TemplateSignatureParam::TypeParam{ .t= PrepareTypeImpl( names_scope, function_context, signature_param ) };
 	}
 
 	return function_type_param;
@@ -670,7 +670,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type, template_params_usage_flags );
 	if( !return_type.GetTypeParam().empty() )
 	{
-		return TemplateSignatureParam::TypeParam{ .t= PrepareType( names_scope, function_context, signature_param ) };
+		return TemplateSignatureParam::TypeParam{ .t= PrepareTypeImpl( names_scope, function_context, signature_param ) };
 	}
 
 	var TemplateSignatureParam::CoroutineTypeParam mut coroutine_type_param

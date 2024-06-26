@@ -143,7 +143,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		function_context.references_graph.AddNode( base_variable_ptr );
 
-		BuildEmptyInitializer( class_members_ptr, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), src_loc );
+		ApplyEmptyInitializer( class_members_ptr, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), src_loc );
 
 		function_context.references_graph.RemoveNode( base_variable_ptr );
 	}
@@ -173,7 +173,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( initializer.has</Synt::EmptyVariant/>() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, field_variable_ptr, field_pair[0], src_loc );
+			ApplyEmptyInitializer( class_members_ptr, function_context, field_variable_ptr, field_pair[0], src_loc );
 		}
 		else
 		{
@@ -195,7 +195,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			}
 			else
 			{
-				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
+				ApplyInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
 

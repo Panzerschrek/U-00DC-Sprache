@@ -94,7 +94,7 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 	auto mut function_context= CreateGlobalFunctionContext();
 	foreach( &static_assert_ : global_static_asserts_set )
 	{
-		BuildBlockElement( names_scope_ptr, function_context, static_assert_.deref() );
+		BuildBlockElementImpl( names_scope_ptr, function_context, static_assert_.deref() );
 	}
 
 	global_static_asserts_set.clear();

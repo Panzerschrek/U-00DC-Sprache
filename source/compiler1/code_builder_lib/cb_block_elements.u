@@ -23,7 +23,7 @@ fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, Fun
 
 		variant_visit( &el : block_element )
 		{
-			auto info = BuildBlockElement( names_scope, function_context, el );
+			auto info = BuildBlockElementImpl( names_scope, function_context, el );
 			block_element_build_info.has_terminal_instruction_inside |= info.has_terminal_instruction_inside;
 		}
 	}
@@ -64,12 +64,12 @@ fn CodeBuilder::BuildIfAlternative( mut this, NamesScopePtr& names_scope, Functi
 {
 	variant_visit( &el : if_alternative )
 	{
-		return BuildBlockElement( names_scope, function_context, el );
+		return BuildBlockElementImpl( names_scope, function_context, el );
 	}
 	halt;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
 {
 	// Empty variant - legal element kind for C style "for" operator variables declaration part.
 	ust::ignore_unused( names_scope );
@@ -78,12 +78,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
 {
 	return BuildBlock( names_scope, function_context, block );
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo
 {
 	var Synt::ScopeBlock& scope_block= scope_block_ptr.deref();
 
@@ -147,7 +147,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
 {
 	auto t= PrepareType( names_scope, function_context, variables_declaration.t );
 	if( !EnsureTypeComplete( t ) )
@@ -248,11 +248,11 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 
 			if( variable_declaration.initializer.has</Synt::EmptyVariant/>() )
 			{
-				constexpr_value= BuildEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
+				constexpr_value= ApplyEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
 			}
 			else
 			{
-				constexpr_value= BuildInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.initializer );
+				constexpr_value= ApplyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.initializer );
 			}
 
 			function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
@@ -363,7 +363,7 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -548,7 +548,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -841,13 +841,13 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo
 {
 	CoroutineYield( names_scope, function_context, yield_operator.expr, yield_operator.src_loc );
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -904,7 +904,7 @@ fn CodeBuilder::BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scop
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -968,7 +968,7 @@ fn CodeBuilder::BuildAdditiveAssignmentOperatorImpl( mut this, NamesScopePtr& na
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -980,7 +980,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -992,7 +992,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -1027,7 +1027,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
 {
 	var LLVMBasicBlockRef if_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 	var LLVMBasicBlockRef alternative_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
@@ -1131,7 +1131,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo
 {
 	var bool condition_res= WithVariablesFrame(
 		function_context,
@@ -1154,7 +1154,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
 {
 	return WithVariablesFrame(
 		function_context,
@@ -1532,7 +1532,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SwitchOperator& switch_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SwitchOperator& switch_operator ) : BlockElementBuildInfo
 {
 	var Type mut switch_type;
 	var LLVMValueRef mut switch_value= LLVMValueRef::Null;
@@ -2083,7 +2083,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
 {
 	auto mut references_graph_before_loop= function_context.references_graph;
 
@@ -2165,7 +2165,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LoopOperator& loop_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LoopOperator& loop_operator ) : BlockElementBuildInfo
 {
 	auto references_graph_before_loop= function_context.references_graph;
 
@@ -2218,7 +2218,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
 {
 	return WithVariablesFrame(
 		function_context,
@@ -2475,7 +2475,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -2495,7 +2495,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	// Variables declaration part.
 	variant_visit( &element : c_style_for_operator.variable_declaration_part )
 	{
-		BuildBlockElement( names_scope, function_context, element );
+		BuildBlockElementImpl( names_scope, function_context, element );
 	}
 
 	auto references_graph_before_loop= function_context.references_graph;
@@ -2591,7 +2591,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	{
 		variant_visit( &el : element )
 		{
-			BuildBlockElement( names_scope, function_context, el );
+			BuildBlockElementImpl( names_scope, function_context, el );
 		}
 	}
 
@@ -2612,7 +2612,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 
@@ -2633,7 +2633,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 
@@ -2660,7 +2660,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
 {
 	return WithVariablesFrame(
 		function_context,
@@ -2858,7 +2858,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
@@ -2907,7 +2907,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo
 {
 	auto& type_alias= type_alias_ptr.deref();
 
@@ -2936,7 +2936,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo
 {
 	ust::ignore_unused( names_scope );
 	ust::ignore_unused( halt_ );
@@ -2952,7 +2952,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
 {
 	var LLVMValueRef mut condition_in_register= LLVMValueRef::Null;
 	WithVariablesFrame(
@@ -2998,7 +2998,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
 {
 	if_var( &block_elements : ExpandBlockMixin( names_scope, function_context, mixin_ ) )
 	{

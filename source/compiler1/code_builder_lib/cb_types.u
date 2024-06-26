@@ -10,13 +10,13 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 {
 	variant_visit( &t : type_name )
 	{
-		return PrepareType( names_scope, function_context, t );
+		return PrepareTypeImpl( names_scope, function_context, t );
 	}
 
 	halt;
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type
 {
 	var Value resolved_value= ResolveValue( names_scope, function_context, named_type );
 	if_var( & t : resolved_value.get</Type/>() )
@@ -28,7 +28,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type
 {
 	var Type mut element_type= PrepareType( names_scope, function_context, array_type.element_type );
 
@@ -95,7 +95,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 }
 
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
 {
 	var TupleType mut out_tuple_type;
 
@@ -111,7 +111,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return out_tuple_type;
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type
 {
 	var RawPointerType mut out_type{ .element_type = PrepareType( names_scope, function_context, raw_pointer_type.element_type ) };
 	out_type.llvm_type= unsafe( LLVMPointerType( out_type.element_type.GetLLVMType(), 0u ) );
@@ -119,7 +119,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return out_type;
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
 {
 	if( function_type.IsAutoReturn() )
 	{
@@ -130,7 +130,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return FunctionTypeToPointer( move(res) );
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type
 {
 	var CoroutineTypeDescription mut coroutine_type_description
 	{
@@ -174,7 +174,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 }
 
-fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type
 {
 	if_var( &type_name : ExpandTypeNameMixin( names_scope, function_context, mixin_ ) )
 	{
