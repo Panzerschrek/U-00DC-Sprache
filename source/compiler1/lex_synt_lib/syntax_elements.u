@@ -13,6 +13,7 @@ static_assert( typeinfo</TypeName/>.size_of <= 48s );
 static_assert( typeinfo</Expression/>.size_of <= 48s );
 static_assert( typeinfo</Initializer/>.size_of <= 56s );
 static_assert( typeinfo</BlockElement/>.size_of <= 96s );
+static_assert( typeinfo</IfAlternative/>.size_of <= 48s );
 
 fn FunctionType::IsAutoReturn( this ) : bool
 {

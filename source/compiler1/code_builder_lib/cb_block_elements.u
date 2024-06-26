@@ -1070,7 +1070,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	var BlockElementBuildInfo mut block_element_build_info;
 
-	if_var( &alternative : if_operator.alternative )
+	if( !if_operator.alternative.has</Synt::EmptyVariant/>() )
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
@@ -1085,7 +1085,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
 
 		function_context.references_graph= move(references_graph_before_branching);
-		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, alternative );
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_operator.alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
@@ -1146,9 +1146,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		return BuildBlock( names_scope, function_context, static_if_operator.block );
 	}
-	if_var( &alternative : static_if_operator.alternative )
+	if( !static_if_operator.alternative.has</Synt::EmptyVariant/>() )
 	{
-		return BuildIfAlternative( names_scope, function_context, alternative );
+		return BuildIfAlternative( names_scope, function_context, static_if_operator.alternative );
 	}
 
 	return BlockElementBuildInfo();
@@ -1461,7 +1461,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	var BlockElementBuildInfo mut block_element_build_info;
 
-	if_var( &alternative : if_coro_advance_operator.alternative )
+	if( !if_coro_advance_operator.alternative.has</Synt::EmptyVariant/>() )
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "after_if_coro_advance\0"[0] ) );
 
@@ -1483,7 +1483,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		// Destroy temporarie in coroutine expression.
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
 
-		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, alternative );
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_coro_advance_operator.alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
