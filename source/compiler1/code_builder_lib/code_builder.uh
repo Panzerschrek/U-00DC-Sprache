@@ -392,7 +392,7 @@ private:
 
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
-	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo;
+	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ScopeBlock& scope_block ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo;
 	fn BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t );
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;

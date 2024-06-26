@@ -83,10 +83,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	return BuildBlock( names_scope, function_context, block );
 }
 
-fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ScopeBlock& scope_block ) : BlockElementBuildInfo
 {
-	var Synt::ScopeBlock& scope_block= scope_block_ptr.deref();
-
 	auto prev_safety= function_context.is_in_unsafe_block;
 
 	if( scope_block.safety == Synt::ScopeBlock::Safety::None ) {}// Keep old safety
