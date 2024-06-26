@@ -359,14 +359,14 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		}
 	}
 
-	if_var( &template_parameterization : param.get</Synt::TemplateParameterization/>() )
+	if_var( &template_parameterization : param.get</ust::box</Synt::TemplateParameterization/>/>() )
 	{
-		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parameterization.base_.deref() ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
+		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parameterization.deref().base_ ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 		{
 			var ust::vector</ TemplateSignatureParam /> mut specialized_template_params;
 
 			auto mut all_params_are_known= true;
-			foreach( &arg : template_parameterization.template_args.deref() )
+			foreach( &arg : template_parameterization.deref().template_args )
 			{
 				auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
 

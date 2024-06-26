@@ -68,6 +68,12 @@ fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 	halt;
 }
 
+template</type T/>
+fn ComplexNameToStringImpl( ust::box</T/>& t ) : ust::string8
+{
+	return U1::ComplexNameToStringImpl( t.deref() );
+}
+
 fn ComplexNameToStringImpl( Synt::NameLookup& name_lookup ) : ust::string8
 {
 	return name_lookup.name;
@@ -80,13 +86,13 @@ fn ComplexNameToStringImpl( Synt::RootNamespaceNameLookup& root_namespace_name_l
 
 fn ComplexNameToStringImpl( Synt::NamesScopeNameFetch& names_scope_name_fetch ) : ust::string8
 {
-	return ComplexNameToString( names_scope_name_fetch.base_.deref() ) + "::" + names_scope_name_fetch.name;
+	return ComplexNameToString( names_scope_name_fetch.base_ ) + "::" + names_scope_name_fetch.name;
 }
 
 fn ComplexNameToStringImpl( Synt::TemplateParameterization& template_parameterization ) : ust::string8
 {
 	// TODO - print real args.
-	return ComplexNameToString( template_parameterization.base_.deref() ) + "</ .. />";
+	return ComplexNameToString( template_parameterization.base_ ) + "</ .. />";
 }
 
 fn ComplexNameToStringImpl( Synt::Typeof& typeof_ ) : ust::string8

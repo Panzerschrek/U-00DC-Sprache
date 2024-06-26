@@ -130,6 +130,13 @@ private:
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
 
 	fn ResolveValueInternal( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : ust::optional</NamesScopeValue/>;
+
+	template</type T/>
+	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : ust::optional</NamesScopeValue/>
+	{
+		return this.ResolveValueImpl( names_scope, function_context, t.deref() );
+	}
+
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NameLookup& name_lookup ) : ust::optional</NamesScopeValue/>;
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RootNamespaceNameLookup& root_namespace_name_lookup ) : ust::optional</NamesScopeValue/>;
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NamesScopeNameFetch& names_scope_fetch ) : ust::optional</NamesScopeValue/>;
@@ -293,17 +300,18 @@ private:
 		NamesScopePtr& names_scope,
 		SrcLoc& src_loc );
 
+	template</type T/>
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : Type
+	{
+		return this.PrepareType( names_scope, function_context, t.deref() );
+	}
+
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
-	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::CoroutineType/>& coroutine_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
@@ -326,6 +334,12 @@ private:
 	fn GetSingleScalarType( LLVMTypeRef t ) : LLVMTypeRef;
 
 	// Returns constant value if initializer is contant
+	template</type T/>
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::box</T/>& t ) : LLVMValueRef
+	{
+		return this.BuildInitializer( names_scope, function_context, variable_ptr, t.deref() );
+	}
+
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef;
@@ -367,6 +381,12 @@ private:
 	fn BuildBlockImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
 
 	fn BuildIfAlternative( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfAlternative& if_alternative ) : BlockElementBuildInfo;
+
+	template</type T/>
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : BlockElementBuildInfo
+	{
+		return this.BuildBlockElement( names_scope, function_context, t.deref() );
+	}
 
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
@@ -430,6 +450,12 @@ private:
 	// May move local variables.
 	fn BuildExpressionCodeForValueReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
 
+	template</type T/>
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& expression ) : Value
+	{
+		return this.BuildExpressionCode( names_scope, function_context, expression.deref() );
+	}
+
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
@@ -461,11 +487,11 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::CoroutineType/>& coroutine_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Value;
 
 	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;

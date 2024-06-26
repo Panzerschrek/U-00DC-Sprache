@@ -36,16 +36,16 @@ type TemplateArgs= ust::vector</Expression/>;
 struct Typeof
 {
 	SrcLoc src_loc;
-
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
 type ComplexName= ust::variant</ tup[
 	NameLookup,
 	RootNamespaceNameLookup,
-	NamesScopeNameFetch,
-	TemplateParameterization,
-	Typeof
+	// Non-terminal nodes (that contain ComplexName inside).
+	ust::box</NamesScopeNameFetch/>,
+	ust::box</TemplateParameterization/>,
+	ust::box</Typeof/>
 	] />;
 
 struct NameLookup
@@ -66,16 +66,16 @@ struct NamesScopeNameFetch
 {
 	SrcLoc src_loc;
 
+	ComplexName base_;
 	ust::string8 name;
-	ust::box</ComplexName/> base_;
 }
 
 struct TemplateParameterization
 {
 	SrcLoc src_loc;
 
-	ust::box</TemplateArgs/> template_args;
-	ust::box</ComplexName/> base_;
+	ComplexName base_;
+	TemplateArgs template_args;
 }
 
 struct NumericConstant
@@ -120,45 +120,45 @@ struct CastRef
 {
 	SrcLoc src_loc;
 	TypeName t;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct CastRefUnsafe
 {
 	SrcLoc src_loc;
 	TypeName t;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct CastImut
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct CastMut
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct Embed
 {
 	SrcLoc src_loc;
-	ust::box_nullable</ComplexName/> element_type;
-	ust::box</Expression/> expression;
+	ust::optional</ComplexName/> element_type;
+	Expression expression;
 }
 
 struct SafeExpression
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct UnsafeExpression
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct MoveOperator
@@ -170,7 +170,7 @@ struct MoveOperator
 struct TakeOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct Lambda
@@ -199,20 +199,20 @@ struct Lambda
 struct TernaryOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> condition;
-	[ ust::box</Expression/>, 2 ] branches;
+	Expression condition;
+	[ Expression, 2 ] branches;
 }
 
 struct ReferenceToRawPointerOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct RawPointerToReferenceOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expression;
+	Expression expression;
 }
 
 struct BinaryOperator
@@ -240,7 +240,7 @@ struct CallOperator
 struct MemberAccessOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> value;
+	Expression value;
 	ust::string8 member_name;
 	ust::box_nullable</TemplateArgs/> template_args;
 }
@@ -248,65 +248,67 @@ struct MemberAccessOperator
 struct VariableInitialization
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> type_name;
-	ust::box</Initializer/> initializer;
+	Expression type_name;
+	Initializer initializer;
 }
 
 struct AwaitOperator
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> value;
+	Expression value;
 }
 
 struct UnaryMinus
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
 struct LogicalNot
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
 struct BitwiseNot
 {
 	SrcLoc src_loc;
-	ust::box</Expression/> expr;
+	Expression expr;
 }
 
+// Use "box" for nodes, which may contain "Expression" inside.
+// Make exceptions for nodes, where an expression is stored in "shared_ptr_final" for some reasons.
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
 	BooleanConstant,
-	StringLiteral,
+	ust::box</StringLiteral/>, // Terminal, but too heavy, to store by-value.
 	ComplexName,
-	Typeinfo,
-	SameType,
-	NonSyncExpression,
-	CastRef,
-	CastRefUnsafe,
-	CastImut,
-	CastMut,
-	Embed,
-	SafeExpression,
-	UnsafeExpression,
+	ust::box</Typeinfo/>,
+	ust::box</SameType/>,
+	ust::box</NonSyncExpression/>,
+	ust::box</CastRef/>,
+	ust::box</CastRefUnsafe/>,
+	ust::box</CastImut/>,
+	ust::box</CastMut/>,
+	ust::box</Embed/>,
+	ust::box</SafeExpression/>,
+	ust::box</UnsafeExpression/>,
 	MoveOperator,
-	TakeOperator,
-	Lambda,
-	TernaryOperator,
-	ReferenceToRawPointerOperator,
-	RawPointerToReferenceOperator,
+	ust::box</TakeOperator/>,
+	ust::box</Lambda/>,
+	ust::box</TernaryOperator/>,
+	ust::box</ReferenceToRawPointerOperator/>,
+	ust::box</RawPointerToReferenceOperator/>,
 	BinaryOperator,
 	IndexationOperator,
 	CallOperator,
-	MemberAccessOperator,
-	VariableInitialization,
-	AwaitOperator,
-	UnaryMinus,
-	LogicalNot,
-	BitwiseNot,
+	ust::box</MemberAccessOperator/>,
+	ust::box</VariableInitialization/>,
+	ust::box</AwaitOperator/>,
+	ust::box</UnaryMinus/>,
+	ust::box</LogicalNot/>,
+	ust::box</BitwiseNot/>,
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
@@ -394,7 +396,7 @@ type TypeName= ust::variant</ tup[
 struct SequenceInitializer
 {
 	SrcLoc src_loc;
-	ust::vector</ ust::box</ Initializer /> /> elements_initializers;
+	ust::vector</ Initializer /> elements_initializers;
 }
 
 struct StructNamedInitializer
@@ -405,7 +407,7 @@ struct StructNamedInitializer
 	{
 		SrcLoc src_loc;
 		ust::string8 name;
-		ust::box</ Initializer /> initializer;
+		Initializer initializer;
 	}
 
 	ust::vector</ Member /> members_initializers;
@@ -430,8 +432,9 @@ struct UninitializedInitializer
 type Initializer= ust::variant</ tup [
 	EmptyVariant,
 	Expression,
-	SequenceInitializer,
-	StructNamedInitializer,
+	// Non-terminals.
+	ust::box</SequenceInitializer/>,
+	ust::box</StructNamedInitializer/>,
 	ConstructorInitializer,
 	ZeroInitializer,
 	UninitializedInitializer
@@ -524,8 +527,8 @@ struct IfOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
-	ust::box</Block/> block;
-	IfAlternativeNullablePtr alternative;
+	Block block;
+	IfAlternative alternative;
 	SrcLoc end_src_loc;
 }
 
@@ -533,8 +536,8 @@ struct StaticIfOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
-	ust::box</Block/> block;
-	IfAlternativeNullablePtr alternative;
+	Block block;
+	IfAlternative alternative;
 	SrcLoc end_src_loc;
 }
 
@@ -545,8 +548,8 @@ struct IfCoroAdvanceOperator
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 variable_name;
 	Expression expression;
-	ust::box</Block/> block;
-	IfAlternativeNullablePtr alternative;
+	Block block;
+	IfAlternative alternative;
 	SrcLoc end_src_loc;
 }
 
@@ -569,7 +572,7 @@ struct SwitchOperator
 	struct Case
 	{
 		CaseValues values;
-		ust::box</Block/> block;
+		Block block;
 	}
 
 	SrcLoc src_loc;
@@ -589,14 +592,14 @@ struct WhileOperator
 	SrcLoc src_loc;
 	Expression condition;
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct LoopOperator
 {
 	SrcLoc src_loc;
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct RangeForOperator
@@ -607,7 +610,7 @@ struct RangeForOperator
 	ust::string8 loop_variable_name;
 	Expression sequence;
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct CStyleForOperator
@@ -634,7 +637,7 @@ struct CStyleForOperator
 	iteration_part_elements;
 
 	ust::optional</Label/> label_;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct BreakOperator
@@ -656,7 +659,7 @@ struct WithOperator
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 variable_name;
 	Expression expression;
-	ust::box</Block/> block;
+	Block block;
 }
 
 struct StaticAssert
@@ -694,17 +697,17 @@ type BlockElement = ust::variant</ tup[
 	IncrementOperator,
 	DecrementOperator,
 	Expression,
-	IfOperator,
-	StaticIfOperator,
-	IfCoroAdvanceOperator,
-	SwitchOperator,
-	WhileOperator,
-	LoopOperator,
-	RangeForOperator,
-	CStyleForOperator,
+	ust::box</IfOperator/>,
+	ust::box</StaticIfOperator/>,
+	ust::box</IfCoroAdvanceOperator/>,
+	ust::box</SwitchOperator/>,
+	ust::box</WhileOperator/>,
+	ust::box</LoopOperator/>,
+	ust::box</RangeForOperator/>,
+	ust::box</CStyleForOperator/>,
 	BreakOperator,
 	ContinueOperator,
-	WithOperator,
+	ust::box</WithOperator/>,
 	StaticAssert,
 	ust::shared_ptr_final</TypeAlias/>,
 	Halt,
@@ -716,13 +719,12 @@ type BlockElements= ust::vector</BlockElement/>;
 
 type IfAlternative=
 	ust::variant</ tup[
+		EmptyVariant,
 		Block,
-		IfOperator,
-		StaticIfOperator,
-		IfCoroAdvanceOperator
+		ust::box</IfOperator/>,
+		ust::box</StaticIfOperator/>,
+		ust::box</IfCoroAdvanceOperator/>
 	] />;
-
-type IfAlternativeNullablePtr= ust::box_nullable</IfAlternative/>;
 
 struct Function
 {

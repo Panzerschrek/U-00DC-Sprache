@@ -1064,13 +1064,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// If block.
 	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, if_block ) );
 	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, if_block ) );
-	var BlockElementBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block.deref() );
+	var BlockElementBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block );
 
 	var ust::vector</ReferencesGraph/> mut references_graphs;
 
 	var BlockElementBuildInfo mut block_element_build_info;
 
-	if_var( &alternative : if_operator.alternative )
+	if( !if_operator.alternative.has</Synt::EmptyVariant/>() )
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
@@ -1085,7 +1085,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
 
 		function_context.references_graph= move(references_graph_before_branching);
-		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, alternative );
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_operator.alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
@@ -1144,11 +1144,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( condition_res )
 	{
-		return BuildBlock( names_scope, function_context, static_if_operator.block.deref() );
+		return BuildBlock( names_scope, function_context, static_if_operator.block );
 	}
-	if_var( &alternative : static_if_operator.alternative )
+	if( !static_if_operator.alternative.has</Synt::EmptyVariant/>() )
 	{
-		return BuildIfAlternative( names_scope, function_context, alternative );
+		return BuildIfAlternative( names_scope, function_context, static_if_operator.alternative );
 	}
 
 	return BlockElementBuildInfo();
@@ -1447,7 +1447,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 			}
 
 			// Reuse names scope of the variable for the block.
-			if_block_build_info= self.BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.deref().elements.range() );
+			if_block_build_info= self.BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.elements.range() );
 			if( !if_block_build_info.has_terminal_instruction_inside )
 			{
 				// Destroy coro result variable.
@@ -1461,7 +1461,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	var BlockElementBuildInfo mut block_element_build_info;
 
-	if_var( &alternative : if_coro_advance_operator.alternative )
+	if( !if_coro_advance_operator.alternative.has</Synt::EmptyVariant/>() )
 	{
 		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "after_if_coro_advance\0"[0] ) );
 
@@ -1483,7 +1483,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		// Destroy temporarie in coroutine expression.
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
 
-		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, alternative );
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_coro_advance_operator.alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
@@ -1720,7 +1720,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 								: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
 					}
 
-					var SrcLoc src_loc= case_.block.deref().src_loc; // TODO - use proper src_loc;
+					var SrcLoc src_loc= case_.block.src_loc; // TODO - use proper src_loc;
 					if( !select( is_signed ? ( i64(range_constants[0]) <= i64(range_constants[1]) ) : ( range_constants[0] <= range_constants[1] ) ) )
 					{
 						REPORT_ERROR(
@@ -1745,7 +1745,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					REPORT_ERROR(
 						SwitchDuplicatedDefaultLabel,
 						names_scope,
-						case_.block.deref().src_loc ) // TODO - use proper src_loc
+						case_.block.src_loc ) // TODO - use proper src_loc
 					all_cases_are_ok= false;
 			}
 			else
@@ -2007,7 +2007,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, case_handle_block ) );
 
 		function_context.references_graph= references_graph_before_branching;
-		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block.deref() );
+		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block );
 
 		if( !block_build_info.has_terminal_instruction_inside )
 		{
@@ -2135,7 +2135,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, while_block );
 	}
 
-	auto info= BuildBlock( names_scope, function_context, while_operator.block.deref() );
+	auto info= BuildBlock( names_scope, function_context, while_operator.block );
 	if( !info.has_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
@@ -2145,13 +2145,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// Disallow outer variables state change in "continue" branches.
 	foreach( &state_after : function_context.loops_stack.back().continue_references_graphs )
 	{
-		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, while_operator.block.deref().end_src_loc );
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, while_operator.block.end_src_loc );
 	}
 
 	// Result graph state is combination of graph state before loop and graph state of all branches terminated with "break".
 	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
 	references_graphs_for_merge.push_back( move( references_graph_before_loop ) );
-	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, while_operator.block.deref().end_src_loc );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, while_operator.block.end_src_loc );
 
 	function_context.loops_stack.pop_back();
 
@@ -2181,7 +2181,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block ) );
 	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block ) );
 
-	auto loop_info= BuildBlock( names_scope, function_context, loop_operator.block.deref() );
+	auto loop_info= BuildBlock( names_scope, function_context, loop_operator.block );
 	if( !loop_info.has_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
@@ -2191,12 +2191,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// Disallow outer variables state change in "continue" branches.
 	foreach( &state_after : function_context.loops_stack.back().continue_references_graphs )
 	{
-		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, loop_operator.block.deref().end_src_loc );
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, loop_operator.block.end_src_loc );
 	}
 
 	// Result graph state is combination of graph state of all branches terminated with "break".
 	var ust::vector</ReferencesGraph/> references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
-	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, loop_operator.block.deref().end_src_loc );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, loop_operator.block.end_src_loc );
 
 	function_context.loops_stack.pop_back();
 
@@ -2386,7 +2386,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 					function_context.loops_stack.back().variable_frames_stack_size= function_context.variables_frames.size() - 1s; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 					// Reuse names scope of tuple element variable for the block.
-					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.deref().elements.range() );
+					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.elements.range() );
 					if( !block_build_info.has_terminal_instruction_inside )
 					{
 						self.CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc ); // destroy loop variable
@@ -2399,7 +2399,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 			var bool continue_branches_is_empty= function_context.loops_stack.back().continue_references_graphs.empty();
 			if( !continue_branches_is_empty )
 			{
-				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.deref().end_src_loc );
+				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.end_src_loc );
 			}
 
 			references_graphs_for_merge.append( function_context.loops_stack.back().break_references_graphs );
@@ -2454,7 +2454,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 		// References graph state after tuple-for is combination of graph state of all branches with "break" of all iterations.
 		else if( !references_graphs_for_merge.empty() )
 		{
-			function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, range_for_operator.block.deref().end_src_loc );
+			function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, range_for_operator.block.end_src_loc );
 		}
 		else
 		{
@@ -2555,7 +2555,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
 	}
 
-	auto info= BuildBlock( names_scope, function_context, c_style_for_operator.block.deref() );
+	auto info= BuildBlock( names_scope, function_context, c_style_for_operator.block );
 	if( !info.has_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block ) );
@@ -2567,7 +2567,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	// References graph state before loop iteration block is combination of references graph states of each branch terminated with "continue".
 	if( loop_iteration_block_is_reachable )
 	{
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.deref().end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.end_src_loc );
 	}
 	else
 	{
@@ -2599,10 +2599,10 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 
 	if( loop_iteration_block_is_reachable )
 	{
-		CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.deref().end_src_loc );
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.end_src_loc );
 	}
 
-	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.deref().end_src_loc );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.end_src_loc );
 
 	// Block after loop.
 	unsafe
@@ -2845,7 +2845,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	}
 
 	// Build block. Reuse scope of with variable for this block.
-	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.deref().elements.range() );
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.elements.range() );
 
 	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
@@ -3235,6 +3235,9 @@ fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
 	halt;
 }
 
+template</type T/>
+fn SingleExpressionIsUselessImpl( ust::box</T/>& e ) : bool { return U1::SingleExpressionIsUselessImpl(e.deref()); }
+
 fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& e ) : bool { ust::ignore_unused( e ); return false; }
 // Calls generally are not useless. Useless may be constexpr calls.
 // But sometimes constexpr/non-constepxr call result may depend on template context.
@@ -3276,14 +3279,14 @@ fn SingleExpressionIsUselessImpl( Synt::SameType& e ) : bool { ust::ignore_unuse
 fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& e ) : bool { ust::ignore_unused(e); return true; }
 // safe/unsafe expressions needs to be visited deeply.
 // safe/unsafe expression can't be discarded, because it has meaning.
-fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression.deref() ); }
-fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression.deref() ); }
+fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
+fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
 // Type names have no side-effects.
-fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::TupleType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::RawPointerType/>& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::CoroutineType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::ArrayType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::FunctionType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::TupleType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::RawPointerType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CoroutineType& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::shared_ptr_final</Synt::Mixin/>& e ) : bool { ust::ignore_unused(e); return true; }
 
 fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::optional_ref_imut</ Synt::Block /> @( ust::reference_notation::return_inner_references::param0 )
@@ -3292,7 +3295,7 @@ fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::option
 	{
 		if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
 		{
-			return ust::optional_ref_imut</Synt::Block/>( case_.block.deref() );
+			return ust::optional_ref_imut</Synt::Block/>( case_.block );
 		}
 	}
 
