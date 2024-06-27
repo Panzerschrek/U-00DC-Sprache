@@ -40,3 +40,26 @@ Lomajusceje rešenije potrebovalo by jedinovremennogo perepisyvanija znaciteljno
 
 Stoit sohranitj rešenije s ispoljzovanijem `constexpr` struktur i kortežej dlä ssylocnoj notaçii.
 Dannyj podhod zarekomendoval sebä kak dostatocno gibkij i v meru ponätnyj.
+
+
+## Podhod A - vossozdanije vsei ijerarhii ssylok dlä každoj peremennoj
+
+Jesli bytj tocneje, dlä každoj peremennoj/ssylki možno sozdavatj uzly grafa kontrolä ssylok dlä každoj vnutrennej ssylki, a dlä nih v svoju oceredj svoi uzly dlä ssylok i tak daleje.
+Eto obobscajet tekuscij podhod, dobavläja k nemu glubiny.
+Pri sozdanii ssylki na peremennuju, vnutrennije ssylocnyje uzly etoj ssylki sväzyvajutsä s takovymi ishodnoj peremennoj, a ih vnutrennije uzly s sootvetstvujuscimi vnutrennimi uzlamui teh uzlov i t. d.
+
+Pri sozdanii uzlov dlä argumentov funkçij sozdajutsä uzly-peremennyje dlä vseh potençialjno-dostupnyh peremennyh (ih dolžno bytj konecnoje kolicestvo).
+Dlä etogo ispoljzujetsä informaçija o tipe argumenta i tipah ssylok vnutri nego.
+
+Ne vpolne jasno, kak eta sistema budet socitatjsä s tekuscim podhodom ssylocnyh tegov.
+Dannyje tegi javläjutsä nekoj abstrakçijej.
+Po ideje možno bylo by etu abstrakçiju ne ispoljzovatj i sozdavatj dlä každoj vnutrennej ssylki svoj docernij uzel.
+Vozmožno takže vsö že ostavitj ispoljzovanije ssylocnyh tegov, kombiniruja ih s fakticeskoj ijerarhijej ssylok.
+
+V ssylocnoj notaçii nado kak-to rabotatj s glubokoj ijerarhijej ssylok.
+Glubokije ssylki nado kak-to oboznacatj.
+Naprimer, možno rasširitj tekuscuju notaçiju i sipoljzovatj cto-to vrode "2ac", "0ba", "1aac".
+
+Notaçiju vozvrascajemyh vnutrennih ssylok tože neobhodimo dorabotatj do boljšej glubiny - ctoby u tegov možno bylo ukazyvatj docernije tegi.
+
+Analogicno so sväzyvanijem ssylok - možet ponadobitjsä ukazyvatj ne toljko sväzj tegov pervogo urovnä, no i sväzj ih vnutrennih tegov.
