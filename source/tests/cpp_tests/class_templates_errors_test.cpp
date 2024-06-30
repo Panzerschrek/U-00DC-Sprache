@@ -121,6 +121,34 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
 }
 
+U_TEST( NameNotFound_ForClassTemplateArgLookup0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		class C{}
+
+		type SomeT= C</i32/>::T; // Can't access "T" here, because template args are located outside class namespace.
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 5u ) );
+}
+
+U_TEST( NameNotFound_ForClassTemplateArgLookup1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ size_type S />
+		struct C</S/>{}
+
+		auto SomeVar= C</78s/>::S; // Can't access "T" here, because template args are located outside class namespace.
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 5u ) );
+}
+
 U_TEST( ValueIsNotTemplateTest0 )
 {
 	static const char c_program_text[]=
