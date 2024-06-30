@@ -64,5 +64,14 @@ fn nomangle main() : i32
 	assert( float_vec[1s] == -22.0f );
 	assert( float_vec[2s] == -72.0f );
 
+	// Can construct vector from array.
+	var [ i32, 4 ] ints[ 7, 5, 89, -15 ];
+	var ust::vector</i32/> ints_vec = ints;
+	assert( ints_vec.size() == 4s );
+	assert( ints_vec[0s] == 7 );
+	assert( ints_vec[1s] == 5 );
+	assert( ints_vec[2s] == 89 );
+	assert( ints_vec[3s] == -15 );
+
 	return 0;
 }
