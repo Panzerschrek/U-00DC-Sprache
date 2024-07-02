@@ -1138,10 +1138,13 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	var TemplateKey mut template_key{ .template_= function_template_ptr, .template_args= result_template_args };
 
-	auto& function_name= function_syntax_element.name.back();
+	// Use inaccessible name instead of proper function name in order to avoid shadowing function template by the instantiated function.
+	// This is needed in order to call properly overloaded functions and function templates with the same name within template functions.
+	var ust::string_view8 function_name_in_namespace= "_";
+
 	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
 	{
-		auto namespace_value= prev_names_scope.lock_imut().deref().GetThisScopeValue( function_name ).try_deref();
+		auto namespace_value= prev_names_scope.lock_imut().deref().GetThisScopeValue( function_name_in_namespace ).try_deref();
 
 		auto functions_set_ptr= namespace_value.Get</FunctionsSet/>();
 		auto functions_set_lock= functions_set_ptr.try_lock_imut();
@@ -1162,8 +1165,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		result_names_scope,
 		src_loc );
 
-	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
-	auto result_namespace_value= result_names_scope.lock_imut().deref().GetThisScopeValue( function_name ).try_deref();
+	NamesScopeFillFunction( result_names_scope, template_syntax_element.function, function_name_in_namespace, function_template.class_, Synt::ClassVisibility::Public );
+	auto result_namespace_value= result_names_scope.lock_imut().deref().GetThisScopeValue( function_name_in_namespace ).try_deref();
 
 	auto result_functions_set_ptr= result_namespace_value.Get</FunctionsSet/>();
 	PrepareFunctionsSet( result_names_scope, result_functions_set_ptr.try_to_non_nullable() );
@@ -1175,6 +1178,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	// Set base template and mangled name.
 	auto mut function_variable= result_functions_set_ptr.try_lock_imut().deref().functions.front();
+
+	auto& function_name= function_syntax_element.name.back();
 
 	auto mut name_mangled=
 		mangler_.deref().MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name.range(), function_variable.t, result_template_args );

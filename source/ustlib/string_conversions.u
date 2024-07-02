@@ -196,43 +196,43 @@ fn to_string32( size_type x ) : string32
 }
 
 template</type C/>
-fn to_string( i8 x ) : ust::string_base</C/>
+fn to_string( i8 x ) :string_base</C/>
 {
-	return ust::to_string</C/>( i64(x) );
+	return to_string</C/>( i64(x) );
 }
 
 template</type C/>
-fn to_string( u8 x ) : ust::string_base</C/>
+fn to_string( u8 x ) : string_base</C/>
 {
-	return ust::to_string</C/>( u64(x) );
+	return to_string</C/>( u64(x) );
 }
 
 template</type C/>
-fn to_string( i16 x ) : ust::string_base</C/>
+fn to_string( i16 x ) : string_base</C/>
 {
-	return ust::to_string</C/>( i64(x) );
+	return to_string</C/>( i64(x) );
 }
 
 template</type C/>
-fn to_string( u16 x ) : ust::string_base</C/>
+fn to_string( u16 x ) : string_base</C/>
 {
-	return ust::to_string</C/>( u64(x) );
+	return to_string</C/>( u64(x) );
 }
 
 template</type C/>
-fn to_string( i32 x ) : ust::string_base</C/>
+fn to_string( i32 x ) : string_base</C/>
 {
-	return ust::to_string</C/>( i64(x) );
+	return to_string</C/>( i64(x) );
 }
 
 template</type C/>
-fn to_string( u32 x ) : ust::string_base</C/>
+fn to_string( u32 x ) : string_base</C/>
 {
-	return ust::to_string</C/>( u64(x) );
+	return to_string</C/>( u64(x) );
 }
 
 template</type C/>
-fn to_string( i64 x ) : ust::string_base</C/>
+fn to_string( i64 x ) : string_base</C/>
 {
 	if( x >= 0i64 )
 	{
@@ -241,7 +241,7 @@ fn to_string( i64 x ) : ust::string_base</C/>
 	else
 	{
 		// TODO - optimize, do not concatenate strings.
-		var ust::string_base</C/> mut result;
+		var string_base</C/> mut result;
 		result.push_back( C("-"c8) );
 		result += to_string_impl</C/>( u64(-x) );
 		return result;
@@ -249,7 +249,7 @@ fn to_string( i64 x ) : ust::string_base</C/>
 }
 
 template</type C/>
-fn to_string( u64 x ) : ust::string_base</C/>
+fn to_string( u64 x ) : string_base</C/>
 {
 	return to_string_impl</C/>(x);
 }
@@ -258,11 +258,11 @@ fn to_string( u64 x ) : ust::string_base</C/>
 // TODO - optimize this.
 
 template</type C/>
-fn to_string_impl( u64 x ) : ust::string_base</C/>
+fn to_string_impl( u64 x ) : string_base</C/>
 {
 	auto constexpr zero_char= C("0"c8);
 
-	var ust::string_base</C/> mut result;
+	var string_base</C/> mut result;
 
 	if( x == 0u64 )
 	{

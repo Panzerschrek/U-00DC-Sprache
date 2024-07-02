@@ -72,6 +72,16 @@ void CodeBuilder::NamesScopeFill(
 		return; // process out of line functions later.
 
 	const std::string& func_name= function_declaration.name.back().name;
+	NamesScopeFillFunction( names_scope, function_declaration, func_name, base_class, visibility );
+}
+
+void CodeBuilder::NamesScopeFillFunction(
+	NamesScope& names_scope,
+	const Synt::Function& function_declaration,
+	const std::string_view func_name,
+	const ClassPtr base_class,
+	const ClassMemberVisibility visibility )
+{
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.src_loc );
 

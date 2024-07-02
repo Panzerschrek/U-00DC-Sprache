@@ -134,7 +134,7 @@ private:
 	template</type T/>
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : ust::optional</NamesScopeValue/>
 	{
-		return this.ResolveValueImpl( names_scope, function_context, t.deref() );
+		return ResolveValueImpl( names_scope, function_context, t.deref() );
 	}
 
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NameLookup& name_lookup ) : ust::optional</NamesScopeValue/>;
@@ -213,6 +213,7 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
+	fn NamesScopeFillFunction( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::string_view8 func_name, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
@@ -305,7 +306,7 @@ private:
 	template</type T/>
 	fn PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : Type
 	{
-		return this.PrepareTypeImpl( names_scope, function_context, t.deref() );
+		return PrepareTypeImpl( names_scope, function_context, t.deref() );
 	}
 
 	fn PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
@@ -340,7 +341,7 @@ private:
 	template</type T/>
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::box</T/>& t ) : LLVMValueRef
 	{
-		return this.ApplyInitializerImpl( names_scope, function_context, variable_ptr, t.deref() );
+		return ApplyInitializerImpl( names_scope, function_context, variable_ptr, t.deref() );
 	}
 
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
@@ -387,7 +388,7 @@ private:
 	template</type T/>
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : BlockElementBuildInfo
 	{
-		return this.BuildBlockElementImpl( names_scope, function_context, t.deref() );
+		return BuildBlockElementImpl( names_scope, function_context, t.deref() );
 	}
 
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo;
@@ -457,7 +458,7 @@ private:
 	template</type T/>
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : Value
 	{
-		return this.BuildExpressionCodeImpl( names_scope, function_context, t.deref() );
+		return BuildExpressionCodeImpl( names_scope, function_context, t.deref() );
 	}
 
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;

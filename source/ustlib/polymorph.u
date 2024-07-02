@@ -172,7 +172,7 @@ fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : $
 		while( $>(type_id_table).parent_type_id_table != nullptr</type_id_table_element/>() )
 		{
 			auto ptr_corrected= ptr + $>(type_id_table).parent_offset;
-			auto res= ust::polymorph_impl::polymorph_cast_r</To/>( ptr_corrected, $>(type_id_table).parent_type_id_table );
+			auto res= polymorph_cast_r</To/>( ptr_corrected, $>(type_id_table).parent_type_id_table );
 			if( !is_nullptr(res) )
 			{
 				return res;

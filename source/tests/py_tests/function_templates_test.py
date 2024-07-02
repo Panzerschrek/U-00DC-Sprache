@@ -483,6 +483,50 @@ def RecursiveTemplateFunctionCall_Test0():
 	assert( call_result == ( 9 + 10 + 11 + 12 + 13 + 14 ) )
 
 
+def NoShadowingInsideTemplateFunction_Test0():
+	c_program_text= """
+		template</ type T />
+		fn DoubleIt( T x ) : T
+		{
+			static_if( same_type</T, f64/> )
+			{
+				return x * 2.0;
+			}
+			else
+			{
+				// Should access here template function itself to instantiate it, rather than "DoubleIt" for current "T".
+				return T( DoubleIt( f64(x) ) );
+			}
+		}
+		fn Foo( u32 x ) : u32
+		{
+			return DoubleIt( x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooj", 67 ) == 67 * 2 )
+	assert( tests_lib.run_function( "_Z3Fooj", 122 ) == 122 * 2 )
+
+
+def NoShadowingInsideTemplateFunction_Test1():
+	c_program_text= """
+		template</ type T />
+		fn TripleIt( T x ) : T
+		{
+			// Should access here the whole functions set named "TripleIt", not only currently instantiated function "TripleIt".
+			return T( TripleIt( f64(x) ) );
+		}
+		fn TripleIt(f64 x) : f64 { return x * 3.0; }
+		fn Foo( i32 x ) : i32
+		{
+			return TripleIt( x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooi", 12 ) == 12 * 3 )
+	assert( tests_lib.run_function( "_Z3Fooi", 578 ) == 578 * 3 )
+
+
 def Specialization_Test0():
 	c_program_text= """
 		template</ type T /> struct Box{}

@@ -1098,6 +1098,10 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	const SrcLoc& src_loc,
 	const TemplateFunctionPreparationResult& template_function_preparation_result )
 {
+	// Use inaccessible name instead of proper function name in order to avoid shadowing function template by the instantiated function.
+	// This is needed in order to call properly overloaded functions and function templates with the same name within template functions.
+	const std::string_view func_name_in_namespace= "_";
+
 	const FunctionTemplatePtr& function_template_ptr= template_function_preparation_result.function_template;
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function;
@@ -1135,7 +1139,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		//Function for this template arguments already generated.
 		const NamesScopePtr template_parameters_space= it->second;
 		U_ASSERT( template_parameters_space != nullptr );
-		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->value.GetFunctionsSet();
+		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name_in_namespace )->value.GetFunctionsSet();
 		if( !result_functions_set.functions.empty() )
 			return &result_functions_set.functions.front();
 		else
@@ -1146,8 +1150,8 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
 	// First, prepare only as prototype.
-	NamesScopeFill( *template_args_namespace, *function_template.syntax_element->function, function_template.base_class );
-	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name )->value.GetFunctionsSet();
+	NamesScopeFillFunction( *template_args_namespace, *function_template.syntax_element->function, func_name_in_namespace, function_template.base_class, ClassMemberVisibility::Public );
+	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name_in_namespace )->value.GetFunctionsSet();
 	PrepareFunctionsSet( *template_args_namespace, result_functions_set );
 
 	if( result_functions_set.functions.empty() )
