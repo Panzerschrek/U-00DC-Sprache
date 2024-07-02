@@ -1307,6 +1307,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFillFunction( NamesScope& names_scope, const Synt::Function& function_declaration, std::string_view func_name, ClassPtr base_class, ClassMemberVisibility visibility );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
 	void FillClassNamesScope( ClassPtr class_type, std::string_view class_name, Synt::ClassKindAttribute class_kind, const Synt::ClassElementsList& class_elements, ClassMemberVisibility initial_visibility );
