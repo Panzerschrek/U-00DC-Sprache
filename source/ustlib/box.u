@@ -93,7 +93,7 @@ struct box_hasher
 	template</ type T />
 	fn hash( box</T/>& b ) : size_type
 	{
-		return ust::default_hasher::hash(b.deref());
+		return default_hasher::hash(b.deref());
 	}
 }
 

@@ -37,14 +37,14 @@ fn call_destructor( T&mut t ) unsafe
 	{
 		for( var size_type mut i(0); i < typeinfo</T/>.element_count; ++i )
 		{
-			unsafe( ust::call_destructor( t[i] ) );
+			unsafe( call_destructor( t[i] ) );
 		}
 	}
 	else static_if( typeinfo</T/>.is_tuple )
 	{
 		for( &mut el : t )
 		{
-			unsafe( ust::call_destructor( el ) );
+			unsafe( call_destructor( el ) );
 		}
 	}
 	else static_if(
@@ -75,14 +75,14 @@ fn call_default_constructor( T&mut t ) unsafe
 	{
 		for( var size_type mut i(0); i < typeinfo</T/>.element_count; ++i )
 		{
-			unsafe( ust::call_default_constructor( t[i] ) );
+			unsafe( call_default_constructor( t[i] ) );
 		}
 	}
 	else static_if( typeinfo</T/>.is_tuple )
 	{
 		for( &mut el : t )
 		{
-			unsafe( ust::call_default_constructor( el ) );
+			unsafe( call_default_constructor( el ) );
 		}
 	}
 }
