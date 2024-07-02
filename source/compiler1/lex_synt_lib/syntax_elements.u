@@ -45,13 +45,13 @@ fn GetSrcLocImpl( T& t ) : SrcLoc
 template</type T/>
 fn GetSrcLocImpl( ust::box</T/>& t ) : SrcLoc
 {
-	return Synt::GetSrcLocImpl(t.deref());
+	return GetSrcLocImpl(t.deref());
 }
 
 template</type T, bool is_nullable/>
 fn GetSrcLocImpl( ust::shared_ptr_final_base</T, is_nullable/>& t ) : SrcLoc
 {
-	return Synt::GetSrcLocImpl(t.deref());
+	return GetSrcLocImpl(t.deref());
 }
 
 template</type Tup/>
@@ -59,7 +59,7 @@ fn GetSrcLocImpl( ust::variant</Tup/>& t ) : SrcLoc
 {
 	variant_visit( &el : t )
 	{
-		return Synt::GetSrcLocImpl(el);
+		return GetSrcLocImpl(el);
 	}
 	halt;
 }

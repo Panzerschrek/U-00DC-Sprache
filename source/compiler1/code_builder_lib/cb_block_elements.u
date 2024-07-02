@@ -3234,7 +3234,7 @@ fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
 }
 
 template</type T/>
-fn SingleExpressionIsUselessImpl( ust::box</T/>& e ) : bool { return U1::SingleExpressionIsUselessImpl(e.deref()); }
+fn SingleExpressionIsUselessImpl( ust::box</T/>& e ) : bool { return SingleExpressionIsUselessImpl(e.deref()); }
 
 fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& e ) : bool { ust::ignore_unused( e ); return false; }
 // Calls generally are not useless. Useless may be constexpr calls.

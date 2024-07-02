@@ -21,7 +21,7 @@ namespace ToStringHelper
 template</type T/>
 fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
 {
-	return ToStringHelper::ToString( b.deref() );
+	return ToString( b.deref() );
 }
 
 fn ToString( FundamentalType& fundamental_type ) : ust::string8
