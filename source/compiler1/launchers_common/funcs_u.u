@@ -312,7 +312,7 @@ fn GetTestsTargetTripleStr() : ust::string8
 fn ProcessCodeBuilderErrors(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data,
-	U1::ErrorsContainer& errors ) unsafe
+	ErrorsContainer& errors ) unsafe
 {
 	foreach( & err : errors )
 	{
@@ -324,7 +324,7 @@ fn ProcessCodeBuilderErrors(
 			if( !err.errors_context.empty() )
 			{
 				auto lock= err.errors_context.try_lock_imut();
-				var U1::TemplateErrorsContext& errors_context= lock.deref();
+				var TemplateErrorsContext& errors_context= lock.deref();
 
 				var U1_StringView context_name{ .data= cast_mut(errors_context.context_name).data(), .size= errors_context.context_name.size() };
 				var U1_StringView args_description{ .data= cast_mut(errors_context.args_description).data(), .size= errors_context.args_description.size() };
@@ -364,9 +364,9 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 {
 	return
 		unsafe( ust::array_view_imut</U1_SourceFile/>( source_files, source_file_count ) ).iter().map(
-			lambda[]( U1_SourceFile& source_file ) : U1::TestVfs::SourceEntry
+			lambda[]( U1_SourceFile& source_file ) : TestVfs::SourceEntry
 			{
-				return U1::TestVfs::SourceEntry
+				return TestVfs::SourceEntry
 				{
 					.file_path= unsafe( StringToArrayView( source_file.file_path ) ),
 					.file_content= unsafe( StringToArrayView( source_file.file_content ) ),
@@ -522,7 +522,7 @@ private:
 		unsafe
 		{
 			auto &mut str= cast_mut( ust::int_to_ref</ust::string8/>(user_data) );
-			str= U1::StringToArrayView( result_path_normalized );
+			str= StringToArrayView( result_path_normalized );
 		}
 	}
 
