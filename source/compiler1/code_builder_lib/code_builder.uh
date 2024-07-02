@@ -213,6 +213,7 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
+	fn NamesScopeFillFunction( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::string_view8 func_name, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
