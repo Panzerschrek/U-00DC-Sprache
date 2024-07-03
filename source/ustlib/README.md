@@ -35,6 +35,7 @@ Other functionality:
 * Math functions (math.u)
 * Memory helpers (memory.u)
 * Minimum/maximum functions (minmax.u)
+* Mixins-related helpers (mixin_utils.u)
 * Functions for polymorph objects manipulation (polymorph.u)
 * Pthread library prototypes (used internally) (pthread.u)
 * Reference notation helpers (reference_notation.u)
@@ -43,6 +44,7 @@ Other functionality:
 * Number to string conversion utilities (string_conversions.u)
 * Thread class (thread.u)
 * Various helpers for types manipulation/type checks (type_traits.u)
+* Some useful macros for effective usage of some containers (ustlin_macros.u)
 * Volatile memory operations support (volatile.u)
 
 
