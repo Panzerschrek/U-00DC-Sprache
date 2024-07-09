@@ -55,19 +55,19 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup_completion ), name_lookup_completion.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_name_fetch )
 {
-	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch ), names_scope_name_fetch->src_loc );
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch ), names_scope_name_fetch.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch_completion )
 {
-	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch_completion ), names_scope_name_fetch_completion->src_loc );
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch_completion ), names_scope_name_fetch_completion.src_loc );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParameterization>& template_parameterization )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization )
 {
-	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parameterization ), template_parameterization->src_loc );
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parameterization ), template_parameterization.src_loc );
 }
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )

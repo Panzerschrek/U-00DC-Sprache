@@ -292,9 +292,9 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParameterization>& template_parameterization );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_name_fetch );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name );

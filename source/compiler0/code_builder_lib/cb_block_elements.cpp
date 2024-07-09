@@ -20,74 +20,79 @@ namespace
 
 // Return true, if root of expression is useless in single expression block element.
 // "useless" meant that expression root is useless, not whole expression.
+bool SingleExpressionIsUseless( const Synt::Expression& expression );
+
+bool SingleExpressionIsUselessImpl( const Synt::EmptyVariant& ) { return false; }
+// Calls generally are not useless. Useless may be constexpr calls.
+// But sometimes constexpr/non-constepxr call result may depend on template context.
+// So, in order to avoid generating too many errors, assume, that all calls are not useless.
+bool SingleExpressionIsUselessImpl( const Synt::CallOperator& ) { return false; }
+bool SingleExpressionIsUselessImpl( const Synt::CallOperatorSignatureHelp& ) { return false; }
+// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
+bool SingleExpressionIsUselessImpl( const Synt::IndexationOperator& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::MemberAccessOperator& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::MemberAccessOperatorCompletion& ) { return true; }
+// It's useless to initialize new variable and not using it.
+bool SingleExpressionIsUselessImpl( const Synt::VariableInitialization& ) { return true; }
+// Await operator is basically an operator for an async call.
+bool SingleExpressionIsUselessImpl( const Synt::AwaitOperator& ) { return false; }
+bool SingleExpressionIsUselessImpl( const Synt::UnaryMinus& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::LogicalNot& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::BitwiseNot& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::BinaryOperator& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::TernaryOperator& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::ReferenceToRawPointerOperator& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::RawPointerToReferenceOperator& ) { return true; }
+// Name resolving itself has no side effects.
+bool SingleExpressionIsUselessImpl( const Synt::RootNamespaceNameLookup& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::RootNamespaceNameLookupCompletion& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::NameLookup& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::NameLookupCompletion& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::TypeofTypeName& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::NamesScopeNameFetch& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::NamesScopeNameFetchCompletion& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::TemplateParameterization& ) { return true; }
+// Simple constant expressions have no side effects.
+bool SingleExpressionIsUselessImpl( const Synt::NumericConstant& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::BooleanConstant& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::StringLiteral& ) { return true; }
+// Move and take have side effects.
+bool SingleExpressionIsUselessImpl( const Synt::MoveOperator& ) { return false; }
+bool SingleExpressionIsUselessImpl( const Synt::MoveOperatorCompletion& ) { return false; }
+bool SingleExpressionIsUselessImpl( const Synt::TakeOperator& ) { return false; }
+// There is no reason not to use a declared lambda.
+bool SingleExpressionIsUselessImpl( const Synt::Lambda& ) { return true; }
+// Casts have no side effects.
+bool SingleExpressionIsUselessImpl( const Synt::CastMut& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::CastImut& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::CastRef& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::CastRefUnsafe& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::Embed& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::TypeInfo& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::SameType& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::NonSyncExpression& ) { return true; }
+// safe/unsafe expressions needs to be visited deeply.
+// safe/unsafe expression can't be discarded, because it has meaning.
+bool SingleExpressionIsUselessImpl( const Synt::SafeExpression& safe_expression ) { return SingleExpressionIsUseless( safe_expression.expression ); }
+bool SingleExpressionIsUselessImpl( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionIsUseless( unsafe_expression.expression ); }
+// Type names have no side-effects.
+bool SingleExpressionIsUselessImpl( const Synt::ArrayTypeName& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::FunctionType& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::TupleType& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::RawPointerType& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::CoroutineType& ) { return true; }
+// Reasonably assume expression mixins are useless.
+bool SingleExpressionIsUselessImpl( const Synt::Mixin& ) { return true; }
+
+template<typename T>
+bool SingleExpressionIsUselessImpl( const std::unique_ptr<T>& t )
+{
+	return SingleExpressionIsUselessImpl(*t);
+}
+
 bool SingleExpressionIsUseless( const Synt::Expression& expression )
 {
-	struct Visitor
-	{
-		bool operator()( const Synt::EmptyVariant& ) { return false; }
-		// Calls generally are not useless. Useless may be constexpr calls.
-		// But sometimes constexpr/non-constepxr call result may depend on template context.
-		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
-		bool operator()( const std::unique_ptr<const Synt::CallOperator>& ) { return false; }
-		bool operator()( const std::unique_ptr<const Synt::CallOperatorSignatureHelp>& ) { return false; }
-		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-		bool operator()( const std::unique_ptr<const Synt::IndexationOperator>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperator>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperatorCompletion>& ) { return true; }
-		// It's useless to initialize new variable and not using it.
-		bool operator()( const std::unique_ptr<const Synt::VariableInitialization>& ) { return true; }
-		// Await operator is basically an operator for an async call.
-		bool operator()( const std::unique_ptr<const Synt::AwaitOperator>& ) { return false; }
-		bool operator()( const std::unique_ptr<const Synt::UnaryMinus>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::LogicalNot>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::BitwiseNot>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::BinaryOperator>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::TernaryOperator>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::ReferenceToRawPointerOperator>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::RawPointerToReferenceOperator>& ) { return true; }
-		// Name resolving itself has no side effects.
-		bool operator()( const Synt::RootNamespaceNameLookup& ) { return true; }
-		bool operator()( const Synt::RootNamespaceNameLookupCompletion& ) { return true; }
-		bool operator()( const Synt::NameLookup& ) { return true; }
-		bool operator()( const Synt::NameLookupCompletion& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::TypeofTypeName>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetch>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::TemplateParameterization>& ) { return true; }
-		// Simple constant expressions have no side effects.
-		bool operator()( const Synt::NumericConstant& ) { return true; }
-		bool operator()( const Synt::BooleanConstant& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::StringLiteral>& ) { return true; }
-		// Move and take have side effects.
-		bool operator()( const Synt::MoveOperator& ) { return false; }
-		bool operator()( const Synt::MoveOperatorCompletion& ) { return false; }
-		bool operator()( const std::unique_ptr<const Synt::TakeOperator>& ) { return false; }
-		// There is no reason not to use a declared lambda.
-		bool operator()( const std::unique_ptr<const Synt::Lambda>& ) { return true; }
-		// Casts have no side effects.
-		bool operator()( const std::unique_ptr<const Synt::CastMut>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::CastImut>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::CastRef>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::CastRefUnsafe>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::Embed>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::TypeInfo>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::SameType>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::NonSyncExpression>& ) { return true; }
-		// safe/unsafe expressions needs to be visited deeply.
-		// safe/unsafe expression can't be discarded, because it has meaning.
-		bool operator()( const std::unique_ptr<const Synt::SafeExpression>& safe_expression ) { return SingleExpressionIsUseless( safe_expression->expression ); }
-		bool operator()( const std::unique_ptr<const Synt::UnsafeExpression>& unsafe_expression ) { return SingleExpressionIsUseless( unsafe_expression->expression ); }
-		// Type names have no side-effects.
-		bool operator()( const std::unique_ptr<const Synt::ArrayTypeName>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::FunctionType>& ) { return true; }
-		bool operator()( const Synt::TupleType& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::RawPointerType>& ) { return true; }
-		bool operator()( const std::unique_ptr<const Synt::CoroutineType>& ) { return true; }
-		// Reasonably assume expression mixins are useless.
-		bool operator()( const std::unique_ptr<const Synt::Mixin>& ) { return true; }
-	};
-
-	return std::visit( Visitor(), expression );
+	return std::visit( []( const auto& el ) { return SingleExpressionIsUselessImpl(el); }, expression );
 }
 
 } // namespace
