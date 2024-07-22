@@ -95,6 +95,7 @@ def main():
 		"switch_operator_test",
 		"syntax_errors_test",
 		"take_operator_test",
+		"templates_as_template_params_test",
 		"ternary_operator_errors_test",
 		"ternary_operator_test",
 		"tuples_test",

@@ -211,23 +211,23 @@ void CodeBuilder::ProcessTemplateParams(
 
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
-		if( params[i].param_type == std::nullopt )
-			continue;
+		if( const auto type_name = std::get_if<Synt::TypeName>( &params[i].kind_payload ) )
+		{
+			template_parameters[i].type=
+				CreateTemplateSignatureParameter(
+					names_scope,
+					*global_function_context_,
+					template_parameters,
+					template_parameters_usage_flags,
+					*type_name );
+			global_function_context_->args_preevaluation_cache.clear();
 
-		template_parameters[i].type=
-			CreateTemplateSignatureParameter(
+			CheckSignatureParamIsValidForTemplateValueArgumentType(
+				*template_parameters[i].type,
 				names_scope,
-				*global_function_context_,
-				template_parameters,
-				template_parameters_usage_flags,
-				*params[i].param_type );
-		global_function_context_->args_preevaluation_cache.clear();
-
-		CheckSignatureParamIsValidForTemplateValueArgumentType(
-			*template_parameters[i].type,
-			names_scope,
-			params[i].name,
-			template_parameters[i].src_loc );
+				params[i].name,
+				template_parameters[i].src_loc );
+		}
 	}
 }
 
