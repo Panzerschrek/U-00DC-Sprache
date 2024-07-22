@@ -3863,12 +3863,13 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
 			NextLexem();
-			params.back().kind_payload= TemplateBase::TypeParamTag{};
-		}
-		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
-		{
-			NextLexem();
-			params.back().kind_payload= TemplateBase::TemplateParamTag{};
+			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
+			{
+				NextLexem();
+				params.back().kind_payload= TemplateBase::TypeTemplateParamTag{};
+			}
+			else
+				params.back().kind_payload= TemplateBase::TypeParamTag{};
 		}
 		else
 			params.back().kind_payload= ParseTypeName();

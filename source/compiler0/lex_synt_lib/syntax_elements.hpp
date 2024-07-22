@@ -1330,13 +1330,13 @@ struct TemplateBase
 		: src_loc(src_loc) {}
 
 	struct TypeParamTag{};
-	struct TemplateParamTag{};
+	struct TypeTemplateParamTag{};
 
 	struct Param
 	{
 		SrcLoc src_loc;
-		// Type param or template param or variable param with given type.
-		std::variant<TypeParamTag, TemplateParamTag, TypeName> kind_payload;
+		// Type param or type template param or variable param with given type.
+		std::variant<TypeParamTag, TypeTemplateParamTag, TypeName> kind_payload;
 		std::string name;
 	};
 

@@ -1057,7 +1057,7 @@ void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostr
 		}
 		else if( std::holds_alternative<TemplateBase::TypeParamTag>( param.kind_payload ) )
 			stream << Keyword( Keywords::type_ ) << " ";
-		else if( std::holds_alternative<TemplateBase::TemplateParamTag>( param.kind_payload ) )
+		else if( std::holds_alternative<TemplateBase::TypeTemplateParamTag>( param.kind_payload ) )
 			stream << Keyword( Keywords::template_ ) << " ";
 		else U_ASSERT(false);
 

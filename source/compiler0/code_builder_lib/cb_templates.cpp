@@ -207,7 +207,7 @@ void CodeBuilder::ProcessTemplateParams(
 
 		if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
 			template_parameters.back().kind_payload= TemplateBase::TypeParamTag{};
-		else if( std::holds_alternative< Synt::TemplateBase::TemplateParamTag >( param.kind_payload ) )
+		else if( std::holds_alternative< Synt::TemplateBase::TypeTemplateParamTag >( param.kind_payload ) )
 			template_parameters.back().kind_payload= TemplateBase::TypeTemplateParamTag{};
 		else if( std::holds_alternative< Synt::TypeName >( param.kind_payload ) )
 			template_parameters.back().kind_payload= TemplateBase::VariableParam();

@@ -3,7 +3,7 @@ from py_tests_common import *
 
 def TemplateTemplateParamDeclaration_Test0():
 	c_program_text= """
-		template</ template T />
+		template</ type template T />
 		struct S
 		{
 			T</i32/> x;
@@ -14,7 +14,7 @@ def TemplateTemplateParamDeclaration_Test0():
 
 	def TemplateTemplateParamDeclaration_Test1():
 		c_program_text= """
-			template</ template T />
+			template</ type template T />
 			fn Foo( T</i32/> arg ){}
 		"""
 		tests_lib.build_program( c_program_text )
@@ -22,7 +22,7 @@ def TemplateTemplateParamDeclaration_Test0():
 
 def TemplateTypeTemplateArg_Test0():
 	c_program_text= """
-		template</template Container/>
+		template</type template Container/>
 		struct IntBox
 		{
 			Container</i32/> container;
@@ -44,7 +44,7 @@ def TemplateTypeTemplateArg_Test0():
 
 def TemplateTypeTemplateArg_Test1():
 	c_program_text= """
-		template</type ContainedT, template Container/>
+		template</type ContainedT, type template Container/>
 		struct ContainerBox
 		{
 			Container</ContainedT/> container;
@@ -68,7 +68,7 @@ def TemplateTypeTemplateArg_Test2():
 	c_program_text= """
 		template</type T/> class Vec{}
 
-		template</ template Container, type ContainedT/>
+		template</ type template Container, type ContainedT/>
 		fn MakeContainer() : Container</ContainedT/>
 		{
 			return Container</ContainedT/>();
