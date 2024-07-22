@@ -27,6 +27,7 @@ public:
 		bool operator==( const VariableParam& other ) const;
 	};
 
+	// TODO - do we really need this?
 	struct TypeTemplateParam
 	{
 		TypeTemplatePtr type_template;

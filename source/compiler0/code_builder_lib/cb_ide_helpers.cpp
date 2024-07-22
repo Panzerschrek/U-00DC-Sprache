@@ -747,10 +747,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 	}
 	else
 	{
-		if( const auto param_type = std::get_if<TemplateSignatureParam>( &param.kind_payload ) )
+		if( const auto variable_param = std::get_if<TemplateBase::VariableParam>( &param.kind_payload ) )
 		{
 			// Create variable arg.
-			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param_type );
+			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, variable_param->type );
 			if( const auto t= std::get_if<Type>( &type_arg ) )
 			{
 				TemplateVariableArg arg;
@@ -778,7 +778,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
 			return t;
 		}
-		else if( std::holds_alternative< TemplateBase::TemplateParamTag >( param.kind_payload ) )
+		else if( std::holds_alternative< TemplateBase::TypeTemplateParamTag >( param.kind_payload ) )
 		{
 			// TODO
 		}

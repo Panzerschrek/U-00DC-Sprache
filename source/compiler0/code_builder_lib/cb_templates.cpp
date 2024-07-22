@@ -208,9 +208,9 @@ void CodeBuilder::ProcessTemplateParams(
 		if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
 			template_parameters.back().kind_payload= TemplateBase::TypeParamTag{};
 		else if( std::holds_alternative< Synt::TemplateBase::TemplateParamTag >( param.kind_payload ) )
-			template_parameters.back().kind_payload= TemplateBase::TemplateParamTag{};
-		else if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
-			template_parameters.back().kind_payload= TemplateSignatureParam();
+			template_parameters.back().kind_payload= TemplateBase::TypeTemplateParamTag{};
+		else if( std::holds_alternative< Synt::TypeName >( param.kind_payload ) )
+			template_parameters.back().kind_payload= TemplateBase::VariableParam();
 
 		template_parameters_usage_flags.push_back(false);
 	}
@@ -221,7 +221,7 @@ void CodeBuilder::ProcessTemplateParams(
 	{
 		if( const auto type_name = std::get_if<Synt::TypeName>( &params[i].kind_payload ) )
 		{
-			template_parameters[i].kind_payload=
+			auto variable_param_type=
 				CreateTemplateSignatureParameter(
 					names_scope,
 					*global_function_context_,
@@ -231,10 +231,12 @@ void CodeBuilder::ProcessTemplateParams(
 			global_function_context_->args_preevaluation_cache.clear();
 
 			CheckSignatureParamIsValidForTemplateValueArgumentType(
-				std::get< TemplateSignatureParam >( template_parameters[i].kind_payload ),
+				variable_param_type,
 				names_scope,
 				params[i].name,
 				template_parameters[i].src_loc );
+
+			std::get<TemplateBase::VariableParam>(template_parameters[i].kind_payload).type= std::move(variable_param_type);
 		}
 	}
 }
@@ -658,7 +660,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		}
 		else if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
 		{
-			if( const auto type_signature_param= std::get_if< TemplateSignatureParam >( &kind_payload ) )
+			if( const auto variable_param= std::get_if< TemplateBase::VariableParam >( &kind_payload ) )
 			{
 				if( !given_variable->type.IsValidForTemplateVariableArgument() || given_variable->constexpr_value == nullptr )
 				{
@@ -666,7 +668,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					return false;
 				}
 
-				if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, *type_signature_param ) )
+				if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, variable_param->type ) )
 					return false;
 
 				// Create global variable for given variable.
@@ -686,7 +688,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		}
 		else if( const auto given_type_template= std::get_if<TypeTemplatePtr>( &template_arg ) )
 		{
-			if( std::holds_alternative< TemplateBase::TypeParamTag >( kind_payload ) )
+			if( std::holds_alternative< TemplateBase::TypeTemplateParamTag >( kind_payload ) )
 			{
 				TypeTemplatesSet type_templates_set;
 				type_templates_set.type_templates.push_back( *given_type_template );
@@ -1158,6 +1160,11 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			template_args.push_back( *type );
 		else if( const auto variable= value->value.GetVariable() )
 			template_args.push_back( TemplateVariableArg( *variable ) );
+		else if( const auto type_template= value->value.GetTypeTemplatesSet() )
+		{
+			U_ASSERT( type_template->type_templates.size() == 1 );
+			template_args.push_back( type_template->type_templates.front() );
+		}
 		else { /* generate error later */ }
 	}
 
@@ -1307,6 +1314,13 @@ OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 					new_template->known_template_args.push_back( *type );
 				else if( const auto variable= val->value.GetVariable() )
 					new_template->known_template_args.push_back( TemplateVariableArg( *variable ) );
+				else if( const auto type_templates_set= val->value.GetTypeTemplatesSet() )
+				{
+					if( type_templates_set->type_templates.size() == 1 )
+						new_template->known_template_args.push_back( type_templates_set->type_templates.front() );
+					else
+						break;
+				}
 				else
 					break; // End at first yet not known argument.
 			}
