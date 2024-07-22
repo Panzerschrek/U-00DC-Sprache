@@ -159,6 +159,11 @@ const TemplateSignatureParam::VariableParam* TemplateSignatureParam::GetVariable
 	return std::get_if<VariableParam>( &something_ );
 }
 
+const TemplateSignatureParam::TypeTemplateParam* TemplateSignatureParam::GetTypeTemplateParam() const
+{
+	return std::get_if<TypeTemplateParam>( &something_ );
+}
+
 const TemplateSignatureParam::TemplateParam* TemplateSignatureParam::GetTemplateParam() const
 {
 	return std::get_if<TemplateParam>( &something_ );

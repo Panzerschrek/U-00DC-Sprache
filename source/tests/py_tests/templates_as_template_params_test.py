@@ -80,3 +80,17 @@ def TemplateTypeTemplateArg_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TemplateTypeTemplateParamOverloading_Test0():
+	c_program_text= """
+		template<//> struct S{}
+		template<//> struct T{}
+
+		template</ type template A /> struct SChecker{ auto is_s = false; }
+		template</ /> struct SChecker</ S /> { auto is_s = true; }
+
+		static_assert(  SChecker</S/>::is_s );
+		static_assert( !SChecker</T/>::is_s );
+	"""
+	tests_lib.build_program( c_program_text )

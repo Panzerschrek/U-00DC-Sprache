@@ -122,6 +122,14 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, then template parameter.
 		else U_ASSERT(false);
 	}
+	else if( left_template_parameter.GetTypeTemplateParam() != nullptr )
+	{
+		if( right_template_parameter.GetTypeTemplateParam() != nullptr )
+			return ConversionsCompareResult::Same;
+		else if( right_template_parameter.IsTemplateParam() )
+			return ConversionsCompareResult::LeftIsBetter; // Type template is more specialized, then template parameter.
+		else U_ASSERT(false);
+	}
 	else if( const auto l_array= left_template_parameter.GetArray() )
 	{
 		if( right_template_parameter.IsType() )
@@ -268,6 +276,8 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, then template parameter.
 		else if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, then template parameter.
+		else if( right_template_parameter.GetTypeTemplateParam() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Type template is more specialized, then template parameter.
 		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.GetArray() != nullptr )

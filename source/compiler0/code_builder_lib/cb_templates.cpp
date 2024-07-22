@@ -566,8 +566,14 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 		return TemplateSignatureParam::VariableParam{ variable->type, variable->constexpr_value };
 	}
 
-	if( value.GetTypeTemplatesSet() != nullptr )
+	if( const auto type_templates_set = value.GetTypeTemplatesSet() )
+	{
+		if( type_templates_set->type_templates.size() == 1 )
+			return TemplateSignatureParam::TypeTemplateParam{ type_templates_set->type_templates.front() };
+
+		// TODO - use other error code?
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, "" );
+	}
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), src_loc, value.GetKindName() );
 	return TemplateSignatureParam::TypeParam{ invalid_type_ };
