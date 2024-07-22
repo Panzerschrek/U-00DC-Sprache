@@ -186,13 +186,15 @@ U_TEST( TemplateInstantiationRequiredTest1 )
 {
 	static const char c_program_text[]=
 	R"(
-		template</ type X /> struct A{}
+		template</ type X /> struct A</X/>{}
+		template<//> struct A</i32/>{}
+		// Template instantiation required, since "A" is not a single type template, but set of two type templates.
 		template</ type T /> struct Box</ A /> {}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 5u ) );
 }
 
 U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
