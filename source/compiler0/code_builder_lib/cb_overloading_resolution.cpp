@@ -248,11 +248,27 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, then template parameter.
 		else if( const auto r_template= right_template_parameter.GetTemplate() )
 		{
+			if( l_template->type_templates.size() != r_template->type_templates.size() )
+				return ConversionsCompareResult::Incomparable;
+
+			ConversionsCompareResult result= ConversionsCompareResult::Same;
+			if( l_template->type_templates.size() == 1 )
+			{
+				result= TemplateSpecializationCompare( l_template->type_templates.front(), r_template->type_templates.front() );
+				if( result == ConversionsCompareResult::Incomparable )
+					return ConversionsCompareResult::Incomparable;
+			}
+			else
+			{
+				// For complex cases do not compare conversions.
+				if( l_template->type_templates != r_template->type_templates )
+					return ConversionsCompareResult::Incomparable;
+			}
+
 			// Templates with different arg count is uncomparable.
 			if( l_template->params.size() != r_template->params.size() )
 				return ConversionsCompareResult::Incomparable;
 
-			ConversionsCompareResult result= ConversionsCompareResult::Same;
 			for( size_t i= 0u; i < l_template->params.size(); ++i )
 			{
 				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_template->params[i], r_template->params[i] );

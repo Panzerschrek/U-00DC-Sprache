@@ -443,6 +443,29 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::TemplateParameterization& template_parameterization )
 {
+	if( const auto name_lookup = std::get_if<Synt::NameLookup>( &template_parameterization.base ) )
+	{
+		for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
+		{
+			if( name_lookup->name == template_parameter.name &&
+				std::holds_alternative< TemplateBase::TypeTemplateParamTag >( template_parameter.kind_payload ) )
+			{
+				const size_t param_index= size_t(&template_parameter - template_parameters.data());
+				template_parameters_usage_flags[ param_index ]= true;
+
+				std::vector<TemplateSignatureParam> specialized_template_params;
+				for( const Synt::Expression& template_arg : template_parameterization.template_args )
+					specialized_template_params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
+
+				return TemplateSignatureParam::SpecializedTemplateParam
+				{
+					{ TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ param_index } ) },
+					std::move(specialized_template_params)
+				};
+			}
+		}
+	}
+
 	const Value base_value= ResolveValue( names_scope, function_context, template_parameterization.base );
 
 	if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
@@ -540,7 +563,12 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 			}
 		}
 
-		return TemplateSignatureParam::SpecializedTemplateParam{ type_templates_set->type_templates, std::move(specialized_template_params) };
+		std::vector<TemplateSignatureParam> type_templates;
+		type_templates.reserve( type_templates_set->type_templates.size() );
+		for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
+			type_templates.push_back( TemplateSignatureParam::TypeTemplateParam{ type_template } );
+
+		return TemplateSignatureParam::SpecializedTemplateParam{ std::move(type_templates), std::move(specialized_template_params) };
 	}
 
 	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, template_parameterization ), names_scope, template_parameterization.src_loc );
@@ -872,19 +900,19 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		{
 			if( const auto base_template= std::get_if< Class::BaseTemplate >( &given_class_type->generated_class_data ) )
 			{
-				if( !(
-						std::find(
-							template_param.type_templates.begin(),
-							template_param.type_templates.end(),
-							base_template->class_template ) != template_param.type_templates.end() &&
-						template_param.params.size() == base_template->signature_args.size()
-					) )
+				if( template_param.params.size() != base_template->signature_args.size() )
 					return false;
 
-				for( size_t i= 0; i < template_param.params.size(); ++i )
+				for( const TemplateSignatureParam& type_template_signature_param : template_param.type_templates )
 				{
-					if( !MatchTemplateArg( template_, args_names_scope, base_template->signature_args[i], template_param.params[i] ) )
-						return false;
+					if( MatchTemplateArg( template_, args_names_scope, base_template->class_template, type_template_signature_param ) )
+					{
+						for( size_t i= 0; i < template_param.params.size(); ++i )
+						{
+							if( !MatchTemplateArg( template_, args_names_scope, base_template->signature_args[i], template_param.params[i] ) )
+								return false;
+						}
+					}
 				}
 
 				return true;

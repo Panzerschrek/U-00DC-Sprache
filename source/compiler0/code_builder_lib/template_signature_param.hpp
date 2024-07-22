@@ -102,7 +102,7 @@ public:
 
 	struct SpecializedTemplateParam
 	{
-		std::vector<TypeTemplatePtr> type_templates;
+		std::vector<TemplateSignatureParam> type_templates;
 		std::vector<TemplateSignatureParam> params;
 
 		bool operator==( const SpecializedTemplateParam& other ) const;
