@@ -912,10 +912,10 @@ bool CodeBuilder::MatchTemplateArgImpl(
 							if( !MatchTemplateArg( template_, args_names_scope, base_template->signature_args[i], template_param.params[i] ) )
 								return false;
 						}
+
+						return true;
 					}
 				}
-
-				return true;
 			}
 		}
 	}
