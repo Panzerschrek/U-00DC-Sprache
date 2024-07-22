@@ -262,6 +262,13 @@ void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableA
 	}
 }
 
+void EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template )
+{
+	// TODO
+	(void)mangler_state;
+	(void)type_template;
+}
+
 void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args )
 {
 	mangler_state.Push( "I" );

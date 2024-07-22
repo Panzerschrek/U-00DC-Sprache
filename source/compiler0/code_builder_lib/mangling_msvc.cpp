@@ -223,6 +223,7 @@ private:
 	void EncodeTemplateArgs( ManglerState& mangler_state, llvm::ArrayRef<TemplateArg> template_args ) const;
 	void EncodeTemplateArgImpl( ManglerState& mangler_state, const Type& type ) const;
 	void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableArg& variable ) const;
+	void EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template ) const;
 	void EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* constexpr_value ) const;
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& names_scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& names_scope ) const;
@@ -604,6 +605,13 @@ void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const Temp
 		U_ASSERT( variable.constexpr_value != nullptr );
 		EncodeNumber( mangler_state, variable.constexpr_value->getUniqueInteger(), is_signed );
 	}
+}
+
+void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template ) const
+{
+	// TODO
+	(void)mangler_state;
+	(void)type_template;
 }
 
 void ManglerMSVC::EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value ) const

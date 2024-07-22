@@ -599,6 +599,15 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return std::move(arg);
 }
 
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeTemplateParam& type_template_param )
+{
+	// TODO
+	(void)template_;
+	(void)args_names_scope;
+	(void) type_template_param;
+	return TemplateArg();
+}
+
 TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param )
 {
 	if( template_param.index < template_.template_params.size() )
@@ -738,10 +747,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 	}
 	else
 	{
-		if( param.type != std::nullopt )
+		if( const auto param_type = std::get_if<TemplateSignatureParam>( &param.kind_payload ) )
 		{
 			// Create variable arg.
-			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param.type );
+			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param_type );
 			if( const auto t= std::get_if<Type>( &type_arg ) )
 			{
 				TemplateVariableArg arg;
@@ -761,7 +770,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 				return std::move(arg);
 			}
 		}
-		else
+		else if( std::holds_alternative< TemplateBase::TypeParamTag >( param.kind_payload ) )
 		{
 			// Create type arg. Use stub type for this.
 
@@ -769,6 +778,11 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
 			return t;
 		}
+		else if( std::holds_alternative< TemplateBase::TemplateParamTag >( param.kind_payload ) )
+		{
+			// TODO
+		}
+		else U_ASSERT(false);
 	}
 
 	return invalid_type_;

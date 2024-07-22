@@ -12,9 +12,29 @@ def TemplateTemplateParamDeclaration_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def TemplateTemplateParamDeclaration_Test1():
+	def TemplateTemplateParamDeclaration_Test1():
+		c_program_text= """
+			template</ template T />
+			fn Foo( T</i32/> arg ){}
+		"""
+		tests_lib.build_program( c_program_text )
+
+
+def TemplateTypeTemplateArg_Test0():
 	c_program_text= """
-		template</ template T />
-		fn Foo( T</i32/> arg ){}
+		template</template Container/>
+		struct IntBox
+		{
+			Container</i32/> container;
+		}
+
+		template</type T/>
+		struct Pair
+		{
+			T first;
+			T second;
+		}
+
+		type IntBoxPair = IntBox</Pair/>;
 	"""
 	tests_lib.build_program( c_program_text )

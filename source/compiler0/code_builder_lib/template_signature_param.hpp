@@ -27,6 +27,13 @@ public:
 		bool operator==( const VariableParam& other ) const;
 	};
 
+	struct TypeTemplateParam
+	{
+		TypeTemplatePtr type_template;
+
+		bool operator==( const TypeTemplateParam& other ) const;
+	};
+
 	struct TemplateParam
 	{
 		size_t index;
@@ -104,6 +111,7 @@ public:
 public:
 	TemplateSignatureParam( TypeParam type= TypeParam() );
 	TemplateSignatureParam( VariableParam variable );
+	TemplateSignatureParam( TypeTemplateParam type_template_param );
 	TemplateSignatureParam( TemplateParam template_parameter );
 	TemplateSignatureParam( ArrayParam array );
 	TemplateSignatureParam( TupleParam tuple );
@@ -138,6 +146,7 @@ private:
 	std::variant<
 		TypeParam,
 		VariableParam,
+		TypeTemplateParam,
 		TemplateParam,
 		ArrayParam,
 		TupleParam,

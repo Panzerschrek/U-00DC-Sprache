@@ -25,6 +25,12 @@ size_t TemplateArgHashImpl( const Type& template_type_arg )
 	return template_type_arg.Hash();
 }
 
+size_t TemplateArgHashImpl( const TypeTemplatePtr& type_template_arg )
+{
+	// Use pointer for hasing, since type templates are identified internally by their pointer.
+	return reinterpret_cast<uintptr_t>( type_template_arg.get() );
+}
+
 size_t TemplateArgHash( const TemplateArg& arg )
 {
 	return std::visit( []( const auto& el ) { return TemplateArgHashImpl(el); }, arg );

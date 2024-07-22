@@ -204,6 +204,14 @@ void CodeBuilder::ProcessTemplateParams(
 		template_parameters.emplace_back();
 		template_parameters.back().name= param.name;
 		template_parameters.back().src_loc= param.src_loc;
+
+		if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
+			template_parameters.back().kind_payload= TemplateBase::TypeParamTag{};
+		else if( std::holds_alternative< Synt::TemplateBase::TemplateParamTag >( param.kind_payload ) )
+			template_parameters.back().kind_payload= TemplateBase::TemplateParamTag{};
+		else if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
+			template_parameters.back().kind_payload= TemplateSignatureParam();
+
 		template_parameters_usage_flags.push_back(false);
 	}
 
@@ -213,7 +221,7 @@ void CodeBuilder::ProcessTemplateParams(
 	{
 		if( const auto type_name = std::get_if<Synt::TypeName>( &params[i].kind_payload ) )
 		{
-			template_parameters[i].type=
+			template_parameters[i].kind_payload=
 				CreateTemplateSignatureParameter(
 					names_scope,
 					*global_function_context_,
@@ -223,7 +231,7 @@ void CodeBuilder::ProcessTemplateParams(
 			global_function_context_->args_preevaluation_cache.clear();
 
 			CheckSignatureParamIsValidForTemplateValueArgumentType(
-				*template_parameters[i].type,
+				std::get< TemplateSignatureParam >( template_parameters[i].kind_payload ),
 				names_scope,
 				params[i].name,
 				template_parameters[i].src_loc );
@@ -615,6 +623,21 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
+	const TemplateSignatureParam::TypeTemplateParam& type_template_param )
+{
+	(void)template_;
+	(void)args_names_scope;
+
+	if( const auto given_type_template= std::get_if<TypeTemplatePtr>( &template_arg ) )
+		return *given_type_template == type_template_param.type_template;
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
 	const TemplateSignatureParam::TemplateParam& template_param )
 {
 	const std::string& name= template_.template_params[ template_param.index ].name;
@@ -623,44 +646,53 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	U_ASSERT( value != nullptr );
 	if( value->value.GetYetNotDeducedTemplateArg() != nullptr )
 	{
-		const auto& param_type= template_.template_params[ template_param.index ].type;
-		const bool is_variable_param= param_type != std::nullopt;
+		const auto& kind_payload= template_.template_params[ template_param.index ].kind_payload;
 
 		if( const auto given_type= std::get_if<Type>( &template_arg ) )
 		{
-			if( is_variable_param )
-				return false;
-
-			value->value= *given_type;
-			return true;
-		}
-		if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
-		{
-			if( !is_variable_param )
-				return false;
-
-			if( !given_variable->type.IsValidForTemplateVariableArgument() || given_variable->constexpr_value == nullptr )
+			if( std::holds_alternative< TemplateBase::TypeParamTag >( kind_payload ) )
 			{
-				// May be in case of error.
-				return false;
+				value->value= *given_type;
+				return true;
 			}
+		}
+		else if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
+		{
+			if( const auto type_signature_param= std::get_if< TemplateSignatureParam >( &kind_payload ) )
+			{
+				if( !given_variable->type.IsValidForTemplateVariableArgument() || given_variable->constexpr_value == nullptr )
+				{
+					// May be in case of error.
+					return false;
+				}
 
-			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, *param_type ) )
-				return false;
+				if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, *type_signature_param ) )
+					return false;
 
-			// Create global variable for given variable.
-			// We can't just use given variable itself, because its address may be local for instantiation point.
-			const VariablePtr variable_for_insertion=
-				Variable::Create(
-					given_variable->type,
-					ValueType::ReferenceImut,
-					Variable::Location::Pointer,
-					name,
-					CreateGlobalConstantVariable( given_variable->type, name, given_variable->constexpr_value ),
-					given_variable->constexpr_value );
+				// Create global variable for given variable.
+				// We can't just use given variable itself, because its address may be local for instantiation point.
+				const VariablePtr variable_for_insertion=
+					Variable::Create(
+						given_variable->type,
+						ValueType::ReferenceImut,
+						Variable::Location::Pointer,
+						name,
+						CreateGlobalConstantVariable( given_variable->type, name, given_variable->constexpr_value ),
+						given_variable->constexpr_value );
 
-			value->value= variable_for_insertion;
-			return true;
+				value->value= variable_for_insertion;
+				return true;
+			}
+		}
+		else if( const auto given_type_template= std::get_if<TypeTemplatePtr>( &template_arg ) )
+		{
+			if( std::holds_alternative< TemplateBase::TypeParamTag >( kind_payload ) )
+			{
+				TypeTemplatesSet type_templates_set;
+				type_templates_set.type_templates.push_back( *given_type_template );
+				value->value= std::move(type_templates_set);
+				return true;
+			}
 		}
 	}
 	else if( const auto prev_type= value->value.GetTypeName() )
@@ -677,6 +709,13 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				// LLVM constants are deduplicated, so, comparing pointers should work.
 				given_variable->constexpr_value == prev_variable->constexpr_value;
 		}
+	}
+	else if( const auto prev_type_templates_set = value->value.GetTypeTemplatesSet() )
+	{
+		if( const auto given_type_template = std::get_if<TypeTemplatePtr>( &template_arg ) )
+			return
+				prev_type_templates_set->type_templates.size() == 1 &&
+				prev_type_templates_set->type_templates.front() == *given_type_template;
 	}
 
 	return false;
@@ -1318,6 +1357,12 @@ std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, 
 	if( const Type* const type_name= value.GetTypeName() )
 		return TemplateArg( *type_name );
 
+	if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+	{
+		if( type_templates_set->type_templates.size() == 1 )
+			return type_templates_set->type_templates.front();
+	}
+
 	if( const auto variable= value.GetVariable() )
 	{
 		if( !variable->type.IsValidForTemplateVariableArgument() )
@@ -1363,6 +1408,12 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 						CreateGlobalConstantVariable( variable->type, name, variable->constexpr_value ),
 						variable->constexpr_value );
 				v= variable_for_insertion;
+			}
+			else if( const auto type_template= std::get_if<TypeTemplatePtr>( &known_template_arg ) )
+			{
+				TypeTemplatesSet type_templates_set;
+				type_templates_set.type_templates.push_back( *type_template );
+				v= std::move(type_templates_set);
 			}
 			else U_ASSERT(false);
 		}

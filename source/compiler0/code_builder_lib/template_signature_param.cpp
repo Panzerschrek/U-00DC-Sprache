@@ -22,6 +22,11 @@ bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& oth
 	return this->index == other.index;
 }
 
+bool TemplateSignatureParam::TypeTemplateParam::operator==( const TypeTemplateParam& other ) const
+{
+	return this->type_template == other.type_template;
+}
+
 bool TemplateSignatureParam::ArrayParam::operator==( const ArrayParam& other ) const
 {
 	return *this->element_type == *other.element_type && *this->element_count == *other.element_count;
@@ -87,6 +92,11 @@ TemplateSignatureParam::TemplateSignatureParam( TypeParam type )
 TemplateSignatureParam::TemplateSignatureParam( VariableParam variable )
 {
 	something_= std::move(variable);
+}
+
+TemplateSignatureParam::TemplateSignatureParam( TypeTemplateParam type_template_param )
+{
+	something_= std::move(type_template_param);
 }
 
 TemplateSignatureParam::TemplateSignatureParam( TemplateParam template_parameter )
@@ -206,6 +216,15 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::VariableParam& param )
 {
 	// Return variable params as is.
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::TypeTemplateParam& param )
+{
+	// Return type template params as is.
 	U_UNUSED(mapping);
 	return param;
 }
