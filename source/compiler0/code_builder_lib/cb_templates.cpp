@@ -201,16 +201,19 @@ void CodeBuilder::ProcessTemplateParams(
 			}
 		}
 
-		template_parameters.emplace_back();
-		template_parameters.back().name= param.name;
-		template_parameters.back().src_loc= param.src_loc;
+		TypeTemplate::TemplateParameter out_param;
+		out_param.name= param.name;
+		out_param.src_loc= param.src_loc;
 
 		if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
-			template_parameters.back().kind_payload= TemplateBase::TypeParamTag{};
+			out_param.kind_payload= TemplateBase::TypeParamTag{};
 		else if( std::holds_alternative< Synt::TemplateBase::TypeTemplateParamTag >( param.kind_payload ) )
-			template_parameters.back().kind_payload= TemplateBase::TypeTemplateParamTag{};
+			out_param.kind_payload= TemplateBase::TypeTemplateParamTag{};
 		else if( std::holds_alternative< Synt::TypeName >( param.kind_payload ) )
-			template_parameters.back().kind_payload= TemplateBase::VariableParam();
+			out_param.kind_payload= TemplateBase::VariableParam();
+		else U_ASSERT(false);
+
+		template_parameters.push_back( std::move(out_param) );
 
 		template_parameters_usage_flags.push_back(false);
 	}
@@ -236,7 +239,7 @@ void CodeBuilder::ProcessTemplateParams(
 				params[i].name,
 				template_parameters[i].src_loc );
 
-			std::get<TemplateBase::VariableParam>(template_parameters[i].kind_payload).type= std::move(variable_param_type);
+			std::get<TemplateBase::VariableParam>( template_parameters[i].kind_payload ).type= std::move(variable_param_type);
 		}
 	}
 }
@@ -460,7 +463,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 				return TemplateSignatureParam::SpecializedTemplateParam
 				{
 					{ TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ param_index } ) },
-					std::move(specialized_template_params)
+					std::move(specialized_template_params),
 				};
 			}
 		}
@@ -730,6 +733,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				return true;
 			}
 		}
+		else U_ASSERT(false);
 	}
 	else if( const auto prev_type= value->value.GetTypeName() )
 	{
