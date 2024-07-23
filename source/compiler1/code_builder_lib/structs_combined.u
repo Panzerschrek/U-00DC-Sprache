@@ -1568,6 +1568,14 @@ fn TemplateArgEquals( TemplateArgFinished& l, TemplateArgFinished& r ) : bool
 		}
 	}
 
+	if_var( &l_type_template : l.get</TypeTemplatePtr/>() )
+	{
+		if_var( &r_type_template : r.get</TypeTemplatePtr/>() )
+		{
+			return l_type_template == r_type_template;
+		}
+	}
+
 	return false;
 }
 

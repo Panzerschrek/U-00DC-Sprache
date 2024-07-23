@@ -397,17 +397,8 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
 	for( auto mut i= 0s; i < generated_template_things_sequence_.size(); ++i )
 	{
-		auto mut names_scope_ref= generated_template_things_.find(generated_template_things_sequence_[i]);
-		if( !names_scope_ref.empty() )
-		{
-			auto names_scope= names_scope_ref.try_deref();
-			move(names_scope_ref);
-			NamesScopeBuild( names_scope );
-		}
-		else
-		{
-			move(names_scope_ref);
-		}
+		auto mut names_scope= generated_template_things_.find(generated_template_things_sequence_[i]).try_deref();
+		NamesScopeBuild( names_scope );
 	}
 	generated_template_things_sequence_.clear();
 
