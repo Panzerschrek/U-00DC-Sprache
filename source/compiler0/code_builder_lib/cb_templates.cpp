@@ -205,12 +205,12 @@ void CodeBuilder::ProcessTemplateParams(
 		out_param.name= param.name;
 		out_param.src_loc= param.src_loc;
 
-		if( std::holds_alternative< Synt::TemplateBase::TypeParamTag >( param.kind_payload ) )
-			out_param.kind_payload= TemplateBase::TypeParamTag{};
-		else if( std::holds_alternative< Synt::TemplateBase::TypeTemplateParamTag >( param.kind_payload ) )
-			out_param.kind_payload= TemplateBase::TypeTemplateParamTag{};
-		else if( std::holds_alternative< Synt::TypeName >( param.kind_payload ) )
-			out_param.kind_payload= TemplateBase::VariableParam();
+		if( std::holds_alternative< Synt::TemplateBase::TypeParamData >( param.kind_data ) )
+			out_param.kind_data= TemplateBase::TypeParamData{};
+		else if( std::holds_alternative< Synt::TemplateBase::TypeTemplateParamData >( param.kind_data ) )
+			out_param.kind_data= TemplateBase::TypeTemplateParamData{};
+		else if( std::holds_alternative< Synt::TemplateBase::VariableParamData >( param.kind_data ) )
+			out_param.kind_data= TemplateBase::VariableParamData();
 		else U_ASSERT(false);
 
 		template_parameters.push_back( std::move(out_param) );
@@ -222,7 +222,7 @@ void CodeBuilder::ProcessTemplateParams(
 
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
-		if( const auto type_name = std::get_if<Synt::TypeName>( &params[i].kind_payload ) )
+		if( const auto variable_param_data = std::get_if<Synt::TemplateBase::VariableParamData>( &params[i].kind_data ) )
 		{
 			auto variable_param_type=
 				CreateTemplateSignatureParameter(
@@ -230,7 +230,7 @@ void CodeBuilder::ProcessTemplateParams(
 					*global_function_context_,
 					template_parameters,
 					template_parameters_usage_flags,
-					*type_name );
+					variable_param_data->type );
 			global_function_context_->args_preevaluation_cache.clear();
 
 			CheckSignatureParamIsValidForTemplateValueArgumentType(
@@ -239,7 +239,7 @@ void CodeBuilder::ProcessTemplateParams(
 				params[i].name,
 				template_parameters[i].src_loc );
 
-			std::get<TemplateBase::VariableParam>( template_parameters[i].kind_payload ).type= std::move(variable_param_type);
+			std::get<TemplateBase::VariableParamData>( template_parameters[i].kind_data ).type= std::move(variable_param_type);
 		}
 	}
 }
@@ -451,7 +451,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
 		{
 			if( name_lookup->name == template_parameter.name &&
-				std::holds_alternative< TemplateBase::TypeTemplateParamTag >( template_parameter.kind_payload ) )
+				std::holds_alternative< TemplateBase::TypeTemplateParamData >( template_parameter.kind_data ) )
 			{
 				const size_t param_index= size_t(&template_parameter - template_parameters.data());
 				template_parameters_usage_flags[ param_index ]= true;
@@ -685,11 +685,11 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	U_ASSERT( value != nullptr );
 	if( value->value.GetYetNotDeducedTemplateArg() != nullptr )
 	{
-		const auto& kind_payload= template_.template_params[ template_param.index ].kind_payload;
+		const auto& kind_payload= template_.template_params[ template_param.index ].kind_data;
 
 		if( const auto given_type= std::get_if<Type>( &template_arg ) )
 		{
-			if( std::holds_alternative< TemplateBase::TypeParamTag >( kind_payload ) )
+			if( std::holds_alternative< TemplateBase::TypeParamData >( kind_payload ) )
 			{
 				value->value= *given_type;
 				return true;
@@ -697,7 +697,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		}
 		else if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
 		{
-			if( const auto variable_param= std::get_if< TemplateBase::VariableParam >( &kind_payload ) )
+			if( const auto variable_param= std::get_if< TemplateBase::VariableParamData >( &kind_payload ) )
 			{
 				if( !given_variable->type.IsValidForTemplateVariableArgument() || given_variable->constexpr_value == nullptr )
 				{
@@ -725,7 +725,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		}
 		else if( const auto given_type_template= std::get_if<TypeTemplatePtr>( &template_arg ) )
 		{
-			if( std::holds_alternative< TemplateBase::TypeTemplateParamTag >( kind_payload ) )
+			if( std::holds_alternative< TemplateBase::TypeTemplateParamData >( kind_payload ) )
 			{
 				TypeTemplatesSet type_templates_set;
 				type_templates_set.type_templates.push_back( *given_type_template );

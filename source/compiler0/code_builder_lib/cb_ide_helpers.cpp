@@ -746,7 +746,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 	}
 	else
 	{
-		if( const auto variable_param = std::get_if<TemplateBase::VariableParam>( &param.kind_payload ) )
+		if( const auto variable_param = std::get_if<TemplateBase::VariableParamData>( &param.kind_data ) )
 		{
 			// Create variable arg.
 			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, variable_param->type );
@@ -769,7 +769,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 				return std::move(arg);
 			}
 		}
-		else if( std::holds_alternative< TemplateBase::TypeParamTag >( param.kind_payload ) )
+		else if( std::holds_alternative< TemplateBase::TypeParamData >( param.kind_data ) )
 		{
 			// Create type arg. Use stub type for this.
 
@@ -777,7 +777,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
 			return t;
 		}
-		else if( std::holds_alternative< TemplateBase::TypeTemplateParamTag >( param.kind_payload ) )
+		else if( std::holds_alternative< TemplateBase::TypeTemplateParamData >( param.kind_data ) )
 		{
 			// It's too complex to create dummy template arg.
 			// And this has little reason too, since such dummy will be practically unusable.

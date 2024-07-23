@@ -35,9 +35,11 @@ struct TemplateBase
 {
 	virtual ~TemplateBase()= default;
 
-	struct TypeParamTag{};
-	struct TypeTemplateParamTag{};
-	struct VariableParam
+	struct TypeParamData{};
+
+	struct TypeTemplateParamData{};
+
+	struct VariableParamData
 	{
 		// Type of variable param.
 		TemplateSignatureParam type;
@@ -47,7 +49,7 @@ struct TemplateBase
 	{
 		SrcLoc src_loc;
 		std::string name;
-		std::variant<TypeParamTag, TypeTemplateParamTag, VariableParam> kind_payload;
+		std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
 	};
 
 	std::vector<TemplateParameter> template_params;

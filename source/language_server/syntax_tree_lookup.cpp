@@ -524,14 +524,19 @@ void FindImpl( const Synt::TypeTemplate& type_template )
 	// TODO - process template arguments and signature arguments.
 }
 
-void FindImpl( const Synt::TypeTemplate::TypeParamTag& ){}
+void FindImpl( const Synt::TypeTemplate::TypeParamData& ){}
 
-void FindImpl( const Synt::TypeTemplate::TypeTemplateParamTag& ){}
+void FindImpl( const Synt::TypeTemplate::TypeTemplateParamData& ){}
+
+void FindImpl( const Synt::TypeTemplate::VariableParamData& variable_param_data )
+{
+	FindImpl( variable_param_data.type );
+}
 
 void FindImpl( const Synt::FunctionTemplate& function_template )
 {
 	for( const auto& param : function_template.params )
-		FindImplVariant( param.kind_payload );
+		FindImplVariant( param.kind_data );
 
 	FindImpl( function_template.function );
 }
