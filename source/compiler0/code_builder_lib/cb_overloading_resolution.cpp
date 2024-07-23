@@ -254,6 +254,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			ConversionsCompareResult result= ConversionsCompareResult::Same;
 			if( l_template->type_templates.size() == 1 )
 			{
+				// A case with type template params and/or single specific template.
 				result= TemplateSpecializationCompare( l_template->type_templates.front(), r_template->type_templates.front() );
 				if( result == ConversionsCompareResult::Incomparable )
 					return ConversionsCompareResult::Incomparable;

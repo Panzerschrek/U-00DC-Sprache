@@ -158,3 +158,68 @@ def TemplateParamOverloading_Test2():
 		static_assert( Foo(z) == 4 ); // Should select overloading for non-templates.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TemplateParamOverloading_Test3():
+	c_program_text= """
+		// Function template with type param.
+		template</type T/> fn Make() : T
+		{
+			var T t{ .t= 1 };
+			return t;
+		}
+
+		// Function template with type template param.
+		template</type template T/> fn Make() : T</i32/>
+		{
+			var T</i32/> t{ .t= 2 };
+			return t;
+		}
+
+		template</type T/> struct S{ T t; }
+
+		// Select overloaded function with type param.
+		static_assert( Make</ S</i32/> />().t == 1 );
+		// Select overloaded function with type template param.
+		static_assert( Make</ S />().t == 2 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemplateParamOverloading_Test4():
+	c_program_text= """
+		template</ type A /> struct S{}
+		template</ type A, type B /> struct S{}
+
+		template</ type A />
+		struct TemplateUnwrapper</ S</A/> /> {}
+
+		template</ type A, type template T />
+		struct TemplateUnwrapper</ T</A/> /> {}
+
+		type SFloat= S</f32/>;
+
+		// Error here - it's for now impossible to compare set of two or more templates against single type template param.
+		type Unwrapper= TemplateUnwrapper</ SFloat />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 14 ) )
+
+
+def TemplateParamOverloading_Test5():
+	c_program_text= """
+		template</ type A /> struct S{}
+
+		template</ type A />
+		struct TemplateUnwrapper</ S</A/> /> { auto order= 1; }
+
+		template</ type A, type template T />
+		struct TemplateUnwrapper</ T</A/> /> { auto order = 2; }
+
+		type SFloat= S</f32/>;
+
+		// Fine - compare type template param against specific type template.
+		static_assert( TemplateUnwrapper</ SFloat />::order == 1 );
+	"""
+	tests_lib.build_program( c_program_text )
