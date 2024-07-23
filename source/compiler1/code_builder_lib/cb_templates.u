@@ -383,6 +383,30 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if_var( &template_parameterization : param.get</ust::box</Synt::TemplateParameterization/>/>() )
 	{
+		if_var( &name_lookup : template_parameterization.deref().base_.get</ Synt::NameLookup />() )
+		{
+			for( auto mut i= 0s; i < template_params.size(); ++i )
+			{
+				if( name_lookup.name == template_params[i].name &&
+					template_params[i].kind_data.has</ TemplateBase::TypeTemplateParamData />() )
+				{
+					template_params_usage_flags[i]= true;
+
+					var ust::vector</TemplateSignatureParam/> mut specialized_template_params;
+					foreach( &arg : template_parameterization.deref().template_args )
+					{
+						specialized_template_params.push_back( CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags ) );
+					}
+
+					return TemplateSignatureParam::SpecializedTemplateParam
+					{
+						.type_templates= ust::make_array( TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ .index= u32(i) } ) ),
+						.params= move(specialized_template_params),
+					};
+				}
+			}
+		}
+
 		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parameterization.deref().base_ ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 		{
 			var ust::vector</ TemplateSignatureParam /> mut specialized_template_params;
@@ -501,9 +525,17 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				}
 			}
 
+
 			return TemplateSignatureParam::SpecializedTemplateParam
 			{
-				.type_templates_set= type_templates_set_ptr,
+				.type_templates=
+					type_templates_set_ptr
+					.lock_imut()
+					.deref()
+					.type_templates
+					.iter()
+					.map( lambda( TypeTemplatePtr type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplateParam{ .type_template= type_tempate }; } )
+					.collect</ ust::vector</TemplateSignatureParam/> />(),
 				.params= move(specialized_template_params)
 			};
 		}
@@ -1784,34 +1816,26 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		{
 			if_var( &base_template : class_type.lock_imut().deref().generated_class_data.get</ ClassType::BaseTemplate />() )
 			{
-				auto mut is_one_of_templates= false;
-				foreach( &type_template_ptr : specialized_template_param.type_templates_set.lock_imut().deref().type_templates )
-				{
-					if( base_template.class_template == type_template_ptr )
-					{
-						is_one_of_templates= true;
-						break;
-					}
-				}
-
-				if( !is_one_of_templates )
-				{
-					return false;
-				}
-
 				if( base_template.signature_args.size() != specialized_template_param.params.size() )
 				{
 					return false;
 				}
-				foreach( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
+
+				foreach( &type_template_signature_param : specialized_template_param.type_templates )
 				{
-					if( !MatchTemplateArgument( names_scope, template_, pair.first, pair.second ) )
+					if( MatchTemplateArgument( names_scope, template_, type_template_signature_param, base_template.class_template ) )
 					{
-						return false;
+						foreach( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
+						{
+							if( !MatchTemplateArgument( names_scope, template_, pair.first, pair.second ) )
+							{
+								return false;
+							}
+						}
+
+						return true;
 					}
 				}
-
-				return true;
 			}
 		}
 	}

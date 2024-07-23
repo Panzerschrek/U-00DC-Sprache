@@ -1512,7 +1512,15 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
 	TemplateSignatureParam::SpecializedTemplateParam& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::SpecializedTemplateParam mut out_param{ .type_templates_set= param.type_templates_set };
+	var TemplateSignatureParam::SpecializedTemplateParam mut out_param
+	{
+		.type_templates=
+			param
+			.type_templates
+			.iter()
+			.map( lambda[mapping]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); } )
+			.collect</ ust::vector</TemplateSignatureParam/> />()
+	};
 	foreach( &template_param : param.params )
 	{
 		out_param.params.push_back( MapTemplateParamsToSignatureParams( mapping, template_param ) );

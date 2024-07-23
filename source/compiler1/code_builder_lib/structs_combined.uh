@@ -806,7 +806,7 @@ public:
 
 	struct SpecializedTemplateParam
 	{
-		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
+		ust::vector</ TemplateSignatureParam /> type_templates;
 		ust::vector</ TemplateSignatureParam /> params;
 	}
 

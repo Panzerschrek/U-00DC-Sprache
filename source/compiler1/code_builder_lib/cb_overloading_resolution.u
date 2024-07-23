@@ -387,6 +387,27 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			}
 
 			auto mut result= ConversionsCompareResult::Same;
+
+			if( l_specialized_template.type_templates.size() != r_specialized_template.type_templates.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+			if( l_specialized_template.type_templates.size() == 1s )
+			{
+				result= CompareTemplateSpecialization( l_specialized_template.type_templates.front(), r_specialized_template.type_templates.front() );
+				if( result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			else
+			{
+				if( l_specialized_template.type_templates != r_specialized_template.type_templates )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+
 			foreach( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
 			{
 				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
