@@ -601,11 +601,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 
 TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeTemplateParam& type_template_param )
 {
-	// TODO
 	(void)template_;
 	(void)args_names_scope;
-	(void) type_template_param;
-	return TemplateArg();
+
+	return type_template_param.type_template;
 }
 
 TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param )
@@ -780,7 +779,12 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 		}
 		else if( std::holds_alternative< TemplateBase::TypeTemplateParamTag >( param.kind_payload ) )
 		{
-			// TODO
+			// It's too complex to create dummy template arg.
+			// And this has little reason too, since such dummy will be practically unusable.
+			// So, just create type dummy.
+			const Type t= GetStubTemplateArgType();
+			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
+			return t;
 		}
 		else U_ASSERT(false);
 	}
