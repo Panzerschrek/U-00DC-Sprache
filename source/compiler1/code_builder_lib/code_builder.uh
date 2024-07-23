@@ -733,6 +733,14 @@ private:
 		Synt::TemplateArgs& template_args,
 		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
 
+	fn GenTemplateType(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		TypeTemplatePtr& type_template,
+		Synt::TemplateArgs& template_args,
+		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
+
 	struct TemplateTypeArgsEvaluationResult
 	{
 		TypeTemplatePtr type_template;

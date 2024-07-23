@@ -820,6 +820,30 @@ fn CodeBuilder::GenTemplateType(
 	return FinishTypeTemplateGeneration( candidate_type_templates[index], args_names_scope, template_instantiation_src_loc );
 }
 
+fn CodeBuilder::GenTemplateType(
+	mut this,
+	NamesScopePtr& args_names_scope,
+	FunctionContext &mut function_context,
+	TypeTemplatePtr& type_template,
+	Synt::TemplateArgs& template_args,
+	SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>
+{
+	var TemplateArgsFinished template_args_finished= EvaluateTemplateArgs( args_names_scope, function_context, template_args, template_instantiation_src_loc );
+	if( template_args_finished.size() != template_args.size() )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_src_loc )
+		return ust::null_optional;
+	}
+
+	if_var( &res : EvaluateTemplateTypeArgs( type_template, template_args_finished.range() ) )
+	{
+		return FinishTypeTemplateGeneration( res, args_names_scope, template_instantiation_src_loc );
+	}
+
+	REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_src_loc )
+	return ust::null_optional;
+}
+
 fn CodeBuilder::EvaluateTemplateTypeArgs(
 	mut this,
 	TypeTemplatePtr& type_template_ptr,

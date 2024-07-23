@@ -455,6 +455,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	var NamesScopeValue& base_= base_opt.try_deref();
 
 	auto type_templates_set= base_.Get</TypeTemplatesSet/>();
+	auto template_arg= base_.Get</TemplateArg/>();
 	auto functions_set= base_.Get</FunctionsSet/>();
 	if( !type_templates_set.empty() )
 	{
@@ -470,6 +471,31 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			return NamesScopeValue( t );
 		}
 
+		return ust::null_optional;
+	}
+	else if( !template_arg.empty() )
+	{
+		with( & arg : template_arg.try_lock_imut().deref() )
+		{
+			if_var( &type_template : arg.something.get</TypeTemplatePtr/>() )
+			{
+				auto generated_type= GenTemplateType(
+					names_scope,
+					function_context,
+					type_template,
+					template_parameterization.template_args,
+					template_parameterization.src_loc );
+
+				if_var( &t : generated_type )
+				{
+					return NamesScopeValue( t );
+				}
+			}
+			else
+			{
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, template_parameterization.src_loc, ust::string8("") )
+			}
+		}
 		return ust::null_optional;
 	}
 	else if( !functions_set.empty() )

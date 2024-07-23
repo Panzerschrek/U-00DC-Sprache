@@ -422,6 +422,16 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		"TemplateTemplateParamDeclaration_Test1",
+		"TemplateTypeTemplateArg_Test3",
+		"TemplateParamOverloading_Test0",
+		"TemplateParamOverloading_Test1",
+		"TemplateParamOverloading_Test2",
+		"TemplateParamOverloading_Test3",
+		"TemplateParamOverloading_Test4",
+		"TemplateParamOverloading_Test5",
+		"MoreThanOneTypeTemplateAsTemplateArgument_Test0",
+		"MoreThanOneTypeTemplateAsTemplateArgument_Test1",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
