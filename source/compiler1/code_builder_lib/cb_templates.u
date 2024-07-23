@@ -263,10 +263,10 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 
 	for( auto mut i= 0s; i < in_params.size(); ++i )
 	{
-		if_var( &t : in_params[i].t )
+		if_var( &variable_param_data : in_params[i].kind_data.get</Synt::TemplateParam::VariableParamData/>() )
 		{
 			var TemplateSignatureParam mut param=
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, t, template_params_usage_flags );
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, variable_param_data.t, template_params_usage_flags );
 
 			CheckSignatureParamIsValidForTemplateValueArgumentType( param, names_scope, in_params[i].name.range(), in_params[i].src_loc );
 

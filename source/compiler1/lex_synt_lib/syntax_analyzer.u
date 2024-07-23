@@ -3431,10 +3431,19 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
 			NextLexem();
+			if( IsKeyword( it_.front(), Keyword::template_ ) )
+			{
+				NextLexem();
+				param.kind_data= TemplateParam::TypeTemplateParamData{};
+			}
+			else
+			{
+				param.kind_data= TemplateParam::TypeParamData{};
+			}
 		}
 		else
 		{
-			param.t= ParseTypeName();
+			param.kind_data= TemplateParam::VariableParamData{ .t= ParseTypeName() };
 		}
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
