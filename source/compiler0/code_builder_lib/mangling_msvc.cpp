@@ -609,9 +609,8 @@ void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const Temp
 
 void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template ) const
 {
-	// TODO
-	(void)mangler_state;
-	(void)type_template;
+	mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
+	EncodeFullName( mangler_state, type_template->syntax_element->name, *type_template->parent_namespace );
 }
 
 void ManglerMSVC::EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value ) const

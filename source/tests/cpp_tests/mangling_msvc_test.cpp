@@ -560,6 +560,78 @@ U_TEST( TemplateClassesManglingTest1 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?ProcessPairs@@YAXU?$MyPair@FG@@AEBU1@AEAU1@@Z" ) != nullptr );
 }
 
+U_TEST( TemplateClassesManglingTest3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type template Container />
+		struct Ghm
+		{
+			fn Bar(){}
+			fn Foo(this){}
+		}
+
+		template</type T/> struct Box{}
+		type GhmBox= Ghm</Box/>;
+
+		namespace Abc
+		{
+			template</type T/> struct Lol{}
+			type LolBox= Ghm</Lol/>;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@?$Ghm@UBox@@@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@?$Ghm@UBox@@@@YAXAEBU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$Ghm@UBox@@@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??8?$Ghm@UBox@@@@YA_NAEBU0@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??4?$Ghm@UBox@@@@YAXAEAU0@AEBU0@@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@?$Ghm@ULol@Abc@@@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@?$Ghm@ULol@Abc@@@@YAXAEBU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$Ghm@ULol@Abc@@@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??8?$Ghm@ULol@Abc@@@@YA_NAEBU0@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??4?$Ghm@ULol@Abc@@@@YAXAEAU0@AEBU0@@Z" ) != nullptr );
+}
+
+U_TEST( TemplateClassesManglingTest4 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Abc
+		{
+			template</ type template Container />
+			struct Ghm
+			{
+				fn Bar(){}
+				fn Foo(this){}
+			}
+
+			template</type T/> struct Box{}
+			type GhmBox= Ghm</Box/>;
+		}
+
+		template</type T/> struct Lol{}
+		type LolBox= Abc::Ghm</Lol/>;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@?$Ghm@UBox@Abc@@@Abc@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@?$Ghm@UBox@Abc@@@Abc@@YAXAEBU12@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$Ghm@UBox@Abc@@@Abc@@YAXAEAU12@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??8?$Ghm@UBox@Abc@@@Abc@@YA_NAEBU01@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??4?$Ghm@UBox@Abc@@@Abc@@YAXAEAU01@AEBU01@@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@?$Ghm@ULol@@@Abc@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@?$Ghm@ULol@@@Abc@@YAXAEBU12@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$Ghm@ULol@@@Abc@@YAXAEAU12@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??8?$Ghm@ULol@@@Abc@@YA_NAEBU01@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??4?$Ghm@ULol@@@Abc@@YAXAEAU01@AEBU01@@Z" ) != nullptr );
+}
+
 U_TEST( ArraysManglingTest )
 {
 	static const char c_program_text[]=
