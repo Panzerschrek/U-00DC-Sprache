@@ -235,6 +235,10 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			function_context.references_graph.AddNodeIfNotExists( v_ptr );
 			return v_ptr;
 		}
+		if_var( &type_template : template_arg.something.get</TypeTemplatePtr/>() )
+		{
+			return ust::shared_ptr_imut</TypeTemplatesSet/>( TypeTemplatesSet{ .type_templates= ust::make_array(type_template) } );
+		}
 		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, ust::string8("") )
 	}
 
