@@ -507,9 +507,11 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Va
 
 fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
 {
-	// TODO
-	ust::ignore_unused(mangler_state);
-	ust::ignore_unused(type_template);
+	with( &t : type_template.lock_imut().deref() )
+	{
+		mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
+		EncodeFullName( mangler_state, t.syntax_element.deref().name.range(), t.parent_names_scope.lock().try_lock_imut().deref() );
+	}
 }
 
 fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )

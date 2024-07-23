@@ -940,9 +940,10 @@ fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, VariablePtr& v_ptr )
 
 fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
 {
-	// TODO
-	ust::ignore_unused(mangler_state);
-	ust::ignore_unused(type_template);
+	with( &t : type_template.lock_imut().deref() )
+	{
+		EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.lock().try_lock_imut().deref() );
+	}
 }
 
 fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )
