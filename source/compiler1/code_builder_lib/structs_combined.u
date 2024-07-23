@@ -1222,6 +1222,10 @@ fn TemplateSignatureParam::conversion_constructor( VariableParam mut variable_pa
 	( something_( move(variable_param) ) )
 {}
 
+fn TemplateSignatureParam::conversion_constructor( TypeTemplateParam mut type_template_param )
+	( something_( move(type_template_param) ) )
+{}
+
 fn TemplateSignatureParam::conversion_constructor( ArrayTypeParam mut array_type_param )
 	( something_( ust::make_shared_ptr_final( move(array_type_param) ) ) )
 {}
@@ -1259,6 +1263,11 @@ fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypePar
 fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags)
 {
 	return something_.get</VariableParam/>();
+}
+
+fn TemplateSignatureParam::GetTypeTemplateParam(this) : ust::optional_ref_imut</ TypeTemplateParam /> @(ret_tags)
+{
+	return something_.get</TypeTemplateParam/>();
 }
 
 fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags)
@@ -1373,6 +1382,10 @@ fn MapTemplateParamsToSignatureParams(
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, variable_param );
 	}
+	if_var( &type_template_param : param.GetTypeTemplateParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, type_template_param );
+	}
 	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, array_type_param );
@@ -1425,6 +1438,15 @@ fn MapTemplateParamsToSignatureParamsImpl(
 {
 	ust::ignore_unused(mapping);
 	// Return variable params as is.
+	return param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::TypeTemplateParam& param ) : TemplateSignatureParam
+{
+	ust::ignore_unused(mapping);
+	// Return type template params as is.
 	return param;
 }
 

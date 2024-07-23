@@ -167,6 +167,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 		}
 		if( !r.GetTypeParam().empty() ||
 			!r.GetVariableParam().empty() ||
+			!r.GetTypeTemplateParam().empty() ||
 			!r.GetArrayTypeParam().empty() ||
 			!r.GetTupleTypeParam().empty() ||
 			!r.GetRawPointerTypeParam().empty() ||
@@ -204,6 +205,17 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			return ConversionsCompareResult::LeftIsBetter; // Concrete variable is better, then template parameter.
 		}
 		if( !r.GetVariableParam().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+	}
+	if( !l.GetTypeTemplateParam().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type template is better, then template parameter.
+		}
+		if( !r.GetTypeTemplateParam().empty() )
 		{
 			return ConversionsCompareResult::Same;
 		}

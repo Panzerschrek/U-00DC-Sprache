@@ -427,7 +427,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParamOverloading_Test0",
 		"TemplateParamOverloading_Test1",
 		"TemplateParamOverloading_Test2",
-		"TemplateParamOverloading_Test3",
 		"TemplateParamOverloading_Test4",
 		"TemplateParamOverloading_Test5",
 		"MoreThanOneTypeTemplateAsTemplateArgument_Test0",

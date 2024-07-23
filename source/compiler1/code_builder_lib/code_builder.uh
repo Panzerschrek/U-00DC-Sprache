@@ -827,6 +827,13 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
+		TemplateSignatureParam::TypeTemplateParam& type_template_param,
+		TemplateArgFinished& given_arg ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
 		TemplateSignatureParam::ArrayTypeParam& array_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 

@@ -754,10 +754,18 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			return TemplateSignatureParam::VariableParam{ .t= v.t, .constexpr_value= v.constexpr_value };
 		}
 	}
-	else if( value.has</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
+	else if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 	{
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
-		return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
+		with( &type_templates_set : type_templates_set_ptr.lock_imut().deref() )
+		{
+			if( type_templates_set.type_templates.size() == 1s )
+			{
+				return TemplateSignatureParam::TypeTemplateParam{ .type_template= type_templates_set.type_templates.front() };
+			}
+
+			REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
+			return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
+		}
 	}
 	else
 	{
@@ -1409,6 +1417,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, variable_param, given_arg );
 	}
+	if_var( &type_template_param_param : param.GetTypeTemplateParam() )
+	{
+		return MatchTemplateArgumentImpl( names_scope, template_, type_template_param_param, given_arg );
+	}
 	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, array_type_param, given_arg );
@@ -1572,6 +1584,24 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			given_variable.t == variable_param.t &&
 			// LLVM constants are deduplicated, so, comparing pointers should work.
 			given_variable.constexpr_value == variable_param.constexpr_value;
+	}
+
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgumentImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	TemplateBase& template_,
+	TemplateSignatureParam::TypeTemplateParam& type_template_param,
+	TemplateArgFinished& given_arg ) : bool
+{
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( template_ );
+
+	if_var( &given_type_template : given_arg.get</TypeTemplatePtr/>() )
+	{
+		return given_type_template == type_template_param.type_template;
 	}
 
 	return false;
