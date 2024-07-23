@@ -46,6 +46,7 @@ private:
 	fn EncodeTemplateArgs( this, ManglerState &mut mangler_state, TemplateArgsFinished& template_args );
 	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Type& t );
 	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, VariablePtr& v_ptr );
+	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template );
 	fn EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value );
 	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state, NamesScope& scope );
@@ -502,6 +503,13 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Va
 			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
 		}
 	}
+}
+
+fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
+{
+	// TODO
+	ust::ignore_unused(mangler_state);
+	ust::ignore_unused(type_template);
 }
 
 fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )

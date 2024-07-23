@@ -1588,6 +1588,10 @@ fn HashTemplateArg( TemplateArgFinished& arg ) : size_type
 					unsafe( cast_ref_unsafe</size_type/>( variable.constexpr_value ) ) );
 		}
 	}
+	else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
+	{
+		return ust::default_hasher::hash( type_template );
+	}
 	else{ halt; }
 }
 

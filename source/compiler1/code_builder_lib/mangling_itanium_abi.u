@@ -938,6 +938,13 @@ fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, VariablePtr& v_ptr )
 	}
 }
 
+fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
+{
+	// TODO
+	ust::ignore_unused(mangler_state);
+	ust::ignore_unused(type_template);
+}
+
 fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )
 {
 	if_var( &array_type : t.GetArrayType() )

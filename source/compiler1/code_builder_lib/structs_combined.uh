@@ -627,10 +627,20 @@ struct LambdaClassData
 
 class TemplateBase polymorph
 {
+	struct TypeParamData{}
+
+	struct TypeTemplateParamData{}
+
+	struct VariableParamData
+	{
+		// Type of variable param.
+		TemplateSignatureParam t;
+	}
+
 	struct Param
 	{
 		ust::string8 name;
-		ust::optional</ TemplateSignatureParam /> t;
+		ust::variant</ tup[ TypeParamData, TypeTemplateParamData, VariableParamData ] /> kind_data;
 	}
 	ust::vector</Param/> params;
 
@@ -717,10 +727,10 @@ struct TemplateArg
 	u32 index;
 
 	struct NotKnownYet{}
-	ust::variant</ tup[ NotKnownYet, Type, VariablePtr ] /> something;
+	ust::variant</ tup[ NotKnownYet, Type, VariablePtr, TypeTemplatePtr ] /> something;
 }
 
-type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr ] />;
+type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr, TypeTemplatePtr ] />;
 type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 
 class TemplateSignatureParam
