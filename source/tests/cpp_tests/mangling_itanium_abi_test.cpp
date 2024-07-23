@@ -754,6 +754,78 @@ U_TEST( ClassTemplatesMangling_Test4 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc4pairINS_14shared_ptr_mutIxEES2_E3BazEv" ) != nullptr );
 }
 
+U_TEST( ClassTemplatesMangling_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type template Container />
+		struct Ghm
+		{
+			fn Bar(){}
+			fn Foo(this){}
+		}
+
+		template</type T/> struct Box{}
+		type GhmBox= Ghm</Box/>;
+
+		namespace Abc
+		{
+			template</type T/> struct Lol{}
+			type LolBox= Ghm</Lol/>;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmI3BoxE3BarEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmI3BoxE3FooERKS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmI3BoxE10destructorERS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmI3BoxEeqERKS1_S3_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmI3BoxEaSERS1_RKS1_" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmIN3Abc3LolEE3BarEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmIN3Abc3LolEE3FooERKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmIN3Abc3LolEE10destructorERS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmIN3Abc3LolEEeqERKS2_S4_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3GhmIN3Abc3LolEEaSERS2_RKS2_" ) != nullptr );
+}
+
+U_TEST( ClassTemplatesMangling_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Abc
+		{
+			template</ type template Container />
+			struct Ghm
+			{
+				fn Bar(){}
+				fn Foo(this){}
+			}
+
+			template</type T/> struct Box{}
+			type GhmBox= Ghm</Box/>;
+		}
+
+		template</type T/> struct Lol{}
+		type LolBox= Abc::Ghm</Lol/>;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmINS_3BoxEE3BarEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmINS_3BoxEE3FooERKNS0_IS1_EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmINS_3BoxEE10destructorERNS0_IS1_EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmINS_3BoxEEeqERKNS0_IS1_EES5_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmINS_3BoxEEaSERNS0_IS1_EERKS3_" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmI3LolE3BarEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmI3LolE3FooERKNS0_IS1_EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmI3LolE10destructorERNS0_IS1_EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmI3LolEeqERKNS0_IS1_EES5_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc3GhmI3LolEaSERNS0_IS1_EERKS3_" ) != nullptr );
+}
+
 U_TEST( FunctionTemplatesMangling_Test0 )
 {
 	static const char c_program_text[]=

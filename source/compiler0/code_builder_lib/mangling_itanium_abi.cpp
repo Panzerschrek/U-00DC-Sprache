@@ -179,6 +179,7 @@ namespace
 void EncodeTypeName( ManglerState& mangler_state, const Type& type );
 void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& function_type );
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
+void EncodeNestedName( ManglerState& mangler_state, const std::string_view name, const NamesScope& parent_scope );
 void EncodeCoroutineType( ManglerState& mangler_state, ClassPtr class_type );
 
 void EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value )
@@ -264,9 +265,7 @@ void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableA
 
 void EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template )
 {
-	// TODO
-	(void)mangler_state;
-	(void)type_template;
+	EncodeNestedName( mangler_state, type_template->syntax_element->name, *type_template->parent_namespace );
 }
 
 void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args )
