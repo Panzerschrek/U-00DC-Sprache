@@ -602,8 +602,8 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 		if( type_templates_set->type_templates.size() == 1 )
 			return TemplateSignatureParam::TypeTemplateParam{ type_templates_set->type_templates.front() };
 
-		// TODO - use other error code?
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, "" );
+		REPORT_ERROR( MoreThanOneTypeTemplateAsTemplateArgument, names_scope.GetErrors(), src_loc );
+		return TemplateSignatureParam::TypeParam{ invalid_type_ };
 	}
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), src_loc, value.GetKindName() );
@@ -1411,8 +1411,14 @@ std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, 
 
 	if( const auto type_templates_set= value.GetTypeTemplatesSet() )
 	{
+		// For now support only single type templates as template arguments.
+		// It's too complicated to deal with sets of multiple templates - too complex to compare them, calculate specialization, mangle.
+
 		if( type_templates_set->type_templates.size() == 1 )
 			return type_templates_set->type_templates.front();
+
+		REPORT_ERROR( MoreThanOneTypeTemplateAsTemplateArgument, errors, src_loc );
+		return std::nullopt;
 	}
 
 	if( const auto variable= value.GetVariable() )

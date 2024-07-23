@@ -223,3 +223,32 @@ def TemplateParamOverloading_Test5():
 		static_assert( TemplateUnwrapper</ SFloat />::order == 1 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MoreThanOneTypeTemplateAsTemplateArgument_Test0():
+	c_program_text= """
+		template</ type template A />
+		struct S{}
+
+		template</ type A /> struct Tup{}
+		template</ type A, type B /> struct Tup{}
+
+		type STup= S</ Tup />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneTypeTemplateAsTemplateArgument", 8 ) )
+
+
+def MoreThanOneTypeTemplateAsTemplateArgument_Test1():
+	c_program_text= """
+		template</ type A /> struct Tup{}
+		template</ type A, type B /> struct Tup{}
+
+		template<//>
+		struct S</ Tup />
+		{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneTypeTemplateAsTemplateArgument", 6 ) )
