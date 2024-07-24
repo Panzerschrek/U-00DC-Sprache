@@ -84,6 +84,22 @@ def TemplateTypeTemplateArg_Test2():
 
 def TemplateTypeTemplateArg_Test3():
 	c_program_text= """
+		template</type T/> struct Box{ T val; }
+
+		template</ type template Container, type ContainedT/>
+		fn MakeContainer( ContainedT mut val ) : Container</ContainedT/>
+		{
+			return Container</ContainedT/>{ .val= move(val) };
+		}
+
+		var Box</f32/> v = MakeContainer</Box/>( 1.2345f );
+		static_assert( v.val == 1.2345f );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemplateTypeTemplateArg_Test4():
+	c_program_text= """
 		// Use signature param to split given argument into container and type components.
 		template</type template Container, type Element/>
 		struct S</ Container</Element/> />
@@ -100,6 +116,22 @@ def TemplateTypeTemplateArg_Test3():
 
 		static_assert( same_type</ IntsBox, Box</i32/> /> );
 		static_assert( same_type</ S</ FloatBox />::ElementType, f32 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemplateTypeTemplateArg_Test5():
+	c_program_text= """
+		template</ type template Container, type PrevType, type NewType />
+		type ReplaceContainedType</ Container</ PrevType />, NewType /> = Container</ NewType />;
+
+		template</ type T /> struct Box{ T x; }
+
+		type FloatBox= Box</f32/>;
+
+		type BigIntsBox= ReplaceContainedType</ FloatBox, u64 />;
+
+		static_assert( same_type</ BigIntsBox, Box</u64/> /> );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -223,6 +255,50 @@ def TemplateParamOverloading_Test5():
 		static_assert( TemplateUnwrapper</ SFloat />::order == 1 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TemplateParamOverloading_Test6():
+	c_program_text= """
+		template</ type T /> struct Box{ T t; }
+
+		template</ type T />
+		struct S</ Box</T/> />{}
+
+		template</ type template T />
+		struct S</ T</ i32 /> /> {}
+
+		// Error while selecting best specialized template.
+		// The first alternative is better, because type template is more specialized.
+		// The econd alternative is better, because type template argument is more specialized.
+		type SIntBox= S</ Box</ i32 /> />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 13 ) )
+
+
+def TemplateParamOverloading_Test7():
+	c_program_text= """
+		template</ type T /> struct Box{ T t; }
+
+		template</ type T />
+		fn Bar( Box</T/> arg ) {}
+
+		template</ type template T />
+		fn Bar( T</ i32 /> arg ) {}
+
+		fn Foo()
+		{
+			var Box</i32/> box= zero_init;
+			// Error while selecting best specialized template.
+			// The first alternative is better, because type template is more specialized.
+			// The econd alternative is better, because type template argument is more specialized.
+			Bar(box);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TooManySuitableOverloadedFunctions", 16 ) )
 
 
 def MoreThanOneTypeTemplateAsTemplateArgument_Test0():
