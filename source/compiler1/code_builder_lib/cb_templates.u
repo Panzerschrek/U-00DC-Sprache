@@ -1002,10 +1002,10 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			{
 				return Type( class_type.try_to_non_nullable() );
 			}
-			auto t= result_name.Get</Type/>();
-			if( !t.empty() )
+			auto type_alias= result_name.Get</TypeAlias/>();
+			if( !type_alias.empty() )
 			{
-				return t.try_lock_imut().deref();
+				return type_alias.try_lock_imut().deref().t;
 			}
 		}
 	}
@@ -1045,22 +1045,19 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	}
 	else if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
 	{
-		// Prepare type
-		var Type mut t;
-		{
-			auto mut global_function_context= CreateGlobalFunctionContext();
-			t= PrepareType( args_names_scope, global_function_context, type_alias_syntax_element.deref().type_name );
-		}
+		auto type_alias = ust::make_shared_ptr( TypeAlias{ .syntax_element= type_alias_syntax_element } );
 
 		// Cache result.
 		with( mut lock : args_names_scope.lock_mut() )
 		{
-			lock.deref().AddName( template_class_name, t );
+			lock.deref().AddName( template_class_name, type_alias );
 		}
 
 		AddNewTemplateThing( move(template_key), args_names_scope );
 
-		return t;
+		BuildTypeAlias( args_names_scope, type_alias );
+
+		return type_alias.lock_imut().deref().t;
 	}
 	else { halt; } // Unhandled type template kind.
 }

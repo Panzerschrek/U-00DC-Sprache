@@ -151,6 +151,19 @@ def TemplateTypeTemplateArg_Test6():
 	tests_lib.build_program( c_program_text )
 
 
+def TemplateTypeTemplateArg_Test7():
+	c_program_text= """
+		// Recursive type alias should be an error.
+		template</ type template T />
+		type Some= T</Some/>;
+
+		type SomeSome= Some</ Some />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	# TODO - create special error for this.
+
+
 def TemplateParamOverloading_Test0():
 	c_program_text= """
 		template<//> struct S{}
