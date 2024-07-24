@@ -99,12 +99,22 @@ public: // Helper methods.
 		return c;
 	}
 
-	// Collect elements into given container.
+	// Collect elements into given container type.
 	// This method is just a wrapper for a container-specific collection method.
 	template</type Container/>
 	fn collect( byval mut this ) : auto
 	{
 		return Container::from_iterator( move(this) );
+	}
+
+	// Collect elements into given container.
+	// This method is just a wrapper for a container-specific collection method.
+	template</type template Container/>
+	fn collect( byval mut this ) : auto
+	{
+		// Assuming given container has single template parameter - contained type.
+		type ElementType= typeof(next().try_deref());
+		return Container</ElementType/>::from_iterator( move(this) );
 	}
 
 	// Find first element using given function, which sould return bool.
