@@ -525,7 +525,6 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				}
 			}
 
-
 			return TemplateSignatureParam::SpecializedTemplateParam
 			{
 				.type_templates=
@@ -535,7 +534,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 					.type_templates
 					.iter()
 					.map( lambda( TypeTemplatePtr type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplateParam{ .type_template= type_tempate }; } )
-					.collect</ ust::vector</TemplateSignatureParam/> />(),
+					.collect</ ust::vector />(),
 				.params= move(specialized_template_params)
 			};
 		}
@@ -746,7 +745,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				{
 					return select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} )
-			.collect</ ust::vector</InnerReferenceKind/> />()
+			.collect</ ust::vector />()
 	};
 
 	auto num_params= 1s;
