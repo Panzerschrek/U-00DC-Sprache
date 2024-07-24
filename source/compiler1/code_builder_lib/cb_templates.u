@@ -795,7 +795,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 				return TemplateSignatureParam::TypeTemplateParam{ .type_template= type_templates_set.type_templates.front() };
 			}
 
-			REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
+			REPORT_ERROR( MoreThanOneTypeTemplateAsTemplateArgument, names_scope, src_loc )
 			return TemplateSignatureParam::TypeParam{ .t= invalid_type_ };
 		}
 	}
@@ -1879,6 +1879,9 @@ fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc,
 			{
 				return TemplateArgFinished( type_templates.front() );
 			}
+
+			REPORT_ERROR( MoreThanOneTypeTemplateAsTemplateArgument, names_scope, src_loc )
+			return ust::null_optional;
 		}
 	}
 
