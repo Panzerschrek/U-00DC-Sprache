@@ -302,7 +302,10 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::SpecializedTemplateParam& param )
 {
 	TemplateSignatureParam::SpecializedTemplateParam out_param;
-	out_param.type_templates= param.type_templates;
+
+	out_param.type_templates.reserve( param.type_templates.size() );
+	for( const TemplateSignatureParam& type_template : param.type_templates )
+		out_param.type_templates.push_back( MapTemplateParamsToSignatureParams( mapping, type_template ) );
 
 	out_param.params.reserve( param.params.size() );
 	for( const TemplateSignatureParam& template_param : param.params )
