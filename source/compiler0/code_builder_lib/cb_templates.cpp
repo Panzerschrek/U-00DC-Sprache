@@ -239,7 +239,7 @@ void CodeBuilder::ProcessTemplateParams(
 				params[i].name,
 				template_parameters[i].src_loc );
 
-			std::get<TemplateBase::VariableParamData>( template_parameters[i].kind_data ).type= std::move(variable_param_type);
+			template_parameters[i].kind_data = TemplateBase::VariableParamData{ std::move(variable_param_type) };
 		}
 	}
 }

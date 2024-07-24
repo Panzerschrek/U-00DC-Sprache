@@ -507,8 +507,8 @@ std::string Type::ToString() const
 						{
 							result+= (*param_as_type_template)->parent_namespace->ToString();
 							result+= "::";
-							result+= (*param_as_type_template)->syntax_element->name;
 						}
+						result+= (*param_as_type_template)->syntax_element->name;
 					}
 					else U_ASSERT(false);
 

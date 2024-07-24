@@ -381,11 +381,6 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 		}
 		if_var( &r_specialized_template : r.GetSpecializedTemplateParam() )
 		{
-			if( l_specialized_template.params.size() != r_specialized_template.params.size() )
-			{
-				return ConversionsCompareResult::Incomparable;
-			}
-
 			auto mut result= ConversionsCompareResult::Same;
 
 			if( l_specialized_template.type_templates.size() != r_specialized_template.type_templates.size() )
@@ -394,6 +389,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			}
 			if( l_specialized_template.type_templates.size() == 1s )
 			{
+				// A case with type template params and/or single specific template.
 				result= CompareTemplateSpecialization( l_specialized_template.type_templates.front(), r_specialized_template.type_templates.front() );
 				if( result == ConversionsCompareResult::Incomparable )
 				{
@@ -402,10 +398,16 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			}
 			else
 			{
+				// For complex cases do not compare conversions.
 				if( l_specialized_template.type_templates != r_specialized_template.type_templates )
 				{
 					return ConversionsCompareResult::Incomparable;
 				}
+			}
+
+			if( l_specialized_template.params.size() != r_specialized_template.params.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
 			}
 
 			foreach( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
