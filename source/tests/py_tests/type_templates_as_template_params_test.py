@@ -136,6 +136,21 @@ def TemplateTypeTemplateArg_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def TemplateTypeTemplateArg_Test6():
+	c_program_text= """
+		template</ type template T />
+		struct Some
+		{
+			type SelfT= T</Some/>;
+		}
+
+		// Some kind of masturbation - use template itself as argument of this template.
+		type SomeSome= Some</ Some />;
+		static_assert( same_type</ SomeSome, SomeSome::SelfT /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TemplateParamOverloading_Test0():
 	c_program_text= """
 		template<//> struct S{}
