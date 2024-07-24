@@ -128,6 +128,7 @@ PROCESS_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, "Mandato
 PROCESS_ERROR( TemplateArgumentIsNotDeducedYet, "\"{0}\" is not deduced yet." )
 PROCESS_ERROR( TemplateArgumentNotUsedInSignature, "Template argument \"{0}\" not used in signature." )
 PROCESS_ERROR( TypeTemplateRedefinition, "\"{0}\" redefinition - type template with such signature already exists in current namespace." )
+PROCESS_ERROR( OverloadingImportedTypeTemplate, "Overloading imported type template. It's not allowed, all type templates with the same name in the same scope should be defined in a single file." )
 PROCESS_ERROR( IncompleteMemberOfClassTemplate, "\"{0}\" is incomplete." )
 PROCESS_ERROR( TemplateFunctionGenerationFailed, "Instantiation of function template \"{0}\" failed." )
 PROCESS_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, "Could not select more spicialized type template." )

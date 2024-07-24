@@ -179,10 +179,20 @@ fn CodeBuilder::PrepareTypeTemplate(
 	// Check for redefinition.
 	foreach( &prev_template_ptr : out_templates_set.type_templates )
 	{
-		if( type_template.signature_params == prev_template_ptr.lock_imut().deref().signature_params )
+		with( &prev_template : prev_template_ptr.lock_imut().deref() )
 		{
-			REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
-			return;
+			if( type_template.signature_params == prev_template.signature_params )
+			{
+				REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
+				return;
+			}
+			if( type_template.syntax_element.deref().src_loc.GetFileIndex() != prev_template.syntax_element.deref().src_loc.GetFileIndex() )
+			{
+				// Require defining a set of overloaded type templates in a single file.
+				// This is needed in order to prevent possible mangling problems of template types with arguments - overloaded type templates.
+				REPORT_ERROR( OverloadingImportedTypeTemplate, names_scope, type_template.syntax_element.deref().src_loc )
+				return;
+			}
 		}
 	}
 

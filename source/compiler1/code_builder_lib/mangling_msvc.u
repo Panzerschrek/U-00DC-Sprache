@@ -511,6 +511,10 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Ty
 	{
 		mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
 		EncodeFullName( mangler_state, t.syntax_element.deref().name.range(), t.parent_names_scope.lock().try_lock_imut().deref() );
+
+		// Do not mangle template signature params to distinguish between different overloaded type templates.
+		// it's not required, since only sets with one type template may be used as template arguments.
+		// Merging different type templates imported from different files into the same type templates set isn't possible too.
 	}
 }
 

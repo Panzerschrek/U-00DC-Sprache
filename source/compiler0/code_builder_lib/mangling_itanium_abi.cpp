@@ -266,6 +266,10 @@ void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableA
 void EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template )
 {
 	EncodeNestedName( mangler_state, type_template->syntax_element->name, *type_template->parent_namespace );
+
+	// Do not mangle template signature params to distinguish between different overloaded type templates.
+	// it's not required, since only sets with one type template may be used as template arguments.
+	// Merging different type templates imported from different files into the same type templates set isn't possible too.
 }
 
 void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args )

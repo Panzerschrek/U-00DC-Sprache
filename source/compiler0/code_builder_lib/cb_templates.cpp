@@ -121,6 +121,13 @@ void CodeBuilder::PrepareTypeTemplate(
 			REPORT_ERROR( TypeTemplateRedefinition, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_declaration.name );
 			return;
 		}
+		if( type_template->src_loc.GetFileIndex() != prev_template->src_loc.GetFileIndex() )
+		{
+			// Require defining a set of overloaded type templates in a single file.
+			// This is needed in order to prevent possible mangling problems of template types with arguments - overloaded type templates.
+			REPORT_ERROR( OverloadingImportedTypeTemplate, names_scope.GetErrors(),  type_template->src_loc );
+			return;
+		}
 	}
 	type_templates_set.type_templates.push_back( type_template );
 }
