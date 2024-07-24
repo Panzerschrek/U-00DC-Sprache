@@ -125,6 +125,31 @@ Arrays and tuples are also possible, if their element types are types, listed ab
    // Parameterize the template with a composite value.
    type MyS= S</ my_arg />;
 
+
+*************************************
+*Template arguments - type templates*
+*************************************
+
+Type templates may be also used as template arguments.
+But it's only possible to use non-overloaded type templates as template arguments.
+
+
+.. code-block:: u_spr
+
+   template</type T/> struct Box{ T val; }
+
+   template</ type template Container /> // This struct template has a single parameter - type template.
+   struct ContainedIntPair
+   {
+       // Use type template - parameter of this template.
+       Container</i32/> first;
+       Container</i32/> second;
+   }
+
+   type BoxedIntPair= ContainedIntPair</ Box />; // Pass as template argument "Box" type template.
+
+   var BoxedIntPair pair{ .first{ .val= 66 }, .second{ .val= 77 } };
+
 **********************
 *Type alias templates*
 **********************
