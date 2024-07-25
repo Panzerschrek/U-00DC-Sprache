@@ -159,6 +159,32 @@ def TypeTemplatesOvelroading_Specialization_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeTemplateOverloadingByTemplateParamKind_Test0():
+	c_program_text= """
+		// Fine - overload type template by param kind (type vs variable).
+
+		template</ type T /> struct S
+		{
+			auto order = 10;
+		}
+
+		template</ size_type x /> struct S
+		{
+			auto order= 20;
+		}
+
+		// Select specialization for arguments-types.
+		static_assert( S</ i32 />::order == 10 );
+		static_assert( S</ [ f64, 4 ] />::order == 10 );
+		static_assert( S</ tup[ bool, char8 ] />::order == 10 );
+
+		// Select specialization for arguments-variables.
+		static_assert( S</ 0s />::order == 20 );
+		static_assert( S</ 12345s />::order == 20 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 	c_program_text= """
 		template</ type T /> struct S</ i32, T /> {}
