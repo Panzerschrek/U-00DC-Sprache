@@ -164,6 +164,26 @@ def TemplateTypeTemplateArg_Test7():
 	# TODO - create special error for this.
 
 
+def TemplateTypeTemplateArg_Test8():
+	c_program_text= """
+		template</type T/> struct Box{ T t; }
+		template</type T/> struct Lol{ T t; }
+
+		// Type template as default param value.
+		template</ type template Container />
+		type IntsContainer</ Container = Box /> = Container</ i32 />;
+
+		type IntsBox = IntsContainer<//>; // Use here default type template argument "Box".
+		type IntsBoxExplicit = IntsContainer</Box/>;
+		type IntsLol = IntsContainer</Lol/>;
+
+		static_assert( same_type</ IntsBox, Box</i32/> /> );
+		static_assert( same_type</ IntsBoxExplicit, Box</i32/> /> );
+		static_assert( same_type</ IntsLol, Lol</i32/> /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TemplateParamOverloading_Test0():
 	c_program_text= """
 		template<//> struct S{}
