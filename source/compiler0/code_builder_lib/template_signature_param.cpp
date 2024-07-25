@@ -19,7 +19,7 @@ bool TemplateSignatureParam::VariableParam::operator==( const VariableParam& oth
 
 bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& other ) const
 {
-	return this->index == other.index;
+	return this->index == other.index && this->kind_index == other.kind_index;
 }
 
 bool TemplateSignatureParam::TypeTemplateParam::operator==( const TypeTemplateParam& other ) const

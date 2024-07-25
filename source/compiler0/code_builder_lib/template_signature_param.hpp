@@ -36,7 +36,10 @@ public:
 
 	struct TemplateParam
 	{
-		size_t index;
+		size_t index= ~0u;
+
+		// See TemplateBase::TemplateParameter::kind_data.
+		size_t kind_index= ~0u;
 
 		bool operator==( const TemplateParam& other ) const;
 	};
