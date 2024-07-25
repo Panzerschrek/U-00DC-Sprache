@@ -779,8 +779,8 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 		}
 		else if( std::holds_alternative< TemplateBase::TypeTemplateParamData >( param.kind_data ) )
 		{
-			// It's too complex to create dummy template arg.
-			// And this has little reason too, since such dummy will be practically unusable.
+			// It's too complex to create dummy type template arg.
+			// And this has little reason too, since such dummy will be practically unusable because of likely signature mismatch.
 			// So, just create type dummy.
 			const Type t= GetStubTemplateArgType();
 			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );

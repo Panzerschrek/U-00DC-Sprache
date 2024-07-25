@@ -125,7 +125,7 @@ public:
 	bool IsTemplateParam() const;
 	const TypeParam* GetType() const;
 	const VariableParam* GetVariable() const;
-	const TypeTemplateParam* GetTypeTemplateParam() const;
+	const TypeTemplateParam* GetTypeTemplate() const;
 	const TemplateParam* GetTemplateParam() const;
 	const ArrayParam* GetArray() const;
 	const TupleParam* GetTuple() const;

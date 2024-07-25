@@ -63,7 +63,7 @@ fn CreateTemplateErrorsContext(
 				{
 					with( &n : t.parent_names_scope.lock().try_lock_imut().deref() )
 					{
-						if( !n.GetThisNamespaceName().empty() )
+						if( !n.GetParent().empty() )
 						{
 							result.args_description += n.ToString();
 							result.args_description += "::";
@@ -553,7 +553,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 					.deref()
 					.type_templates
 					.iter()
-					.map( lambda( TypeTemplatePtr type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplateParam{ .type_template= type_tempate }; } )
+					.map( lambda( TypeTemplatePtr& type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplateParam{ .type_template= type_tempate }; } )
 					.collect</ ust::vector />(),
 				.params= move(specialized_template_params)
 			};
@@ -1891,6 +1891,9 @@ fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc,
 	{
 		with( &type_templates : type_templates_set.lock_imut().deref().type_templates )
 		{
+			// For now support only single type templates as template arguments.
+			// It's too complicated to deal with sets of multiple templates - too complex to compare them, calculate specialization, mangle.
+
 			if( type_templates.size() == 1s )
 			{
 				return TemplateArgFinished( type_templates.front() );

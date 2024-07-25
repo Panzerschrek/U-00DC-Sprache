@@ -133,7 +133,6 @@ Arrays and tuples are also possible, if their element types are types, listed ab
 Type templates may be also used as template arguments.
 But it's only possible to use non-overloaded type templates as template arguments.
 
-
 .. code-block:: u_spr
 
    template</type T/> struct Box{ T val; }

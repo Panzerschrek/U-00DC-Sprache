@@ -217,7 +217,7 @@ void CodeBuilder::ProcessTemplateParams(
 		else if( std::holds_alternative< Synt::TemplateBase::TypeTemplateParamData >( param.kind_data ) )
 			out_param.kind_data= TemplateBase::TypeTemplateParamData{};
 		else if( std::holds_alternative< Synt::TemplateBase::VariableParamData >( param.kind_data ) )
-			out_param.kind_data= TemplateBase::VariableParamData();
+			out_param.kind_data= TemplateBase::VariableParamData(); // Set type of variable later.
 		else U_ASSERT(false);
 
 		template_parameters.push_back( std::move(out_param) );
@@ -464,6 +464,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 				template_parameters_usage_flags[ param_index ]= true;
 
 				std::vector<TemplateSignatureParam> specialized_template_params;
+				specialized_template_params.reserve( template_parameterization.template_args.size() );
 				for( const Synt::Expression& template_arg : template_parameterization.template_args )
 					specialized_template_params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
 
@@ -481,6 +482,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
 	{
 		std::vector<TemplateSignatureParam> specialized_template_params;
+		specialized_template_params.reserve( template_parameterization.template_args.size() );
 		bool all_params_are_known= true;
 		for( const Synt::Expression& template_arg : template_parameterization.template_args )
 		{
