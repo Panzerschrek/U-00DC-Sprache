@@ -134,7 +134,7 @@ def OverloadingResolutionTest_OnlyMutabilityCheck_Test4():
 		fn Foo() : i32
 		{
 			var i32 mut x= 0, mut y= 0;
-			return Bar(x, y);   // Should select (imut, mut), which is better, then (imut, imut)
+			return Bar(x, y);   // Should select (imut, mut), which is better, than (imut, imut)
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -407,7 +407,7 @@ def OverloadingResolutionTest_ForFunctionTemplates_Test0():
 		{
 			var B b;
 			var Box</i32/> box;
-			Bar( box, b ); // Error, first argument is better for second function ( more specialized ), but second argument is berrter for first function ( conversion B&->B& is better, then B&->A& ).
+			Bar( box, b ); // Error, first argument is better for second function ( more specialized ), but second argument is better for first function ( conversion B&->B& is better, than B&->A& ).
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -641,7 +641,7 @@ def OverloadingResolutionTest_TypeConversions_Test1():
 		fn Foo() : i32
 		{
 			var B b;
-			return Bar(b); // Ok, select Bar( A& a ), because reference conversion B->A is better, then type conversion B->C.
+			return Bar(b); // Ok, select Bar( A& a ), because reference conversion B->A is better, than type conversion B->C.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

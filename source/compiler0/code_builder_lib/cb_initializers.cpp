@@ -1416,7 +1416,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 			{
 				if( exact_match_function_variable != nullptr )
 				{
-					// Error, exists more,then one non-exact match function.
+					// Error, exists more, than one non-exact match function.
 					// TODO - maybe generate separate error?
 					REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function_type.params) );
 					return nullptr;
@@ -1433,7 +1433,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	{
 		if( convertible_function_variables.size() > 1u )
 		{
-			// Error, exist more, then one non-exact match function.
+			// Error, exist more, than one non-exact match function.
 			// TODO - maybe generate separate error?
 			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function_type.params) );
 			return nullptr;

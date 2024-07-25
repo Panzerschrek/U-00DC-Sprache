@@ -63,7 +63,7 @@ fn ComplareConversionsType(
 			return ConversionsCompareResult::LeftIsBetter;
 		}
 	}
-	// Reference conversions are better, then type conversions.
+	// Reference conversions are better, than type conversions.
 	if( src.ReferenceIsConvertibleTo( dst_left  ) )
 	{
 		return ConversionsCompareResult::LeftIsBetter ;
@@ -182,7 +182,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
@@ -202,7 +202,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Concrete variable is better, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Concrete variable is better, than template parameter.
 		}
 		if( !r.GetVariableParam().empty() )
 		{
@@ -213,7 +213,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Concrete type template is better, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type template is better, than template parameter.
 		}
 		if( !r.GetTypeTemplateParam().empty() )
 		{
@@ -224,11 +224,11 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Array type is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Array type is more specialized, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
-			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then array type.
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than array type.
 		}
 		if_var( &r_array_type : r.GetArrayTypeParam() )
 		{
@@ -257,11 +257,11 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Tuple type is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Tuple type is more specialized, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
-			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then tupe type.
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than tupe type.
 		}
 		if_var( &r_tuple_type : r.GetTupleTypeParam() )
 		{
@@ -297,11 +297,11 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Raw pointer type is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Raw pointer type is more specialized, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
-			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then raw pointer type.
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than raw pointer type.
 		}
 		if_var( &r_raw_pointer_type : r.GetRawPointerTypeParam() )
 		{
@@ -312,11 +312,11 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Function type is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Function type is more specialized, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
-			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then function type.
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than function type.
 		}
 		if_var( &r_function_type : r.GetFunctionTypeParam() )
 		{
@@ -349,11 +349,11 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Coroutine type is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Coroutine type is more specialized, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
-			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then coroutine type.
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than coroutine type.
 		}
 		if_var( &r_coroutine_type : r.GetCoroutineTypeParam() )
 		{
@@ -373,11 +373,11 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	{
 		if( !r.GetTemplateParam().empty() )
 		{
-			return ConversionsCompareResult::LeftIsBetter; // Specialized template is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Specialized template is more specialized, than template parameter.
 		}
 		if( !r.GetTypeParam().empty() )
 		{
-			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then Specialized template.
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than specialized template.
 		}
 		if_var( &r_specialized_template : r.GetSpecializedTemplateParam() )
 		{

@@ -60,7 +60,7 @@ ConversionsCompareResult CompareConversionsTypes(
 
 		return ConversionsCompareResult::Incomparable;
 	}
-	// Reference conversions are better, then type conversions.
+	// Reference conversions are better, than type conversions.
 	else if( src.ReferenceIsConvertibleTo( dst_left  ) )
 		return ConversionsCompareResult::LeftIsBetter ;
 	else if( src.ReferenceIsConvertibleTo( dst_right ) )
@@ -99,19 +99,19 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, than template parameter.
 		else if( right_template_parameter.GetArray() != nullptr )
-			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then array.
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than array.
 		if( right_template_parameter.GetTuple() != nullptr )
-			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then tuple.
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than tuple.
 		if( right_template_parameter.GetRawPointer() != nullptr )
-			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then raw pointer.
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than raw pointer.
 		if( right_template_parameter.GetFunction() != nullptr )
-			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then function.
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than function.
 		if( right_template_parameter.GetCoroutine() != nullptr )
-			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then coroutine.
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than coroutine.
 		if( right_template_parameter.GetTemplate() != nullptr )
-			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then template.
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than template.
 		else U_ASSERT(false);
 	}
 	else if( left_template_parameter.IsVariable() )
@@ -119,7 +119,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, than template parameter.
 		else U_ASSERT(false);
 	}
 	else if( left_template_parameter.GetTypeTemplate() != nullptr )
@@ -127,15 +127,15 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		if( right_template_parameter.GetTypeTemplate() != nullptr )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Type template is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Type template is more specialized, than template parameter.
 		else U_ASSERT(false);
 	}
 	else if( const auto l_array= left_template_parameter.GetArray() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then array.
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than array.
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Array is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Array is more specialized, than template parameter.
 		else if( const auto r_array= right_template_parameter.GetArray() )
 		{
 			const ConversionsCompareResult size_compare_result= TemplateSpecializationCompare( *l_array->element_count, *r_array->element_count );
@@ -155,9 +155,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	else if( const auto l_tuple= left_template_parameter.GetTuple() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then tuple.
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than tuple.
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Tuple is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Tuple is more specialized, than template parameter.
 		else if( const auto r_tuple= right_template_parameter.GetTuple() )
 		{
 			// Tuples with different size is incomparable.
@@ -185,9 +185,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	else if( const auto l_raw_pointer= left_template_parameter.GetRawPointer() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then raw pointer.
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than raw pointer.
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Raw pointer is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Raw pointer is more specialized, than template parameter.
 		else if( const auto r_raw_pointer= right_template_parameter.GetRawPointer() )
 			return TemplateSpecializationCompare( *l_raw_pointer->element_type, *r_raw_pointer->element_type );
 		else U_ASSERT(false);
@@ -195,9 +195,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	else if( const auto l_function= left_template_parameter.GetFunction() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then function.
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than function.
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Function is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Function is more specialized, than template parameter.
 		else if( const auto r_function= right_template_parameter.GetFunction() )
 		{
 			if( l_function->params.size() != r_function->params.size() )
@@ -224,9 +224,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	else if( const auto l_coroutine= left_template_parameter.GetCoroutine() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then coroutine.
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than coroutine.
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Coroutine is more specialized, then template.
+			return ConversionsCompareResult::LeftIsBetter; // Coroutine is more specialized, than template.
 		else if( const auto r_coroutine= right_template_parameter.GetCoroutine() )
 		{
 			if( l_coroutine->kind != r_coroutine->kind ||
@@ -243,9 +243,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	else if( const auto l_template= left_template_parameter.GetTemplate() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then template.
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than template.
 		else if( right_template_parameter.IsTemplateParam() )
-			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, then template parameter.
+			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, than template parameter.
 		else if( const auto r_template= right_template_parameter.GetTemplate() )
 		{
 			if( l_template->type_templates.size() != r_template->type_templates.size() )
@@ -290,23 +290,23 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	else if( left_template_parameter.IsTemplateParam() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, then template parameter.
+			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, than template parameter.
 		else if( right_template_parameter.IsVariable() )
-			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, than template parameter.
 		else if( right_template_parameter.GetTypeTemplate() != nullptr )
-			return ConversionsCompareResult::RightIsBetter; // Type template is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Type template is more specialized, than template parameter.
 		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.GetArray() != nullptr )
-			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, than template parameter.
 		else if( right_template_parameter.GetTuple() != nullptr )
-			return ConversionsCompareResult::RightIsBetter; // Tuple is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Tuple is more specialized, than template parameter.
 		else if( right_template_parameter.GetRawPointer() != nullptr )
-			return ConversionsCompareResult::RightIsBetter; // Raw pointer is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Raw pointer is more specialized, than template parameter.
 		else if( right_template_parameter.GetFunction() != nullptr )
-			return ConversionsCompareResult::RightIsBetter; // Function is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Function is more specialized, than template parameter.
 		else if( right_template_parameter.GetTemplate() != nullptr )
-			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, then template parameter.
+			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, than template parameter.
 		else U_ASSERT(false);
 	}
 	else U_ASSERT(false);

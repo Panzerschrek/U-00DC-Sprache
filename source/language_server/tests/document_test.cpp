@@ -970,7 +970,7 @@ U_TEST( DocumentCompletion_Test24 )
 	const CompletionItemsNormalized expected_completion_result{ "arr_arg" };
 	for( size_t i= 0; i < 2; ++i )
 	{
-		// Should complete properly more then once.
+		// Should complete properly more than once.
 		const auto completion_result= document.Complete( DocumentPosition{ 1, 66 } );
 		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 	}

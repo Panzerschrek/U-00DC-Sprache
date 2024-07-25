@@ -17,7 +17,7 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 25.0e-5 == 0.00025 );
 		static_assert( 0.00025 == 25.0 / 100000.0 );
 		static_assert( 0.32145e5 == 32145.0 );
-		static_assert( 5.0e32 == 5.0 * 1.0e8 * 1.0e8 * 1.0e8 * 1.0e8 ); // pow( 10, exponent ) is greater, then u64 limit.
+		static_assert( 5.0e32 == 5.0 * 1.0e8 * 1.0e8 * 1.0e8 * 1.0e8 ); // pow( 10, exponent ) is greater, than u64 limit.
 	"""
 	tests_lib.build_program( c_program_text )
 

@@ -64,7 +64,7 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 
 	if( g_current_engine != nullptr )
 	{
-		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		PyErr_SetString( PyExc_RuntimeError, "can not have more than one program in one time" );
 		return nullptr;
 	}
 
@@ -95,13 +95,13 @@ PyObject* BuildProgramUnusedErrorsEnabled( PyObject* const self, PyObject* const
 
 	if( g_current_engine != nullptr )
 	{
-		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		PyErr_SetString( PyExc_RuntimeError, "can not have more than one program in one time" );
 		return nullptr;
 	}
 
 	if( g_current_engine != nullptr )
 	{
-		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		PyErr_SetString( PyExc_RuntimeError, "can not have more than one program in one time" );
 		return nullptr;
 	}
 

@@ -378,7 +378,7 @@ def TemplateFunctionGenerationFailed_Test0():
 
 		fn Foo()
 		{
-			CastIntTo</ i32, f64 />; // Error, function generation failed, because parameter count is greater, then needs.
+			CastIntTo</ i32, f64 />; // Error, function generation failed, because parameter count is greater, than needs.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -436,7 +436,7 @@ def TemplateFunctionGenerationFailed_Test5():
 
 		fn Foo()
 		{
-			Bar</ i32, f32 />(); // Error, template parameter count is greater, then expected.
+			Bar</ i32, f32 />(); // Error, template parameter count is greater, than expected.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

@@ -158,7 +158,7 @@ def CouldNotSelectFunctionForPointer_Test0():
 	c_program_text= """
 		fn a( i32& mut x, i32&imut y ){}
 		fn a( i32&imut x, i32& mut y ){}
-		fn Foo(){  var ( fn( i32&mut x, i32&mut y ) ) ptr= a;  }  // Error, exist more, then one function, convertible to pointer type, but not equal to it.
+		fn Foo(){  var ( fn( i32&mut x, i32&mut y ) ) ptr= a;  }  // Error, exist more, than one function, convertible to pointer type, but not equal to it.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

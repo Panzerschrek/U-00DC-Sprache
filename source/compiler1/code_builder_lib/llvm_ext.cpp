@@ -86,7 +86,7 @@ size_t U1_ConvertUTF8ToUTF32(
 	if( res == llvm::conversionOK && src_buff == src_buff_end )
 		return size_t(dst_buff - dst_buff_start);
 	else
-		return dst_buff_size + 1; // Size is unknown, but greater then expected.
+		return dst_buff_size + 1; // Size is unknown, but greater than expected.
 }
 
 bool U1_IsLegalUTF8Sequence( const char* const start, const size_t length )

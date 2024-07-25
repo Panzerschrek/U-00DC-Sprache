@@ -573,7 +573,7 @@ U_TEST( ImportsTest14_ImportFunctionTemplate1 )
 		fn Foo() : i32
 		{
 			var i32 mut x= 0;
-			ToImut(x); // Must select non-template function from "b", rather then template from "a".
+			ToImut(x); // Must select non-template function from "b", rather than template from "a".
 			return x;
 		}
 	)";

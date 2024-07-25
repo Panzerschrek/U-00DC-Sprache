@@ -310,7 +310,7 @@ def EnableIf_ForPrototypeAndBody_Test0():
 
 def EnableIf_ForPrototypeAndBody_Test1():
 	c_program_text= """
-		// More then one body enabled.
+		// More than one body enabled.
 		fn Foo() : i32;
 		fn enable_if( true  ) Foo() : i32 { return 11111; }
 		fn enable_if( false ) Foo() : i32 { return 22222; }

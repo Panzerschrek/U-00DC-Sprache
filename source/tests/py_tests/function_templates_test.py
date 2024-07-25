@@ -624,7 +624,7 @@ def Specialization_Test4():
 
 		fn Foo() : i32
 		{
-			return Bar(0); // Should select Bar( i32 & t ), concrete type is more specialized, then template parameter.
+			return Bar(0); // Should select Bar( i32 & t ), concrete type is more specialized, than template parameter.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -727,7 +727,7 @@ def Specialization_Test9():
 		fn Foo() : i32
 		{
 			var [ i32, 8 ] arr= zero_init;
-			return Bar(arr); // Should select Bar( [ i32, size ] & t ), because array element type as type is better, then array element type as template parameter.
+			return Bar(arr); // Should select Bar( [ i32, size ] & t ), because array element type as type is better, than array element type as template parameter.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

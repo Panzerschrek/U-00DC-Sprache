@@ -173,7 +173,7 @@ fn DoFloatsTest()
 	ExpectNear( ust::log1p( T(1.718281828) ), T(1.0), T(1.0e-5) );
 	ExpectNear( ust::log1p( T(9.0) ), T(2.302585), T(1.0e-5) );
 	halt if( !ust::is_nan( ust::log1p( ust::nan</T/>() ) ) ); // result for nan is nan
-	halt if( !ust::is_nan( ust::log1p( T(-1.1) ) ) ); // result for valie less then -1 is nan
+	halt if( !ust::is_nan( ust::log1p( T(-1.1) ) ) ); // result for valie less than -1 is nan
 	halt if( !ust::is_nan( ust::log1p( ust::minus_inf</T/>() ) ) ); // result for minus infinity is nan
 	halt if( ust::log1p( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 
