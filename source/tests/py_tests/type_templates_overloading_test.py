@@ -173,6 +173,14 @@ def TypeTemplateOverloadingByTemplateParamKind_Test0():
 			auto order= 20;
 		}
 
+		template</ type template T /> struct S
+		{
+			auto order= 30;
+		}
+
+		template</type T/> struct Box{ T t; }
+		template</type T/> struct Wrapper{ T t; }
+
 		// Select specialization for arguments-types.
 		static_assert( S</ i32 />::order == 10 );
 		static_assert( S</ [ f64, 4 ] />::order == 10 );
@@ -181,6 +189,91 @@ def TypeTemplateOverloadingByTemplateParamKind_Test0():
 		// Select specialization for arguments-variables.
 		static_assert( S</ 0s />::order == 20 );
 		static_assert( S</ 12345s />::order == 20 );
+
+		// Select specialization for type templates.
+		static_assert( S</ Box />::order == 30 );
+		static_assert( S</ Wrapper />::order == 30 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateOverloadingByTemplateParamKind_Test1():
+	c_program_text= """
+		// Fine - overload type template by param kind (type vs variable).
+
+		template</ type T, size_type x /> struct S
+		{
+			auto order = 10;
+		}
+
+		template</ size_type x, type T /> struct S
+		{
+			auto order= 20;
+		}
+
+
+		// Select specialization for type and then value,
+		static_assert( S</ i32, 67s />::order == 10 );
+		static_assert( S</ [ f64, 4 ], 33s />::order == 10 );
+		static_assert( S</ tup[ bool, char8 ], 0s />::order == 10 );
+
+		// Select specialization for value and then type.
+		static_assert( S</ 0s, bool />::order == 20 );
+		static_assert( S</ 12345s, tup[] />::order == 20 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateOverloadingByTemplateParamKind_Test2():
+	c_program_text= """
+		// Fine - overload type template by param kind (type vs variable).
+
+		template</ type T /> struct S
+		{
+			auto order = 10;
+		}
+
+		template<//> struct S</ i32 />
+		{
+			auto order = 11;
+		}
+
+		template</ size_type x /> struct S
+		{
+			auto order= 20;
+		}
+
+		template</ /> struct S</ 33s />
+		{
+			auto order= 21;
+		}
+
+		template</ type template T /> struct S
+		{
+			auto order= 30;
+		}
+
+		template</ /> struct S</ Box />
+		{
+			auto order= 31;
+		}
+
+		template</type T/> struct Box{ T t; }
+		template</type T/> struct Wrapper{ T t; }
+
+		// Select specialization for arguments-types.
+		static_assert( S</ i32 />::order == 11 ); // Specialization for i32 type.
+		static_assert( S</ [ f64, 4 ] />::order == 10 );
+		static_assert( S</ tup[ bool, char8 ] />::order == 10 );
+
+		// Select specialization for arguments-variables.
+		static_assert( S</ 0s />::order == 20 );
+		static_assert( S</ 33s />::order == 21 ); // Specialization for value 33s.
+		static_assert( S</ 12345s />::order == 20 );
+
+		// Select specialization for type templates.
+		static_assert( S</ Box />::order == 31 ); // Specialization for "Box" type template.
+		static_assert( S</ Wrapper />::order == 30 );
 	"""
 	tests_lib.build_program( c_program_text )
 
