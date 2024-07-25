@@ -1222,6 +1222,10 @@ fn TemplateSignatureParam::conversion_constructor( VariableParam mut variable_pa
 	( something_( move(variable_param) ) )
 {}
 
+fn TemplateSignatureParam::conversion_constructor( TypeTemplateParam mut type_template_param )
+	( something_( move(type_template_param) ) )
+{}
+
 fn TemplateSignatureParam::conversion_constructor( ArrayTypeParam mut array_type_param )
 	( something_( ust::make_shared_ptr_final( move(array_type_param) ) ) )
 {}
@@ -1259,6 +1263,11 @@ fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypePar
 fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags)
 {
 	return something_.get</VariableParam/>();
+}
+
+fn TemplateSignatureParam::GetTypeTemplateParam(this) : ust::optional_ref_imut</ TypeTemplateParam /> @(ret_tags)
+{
+	return something_.get</TypeTemplateParam/>();
 }
 
 fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags)
@@ -1373,6 +1382,10 @@ fn MapTemplateParamsToSignatureParams(
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, variable_param );
 	}
+	if_var( &type_template_param : param.GetTypeTemplateParam() )
+	{
+		return MapTemplateParamsToSignatureParamsImpl( mapping, type_template_param );
+	}
 	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, array_type_param );
@@ -1425,6 +1438,15 @@ fn MapTemplateParamsToSignatureParamsImpl(
 {
 	ust::ignore_unused(mapping);
 	// Return variable params as is.
+	return param;
+}
+
+fn MapTemplateParamsToSignatureParamsImpl(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam::TypeTemplateParam& param ) : TemplateSignatureParam
+{
+	ust::ignore_unused(mapping);
+	// Return type template params as is.
 	return param;
 }
 
@@ -1490,7 +1512,15 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
 	TemplateSignatureParam::SpecializedTemplateParam& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::SpecializedTemplateParam mut out_param{ .type_templates_set= param.type_templates_set };
+	var TemplateSignatureParam::SpecializedTemplateParam mut out_param
+	{
+		.type_templates=
+			param
+			.type_templates
+			.iter()
+			.map( lambda[mapping]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); } )
+			.collect</ ust::vector />()
+	};
 	foreach( &template_param : param.params )
 	{
 		out_param.params.push_back( MapTemplateParamsToSignatureParams( mapping, template_param ) );
@@ -1568,6 +1598,14 @@ fn TemplateArgEquals( TemplateArgFinished& l, TemplateArgFinished& r ) : bool
 		}
 	}
 
+	if_var( &l_type_template : l.get</TypeTemplatePtr/>() )
+	{
+		if_var( &r_type_template : r.get</TypeTemplatePtr/>() )
+		{
+			return l_type_template == r_type_template;
+		}
+	}
+
 	return false;
 }
 
@@ -1587,6 +1625,10 @@ fn HashTemplateArg( TemplateArgFinished& arg ) : size_type
 					// LLVM constants are deduplicated, so, hashing pointers should work.
 					unsafe( cast_ref_unsafe</size_type/>( variable.constexpr_value ) ) );
 		}
+	}
+	else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
+	{
+		return ust::default_hasher::hash( type_template );
 	}
 	else{ halt; }
 }

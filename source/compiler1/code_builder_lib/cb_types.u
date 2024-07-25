@@ -104,7 +104,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		out_tuple_type.element_types.push_back( PrepareType( names_scope, function_context, element ) );
 	}
 
-	auto mut element_llvm_types= out_tuple_type.element_types.iter().map( Type::GetLLVMType ).collect</ ust::vector</ LLVMTypeRef /> />();
+	auto mut element_llvm_types= out_tuple_type.element_types.iter().map( Type::GetLLVMType ).collect</ ust::vector />();
 
 	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 
@@ -151,7 +151,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 				{
 					return select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} )
-			.collect</ ust::vector</InnerReferenceKind/> />()
+			.collect</ ust::vector/>()
 	};
 
 	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type.src_loc  ) )

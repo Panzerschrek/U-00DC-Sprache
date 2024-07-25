@@ -347,30 +347,11 @@ fn CodeBuilder::NamesScopeMergeValues(
 			auto mut dst_lock= dst_type_templates_set_ptr.try_lock_mut();
 			auto &mut dst= dst_lock.deref();
 
-			foreach( &type_template_ptr : src.type_templates )
+			if( src != dst )
 			{
-				auto mut same_found= false;
-				foreach( &dst_type_template_ptr : dst.type_templates )
-				{
-					if( type_template_ptr == dst_type_template_ptr )
-					{
-						same_found= true;
-						break;
-					}
-					with( &type_template : type_template_ptr.lock_imut().deref() )
-					{
-						if( type_template.signature_params == dst_type_template_ptr.lock_imut().deref().signature_params )
-						{
-							REPORT_ERROR( TypeTemplateRedefinition, target_names_scope, type_template.syntax_element.deref().src_loc, name )
-							same_found= true;
-							break;
-						}
-					}
-				}
-				if( !same_found )
-				{
-					dst.type_templates.push_back( type_template_ptr );
-				}
+				// Require defining a set of overloaded type templates in a single file.
+				// This is needed in order to prevent possible mangling problems of template types with arguments - overloaded type templates.
+				REPORT_ERROR( OverloadingImportedTypeTemplate, target_names_scope, src.type_templates.front().lock_imut().deref().syntax_element.deref().src_loc )
 			}
 
 			return;

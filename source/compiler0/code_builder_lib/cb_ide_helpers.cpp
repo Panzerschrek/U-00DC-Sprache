@@ -599,6 +599,14 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return std::move(arg);
 }
 
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeTemplateParam& type_template_param )
+{
+	(void)template_;
+	(void)args_names_scope;
+
+	return type_template_param.type_template;
+}
+
 TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param )
 {
 	if( template_param.index < template_.template_params.size() )
@@ -738,10 +746,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 	}
 	else
 	{
-		if( param.type != std::nullopt )
+		if( const auto variable_param = std::get_if<TemplateBase::VariableParamData>( &param.kind_data ) )
 		{
 			// Create variable arg.
-			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param.type );
+			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, variable_param->type );
 			if( const auto t= std::get_if<Type>( &type_arg ) )
 			{
 				TemplateVariableArg arg;
@@ -761,7 +769,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 				return std::move(arg);
 			}
 		}
-		else
+		else if( std::holds_alternative< TemplateBase::TypeParamData >( param.kind_data ) )
 		{
 			// Create type arg. Use stub type for this.
 
@@ -769,6 +777,16 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
 			return t;
 		}
+		else if( std::holds_alternative< TemplateBase::TypeTemplateParamData >( param.kind_data ) )
+		{
+			// It's too complex to create dummy type template arg.
+			// And this has little reason too, since such dummy will be practically unusable because of likely signature mismatch.
+			// So, just create type dummy.
+			const Type t= GetStubTemplateArgType();
+			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
+			return t;
+		}
+		else U_ASSERT(false);
 	}
 
 	return invalid_type_;

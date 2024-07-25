@@ -1329,10 +1329,21 @@ struct TemplateBase
 	explicit TemplateBase( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
+	struct TypeParamData{};
+
+	struct TypeTemplateParamData{};
+
+	struct VariableParamData
+	{
+		// Type of variable param.
+		TypeName type;
+	};
+
 	struct Param
 	{
 		SrcLoc src_loc;
-		std::optional<TypeName> param_type; // For variable params.
+		// Type param or type template param or variable param with given type.
+		std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
 		std::string name;
 	};
 

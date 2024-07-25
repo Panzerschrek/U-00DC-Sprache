@@ -167,6 +167,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 		}
 		if( !r.GetTypeParam().empty() ||
 			!r.GetVariableParam().empty() ||
+			!r.GetTypeTemplateParam().empty() ||
 			!r.GetArrayTypeParam().empty() ||
 			!r.GetTupleTypeParam().empty() ||
 			!r.GetRawPointerTypeParam().empty() ||
@@ -204,6 +205,17 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			return ConversionsCompareResult::LeftIsBetter; // Concrete variable is better, then template parameter.
 		}
 		if( !r.GetVariableParam().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+	}
+	if( !l.GetTypeTemplateParam().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type template is better, then template parameter.
+		}
+		if( !r.GetTypeTemplateParam().empty() )
 		{
 			return ConversionsCompareResult::Same;
 		}
@@ -369,12 +381,35 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 		}
 		if_var( &r_specialized_template : r.GetSpecializedTemplateParam() )
 		{
+			auto mut result= ConversionsCompareResult::Same;
+
+			if( l_specialized_template.type_templates.size() != r_specialized_template.type_templates.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+			if( l_specialized_template.type_templates.size() == 1s )
+			{
+				// A case with type template params and/or single specific template.
+				result= CompareTemplateSpecialization( l_specialized_template.type_templates.front(), r_specialized_template.type_templates.front() );
+				if( result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			else
+			{
+				// For complex cases do not compare conversions.
+				if( l_specialized_template.type_templates != r_specialized_template.type_templates )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+
 			if( l_specialized_template.params.size() != r_specialized_template.params.size() )
 			{
 				return ConversionsCompareResult::Incomparable;
 			}
 
-			auto mut result= ConversionsCompareResult::Same;
 			foreach( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
 			{
 				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );

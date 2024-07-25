@@ -519,23 +519,50 @@ U_TEST( Redefineition_ForImports_Test6 )
 	U_TEST_ASSERT( result.errors[0u].src_loc.GetLine() == 2u );
 }
 
-U_TEST( TypeTemplateRedefinition_ForImports_Test0 )
+U_TEST( OverloadingImportedTypeTemplate_Test0 )
 {
-	// Redefinition - same type template.
-
 	static const char c_program_text_a[]=
 	R"(
-		template</type U/> struct S{}
-	)";
-
-	static const char c_program_text_b[]=
-	R"(
-		template</type V/> struct S{}
+		template</type A/> struct S{}
 	)";
 
 	static const char c_program_text_root[]=
 	R"(
 		import "a"
+
+		// Error - already has an imorted template with the same name.
+		// For now all type templates with the same name in the same namespace should be defined within single file.
+		template</type A, type B/> struct S{}
+	)";
+
+	const ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::OverloadingImportedTypeTemplate, 6u ) );
+}
+
+U_TEST( OverloadingImportedTypeTemplate_Test1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</type A/> struct S{}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		template</type A, type B/> struct S{}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		// Error - already has an imorted template with the same name.
+		// For now all type templates with the same name in the same namespace should be defined within single file.
 		import "b"
 	)";
 
@@ -548,10 +575,10 @@ U_TEST( TypeTemplateRedefinition_ForImports_Test0 )
 			},
 			"root" );
 
-	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::TypeTemplateRedefinition, 2u ) );
+	U_TEST_ASSERT( HasError( result.errors, CodeBuilderErrorCode::OverloadingImportedTypeTemplate, 2u ) );
 }
 
-U_TEST( TypeTemplateRedefinition_ForImports_Test1 )
+U_TEST( OverloadingImportedTypeTemplate_Test2 )
 {
 	static const char c_program_text_a[]=
 	R"(
@@ -585,31 +612,36 @@ U_TEST( TypeTemplateRedefinition_ForImports_Test1 )
 		"root" );
 }
 
-U_TEST( TypeTemplateRedefinition_ForImports_Test2 )
+U_TEST( OverloadingImportedTypeTemplate_Test3 )
 {
 	static const char c_program_text_a[]=
 	R"(
 		template</type U/> struct S{}
+		template</type U, type V/> struct S{}
 	)";
 
 	static const char c_program_text_b[]=
 	R"(
-		template</type U, type V/> struct S{}
+		import "a"
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
 	)";
 
 	static const char c_program_text_root[]=
 	R"(
-		// Ok - take two diffetent type templates from imporded files.
-		import "a"
+		// Import same type template set from "a" via "b" and "c"
 		import "b"
-		type T0= S</i32/>;
-		type T1= S</f32, i8/>;
+		import "c"
 	)";
 
 	BuildMultisourceProgram(
 		{
 			{ "a", c_program_text_a },
 			{ "b", c_program_text_b },
+			{ "c", c_program_text_c },
 			{ "root", c_program_text_root }
 		},
 		"root" );

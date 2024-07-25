@@ -27,6 +27,13 @@ public:
 		bool operator==( const VariableParam& other ) const;
 	};
 
+	struct TypeTemplateParam
+	{
+		TypeTemplatePtr type_template;
+
+		bool operator==( const TypeTemplateParam& other ) const;
+	};
+
 	struct TemplateParam
 	{
 		size_t index;
@@ -95,7 +102,7 @@ public:
 
 	struct SpecializedTemplateParam
 	{
-		std::vector<TypeTemplatePtr> type_templates;
+		std::vector<TemplateSignatureParam> type_templates;
 		std::vector<TemplateSignatureParam> params;
 
 		bool operator==( const SpecializedTemplateParam& other ) const;
@@ -104,6 +111,7 @@ public:
 public:
 	TemplateSignatureParam( TypeParam type= TypeParam() );
 	TemplateSignatureParam( VariableParam variable );
+	TemplateSignatureParam( TypeTemplateParam type_template_param );
 	TemplateSignatureParam( TemplateParam template_parameter );
 	TemplateSignatureParam( ArrayParam array );
 	TemplateSignatureParam( TupleParam tuple );
@@ -117,6 +125,7 @@ public:
 	bool IsTemplateParam() const;
 	const TypeParam* GetType() const;
 	const VariableParam* GetVariable() const;
+	const TypeTemplateParam* GetTypeTemplate() const;
 	const TemplateParam* GetTemplateParam() const;
 	const ArrayParam* GetArray() const;
 	const TupleParam* GetTuple() const;
@@ -138,6 +147,7 @@ private:
 	std::variant<
 		TypeParam,
 		VariableParam,
+		TypeTemplateParam,
 		TemplateParam,
 		ArrayParam,
 		TupleParam,

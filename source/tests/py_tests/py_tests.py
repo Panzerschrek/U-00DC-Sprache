@@ -99,6 +99,7 @@ def main():
 		"ternary_operator_test",
 		"tuples_test",
 		"type_alias_template_in_template_signature_test",
+		"type_templates_as_template_params_test",
 		"type_templates_overloading_test",
 		"type_conversions_test",
 		"typeinfo_test",

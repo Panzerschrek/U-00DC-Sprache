@@ -627,10 +627,20 @@ struct LambdaClassData
 
 class TemplateBase polymorph
 {
+	struct TypeParamData{}
+
+	struct TypeTemplateParamData{}
+
+	struct VariableParamData
+	{
+		// Type of variable param.
+		TemplateSignatureParam t;
+	}
+
 	struct Param
 	{
 		ust::string8 name;
-		ust::optional</ TemplateSignatureParam /> t;
+		ust::variant</ tup[ TypeParamData, TypeTemplateParamData, VariableParamData ] /> kind_data;
 	}
 	ust::vector</Param/> params;
 
@@ -717,10 +727,10 @@ struct TemplateArg
 	u32 index;
 
 	struct NotKnownYet{}
-	ust::variant</ tup[ NotKnownYet, Type, VariablePtr ] /> something;
+	ust::variant</ tup[ NotKnownYet, Type, VariablePtr, TypeTemplatePtr ] /> something;
 }
 
-type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr ] />;
+type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr, TypeTemplatePtr ] />;
 type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 
 class TemplateSignatureParam
@@ -742,6 +752,11 @@ public:
 		LLVMValueRef constexpr_value;
 
 		op==(VariableParam& l, VariableParam& r) : bool;
+	}
+
+	struct TypeTemplateParam
+	{
+		TypeTemplatePtr type_template;
 	}
 
 	struct ArrayTypeParam
@@ -791,7 +806,7 @@ public:
 
 	struct SpecializedTemplateParam
 	{
-		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
+		ust::vector</ TemplateSignatureParam /> type_templates;
 		ust::vector</ TemplateSignatureParam /> params;
 	}
 
@@ -801,6 +816,7 @@ public:
 	fn conversion_constructor( TemplateParam mut template_param );
 	fn conversion_constructor( TypeParam mut type_param );
 	fn conversion_constructor( VariableParam mut variable_param );
+	fn conversion_constructor( TypeTemplateParam mut type_template_param );
 	fn conversion_constructor( ArrayTypeParam mut array_type_param );
 	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
 	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
@@ -811,6 +827,7 @@ public:
 	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);
 	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags);
 	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags);
+	fn GetTypeTemplateParam(this) : ust::optional_ref_imut</ TypeTemplateParam /> @(ret_tags);
 	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags);
 	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags);
 	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags);
@@ -828,6 +845,7 @@ private:
 		TemplateParam,
 		TypeParam,
 		VariableParam,
+		TypeTemplateParam,
 		ust::shared_ptr_final</ ArrayTypeParam />,
 		ust::shared_ptr_final</ TupleTypeParam />,
 		ust::shared_ptr_final</ RawPointerTypeParam />,

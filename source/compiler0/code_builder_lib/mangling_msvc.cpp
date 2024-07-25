@@ -223,6 +223,7 @@ private:
 	void EncodeTemplateArgs( ManglerState& mangler_state, llvm::ArrayRef<TemplateArg> template_args ) const;
 	void EncodeTemplateArgImpl( ManglerState& mangler_state, const Type& type ) const;
 	void EncodeTemplateArgImpl( ManglerState& mangler_state, const TemplateVariableArg& variable ) const;
+	void EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template ) const;
 	void EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* constexpr_value ) const;
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& names_scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& names_scope ) const;
@@ -604,6 +605,16 @@ void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const Temp
 		U_ASSERT( variable.constexpr_value != nullptr );
 		EncodeNumber( mangler_state, variable.constexpr_value->getUniqueInteger(), is_signed );
 	}
+}
+
+void ManglerMSVC::EncodeTemplateArgImpl( ManglerState& mangler_state, const TypeTemplatePtr& type_template ) const
+{
+	mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
+	EncodeFullName( mangler_state, type_template->syntax_element->name, *type_template->parent_namespace );
+
+	// Do not mangle template signature params to distinguish between different overloaded type templates.
+	// it's not required, since only sets with one type template may be used as template arguments.
+	// Merging different type templates imported from different files into the same type templates set isn't possible too.
 }
 
 void ManglerMSVC::EncodeConstexprValue( ManglerState& mangler_state, const Type& type, const llvm::Constant* const constexpr_value ) const

@@ -537,25 +537,11 @@ void CodeBuilder::MergeNameScopes(
 			{
 				if( const auto src_type_templates_set= src_member.value.GetTypeTemplatesSet() )
 				{
-					for( const TypeTemplatePtr& src_type_template : src_type_templates_set->type_templates )
+					if( dst_type_templates_set->type_templates != src_type_templates_set->type_templates )
 					{
-						bool should_add= true;
-						for( const TypeTemplatePtr& dst_type_template : dst_type_templates_set->type_templates )
-						{
-							if( dst_type_template == src_type_template )
-							{
-								should_add= false;
-								break;
-							}
-							if( src_type_template->signature_params == dst_type_template->signature_params )
-							{
-								REPORT_ERROR( TypeTemplateRedefinition, dst.GetErrors(), src_type_template->src_loc, src_name );
-								should_add= false;
-								break;
-							}
-						}
-						if( should_add )
-							dst_type_templates_set->type_templates.push_back( src_type_template );
+						// Require defining a set of overloaded type templates in a single file.
+						// This is needed in order to prevent possible mangling problems of template types with arguments - overloaded type templates.
+						REPORT_ERROR( OverloadingImportedTypeTemplate, dst.GetErrors(), src_type_templates_set->type_templates.front()->syntax_element->src_loc );
 					}
 
 					return;

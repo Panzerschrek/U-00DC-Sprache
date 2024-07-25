@@ -46,6 +46,7 @@ private:
 	fn EncodeTemplateArgs( this, ManglerState &mut mangler_state, TemplateArgsFinished& template_args );
 	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Type& t );
 	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, VariablePtr& v_ptr );
+	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template );
 	fn EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value );
 	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state, NamesScope& scope );
@@ -501,6 +502,19 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Va
 		{
 			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
 		}
+	}
+}
+
+fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
+{
+	with( &t : type_template.lock_imut().deref() )
+	{
+		mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
+		EncodeFullName( mangler_state, t.syntax_element.deref().name.range(), t.parent_names_scope.lock().try_lock_imut().deref() );
+
+		// Do not mangle template signature params to distinguish between different overloaded type templates.
+		// it's not required, since only sets with one type template may be used as template arguments.
+		// Merging different type templates imported from different files into the same type templates set isn't possible too.
 	}
 }
 

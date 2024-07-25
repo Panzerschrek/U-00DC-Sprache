@@ -28,18 +28,28 @@ struct TemplateVariableArg
 bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r );
 inline bool operator!=( const TemplateVariableArg& l, const TemplateVariableArg& r ) { return !(l == r); }
 
-using TemplateArg= std::variant< TemplateVariableArg, Type >;
+using TemplateArg= std::variant< TemplateVariableArg, Type, TypeTemplatePtr >;
 using TemplateArgs= llvm::SmallVector<TemplateArg, 2>;
 
 struct TemplateBase
 {
 	virtual ~TemplateBase()= default;
 
+	struct TypeParamData{};
+
+	struct TypeTemplateParamData{};
+
+	struct VariableParamData
+	{
+		// Type of variable param.
+		TemplateSignatureParam type;
+	};
+
 	struct TemplateParameter
 	{
 		SrcLoc src_loc;
 		std::string name;
-		std::optional<TemplateSignatureParam> type; // For variable params.
+		std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
 	};
 
 	std::vector<TemplateParameter> template_params;

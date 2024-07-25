@@ -733,6 +733,14 @@ private:
 		Synt::TemplateArgs& template_args,
 		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
 
+	fn GenTemplateType(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		TypeTemplatePtr& type_template,
+		Synt::TemplateArgs& template_args,
+		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
+
 	struct TemplateTypeArgsEvaluationResult
 	{
 		TypeTemplatePtr type_template;
@@ -813,6 +821,13 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::VariableParam& variable_param,
+		TemplateArgFinished& given_arg ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
+		TemplateSignatureParam::TypeTemplateParam& type_template_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(

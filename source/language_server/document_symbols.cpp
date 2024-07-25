@@ -91,10 +91,13 @@ void WriteTemplateParams( const std::vector<Synt::TypeTemplate::Param>& params, 
 {
 	for( const Synt::TypeTemplate::Param& param : params )
 	{
-		if( param.param_type != std::nullopt )
-			Synt::WriteTypeName( *param.param_type, stream );
-		else
+		if( const auto variable_param_data= std::get_if<Synt::TemplateBase::VariableParamData>( &param.kind_data ) )
+			Synt::WriteTypeName( variable_param_data->type, stream );
+		else if( std::holds_alternative<Synt::TemplateBase::TypeParamData>( param.kind_data ) )
 			stream << Keyword( Keywords::type_ );
+		else if( std::holds_alternative<Synt::TemplateBase::TypeTemplateParamData>( param.kind_data ) )
+			stream << Keyword( Keywords::type_ ) << " " << Keyword( Keywords::template_ );
+		else U_ASSERT(false);
 
 		stream << " " << param.name;
 		if( &param != &params.back() )

@@ -22,6 +22,11 @@ bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& oth
 	return this->index == other.index;
 }
 
+bool TemplateSignatureParam::TypeTemplateParam::operator==( const TypeTemplateParam& other ) const
+{
+	return this->type_template == other.type_template;
+}
+
 bool TemplateSignatureParam::ArrayParam::operator==( const ArrayParam& other ) const
 {
 	return *this->element_type == *other.element_type && *this->element_count == *other.element_count;
@@ -89,6 +94,11 @@ TemplateSignatureParam::TemplateSignatureParam( VariableParam variable )
 	something_= std::move(variable);
 }
 
+TemplateSignatureParam::TemplateSignatureParam( TypeTemplateParam type_template_param )
+{
+	something_= std::move(type_template_param);
+}
+
 TemplateSignatureParam::TemplateSignatureParam( TemplateParam template_parameter )
 {
 	something_= std::move(template_parameter);
@@ -149,6 +159,11 @@ const TemplateSignatureParam::VariableParam* TemplateSignatureParam::GetVariable
 	return std::get_if<VariableParam>( &something_ );
 }
 
+const TemplateSignatureParam::TypeTemplateParam* TemplateSignatureParam::GetTypeTemplate() const
+{
+	return std::get_if<TypeTemplateParam>( &something_ );
+}
+
 const TemplateSignatureParam::TemplateParam* TemplateSignatureParam::GetTemplateParam() const
 {
 	return std::get_if<TemplateParam>( &something_ );
@@ -206,6 +221,15 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::VariableParam& param )
 {
 	// Return variable params as is.
+	U_UNUSED(mapping);
+	return param;
+}
+
+TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
+	const TemplateParamsToSignatureParamsMappingRef mapping,
+	const TemplateSignatureParam::TypeTemplateParam& param )
+{
+	// Return type template params as is.
 	U_UNUSED(mapping);
 	return param;
 }
@@ -278,7 +302,10 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::SpecializedTemplateParam& param )
 {
 	TemplateSignatureParam::SpecializedTemplateParam out_param;
-	out_param.type_templates= param.type_templates;
+
+	out_param.type_templates.reserve( param.type_templates.size() );
+	for( const TemplateSignatureParam& type_template : param.type_templates )
+		out_param.type_templates.push_back( MapTemplateParamsToSignatureParams( mapping, type_template ) );
 
 	out_param.params.reserve( param.params.size() );
 	for( const TemplateSignatureParam& template_param : param.params )

@@ -182,19 +182,6 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 6u ) );
 }
 
-U_TEST( TemplateInstantiationRequiredTest1 )
-{
-	static const char c_program_text[]=
-	R"(
-		template</ type X /> struct A{}
-		template</ type T /> struct Box</ A /> {}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 3u ) );
-}
-
 U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
 {
 	static const char c_program_text[]=

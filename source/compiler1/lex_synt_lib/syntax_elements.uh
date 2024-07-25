@@ -863,8 +863,18 @@ struct Enum
 
 struct TemplateParam
 {
+	struct TypeParamData{}
+
+	struct TypeTemplateParamData{}
+
+	struct VariableParamData
+	{
+		// Type of variable param.
+		TypeName t;
+	}
+
 	SrcLoc src_loc;
-	ust::optional</TypeName/> t;
+	ust::variant</ tup[ TypeParamData, TypeTemplateParamData, VariableParamData ] /> kind_data;
 	ust::string8 name;
 }
 

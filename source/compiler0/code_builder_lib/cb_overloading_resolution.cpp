@@ -122,6 +122,14 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, then template parameter.
 		else U_ASSERT(false);
 	}
+	else if( left_template_parameter.GetTypeTemplate() != nullptr )
+	{
+		if( right_template_parameter.GetTypeTemplate() != nullptr )
+			return ConversionsCompareResult::Same;
+		else if( right_template_parameter.IsTemplateParam() )
+			return ConversionsCompareResult::LeftIsBetter; // Type template is more specialized, then template parameter.
+		else U_ASSERT(false);
+	}
 	else if( const auto l_array= left_template_parameter.GetArray() )
 	{
 		if( right_template_parameter.IsType() )
@@ -240,11 +248,28 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, then template parameter.
 		else if( const auto r_template= right_template_parameter.GetTemplate() )
 		{
+			if( l_template->type_templates.size() != r_template->type_templates.size() )
+				return ConversionsCompareResult::Incomparable;
+
+			ConversionsCompareResult result= ConversionsCompareResult::Same;
+			if( l_template->type_templates.size() == 1 )
+			{
+				// A case with type template params and/or single specific template.
+				result= TemplateSpecializationCompare( l_template->type_templates.front(), r_template->type_templates.front() );
+				if( result == ConversionsCompareResult::Incomparable )
+					return ConversionsCompareResult::Incomparable;
+			}
+			else
+			{
+				// For complex cases do not compare conversions.
+				if( l_template->type_templates != r_template->type_templates )
+					return ConversionsCompareResult::Incomparable;
+			}
+
 			// Templates with different arg count is uncomparable.
 			if( l_template->params.size() != r_template->params.size() )
 				return ConversionsCompareResult::Incomparable;
 
-			ConversionsCompareResult result= ConversionsCompareResult::Same;
 			for( size_t i= 0u; i < l_template->params.size(); ++i )
 			{
 				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_template->params[i], r_template->params[i] );
@@ -268,6 +293,8 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, then template parameter.
 		else if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, then template parameter.
+		else if( right_template_parameter.GetTypeTemplate() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Type template is more specialized, then template parameter.
 		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.GetArray() != nullptr )

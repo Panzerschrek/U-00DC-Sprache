@@ -1050,13 +1050,16 @@ void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostr
 
 	for( const TemplateBase::Param& param : function_template.params )
 	{
-		if( param.param_type != std::nullopt )
+		if( const auto variable_param_data= std::get_if<TemplateBase::VariableParamData>( &param.kind_data ) )
 		{
-			ElementWrite( *param.param_type, stream );
+			ElementWrite( variable_param_data->type, stream );
 			stream << " ";
 		}
-		else
+		else if( std::holds_alternative<TemplateBase::TypeParamData>( param.kind_data ) )
 			stream << Keyword( Keywords::type_ ) << " ";
+		else if( std::holds_alternative<TemplateBase::TypeTemplateParamData>( param.kind_data ) )
+			stream << Keyword( Keywords::type_ ) << " " << Keyword( Keywords::template_ ) << " ";
+		else U_ASSERT(false);
 
 		stream << param.name;
 
