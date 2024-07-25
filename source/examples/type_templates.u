@@ -25,6 +25,9 @@ fn nomangle main() : i32
 	assert( f64_3dvec[1] == 0.0 );
 	assert( f64_3dvec[2] == 0.0 );
 
+	var IntsContainer</Wrapper/> int_wrapper{ .t= 789 };
+	static_assert( same_type</ typeof(int_wrapper), Wrapper</i32/> /> );
+
 	return 0;
 }
 
@@ -54,3 +57,7 @@ type VecN= [ T, S ];
 // Use one type alias template within another.
 template</ type T />
 type Vec3= VecN</ T, 3s />;
+
+// Type template as template parameter.
+template</ type template ConainerT />
+type IntsContainer= ConainerT</i32/>;
