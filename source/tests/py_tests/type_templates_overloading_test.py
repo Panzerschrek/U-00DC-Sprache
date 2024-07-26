@@ -161,7 +161,7 @@ def TypeTemplatesOvelroading_Specialization_Test5():
 
 def TypeTemplateOverloadingByTemplateParamKind_Test0():
 	c_program_text= """
-		// Fine - overload type template by param kind (type vs variable).
+		// Fine - overload type template by param kind (type vs variable vs type template).
 
 		template</ type T /> struct S
 		{
@@ -199,7 +199,7 @@ def TypeTemplateOverloadingByTemplateParamKind_Test0():
 
 def TypeTemplateOverloadingByTemplateParamKind_Test1():
 	c_program_text= """
-		// Fine - overload type template by param kind (type vs variable).
+		// Fine - overload type template by param kind (type and variable vs variable and type).
 
 		template</ type T, size_type x /> struct S
 		{
@@ -212,7 +212,7 @@ def TypeTemplateOverloadingByTemplateParamKind_Test1():
 		}
 
 
-		// Select specialization for type and then value,
+		// Select specialization for type and then value.
 		static_assert( S</ i32, 67s />::order == 10 );
 		static_assert( S</ [ f64, 4 ], 33s />::order == 10 );
 		static_assert( S</ tup[ bool, char8 ], 0s />::order == 10 );
@@ -226,14 +226,14 @@ def TypeTemplateOverloadingByTemplateParamKind_Test1():
 
 def TypeTemplateOverloadingByTemplateParamKind_Test2():
 	c_program_text= """
-		// Fine - overload type template by param kind (type vs variable).
+		// Fine - overload type template by param kind (type vs variable vs type template). Add also specializations for each kind.
 
 		template</ type T /> struct S
 		{
 			auto order = 10;
 		}
 
-		template<//> struct S</ i32 />
+		template<//> struct S</ i32 /> // Specialization for "i32" types.
 		{
 			auto order = 11;
 		}
@@ -243,7 +243,7 @@ def TypeTemplateOverloadingByTemplateParamKind_Test2():
 			auto order= 20;
 		}
 
-		template</ /> struct S</ 33s />
+		template<//> struct S</ 33s /> // Specialization for "33s" value.
 		{
 			auto order= 21;
 		}
@@ -253,7 +253,7 @@ def TypeTemplateOverloadingByTemplateParamKind_Test2():
 			auto order= 30;
 		}
 
-		template</ /> struct S</ Box />
+		template<//> struct S</ Box /> // Specialization for "Box" type template.
 		{
 			auto order= 31;
 		}

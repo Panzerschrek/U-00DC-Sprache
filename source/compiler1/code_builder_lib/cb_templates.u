@@ -393,10 +393,11 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			if( name_lookup.name == template_params[i].name )
+			auto& template_param= template_params[i];
+			if( name_lookup.name == template_param.name )
 			{
 				template_params_usage_flags[i]= true;
-				return TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_params[i].kind_data.index() ) };
+				return TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_param.kind_data.index() ) };
 			}
 		}
 	}
