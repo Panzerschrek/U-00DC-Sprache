@@ -135,7 +135,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		// Short form.
 		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			signature_params.push_back( TemplateSignatureParam::TemplateParam{ .index= u32(i) } );
+			signature_params.push_back( TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_params[size_type(i)].kind_data.index() ) } );
 			template_params_usage_flags[i]= true;
 		}
 	}
@@ -393,10 +393,11 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			if( name_lookup.name == template_params[i].name )
+			auto& template_param= template_params[i];
+			if( name_lookup.name == template_param.name )
 			{
 				template_params_usage_flags[i]= true;
-				return TemplateSignatureParam::TemplateParam{ .index= u32(i) };
+				return TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_param.kind_data.index() ) };
 			}
 		}
 	}
@@ -407,8 +408,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		{
 			for( auto mut i= 0s; i < template_params.size(); ++i )
 			{
-				if( name_lookup.name == template_params[i].name &&
-					template_params[i].kind_data.has</ TemplateBase::TypeTemplateParamData />() )
+				auto& template_param= template_params[i];
+				if( name_lookup.name == template_param.name &&
+					template_param.kind_data.has</ TemplateBase::TypeTemplateParamData />() )
 				{
 					template_params_usage_flags[i]= true;
 
@@ -420,7 +422,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 					return TemplateSignatureParam::SpecializedTemplateParam
 					{
-						.type_templates= ust::make_array( TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ .index= u32(i) } ) ),
+						.type_templates= ust::make_array( TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_param.kind_data.index() ) } ) ),
 						.params= move(specialized_template_params),
 					};
 				}
@@ -1381,7 +1383,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 			if( !MatchTemplateArgument(
 					result_names_scope,
 					function_template,
-					TemplateSignatureParam::TemplateParam{ .index= u32(i) },
+					TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( function_template.params[i].kind_data.index() ) },
 					template_args_finished[i] ) )
 			{
 				all_ok= false;

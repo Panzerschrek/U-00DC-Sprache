@@ -739,6 +739,8 @@ public:
 	struct TemplateParam
 	{
 		u32 index;
+		// See TemplateBase::TemplateParameter::kind_data.
+		u32 kind_index;
 	}
 
 	struct TypeParam

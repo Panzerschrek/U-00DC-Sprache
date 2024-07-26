@@ -76,7 +76,7 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template params to signature params.
 		for( size_t i= 0u; i < type_template_declaration.params.size(); ++i )
 		{
-			type_template->signature_params.push_back( TemplateSignatureParam::TemplateParam{ i } );
+			type_template->signature_params.push_back( TemplateSignatureParam::TemplateParam{ i, template_parameters[i].kind_data.index() } );
 			template_parameters_usage_flags[i]= true;
 		}
 
@@ -439,7 +439,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 			const size_t param_index= size_t(&template_parameter - template_parameters.data());
 			template_parameters_usage_flags[ param_index ]= true;
 
-			return TemplateSignatureParam::TemplateParam{ param_index };
+			return TemplateSignatureParam::TemplateParam{ param_index, template_parameter.kind_data.index() };
 		}
 	}
 
@@ -470,7 +470,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 				return TemplateSignatureParam::SpecializedTemplateParam
 				{
-					{ TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ param_index } ) },
+					{ TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ param_index, template_parameter.kind_data.index() } ) },
 					std::move(specialized_template_params),
 				};
 			}
@@ -1342,7 +1342,7 @@ OverloadedFunctionsSetPtr CodeBuilder::ParameterizeFunctionTemplate(
 				function_template,
 				args_names_scope,
 				arguments_calculated[i],
-				TemplateSignatureParam::TemplateParam{ i } );
+				TemplateSignatureParam::TemplateParam{ i, function_template.template_params[i].kind_data.index() } );
 		}
 
 		if( !ok )
