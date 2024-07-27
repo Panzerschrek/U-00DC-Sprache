@@ -45,6 +45,22 @@ public:
 		( begin_= unsafe( src_range.data() ), size_= src_range.size() )
 	{}
 
+	// Explicit constructor from a container with "range" method.
+	template</type template Container/>
+	fn enable_if( is_mutable )
+	conversion_constructor( mut this, Container</T/> & mut container ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		this = container.range();
+	}
+
+	// Explicit constructor from a container with "range" method.
+	template</type template Container/>
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, Container</T/> &imut container ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		this = container.range();
+	}
+
 	// Construct from raw parts.
 	fn constructor( $(T) begin, size_type size ) unsafe
 		( begin_(begin), size_(size) )
