@@ -9,7 +9,7 @@ namespace U
 namespace
 {
 
-const TemplateSignatureParam g_dummy_template_signature_param = TemplateSignatureParam::TypeParam();
+const TemplateSignatureParam g_dummy_template_signature_param = TemplateSignatureParam::Type();
 
 // "Class" of function argument in terms of overloading.
 enum class ArgOverloadingClass
@@ -110,7 +110,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than function.
 		if( right_template_parameter.GetCoroutine() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than coroutine.
-		if( right_template_parameter.GetTemplate() != nullptr )
+		if( right_template_parameter.GetSpecializedTemplate() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, than template.
 		else U_ASSERT(false);
 	}
@@ -240,39 +240,39 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		}
 		else U_ASSERT(false);
 	}
-	else if( const auto l_template= left_template_parameter.GetTemplate() )
+	else if( const auto l_specialized_template= left_template_parameter.GetSpecializedTemplate() )
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, than template.
 		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, than template parameter.
-		else if( const auto r_template= right_template_parameter.GetTemplate() )
+		else if( const auto r_specialized_template= right_template_parameter.GetSpecializedTemplate() )
 		{
-			if( l_template->type_templates.size() != r_template->type_templates.size() )
+			if( l_specialized_template->type_templates.size() != r_specialized_template->type_templates.size() )
 				return ConversionsCompareResult::Incomparable;
 
 			ConversionsCompareResult result= ConversionsCompareResult::Same;
-			if( l_template->type_templates.size() == 1 )
+			if( l_specialized_template->type_templates.size() == 1 )
 			{
 				// A case with type template params and/or single specific template.
-				result= TemplateSpecializationCompare( l_template->type_templates.front(), r_template->type_templates.front() );
+				result= TemplateSpecializationCompare( l_specialized_template->type_templates.front(), r_specialized_template->type_templates.front() );
 				if( result == ConversionsCompareResult::Incomparable )
 					return ConversionsCompareResult::Incomparable;
 			}
 			else
 			{
 				// For complex cases do not compare conversions.
-				if( l_template->type_templates != r_template->type_templates )
+				if( l_specialized_template->type_templates != r_specialized_template->type_templates )
 					return ConversionsCompareResult::Incomparable;
 			}
 
 			// Templates with different arg count is uncomparable.
-			if( l_template->params.size() != r_template->params.size() )
+			if( l_specialized_template->params.size() != r_specialized_template->params.size() )
 				return ConversionsCompareResult::Incomparable;
 
-			for( size_t i= 0u; i < l_template->params.size(); ++i )
+			for( size_t i= 0u; i < l_specialized_template->params.size(); ++i )
 			{
-				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_template->params[i], r_template->params[i] );
+				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_specialized_template->params[i], r_specialized_template->params[i] );
 				if( arg_result == ConversionsCompareResult::Incomparable )
 					return ConversionsCompareResult::Incomparable;
 
@@ -305,7 +305,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::RightIsBetter; // Raw pointer is more specialized, than template parameter.
 		else if( right_template_parameter.GetFunction() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Function is more specialized, than template parameter.
-		else if( right_template_parameter.GetTemplate() != nullptr )
+		else if( right_template_parameter.GetSpecializedTemplate() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, than template parameter.
 		else U_ASSERT(false);
 	}

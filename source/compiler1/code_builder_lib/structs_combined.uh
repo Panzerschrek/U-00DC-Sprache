@@ -743,41 +743,41 @@ public:
 		u32 kind_index;
 	}
 
-	struct TypeParam
+	struct Type
 	{
-		Type t;
+		U1::Type t;
 	}
 
-	struct VariableParam
+	struct Variable
 	{
-		Type t;
+		U1::Type t;
 		LLVMValueRef constexpr_value;
 
-		op==(VariableParam& l, VariableParam& r) : bool;
+		op==(Variable& l, Variable& r) : bool;
 	}
 
-	struct TypeTemplateParam
+	struct TypeTemplate
 	{
 		TypeTemplatePtr type_template;
 	}
 
-	struct ArrayTypeParam
+	struct Array
 	{
 		TemplateSignatureParam element_type;
 		TemplateSignatureParam element_count;
 	}
 
-	struct TupleTypeParam
+	struct Tuple
 	{
 		ust::vector</TemplateSignatureParam/> element_types;
 	}
 
-	struct RawPointerTypeParam
+	struct RawPointer
 	{
 		TemplateSignatureParam element_type;
 	}
 
-	struct FunctionTypeParam
+	struct Function
 	{
 		TemplateSignatureParam return_type;
 		ValueType return_value_type;
@@ -793,7 +793,7 @@ public:
 		ust::vector</Param/> params;
 	}
 
-	struct CoroutineTypeParam
+	struct Coroutine
 	{
 		CoroutineKind kind;
 		TemplateSignatureParam return_type;
@@ -806,7 +806,7 @@ public:
 		FunctionType::ReturnInnerReferences return_inner_references;
 	}
 
-	struct SpecializedTemplateParam
+	struct SpecializedTemplate
 	{
 		ust::vector</ TemplateSignatureParam /> type_templates;
 		ust::vector</ TemplateSignatureParam /> params;
@@ -815,27 +815,27 @@ public:
 	fn constructor( mut this, TemplateSignatureParam& other )= default;
 	op=( mut this, TemplateSignatureParam& other )= default;
 
-	fn conversion_constructor( TemplateParam mut template_param );
-	fn conversion_constructor( TypeParam mut type_param );
-	fn conversion_constructor( VariableParam mut variable_param );
-	fn conversion_constructor( TypeTemplateParam mut type_template_param );
-	fn conversion_constructor( ArrayTypeParam mut array_type_param );
-	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
-	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
-	fn conversion_constructor( FunctionTypeParam mut function_type_param );
-	fn conversion_constructor( CoroutineTypeParam mut coroutine_type_param );
-	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
+	fn conversion_constructor( TemplateParam template_param );
+	fn conversion_constructor( Type mut type_param );
+	fn conversion_constructor( Variable variable_param );
+	fn conversion_constructor( TypeTemplate type_template_param );
+	fn conversion_constructor( Array array_type_param );
+	fn conversion_constructor( Tuple tuple_type_param );
+	fn conversion_constructor( RawPointer raw_pointer_type_param );
+	fn conversion_constructor( Function function_type_param );
+	fn conversion_constructor( Coroutine coroutine_type_param );
+	fn conversion_constructor( SpecializedTemplate specialized_template_param );
 
 	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);
-	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags);
-	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags);
-	fn GetTypeTemplateParam(this) : ust::optional_ref_imut</ TypeTemplateParam /> @(ret_tags);
-	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags);
-	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags);
-	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags);
-	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam /> @(ret_tags);
-	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam /> @(ret_tags);
-	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam /> @(ret_tags);
+	fn GetType(this) : ust::optional_ref_imut</ Type /> @(ret_tags);
+	fn GetVariable(this) : ust::optional_ref_imut</ Variable /> @(ret_tags);
+	fn GetTypeTemplate(this) : ust::optional_ref_imut</ TypeTemplate /> @(ret_tags);
+	fn GetArray(this) : ust::optional_ref_imut</ Array /> @(ret_tags);
+	fn GetTuple(this) : ust::optional_ref_imut</ Tuple /> @(ret_tags);
+	fn GetRawPointer(this) : ust::optional_ref_imut</ RawPointer /> @(ret_tags);
+	fn GetFunction(this) : ust::optional_ref_imut</ Function /> @(ret_tags);
+	fn GetCoroutine(this) : ust::optional_ref_imut</ Coroutine /> @(ret_tags);
+	fn GetSpecializedTemplate(this) : ust::optional_ref_imut</ SpecializedTemplate /> @(ret_tags);
 
 	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
 
@@ -845,15 +845,15 @@ private:
 private:
 	type Container= ust::variant</ tup[
 		TemplateParam,
-		TypeParam,
-		VariableParam,
-		TypeTemplateParam,
-		ust::shared_ptr_final</ ArrayTypeParam />,
-		ust::shared_ptr_final</ TupleTypeParam />,
-		ust::shared_ptr_final</ RawPointerTypeParam />,
-		ust::shared_ptr_final</ FunctionTypeParam />,
-		ust::shared_ptr_final</ CoroutineTypeParam />,
-		ust::shared_ptr_final</ SpecializedTemplateParam />
+		Type,
+		Variable,
+		TypeTemplate,
+		ust::shared_ptr_final</ Array />,
+		ust::shared_ptr_final</ Tuple />,
+		ust::shared_ptr_final</ RawPointer />,
+		ust::shared_ptr_final</ Function />,
+		ust::shared_ptr_final</ Coroutine />,
+		ust::shared_ptr_final</ SpecializedTemplate />
 		] />;
 
 	Container something_;

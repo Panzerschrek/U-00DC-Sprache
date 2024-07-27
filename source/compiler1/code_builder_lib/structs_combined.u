@@ -1214,39 +1214,39 @@ fn TemplateSignatureParam::conversion_constructor( TemplateParam mut template_pa
 	( something_( move(template_param) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( TypeParam mut type_param )
+fn TemplateSignatureParam::conversion_constructor( Type mut type_param )
 	( something_( move(type_param) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( VariableParam mut variable_param )
+fn TemplateSignatureParam::conversion_constructor( Variable mut variable_param )
 	( something_( move(variable_param) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( TypeTemplateParam mut type_template_param )
+fn TemplateSignatureParam::conversion_constructor( TypeTemplate mut type_template_param )
 	( something_( move(type_template_param) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( ArrayTypeParam mut array_type_param )
+fn TemplateSignatureParam::conversion_constructor( Array mut array_type_param )
 	( something_( ust::make_shared_ptr_final( move(array_type_param) ) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( TupleTypeParam mut tuple_type_param )
+fn TemplateSignatureParam::conversion_constructor( Tuple mut tuple_type_param )
 	( something_( ust::make_shared_ptr_final( move(tuple_type_param) ) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param )
+fn TemplateSignatureParam::conversion_constructor( RawPointer mut raw_pointer_type_param )
 	( something_( ust::make_shared_ptr_final( move(raw_pointer_type_param) ) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut function_type_param )
+fn TemplateSignatureParam::conversion_constructor( Function mut function_type_param )
 	( something_( ust::make_shared_ptr_final( move(function_type_param) ) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( CoroutineTypeParam mut coroutine_type_param )
+fn TemplateSignatureParam::conversion_constructor( Coroutine mut coroutine_type_param )
 	( something_( ust::make_shared_ptr_final( move(coroutine_type_param) ) ) )
 {}
 
-fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut specialized_template_param )
+fn TemplateSignatureParam::conversion_constructor( SpecializedTemplate mut specialized_template_param )
 	( something_( ust::make_shared_ptr_final( move(specialized_template_param) ) ) )
 {}
 
@@ -1255,82 +1255,82 @@ fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ Tem
 	return something_.get</TemplateParam/>();
 }
 
-fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypeParam /> @(ret_tags)
+fn TemplateSignatureParam::GetType(this) : ust::optional_ref_imut</ Type /> @(ret_tags)
 {
-	return something_.get</TypeParam/>();
+	return something_.get</Type/>();
 }
 
-fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam /> @(ret_tags)
+fn TemplateSignatureParam::GetVariable(this) : ust::optional_ref_imut</ Variable /> @(ret_tags)
 {
-	return something_.get</VariableParam/>();
+	return something_.get</Variable/>();
 }
 
-fn TemplateSignatureParam::GetTypeTemplateParam(this) : ust::optional_ref_imut</ TypeTemplateParam /> @(ret_tags)
+fn TemplateSignatureParam::GetTypeTemplate(this) : ust::optional_ref_imut</ TypeTemplate /> @(ret_tags)
 {
-	return something_.get</TypeTemplateParam/>();
+	return something_.get</TypeTemplate/>();
 }
 
-fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam /> @(ret_tags)
+fn TemplateSignatureParam::GetArray(this) : ust::optional_ref_imut</ Array /> @(ret_tags)
 {
-	if_var( &array_type_param : something_.get</ ust::shared_ptr_final</ArrayTypeParam/> />() )
+	if_var( &array_type_param : something_.get</ ust::shared_ptr_final</Array/> />() )
 	{
-		return ust::optional_ref_imut</ ArrayTypeParam />(array_type_param.deref());
+		return ust::optional_ref_imut</ Array />(array_type_param.deref());
 	}
 
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam /> @(ret_tags)
+fn TemplateSignatureParam::GetTuple(this) : ust::optional_ref_imut</ Tuple /> @(ret_tags)
 {
-	if_var( &tuple_type_param : something_.get</ ust::shared_ptr_final</TupleTypeParam/> />() )
+	if_var( &tuple_type_param : something_.get</ ust::shared_ptr_final</Tuple/> />() )
 	{
-		return ust::optional_ref_imut</ TupleTypeParam />(tuple_type_param.deref());
+		return ust::optional_ref_imut</ Tuple />(tuple_type_param.deref());
 	}
 
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam /> @(ret_tags)
+fn TemplateSignatureParam::GetRawPointer(this) : ust::optional_ref_imut</ RawPointer /> @(ret_tags)
 {
-	if_var( &raw_pointer_type_param : something_.get</ ust::shared_ptr_final</RawPointerTypeParam/> />() )
+	if_var( &raw_pointer_type_param : something_.get</ ust::shared_ptr_final</RawPointer/> />() )
 	{
-		return ust::optional_ref_imut</ RawPointerTypeParam />(raw_pointer_type_param.deref());
+		return ust::optional_ref_imut</ RawPointer />(raw_pointer_type_param.deref());
 	}
 
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam /> @(ret_tags)
+fn TemplateSignatureParam::GetFunction(this) : ust::optional_ref_imut</ Function /> @(ret_tags)
 {
-	if_var( &function_type_param : something_.get</ ust::shared_ptr_final</FunctionTypeParam/> />() )
+	if_var( &function_type_param : something_.get</ ust::shared_ptr_final</Function/> />() )
 	{
-		return ust::optional_ref_imut</ FunctionTypeParam />(function_type_param.deref());
+		return ust::optional_ref_imut</ Function />(function_type_param.deref());
 	}
 
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam /> @(ret_tags)
+fn TemplateSignatureParam::GetCoroutine(this) : ust::optional_ref_imut</ Coroutine /> @(ret_tags)
 {
-	if_var( &coroutine_type_param : something_.get</ ust::shared_ptr_final</CoroutineTypeParam/> />() )
+	if_var( &coroutine_type_param : something_.get</ ust::shared_ptr_final</Coroutine/> />() )
 	{
-		return ust::optional_ref_imut</ CoroutineTypeParam />(coroutine_type_param.deref());
+		return ust::optional_ref_imut</ Coroutine />(coroutine_type_param.deref());
 	}
 
 	return ust::null_optional_ref;
 }
 
-fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam /> @(ret_tags)
+fn TemplateSignatureParam::GetSpecializedTemplate(this) : ust::optional_ref_imut</ SpecializedTemplate /> @(ret_tags)
 {
-	if_var( &specialized_template_param : something_.get</ ust::shared_ptr_final</SpecializedTemplateParam/> />() )
+	if_var( &specialized_template_param : something_.get</ ust::shared_ptr_final</SpecializedTemplate/> />() )
 	{
-		return ust::optional_ref_imut</ SpecializedTemplateParam />(specialized_template_param.deref());
+		return ust::optional_ref_imut</ SpecializedTemplate />(specialized_template_param.deref());
 	}
 
 	return ust::null_optional_ref;
 }
 
-op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r) : bool
+op TemplateSignatureParam::Variable::==(Variable& l, Variable& r) : bool
 {
 	return
 		l.t == r.t &&
@@ -1374,39 +1374,39 @@ fn MapTemplateParamsToSignatureParams(
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, template_param );
 	}
-	if_var( &type_param : param.GetTypeParam() )
+	if_var( &type_param : param.GetType() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, type_param );
 	}
-	if_var( &variable_param : param.GetVariableParam() )
+	if_var( &variable_param : param.GetVariable() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, variable_param );
 	}
-	if_var( &type_template_param : param.GetTypeTemplateParam() )
+	if_var( &type_template_param : param.GetTypeTemplate() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, type_template_param );
 	}
-	if_var( &array_type_param : param.GetArrayTypeParam() )
+	if_var( &array_type_param : param.GetArray() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, array_type_param );
 	}
-	if_var( &tuple_type_param : param.GetTupleTypeParam() )
+	if_var( &tuple_type_param : param.GetTuple() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, tuple_type_param );
 	}
-	if_var( &raw_pointer_type_param : param.GetRawPointerTypeParam() )
+	if_var( &raw_pointer_type_param : param.GetRawPointer() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, raw_pointer_type_param );
 	}
-	if_var( &function_type_param : param.GetFunctionTypeParam() )
+	if_var( &function_type_param : param.GetFunction() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, function_type_param );
 	}
-	if_var( &coroutine_type_param : param.GetCoroutineTypeParam() )
+	if_var( &coroutine_type_param : param.GetCoroutine() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, coroutine_type_param );
 	}
-	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
+	if_var( &specialized_template_param : param.GetSpecializedTemplate() )
 	{
 		return MapTemplateParamsToSignatureParamsImpl( mapping, specialized_template_param );
 	}
@@ -1425,7 +1425,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::TypeParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::Type& param ) : TemplateSignatureParam
 {
 	ust::ignore_unused(mapping);
 	// Return type params as is.
@@ -1434,7 +1434,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::VariableParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::Variable& param ) : TemplateSignatureParam
 {
 	ust::ignore_unused(mapping);
 	// Return variable params as is.
@@ -1443,7 +1443,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::TypeTemplateParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::TypeTemplate& param ) : TemplateSignatureParam
 {
 	ust::ignore_unused(mapping);
 	// Return type template params as is.
@@ -1452,9 +1452,9 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::ArrayTypeParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::Array& param ) : TemplateSignatureParam
 {
-	return TemplateSignatureParam::ArrayTypeParam
+	return TemplateSignatureParam::Array
 	{
 		.element_type= MapTemplateParamsToSignatureParams( mapping, param.element_type ),
 		.element_count= MapTemplateParamsToSignatureParams( mapping, param.element_count ),
@@ -1463,9 +1463,9 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::TupleTypeParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::Tuple& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::TupleTypeParam mut out_param;
+	var TemplateSignatureParam::Tuple mut out_param;
 	foreach( &element_type : param.element_types )
 	{
 		out_param.element_types.push_back( MapTemplateParamsToSignatureParams( mapping, element_type ) );
@@ -1476,9 +1476,9 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::RawPointerTypeParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::RawPointer& param ) : TemplateSignatureParam
 {
-	return TemplateSignatureParam::RawPointerTypeParam
+	return TemplateSignatureParam::RawPointer
 	{
 		.element_type= MapTemplateParamsToSignatureParams( mapping, param.element_type )
 	};
@@ -1486,9 +1486,9 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::FunctionTypeParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::Function& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::FunctionTypeParam mut out_param= param;
+	var TemplateSignatureParam::Function mut out_param= param;
 	out_param.return_type= MapTemplateParamsToSignatureParams( mapping, param.return_type );
 
 	foreach( &mut function_param : out_param.params )
@@ -1501,18 +1501,18 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::CoroutineTypeParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::Coroutine& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::CoroutineTypeParam mut out_param= param;
+	var TemplateSignatureParam::Coroutine mut out_param= param;
 	out_param.return_type= MapTemplateParamsToSignatureParams( mapping, param.return_type );
 	return out_param;
 }
 
 fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
-	TemplateSignatureParam::SpecializedTemplateParam& param ) : TemplateSignatureParam
+	TemplateSignatureParam::SpecializedTemplate& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::SpecializedTemplateParam mut out_param
+	var TemplateSignatureParam::SpecializedTemplate mut out_param
 	{
 		.type_templates=
 			param

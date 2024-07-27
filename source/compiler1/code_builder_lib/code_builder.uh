@@ -813,63 +813,63 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::TypeParam& type_param,
+		TemplateSignatureParam::Type& type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::VariableParam& variable_param,
+		TemplateSignatureParam::Variable& variable_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::TypeTemplateParam& type_template_param,
+		TemplateSignatureParam::TypeTemplate& type_template_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::ArrayTypeParam& array_type_param,
+		TemplateSignatureParam::Array& array_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::TupleTypeParam& tuple_type_param,
+		TemplateSignatureParam::Tuple& tuple_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::RawPointerTypeParam& raw_pointer_type_param,
+		TemplateSignatureParam::RawPointer& raw_pointer_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::FunctionTypeParam& function_type_param,
+		TemplateSignatureParam::Function& function_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::CoroutineTypeParam& coroutine_type_param,
+		TemplateSignatureParam::Coroutine& coroutine_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
-		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
+		TemplateSignatureParam::SpecializedTemplate& specialized_template_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	// Returns vector with wrong size in case of error.

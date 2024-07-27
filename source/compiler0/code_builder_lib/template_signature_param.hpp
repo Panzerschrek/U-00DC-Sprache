@@ -12,26 +12,26 @@ namespace U
 class TemplateSignatureParam
 {
 public:
-	struct TypeParam
+	struct Type
 	{
-		Type t;
+		U::Type t;
 
-		bool operator==( const TypeParam& other ) const;
+		bool operator==( const Type& other ) const;
 	};
 
-	struct VariableParam
+	struct Variable
 	{
-		Type type;
+		U::Type type;
 		llvm::Constant* constexpr_value= nullptr;
 
-		bool operator==( const VariableParam& other ) const;
+		bool operator==( const Variable& other ) const;
 	};
 
-	struct TypeTemplateParam
+	struct TypeTemplate
 	{
 		TypeTemplatePtr type_template;
 
-		bool operator==( const TypeTemplateParam& other ) const;
+		bool operator==( const TypeTemplate& other ) const;
 	};
 
 	struct TemplateParam
@@ -46,29 +46,29 @@ public:
 
 	// use shared_ptr to avoid manual copy constructors creation.
 
-	struct ArrayParam
+	struct Array
 	{
 		std::shared_ptr<const TemplateSignatureParam> element_count;
 		std::shared_ptr<const TemplateSignatureParam> element_type;
 
-		bool operator==( const ArrayParam& other ) const;
+		bool operator==( const Array& other ) const;
 	};
 
-	struct TupleParam
+	struct Tuple
 	{
 		std::vector<TemplateSignatureParam> element_types;
 
-		bool operator==( const TupleParam& other ) const;
+		bool operator==( const Tuple& other ) const;
 	};
 
-	struct RawPointerParam
+	struct RawPointer
 	{
 		std::shared_ptr<const TemplateSignatureParam> element_type;
 
-		bool operator==( const RawPointerParam& other ) const;
+		bool operator==( const RawPointer& other ) const;
 	};
 
-	struct FunctionParam
+	struct Function
 	{
 		std::shared_ptr<const TemplateSignatureParam> return_type;
 		ValueType return_value_type= ValueType::Value;
@@ -85,10 +85,10 @@ public:
 		};
 		std::vector<Param> params;
 
-		bool operator==( const FunctionParam& other ) const;
+		bool operator==( const Function& other ) const;
 	};
 
-	struct CoroutineParam
+	struct Coroutine
 	{
 		CoroutineKind kind= CoroutineKind::Generator;
 		std::shared_ptr<const TemplateSignatureParam> return_type;
@@ -100,42 +100,42 @@ public:
 		llvm::SmallVector<InnerReferenceKind, 4> inner_references;
 		bool non_sync= false;
 
-		bool operator==( const CoroutineParam& other ) const;
+		bool operator==( const Coroutine& other ) const;
 	};
 
-	struct SpecializedTemplateParam
+	struct SpecializedTemplate
 	{
 		std::vector<TemplateSignatureParam> type_templates;
 		std::vector<TemplateSignatureParam> params;
 
-		bool operator==( const SpecializedTemplateParam& other ) const;
+		bool operator==( const SpecializedTemplate& other ) const;
 	};
 
 public:
-	TemplateSignatureParam( TypeParam type= TypeParam() );
-	TemplateSignatureParam( VariableParam variable );
-	TemplateSignatureParam( TypeTemplateParam type_template_param );
+	TemplateSignatureParam( Type type= Type() );
+	TemplateSignatureParam( Variable variable );
+	TemplateSignatureParam( TypeTemplate type_template_param );
 	TemplateSignatureParam( TemplateParam template_parameter );
-	TemplateSignatureParam( ArrayParam array );
-	TemplateSignatureParam( TupleParam tuple );
-	TemplateSignatureParam( RawPointerParam raw_pointer );
-	TemplateSignatureParam( FunctionParam function );
-	TemplateSignatureParam( CoroutineParam coroutine );
-	TemplateSignatureParam( SpecializedTemplateParam template_ );
+	TemplateSignatureParam( Array array );
+	TemplateSignatureParam( Tuple tuple );
+	TemplateSignatureParam( RawPointer raw_pointer );
+	TemplateSignatureParam( Function function );
+	TemplateSignatureParam( Coroutine coroutine );
+	TemplateSignatureParam( SpecializedTemplate template_ );
 
 	bool IsType() const;
 	bool IsVariable() const;
 	bool IsTemplateParam() const;
-	const TypeParam* GetType() const;
-	const VariableParam* GetVariable() const;
-	const TypeTemplateParam* GetTypeTemplate() const;
+	const Type* GetType() const;
+	const Variable* GetVariable() const;
+	const TypeTemplate* GetTypeTemplate() const;
 	const TemplateParam* GetTemplateParam() const;
-	const ArrayParam* GetArray() const;
-	const TupleParam* GetTuple() const;
-	const RawPointerParam* GetRawPointer() const;
-	const FunctionParam* GetFunction() const;
-	const CoroutineParam* GetCoroutine() const;
-	const SpecializedTemplateParam* GetTemplate() const;
+	const Array* GetArray() const;
+	const Tuple* GetTuple() const;
+	const RawPointer* GetRawPointer() const;
+	const Function* GetFunction() const;
+	const Coroutine* GetCoroutine() const;
+	const SpecializedTemplate* GetSpecializedTemplate() const;
 
 	template<class Func>
 	auto Visit( const Func& func ) const
@@ -148,16 +148,16 @@ public:
 
 private:
 	std::variant<
-		TypeParam,
-		VariableParam,
-		TypeTemplateParam,
+		Type,
+		Variable,
+		TypeTemplate,
 		TemplateParam,
-		ArrayParam,
-		TupleParam,
-		RawPointerParam,
-		FunctionParam,
-		CoroutineParam,
-		SpecializedTemplateParam> something_;
+		Array,
+		Tuple,
+		RawPointer,
+		Function,
+		Coroutine,
+		SpecializedTemplate> something_;
 };
 
 // Mapping of template params 0-N to signature params.

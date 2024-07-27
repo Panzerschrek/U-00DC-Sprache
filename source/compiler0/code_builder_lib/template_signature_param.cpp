@@ -4,12 +4,12 @@
 namespace U
 {
 
-bool TemplateSignatureParam::TypeParam::operator==( const TypeParam& other ) const
+bool TemplateSignatureParam::Type::operator==( const Type& other ) const
 {
 	return this->t == other.t;
 }
 
-bool TemplateSignatureParam::VariableParam::operator==( const VariableParam& other ) const
+bool TemplateSignatureParam::Variable::operator==( const Variable& other ) const
 {
 	return
 		this->type == other.type &&
@@ -22,34 +22,34 @@ bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& oth
 	return this->index == other.index && this->kind_index == other.kind_index;
 }
 
-bool TemplateSignatureParam::TypeTemplateParam::operator==( const TypeTemplateParam& other ) const
+bool TemplateSignatureParam::TypeTemplate::operator==( const TypeTemplate& other ) const
 {
 	return this->type_template == other.type_template;
 }
 
-bool TemplateSignatureParam::ArrayParam::operator==( const ArrayParam& other ) const
+bool TemplateSignatureParam::Array::operator==( const Array& other ) const
 {
 	return *this->element_type == *other.element_type && *this->element_count == *other.element_count;
 }
 
-bool TemplateSignatureParam::TupleParam::operator==( const TupleParam& other ) const
+bool TemplateSignatureParam::Tuple::operator==( const Tuple& other ) const
 {
 	return this->element_types == other.element_types;
 }
 
-bool TemplateSignatureParam::RawPointerParam::operator==( const RawPointerParam& other ) const
+bool TemplateSignatureParam::RawPointer::operator==( const RawPointer& other ) const
 {
 	return *this->element_type == *other.element_type;
 }
 
-bool TemplateSignatureParam::FunctionParam::Param::operator==( const Param& other ) const
+bool TemplateSignatureParam::Function::Param::operator==( const Param& other ) const
 {
 	return
 		*this->type == *other.type &&
 		this->value_type == other.value_type;
 }
 
-bool TemplateSignatureParam::FunctionParam::operator==( const FunctionParam& other ) const
+bool TemplateSignatureParam::Function::operator==( const Function& other ) const
 {
 	if( this->params.size() != other.params.size() )
 		return false;
@@ -65,7 +65,7 @@ bool TemplateSignatureParam::FunctionParam::operator==( const FunctionParam& oth
 		this->calling_convention == other.calling_convention;
 }
 
-bool TemplateSignatureParam::CoroutineParam::operator==( const CoroutineParam& other ) const
+bool TemplateSignatureParam::Coroutine::operator==( const Coroutine& other ) const
 {
 	return
 		this->kind == other.kind &&
@@ -77,24 +77,24 @@ bool TemplateSignatureParam::CoroutineParam::operator==( const CoroutineParam& o
 		this->non_sync == other.non_sync;
 }
 
-bool TemplateSignatureParam::SpecializedTemplateParam::operator==( const SpecializedTemplateParam& other ) const
+bool TemplateSignatureParam::SpecializedTemplate::operator==( const SpecializedTemplate& other ) const
 {
 	return
 		this->type_templates == other.type_templates &&
 		this->params == other.params;
 }
 
-TemplateSignatureParam::TemplateSignatureParam( TypeParam type )
+TemplateSignatureParam::TemplateSignatureParam( Type type )
 {
 	something_= std::move(type);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( VariableParam variable )
+TemplateSignatureParam::TemplateSignatureParam( Variable variable )
 {
 	something_= std::move(variable);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( TypeTemplateParam type_template_param )
+TemplateSignatureParam::TemplateSignatureParam( TypeTemplate type_template_param )
 {
 	something_= std::move(type_template_param);
 }
@@ -104,44 +104,44 @@ TemplateSignatureParam::TemplateSignatureParam( TemplateParam template_parameter
 	something_= std::move(template_parameter);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( ArrayParam array )
+TemplateSignatureParam::TemplateSignatureParam( Array array )
 {
 	something_= std::move(array);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( RawPointerParam raw_pointer )
+TemplateSignatureParam::TemplateSignatureParam( RawPointer raw_pointer )
 {
 	something_= std::move(raw_pointer);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( TupleParam tuple )
+TemplateSignatureParam::TemplateSignatureParam( Tuple tuple )
 {
 	something_= std::move(tuple);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( FunctionParam function )
+TemplateSignatureParam::TemplateSignatureParam( Function function )
 {
 	something_= std::move(function);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( CoroutineParam coroutine )
+TemplateSignatureParam::TemplateSignatureParam( Coroutine coroutine )
 {
 	something_= std::move(coroutine);
 }
 
-TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplateParam template_ )
+TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplate template_ )
 {
 	something_= std::move(template_);
 }
 
 bool TemplateSignatureParam::IsType() const
 {
-	return std::get_if<TypeParam>( &something_ ) != nullptr;
+	return std::get_if<Type>( &something_ ) != nullptr;
 }
 
 bool TemplateSignatureParam::IsVariable() const
 {
-	return std::get_if<VariableParam>( &something_ ) != nullptr;
+	return std::get_if<Variable>( &something_ ) != nullptr;
 }
 
 bool TemplateSignatureParam::IsTemplateParam() const
@@ -149,19 +149,19 @@ bool TemplateSignatureParam::IsTemplateParam() const
 	return std::get_if<TemplateParam>( &something_ ) != nullptr;
 }
 
-const TemplateSignatureParam::TypeParam* TemplateSignatureParam::GetType() const
+const TemplateSignatureParam::Type* TemplateSignatureParam::GetType() const
 {
-	return std::get_if<TypeParam>( &something_ );
+	return std::get_if<Type>( &something_ );
 }
 
-const TemplateSignatureParam::VariableParam* TemplateSignatureParam::GetVariable() const
+const TemplateSignatureParam::Variable* TemplateSignatureParam::GetVariable() const
 {
-	return std::get_if<VariableParam>( &something_ );
+	return std::get_if<Variable>( &something_ );
 }
 
-const TemplateSignatureParam::TypeTemplateParam* TemplateSignatureParam::GetTypeTemplate() const
+const TemplateSignatureParam::TypeTemplate* TemplateSignatureParam::GetTypeTemplate() const
 {
-	return std::get_if<TypeTemplateParam>( &something_ );
+	return std::get_if<TypeTemplate>( &something_ );
 }
 
 const TemplateSignatureParam::TemplateParam* TemplateSignatureParam::GetTemplateParam() const
@@ -169,34 +169,34 @@ const TemplateSignatureParam::TemplateParam* TemplateSignatureParam::GetTemplate
 	return std::get_if<TemplateParam>( &something_ );
 }
 
-const TemplateSignatureParam::ArrayParam* TemplateSignatureParam::GetArray() const
+const TemplateSignatureParam::Array* TemplateSignatureParam::GetArray() const
 {
-	return std::get_if<ArrayParam>( &something_ );
+	return std::get_if<Array>( &something_ );
 }
 
-const TemplateSignatureParam::TupleParam* TemplateSignatureParam::GetTuple() const
+const TemplateSignatureParam::Tuple* TemplateSignatureParam::GetTuple() const
 {
-	return std::get_if<TupleParam>( &something_ );
+	return std::get_if<Tuple>( &something_ );
 }
 
-const TemplateSignatureParam::RawPointerParam* TemplateSignatureParam::GetRawPointer() const
+const TemplateSignatureParam::RawPointer* TemplateSignatureParam::GetRawPointer() const
 {
-	return std::get_if<RawPointerParam>( &something_ );
+	return std::get_if<RawPointer>( &something_ );
 }
 
-const TemplateSignatureParam::FunctionParam* TemplateSignatureParam::GetFunction() const
+const TemplateSignatureParam::Function* TemplateSignatureParam::GetFunction() const
 {
-	return std::get_if<FunctionParam>( &something_ );
+	return std::get_if<Function>( &something_ );
 }
 
-const TemplateSignatureParam::CoroutineParam* TemplateSignatureParam::GetCoroutine() const
+const TemplateSignatureParam::Coroutine* TemplateSignatureParam::GetCoroutine() const
 {
-	return std::get_if<CoroutineParam>( &something_ );
+	return std::get_if<Coroutine>( &something_ );
 }
 
-const TemplateSignatureParam::SpecializedTemplateParam* TemplateSignatureParam::GetTemplate() const
+const TemplateSignatureParam::SpecializedTemplate* TemplateSignatureParam::GetSpecializedTemplate() const
 {
-	return std::get_if<SpecializedTemplateParam>( &something_ );
+	return std::get_if<SpecializedTemplate>( &something_ );
 }
 
 bool TemplateSignatureParam::operator==( const TemplateSignatureParam& other ) const
@@ -209,7 +209,7 @@ namespace
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::TypeParam& param )
+	const TemplateSignatureParam::Type& param )
 {
 	// Return type params as is.
 	U_UNUSED(mapping);
@@ -218,7 +218,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::VariableParam& param )
+	const TemplateSignatureParam::Variable& param )
 {
 	// Return variable params as is.
 	U_UNUSED(mapping);
@@ -227,7 +227,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::TypeTemplateParam& param )
+	const TemplateSignatureParam::TypeTemplate& param )
 {
 	// Return type template params as is.
 	U_UNUSED(mapping);
@@ -245,9 +245,9 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::ArrayParam& param )
+	const TemplateSignatureParam::Array& param )
 {
-	TemplateSignatureParam::ArrayParam out_param;
+	TemplateSignatureParam::Array out_param;
 	out_param.element_count= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_count ) );
 	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
 	return out_param;
@@ -255,9 +255,9 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::TupleParam& param )
+	const TemplateSignatureParam::Tuple& param )
 {
-	TemplateSignatureParam::TupleParam out_param;
+	TemplateSignatureParam::Tuple out_param;
 	out_param.element_types.reserve( param.element_types.size() );
 
 	for( const TemplateSignatureParam& element_type_param : param.element_types )
@@ -268,21 +268,21 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::RawPointerParam& param )
+	const TemplateSignatureParam::RawPointer& param )
 {
-	TemplateSignatureParam::RawPointerParam out_param;
+	TemplateSignatureParam::RawPointer out_param;
 	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
 	return out_param;
 }
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::FunctionParam& param )
+	const TemplateSignatureParam::Function& param )
 {
-	TemplateSignatureParam::FunctionParam out_param= param;
+	TemplateSignatureParam::Function out_param= param;
 	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
 
-	for( TemplateSignatureParam::FunctionParam::Param& function_param : out_param.params )
+	for( TemplateSignatureParam::Function::Param& function_param : out_param.params )
 		function_param.type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *function_param.type ) );
 
 	return out_param;
@@ -290,18 +290,18 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::CoroutineParam& param )
+	const TemplateSignatureParam::Coroutine& param )
 {
-	TemplateSignatureParam::CoroutineParam out_param= param;
+	TemplateSignatureParam::Coroutine out_param= param;
 	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
 	return out_param;
 }
 
 TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateParamsToSignatureParamsMappingRef mapping,
-	const TemplateSignatureParam::SpecializedTemplateParam& param )
+	const TemplateSignatureParam::SpecializedTemplate& param )
 {
-	TemplateSignatureParam::SpecializedTemplateParam out_param;
+	TemplateSignatureParam::SpecializedTemplate out_param;
 
 	out_param.type_templates.reserve( param.type_templates.size() );
 	for( const TemplateSignatureParam& type_template : param.type_templates )
