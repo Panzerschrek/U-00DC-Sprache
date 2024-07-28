@@ -544,6 +544,14 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 								else
 									params_matching_ok= false;
 							}
+							else if( const auto dst_type_template= dst_param.GetTypeTemplate() )
+							{
+								// Trivial type template in signature param.
+								if( const auto src_type_template= src_param.GetTypeTemplate() )
+									params_matching_ok= *src_type_template == *dst_type_template;
+								else
+									params_matching_ok= false;
+							}
 							else
 							{
 								// For now we support only trivial type alias templates.
