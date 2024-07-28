@@ -178,8 +178,12 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 			BuildGlobalThingDuringResolveIfNecessary( enum_->members, value );
 		}
 	}
-	else if( base.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.base );
+	else if( const auto type_templates_set= base.GetTypeTemplatesSet() )
+		REPORT_ERROR(
+			TemplateInstantiationRequired,
+			names_scope.GetErrors(),
+			names_scope_fetch.src_loc,
+			type_templates_set->type_templates.empty() ? "" : type_templates_set->type_templates.front()->ToString() );
 
 	if( value == nullptr )
 	{

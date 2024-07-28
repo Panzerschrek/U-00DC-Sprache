@@ -441,7 +441,14 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	}
 	else if( !type_templates_set.empty() )
 	{
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, names_scope_fetch.src_loc, names_scope_fetch.base_ )
+		with( &type_templates : type_templates_set.try_lock_imut().deref().type_templates )
+		{
+			REPORT_ERROR(
+				TemplateInstantiationRequired,
+				names_scope,
+				names_scope_fetch.src_loc,
+				select( type_templates.empty() ? ust::string8() : type_templates.front().lock_imut().deref().ToString() ) )
+		}
 		return ust::null_optional;
 	}
 

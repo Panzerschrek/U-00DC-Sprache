@@ -71,6 +71,9 @@ struct TypeTemplate final : TemplateBase
 
 	// Set to "true" if this type template was instantiated at least once.
 	mutable bool used= false;
+
+	// Convert type template name to human-readable format.
+	std::string ToString() const;
 };
 
 struct FunctionTemplate final : public TemplateBase

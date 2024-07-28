@@ -48,6 +48,19 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 		l.constexpr_value == r.constexpr_value;
 }
 
+std::string TypeTemplate::ToString() const
+{
+	std::string result;
+	if( parent_namespace->GetParent() != nullptr )
+	{
+		parent_namespace->ToString();
+		result+= "::";
+	}
+	result+= syntax_element->name;
+
+	return result;
+}
+
 size_t TemplateKey::Hash() const
 {
 	size_t hash= size_t( reinterpret_cast<uintptr_t>( template_.get() ) );

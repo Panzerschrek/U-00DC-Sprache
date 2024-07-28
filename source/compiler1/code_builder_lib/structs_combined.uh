@@ -682,6 +682,9 @@ class TypeTemplate final : TemplateBase
 			first_default_param( in_first_default_param )
 		)
 	{}
+
+	// Convert type template name to human-readable format.
+	fn ToString( this ) : ust::string8;
 }
 
 type TypeTemplatePtr = ust::shared_ptr_mut</TypeTemplate/>;

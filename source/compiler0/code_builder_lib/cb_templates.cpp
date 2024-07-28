@@ -1534,7 +1534,11 @@ void CodeBuilder::CreateTemplateErrorsContext(
 					args_description+= type->ToString();
 				else if( const auto variable= value->value.GetVariable() )
 					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
-				else {}
+				else if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
+				{
+					if( type_templates_set->type_templates.size() == 1 )
+						args_description+= type_templates_set->type_templates.front()->ToString();
+				}
 
 				if( &param != &template_.template_params.back() )
 					args_description+= ", ";

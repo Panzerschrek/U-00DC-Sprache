@@ -59,18 +59,7 @@ fn CreateTemplateErrorsContext(
 			}
 			else if_var( &type_template : arg.something.get</TypeTemplatePtr/>() )
 			{
-				with( &t : type_template.lock_imut().deref() )
-				{
-					with( &n : t.parent_names_scope.lock().try_lock_imut().deref() )
-					{
-						if( !n.GetParent().empty() )
-						{
-							result.args_description += n.ToString();
-							result.args_description += "::";
-						}
-					}
-					result.args_description += t.syntax_element.deref().name;
-				}
+				result.args_description += type_template.lock_imut().deref().ToString();
 			}
 			else { halt; }
 

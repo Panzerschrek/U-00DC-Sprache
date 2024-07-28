@@ -1206,6 +1206,22 @@ fn GetValueKindName( Value& v ) : ust::string_view8
 	halt;
 }
 
+fn TypeTemplate::ToString( this ) : ust::string8
+{
+	var ust::string8 mut result;
+	with( &n : parent_names_scope.lock().try_lock_imut().deref() )
+	{
+		if( !n.GetParent().empty() )
+		{
+			result += n.ToString();
+			result += "::";
+		}
+	}
+	result += syntax_element.deref().name;
+
+	return result;
+}
+
 //
 // Templates
 //
@@ -1735,6 +1751,10 @@ fn NamesScope::ToString( this ) : ust::string8
 							auto lock= v_ptr.lock_imut();
 							auto& v= lock.deref();
 							res+= ConstantVariableToString( v.t, v.constexpr_value );
+						}
+						else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
+						{
+							res+= type_template.lock_imut().deref().ToString();
 						}
 
 						if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
