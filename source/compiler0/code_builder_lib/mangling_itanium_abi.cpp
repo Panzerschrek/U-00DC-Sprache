@@ -702,23 +702,24 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 {
 	const ManglerState::NodeHolder function_node( mangler_state );
 
-	if( function_type.calling_convention == llvm::CallingConv::C ){}
-	else if( function_type.calling_convention == llvm::CallingConv::Cold )
+	switch( function_type.calling_convention )
 	{
+	case llvm::CallingConv::C:
+		break;
+	case llvm::CallingConv::Cold:
 		mangler_state.Push( "U" );
 		mangler_state.PushLengthPrefixed( "cold" );
-	}
-	else if( function_type.calling_convention == llvm::CallingConv::Fast )
-	{
+		break;
+	case llvm::CallingConv::Fast:
 		mangler_state.Push( "U" );
 		mangler_state.PushLengthPrefixed( "fast" );
-	}
-	else if( function_type.calling_convention == llvm::CallingConv::X86_StdCall )
-	{
+		break;
+	case llvm::CallingConv::X86_StdCall:
 		mangler_state.Push( "U" );
 		mangler_state.PushLengthPrefixed( "stdcall" );
-	}
-	else U_ASSERT(false);
+		break;
+	default: U_ASSERT(false); // Unknown calling convention.
+	};
 
 	mangler_state.Push( "F" );
 

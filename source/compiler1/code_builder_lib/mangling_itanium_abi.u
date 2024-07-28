@@ -808,21 +808,25 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 {
 	ADD_NODE( mangler_state )
 	{
-		if( function_type.calling_convention == LLVMCallConv::C ) {}
-		else if( function_type.calling_convention == LLVMCallConv::Cold )
+		switch( function_type.calling_convention )
 		{
-			mangler_state.Push( "U" );
-			mangler_state.PushLengthPrefixed( "cold" );
-		}
-		else if( function_type.calling_convention == LLVMCallConv::Fast )
-		{
-			mangler_state.Push( "U" );
-			mangler_state.PushLengthPrefixed( "fast" );
-		}
-		else if( function_type.calling_convention == LLVMCallConv::X86Stdcall )
-		{
-			mangler_state.Push( "U" );
-			mangler_state.PushLengthPrefixed( "stdcall" );
+			LLVMCallConv::C -> {},
+			LLVMCallConv::Cold ->
+			{
+				mangler_state.Push( "U" );
+				mangler_state.PushLengthPrefixed( "cold" );
+			},
+			LLVMCallConv::Fast ->
+			{
+				mangler_state.Push( "U" );
+				mangler_state.PushLengthPrefixed( "fast" );
+			},
+			LLVMCallConv::X86Stdcall ->
+			{
+				mangler_state.Push( "U" );
+				mangler_state.PushLengthPrefixed( "stdcall" );
+			},
+			default -> { /* Unhandled convention */ halt; },
 		}
 
 		mangler_state.Push( "F" );

@@ -1069,24 +1069,14 @@ fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
 
 fn GetCallingConventionName( LLVMCallConvID cc ) : ust::string_view8
 {
-	if( cc == LLVMCallConv::C )
+	switch(cc)
 	{
-		return "A";
+		LLVMCallConv::C -> { return "A"; },
+		LLVMCallConv::Fast -> { return "I"; },
+		LLVMCallConv::Cold -> { return "U"; },
+		LLVMCallConv::X86Stdcall -> { return "G"; },
+		default -> { /* Unhandled convention */ halt; },
 	}
-	if( cc == LLVMCallConv::Fast )
-	{
-		return "I";
-	}
-	if( cc == LLVMCallConv::Cold )
-	{
-		return "U";
-	}
-	if( cc == LLVMCallConv::X86Stdcall )
-	{
-		return "G";
-	}
-
-	return "A";
 }
 
 auto g_num_back_references= 10s;
