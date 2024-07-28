@@ -75,16 +75,9 @@ fn PreprocessErrorArg( ust::string_view8 s ) : ust::string8
 	return s;
 }
 
-fn PreprocessErrorArg( Synt::ComplexName& name ) : ust::string8
-{
-	return ComplexNameToString(name);
-}
-
 fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string8/> format_args ) : CodeBuilderError;
 
 fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error );
-
-fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8;
 
 fn NormalizeErrors( ErrorsContainer &mut errors, Synt::MacroExpansionContexts& macro_expansion_contexts );
 

@@ -25,8 +25,6 @@ namespace ErrorReportingImpl
 const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 std::string PreprocessArg( const Type& type );
-std::string PreprocessArg( const Synt::ComplexName& name );
-std::string PreprocessArg( const Synt::TypeName& name );
 inline llvm::StringRef PreprocessArg( const std::string_view arg ) { return StringViewToStringRef(arg); }
 template<class T> const T& PreprocessArg( const T& t ) { return t; }
 

@@ -391,7 +391,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
 		{
-			REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.src_loc, parent );
+			REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), Synt::GetSrcLoc(parent), parent_value.GetKindName() );
 			continue;
 		}
 
@@ -1175,7 +1175,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		global_function_context_->args_preevaluation_cache.clear();
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc, *enum_decl.underlying_type_name );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), Synt::GetSrcLoc(*enum_decl.underlying_type_name), type_value.GetKindName() );
 		else
 		{
 			const FundamentalType* const fundamental_type= type->GetFundamentalType();

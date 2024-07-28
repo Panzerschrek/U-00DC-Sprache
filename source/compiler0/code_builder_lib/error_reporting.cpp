@@ -1,6 +1,5 @@
 #include <sstream>
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "../lex_synt_lib/program_writer.hpp"
 #include "keywords.hpp"
 #include "type.hpp"
 #include "error_reporting.hpp"
@@ -137,24 +136,6 @@ const char* GetErrorMessagePattern( const CodeBuilderErrorCode code )
 std::string PreprocessArg( const Type& type )
 {
 	return type.ToString();
-}
-
-std::string PreprocessArg( const Synt::ComplexName& name )
-{
-	std::stringstream ss;
-
-	WriteProgramElement( name, ss );
-
-	return ss.str();
-}
-
-std::string PreprocessArg( const Synt::TypeName& name )
-{
-	std::stringstream ss;
-
-	WriteTypeName( name, ss );
-
-	return ss.str();
 }
 
 } // namespace ErrorReportingImpl

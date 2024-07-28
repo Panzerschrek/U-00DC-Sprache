@@ -902,11 +902,6 @@ void WriteProgram( const ProgramElementsList& program_elements, std::ostream& st
 	ElementWrite( program_elements, stream );
 }
 
-void WriteProgramElement( const ComplexName& complex_name, std::ostream& stream )
-{
-	ElementWrite( complex_name, stream );
-}
-
 void WriteExpression( const Synt::Expression& expression, std::ostream& stream )
 {
 	ElementWrite( expression, stream );

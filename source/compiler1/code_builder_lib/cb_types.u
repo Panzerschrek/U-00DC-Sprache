@@ -24,7 +24,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		return t;
 	}
 
-	REPORT_ERROR( NameIsNotTypeName, names_scope, Synt::GetSrcLoc(named_type), named_type )
+	REPORT_ERROR( NameIsNotTypeName, names_scope, Synt::GetSrcLoc(named_type), GetValueKindName(resolved_value) )
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
