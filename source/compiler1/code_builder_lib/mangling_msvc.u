@@ -225,8 +225,6 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
-		auto template_args= tuple_type.element_types.iter().collect</TemplateArgsFinished/>();
-
 		mangler_state.PushElement( g_class_type_prefix );
 
 		// Use separate backreferences table.
@@ -235,7 +233,14 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 
 			template_mangler_state.PushElement( g_template_prefix );
 			template_mangler_state.EncodeName( KeywordToString( Keyword::tup_ ) );
-			EncodeTemplateArgs( template_mangler_state, template_args );
+
+			foreach( &element_type : tuple_type.element_types )
+			{
+				EncodeTemplateArgImpl( template_mangler_state, element_type );
+			}
+
+			// Finish list of template arguments.
+			template_mangler_state.PushElement( g_terminator );
 
 			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
 		}

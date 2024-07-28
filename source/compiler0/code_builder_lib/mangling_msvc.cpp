@@ -364,21 +364,21 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
-		llvm::SmallVector<TemplateArg, 8> template_args;
-		template_args.reserve( tuple_type->element_types.size() );
-		for( const Type& element : tuple_type->element_types )
-			template_args.push_back( element );
-
 		mangler_state.PushElement( g_class_type_prefix );
 
 		// Use separate backreferences table.
 		std::string template_name;
 		{
-			ManglerState template_mangler_state(template_name );
+			ManglerState template_mangler_state( template_name );
 
 			template_mangler_state.PushElement( g_template_prefix );
 			template_mangler_state.EncodeName( Keyword( Keywords::tup_ ) );
-			EncodeTemplateArgs( template_mangler_state, template_args );
+
+			for( const Type& element_type : tuple_type->element_types )
+				EncodeTemplateArgImpl( template_mangler_state, element_type );
+
+			// Finish list of template arguments.
+			template_mangler_state.PushElement( g_terminator );
 		}
 		mangler_state.EncodeNameNoTerminator( template_name );
 		// Finish class name.
