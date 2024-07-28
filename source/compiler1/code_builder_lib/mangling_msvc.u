@@ -952,7 +952,7 @@ private:
 	{
 		for( auto mut i= 0s; i < g_num_back_references; ++i )
 		{
-			var BackReference br= back_references_[i];
+			var BackReference &mut br= back_references_[i];
 			if( res_.range().subrange( size_type(br.pos), size_type(br.pos + br.count) ) == str )
 			{
 				res_.push_back( char8(i + size_type("0"c8) ) );
@@ -961,8 +961,8 @@ private:
 			if( br.count == 0u )
 			{
 				// Reached empty space - fill it.
-				back_references_[i].pos= u32(res_.size());
-				back_references_[i].count= u32(str.size());
+				br.pos= u32(res_.size());
+				br.count= u32(str.size());
 				break;
 			}
 		}

@@ -91,6 +91,8 @@ public: // Helper methods.
 	// The complexity is linear, it's recommended to use proper container "size" methods if it is possible.
 	fn count( byval mut this ) : size_type
 	{
+		// TODO - speed-up this method for underlying iterators with known size (make O(1) instead of O(n)).
+
 		var size_type mut c= 0s;
 		while( !impl_.next().empty() )
 		{
@@ -284,6 +286,8 @@ public: // Methods returning iterators.
 	// Complexity is linear.
 	fn skip( byval mut this, size_type n ) : auto
 	{
+		// TODO - speed-up this method for underlying iterators with known size (make O(1) instead of O(n)).
+
 		for( auto mut i= 0s; i < n && !impl_.next().empty(); ++i )
 		{}
 		return this;

@@ -1809,9 +1809,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			if( element_type_reference_tag_count > 0u )
 			{
 				var size_type mut offset= 0s;
-				for( auto mut i= 0s; i < size_type(type_index); ++i )
+				foreach( &element_type : tuple_type.element_types.iter().limit( size_type(type_index) ) )
 				{
-					offset+= size_type( tuple_type.element_types[i].ReferenceTagCount() );
+					offset+= size_type( element_type.ReferenceTagCount() );
 				}
 
 				for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
@@ -2584,9 +2584,9 @@ fn CodeBuilder::AccessDirectClassField(
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
 
-		for( var size_type mut i= 0s, reference_tag_count= size_type(field.t.ReferenceTagCount()); i < reference_tag_count; ++i )
+		foreach( tag : field.inner_reference_tags.iter().limit( size_type( field.t.ReferenceTagCount() ) ) )
 		{
-			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( field.inner_reference_tags[i] ) ] );
+			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( tag ) ] );
 		}
 
 		var VariablePtr result_ptr= move(result).CreateChildPtr( variable_ptr );

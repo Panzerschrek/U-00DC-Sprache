@@ -934,9 +934,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			foreach( &parent : class_.parents )
 			{
-				for( var size_type mut i= 0s, s= parent.class_.lock_imut().deref().inner_references.size(); i < s; ++i )
+				foreach( &mut tag : reference_tags_usage_flags.iter().limit( parent.class_.lock_imut().deref().inner_references.size()  ) )
 				{
-					reference_tags_usage_flags[i] = true;
+					tag = true;
 				}
 			}
 

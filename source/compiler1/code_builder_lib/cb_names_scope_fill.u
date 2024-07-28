@@ -569,24 +569,25 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 		if_var( & function_declaration_ptr : namespace_element.get</ ust::shared_ptr_final</Synt::Function/> />() )
 		{
 			auto& function_declaration= function_declaration_ptr.deref();
-			auto& name_components = function_declaration.name;
+			auto mut name_components = function_declaration.name.range();
+
+			var ust::optional</NamesScopeValue/> mut current_value;
+
 			if( name_components.size() <= 1s )
 			{
 				continue;
 			}
-
-			var ust::optional</NamesScopeValue/> mut current_value;
-
-			auto mut start_component_index= 0s;
-			if( name_components.front().empty() )
+			else if( name_components.front().empty() )
 			{
+				name_components.drop_front();
+
 				// Global name - search in root namespace.
-				if_var( mut names_scope_value : GetRootNamespace( names_scope_ptr ).lock_imut().deref().GetThisScopeValue( name_components[1s] ) )
+				if_var( mut names_scope_value : GetRootNamespace( names_scope_ptr ).lock_imut().deref().GetThisScopeValue( name_components.front() ) )
 				{
 					current_value= move(names_scope_value);
 				}
 
-				start_component_index= 2s;
+				name_components.drop_front();
 			}
 			else
 			{
@@ -606,17 +607,17 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					}
 					current_scope= next_scope.try_to_non_nullable();
 				}
-				start_component_index= 1s;
+
+				name_components.drop_front();
 			}
 			if( current_value.empty() )
 			{
 				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_components.front() )
 				continue;
 			}
-			for( auto mut i= start_component_index; i < name_components.size(); ++i )
-			{
-				auto& name_component= name_components[i];
 
+			foreach( &name_component : name_components )
+			{
 				auto namespace_= current_value.try_deref().Get</NamesScope/>();
 				auto class_= current_value.try_deref().Get</ClassType/>();
 				if( !namespace_.empty() )

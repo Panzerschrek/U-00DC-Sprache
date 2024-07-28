@@ -1400,9 +1400,9 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 		auto mut known_args= template_args_finished;
 
 		// Try to add further args, which was calculated indirectly.
-		for( auto mut i= known_args.size(); i < function_template.params.size(); ++i )
+		foreach( &param : function_template.params.iter().skip( known_args.size() ) )
 		{
-			if_var( & val : result_names_scope.lock_imut().deref().GetThisScopeValue( function_template.params[i].name ) )
+			if_var( & val : result_names_scope.lock_imut().deref().GetThisScopeValue( param.name ) )
 			{
 				auto template_arg_ptr= val.Get</TemplateArg/>();
 				if( !template_arg_ptr.empty() )
@@ -1947,11 +1947,13 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 
 		if( i < known_template_args.size() )
 		{
-			if_var( &t : known_template_args[i].get</Type/>() )
+			var TemplateArgFinished& known_template_arg = known_template_args[i];
+
+			if_var( &t : known_template_arg.get</Type/>() )
 			{
 				template_arg.something= t;
 			}
-			else if_var( &v_ptr : known_template_args[i].get</VariablePtr/>() )
+			else if_var( &v_ptr : known_template_arg.get</VariablePtr/>() )
 			{
 				auto lock= v_ptr.lock_imut();
 				var Variable& v= lock.deref();
@@ -1967,7 +1969,7 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 						.name= param_name,
 					} );
 			}
-			else if_var( &type_template : known_template_args[i].get</TypeTemplatePtr/>() )
+			else if_var( &type_template : known_template_arg.get</TypeTemplatePtr/>() )
 			{
 				template_arg.something= type_template;
 			}
