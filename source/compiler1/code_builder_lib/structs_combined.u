@@ -1512,21 +1512,13 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
 	TemplateSignatureParam::SpecializedTemplate& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::SpecializedTemplate mut out_param
-	{
-		.type_templates=
-			param
-			.type_templates
-			.iter()
-			.map( lambda[mapping]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); } )
-			.collect</ ust::vector />()
-	};
-	foreach( &template_param : param.params )
-	{
-		out_param.params.push_back( MapTemplateParamsToSignatureParams( mapping, template_param ) );
-	}
+	auto map_fn = lambda[mapping]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); };
 
-	return out_param;
+	return TemplateSignatureParam::SpecializedTemplate
+	{
+		.type_templates= param.type_templates.iter().map( map_fn ).collect</ ust::vector />(),
+		.params= param.params.iter().map( map_fn ).collect</ ust::vector />(),
+	};
 }
 
 // TemplateKey
@@ -1635,10 +1627,7 @@ fn HashTemplateArg( TemplateArgFinished& arg ) : size_type
 
 fn HashTemplateArgs( TemplateArgsFinished& args ) : size_type
 {
-	return args
-		.iter()
-		.map( HashTemplateArg )
-		.fold( 0s, TypeHasher::hash_combine );
+	return args.iter().map( HashTemplateArg ).fold( 0s, TypeHasher::hash_combine );
 }
 
 //
