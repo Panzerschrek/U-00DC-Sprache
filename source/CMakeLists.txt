@@ -135,7 +135,7 @@ if(MSVC)
 		add_compile_options( /GR- )
 	endif()
 
-	# 32 MB stack for big recursion.
+	# 32 MB stack for deep recursion. Necessary for things like VariantLinkedList.
 	add_link_options("/STACK:33554432")
 
 else()
@@ -166,6 +166,9 @@ else()
 	# Clear garbage.
 	string( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
 	string( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
+
+	# 32 MB stack for deep recursion. Necessary for things like VariantLinkedList.
+	add_link_options( "-Wl,-z,stack-size=33554432" )
 
 endif()
 
