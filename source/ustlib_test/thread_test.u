@@ -36,7 +36,7 @@ fn nomangle main() : i32
 {
 	{
 		// Can create thread for function.
-		auto thread= ust::make_thread_void( (fn())(Bar) );
+		auto thread= ust::make_thread_void( Bar );
 	}
 	{
 		// Can create thread for callable object.
@@ -70,7 +70,7 @@ fn nomangle main() : i32
 	}
 	{
 		// Can get result of thread.
-		auto mut thread= ust::make_thread</ i32 />( (fn() : i32 )( Get42 ) );
+		auto mut thread= ust::make_thread</ i32 />( Get42 );
 		var i32 res= move(thread).join();
 		halt if( res != 42 );
 	}

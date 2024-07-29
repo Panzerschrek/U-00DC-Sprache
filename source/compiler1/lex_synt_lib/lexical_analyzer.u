@@ -219,21 +219,21 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 		if( d == "b"c8 )
 		{
 			base_= 2u64;
-			number_func= NumberParseFunc(NumberFunc2);
+			number_func= NumberFunc2;
 			it.drop_front();
 			it.drop_front();
 		}
 		if( d == "o"c8 )
 		{
 			base_= 8u64;
-			number_func= NumberParseFunc(NumberFunc8);
+			number_func= NumberFunc8;
 			it.drop_front();
 			it.drop_front();
 		}
 		if( d == "x"c8 )
 		{
 			base_= 16u64;
-			number_func= NumberParseFunc(NumberFunc16);
+			number_func= NumberFunc16;
 			it.drop_front();
 			it.drop_front();
 		}
