@@ -162,3 +162,8 @@ typedef enum
 {
 	Eins, Zwei, Drei, Vier,
 } NumbersEnum, *NumbersEnumPtr;
+
+typedef float SillyName;
+
+// In C it's fine - param name doesn't shadow type name.
+void SillyFunction( SillyName SillyName );

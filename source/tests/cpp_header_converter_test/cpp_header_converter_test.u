@@ -159,5 +159,7 @@ fn nomangle main() : i32
 	static_assert( typeinfo</NumbersEnum/>.is_integer );
 	static_assert( typeinfo</NumbersEnumPtr/>.is_raw_pointer );
 
+	unsafe( SillyFunction( 33.3f ) );
+
 	return 0;
 }

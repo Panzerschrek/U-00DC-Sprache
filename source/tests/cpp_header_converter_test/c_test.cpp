@@ -84,4 +84,9 @@ void XYZFunc( TypedefForEnumXYZ arg )
 	(void)arg;
 }
 
+void SillyFunction( SillyName SillyName )
+{
+	(void) SillyName;
+}
+
 } // extern "C"
