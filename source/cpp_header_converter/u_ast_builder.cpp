@@ -928,6 +928,21 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 	}
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
+	// TODO - handle/introduce other calling conventions.
+	switch( in_type.getCallConv() )
+	{
+	case clang::CallingConv::CC_C:
+		break;
+	case clang::CallingConv::CC_X86StdCall:
+		case clang::CallingConv::CC_Swift:
+		function_type.calling_convention= "system";
+		break;
+	case clang::CallingConv::CC_X86FastCall:
+		function_type.calling_convention= "fast";
+		break;
+	default: break;
+	}
+
 	return function_type;
 }
 
