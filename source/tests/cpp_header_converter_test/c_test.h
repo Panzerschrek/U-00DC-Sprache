@@ -140,7 +140,10 @@ typedef struct DifferentNamesForStructAndTypedef_0
 	float dummy1;
 } DifferentNamesForStructAndTypedef_1;
 
+// Should properly process forward declaration without later definition.
 struct SomeForwardDeclaration;
+
+// Should properly process forward declaration with later definition.
 struct SomeForwardDeclarationWithoutLaterDefinition;
 
 struct SomeForwardDeclaration
@@ -148,3 +151,9 @@ struct SomeForwardDeclaration
 	int contents;
 	float contents2;
 };
+
+// Should process "typedef enum" for pointers.
+typedef enum
+{
+	Eins, Zwei, Drei, Vier,
+} NumbersEnum, *NumbersEnumPtr;

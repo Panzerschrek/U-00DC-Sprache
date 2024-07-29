@@ -497,22 +497,7 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 {
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
-
-	bool anonymous_enum_processed= false;
-	if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>(typedef_decl.getUnderlyingType().getTypePtr()) )
-	{
-		if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(elaborated_type->desugar().getTypePtr()) )
-		{
-			if( enum_type->getDecl()->getName().empty() )
-			{
-				type_alias.value= TranslateType( *enum_type->getDecl()->getIntegerType().getTypePtr() );
-				anonymous_enum_processed= true;
-			}
-		}
-	}
-
-	if( !anonymous_enum_processed )
-		type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
+	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
 
 	return type_alias;
 }
@@ -579,12 +564,21 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	const std::string enum_name= TranslateIdentifier( enum_decl.getName() );
 	const auto enumerators_range= enum_decl.enumerators();
 
-	enum_names_cache_[ &enum_decl ]= enum_name;
-
 	if( enum_decl.getName().empty() )
 	{
 		// Anonimous enum. Just create a bunch of constants for it in space, where this enum is located.
 		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+
+		std::string_view underlying_type_name;
+		if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_decl.getIntegerType().getTypePtr() ) )
+			underlying_type_name= GetUFundamentalType( *built_in_type );
+
+		{
+			Synt::NameLookup name_lookup(g_dummy_src_loc);
+			name_lookup.name= underlying_type_name;
+			variables_declaration.type= std::move(name_lookup);
+		}
+
 		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
@@ -611,8 +605,12 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 		out_elements.Append( std::move(variables_declaration) );
 
+		enum_names_cache_[ &enum_decl ]= underlying_type_name;
+
 		return;
 	}
+
+	enum_names_cache_[ &enum_decl ]= enum_name;
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;

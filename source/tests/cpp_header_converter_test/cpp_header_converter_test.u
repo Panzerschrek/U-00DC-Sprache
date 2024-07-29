@@ -150,5 +150,8 @@ fn nomangle main() : i32
 		type OpaqueStructUsage= SomeForwardDeclarationWithoutLaterDefinition;
 	}
 
+	static_assert( typeinfo</NumbersEnum/>.is_integer );
+	static_assert( typeinfo</NumbersEnumPtr/>.is_raw_pointer );
+
 	return 0;
 }
