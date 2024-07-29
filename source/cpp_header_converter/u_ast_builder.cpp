@@ -106,7 +106,15 @@ CppAstConsumer::CppAstConsumer(
 	, printing_policy_(lang_options_)
 	, ast_context_(ast_context)
 	, skip_declarations_from_includes_(skip_declarations_from_includes)
-{}
+{
+	// HACK! Add type alias for "size_t".
+
+	Synt::TypeAlias type_alias( g_dummy_src_loc );
+	type_alias.name= "size_t";
+	type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
+
+	root_program_elements_.Append( std::move(type_alias) );
+}
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 {
