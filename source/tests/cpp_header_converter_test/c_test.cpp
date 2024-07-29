@@ -64,6 +64,11 @@ void StupidFunc( StupidStuctNaming* s )
 	(void)s;
 }
 
+struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct()
+{
+	return nullptr;
+}
+
 void SequentialEnumFunc( enum SequentialEnum s )
 {
 	(void)s;

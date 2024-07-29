@@ -106,6 +106,10 @@ fn nomangle main() : i32
 		var StupidStuctNaming mut s= zero_init;
 		unsafe( StupidFunc( $<(s) ) );
 	}
+	{
+		type UnknownStruct= StructUsedWithoutDeclaration;
+		unsafe( FunctionReturningUnknownStruct() );
+	}
 
 	{
 		var StructWithName mut s{ .ff= 67u };

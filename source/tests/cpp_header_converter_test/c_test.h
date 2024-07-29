@@ -76,6 +76,8 @@ typedef struct StructWithName
 
 void StupidFunc( StupidStuctNaming* s );
 
+struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct();
+
 struct StructWithAnonimousRecordsInside
 {
 	struct
