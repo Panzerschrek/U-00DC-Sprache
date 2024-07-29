@@ -145,5 +145,10 @@ fn nomangle main() : i32
 	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
 	static_assert( same_type</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 /> );
 
+	{
+		var SomeForwardDeclaration v{ .contents= 2, .contents2= -2.5f };
+		type OpaqueStructUsage= SomeForwardDeclarationWithoutLaterDefinition;
+	}
+
 	return 0;
 }

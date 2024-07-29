@@ -139,3 +139,12 @@ typedef struct DifferentNamesForStructAndTypedef_0
 	int dummy0;
 	float dummy1;
 } DifferentNamesForStructAndTypedef_1;
+
+struct SomeForwardDeclaration;
+struct SomeForwardDeclarationWithoutLaterDefinition;
+
+struct SomeForwardDeclaration
+{
+	int contents;
+	float contents2;
+};

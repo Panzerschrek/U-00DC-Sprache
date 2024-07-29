@@ -69,6 +69,8 @@ private:
 	size_t unique_name_index_= 0u;
 	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
 	std::unordered_map< const clang::EnumDecl*, std::string > enum_names_cache_;
+
+	std::unordered_set< const clang::RecordType* > opaque_structs_;
 };
 
 class CppAstProcessor : public clang::ASTFrontendAction
@@ -289,6 +291,24 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
 		}
 	} // for defines
+
+	// Create dummy definition for opaque structs.
+	for( const auto s : opaque_structs_ )
+	{
+		if( const auto decl= s->getDecl() )
+		{
+			if( decl->getDefinition() == nullptr )
+			{
+				Synt::Class class_(g_dummy_src_loc);
+				class_.name= TranslateRecordType( *s );
+				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+				// TODO - add deleted default constructor?
+
+				root_program_elements_.Append( std::move(class_) );
+			}
+		}
+	}
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
@@ -403,20 +423,27 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 {
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
 		if( record_decl.isCompleteDefinition() )
 		{
+			Synt::Class class_(g_dummy_src_loc);
+			class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+			class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
 			Synt::ClassElementsList::Builder class_elements;
 			for( const clang::Decl* const sub_decl : record_decl.decls() )
 				ProcessClassDecl( *sub_decl, class_elements, externc );
 
 			class_.elements= class_elements.Build();
-		}
 
-		return std::move(class_);
+			return std::move(class_);
+		}
+		else
+		{
+			// Opaque struct.
+			opaque_structs_.insert( llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+
+			return std::nullopt;
+		}
 	}
 	else if( record_decl.isUnion() )
 	{
