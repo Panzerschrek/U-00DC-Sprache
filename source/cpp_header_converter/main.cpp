@@ -52,12 +52,19 @@ int main( int argc, const char* argv[] )
 	if( res != 0 )
 		return res;
 
-	std::ofstream out_file( output_file_name.getValue() );
-	for( const std::string& import : force_import )
-		out_file << "import " << "\"" << import << "\"\n";
-
+	std::vector<U::Synt::ProgramElementsList> units_elements;
 	for( auto& unit : *parsed_units )
-		U::Synt::WriteProgram( unit.second.Build(), out_file );
+		units_elements.push_back( unit.second.Build() );
 
-	return 0;
+	{
+		std::ofstream out_file( output_file_name.getValue() );
+		for( const std::string& import : force_import )
+			out_file << "import " << "\"" << import << "\"\n";
+
+		for( const auto& element : units_elements )
+			U::Synt::WriteProgram( element, out_file );
+	}
+
+	// Hack! Call exit here, to avoid calling destructors for large syntax trees, which may cause stack overflow because of variant linked list.
+	std::exit(0);
 }

@@ -50,6 +50,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				${CMAKE_CURRENT_SOURCE_DIR}/windows_headers.h
 				../dummy.cpp )
 		add_dependencies( WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
 	endif()
 
 endif()
