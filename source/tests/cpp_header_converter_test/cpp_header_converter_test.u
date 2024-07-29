@@ -107,6 +107,12 @@ fn nomangle main() : i32
 		unsafe( StupidFunc( $<(s) ) );
 	}
 
+	{
+		var StructWithName mut s{ .ff= 67u };
+		var TypedefForStructWithName &mut s_ref= s;
+		var PointerTypedefForStructWithName s_ptr= $<(s_ref);
+	}
+
 	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
 	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
 	static_assert( typeinfo</UnionAlign2/>.size_of == 2s );

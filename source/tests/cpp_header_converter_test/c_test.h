@@ -69,6 +69,11 @@ typedef struct StupidStuctNaming
 	int x;
 } StupidStuctNaming;
 
+typedef struct StructWithName
+{
+	unsigned int ff;
+} TypedefForStructWithName, *PointerTypedefForStructWithName;
+
 void StupidFunc( StupidStuctNaming* s );
 
 struct StructWithAnonimousRecordsInside
