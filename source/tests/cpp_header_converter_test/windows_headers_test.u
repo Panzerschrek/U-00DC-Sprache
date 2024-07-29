@@ -1,6 +1,21 @@
 import "/windows_headers.u"
 
-fn nomangle mian() : i32
+fn nomangle main() : i32
 {
+	auto& message = "Hello, world!";
+
+	var DWORD mut written(0);
+	var LPVOID reserved = zero_init;
+
+	auto STD_OUTPUT_HANDLE = DWORD(-11);
+
+	unsafe(
+		WriteConsoleA(
+			GetStdHandle(STD_OUTPUT_HANDLE),
+			$<( cast_ref_unsafe</void/>( cast_mut(message[0]) ) ),
+			DWORD(typeinfo</typeof(message)/>.element_count),
+			$<(written),
+			reserved ) );
+
 	return 0;
 }
