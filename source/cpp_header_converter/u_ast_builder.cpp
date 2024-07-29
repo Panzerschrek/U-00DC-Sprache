@@ -777,8 +777,18 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	else if( in_type.isFunctionPointerType() )
 	{
 		const clang::Type* function_type= in_type.getPointeeType().getTypePtr();
-		while( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
-			function_type= paren_type->getInnerType().getTypePtr();
+
+		while(true)
+		{
+			if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
+				function_type= paren_type->getInnerType().getTypePtr();
+			else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( function_type ) )
+				function_type= elaborated_type->desugar().getTypePtr();
+			else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( function_type ) )
+				function_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+			else
+				break;
+		}
 
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
 			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_proto_type ) );
@@ -796,6 +806,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		return TranslateType( *paren_type->getInnerType().getTypePtr() );
 	else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( &in_type ) )
 		return TranslateType( *elaborated_type->desugar().getTypePtr() );
+	else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( &in_type ) )
+		return TranslateType( *attributed_type->desugar().getTypePtr() ); // TODO - maybe process attributes?
 
 	return Synt::ComplexNameToTypeName( TranslateNamedType( "void" ) );
 }
