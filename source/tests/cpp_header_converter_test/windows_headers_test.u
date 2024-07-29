@@ -1,0 +1,6 @@
+import "/windows_headers.u"
+
+fn nomangle mian() : i32
+{
+	return 0;
+}
