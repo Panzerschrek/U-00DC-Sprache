@@ -522,6 +522,13 @@ Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_
 	Synt::Function func(g_dummy_src_loc);
 
 	func.name.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
+
+	// Fix collisions with keywords.
+	// TODO - find a better way to do this.
+	// Sometimes it may be necessary to call such functions using exactly the same name.
+	if( IsKeyword( func.name.back().name ) )
+		func.name.back().name+= "_";
+
 	globals_names_.insert( func.name.back().name );
 
 	func.no_mangle= externc;

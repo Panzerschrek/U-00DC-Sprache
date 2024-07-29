@@ -173,3 +173,7 @@ struct SillyStructWithAStrangeField
 	// In C it's fine - type name doesn't shadow field name.
 	SillyName SillyName;
 };
+
+// A function with name as Ü keyword.
+// For now it's not possible to call it, but at least current workaround fixes compilation.
+void yield();
