@@ -135,8 +135,8 @@ if(MSVC)
 		add_compile_options( /GR- )
 	endif()
 
-	# 128 MB stack for big recursion.
-	add_link_options("/STACK:134217728")
+	# 32 MB stack for big recursion.
+	add_link_options("/STACK:33554432")
 
 else()
 	add_compile_options( -Werror -Wall -Wextra -Wconversion )
