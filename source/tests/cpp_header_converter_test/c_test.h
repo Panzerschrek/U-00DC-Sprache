@@ -167,3 +167,9 @@ typedef float SillyName;
 
 // In C it's fine - param name doesn't shadow type name.
 void SillyFunction( SillyName SillyName );
+
+struct SillyStructWithAStrangeField
+{
+	// In C it's fine - type name doesn't shadow field name.
+	SillyName SillyName;
+};

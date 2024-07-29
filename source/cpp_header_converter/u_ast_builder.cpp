@@ -70,6 +70,8 @@ private:
 	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
 	std::unordered_map< const clang::EnumDecl*, std::string > enum_names_cache_;
 
+	std::unordered_set< std::string > globals_names_;
+
 	std::unordered_set< const clang::RecordType* > opaque_structs_;
 };
 
@@ -400,6 +402,14 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 		if( IsKeyword( field.name ) )
 			field.name+= "_";
 
+		while( globals_names_.count( field.name ) != 0 )
+		{
+			// HACK!
+			// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
+			// C allows such collisions, but Ü doesn't.
+			field.name+= "_";
+		}
+
 		class_elements.Append( std::move(field) );
 	}
 	else if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
@@ -427,6 +437,9 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		{
 			Synt::Class class_(g_dummy_src_loc);
 			class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+
+			globals_names_.insert( class_.name );
+
 			class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 			Synt::ClassElementsList::Builder class_elements;
@@ -499,6 +512,8 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
 	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
 
+	globals_names_.insert( type_alias.name );
+
 	return type_alias;
 }
 
@@ -507,6 +522,8 @@ Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_
 	Synt::Function func(g_dummy_src_loc);
 
 	func.name.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
+	globals_names_.insert( func.name.back().name );
+
 	func.no_mangle= externc;
 	func.type.unsafe= true; // All C/C++ functions are unsafe.
 
@@ -611,6 +628,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	}
 
 	enum_names_cache_[ &enum_decl ]= enum_name;
+	globals_names_.insert( enum_name );
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;

@@ -161,5 +161,9 @@ fn nomangle main() : i32
 
 	unsafe( SillyFunction( 33.3f ) );
 
+	{
+		var SillyStructWithAStrangeField s{ .SillyName_= zero_init };
+	}
+
 	return 0;
 }
