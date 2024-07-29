@@ -71,8 +71,6 @@ private:
 	std::unordered_map< const clang::EnumDecl*, std::string > enum_names_cache_;
 
 	std::unordered_set< std::string > globals_names_;
-
-	std::unordered_set< const clang::RecordType* > opaque_structs_;
 };
 
 class CppAstProcessor : public clang::ASTFrontendAction
@@ -295,14 +293,14 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	} // for defines
 
 	// Create dummy definition for opaque structs.
-	for( const auto s : opaque_structs_ )
+	for( const auto type : ast_context.getTypes() )
 	{
-		if( const auto decl= s->getDecl() )
+		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
 		{
-			if( decl->getDefinition() == nullptr )
+			if( record_type->isIncompleteType() )
 			{
 				Synt::Class class_(g_dummy_src_loc);
-				class_.name= TranslateRecordType( *s );
+				class_.name= TranslateRecordType( *record_type );
 				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 				// TODO - add deleted default constructor?
@@ -431,32 +429,28 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_decl, const bool externc )
 {
+	if( !record_decl.isCompleteDefinition() )
+	{
+		// Opaque struct/union.
+		return std::nullopt;
+	}
+
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
-		if( record_decl.isCompleteDefinition() )
-		{
-			Synt::Class class_(g_dummy_src_loc);
-			class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 
-			globals_names_.insert( class_.name );
+		globals_names_.insert( class_.name );
 
-			class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-			Synt::ClassElementsList::Builder class_elements;
-			for( const clang::Decl* const sub_decl : record_decl.decls() )
-				ProcessClassDecl( *sub_decl, class_elements, externc );
+		Synt::ClassElementsList::Builder class_elements;
+		for( const clang::Decl* const sub_decl : record_decl.decls() )
+			ProcessClassDecl( *sub_decl, class_elements, externc );
 
-			class_.elements= class_elements.Build();
+		class_.elements= class_elements.Build();
 
-			return std::move(class_);
-		}
-		else
-		{
-			// Opaque struct.
-			opaque_structs_.insert( llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-
-			return std::nullopt;
-		}
+		return std::move(class_);
 	}
 	else if( record_decl.isUnion() )
 	{
@@ -466,39 +460,36 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		if( record_decl.isCompleteDefinition() )
+		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
+		const auto int_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
+		const auto num= ( size + int_size - 1u ) / int_size;
+
+		std::string int_name;
+		switch(int_size)
 		{
-			const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
-			const auto int_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
-			const auto num= ( size + int_size - 1u ) / int_size;
+		case  1: int_name= Keyword( Keywords::  u8_ ); break;
+		case  2: int_name= Keyword( Keywords:: u16_ ); break;
+		case  4: int_name= Keyword( Keywords:: u32_ ); break;
+		case  8: int_name= Keyword( Keywords:: u64_ ); break;
+		case 16: int_name= Keyword( Keywords::u128_ ); break;
+		default: U_ASSERT(false); break;
+		};
 
-			std::string int_name;
-			switch(int_size)
-			{
-			case  1: int_name= Keyword( Keywords::  u8_ ); break;
-			case  2: int_name= Keyword( Keywords:: u16_ ); break;
-			case  4: int_name= Keyword( Keywords:: u32_ ); break;
-			case  8: int_name= Keyword( Keywords:: u64_ ); break;
-			case 16: int_name= Keyword( Keywords::u128_ ); break;
-			default: U_ASSERT(false); break;
-			};
+		auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+		array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( int_name ) );
 
-			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-			array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( int_name ) );
+		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.value_int= num;
+		numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
+		array_type->size= std::move(numeric_constant);
 
-			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-			numeric_constant.value_int= num;
-			numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
-			array_type->size= std::move(numeric_constant);
+		Synt::ClassField field( g_dummy_src_loc );
+		field.name= "union_content";
+		field.type= std::move(array_type);
 
-			Synt::ClassField field( g_dummy_src_loc );
-			field.name= "union_content";
-			field.type= std::move(array_type);
-
-			Synt::ClassElementsList::Builder class_elements;
-			class_elements.Append( std::move(field) );
-			class_.elements= class_elements.Build();
-		}
+		Synt::ClassElementsList::Builder class_elements;
+		class_elements.Append( std::move(field) );
+		class_.elements= class_elements.Build();
 
 		return std::move(class_);
 	}

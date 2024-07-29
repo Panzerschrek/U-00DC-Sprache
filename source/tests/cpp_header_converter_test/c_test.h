@@ -78,6 +78,8 @@ void StupidFunc( StupidStuctNaming* s );
 
 struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct();
 
+inline struct AnotherStructUsedWithoutDeclaration* InlineFunctionReturningUnknownStruct() { return 0; }
+
 struct StructWithAnonimousRecordsInside
 {
 	struct
