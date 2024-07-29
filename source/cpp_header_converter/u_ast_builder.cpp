@@ -297,7 +297,9 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	{
 		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
 		{
-			if( record_type->isIncompleteType() )
+			// Process only incomplete records.
+			// ignore implicitely-defined records, like "_GUID".
+			if( record_type->isIncompleteType() && ! record_type->getDecl()->isImplicit() )
 			{
 				Synt::Class class_(g_dummy_src_loc);
 				class_.name= TranslateRecordType( *record_type );
