@@ -59,6 +59,12 @@ void DuplicatedProto( int xx )
 	(void)xx;
 }
 
+int ExternallyDeclaredFunction( const char* s )
+{
+	(void)s;
+	return 0;
+}
+
 void StupidFunc( StupidStuctNaming* s )
 {
 	(void)s;

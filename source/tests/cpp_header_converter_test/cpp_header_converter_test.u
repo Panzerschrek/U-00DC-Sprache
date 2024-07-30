@@ -58,6 +58,9 @@ fn nomangle main() : i32
 		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
+
+		var char8 mut c= zero_init;
+		ExternallyDeclaredFunction( $<(c) );
 	}
 	{
 		static_assert( same_type</ CPP_char8, char8 /> );

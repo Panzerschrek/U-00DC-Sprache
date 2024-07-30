@@ -33,6 +33,8 @@ void Function_UnnamedArgs( int, float, double );
 void DuplicatedProto( int x );
 void DuplicatedProto( int xx );
 
+extern int ExternallyDeclaredFunction( const char* s );
+
 typedef char CPP_char8;
 typedef   signed char  CPP_i8;
 typedef unsigned char  CPP_u8;
