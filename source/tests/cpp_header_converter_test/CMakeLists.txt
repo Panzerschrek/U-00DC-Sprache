@@ -1,4 +1,11 @@
 if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
+
+	if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+		set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
+	else()
+		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
+	endif()
+
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_test.h CppHeaderConverter
@@ -13,6 +20,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o
 			${SPRACHE_COMPILER_PIC_OPTIONS}
+			${SPRACHE_COMPILER_OPT_OPTIONS}
 			--allow-unused-names # Allow unused variables - in this test we only check initialization for them.
 			--verify-module
 			--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
@@ -39,6 +47,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				Compiler${CURRENT_COMPILER_GENERATION}
 				${CMAKE_CURRENT_SOURCE_DIR}/windows_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/windows_headers_test.o
 				${SPRACHE_COMPILER_PIC_OPTIONS}
+				${SPRACHE_COMPILER_OPT_OPTIONS}
 				--allow-unused-names # Allow unused variables - in this test we only check initialization for them.
 				--verify-module
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
