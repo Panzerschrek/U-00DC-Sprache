@@ -164,6 +164,9 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		if( IsKeyword( name ) )
 			name+= "_";
 
+		if( globals_names_.count( name ) != 0 )
+			continue; // Avoid redefining something.
+
 		const clang::Token& token= macro_info->tokens().front();
 		if( token.getKind() == clang::tok::numeric_constant )
 		{
@@ -226,6 +229,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+			globals_names_.insert(name);
 		}
 		else if( clang::tok::isStringLiteral( token.getKind() ) )
 		{
@@ -260,6 +265,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				globals_names_.insert(name);
 			}
 			else if( string_literal_parser.isUTF32() ||
 				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
@@ -274,6 +281,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				globals_names_.insert(name);
 			}
 		}
 		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -295,6 +304,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			auto_variable_declaration.initializer_expression= std::move(string_constant);
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+			globals_names_.insert(name);
 		}
 	} // for defines
 
@@ -639,6 +650,8 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			var.name= TranslateIdentifier( enumerator->getName() );
 			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+
+			globals_names_.insert( var.name );
 
 			variables_declaration.variables.push_back( std::move(var) );
 		}
