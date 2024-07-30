@@ -384,7 +384,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 				is_same_name= name_lookup->name == type_alias.name;
 
 			if( !is_same_name )
+			{
+				globals_names_.insert( type_alias.name );
 				program_elements.Append( std::move(type_alias) );
+			}
 		}
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
@@ -561,8 +564,6 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
 	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
-
-	globals_names_.insert( type_alias.name );
 
 	return type_alias;
 }

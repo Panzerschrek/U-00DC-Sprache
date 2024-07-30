@@ -176,5 +176,9 @@ fn nomangle main() : i32
 		var SameNameForStructAndFunc1 s= zero_init;
 	}
 
+	{
+		var TypedefStructWithSameNameForwardDeclaration s{ .contents= zero_init };
+	}
+
 	return 0;
 }

@@ -197,3 +197,10 @@ struct SameNameForStructAndFunc1
 };
 
 void SameNameForStructAndFunc1( struct SameNameForStructAndFunc1* );
+
+typedef struct TypedefStructWithSameNameForwardDeclaration TypedefStructWithSameNameForwardDeclaration;
+
+struct TypedefStructWithSameNameForwardDeclaration
+{
+	void* contents;
+};
