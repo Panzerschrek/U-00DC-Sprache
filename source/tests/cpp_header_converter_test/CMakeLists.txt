@@ -70,7 +70,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			COMMAND
 				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
 				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
-				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADERS_CONVERTER}
+				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
 				)
 
 		add_custom_command(
