@@ -6,6 +6,10 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 	endif()
 
+	#
+	# Basic CppHeaderConverter test - for a manually-crafter header file.
+	#
+
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_test.h CppHeaderConverter
@@ -34,7 +38,9 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 
 	if(WIN32)
 
+		#
 		# A test for convertion of <windows.h> and its usage for a simple program.
+		#
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.u
@@ -62,36 +68,38 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				../dummy.cpp )
 		add_dependencies( WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
-	else()
-
-		add_custom_command(
-			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
-			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h CppHeaderConverter
-			COMMAND
-				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
-				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
-				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
-				)
-
-		add_custom_command(
-			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
-			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u Compiler
-			COMMAND
-				Compiler${CURRENT_COMPILER_GENERATION}
-				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
-				${SPRACHE_COMPILER_PIC_OPTIONS}
-				${SPRACHE_COMPILER_OPT_OPTIONS}
-				--verify-module
-				--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
-
-		add_executable(
-			CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION}
-				${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
-				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u
-				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h
-				../dummy.cpp )
-		add_dependencies( CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
-
 	endif()
+
+	#
+	# Test for converting almost the whole C standard library.
+	#
+
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h CppHeaderConverter
+		COMMAND
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
+			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
+			-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
+			)
+
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u Compiler
+		COMMAND
+			Compiler${CURRENT_COMPILER_GENERATION}
+			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
+			${SPRACHE_COMPILER_PIC_OPTIONS}
+			${SPRACHE_COMPILER_OPT_OPTIONS}
+			--verify-module
+			--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
+
+	add_executable(
+		CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION}
+			${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
+			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u
+			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h
+			../dummy.cpp )
+	add_dependencies( CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 endif()
