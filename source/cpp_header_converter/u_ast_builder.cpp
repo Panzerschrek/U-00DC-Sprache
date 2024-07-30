@@ -111,6 +111,7 @@ CppAstConsumer::CppAstConsumer(
 	, skip_declarations_from_includes_(skip_declarations_from_includes)
 {
 	// HACK! Add type alias for "size_t".
+	// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
 
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= "size_t";

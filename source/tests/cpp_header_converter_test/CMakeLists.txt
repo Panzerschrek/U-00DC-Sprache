@@ -33,6 +33,9 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	add_dependencies( CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 	if(WIN32)
+
+		# A test for convertion of <windows.h> and its usage for a simple program.
+
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.u
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/windows_headers.h CppHeaderConverter
@@ -48,7 +51,6 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				${CMAKE_CURRENT_SOURCE_DIR}/windows_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/windows_headers_test.o
 				${SPRACHE_COMPILER_PIC_OPTIONS}
 				${SPRACHE_COMPILER_OPT_OPTIONS}
-				--allow-unused-names # Allow unused variables - in this test we only check initialization for them.
 				--verify-module
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
 
