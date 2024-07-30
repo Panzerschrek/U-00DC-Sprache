@@ -2,6 +2,108 @@ import "/windows_headers.u"
 
 fn nomangle main() : i32
 {
+	WriteHello();
+
+	auto& window_class_name= "windows_headers_test\0";
+	auto& title= "windows_headers_test_window\0";
+
+	var WNDCLASSEXA mut window_class= zero_init;
+	window_class.cbSize= u32( typeinfo</WNDCLASSEXA/>.size_of );
+	window_class.style= u32(CS_OWNDC);
+	window_class.lpfnWndProc= WindowProc;
+	window_class.lpszClassName= unsafe( $<( cast_mut(window_class_name[0]) ) );
+
+	unsafe( RegisterClassExA( $<(window_class) ) );
+
+	var u32 width= 640u, height= 480u;
+
+	var DWORD window_style( WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_BORDER );
+
+	var RECT mut rect{ .left(0), .top(0), .right(width), .bottom(height) };
+	unsafe( AdjustWindowRect( $<(rect), window_style, FALSE ) );
+
+	var DWORD ex_style= zero_init;
+	var HWND parent= zero_init;
+	var HMENU menu= zero_init;
+	var HINSTANCE instance= zero_init;
+	var LPVOID param= zero_init;
+
+	auto hwnd = unsafe( CreateWindowExA(
+		ex_style,
+		$<( cast_mut(window_class_name[0]) ),
+		$<( cast_mut(title[0]) ),
+		window_style,
+		0, 0,
+		i32(rect.right - rect.left), i32(rect.bottom - rect.top),
+		parent,
+		menu,
+		instance,
+		param ) );
+
+	auto hdc = unsafe( GetDC( hwnd ) );
+	auto compatible_dc = unsafe( CreateCompatibleDC(hdc) );
+
+	var BITMAPINFO mut bitmap_info= zero_init;
+	bitmap_info.bmiHeader.biSize = u32( typeinfo</BITMAPINFOHEADER/>.size_of );
+	bitmap_info.bmiHeader.biWidth = i32(width);
+	bitmap_info.bmiHeader.biHeight = -i32(height);
+	bitmap_info.bmiHeader.biSizeImage = -(height * width);
+	bitmap_info.bmiHeader.biPlanes = 1u16;
+	bitmap_info.bmiHeader.biBitCount = 32u16;
+	bitmap_info.bmiHeader.biCompression = u32(BI_RGB);
+
+	type PixelType= u32;
+	var $(PixelType) mut pixels= zero_init;
+
+	var HANDLE h_section= zero_init;
+
+	var HBITMAP bitmap_handle = unsafe( CreateDIBSection(
+		hdc,
+		$<(bitmap_info),
+		u32(DIB_RGB_COLORS),
+		$<( cast_ref_unsafe</$(void)/>( pixels ) ),
+		h_section,
+		0u ) );
+
+	unsafe( SelectObject( compatible_dc, cast_ref_unsafe</HGDIOBJ/>( bitmap_handle ) ) );
+
+	unsafe( ShowWindow( hwnd, SW_SHOWNORMAL ) );
+
+	auto mut iteration= 0u;
+	loop
+	{
+		var MSG mut message= zero_init;
+		while( unsafe( PeekMessageA( $<(message), hwnd, 0u, 0u, u32(PM_REMOVE) ) ) != FALSE )
+		{
+			unsafe( TranslateMessage( $<(message) ) );
+			unsafe( DispatchMessageA( $<(message) ) );
+		}
+
+		for( var u32 mut y(0); y < height; ++y)
+		{
+			for( var u32 mut x(0); x < width; ++x)
+			{
+				unsafe
+				{
+					$>( pixels + x + y * width) =
+						(x * 255u / width) |
+						((y * 255u / height) << 8u) |
+						(((iteration << 1u) & 255u) << 16u);
+				}
+			}
+		}
+
+		auto SRCCOPY= 0x00CC0020u;
+		unsafe( BitBlt( hdc, 0, 0, i32(width), i32(height), compatible_dc, 0, 0, SRCCOPY ) );
+
+		unsafe( Sleep( 15u ) );
+
+		++iteration;
+	}
+}
+
+fn WriteHello()
+{
 	auto& message = "Hello, world!";
 
 	var DWORD mut written(0);
@@ -16,6 +118,14 @@ fn nomangle main() : i32
 			DWORD(typeinfo</typeof(message)/>.element_count),
 			$<(written),
 			reserved ) );
+}
 
-	return 0;
+fn WindowProc( HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param ) unsafe : LRESULT
+{
+	if( msg == u32(WM_CLOSE) || msg == u32(WM_QUIT) )
+	{
+		unsafe( ExitProcess( 0u ) );
+	}
+
+	return unsafe( DefWindowProcA( hwnd, msg, w_param, l_param ) );
 }
