@@ -459,6 +459,12 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 
+		// HACK! C allows to declare a struct and a function with the same name.
+		// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
+		// But in Ü this isn't possible, so, correct class name.
+		while( globals_names_.count( class_.name ) != 0 )
+			class_.name+= "_";
+
 		globals_names_.insert( class_.name );
 
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
@@ -478,6 +484,14 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		// HACK! C allows to declare a struct and a function with the same name.
+		// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
+		// But in Ü this isn't possible, so, correct class name.
+		while( globals_names_.count( class_.name ) != 0 )
+			class_.name+= "_";
+
+		globals_names_.insert( class_.name );
 
 		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
 		const auto byte_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
@@ -537,6 +551,12 @@ Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_
 	// TODO - find a better way to do this.
 	// Sometimes it may be necessary to call such functions using exactly the same name.
 	if( IsKeyword( func.name.back().name ) )
+		func.name.back().name+= "_";
+
+	// HACK! C allows to declare a struct and a function with the same name.
+	// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
+	// But in Ü this isn't possible, so, correct function name.
+	while( globals_names_.count( func.name.back().name ) != 0 )
 		func.name.back().name+= "_";
 
 	globals_names_.insert( func.name.back().name );

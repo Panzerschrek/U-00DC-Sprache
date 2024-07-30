@@ -188,3 +188,10 @@ void yield();
 		void __stdcall StdCallFunc(void);
 	#endif
 #endif
+
+struct SameNameForStructAndFunc1
+{
+	int contents;
+};
+
+void SameNameForStructAndFunc1( struct SameNameForStructAndFunc1* );
