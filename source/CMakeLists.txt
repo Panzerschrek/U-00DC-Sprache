@@ -56,6 +56,7 @@ if( DEFINED LLVM_SRC_DIR )
 
 	# Hack! Can't get LLVM version from sources, so, hardcode it.
 	set( CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER ${CMAKE_BINARY_DIR}/llvm/lib/clang/15.0.7/include/ )
+	set( CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION lib/clang/15.0.7/include/ )
 
 elseif( DEFINED LLVM_LIB_DIR )
 	message( STATUS "Use binary LLVM package" )
@@ -80,6 +81,7 @@ elseif( DEFINED LLVM_LIB_DIR )
 	include_directories( ${LLVM_INCLUDE_DIRS} )
 
 	set( CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER ${LLVM_LIB_DIR}/clang/${LLVM_VERSION}/include/ )
+	set( CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION lib/clang/${LLVM_VERSION}/include/ )
 
 else()
 	message( FATAL_ERROR "llvm not found. Define LLVM_SRC_DIR for building llvm from sources, or define LLVM_LIB_DIR for installed llvm." )
