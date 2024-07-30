@@ -137,7 +137,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
 
-		const std::string name= ident_info->getName().str();
+		std::string name= ident_info->getName().str();
 		if( name.empty() )
 			continue;
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
@@ -160,6 +160,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		if( macro_info->getNumTokens() != 1u )
 			continue;
 
+		name= TranslateIdentifier(name);
+		if( IsKeyword( name ) )
+			name+= "_";
+
 		const clang::Token& token= macro_info->tokens().front();
 		if( token.getKind() == clang::tok::numeric_constant )
 		{
@@ -174,7 +178,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= TranslateIdentifier( name );
+			auto_variable_declaration.name= name;
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 
@@ -230,7 +234,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= TranslateIdentifier( name );
+			auto_variable_declaration.name= name;
 
 			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
 
@@ -283,7 +287,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= TranslateIdentifier( name );
+			auto_variable_declaration.name= name;
 
 			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
 			string_constant->value.push_back( char(char_literal_parser.getValue()) );
