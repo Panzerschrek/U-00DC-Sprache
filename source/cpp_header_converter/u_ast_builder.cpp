@@ -477,6 +477,9 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		return std::nullopt;
 	}
 
+	if( record_decl.isTemplated() )
+		return std::nullopt; // Ignore templates.
+
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
 		Synt::Class class_(g_dummy_src_loc);
