@@ -106,6 +106,16 @@ fn nomangle main() : i32
 		var StupidStuctNaming mut s= zero_init;
 		unsafe( StupidFunc( $<(s) ) );
 	}
+	{
+		type UnknownStruct= StructUsedWithoutDeclaration;
+		unsafe( FunctionReturningUnknownStruct() );
+	}
+
+	{
+		var StructWithName mut s{ .ff= 67u };
+		var TypedefForStructWithName &mut s_ref= s;
+		var PointerTypedefForStructWithName s_ptr= $<(s_ref);
+	}
 
 	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
 	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
@@ -144,6 +154,20 @@ fn nomangle main() : i32
 	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
 	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
 	static_assert( same_type</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 /> );
+
+	{
+		var SomeForwardDeclaration v{ .contents= 2, .contents2= -2.5f };
+		type OpaqueStructUsage= SomeForwardDeclarationWithoutLaterDefinition;
+	}
+
+	static_assert( typeinfo</NumbersEnum/>.is_integer );
+	static_assert( typeinfo</NumbersEnumPtr/>.is_raw_pointer );
+
+	unsafe( SillyFunction( 33.3f ) );
+
+	{
+		var SillyStructWithAStrangeField s{ .SillyName_= zero_init };
+	}
 
 	return 0;
 }

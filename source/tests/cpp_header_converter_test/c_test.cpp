@@ -64,6 +64,11 @@ void StupidFunc( StupidStuctNaming* s )
 	(void)s;
 }
 
+struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct()
+{
+	return nullptr;
+}
+
 void SequentialEnumFunc( enum SequentialEnum s )
 {
 	(void)s;
@@ -82,6 +87,11 @@ void ABCFunc( TypedefForEnumABC arg )
 void XYZFunc( TypedefForEnumXYZ arg )
 {
 	(void)arg;
+}
+
+void SillyFunction( SillyName SillyName )
+{
+	(void) SillyName;
 }
 
 } // extern "C"

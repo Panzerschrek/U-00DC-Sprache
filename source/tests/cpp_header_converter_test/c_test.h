@@ -69,7 +69,16 @@ typedef struct StupidStuctNaming
 	int x;
 } StupidStuctNaming;
 
+typedef struct StructWithName
+{
+	unsigned int ff;
+} TypedefForStructWithName, *PointerTypedefForStructWithName;
+
 void StupidFunc( StupidStuctNaming* s );
+
+struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct();
+
+inline struct AnotherStructUsedWithoutDeclaration* InlineFunctionReturningUnknownStruct() { return 0; }
 
 struct StructWithAnonimousRecordsInside
 {
@@ -139,3 +148,43 @@ typedef struct DifferentNamesForStructAndTypedef_0
 	int dummy0;
 	float dummy1;
 } DifferentNamesForStructAndTypedef_1;
+
+// Should properly process forward declaration without later definition.
+struct SomeForwardDeclaration;
+
+// Should properly process forward declaration with later definition.
+struct SomeForwardDeclarationWithoutLaterDefinition;
+
+struct SomeForwardDeclaration
+{
+	int contents;
+	float contents2;
+};
+
+// Should process "typedef enum" for pointers.
+typedef enum
+{
+	Eins, Zwei, Drei, Vier,
+} NumbersEnum, *NumbersEnumPtr;
+
+typedef float SillyName;
+
+// In C it's fine - param name doesn't shadow type name.
+void SillyFunction( SillyName SillyName );
+
+struct SillyStructWithAStrangeField
+{
+	// In C it's fine - type name doesn't shadow field name.
+	SillyName SillyName;
+};
+
+// A function with name as Ü keyword.
+// For now it's not possible to call it, but at least current workaround fixes compilation.
+void yield();
+
+// Test for __stdcall functions under 32-bit windows.
+#ifdef _WIN32
+	#ifndef _WIN64
+		void __stdcall StdCallFunc(void);
+	#endif
+#endif

@@ -3,7 +3,8 @@
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <clang/Tooling/CommonOptionsParser.h>
-#include  <llvm/Support/CommandLine.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/TargetSelect.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../compiler0/lex_synt_lib/program_writer.hpp"
@@ -11,6 +12,12 @@
 
 int main( int argc, const char* argv[] )
 {
+	// Initialize targets for clang module support.
+	llvm::InitializeAllTargets();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmPrinters();
+	llvm::InitializeAllAsmParsers();
+
 	llvm::cl::OptionCategory tool_category( "C++ to Ü header converter options" );
 
 	llvm::cl::opt<std::string> output_file_name(
