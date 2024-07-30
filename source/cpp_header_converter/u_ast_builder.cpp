@@ -110,14 +110,6 @@ CppAstConsumer::CppAstConsumer(
 	, ast_context_(ast_context)
 	, skip_declarations_from_includes_(skip_declarations_from_includes)
 {
-	// HACK! Add type alias for "size_t".
-	// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
-
-	Synt::TypeAlias type_alias( g_dummy_src_loc );
-	type_alias.name= "size_t";
-	type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
-
-	root_program_elements_.Append( std::move(type_alias) );
 }
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
@@ -327,6 +319,19 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 				root_program_elements_.Append( std::move(class_) );
 			}
 		}
+	}
+
+	// Add implicit "size_t", if it wasn't defined explicitely.
+	if( globals_names_.count( "size_t" ) == 0 )
+	{
+		// HACK! Add type alias for "size_t".
+		// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
+
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= "size_t";
+		type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
+
+		root_program_elements_.Append( std::move(type_alias) );
 	}
 }
 
