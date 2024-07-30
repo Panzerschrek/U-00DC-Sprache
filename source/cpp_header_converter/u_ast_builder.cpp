@@ -456,33 +456,33 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 	}
 	else if( record_decl.isUnion() )
 	{
-		// Emulate union, using array of ints with required alignment.
+		// Emulate union, using array of bytes with required alignment.
 
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
-		const auto int_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
-		const auto num= ( size + int_size - 1u ) / int_size;
+		const auto byte_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
+		const auto num= ( size + byte_size - 1u ) / byte_size;
 
-		std::string int_name;
-		switch(int_size)
+		std::string byte_name;
+		switch(byte_size)
 		{
-		case  1: int_name= Keyword( Keywords::  u8_ ); break;
-		case  2: int_name= Keyword( Keywords:: u16_ ); break;
-		case  4: int_name= Keyword( Keywords:: u32_ ); break;
-		case  8: int_name= Keyword( Keywords:: u64_ ); break;
-		case 16: int_name= Keyword( Keywords::u128_ ); break;
+		case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
+		case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
+		case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
+		case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
+		case 16: byte_name= Keyword( Keywords::byte128_ ); break;
 		default: U_ASSERT(false); break;
 		};
 
 		auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-		array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( int_name ) );
+		array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( byte_name ) );
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= num;
-		numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
+		numeric_constant.value_double= double(numeric_constant.value_int);
 		array_type->size= std::move(numeric_constant);
 
 		Synt::ClassField field( g_dummy_src_loc );
