@@ -70,11 +70,8 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			COMMAND
 				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
 				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
-				-I ../clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/include/
-				-I ../clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/include/c++/v1/
-				-I ../clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/include/x86_64-unknown-linux-gnu/c++/v1/
-				-I /usr/lib/gcc/x86_64-linux-gnu/7/include/
-				-I /usr/lib/gcc/x86_64-linux-gnu/7/include-fixed/ )
+				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADERS_CONVERTER}
+				)
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
