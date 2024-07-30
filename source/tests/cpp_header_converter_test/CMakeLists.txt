@@ -62,6 +62,39 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				../dummy.cpp )
 		add_dependencies( WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
+	else()
+
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h CppHeaderConverter
+			COMMAND
+				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
+				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
+				-I ../clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/include/
+				-I ../clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/include/c++/v1/
+				-I ../clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/include/x86_64-unknown-linux-gnu/c++/v1/
+				-I /usr/lib/gcc/x86_64-linux-gnu/7/include/
+				-I /usr/lib/gcc/x86_64-linux-gnu/7/include-fixed/ )
+
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u Compiler
+			COMMAND
+				Compiler${CURRENT_COMPILER_GENERATION}
+				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
+				${SPRACHE_COMPILER_PIC_OPTIONS}
+				${SPRACHE_COMPILER_OPT_OPTIONS}
+				--verify-module
+				--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
+
+		add_executable(
+			CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION}
+				${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
+				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u
+				${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h
+				../dummy.cpp )
+		add_dependencies( CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
 	endif()
 
 endif()

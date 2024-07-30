@@ -1,0 +1,6 @@
+import "/c_standard_library_headers.u"
+
+fn nomangle main() : i32
+{
+	return 0;
+}
