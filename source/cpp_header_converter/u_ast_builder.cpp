@@ -333,6 +333,24 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 		root_program_elements_.Append( std::move(type_alias) );
 	}
+
+	// "__builtin_va_list" is also sometimes implicitely defined. Create something for it.
+	std::string va_list_name= TranslateIdentifier( "__builtin_va_list" );
+	if( globals_names_.count( va_list_name ) == 0 )
+	{
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= std::move(va_list_name);
+
+		Synt::NameLookup void_name(g_dummy_src_loc);
+		void_name.name=  Keyword( Keywords::void_ );
+
+		Synt::RawPointerType pointer_type(g_dummy_src_loc);
+		pointer_type.element_type= std::move(void_name);
+
+		type_alias.value= std::make_unique<Synt::RawPointerType>( std::move(pointer_type) );
+
+		root_program_elements_.Append( std::move(type_alias) );
+	}
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
