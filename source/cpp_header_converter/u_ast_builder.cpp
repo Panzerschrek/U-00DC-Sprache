@@ -51,6 +51,7 @@ private:
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::ComplexName TranslateNamedType( llvm::StringRef cpp_type_name );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type );
+	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
@@ -570,6 +571,23 @@ Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_
 	}
 	func.type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
+	const clang::Type* function_type= func_decl.getType().getTypePtr();
+
+	while(true)
+	{
+		if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
+			function_type= paren_type->getInnerType().getTypePtr();
+		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( function_type ) )
+			function_type= elaborated_type->desugar().getTypePtr();
+		else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( function_type ) )
+			function_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+		else
+			break;
+	}
+
+	if( const auto ft= llvm::dyn_cast<clang::FunctionType>( function_type ) )
+		func.type.calling_convention= TranslateCallingConvention( *ft );
+
 	return func;
 }
 
@@ -928,22 +946,26 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 	}
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
+	function_type.calling_convention= TranslateCallingConvention( in_type );
+
+	return function_type;
+}
+
+std::optional<std::string> CppAstConsumer::TranslateCallingConvention( const clang::FunctionType& in_type )
+{
 	// TODO - handle/introduce other calling conventions.
 	switch( in_type.getCallConv() )
 	{
 	case clang::CallingConv::CC_C:
-		break;
+		return std::nullopt;
 	case clang::CallingConv::CC_X86StdCall:
-		case clang::CallingConv::CC_Swift:
-		function_type.calling_convention= "system";
-		break;
+		return "system";
 	case clang::CallingConv::CC_X86FastCall:
-		function_type.calling_convention= "fast";
-		break;
+		return "fast";
 	default: break;
 	}
 
-	return function_type;
+	return std::nullopt;
 }
 
 std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifier )

@@ -1014,6 +1014,9 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	if( function_type.unsafe )
 		stream << Keyword( Keywords::unsafe_ ) << " ";
 
+	if( function_type.calling_convention != std::nullopt )
+		stream << Keyword( Keywords::call_conv_ ) << "( \"" << *function_type.calling_convention << "\" ) ";
+
 	stream << ": ";
 	if( function_type.return_type != nullptr )
 		ElementWrite( *function_type.return_type, stream );

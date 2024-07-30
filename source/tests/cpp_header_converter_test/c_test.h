@@ -181,3 +181,10 @@ struct SillyStructWithAStrangeField
 // A function with name as Ü keyword.
 // For now it's not possible to call it, but at least current workaround fixes compilation.
 void yield();
+
+// Test for __stdcall functions under 32-bit windows.
+#ifdef _WIN32
+	#ifndef _WIN64
+		void __stdcall StdCallFunc(void);
+	#endif
+#endif

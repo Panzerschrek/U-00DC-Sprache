@@ -120,7 +120,7 @@ fn WriteHello()
 			reserved ) );
 }
 
-fn WindowProc( HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param ) unsafe : LRESULT
+fn WindowProc( HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param ) unsafe call_conv("system") : LRESULT
 {
 	if( msg == u32(WM_CLOSE) || msg == u32(WM_QUIT) )
 	{
