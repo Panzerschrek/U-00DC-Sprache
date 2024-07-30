@@ -58,6 +58,7 @@ Compiler:
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Speed-up references graph code
+*) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
@@ -114,6 +115,10 @@ CPP Header converter:
 *) White list of converted symbols
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
+*) Add workarounds for function names conflicting with Ü keywords
+*) Add more satisfying defines conversion - where defined value is a constant expression
+*) Forbid construction of opaque structs
+*) Find a way to handle properly name conflicts between struct fileds and type names used for field types of current struct
 
 Documentation:
 *) Other languages (not only russian and english)
