@@ -467,6 +467,8 @@ std::optional<std::string> CppAstConsumer::TranslateCallingConvention( const cla
 
 std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifier )
 {
+	U_ASSERT( !identifier.empty() );
+
 	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
 	if( identifier[0] == '_' )
 		return ( "ü" + identifier ).str();
@@ -753,7 +755,11 @@ void CppAstConsumer::EmitGlobalRecord(
 				else
 					field.type= TranslateType( *field_type, type_names_map );
 
-				field.name= TranslateIdentifier( field_declaration->getName() );
+				const auto src_name= field_declaration->getName();
+				if( src_name.empty() )
+					field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
+				else
+					field.name= TranslateIdentifier( src_name );
 
 				// HACK!
 				// For cases where field name is the same as some global name, add name suffix to avoid collsiions.

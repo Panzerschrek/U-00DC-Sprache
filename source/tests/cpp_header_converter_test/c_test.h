@@ -119,6 +119,17 @@ struct StructWithNamedRecordsInside
 	} b;
 };
 
+struct StructWithAnonUnion
+{
+	unsigned int field_before;
+	union
+	{
+		float float_val;
+		int int_val;
+	};
+	unsigned int field_after;
+};
+
 union UnionAlign1 { char c; };
 union UnionAlign2 { short s; };
 union UnionAlign4 { int i; };
