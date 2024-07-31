@@ -73,9 +73,9 @@ private:
 	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
 	TypeNamesMap BuildTypeNamesMap( const NamedRecordDeclarations& named_record_declarations );
 
-	void GenerateDefinitionsForMacros();
-	void GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
-	void GenerateImplicitDefinitions();
+	void EmitDefinitionsForMacros();
+	void EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
+	void EmitImplicitDefinitions();
 
 private:
 	Synt::ProgramElementsList::Builder& root_program_elements_;
@@ -157,11 +157,11 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names );
 
-	GenerateDefinitionsForMacros();
+	EmitDefinitionsForMacros();
 
-	GenerateDefinitionsForOpaqueStructs( ast_context );
+	EmitDefinitionsForOpaqueStructs( ast_context );
 
-	GenerateImplicitDefinitions();
+	EmitImplicitDefinitions();
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
@@ -937,7 +937,7 @@ CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap( const NamedRecor
 	return res;
 }
 
-void CppAstConsumer::GenerateDefinitionsForMacros()
+void CppAstConsumer::EmitDefinitionsForMacros()
 {
 	// Dump definitions of simple constants, using "define".
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
@@ -1117,7 +1117,7 @@ void CppAstConsumer::GenerateDefinitionsForMacros()
 	} // for defines
 }
 
-void CppAstConsumer::GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context )
+void CppAstConsumer::EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context )
 {
 	// Create dummy definition for opaque structs.
 	for( const auto type : ast_context.getTypes() )
@@ -1140,7 +1140,7 @@ void CppAstConsumer::GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast
 	}
 }
 
-void CppAstConsumer::GenerateImplicitDefinitions()
+void CppAstConsumer::EmitImplicitDefinitions()
 {
 	// Add implicit "size_t", if it wasn't defined explicitely.
 	if( globals_names_.count( "size_t" ) == 0 )
