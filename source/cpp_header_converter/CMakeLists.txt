@@ -12,6 +12,9 @@ if( TARGET clangTooling )
 
 	install( TARGETS CppHeaderConverter )
 
+	# Install clang headers.
+	install( DIRECTORY ${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} DESTINATION ${CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION} )
+
 else()
 	message( STATUS "Clang not found, c++ header converter build disabled" )
 endif()

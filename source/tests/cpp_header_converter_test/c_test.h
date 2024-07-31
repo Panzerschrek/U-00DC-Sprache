@@ -33,6 +33,8 @@ void Function_UnnamedArgs( int, float, double );
 void DuplicatedProto( int x );
 void DuplicatedProto( int xx );
 
+extern int ExternallyDeclaredFunction( const char* s );
+
 typedef char CPP_char8;
 typedef   signed char  CPP_i8;
 typedef unsigned char  CPP_u8;
@@ -188,3 +190,28 @@ void yield();
 		void __stdcall StdCallFunc(void);
 	#endif
 #endif
+
+struct SameNameForStructAndFunc1
+{
+	int contents;
+};
+
+void SameNameForStructAndFunc1( struct SameNameForStructAndFunc1* );
+
+typedef struct TypedefStructWithSameNameForwardDeclaration TypedefStructWithSameNameForwardDeclaration;
+
+struct TypedefStructWithSameNameForwardDeclaration
+{
+	void* contents;
+};
+
+#ifdef _WIN32
+	// Should generate prototype for this function, but it isn't possible to call it, because Ü doesn't support dllimport.
+	__declspec(dllimport) int SomeDllImportedFunction(unsigned int, void*);
+
+	// But this function should be callable.
+	__declspec(dllexport) int SomeDllExportedFunction(void);
+#endif
+
+// Should convert function with variadic params, but skip them - Ü doesn't support C-style variadic params.
+int VariadicFunc( int x, const char* s, ...);

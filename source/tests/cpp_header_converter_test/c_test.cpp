@@ -59,6 +59,12 @@ void DuplicatedProto( int xx )
 	(void)xx;
 }
 
+int ExternallyDeclaredFunction( const char* s )
+{
+	(void)s;
+	return 0;
+}
+
 void StupidFunc( StupidStuctNaming* s )
 {
 	(void)s;
@@ -92,6 +98,25 @@ void XYZFunc( TypedefForEnumXYZ arg )
 void SillyFunction( SillyName SillyName )
 {
 	(void) SillyName;
+}
+
+#ifdef _WIN32
+__declspec(dllexport) int SomeDllExportedFunction(void)
+{
+	return 34;
+}
+#endif
+
+int VariadicFunc( int x, const char*  s, ...)
+{
+	int len= 0;
+	while(s[0] != '\0')
+	{
+		++s;
+		++len;
+	}
+
+	return x * len;
 }
 
 } // extern "C"

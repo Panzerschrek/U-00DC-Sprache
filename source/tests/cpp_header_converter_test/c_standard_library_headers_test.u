@@ -1,0 +1,21 @@
+import "/c_standard_library_headers.u"
+
+fn nomangle main() : i32
+{
+	// Some well-known C functions should be available.
+	auto exit_func= exit;
+	auto abort_funct= abort;
+	auto malloc_func= malloc;
+	auto free_func= free;
+	auto memcpy_func= memcpy;
+	auto strcpy_func= strcpy;
+	auto fread_func= fread;
+	auto fwrite_func= fwrite;
+	auto isalpha_func= isalpha;
+	auto tolower_func= tolower;
+	auto cos_func= cosf;
+	auto atan2_func= atan2;
+	auto pow_func= pow;
+
+	return 0;
+}

@@ -58,6 +58,9 @@ fn nomangle main() : i32
 		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
+
+		var char8 mut c= zero_init;
+		ExternallyDeclaredFunction( $<(c) );
 	}
 	{
 		static_assert( same_type</ CPP_char8, char8 /> );
@@ -167,6 +170,19 @@ fn nomangle main() : i32
 
 	{
 		var SillyStructWithAStrangeField s{ .SillyName_= zero_init };
+	}
+
+	{
+		var SameNameForStructAndFunc1 s= zero_init;
+	}
+
+	{
+		var TypedefStructWithSameNameForwardDeclaration s{ .contents= zero_init };
+	}
+
+	{
+		auto x= unsafe( VariadicFunc( 5, $<( cast_mut( "Some string\0"[0] ) ) ) );
+		halt if( x != 55 );
 	}
 
 	return 0;

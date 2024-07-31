@@ -110,14 +110,6 @@ CppAstConsumer::CppAstConsumer(
 	, ast_context_(ast_context)
 	, skip_declarations_from_includes_(skip_declarations_from_includes)
 {
-	// HACK! Add type alias for "size_t".
-	// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
-
-	Synt::TypeAlias type_alias( g_dummy_src_loc );
-	type_alias.name= "size_t";
-	type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
-
-	root_program_elements_.Append( std::move(type_alias) );
 }
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
@@ -137,7 +129,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
 
-		const std::string name= ident_info->getName().str();
+		std::string name= ident_info->getName().str();
 		if( name.empty() )
 			continue;
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
@@ -160,6 +152,13 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		if( macro_info->getNumTokens() != 1u )
 			continue;
 
+		name= TranslateIdentifier(name);
+		if( IsKeyword( name ) )
+			name+= "_";
+
+		if( globals_names_.count( name ) != 0 )
+			continue; // Avoid redefining something.
+
 		const clang::Token& token= macro_info->tokens().front();
 		if( token.getKind() == clang::tok::numeric_constant )
 		{
@@ -174,7 +173,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= TranslateIdentifier( name );
+			auto_variable_declaration.name= name;
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 
@@ -222,6 +221,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+			globals_names_.insert(name);
 		}
 		else if( clang::tok::isStringLiteral( token.getKind() ) )
 		{
@@ -230,7 +231,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= TranslateIdentifier( name );
+			auto_variable_declaration.name= name;
 
 			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
 
@@ -256,6 +257,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				globals_names_.insert(name);
 			}
 			else if( string_literal_parser.isUTF32() ||
 				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
@@ -270,6 +273,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				globals_names_.insert(name);
 			}
 		}
 		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -283,7 +288,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= TranslateIdentifier( name );
+			auto_variable_declaration.name= name;
 
 			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
 			string_constant->value.push_back( char(char_literal_parser.getValue()) );
@@ -291,6 +296,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			auto_variable_declaration.initializer_expression= std::move(string_constant);
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+			globals_names_.insert(name);
 		}
 	} // for defines
 
@@ -312,6 +319,37 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 				root_program_elements_.Append( std::move(class_) );
 			}
 		}
+	}
+
+	// Add implicit "size_t", if it wasn't defined explicitely.
+	if( globals_names_.count( "size_t" ) == 0 )
+	{
+		// HACK! Add type alias for "size_t".
+		// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
+
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= "size_t";
+		type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
+
+		root_program_elements_.Append( std::move(type_alias) );
+	}
+
+	// "__builtin_va_list" is also sometimes implicitely defined. Create something for it.
+	std::string va_list_name= TranslateIdentifier( "__builtin_va_list" );
+	if( globals_names_.count( va_list_name ) == 0 )
+	{
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= std::move(va_list_name);
+
+		Synt::NameLookup void_name(g_dummy_src_loc);
+		void_name.name=  Keyword( Keywords::void_ );
+
+		Synt::RawPointerType pointer_type(g_dummy_src_loc);
+		pointer_type.element_type= std::move(void_name);
+
+		type_alias.value= std::make_unique<Synt::RawPointerType>( std::move(pointer_type) );
+
+		root_program_elements_.Append( std::move(type_alias) );
 	}
 }
 
@@ -346,12 +384,15 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 				is_same_name= name_lookup->name == type_alias.name;
 
 			if( !is_same_name )
+			{
+				globals_names_.insert( type_alias.name );
 				program_elements.Append( std::move(type_alias) );
+			}
 		}
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
-		if( func_decl->isFirstDecl() )
+		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
 			program_elements.Append( ProcessFunction( *func_decl, current_externc ) );
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
@@ -439,10 +480,19 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		return std::nullopt;
 	}
 
+	if( record_decl.isTemplated() )
+		return std::nullopt; // Ignore templates.
+
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+
+		// HACK! C allows to declare a struct and a function with the same name.
+		// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
+		// But in Ü this isn't possible, so, correct class name.
+		while( globals_names_.count( class_.name ) != 0 )
+			class_.name+= "_";
 
 		globals_names_.insert( class_.name );
 
@@ -463,6 +513,14 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		// HACK! C allows to declare a struct and a function with the same name.
+		// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
+		// But in Ü this isn't possible, so, correct class name.
+		while( globals_names_.count( class_.name ) != 0 )
+			class_.name+= "_";
+
+		globals_names_.insert( class_.name );
 
 		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
 		const auto byte_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
@@ -507,8 +565,6 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
 	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
 
-	globals_names_.insert( type_alias.name );
-
 	return type_alias;
 }
 
@@ -522,6 +578,12 @@ Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_
 	// TODO - find a better way to do this.
 	// Sometimes it may be necessary to call such functions using exactly the same name.
 	if( IsKeyword( func.name.back().name ) )
+		func.name.back().name+= "_";
+
+	// HACK! C allows to declare a struct and a function with the same name.
+	// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
+	// But in Ü this isn't possible, so, correct function name.
+	while( globals_names_.count( func.name.back().name ) != 0 )
 		func.name.back().name+= "_";
 
 	globals_names_.insert( func.name.back().name );
@@ -635,6 +697,8 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			var.name= TranslateIdentifier( enumerator->getName() );
 			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+
+			globals_names_.insert( var.name );
 
 			variables_declaration.variables.push_back( std::move(var) );
 		}
