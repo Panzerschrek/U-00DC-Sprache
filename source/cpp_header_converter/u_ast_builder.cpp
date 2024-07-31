@@ -38,14 +38,6 @@ public:
 	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
-	struct RecordDeclaration
-	{
-		const clang::RecordDecl* decl= nullptr;
-
-		std::vector<RecordDeclaration> sub_records;
-		std::vector<const clang::FieldDecl*> fields;
-	};
-
 	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
 
 private:
@@ -62,7 +54,7 @@ private:
 	using NamedFunctionDeclarations= std::unordered_map<std::string, const clang::FunctionDecl*>;
 	NamedFunctionDeclarations GenerateFunctionNames();
 
-	using NamedRecordDeclarations= std::unordered_map<std::string, RecordDeclaration>;
+	using NamedRecordDeclarations= std::unordered_map<std::string, const clang::RecordDecl*>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
 	using NamedTypedefDeclarations= std::unordered_map<std::string, const clang::TypedefNameDecl*>;
@@ -92,7 +84,7 @@ private:
 
 	void EmitGlobalRecord(
 		const std::string& name,
-		const RecordDeclaration& record_declaration,
+		const clang::RecordDecl& record_declaration,
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
@@ -136,7 +128,7 @@ private:
 	const bool skip_declarations_from_includes_;
 
 	std::vector< const clang::FunctionDecl* > top_level_function_declarations_;
-	std::vector<RecordDeclaration> top_level_record_declarations_;
+	std::vector< const clang::RecordDecl* > record_declarations_;
 	std::vector< const clang::TypedefNameDecl* > top_level_typedefs_;
 	std::vector< const clang::EnumDecl* > top_level_enums_;
 
@@ -245,25 +237,13 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	{
 		if( record_decl->isCompleteDefinition() && !record_decl->isTemplated() )
 		{
-			RecordDeclaration record_declaration;
-			record_declaration.decl= record_decl;
-
 			if( record_decl->isStruct() || record_decl->isClass() )
 			{
-				for( const clang::Decl* const sub_decl : record_decl->decls() )
-				{
-					if( const auto field_decl= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
-						record_declaration.fields.push_back( field_decl );
-				}
 
 				// TODO - process declarations recursively.
 			}
-			else if( record_decl->isUnion() )
-			{
-				// TODO
-			}
 
-			top_level_record_declarations_.push_back( std::move(record_declaration) );
+			record_declarations_.push_back( record_decl );
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
@@ -521,9 +501,9 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 {
 	NamedRecordDeclarations named_declarations;
 
-	for( const RecordDeclaration& record_declaration : top_level_record_declarations_ )
+	for( const auto record_declaration : record_declarations_ )
 	{
-		const auto src_name= record_declaration.decl->getName();
+		const auto src_name= record_declaration->getName();
 
 		std::string name;
 		if( src_name.empty() )
@@ -609,7 +589,7 @@ CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap(
 	TypeNamesMap res;
 
 	for( const auto& pair : named_record_declarations )
-		res[ pair.second.decl->getTypeForDecl() ] = pair.first;
+		res[ pair.second->getTypeForDecl() ] = pair.first;
 
 	for( const auto& pair : named_typedef_declarations )
 		res[ pair.second->getTypeForDecl() ] = pair.first;
@@ -708,18 +688,18 @@ void CppAstConsumer::EmitGlobalRecords(
 	const TypeNamesMap& type_names_map )
 {
 	for( const auto& pair : record_declarations )
-		EmitGlobalRecord( pair.first, pair.second, record_declarations, named_typedef_declarations, named_enum_declarations, type_names_map );
+		EmitGlobalRecord( pair.first, *pair.second, record_declarations, named_typedef_declarations, named_enum_declarations, type_names_map );
 }
 
 void CppAstConsumer::EmitGlobalRecord(
 	const std::string& name,
-	const RecordDeclaration& record_declaration,
+	const clang::RecordDecl& record_declaration,
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const TypeNamesMap& type_names_map )
 {
-	if( record_declaration.decl->isStruct() || record_declaration.decl->isClass() )
+	if( record_declaration.isStruct() || record_declaration.isClass() )
 	{
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= name;
@@ -728,45 +708,48 @@ void CppAstConsumer::EmitGlobalRecord(
 
 		Synt::ClassElementsList::Builder class_elements;
 
-		for( const auto field_declaration : record_declaration.fields )
+		for( const clang::Decl* const sub_decl : record_declaration.decls() )
 		{
-			Synt::ClassField field( g_dummy_src_loc );
-
-			const clang::Type* field_type= field_declaration->getType().getTypePtr();
-
-			if( field_type->isReferenceType() )
+			if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
 			{
-				// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
-				const clang::QualType type_qual= field_type->getPointeeType();
-				field_type= type_qual.getTypePtr();
+				Synt::ClassField field( g_dummy_src_loc );
 
-				auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-				raw_pointer_type->element_type= TranslateType( *field_type, type_names_map );
+				const clang::Type* field_type= field_declaration->getType().getTypePtr();
 
-				field.type= std::move(raw_pointer_type);
+				if( field_type->isReferenceType() )
+				{
+					// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
+					const clang::QualType type_qual= field_type->getPointeeType();
+					field_type= type_qual.getTypePtr();
+
+					auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+					raw_pointer_type->element_type= TranslateType( *field_type, type_names_map );
+
+					field.type= std::move(raw_pointer_type);
+				}
+				else
+					field.type= TranslateType( *field_type, type_names_map );
+
+				field.name= TranslateIdentifier( field_declaration->getName() );
+
+				// HACK!
+				// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
+				// C allows such collisions, but Ü doesn't.
+				while(
+					named_record_declarations.count( field.name ) != 0 ||
+					named_typedef_declarations.count( field.name ) != 0 ||
+					named_enum_declarations.count( field.name ) != 0 )
+					field.name+= "_";
+
+				class_elements.Append( std::move(field) );
 			}
-			else
-				field.type= TranslateType( *field_type, type_names_map );
-
-			field.name= TranslateIdentifier( field_declaration->getName() );
-
-			// HACK!
-			// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
-			// C allows such collisions, but Ü doesn't.
-			while(
-				named_record_declarations.count( field.name ) != 0 ||
-				named_typedef_declarations.count( field.name ) != 0 ||
-				named_enum_declarations.count( field.name ) != 0 )
-				field.name+= "_";
-
-			class_elements.Append( std::move(field) );
 		}
 
 		class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
-	else if( record_declaration.decl->isUnion() )
+	else if( record_declaration.isUnion() )
 	{
 		// Emulate union, using array of bytes with required alignment.
 
@@ -774,8 +757,8 @@ void CppAstConsumer::EmitGlobalRecord(
 		class_.name= name;
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		const auto size= ast_context_.getTypeSize( record_declaration.decl->getTypeForDecl() ) / 8u;
-		const auto byte_size= ast_context_.getTypeAlign( record_declaration.decl->getTypeForDecl() ) / 8u;
+		const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
+		const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
 		const auto num= ( size + byte_size - 1u ) / byte_size;
 
 		std::string byte_name;
