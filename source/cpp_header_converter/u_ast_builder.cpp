@@ -45,7 +45,7 @@ private:
 	using NamesMapContainer= std::map<K, V>;
 
 private:
-	void ProcessDecl( const clang::Decl& decl, bool externc );
+	void ProcessDecl( const clang::Decl& decl );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
@@ -82,13 +82,13 @@ private:
 	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
 	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
 
-	void EmitGlobalRecords(
+	void EmitRecords(
 		const NamedRecordDeclarations& record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map );
 
-	void EmitGlobalRecord(
+	void EmitRecord(
 		const std::string& name,
 		const clang::RecordDecl& record_declaration,
 		const NamedRecordDeclarations& named_record_declarations,
@@ -96,12 +96,12 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map );
 
-	void EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
-	void EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
+	void EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
+	void EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
 
 	using AnonymousEnumMembersSet= std::unordered_set<std::string>;
 
-	void EmitGlobalEnums(
+	void EmitEnums(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
@@ -109,7 +109,7 @@ private:
 		const TypeNamesMap& type_names_map,
 		AnonymousEnumMembersSet& out_anonymous_enum_members );
 
-	void EmitGlobalEnum(
+	void EmitEnum(
 		const std::string& name,
 		const clang::EnumDecl& enum_declaration,
 		const NamedFunctionDeclarations& named_function_declarations,
@@ -126,7 +126,7 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const AnonymousEnumMembersSet& anonymous_enum_members );
 
-	void EmitDefinitionsForOpaqueStructs(
+	void EmitOpaqueStructs(
 		clang::ASTContext& ast_context,
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
@@ -153,10 +153,10 @@ private:
 	const clang::ASTContext& ast_context_;
 	const bool skip_declarations_from_includes_;
 
-	std::vector< const clang::FunctionDecl* > top_level_function_declarations_;
+	std::vector< const clang::FunctionDecl* > function_declarations_;
 	std::vector< const clang::RecordDecl* > record_declarations_;
-	std::vector< const clang::TypedefNameDecl* > top_level_typedefs_;
-	std::vector< const clang::EnumDecl* > top_level_enums_;
+	std::vector< const clang::TypedefNameDecl* > typedef_declarations_;
+	std::vector< const clang::EnumDecl* > enum_declarations_;
 
 	size_t unique_name_index_= 0u;
 };
@@ -201,9 +201,8 @@ CppAstConsumer::CppAstConsumer(
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 {
-	const bool externc= !lang_options_.CPlusPlus;
 	for( const clang::Decl* const decl : decl_group )
-		ProcessDecl( *decl, externc );
+		ProcessDecl( *decl );
 	return true;
 }
 
@@ -240,34 +239,25 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitFunctions( function_names, type_names_map );
 
-	EmitGlobalRecords( record_names, typedef_names, enum_names, type_names_map );
+	EmitRecords( record_names, typedef_names, enum_names, type_names_map );
 
-	EmitGlobalTypedefs( typedef_names, type_names_map );
+	EmitTypedefs( typedef_names, type_names_map );
 
 	AnonymousEnumMembersSet anonymous_enum_members;
-	EmitGlobalEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
+	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
-	EmitDefinitionsForOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
+	EmitOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 
 	EmitImplicitDefinitions( record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
 	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 }
 
-void CppAstConsumer::ProcessDecl( const clang::Decl& decl, const bool externc )
+void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 {
 	if( skip_declarations_from_includes_ &&
 		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
 		return;
-
-	bool current_externc= externc;
-	if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
-	{
-		if( decl_context->isExternCContext() )
-			current_externc= true;
-		if( decl_context->isExternCXXContext() )
-			current_externc= false;
-	}
 
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
@@ -275,22 +265,18 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, const bool externc )
 			record_declarations_.push_back( record_decl );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-	{
-		top_level_typedefs_.push_back( type_alias_decl );
-	}
+		typedef_declarations_.push_back( type_alias_decl );
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
-			top_level_function_declarations_.push_back( func_decl );
+			function_declarations_.push_back( func_decl );
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
-	{
-		top_level_enums_.push_back( enum_decl );
-	}
+		enum_declarations_.push_back( enum_decl );
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
-			ProcessDecl( *sub_decl, current_externc );
+			ProcessDecl( *sub_decl );
 	}
 }
 
@@ -512,17 +498,14 @@ void CppAstConsumer::CollectSubrecords()
 	for( size_t i= 0; i < record_declarations_.size(); ++i )
 	{
 		const auto record_declaration= record_declarations_[i];
-		if( record_declaration->isStruct() || record_declaration->isClass() )
+		for( const clang::Decl* const sub_decl : record_declaration->decls() )
 		{
-			for( const clang::Decl* const sub_decl : record_declaration->decls() )
-			{
-				// Collect sub-structs into flat result container.
-				// Doing so we force move nested records into the root namespace.
-				// This may cause renaming due to name conflicts.
-				// But it's not so bad.
-				if( const auto subrecord= llvm::dyn_cast<clang::RecordDecl>( sub_decl ) )
-					record_declarations_.push_back( subrecord );
-			}
+			// Collect sub-structs into flat result container.
+			// Doing so we force move nested records into the root namespace.
+			// This may cause renaming due to name conflicts.
+			// But it's not so bad.
+			if( const auto subrecord= llvm::dyn_cast<clang::RecordDecl>( sub_decl ) )
+				record_declarations_.push_back( subrecord );
 		}
 	}
 }
@@ -530,7 +513,7 @@ void CppAstConsumer::CollectSubrecords()
 CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames()
 {
 	NamedFunctionDeclarations named_declarations;
-	for( const auto function_declaration : top_level_function_declarations_ )
+	for( const auto function_declaration : function_declarations_ )
 	{
 		std::string name= function_declaration->getName().str();
 		if( IsKeyword( name ) || ( !name.empty() && name[0] == '_' ) )
@@ -580,7 +563,7 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 {
 	NamedTypedefDeclarations named_declarations;
 
-	for( const auto typedef_decl : top_level_typedefs_ )
+	for( const auto typedef_decl : typedef_declarations_ )
 	{
 		const auto src_name= typedef_decl->getName();
 		if( src_name.empty() )
@@ -608,7 +591,7 @@ CppAstConsumer::NamedEnumDeclarations CppAstConsumer::GenerateEnumNames(
 {
 	NamedEnumDeclarations named_declarations;
 
-	for( const auto enum_decl : top_level_enums_ )
+	for( const auto enum_decl : enum_declarations_ )
 	{
 		const auto src_name= enum_decl->getName();
 
@@ -659,13 +642,11 @@ void CppAstConsumer::EmitFunctions( const NamedFunctionDeclarations& function_de
 
 void CppAstConsumer::EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map )
 {
-	const bool externc= true; // TODO - pass it
-
 	Synt::Function func(g_dummy_src_loc);
 
 	func.name.push_back( Synt::Function::NameComponent{ name, g_dummy_src_loc } );
 
-	func.no_mangle= externc;
+	func.no_mangle= true; // For now import only C functions witohut mangling.
 	func.type.unsafe= true; // All C/C++ functions are unsafe.
 
 	func.type.params.reserve( function_decl.param_size() );
@@ -732,17 +713,17 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 	root_program_elements_.Append( std::move(func) );
 }
 
-void CppAstConsumer::EmitGlobalRecords(
+void CppAstConsumer::EmitRecords(
 	const NamedRecordDeclarations& record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const TypeNamesMap& type_names_map )
 {
 	for( const auto& pair : record_declarations )
-		EmitGlobalRecord( pair.first, *pair.second, record_declarations, named_typedef_declarations, named_enum_declarations, type_names_map );
+		EmitRecord( pair.first, *pair.second, record_declarations, named_typedef_declarations, named_enum_declarations, type_names_map );
 }
 
-void CppAstConsumer::EmitGlobalRecord(
+void CppAstConsumer::EmitRecord(
 	const std::string& name,
 	const clang::RecordDecl& record_declaration,
 	const NamedRecordDeclarations& named_record_declarations,
@@ -847,13 +828,13 @@ void CppAstConsumer::EmitGlobalRecord(
 	}
 }
 
-void CppAstConsumer::EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map )
 {
 	for( const auto& pair : typedef_declarations )
-		EmitGlobalTypedef( pair.first, *pair.second, type_names_map );
+		EmitTypedef( pair.first, *pair.second, type_names_map );
 }
 
-void CppAstConsumer::EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map )
 {
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= name;
@@ -862,7 +843,7 @@ void CppAstConsumer::EmitGlobalTypedef( const std::string& name, const clang::Ty
 	root_program_elements_.Append( std::move(type_alias ) );
 }
 
-void CppAstConsumer::EmitGlobalEnums(
+void CppAstConsumer::EmitEnums(
 	const NamedFunctionDeclarations& named_function_declarations,
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
@@ -871,7 +852,7 @@ void CppAstConsumer::EmitGlobalEnums(
 	AnonymousEnumMembersSet& out_anonymous_enum_members )
 {
 	for( const auto& pair: named_enum_declarations )
-		EmitGlobalEnum(
+		EmitEnum(
 			pair.first,
 			*pair.second,
 			named_function_declarations,
@@ -882,7 +863,7 @@ void CppAstConsumer::EmitGlobalEnums(
 			out_anonymous_enum_members );
 }
 
-void CppAstConsumer::EmitGlobalEnum(
+void CppAstConsumer::EmitEnum(
 	const std::string& name,
 	const clang::EnumDecl& enum_declaration,
 	const NamedFunctionDeclarations& named_function_declarations,
@@ -1247,7 +1228,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	} // for defines
 }
 
-void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
+void CppAstConsumer::EmitOpaqueStructs(
 	clang::ASTContext& ast_context,
 	const NamedFunctionDeclarations& named_function_declarations,
 	const NamedRecordDeclarations& named_record_declarations,
@@ -1255,7 +1236,7 @@ void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
 	const NamedEnumDeclarations& named_enum_declarations,
 	const AnonymousEnumMembersSet& anonymous_enum_members )
 {
-	// Create dummy definition for opaque structs.
+	// Create dummy definitions for opaque structs.
 	for( const auto type : ast_context.getTypes() )
 	{
 		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
