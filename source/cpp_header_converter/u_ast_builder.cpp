@@ -55,6 +55,9 @@ private:
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
+	using NamedFunctionDeclarations= std::unordered_map<std::string, const clang::FunctionDecl*>;
+	NamedFunctionDeclarations GenerateFunctionNames();
+
 	void GenerateDefinitionsForMacros();
 	void GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
 	void GenerateImplicitDefinitions();
@@ -140,6 +143,11 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
+	// First, generate names for functions.
+	// This step is first, since we need to try to preserve original names.
+	// It's fine to rename types later, if they conflict with function names.
+	const NamedFunctionDeclarations function_names= GenerateFunctionNames();
+
 	GenerateDefinitionsForMacros();
 
 	GenerateDefinitionsForOpaqueStructs( ast_context );
@@ -865,6 +873,23 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 		return ( "ü" + identifier ).str();
 
 	return identifier.str();
+}
+
+CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames()
+{
+	NamedFunctionDeclarations named_declarations;
+	for( const auto function_declaration : top_level_function_declarations_ )
+	{
+		// TODO - ignore functions with wrong in Ü identifiers. They are impossible to use.
+		std::string name= TranslateIdentifier( function_declaration->getName() );
+
+		if( named_declarations.count( name ) != 0 )
+			continue; // Aleady has this declaration.
+
+		named_declarations.emplace( std::move(name), function_declaration );
+	}
+
+	return named_declarations;
 }
 
 void CppAstConsumer::GenerateDefinitionsForMacros()
