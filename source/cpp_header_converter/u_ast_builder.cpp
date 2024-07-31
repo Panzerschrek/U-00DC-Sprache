@@ -51,7 +51,6 @@ private:
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
 
-	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
 	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
@@ -70,13 +69,23 @@ private:
 	using NamedRecordDeclarations= std::unordered_map<std::string, RecordDeclaration>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
-	TypeNamesMap BuildTypeNamesMap( const NamedRecordDeclarations& named_record_declarations );
+	using NamedTypedefDeclarations= std::unordered_map<std::string, const clang::TypedefNameDecl*>;
+	NamedTypedefDeclarations GenerateTypedefNames(
+		const NamedFunctionDeclarations& named_function_declarations,
+		const NamedRecordDeclarations& named_record_declarations );
+
+	TypeNamesMap BuildTypeNamesMap(
+		const NamedRecordDeclarations& named_record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations );
 
 	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
 	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
 
 	void EmitGlobalRecords( const NamedRecordDeclarations& record_declarations, const TypeNamesMap& type_names_map );
 	void EmitGlobalRecord( const std::string& name, const RecordDeclaration& record_declaration, const TypeNamesMap& type_names_map );
+
+	void EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
+	void EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl* typedef_declaration, const TypeNamesMap& type_names_map );
 
 	void EmitDefinitionsForMacros();
 	void EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
@@ -163,23 +172,27 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	// It's fine to rename, since type names in C aren't used for symbols mangling.
 	const NamedRecordDeclarations record_names= GenerateRecordNames( function_names );
 
-	// TODO - process enums.
-	// TODO - process typedefs.
+	// Third, generate names for typedefs.
+	// Rename in case of conflicts, if necessary.
+	const NamedTypedefDeclarations typedef_names= GenerateTypedefNames( function_names, record_names );
 
-	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names );
+	// TODO - process enums.
+
+	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names, typedef_names );
 
 	EmitFunctions( function_names, type_names_map );
 
 	EmitGlobalRecords( record_names, type_names_map );
 
-	// TODO - emit enums.
-	// TODO - emit typedefs.
+	EmitGlobalTypedefs( typedef_names, type_names_map );
 
-	EmitDefinitionsForMacros();
+	// TODO - emit enums.
 
 	EmitDefinitionsForOpaqueStructs( ast_context );
 
 	EmitImplicitDefinitions();
+
+	EmitDefinitionsForMacros();
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
@@ -225,21 +238,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
 		top_level_typedefs_.push_back( type_alias_decl );
-
-		if( type_alias_decl->isFirstDecl() )
-		{
-			Synt::TypeAlias type_alias= ProcessTypedef(*type_alias_decl);
-
-			bool is_same_name= false;
-			if( const auto name_lookup= std::get_if<Synt::NameLookup>( &type_alias.value ) )
-				is_same_name= name_lookup->name == type_alias.name;
-
-			if( !is_same_name )
-			{
-				globals_names_.insert( type_alias.name );
-				program_elements.Append( std::move(type_alias) );
-			}
-		}
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
@@ -265,15 +263,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
 			ProcessDecl( *sub_decl, program_elements, current_externc );
 	}
-}
-
-Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& typedef_decl )
-{
-	Synt::TypeAlias type_alias( g_dummy_src_loc );
-	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
-	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
-
-	return type_alias;
 }
 
 void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements )
@@ -791,6 +780,8 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 		else
 			name= TranslateIdentifier( src_name );
 
+		// TODO - fix keyword name conflicts.
+
 		// Rename record until we have no name conflict.
 		while(
 			named_function_declarations.count( name ) != 0 ||
@@ -803,12 +794,42 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 	return named_declarations;
 }
 
-CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap( const NamedRecordDeclarations& named_record_declarations )
+CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
+	const NamedFunctionDeclarations& named_function_declarations,
+	const NamedRecordDeclarations& named_record_declarations )
+{
+	NamedTypedefDeclarations named_declarations;
+
+	for( const auto typedef_decl : top_level_typedefs_ )
+	{
+		std::string name= TranslateIdentifier( typedef_decl->getName() );
+
+		// TODO - fix keyword name conflicts.
+
+		// Rename typedef until we have no name conflict.
+		while(
+			named_function_declarations.count( name ) != 0 ||
+			named_record_declarations.count( name ) != 0 ||
+			named_declarations.count( name ) != 0 )
+			name+= "_";
+
+		named_declarations.emplace( std::move(name), typedef_decl );
+	}
+
+	return named_declarations;
+}
+
+CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap(
+	const NamedRecordDeclarations& named_record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations )
 {
 	TypeNamesMap res;
 
 	for( const auto& pair : named_record_declarations )
 		res[ pair.second.decl->getTypeForDecl() ] = pair.first;
+
+	for( const auto& pair : named_typedef_declarations )
+		res[ pair.second->getTypeForDecl() ] = pair.first;
 
 	return res;
 }
@@ -990,6 +1011,21 @@ void CppAstConsumer::EmitGlobalRecord( const std::string& name, const RecordDecl
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
+}
+
+void CppAstConsumer::EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map )
+{
+	for( const auto& pair : typedef_declarations )
+		EmitGlobalTypedef( pair.first, pair.second, type_names_map );
+}
+
+void CppAstConsumer::EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl* const typedef_declaration, const TypeNamesMap& type_names_map )
+{
+	Synt::TypeAlias type_alias( g_dummy_src_loc );
+	type_alias.name= name;
+	type_alias.value= TranslateType( *typedef_declaration->getUnderlyingType().getTypePtr(), type_names_map );
+
+	root_program_elements_.Append( std::move(type_alias ) );
 }
 
 void CppAstConsumer::EmitDefinitionsForMacros()
