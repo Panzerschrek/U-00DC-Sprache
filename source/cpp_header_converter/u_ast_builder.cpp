@@ -104,10 +104,15 @@ private:
 	void EmitGlobalEnums( const TypeNamesMap& type_names_map );
 	void EmitGlobalEnum( const clang::EnumDecl* enum_declaration, const TypeNamesMap& type_names_map );
 
-	void EmitDefinitionsForMacros();
+	void EmitDefinitionsForMacros(
+		const NamedFunctionDeclarations& named_function_declarations,
+		const NamedRecordDeclarations& named_record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations,
+		const NamedEnumDeclarations& named_enum_declarations );
 
 	void EmitDefinitionsForOpaqueStructs(
 		clang::ASTContext& ast_context,
+		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations );
@@ -214,11 +219,11 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitGlobalEnums( type_names_map );
 
-	EmitDefinitionsForOpaqueStructs( ast_context, record_names, typedef_names, enum_names );
+	EmitDefinitionsForOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names );
 
 	EmitImplicitDefinitions( record_names, typedef_names, enum_names, type_names_map );
 
-	EmitDefinitionsForMacros();
+	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names );
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
@@ -992,7 +997,11 @@ void CppAstConsumer::EmitGlobalEnum( const clang::EnumDecl* enum_declaration, co
 	}
 }
 
-void CppAstConsumer::EmitDefinitionsForMacros()
+void CppAstConsumer::EmitDefinitionsForMacros(
+	const NamedFunctionDeclarations& named_function_declarations,
+	const NamedRecordDeclarations& named_record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations,
+	const NamedEnumDeclarations& named_enum_declarations )
 {
 	// Dump definitions of simple constants, using "define".
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
@@ -1024,6 +1033,13 @@ void CppAstConsumer::EmitDefinitionsForMacros()
 
 		name= TranslateIdentifier(name);
 		if( IsKeyword( name ) )
+			name+= "_";
+		// Rename to avoid name conflicts.
+		while(
+			named_function_declarations.count( name ) != 0 ||
+			named_record_declarations.count( name ) != 0 ||
+			named_typedef_declarations.count( name ) != 0 ||
+			named_enum_declarations.count( name ) != 0 )
 			name+= "_";
 
 		const clang::Token& token= macro_info->tokens().front();
@@ -1163,6 +1179,7 @@ void CppAstConsumer::EmitDefinitionsForMacros()
 
 void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
 	clang::ASTContext& ast_context,
+	const NamedFunctionDeclarations& named_function_declarations,
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations )
@@ -1186,6 +1203,7 @@ void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
 
 				// Rename to avoid name conflicts.
 				while(
+					named_function_declarations.count( class_.name ) != 0 ||
 					named_record_declarations.count( class_.name ) != 0 ||
 					named_typedef_declarations.count( class_.name ) != 0 ||
 					named_enum_declarations.count( class_.name ) != 0 )
