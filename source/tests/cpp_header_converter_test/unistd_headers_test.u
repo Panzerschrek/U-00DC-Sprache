@@ -2,8 +2,15 @@ import "/unistd_headers.u"
 
 fn nomangle main() : i32
 {
+	// Can request process id.
+	auto pid= unsafe( getpid() );
+
+	// Can sleep.
+	unsafe( sleep( 2u ) );
+
 	auto& str= "Hallo, Welt!\n";
 
+	// Can use "write" function.
 	unsafe( write(
 		STDOUT_FILENO,
 		$<( cast_ref_unsafe</void/>( cast_mut( str[0] ) ) ),
