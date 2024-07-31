@@ -259,3 +259,11 @@ int VariadicFunc( int x, const char* s, ...);
 // Should translate array params as raw pointers.
 void ArrayArg( int arg[4] );
 void IncompleteArrayArg( int arg[] );
+
+typedef int TypedefForFunctionType( int param_a, void* param_b );
+
+struct StructWithFunctionTypePtrField
+{
+	// Should translate this into proper function pointer.
+	TypedefForFunctionType* ptr;
+};

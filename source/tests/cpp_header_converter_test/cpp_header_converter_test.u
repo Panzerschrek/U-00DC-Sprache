@@ -208,5 +208,10 @@ fn nomangle main() : i32
 		IncompleteArrayArg( arr_ptr );
 	}
 
+	{
+		var StructWithFunctionTypePtrField s= zero_init;
+		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
+	}
+
 	return 0;
 }
