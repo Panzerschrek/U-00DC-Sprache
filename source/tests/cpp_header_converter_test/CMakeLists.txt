@@ -68,6 +68,40 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				../dummy.cpp )
 		add_dependencies( WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
+	else()
+
+		#
+		# A test for convertion of <unistd.h> and its usage for a simple program.
+		#
+
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h CppHeaderConverter
+			COMMAND
+				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
+				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h --
+				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
+				)
+
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers_test.o
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u Compiler
+			COMMAND
+				Compiler${CURRENT_COMPILER_GENERATION}
+				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers_test.o
+				${SPRACHE_COMPILER_PIC_OPTIONS}
+				${SPRACHE_COMPILER_OPT_OPTIONS}
+				--verify-module
+				--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
+
+		add_executable(
+			UnistdHeadersConversionTest${CURRENT_COMPILER_GENERATION}
+				${CMAKE_CURRENT_BINARY_DIR}/unistd_headers_test.o
+				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers_test.u
+				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h
+				../dummy.cpp )
+		add_dependencies( UnistdHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
 	endif()
 
 	#
