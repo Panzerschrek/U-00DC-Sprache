@@ -17,5 +17,14 @@ fn nomangle main() : i32
 	auto atan2_func= atan2;
 	auto pow_func= pow;
 
+	// Atomic types should be equal to underlying types.
+	static_assert( same_type</ atomic_bool, bool /> );
+	static_assert( same_type</ atomic_char, char8 /> );
+	static_assert( same_type</ atomic_intmax_t, intmax_t /> );
+	static_assert( same_type</ atomic_size_t, size_t /> );
+	static_assert( same_type</ atomic_wchar_t, wchar_t /> );
+	static_assert( same_type</ atomic_int_least32_t, int_least32_t /> );
+	static_assert( same_type</ atomic_uint_fast64_t, uint_fast64_t /> );
+
 	return 0;
 }

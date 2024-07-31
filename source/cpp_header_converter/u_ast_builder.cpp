@@ -292,6 +292,11 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
+	else if( const auto atomic_type= llvm::dyn_cast<clang::AtomicType>(&in_type) )
+	{
+		// For now translate atomic types as underlying types.
+		return TranslateType( *atomic_type->getValueType().getTypePtr(), type_names_map );
+	}
 	else if( const auto constant_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
