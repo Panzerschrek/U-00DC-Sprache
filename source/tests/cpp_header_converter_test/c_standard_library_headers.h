@@ -23,7 +23,9 @@
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <string.h>
-#include <tgmath.h>
+#ifndef _MSC_VER // tgmath for MSVC doesn't work properly.
+	#include <tgmath.h>
+#endif
 // #include <threads.h> // C11, but unsupported by GCC.
 #include <time.h>
 #include <uchar.h>
