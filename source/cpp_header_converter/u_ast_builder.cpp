@@ -40,6 +40,10 @@ public:
 private:
 	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
 
+	// Use ordered map in order to emit elements in stable order.
+	template<typename K, typename V>
+	using NamesMapContainer= std::map<K, V>;
+
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
 
@@ -51,18 +55,18 @@ private:
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
-	using NamedFunctionDeclarations= std::unordered_map<std::string, const clang::FunctionDecl*>;
+	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
 	NamedFunctionDeclarations GenerateFunctionNames();
 
-	using NamedRecordDeclarations= std::unordered_map<std::string, const clang::RecordDecl*>;
+	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
-	using NamedTypedefDeclarations= std::unordered_map<std::string, const clang::TypedefNameDecl*>;
+	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
 	NamedTypedefDeclarations GenerateTypedefNames(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations );
 
-	using NamedEnumDeclarations= std::unordered_map<std::string, const clang::EnumDecl*>;
+	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
 	NamedEnumDeclarations GenerateEnumNames(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
