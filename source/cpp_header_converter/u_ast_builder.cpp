@@ -67,6 +67,20 @@ private:
 	const clang::ASTContext& ast_context_;
 	const bool skip_declarations_from_includes_;
 
+	std::vector< const clang::FunctionDecl* > top_level_function_declarations_;
+
+	struct RecordDeclaration
+	{
+		const clang::RecordDecl* decl= nullptr;
+
+		std::vector<RecordDeclaration> sub_records;
+		std::vector<const clang::FieldDecl*> fields;
+	};
+
+	std::vector<RecordDeclaration> top_level_record_declarations_;
+
+	std::vector< const clang::TypedefNameDecl* > top_level_typedefs_;
+
 	size_t unique_name_index_= 0u;
 	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
 	std::unordered_map< const clang::EnumDecl*, std::string > enum_names_cache_;
@@ -370,11 +384,36 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
+		if( record_decl->isCompleteDefinition() && !record_decl->isTemplated() )
+		{
+			RecordDeclaration record_declaration;
+			record_declaration.decl= record_decl;
+
+			if( record_decl->isStruct() || record_decl->isClass() )
+			{
+				for( const clang::Decl* const sub_decl : record_decl->decls() )
+				{
+					if( const auto field_decl= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
+						record_declaration.fields.push_back( field_decl );
+				}
+
+				// TODO - process declarations recursively.
+			}
+			else if( record_decl->isUnion() )
+			{
+				// TODO
+			}
+
+			top_level_record_declarations_.push_back( std::move(record_declaration) );
+		}
+
 		if( auto record= ProcessRecord( *record_decl, current_externc ) )
 			program_elements.Append( std::move(*record) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
+		top_level_typedefs_.push_back( type_alias_decl );
+
 		if( type_alias_decl->isFirstDecl() )
 		{
 			Synt::TypeAlias type_alias= ProcessTypedef(*type_alias_decl);
@@ -393,7 +432,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
+		{
+			top_level_function_declarations_.push_back( func_decl );
 			program_elements.Append( ProcessFunction( *func_decl, current_externc ) );
+		}
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
 		ProcessEnum( *enum_decl, program_elements );
