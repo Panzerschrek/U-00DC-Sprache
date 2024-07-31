@@ -94,7 +94,13 @@ private:
 	void EmitGlobalEnum( const clang::EnumDecl* enum_declaration, const TypeNamesMap& type_names_map );
 
 	void EmitDefinitionsForMacros();
-	void EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
+
+	void EmitDefinitionsForOpaqueStructs(
+		clang::ASTContext& ast_context,
+		const NamedRecordDeclarations& named_record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations,
+		const NamedEnumDeclarations& named_enum_declarations);
+
 	void EmitImplicitDefinitions( const TypeNamesMap& type_names_map );
 
 private:
@@ -193,7 +199,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitGlobalEnums( type_names_map );
 
-	EmitDefinitionsForOpaqueStructs( ast_context );
+	EmitDefinitionsForOpaqueStructs( ast_context,  record_names, typedef_names, enum_names );
 
 	EmitImplicitDefinitions( type_names_map );
 
@@ -1123,7 +1129,11 @@ void CppAstConsumer::EmitDefinitionsForMacros()
 	} // for defines
 }
 
-void CppAstConsumer::EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context )
+void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
+	clang::ASTContext& ast_context,
+	const NamedRecordDeclarations& named_record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations,
+	const NamedEnumDeclarations& named_enum_declarations )
 {
 	// Create dummy definition for opaque structs.
 	for( const auto type : ast_context.getTypes() )
@@ -1135,8 +1145,19 @@ void CppAstConsumer::EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_con
 			if( record_type->isIncompleteType() && ! record_type->getDecl()->isImplicit() )
 			{
 				Synt::Class class_(g_dummy_src_loc);
-				class_.name= "TODO_incomplete_record_types";
 				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+				class_.name= record_type->getDecl()->getName();
+
+				if( IsKeyword( class_.name ) )
+					class_.name+= "_";
+
+				// Rename to avoid name conflicts.
+				while(
+					named_record_declarations.count( class_.name ) != 0 ||
+					named_typedef_declarations.count( class_.name ) != 0 ||
+					named_enum_declarations.count( class_.name ) != 0 )
+					class_.name+= "_";
 
 				// TODO - add deleted default constructor?
 
