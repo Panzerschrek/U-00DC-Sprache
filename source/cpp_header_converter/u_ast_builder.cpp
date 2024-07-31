@@ -35,7 +35,7 @@ public:
 
 public:
 	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
-	virtual void HandleTranslationUnit( clang:: ASTContext& ast_context ) override;
+	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
@@ -54,6 +54,10 @@ private:
 	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
+
+	void GenerateDefinitionsForMacros();
+	void GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
+	void GenerateImplicitDefinitions();
 
 private:
 	Synt::ProgramElementsList::Builder& root_program_elements_;
@@ -136,235 +140,11 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
-	U_UNUSED(ast_context);
+	GenerateDefinitionsForMacros();
 
-	// Dump definitions of simple constants, using "define".
-	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
-	{
-		const clang::IdentifierInfo* ident_info= macro_pair.first;
+	GenerateDefinitionsForOpaqueStructs( ast_context );
 
-		std::string name= ident_info->getName().str();
-		if( name.empty() )
-			continue;
-		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
-			continue;
-
-		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
-		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
-			continue;
-
-		if( skip_declarations_from_includes_ &&
-			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
-			return;
-
-		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
-		if( macro_info->isBuiltinMacro() )
-			continue;
-
-		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
-			continue;
-		if( macro_info->getNumTokens() != 1u )
-			continue;
-
-		name= TranslateIdentifier(name);
-		if( IsKeyword( name ) )
-			name+= "_";
-
-		if( globals_names_.count( name ) != 0 )
-			continue; // Avoid redefining something.
-
-		const clang::Token& token= macro_info->tokens().front();
-		if( token.getKind() == clang::tok::numeric_constant )
-		{
-			const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
-			clang::NumericLiteralParser numeric_literal_parser(
-				numeric_literal_str,
-				token.getLocation(),
-				source_manager_,
-				lang_options_,
-				target_info_,
-				diagnostic_engine_ );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-
-			llvm::APInt int_val( 64u, 0u );
-			numeric_literal_parser.GetIntegerValue( int_val );
-			numeric_constant.value_int= int_val.getLimitedValue();
-
-			if( numeric_literal_parser.getRadix() == 10 )
-			{
-				llvm::APFloat float_val(0.0);
-				numeric_literal_parser.GetFloatValue( float_val );
-
-				// "HACK! fix infinity.
-				if( float_val.isInfinity() )
-					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
-				numeric_constant.value_double= float_val.convertToDouble();
-			}
-			else
-				numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
-
-			if( numeric_literal_parser.isFloat )
-				numeric_constant.type_suffix[0]= 'f';
-			else if( numeric_literal_parser.isUnsigned )
-			{
-				if( numeric_literal_parser.isLongLong )
-				{
-					numeric_constant.type_suffix[0]= 'i';
-					numeric_constant.type_suffix[1]= '6';
-					numeric_constant.type_suffix[2]= '4';
-				}
-				else
-					numeric_constant.type_suffix[0]= 'u';
-			}
-			else
-			{
-				if( numeric_literal_parser.isLongLong )
-				{
-					numeric_constant.type_suffix[0]= 'u';
-					numeric_constant.type_suffix[1]= '6';
-					numeric_constant.type_suffix[2]= '4';
-				}
-			}
-
-			numeric_constant.has_fractional_point= numeric_literal_parser.isFloatingLiteral();
-
-			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-			root_program_elements_.Append( std::move( auto_variable_declaration ) );
-
-			globals_names_.insert(name);
-		}
-		else if( clang::tok::isStringLiteral( token.getKind() ) )
-		{
-			clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-
-			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
-			{
-				string_constant->value= string_literal_parser.GetString().str();
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
-			else if( string_literal_parser.isUTF16() ||
-				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
-			{
-				llvm::convertUTF16ToUTF8String(
-					llvm::ArrayRef<llvm::UTF16>(
-						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
-						string_literal_parser.GetNumStringChars() ),
-					string_constant->value );
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				string_constant->type_suffix= "u16";
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-
-				globals_names_.insert(name);
-			}
-			else if( string_literal_parser.isUTF32() ||
-				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
-			{
-				const auto string_ref = string_literal_parser.GetString();
-				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
-					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
-
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				string_constant->type_suffix= "u32";
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-
-				globals_names_.insert(name);
-			}
-		}
-		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
-		{
-			clang::CharLiteralParser char_literal_parser(
-					token.getLiteralData(),
-					token.getLiteralData() + token.getLength(),
-					token.getLocation(),
-					preprocessor_,
-					token.getKind() );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-			string_constant->value.push_back( char(char_literal_parser.getValue()) );
-			string_constant->type_suffix= "c8";
-
-			auto_variable_declaration.initializer_expression= std::move(string_constant);
-			root_program_elements_.Append( std::move( auto_variable_declaration ) );
-
-			globals_names_.insert(name);
-		}
-	} // for defines
-
-	// Create dummy definition for opaque structs.
-	for( const auto type : ast_context.getTypes() )
-	{
-		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
-		{
-			// Process only incomplete records.
-			// ignore implicitely-defined records, like "_GUID".
-			if( record_type->isIncompleteType() && ! record_type->getDecl()->isImplicit() )
-			{
-				Synt::Class class_(g_dummy_src_loc);
-				class_.name= TranslateRecordType( *record_type );
-				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-				// TODO - add deleted default constructor?
-
-				root_program_elements_.Append( std::move(class_) );
-			}
-		}
-	}
-
-	// Add implicit "size_t", if it wasn't defined explicitely.
-	if( globals_names_.count( "size_t" ) == 0 )
-	{
-		// HACK! Add type alias for "size_t".
-		// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
-
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= "size_t";
-		type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
-
-		root_program_elements_.Append( std::move(type_alias) );
-	}
-
-	// "__builtin_va_list" is also sometimes implicitely defined. Create something for it.
-	std::string va_list_name= TranslateIdentifier( "__builtin_va_list" );
-	if( globals_names_.count( va_list_name ) == 0 )
-	{
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= std::move(va_list_name);
-
-		Synt::NameLookup void_name(g_dummy_src_loc);
-		void_name.name=  Keyword( Keywords::void_ );
-
-		Synt::RawPointerType pointer_type(g_dummy_src_loc);
-		pointer_type.element_type= std::move(void_name);
-
-		type_alias.value= std::make_unique<Synt::RawPointerType>( std::move(pointer_type) );
-
-		root_program_elements_.Append( std::move(type_alias) );
-	}
+	GenerateImplicitDefinitions();
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
@@ -1085,6 +865,243 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 		return ( "ü" + identifier ).str();
 
 	return identifier.str();
+}
+
+void CppAstConsumer::GenerateDefinitionsForMacros()
+{
+	// Dump definitions of simple constants, using "define".
+	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
+	{
+		const clang::IdentifierInfo* ident_info= macro_pair.first;
+
+		std::string name= ident_info->getName().str();
+		if( name.empty() )
+			continue;
+		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
+			continue;
+
+		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
+		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
+			continue;
+
+		if( skip_declarations_from_includes_ &&
+			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
+			return;
+
+		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
+		if( macro_info->isBuiltinMacro() )
+			continue;
+
+		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
+			continue;
+		if( macro_info->getNumTokens() != 1u )
+			continue;
+
+		name= TranslateIdentifier(name);
+		if( IsKeyword( name ) )
+			name+= "_";
+
+		if( globals_names_.count( name ) != 0 )
+			continue; // Avoid redefining something.
+
+		const clang::Token& token= macro_info->tokens().front();
+		if( token.getKind() == clang::tok::numeric_constant )
+		{
+			const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
+			clang::NumericLiteralParser numeric_literal_parser(
+				numeric_literal_str,
+				token.getLocation(),
+				source_manager_,
+				lang_options_,
+				target_info_,
+				diagnostic_engine_ );
+
+			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			auto_variable_declaration.name= name;
+
+			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+
+			llvm::APInt int_val( 64u, 0u );
+			numeric_literal_parser.GetIntegerValue( int_val );
+			numeric_constant.value_int= int_val.getLimitedValue();
+
+			if( numeric_literal_parser.getRadix() == 10 )
+			{
+				llvm::APFloat float_val(0.0);
+				numeric_literal_parser.GetFloatValue( float_val );
+
+				// "HACK! fix infinity.
+				if( float_val.isInfinity() )
+					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
+				numeric_constant.value_double= float_val.convertToDouble();
+			}
+			else
+				numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
+
+			if( numeric_literal_parser.isFloat )
+				numeric_constant.type_suffix[0]= 'f';
+			else if( numeric_literal_parser.isUnsigned )
+			{
+				if( numeric_literal_parser.isLongLong )
+				{
+					numeric_constant.type_suffix[0]= 'i';
+					numeric_constant.type_suffix[1]= '6';
+					numeric_constant.type_suffix[2]= '4';
+				}
+				else
+					numeric_constant.type_suffix[0]= 'u';
+			}
+			else
+			{
+				if( numeric_literal_parser.isLongLong )
+				{
+					numeric_constant.type_suffix[0]= 'u';
+					numeric_constant.type_suffix[1]= '6';
+					numeric_constant.type_suffix[2]= '4';
+				}
+			}
+
+			numeric_constant.has_fractional_point= numeric_literal_parser.isFloatingLiteral();
+
+			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
+			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+			globals_names_.insert(name);
+		}
+		else if( clang::tok::isStringLiteral( token.getKind() ) )
+		{
+			clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
+
+			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			auto_variable_declaration.name= name;
+
+			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+
+			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
+			{
+				string_constant->value= string_literal_parser.GetString().str();
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+				auto_variable_declaration.initializer_expression= std::move(string_constant);
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+			}
+			else if( string_literal_parser.isUTF16() ||
+				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
+			{
+				llvm::convertUTF16ToUTF8String(
+					llvm::ArrayRef<llvm::UTF16>(
+						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
+						string_literal_parser.GetNumStringChars() ),
+					string_constant->value );
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+				string_constant->type_suffix= "u16";
+
+				auto_variable_declaration.initializer_expression= std::move(string_constant);
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				globals_names_.insert(name);
+			}
+			else if( string_literal_parser.isUTF32() ||
+				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
+			{
+				const auto string_ref = string_literal_parser.GetString();
+				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
+					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
+
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+				string_constant->type_suffix= "u32";
+
+				auto_variable_declaration.initializer_expression= std::move(string_constant);
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				globals_names_.insert(name);
+			}
+		}
+		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
+		{
+			clang::CharLiteralParser char_literal_parser(
+					token.getLiteralData(),
+					token.getLiteralData() + token.getLength(),
+					token.getLocation(),
+					preprocessor_,
+					token.getKind() );
+
+			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			auto_variable_declaration.name= name;
+
+			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+			string_constant->value.push_back( char(char_literal_parser.getValue()) );
+			string_constant->type_suffix= "c8";
+
+			auto_variable_declaration.initializer_expression= std::move(string_constant);
+			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+			globals_names_.insert(name);
+		}
+	} // for defines
+}
+
+void CppAstConsumer::GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context )
+{
+	// Create dummy definition for opaque structs.
+	for( const auto type : ast_context.getTypes() )
+	{
+		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
+		{
+			// Process only incomplete records.
+			// ignore implicitely-defined records, like "_GUID".
+			if( record_type->isIncompleteType() && ! record_type->getDecl()->isImplicit() )
+			{
+				Synt::Class class_(g_dummy_src_loc);
+				class_.name= TranslateRecordType( *record_type );
+				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+				// TODO - add deleted default constructor?
+
+				root_program_elements_.Append( std::move(class_) );
+			}
+		}
+	}
+}
+
+void CppAstConsumer::GenerateImplicitDefinitions()
+{
+	// Add implicit "size_t", if it wasn't defined explicitely.
+	if( globals_names_.count( "size_t" ) == 0 )
+	{
+		// HACK! Add type alias for "size_t".
+		// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
+
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= "size_t";
+		type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr() );
+
+		root_program_elements_.Append( std::move(type_alias) );
+	}
+
+	// "__builtin_va_list" is also sometimes implicitely defined. Create something for it.
+	std::string va_list_name= TranslateIdentifier( "__builtin_va_list" );
+	if( globals_names_.count( va_list_name ) == 0 )
+	{
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= std::move(va_list_name);
+
+		Synt::NameLookup void_name(g_dummy_src_loc);
+		void_name.name=  Keyword( Keywords::void_ );
+
+		Synt::RawPointerType pointer_type(g_dummy_src_loc);
+		pointer_type.element_type= std::move(void_name);
+
+		type_alias.value= std::make_unique<Synt::RawPointerType>( std::move(pointer_type) );
+
+		root_program_elements_.Append( std::move(type_alias) );
+	}
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
