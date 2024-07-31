@@ -105,4 +105,16 @@ __declspec(dllexport) int SomeDllExportedFunction(void)
 	return 34;
 }
 
+int VariadicFunc( int x, const char*  s, ...)
+{
+	int len= 0;
+	while(s[0] != '\0')
+	{
+		++s;
+		++len;
+	}
+
+	return x * len;
+}
+
 } // extern "C"

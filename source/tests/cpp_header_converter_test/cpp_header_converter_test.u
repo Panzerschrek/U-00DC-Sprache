@@ -180,5 +180,10 @@ fn nomangle main() : i32
 		var TypedefStructWithSameNameForwardDeclaration s{ .contents= zero_init };
 	}
 
+	{
+		auto x= unsafe( VariadicFunc( 5, $<( cast_mut( "Some string\0"[0] ) ) ) );
+		halt if( x != 55 );
+	}
+
 	return 0;
 }
