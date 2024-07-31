@@ -204,3 +204,11 @@ struct TypedefStructWithSameNameForwardDeclaration
 {
 	void* contents;
 };
+
+#ifdef _WIN32
+	// Should generate prototype for this function, but it isn't possible to call it, because Ü doesn't support dllimport.
+	__declspec(dllimport) int SomeDllImportedFunction(unsigned int, void*);
+
+	// But this function should be callable.
+	__declspec(dllexport) int SomeDllExportedFunction(void);
+#endif

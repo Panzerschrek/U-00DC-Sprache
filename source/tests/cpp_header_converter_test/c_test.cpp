@@ -100,4 +100,9 @@ void SillyFunction( SillyName SillyName )
 	(void) SillyName;
 }
 
+__declspec(dllexport) int SomeDllExportedFunction(void)
+{
+	return 34;
+}
+
 } // extern "C"
