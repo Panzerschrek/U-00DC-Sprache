@@ -102,6 +102,9 @@ private:
 	using AnonymousEnumMembersSet= std::unordered_set<std::string>;
 
 	void EmitGlobalEnums(
+		const NamedFunctionDeclarations& named_function_declarations,
+		const NamedRecordDeclarations& named_record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map,
 		AnonymousEnumMembersSet& out_anonymous_enum_members );
@@ -109,6 +112,10 @@ private:
 	void EmitGlobalEnum(
 		const std::string& name,
 		const clang::EnumDecl& enum_declaration,
+		const NamedFunctionDeclarations& named_function_declarations,
+		const NamedRecordDeclarations& named_record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations,
+		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map,
 		AnonymousEnumMembersSet& out_anonymous_enum_members );
 
@@ -224,7 +231,12 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	// Skip anonymous enums, rename, if necessary.
 	const NamedEnumDeclarations enum_names= GenerateEnumNames( function_names, record_names, typedef_names );
 
+	// Build types map to referr to types by name (possible renamed).
 	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names, typedef_names, enum_names );
+
+	//
+	// Emit symbols.
+	//
 
 	EmitFunctions( function_names, type_names_map );
 
@@ -233,7 +245,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	EmitGlobalTypedefs( typedef_names, type_names_map );
 
 	AnonymousEnumMembersSet anonymous_enum_members;
-	EmitGlobalEnums( enum_names, type_names_map, anonymous_enum_members );
+	EmitGlobalEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
 	EmitDefinitionsForOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 
@@ -851,17 +863,32 @@ void CppAstConsumer::EmitGlobalTypedef( const std::string& name, const clang::Ty
 }
 
 void CppAstConsumer::EmitGlobalEnums(
+	const NamedFunctionDeclarations& named_function_declarations,
+	const NamedRecordDeclarations& named_record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const TypeNamesMap& type_names_map,
 	AnonymousEnumMembersSet& out_anonymous_enum_members )
 {
 	for( const auto& pair: named_enum_declarations )
-		EmitGlobalEnum( pair.first, *pair.second, type_names_map, out_anonymous_enum_members );
+		EmitGlobalEnum(
+			pair.first,
+			*pair.second,
+			named_function_declarations,
+			named_record_declarations,
+			named_typedef_declarations,
+			named_enum_declarations,
+			type_names_map,
+			out_anonymous_enum_members );
 }
 
 void CppAstConsumer::EmitGlobalEnum(
 	const std::string& name,
 	const clang::EnumDecl& enum_declaration,
+	const NamedFunctionDeclarations& named_function_declarations,
+	const NamedRecordDeclarations& named_record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations,
+	const NamedEnumDeclarations& named_enum_declarations,
 	const TypeNamesMap& type_names_map,
 	AnonymousEnumMembersSet& out_anonymous_enum_members )
 {
@@ -913,7 +940,16 @@ void CppAstConsumer::EmitGlobalEnum(
 
 			Synt::VariablesDeclaration::VariableEntry var;
 			var.src_loc= g_dummy_src_loc;
-			var.name= TranslateIdentifier( enumerator->getName() ); // TODO - rename if necessary.
+
+			var.name= TranslateIdentifier( enumerator->getName() );
+
+			while(
+				named_function_declarations.count( var.name ) != 0 ||
+				named_record_declarations.count( var.name ) != 0 ||
+				named_typedef_declarations.count( var.name ) != 0 ||
+				named_enum_declarations.count( var.name ) != 0 )
+				var.name+= "_";
+
 			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
 
