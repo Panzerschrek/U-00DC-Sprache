@@ -529,7 +529,7 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 		return ( "ü" + identifier ).str();
 
 	// Avoid using keywords as names.
-	if( IsKeyword( StringViewToStringRef( identifier ) ) )
+	if( IsKeyword( StringRefToStringView( identifier ) ) )
 		return (identifier + "_").str();
 
 	return identifier.str();
