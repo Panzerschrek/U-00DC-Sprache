@@ -38,6 +38,15 @@ public:
 	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
+	struct RecordDeclaration
+	{
+		const clang::RecordDecl* decl= nullptr;
+
+		std::vector<RecordDeclaration> sub_records;
+		std::vector<const clang::FieldDecl*> fields;
+	};
+
+private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
 	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList::Builder& class_elements, bool externc );
 
@@ -58,6 +67,9 @@ private:
 	using NamedFunctionDeclarations= std::unordered_map<std::string, const clang::FunctionDecl*>;
 	NamedFunctionDeclarations GenerateFunctionNames();
 
+	using NamedRecordDeclarations= std::unordered_map<std::string, RecordDeclaration>;
+	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
+
 	void GenerateDefinitionsForMacros();
 	void GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
 	void GenerateImplicitDefinitions();
@@ -75,17 +87,7 @@ private:
 	const bool skip_declarations_from_includes_;
 
 	std::vector< const clang::FunctionDecl* > top_level_function_declarations_;
-
-	struct RecordDeclaration
-	{
-		const clang::RecordDecl* decl= nullptr;
-
-		std::vector<RecordDeclaration> sub_records;
-		std::vector<const clang::FieldDecl*> fields;
-	};
-
 	std::vector<RecordDeclaration> top_level_record_declarations_;
-
 	std::vector< const clang::TypedefNameDecl* > top_level_typedefs_;
 
 	size_t unique_name_index_= 0u;
@@ -147,6 +149,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	// This step is first, since we need to try to preserve original names.
 	// It's fine to rename types later, if they conflict with function names.
 	const NamedFunctionDeclarations function_names= GenerateFunctionNames();
+
+	const NamedRecordDeclarations record_names= GenerateRecordNames( function_names );
 
 	GenerateDefinitionsForMacros();
 
@@ -887,6 +891,32 @@ CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames(
 			continue; // Aleady has this declaration.
 
 		named_declarations.emplace( std::move(name), function_declaration );
+	}
+
+	return named_declarations;
+}
+
+CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations )
+{
+	NamedRecordDeclarations named_declarations;
+
+	for( const RecordDeclaration& record_declaration : top_level_record_declarations_ )
+	{
+		const auto src_name= record_declaration.decl->getName();
+
+		std::string name;
+		if( src_name.empty() )
+			name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+		else
+			name= TranslateIdentifier( src_name );
+
+		// Rename record until we have no name conflict.
+		while(
+			named_function_declarations.count( name ) != 0 ||
+			named_declarations.count( name ) != 0 )
+			name+= "_";
+
+		named_declarations.emplace( std::move(name), record_declaration );
 	}
 
 	return named_declarations;
