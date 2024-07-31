@@ -50,9 +50,7 @@ private:
 
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
-	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList::Builder& class_elements, bool externc );
 
-	std::optional<Synt::Class> ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
 	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
 	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements );
 
@@ -76,6 +74,9 @@ private:
 
 	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
 	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
+
+	void EmitGlobalRecords( const NamedRecordDeclarations& record_declarations, const TypeNamesMap& type_names_map );
+	void EmitGlobalRecord( const std::string& name, const RecordDeclaration& record_declaration, const TypeNamesMap& type_names_map );
 
 	void EmitDefinitionsForMacros();
 	void EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
@@ -169,7 +170,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitFunctions( function_names, type_names_map );
 
-	// TODO - emit structs.
+	EmitGlobalRecords( record_names, type_names_map );
+
 	// TODO - emit enums.
 	// TODO - emit typedefs.
 
@@ -219,9 +221,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 
 			top_level_record_declarations_.push_back( std::move(record_declaration) );
 		}
-
-		if( auto record= ProcessRecord( *record_decl, current_externc ) )
-			program_elements.Append( std::move(*record) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
@@ -266,144 +265,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
 			ProcessDecl( *sub_decl, program_elements, current_externc );
 	}
-}
-
-void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList::Builder& class_elements, bool externc )
-{
-	if( decl.isImplicit() )
-		return;
-
-	if( const auto field_decl= llvm::dyn_cast<clang::FieldDecl>(&decl) )
-	{
-		Synt::ClassField field( g_dummy_src_loc );
-
-		const clang::Type* field_type= field_decl->getType().getTypePtr();
-
-		if( field_type->isReferenceType() )
-		{
-			// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
-			const clang::QualType type_qual= field_type->getPointeeType();
-			field_type= type_qual.getTypePtr();
-
-			auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-			raw_pointer_type->element_type= TranslateType( *field_type );
-
-			field.type= std::move(raw_pointer_type);
-		}
-		else
-			field.type= TranslateType( *field_type );
-
-		field.name= TranslateIdentifier( field_decl->getName() );
-		if( IsKeyword( field.name ) )
-			field.name+= "_";
-
-		while( globals_names_.count( field.name ) != 0 )
-		{
-			// HACK!
-			// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
-			// C allows such collisions, but Ü doesn't.
-			field.name+= "_";
-		}
-
-		class_elements.Append( std::move(field) );
-	}
-	else if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
-	{
-		if( auto record = ProcessRecord( *record_decl, externc ) )
-			class_elements.Append( std::move(*record) );
-	}
-	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-	{
-		if( type_alias_decl->isFirstDecl() )
-			class_elements.Append( ProcessTypedef(*type_alias_decl) );
-	}
-}
-
-std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_decl, const bool externc )
-{
-	if( !record_decl.isCompleteDefinition() )
-	{
-		// Opaque struct/union.
-		return std::nullopt;
-	}
-
-	if( record_decl.isTemplated() )
-		return std::nullopt; // Ignore templates.
-
-	if( record_decl.isStruct() || record_decl.isClass() )
-	{
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-
-		// HACK! C allows to declare a struct and a function with the same name.
-		// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
-		// But in Ü this isn't possible, so, correct class name.
-		while( globals_names_.count( class_.name ) != 0 )
-			class_.name+= "_";
-
-		globals_names_.insert( class_.name );
-
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-		Synt::ClassElementsList::Builder class_elements;
-		for( const clang::Decl* const sub_decl : record_decl.decls() )
-			ProcessClassDecl( *sub_decl, class_elements, externc );
-
-		class_.elements= class_elements.Build();
-
-		return std::move(class_);
-	}
-	else if( record_decl.isUnion() )
-	{
-		// Emulate union, using array of bytes with required alignment.
-
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-		// HACK! C allows to declare a struct and a function with the same name.
-		// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
-		// But in Ü this isn't possible, so, correct class name.
-		while( globals_names_.count( class_.name ) != 0 )
-			class_.name+= "_";
-
-		globals_names_.insert( class_.name );
-
-		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
-		const auto byte_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
-		const auto num= ( size + byte_size - 1u ) / byte_size;
-
-		std::string byte_name;
-		switch(byte_size)
-		{
-		case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
-		case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
-		case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
-		case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
-		case 16: byte_name= Keyword( Keywords::byte128_ ); break;
-		default: U_ASSERT(false); break;
-		};
-
-		auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-		array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( byte_name ) );
-
-		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.value_int= num;
-		numeric_constant.value_double= double(numeric_constant.value_int);
-		array_type->size= std::move(numeric_constant);
-
-		Synt::ClassField field( g_dummy_src_loc );
-		field.name= "union_content";
-		field.type= std::move(array_type);
-
-		Synt::ClassElementsList::Builder class_elements;
-		class_elements.Append( std::move(field) );
-		class_.elements= class_elements.Build();
-
-		return std::move(class_);
-	}
-
-	return std::nullopt;
 }
 
 Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& typedef_decl )
@@ -955,10 +816,7 @@ CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap( const NamedRecor
 void CppAstConsumer::EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map )
 {
 	for( const auto& pair : function_declarations )
-	{
-		std::cout << "Emit function " << pair.first << std::endl;
 		EmitFunction( pair.first, *pair.second, type_names_map );
-	}
 }
 
 void CppAstConsumer::EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map )
@@ -1033,6 +891,105 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 		func.type.calling_convention= TranslateCallingConvention( *ft );
 
 	root_program_elements_.Append( std::move(func) );
+}
+
+void CppAstConsumer::EmitGlobalRecords( const NamedRecordDeclarations& record_declarations, const TypeNamesMap& type_names_map )
+{
+	for( const auto& pair : record_declarations )
+		EmitGlobalRecord( pair.first, pair.second, type_names_map );
+}
+
+void CppAstConsumer::EmitGlobalRecord( const std::string& name, const RecordDeclaration& record_declaration, const TypeNamesMap& type_names_map )
+{
+	if( record_declaration.decl->isStruct() || record_declaration.decl->isClass() )
+	{
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= name;
+
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		Synt::ClassElementsList::Builder class_elements;
+
+		for( const auto field_declaration : record_declaration.fields )
+		{
+			Synt::ClassField field( g_dummy_src_loc );
+
+			const clang::Type* field_type= field_declaration->getType().getTypePtr();
+
+			if( field_type->isReferenceType() )
+			{
+				// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
+				const clang::QualType type_qual= field_type->getPointeeType();
+				field_type= type_qual.getTypePtr();
+
+				auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+				raw_pointer_type->element_type= TranslateType( *field_type );
+
+				field.type= std::move(raw_pointer_type);
+			}
+			else
+				field.type= TranslateType( *field_type, type_names_map );
+
+			field.name= TranslateIdentifier( field_declaration->getName() );
+			if( IsKeyword( field.name ) )
+				field.name+= "_";
+
+			while( globals_names_.count( field.name ) != 0 )
+			{
+				// HACK!
+				// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
+				// C allows such collisions, but Ü doesn't.
+				field.name+= "_";
+			}
+
+			class_elements.Append( std::move(field) );
+		}
+
+		class_.elements= class_elements.Build();
+
+		root_program_elements_.Append( std::move(class_ ) );
+	}
+	else if( record_declaration.decl->isUnion() )
+	{
+		// Emulate union, using array of bytes with required alignment.
+
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= name;
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		const auto size= ast_context_.getTypeSize( record_declaration.decl->getTypeForDecl() ) / 8u;
+		const auto byte_size= ast_context_.getTypeAlign( record_declaration.decl->getTypeForDecl() ) / 8u;
+		const auto num= ( size + byte_size - 1u ) / byte_size;
+
+		std::string byte_name;
+		switch(byte_size)
+		{
+		case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
+		case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
+		case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
+		case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
+		case 16: byte_name= Keyword( Keywords::byte128_ ); break;
+		default: U_ASSERT(false); break;
+		};
+
+		auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+		array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( byte_name ) );
+
+		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.value_int= num;
+		numeric_constant.value_double= double(numeric_constant.value_int);
+		array_type->size= std::move(numeric_constant);
+
+		Synt::ClassField field( g_dummy_src_loc );
+		field.name= "union_content";
+		field.type= std::move(array_type);
+
+		Synt::ClassElementsList::Builder class_elements;
+		class_elements.Append( std::move(field) );
+		class_.elements= class_elements.Build();
+
+		root_program_elements_.Append( std::move(class_ ) );
+	}
 }
 
 void CppAstConsumer::EmitDefinitionsForMacros()
