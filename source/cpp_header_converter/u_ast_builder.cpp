@@ -392,7 +392,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
-		if( func_decl->isFirstDecl() )
+		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
 			program_elements.Append( ProcessFunction( *func_decl, current_externc ) );
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
