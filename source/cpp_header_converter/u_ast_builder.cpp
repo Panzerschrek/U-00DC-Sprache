@@ -46,16 +46,18 @@ private:
 		std::vector<const clang::FieldDecl*> fields;
 	};
 
+	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
+
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
 	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList::Builder& class_elements, bool externc );
 
 	std::optional<Synt::Class> ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
 	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
-	Synt::Function ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
 	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
+	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::ComplexName TranslateNamedType( llvm::StringRef cpp_type_name );
@@ -70,8 +72,10 @@ private:
 	using NamedRecordDeclarations= std::unordered_map<std::string, RecordDeclaration>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
-	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
 	TypeNamesMap BuildTypeNamesMap( const NamedRecordDeclarations& named_record_declarations );
+
+	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
+	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
 
 	void EmitDefinitionsForMacros();
 	void EmitDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
@@ -153,9 +157,21 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	// It's fine to rename types later, if they conflict with function names.
 	const NamedFunctionDeclarations function_names= GenerateFunctionNames();
 
+	// Second, generate names for types.
+	// We can rename them in case of conflicts.
+	// It's fine to rename, since type names in C aren't used for symbols mangling.
 	const NamedRecordDeclarations record_names= GenerateRecordNames( function_names );
 
+	// TODO - process enums.
+	// TODO - process typedefs.
+
 	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names );
+
+	EmitFunctions( function_names, type_names_map );
+
+	// TODO - emit structs.
+	// TODO - emit enums.
+	// TODO - emit typedefs.
 
 	EmitDefinitionsForMacros();
 
@@ -229,10 +245,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
-		{
 			top_level_function_declarations_.push_back( func_decl );
-			program_elements.Append( ProcessFunction( *func_decl, current_externc ) );
-		}
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
 		ProcessEnum( *enum_decl, program_elements );
@@ -298,11 +311,6 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 	{
 		if( auto record = ProcessRecord( *record_decl, externc ) )
 			class_elements.Append( std::move(*record) );
-	}
-	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
-	{
-		if( func_decl->isFirstDecl() )
-			class_elements.Append( ProcessFunction(* func_decl, false ) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
@@ -405,92 +413,6 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
 
 	return type_alias;
-}
-
-Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, const bool externc )
-{
-	Synt::Function func(g_dummy_src_loc);
-
-	func.name.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
-
-	// Fix collisions with keywords.
-	// TODO - find a better way to do this.
-	// Sometimes it may be necessary to call such functions using exactly the same name.
-	if( IsKeyword( func.name.back().name ) )
-		func.name.back().name+= "_";
-
-	// HACK! C allows to declare a struct and a function with the same name.
-	// This doesn't create name conflict, as soon as struct is accessed via "struct StructName".
-	// But in Ü this isn't possible, so, correct function name.
-	while( globals_names_.count( func.name.back().name ) != 0 )
-		func.name.back().name+= "_";
-
-	globals_names_.insert( func.name.back().name );
-
-	func.no_mangle= externc;
-	func.type.unsafe= true; // All C/C++ functions are unsafe.
-
-	func.type.params.reserve( func_decl.param_size() );
-	size_t i= 0u;
-	for( const clang::ParmVarDecl* const param : func_decl.parameters() )
-	{
-		Synt::FunctionParam arg( g_dummy_src_loc );
-		arg.name= TranslateIdentifier( param->getName() );
-		if( arg.name.empty() )
-			arg.name= "arg" + std::to_string(i);
-		if( IsKeyword( arg.name ) )
-			arg.name+= "_";
-
-		const clang::Type* arg_type= param->getType().getTypePtr();
-		if( arg_type->isReferenceType() )
-		{
-			arg.reference_modifier= Synt::ReferenceModifier::Reference;
-			const clang::QualType type_qual= arg_type->getPointeeType();
-			arg_type= type_qual.getTypePtr();
-
-			if( type_qual.isConstQualified() )
-				arg.mutability_modifier= Synt::MutabilityModifier::Immutable;
-			else
-				arg.mutability_modifier= Synt::MutabilityModifier::Mutable;
-		}
-
-		arg.type= TranslateType( *arg_type );
-		func.type.params.push_back(std::move(arg));
-		++i;
-	}
-
-	const clang::Type* return_type= func_decl.getReturnType().getTypePtr();
-	if( return_type->isReferenceType() )
-	{
-		func.type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
-		const clang::QualType type_qual= return_type->getPointeeType();
-		return_type= type_qual.getTypePtr();
-
-		if( type_qual.isConstQualified() )
-			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
-		else
-			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
-	}
-	func.type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
-
-	const clang::Type* function_type= func_decl.getType().getTypePtr();
-
-	while(true)
-	{
-		if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
-			function_type= paren_type->getInnerType().getTypePtr();
-		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( function_type ) )
-			function_type= elaborated_type->desugar().getTypePtr();
-		else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( function_type ) )
-			function_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
-		else
-			break;
-	}
-
-	if( const auto ft= llvm::dyn_cast<clang::FunctionType>( function_type ) )
-		func.type.calling_convention= TranslateCallingConvention( *ft );
-
-	return func;
 }
 
 void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements )
@@ -657,6 +579,9 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
+	// old version
+	// TODO - remove it.
+
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 		return Synt::ComplexNameToTypeName( TranslateNamedType( StringViewToStringRef( GetUFundamentalType( *built_in_type ) ) ) );
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
@@ -676,6 +601,90 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= constna_array_type->getSize().getLimitedValue();
+		numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
+		numeric_constant.type_suffix[0]= 'u';
+		array_type->size= std::move(numeric_constant);
+
+		return std::move(array_type);
+	}
+	else if( const auto array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
+	{
+		// For other variants of array types use zero size.
+		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr() );
+
+		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.value_int= 0;
+		numeric_constant.value_double= 0.0;
+		numeric_constant.type_suffix[0]= 'u';
+		out_array_type->size= std::move(numeric_constant);
+
+		return std::move(out_array_type);
+	}
+	else if( in_type.isFunctionPointerType() )
+	{
+		const clang::Type* function_type= in_type.getPointeeType().getTypePtr();
+
+		while(true)
+		{
+			if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
+				function_type= paren_type->getInnerType().getTypePtr();
+			else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( function_type ) )
+				function_type= elaborated_type->desugar().getTypePtr();
+			else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( function_type ) )
+				function_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+			else
+				break;
+		}
+
+		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
+			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_proto_type ) );
+	}
+	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
+	{
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *pointer_type->getPointeeType().getTypePtr() );
+
+		return std::move(raw_pointer_type);
+	}
+	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
+		return TranslateType( *decltype_type->desugar().getTypePtr() );
+	else if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( &in_type ) )
+		return TranslateType( *paren_type->getInnerType().getTypePtr() );
+	else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( &in_type ) )
+		return TranslateType( *elaborated_type->desugar().getTypePtr() );
+	else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( &in_type ) )
+		return TranslateType( *attributed_type->desugar().getTypePtr() ); // TODO - maybe process attributes?
+
+	return Synt::ComplexNameToTypeName( TranslateNamedType( "void" ) );
+}
+
+Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map )
+{
+	if( const auto named_type_it= type_names_map.find( &in_type ); named_type_it != type_names_map.end() )
+	{
+		Synt::NameLookup name_lookup(g_dummy_src_loc);
+		name_lookup.name= named_type_it->second;
+		return std::move(name_lookup);
+	}
+
+	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
+		return Synt::ComplexNameToTypeName( TranslateNamedType( StringViewToStringRef( GetUFundamentalType( *built_in_type ) ) ) );
+	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
+	{
+		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
+			return Synt::ComplexNameToTypeName( TranslateNamedType( it->second ) );
+	}
+	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
+		return Synt::ComplexNameToTypeName( TranslateNamedType( typedef_type->getDecl()->getName() ) );
+	else if( const auto constant_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
+	{
+		// For arrays with constant size use normal Ü array.
+		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		array_type->element_type= TranslateType( *constant_array_type->getElementType().getTypePtr() );
+
+		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.value_int= constant_array_type->getSize().getLimitedValue();
 		numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
 		numeric_constant.type_suffix[0]= 'u';
 		array_type->size= std::move(numeric_constant);
@@ -892,6 +901,12 @@ CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames(
 		// TODO - ignore functions with wrong in Ü identifiers. They are impossible to use.
 		std::string name= TranslateIdentifier( function_declaration->getName() );
 
+		// Fix collisions with keywords.
+		// TODO - find a better way to do this.
+		// Sometimes it may be necessary to call such functions using exactly the same name.
+		if( IsKeyword( name ) )
+			name+= "_";
+
 		if( named_declarations.count( name ) != 0 )
 			continue; // Aleady has this declaration.
 
@@ -935,6 +950,89 @@ CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap( const NamedRecor
 		res[ pair.second.decl->getTypeForDecl() ] = pair.first;
 
 	return res;
+}
+
+void CppAstConsumer::EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map )
+{
+	for( const auto& pair : function_declarations )
+	{
+		std::cout << "Emit function " << pair.first << std::endl;
+		EmitFunction( pair.first, *pair.second, type_names_map );
+	}
+}
+
+void CppAstConsumer::EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map )
+{
+	const bool externc= true; // TODO - pass it
+
+	Synt::Function func(g_dummy_src_loc);
+
+	func.name.push_back( Synt::Function::NameComponent{ name, g_dummy_src_loc } );
+
+	func.no_mangle= externc;
+	func.type.unsafe= true; // All C/C++ functions are unsafe.
+
+	func.type.params.reserve( function_decl.param_size() );
+	size_t i= 0u;
+	for( const clang::ParmVarDecl* const param : function_decl.parameters() )
+	{
+		Synt::FunctionParam arg( g_dummy_src_loc );
+		arg.name= TranslateIdentifier( param->getName() );
+		if( arg.name.empty() )
+			arg.name= "arg" + std::to_string(i);
+		if( IsKeyword( arg.name ) )
+			arg.name+= "_";
+
+		const clang::Type* arg_type= param->getType().getTypePtr();
+		if( arg_type->isReferenceType() )
+		{
+			arg.reference_modifier= Synt::ReferenceModifier::Reference;
+			const clang::QualType type_qual= arg_type->getPointeeType();
+			arg_type= type_qual.getTypePtr();
+
+			if( type_qual.isConstQualified() )
+				arg.mutability_modifier= Synt::MutabilityModifier::Immutable;
+			else
+				arg.mutability_modifier= Synt::MutabilityModifier::Mutable;
+		}
+
+		arg.type= TranslateType( *arg_type, type_names_map );
+		func.type.params.push_back(std::move(arg));
+		++i;
+	}
+
+	const clang::Type* return_type= function_decl.getReturnType().getTypePtr();
+	if( return_type->isReferenceType() )
+	{
+		func.type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
+		const clang::QualType type_qual= return_type->getPointeeType();
+		return_type= type_qual.getTypePtr();
+
+		if( type_qual.isConstQualified() )
+			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
+		else
+			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
+	}
+	func.type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
+
+	const clang::Type* function_type= function_decl.getType().getTypePtr();
+
+	while(true)
+	{
+		if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
+			function_type= paren_type->getInnerType().getTypePtr();
+		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( function_type ) )
+			function_type= elaborated_type->desugar().getTypePtr();
+		else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( function_type ) )
+			function_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+		else
+			break;
+	}
+
+	if( const auto ft= llvm::dyn_cast<clang::FunctionType>( function_type ) )
+		func.type.calling_convention= TranslateCallingConvention( *ft );
+
+	root_program_elements_.Append( std::move(func) );
 }
 
 void CppAstConsumer::EmitDefinitionsForMacros()
