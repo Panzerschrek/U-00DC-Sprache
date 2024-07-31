@@ -53,7 +53,7 @@ private:
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::ComplexName TranslateNamedType( llvm::StringRef cpp_type_name );
+	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
 
@@ -279,18 +279,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	{
 		top_level_enums_.push_back( enum_decl );
 	}
-	else if( const auto namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
-	{
-		Synt::Namespace namespace_( g_dummy_src_loc );
-		namespace_.name= TranslateIdentifier( namespace_decl->getName() );
-
-		Synt::ProgramElementsList::Builder namespace_elements;
-		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
-			ProcessDecl( *sub_decl, namespace_elements, current_externc );
-		namespace_.elements= namespace_elements.Build();
-
-		program_elements.Append(std::move(namespace_));
-	}
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
@@ -309,7 +297,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	}
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return Synt::ComplexNameToTypeName( TranslateNamedType( StringViewToStringRef( GetUFundamentalType( *built_in_type ) ) ) );
+		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
 	else if( const auto constant_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
@@ -373,7 +361,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( &in_type ) )
 		return TranslateType( *attributed_type->desugar().getTypePtr(), type_names_map ); // TODO - maybe process attributes?
 
-	return Synt::ComplexNameToTypeName( TranslateNamedType( "void" ) );
+	return StringToTypeName( Keyword( Keywords::void_ ) );
 }
 
 std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
@@ -421,11 +409,11 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 	};
 }
 
-Synt::ComplexName CppAstConsumer::TranslateNamedType( const llvm::StringRef cpp_type_name )
+Synt::TypeName CppAstConsumer::StringToTypeName( const std::string_view s )
 {
-	Synt::NameLookup named_type(g_dummy_src_loc);
-	named_type.name= TranslateIdentifier( cpp_type_name );
-	return Synt::ComplexName( std::move(named_type) );
+	Synt::NameLookup name_lookup( g_dummy_src_loc );
+	name_lookup.name= s;
+	return std::move(name_lookup);
 }
 
 Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map )
@@ -501,6 +489,10 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 	if( identifier[0] == '_' )
 		return ( "ü" + identifier ).str();
 
+	// Avoid using keywords as names.
+	if( IsKeyword( identifier ) )
+		return (identifier + "_").str();
+
 	return identifier.str();
 }
 
@@ -509,14 +501,12 @@ CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames(
 	NamedFunctionDeclarations named_declarations;
 	for( const auto function_declaration : top_level_function_declarations_ )
 	{
-		// TODO - ignore functions with wrong in Ü identifiers. They are impossible to use.
-		std::string name= TranslateIdentifier( function_declaration->getName() );
-
-		// Fix collisions with keywords.
-		// TODO - find a better way to do this.
-		// Sometimes it may be necessary to call such functions using exactly the same name.
-		if( IsKeyword( name ) )
-			name+= "_";
+		std::string name= function_declaration->getName().str();
+		if( IsKeyword( name ) || ( !name.empty() && name[0] == '_' ) )
+		{
+			// It's for now impossible to use a function with name, which isn't a valid Ü identifier.
+			continue;
+		}
 
 		if( named_declarations.count( name ) != 0 )
 			continue; // Aleady has this declaration.
@@ -541,8 +531,6 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 		else
 			name= TranslateIdentifier( src_name );
 
-		// TODO - fix keyword name conflicts.
-
 		// Rename record until we have no name conflict.
 		while(
 			named_function_declarations.count( name ) != 0 ||
@@ -563,9 +551,11 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 
 	for( const auto typedef_decl : top_level_typedefs_ )
 	{
-		std::string name= TranslateIdentifier( typedef_decl->getName() );
+		const auto src_name= typedef_decl->getName();
+		if( src_name.empty() )
+			continue; // Is it possible?
 
-		// TODO - fix keyword name conflicts.
+		std::string name= TranslateIdentifier( src_name );
 
 		// Rename typedef until we have no name conflict.
 		while(
@@ -652,11 +642,12 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 	for( const clang::ParmVarDecl* const param : function_decl.parameters() )
 	{
 		Synt::FunctionParam arg( g_dummy_src_loc );
-		arg.name= TranslateIdentifier( param->getName() );
-		if( arg.name.empty() )
+
+		const auto src_name= param->getName();
+		if( src_name.empty() )
 			arg.name= "arg" + std::to_string(i);
-		if( IsKeyword( arg.name ) )
-			arg.name+= "_";
+		else
+			arg.name= TranslateIdentifier( src_name );
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
 		if( arg_type->isReferenceType() )
@@ -758,8 +749,6 @@ void CppAstConsumer::EmitGlobalRecord(
 				field.type= TranslateType( *field_type, type_names_map );
 
 			field.name= TranslateIdentifier( field_declaration->getName() );
-			if( IsKeyword( field.name ) )
-				field.name+= "_";
 
 			// HACK!
 			// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
@@ -801,7 +790,7 @@ void CppAstConsumer::EmitGlobalRecord(
 		};
 
 		auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-		array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( byte_name ) );
+		array_type->element_type= StringToTypeName( byte_name );
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= num;
@@ -891,7 +880,7 @@ void CppAstConsumer::EmitGlobalEnum( const std::string& name, const clang::EnumD
 
 			Synt::VariablesDeclaration::VariableEntry var;
 			var.src_loc= g_dummy_src_loc;
-			var.name= TranslateIdentifier( enumerator->getName() );
+			var.name= TranslateIdentifier( enumerator->getName() ); // TODO - rename if necessary.
 			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
 
@@ -1041,8 +1030,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			continue;
 
 		name= TranslateIdentifier(name);
-		if( IsKeyword( name ) )
-			name+= "_";
+
 		// Rename to avoid name conflicts.
 		while(
 			named_function_declarations.count( name ) != 0 ||
@@ -1205,10 +1193,11 @@ void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
 				Synt::Class class_(g_dummy_src_loc);
 				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-				class_.name= record_type->getDecl()->getName();
-
-				if( IsKeyword( class_.name ) )
-					class_.name+= "_";
+				const auto src_name= record_type->getDecl()->getName();
+				if( src_name.empty() )
+					class_.name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+				else
+					class_.name= TranslateIdentifier( src_name );
 
 				// Rename to avoid name conflicts.
 				while(
