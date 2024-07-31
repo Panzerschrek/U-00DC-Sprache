@@ -297,6 +297,19 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		// For now translate atomic types as underlying types.
 		return TranslateType( *atomic_type->getValueType().getTypePtr(), type_names_map );
 	}
+	else if( const auto complex_type= llvm::dyn_cast<clang::ComplexType>(&in_type) )
+	{
+		// For now translate complex types as arrays of two values of underlying types.
+		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		array_type->element_type= TranslateType( *complex_type->getElementType().getTypePtr(), type_names_map );
+
+		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.value_int= 2;
+		numeric_constant.value_double= 2.0;
+		array_type->size= std::move(numeric_constant);
+
+		return std::move(array_type);
+	}
 	else if( const auto constant_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
