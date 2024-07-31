@@ -128,4 +128,14 @@ int VariadicFunc( int x, const char*  s, ...)
 	return x * len;
 }
 
+void ArrayArg( int arg[4] )
+{
+	(void)arg;
+}
+
+void IncompleteArrayArg( int arg[] )
+{
+	(void)arg;
+}
+
 } // extern "C"

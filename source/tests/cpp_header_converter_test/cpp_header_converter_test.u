@@ -200,5 +200,13 @@ fn nomangle main() : i32
 		halt if( x != 55 );
 	}
 
+	unsafe
+	{
+		var [ i32, 4 ] mut arr= zero_init;
+		auto arr_ptr= $<( arr[0] );
+		ArrayArg( arr_ptr );
+		IncompleteArrayArg( arr_ptr );
+	}
+
 	return 0;
 }

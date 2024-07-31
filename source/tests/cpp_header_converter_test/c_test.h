@@ -255,3 +255,7 @@ struct TypedefStructWithSameNameForwardDeclaration
 
 // Should convert function with variadic params, but skip them - Ü doesn't support C-style variadic params.
 int VariadicFunc( int x, const char* s, ...);
+
+// Should translate array params as raw pointers.
+void ArrayArg( int arg[4] );
+void IncompleteArrayArg( int arg[] );

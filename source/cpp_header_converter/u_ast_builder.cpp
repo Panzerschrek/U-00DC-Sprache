@@ -338,6 +338,22 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		return std::move(out_array_type);
 	}
+	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
+	{
+		// Translate incomplete array types as raw pointers.
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
+	}
+	else if( const auto decayed_type= llvm::dyn_cast<clang::DecayedType>(&in_type) )
+	{
+		// Decayed type - implicit array to pointer conversion.
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *decayed_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
+	}
 	else if( in_type.isFunctionPointerType() )
 	{
 		const clang::Type* function_type= in_type.getPointeeType().getTypePtr();
