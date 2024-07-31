@@ -101,8 +101,8 @@ private:
 	void EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
 	void EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
 
-	void EmitGlobalEnums( const TypeNamesMap& type_names_map );
-	void EmitGlobalEnum( const clang::EnumDecl& enum_declaration, const TypeNamesMap& type_names_map );
+	void EmitGlobalEnums( const NamedEnumDeclarations& named_enum_declarations, const TypeNamesMap& type_names_map );
+	void EmitGlobalEnum( const std::string& name, const clang::EnumDecl& enum_declaration, const TypeNamesMap& type_names_map );
 
 	void EmitDefinitionsForMacros(
 		const NamedFunctionDeclarations& named_function_declarations,
@@ -217,7 +217,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitGlobalTypedefs( typedef_names, type_names_map );
 
-	EmitGlobalEnums( type_names_map );
+	EmitGlobalEnums( enum_names, type_names_map );
 
 	EmitDefinitionsForOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names );
 
@@ -590,12 +590,12 @@ CppAstConsumer::NamedEnumDeclarations CppAstConsumer::GenerateEnumNames(
 	for( const auto enum_decl : top_level_enums_ )
 	{
 		const auto src_name= enum_decl->getName();
+
+		std::string name;
 		if( src_name.empty() )
-			continue; // Anonymous enum.
-
-		std::string name= TranslateIdentifier( enum_decl->getName() );
-
-		// TODO - fix keyword name conflicts.
+			name= "ü_anon_enum_" + std::to_string( ++unique_name_index_ );
+		else
+			name= TranslateIdentifier( enum_decl->getName() );
 
 		// Rename enum until we have no name conflict.
 		while(
@@ -835,37 +835,46 @@ void CppAstConsumer::EmitGlobalTypedef( const std::string& name, const clang::Ty
 	root_program_elements_.Append( std::move(type_alias ) );
 }
 
-void CppAstConsumer::EmitGlobalEnums( const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitGlobalEnums( const NamedEnumDeclarations& named_enum_declarations, const TypeNamesMap& type_names_map )
 {
-	for( const auto enum_decl : top_level_enums_ )
-		EmitGlobalEnum( *enum_decl, type_names_map );
+	for( const auto& pair: named_enum_declarations )
+		EmitGlobalEnum( pair.first, *pair.second, type_names_map );
 }
 
-void CppAstConsumer::EmitGlobalEnum( const clang::EnumDecl& enum_declaration, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitGlobalEnum( const std::string& name, const clang::EnumDecl& enum_declaration, const TypeNamesMap& type_names_map )
 {
 	if( !enum_declaration.isComplete() )
 		return;
 
-	// TODO - use previously corrected name.
-	const std::string enum_name= TranslateIdentifier( enum_declaration.getName() );
 	const auto enumerators_range= enum_declaration.enumerators();
 
 	if( enum_declaration.getName().empty() )
 	{
 		// Anonimous enum. Just create a bunch of constants for it in space, where this enum is located.
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 
-		std::string_view underlying_type_name;
-		if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
-			underlying_type_name= GetUFundamentalType( *built_in_type );
+		// Create type alias for this enum.
+		{
+			Synt::TypeAlias type_alias( g_dummy_src_loc );
+			type_alias.name= name;
+
+			std::string_view underlying_type_name;
+			if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
+				underlying_type_name= GetUFundamentalType( *built_in_type );
+
+			Synt::NameLookup name_lookup(g_dummy_src_loc);
+			name_lookup.name= underlying_type_name;
+			type_alias.value= std::move(name_lookup);
+
+			root_program_elements_.Append( std::move(type_alias) );
+		}
+
+		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 
 		{
 			Synt::NameLookup name_lookup(g_dummy_src_loc);
-			name_lookup.name= underlying_type_name;
+			name_lookup.name= name;
 			variables_declaration.type= std::move(name_lookup);
 		}
-
-		variables_declaration.type= TranslateType( *enum_declaration.getIntegerType().getTypePtr(), type_names_map );
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
@@ -922,7 +931,7 @@ void CppAstConsumer::EmitGlobalEnum( const clang::EnumDecl& enum_declaration, co
 	if( can_be_u_enum )
 	{
 		Synt::Enum enum_( g_dummy_src_loc );
-		enum_.name= enum_name;
+		enum_.name= name;
 
 		Synt::TypeName type_name= TranslateType( *enum_declaration.getIntegerType().getTypePtr(), type_names_map );
 		if( const auto named_type_name= std::get_if<Synt::NameLookup>( &type_name ) )
@@ -943,7 +952,7 @@ void CppAstConsumer::EmitGlobalEnum( const clang::EnumDecl& enum_declaration, co
 		// Since such struct contains singe scalar inside, it is passed via this scalar.
 
 		Synt::Class enum_class_( g_dummy_src_loc );
-		enum_class_.name= TranslateIdentifier( enum_name );
+		enum_class_.name= name;
 
 		Synt::ClassElementsList::Builder class_elements;
 
