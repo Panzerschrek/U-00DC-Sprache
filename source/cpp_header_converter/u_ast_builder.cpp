@@ -70,6 +70,9 @@ private:
 	using NamedRecordDeclarations= std::unordered_map<std::string, RecordDeclaration>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
+	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
+	TypeNamesMap BuildTypeNamesMap( const NamedRecordDeclarations& named_record_declarations );
+
 	void GenerateDefinitionsForMacros();
 	void GenerateDefinitionsForOpaqueStructs( clang::ASTContext& ast_context );
 	void GenerateImplicitDefinitions();
@@ -151,6 +154,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	const NamedFunctionDeclarations function_names= GenerateFunctionNames();
 
 	const NamedRecordDeclarations record_names= GenerateRecordNames( function_names );
+
+	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names );
 
 	GenerateDefinitionsForMacros();
 
@@ -920,6 +925,16 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 	}
 
 	return named_declarations;
+}
+
+CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap( const NamedRecordDeclarations& named_record_declarations )
+{
+	TypeNamesMap res;
+
+	for( const auto& pair : named_record_declarations )
+		res[ pair.second.decl->getTypeForDecl() ] = pair.first;
+
+	return res;
 }
 
 void CppAstConsumer::GenerateDefinitionsForMacros()
