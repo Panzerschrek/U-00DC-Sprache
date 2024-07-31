@@ -100,6 +100,25 @@ struct StructWithAnonimousRecordsInside
 	} anon_struct_as_array[5];
 };
 
+struct StructWithNamedRecordsInside
+{
+	struct InnerA
+	{
+		unsigned int x;
+		float y;
+	} a_arr[2];
+
+	struct InnerB
+	{
+		char s[16];
+
+		struct InnerC
+		{
+			int sign;
+		} *c_ptr;
+	} b;
+};
+
 union UnionAlign1 { char c; };
 union UnionAlign2 { short s; };
 union UnionAlign4 { int i; };
