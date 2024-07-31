@@ -100,10 +100,12 @@ void SillyFunction( SillyName SillyName )
 	(void) SillyName;
 }
 
+#ifdef _WIN32
 __declspec(dllexport) int SomeDllExportedFunction(void)
 {
 	return 34;
 }
+#endif
 
 int VariadicFunc( int x, const char*  s, ...)
 {

@@ -213,5 +213,5 @@ struct TypedefStructWithSameNameForwardDeclaration
 	__declspec(dllexport) int SomeDllExportedFunction(void);
 #endif
 
-// Should convert function with params arguments, but skip them - Ü doesn't support C-style variadic params.
+// Should convert function with variadic params, but skip them - Ü doesn't support C-style variadic params.
 int VariadicFunc( int x, const char* s, ...);
