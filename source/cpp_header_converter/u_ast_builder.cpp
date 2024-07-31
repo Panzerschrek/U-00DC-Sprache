@@ -99,27 +99,40 @@ private:
 	void EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
 	void EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
 
-	void EmitGlobalEnums( const NamedEnumDeclarations& named_enum_declarations, const TypeNamesMap& type_names_map );
-	void EmitGlobalEnum( const std::string& name, const clang::EnumDecl& enum_declaration, const TypeNamesMap& type_names_map );
+	using AnonymousEnumMembersSet= std::unordered_set<std::string>;
+
+	void EmitGlobalEnums(
+		const NamedEnumDeclarations& named_enum_declarations,
+		const TypeNamesMap& type_names_map,
+		AnonymousEnumMembersSet& out_anonymous_enum_members );
+
+	void EmitGlobalEnum(
+		const std::string& name,
+		const clang::EnumDecl& enum_declaration,
+		const TypeNamesMap& type_names_map,
+		AnonymousEnumMembersSet& out_anonymous_enum_members );
 
 	void EmitDefinitionsForMacros(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations );
+		const NamedEnumDeclarations& named_enum_declarations,
+		const AnonymousEnumMembersSet& anonymous_enum_members );
 
 	void EmitDefinitionsForOpaqueStructs(
 		clang::ASTContext& ast_context,
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations );
+		const NamedEnumDeclarations& named_enum_declarations,
+		const AnonymousEnumMembersSet& anonymous_enum_members );
 
 	void EmitImplicitDefinitions(
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
-		const TypeNamesMap& type_names_map );
+		const TypeNamesMap& type_names_map,
+		const AnonymousEnumMembersSet& anonymous_enum_members );
 
 private:
 	Synt::ProgramElementsList::Builder& root_program_elements_;
@@ -219,13 +232,14 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitGlobalTypedefs( typedef_names, type_names_map );
 
-	EmitGlobalEnums( enum_names, type_names_map );
+	AnonymousEnumMembersSet anonymous_enum_members;
+	EmitGlobalEnums( enum_names, type_names_map, anonymous_enum_members );
 
-	EmitDefinitionsForOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names );
+	EmitDefinitionsForOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 
-	EmitImplicitDefinitions( record_names, typedef_names, enum_names, type_names_map );
+	EmitImplicitDefinitions( record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
-	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names );
+	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, const bool externc )
@@ -836,13 +850,20 @@ void CppAstConsumer::EmitGlobalTypedef( const std::string& name, const clang::Ty
 	root_program_elements_.Append( std::move(type_alias ) );
 }
 
-void CppAstConsumer::EmitGlobalEnums( const NamedEnumDeclarations& named_enum_declarations, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitGlobalEnums(
+	const NamedEnumDeclarations& named_enum_declarations,
+	const TypeNamesMap& type_names_map,
+	AnonymousEnumMembersSet& out_anonymous_enum_members )
 {
 	for( const auto& pair: named_enum_declarations )
-		EmitGlobalEnum( pair.first, *pair.second, type_names_map );
+		EmitGlobalEnum( pair.first, *pair.second, type_names_map, out_anonymous_enum_members );
 }
 
-void CppAstConsumer::EmitGlobalEnum( const std::string& name, const clang::EnumDecl& enum_declaration, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitGlobalEnum(
+	const std::string& name,
+	const clang::EnumDecl& enum_declaration,
+	const TypeNamesMap& type_names_map,
+	AnonymousEnumMembersSet& out_anonymous_enum_members )
 {
 	if( !enum_declaration.isComplete() )
 		return;
@@ -895,6 +916,8 @@ void CppAstConsumer::EmitGlobalEnum( const std::string& name, const clang::EnumD
 			var.name= TranslateIdentifier( enumerator->getName() ); // TODO - rename if necessary.
 			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+
+			out_anonymous_enum_members.insert( var.name );
 
 			variables_declaration.variables.push_back( std::move(var) );
 		}
@@ -1011,7 +1034,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const NamedFunctionDeclarations& named_function_declarations,
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations )
+	const NamedEnumDeclarations& named_enum_declarations,
+	const AnonymousEnumMembersSet& anonymous_enum_members )
 {
 	// Dump definitions of simple constants, using "define".
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
@@ -1048,7 +1072,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			named_function_declarations.count( name ) != 0 ||
 			named_record_declarations.count( name ) != 0 ||
 			named_typedef_declarations.count( name ) != 0 ||
-			named_enum_declarations.count( name ) != 0 )
+			named_enum_declarations.count( name ) != 0 ||
+			anonymous_enum_members.count( name ) != 0 )
 			name+= "_";
 
 		const clang::Token& token= macro_info->tokens().front();
@@ -1191,7 +1216,8 @@ void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
 	const NamedFunctionDeclarations& named_function_declarations,
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations )
+	const NamedEnumDeclarations& named_enum_declarations,
+	const AnonymousEnumMembersSet& anonymous_enum_members )
 {
 	// Create dummy definition for opaque structs.
 	for( const auto type : ast_context.getTypes() )
@@ -1216,7 +1242,8 @@ void CppAstConsumer::EmitDefinitionsForOpaqueStructs(
 					named_function_declarations.count( class_.name ) != 0 ||
 					named_record_declarations.count( class_.name ) != 0 ||
 					named_typedef_declarations.count( class_.name ) != 0 ||
-					named_enum_declarations.count( class_.name ) != 0 )
+					named_enum_declarations.count( class_.name ) != 0 ||
+					anonymous_enum_members.count( class_.name ) != 0 )
 					class_.name+= "_";
 
 				// TODO - add deleted default constructor?
@@ -1231,13 +1258,15 @@ void CppAstConsumer::EmitImplicitDefinitions(
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
-	const TypeNamesMap& type_names_map )
+	const TypeNamesMap& type_names_map,
+	const AnonymousEnumMembersSet& anonymous_enum_members )
 {
 	// Add implicit "size_t", if it wasn't defined explicitely.
 	std::string size_t_name= "size_t";
 	if( named_record_declarations.count( size_t_name ) == 0 &&
 		named_typedef_declarations.count( size_t_name ) == 0 &&
-		named_enum_declarations.count( size_t_name ) == 0 )
+		named_enum_declarations.count( size_t_name ) == 0 &&
+		anonymous_enum_members.count( size_t_name ) == 0 )
 	{
 		// HACK! Add type alias for "size_t".
 		// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
@@ -1253,7 +1282,8 @@ void CppAstConsumer::EmitImplicitDefinitions(
 	std::string va_list_name= TranslateIdentifier( "__builtin_va_list" );
 	if( named_record_declarations.count( va_list_name ) == 0 &&
 		named_typedef_declarations.count( va_list_name ) == 0 &&
-		named_enum_declarations.count( va_list_name ) == 0 )
+		named_enum_declarations.count( va_list_name ) == 0 &&
+		anonymous_enum_members.count( va_list_name ) == 0 )
 	{
 		Synt::TypeAlias type_alias( g_dummy_src_loc );
 		type_alias.name= std::move(va_list_name);
