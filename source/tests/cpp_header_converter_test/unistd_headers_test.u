@@ -1,4 +1,13 @@
+import "/unistd_headers.u"
+
 fn nomangle main() : i32
 {
+	auto& str= "Hallo, Welt!\n";
+
+	unsafe( write(
+		STDOUT_FILENO,
+		$<( cast_ref_unsafe</void/>( cast_mut( str[0] ) ) ),
+		size_t( typeinfo</ typeof(str) />.element_count ) ) );
+
 	return 0;
 }
