@@ -173,7 +173,12 @@ fn nomangle main() : i32
 	}
 
 	{
-		var SameNameForStructAndFunc1 s= zero_init;
+		var SameNameForStructAndFunc1_ mut s= zero_init;
+		unsafe( SameNameForStructAndFunc1( $<(s) ) );
+	}
+
+	{
+		var $(SameNameForStructAndFunc2_) ptr= unsafe( SameNameForStructAndFunc2() );
 	}
 
 	{

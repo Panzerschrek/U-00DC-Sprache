@@ -100,6 +100,15 @@ void SillyFunction( SillyName SillyName )
 	(void) SillyName;
 }
 
+void SameNameForStructAndFunc1( struct SameNameForStructAndFunc1* )
+{
+}
+
+struct SameNameForStructAndFunc2* SameNameForStructAndFunc2(void)
+{
+	return nullptr;
+}
+
 #ifdef _WIN32
 __declspec(dllexport) int SomeDllExportedFunction(void)
 {

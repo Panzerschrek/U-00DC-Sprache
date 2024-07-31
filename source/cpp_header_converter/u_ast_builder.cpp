@@ -45,7 +45,7 @@ private:
 	using NamesMapContainer= std::map<K, V>;
 
 private:
-	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
+	void ProcessDecl( const clang::Decl& decl, bool externc );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
@@ -54,6 +54,8 @@ private:
 	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
+
+	void CollectSubrecords();
 
 	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
 	NamedFunctionDeclarations GenerateFunctionNames();
@@ -181,12 +183,16 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 {
 	const bool externc= !lang_options_.CPlusPlus;
 	for( const clang::Decl* const decl : decl_group )
-		ProcessDecl( *decl, root_program_elements_, externc );
+		ProcessDecl( *decl, externc );
 	return true;
 }
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
+	// Collect subrecords.
+	// Do it via a separate step in order to process all subrecords late and avoid renaming of main records in case of naming conflicts.
+	CollectSubrecords();
+
 	// First, generate names for functions.
 	// This step is first, since we need to try to preserve original names.
 	// It's fine to rename types later, if they conflict with function names.
@@ -222,7 +228,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names );
 }
 
-void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
+void CppAstConsumer::ProcessDecl( const clang::Decl& decl, const bool externc )
 {
 	if( skip_declarations_from_includes_ &&
 		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
@@ -240,15 +246,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
 		if( record_decl->isCompleteDefinition() && !record_decl->isTemplated() )
-		{
-			if( record_decl->isStruct() || record_decl->isClass() )
-			{
-
-				// TODO - process declarations recursively.
-			}
-
 			record_declarations_.push_back( record_decl );
-		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
@@ -266,7 +264,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
-			ProcessDecl( *sub_decl, program_elements, current_externc );
+			ProcessDecl( *sub_decl, current_externc );
 	}
 }
 
@@ -478,6 +476,27 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 		return (identifier + "_").str();
 
 	return identifier.str();
+}
+
+void CppAstConsumer::CollectSubrecords()
+{
+	// use index-based for loop, since container may be modifier.
+	for( size_t i= 0; i < record_declarations_.size(); ++i )
+	{
+		const auto record_declaration= record_declarations_[i];
+		if( record_declaration->isStruct() || record_declaration->isClass() )
+		{
+			for( const clang::Decl* const sub_decl : record_declaration->decls() )
+			{
+				// Collect sub-structs into flat result container.
+				// Doing so we force move nested records into the root namespace.
+				// This may cause renaming due to name conflicts.
+				// But it's not so bad.
+				if( const auto subrecord= llvm::dyn_cast<clang::RecordDecl>( sub_decl ) )
+					record_declarations_.push_back( subrecord );
+			}
+		}
+	}
 }
 
 CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames()
