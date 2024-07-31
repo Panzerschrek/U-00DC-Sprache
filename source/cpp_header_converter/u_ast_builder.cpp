@@ -84,8 +84,19 @@ private:
 	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
 	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
 
-	void EmitGlobalRecords( const NamedRecordDeclarations& record_declarations, const TypeNamesMap& type_names_map );
-	void EmitGlobalRecord( const std::string& name, const RecordDeclaration& record_declaration, const TypeNamesMap& type_names_map );
+	void EmitGlobalRecords(
+		const NamedRecordDeclarations& record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations,
+		const NamedEnumDeclarations& named_enum_declarations,
+		const TypeNamesMap& type_names_map );
+
+	void EmitGlobalRecord(
+		const std::string& name,
+		const RecordDeclaration& record_declaration,
+		const NamedRecordDeclarations& named_record_declarations,
+		const NamedTypedefDeclarations& named_typedef_declarations,
+		const NamedEnumDeclarations& named_enum_declarations,
+		const TypeNamesMap& type_names_map );
 
 	void EmitGlobalTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
 	void EmitGlobalTypedef( const std::string& name, const clang::TypedefNameDecl* typedef_declaration, const TypeNamesMap& type_names_map );
@@ -197,7 +208,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitFunctions( function_names, type_names_map );
 
-	EmitGlobalRecords( record_names, type_names_map );
+	EmitGlobalRecords( record_names, typedef_names, enum_names, type_names_map );
 
 	EmitGlobalTypedefs( typedef_names, type_names_map );
 
@@ -694,13 +705,23 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 	root_program_elements_.Append( std::move(func) );
 }
 
-void CppAstConsumer::EmitGlobalRecords( const NamedRecordDeclarations& record_declarations, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitGlobalRecords(
+	const NamedRecordDeclarations& record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations,
+	const NamedEnumDeclarations& named_enum_declarations,
+	const TypeNamesMap& type_names_map )
 {
 	for( const auto& pair : record_declarations )
-		EmitGlobalRecord( pair.first, pair.second, type_names_map );
+		EmitGlobalRecord( pair.first, pair.second, record_declarations, named_typedef_declarations, named_enum_declarations, type_names_map );
 }
 
-void CppAstConsumer::EmitGlobalRecord( const std::string& name, const RecordDeclaration& record_declaration, const TypeNamesMap& type_names_map )
+void CppAstConsumer::EmitGlobalRecord(
+	const std::string& name,
+	const RecordDeclaration& record_declaration,
+	const NamedRecordDeclarations& named_record_declarations,
+	const NamedTypedefDeclarations& named_typedef_declarations,
+	const NamedEnumDeclarations& named_enum_declarations,
+	const TypeNamesMap& type_names_map )
 {
 	if( record_declaration.decl->isStruct() || record_declaration.decl->isClass() )
 	{
@@ -735,7 +756,14 @@ void CppAstConsumer::EmitGlobalRecord( const std::string& name, const RecordDecl
 			if( IsKeyword( field.name ) )
 				field.name+= "_";
 
-			// TODO - prevent name conflict with global types.
+			// HACK!
+			// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
+			// C allows such collisions, but Ü doesn't.
+			while(
+				named_record_declarations.count( field.name ) != 0 ||
+				named_typedef_declarations.count( field.name ) != 0 ||
+				named_enum_declarations.count( field.name ) != 0 )
+				field.name+= "_";
 
 			class_elements.Append( std::move(field) );
 		}
