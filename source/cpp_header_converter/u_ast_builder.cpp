@@ -1054,13 +1054,32 @@ void CppAstConsumer::EmitEnum(
 	AnonymousEnumMembersSet& out_anonymous_enum_members )
 {
 	if( !enum_declaration.isComplete() )
+	{
+		// Create dummy class with deleted default constructor for incomplete enums.
+
+		Synt::Class enum_class_( g_dummy_src_loc );
+		enum_class_.name= name;
+
+		Synt::ClassElementsList::Builder class_elements;
+
+		Synt::Function func(g_dummy_src_loc);
+		func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
+		func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
+
+		class_elements.Append( std::move(func) );
+
+		enum_class_.elements= class_elements.Build();
+
+		root_program_elements_.Append( std::move(enum_class_ ) );
+
 		return;
+	}
 
 	const auto enumerators_range= enum_declaration.enumerators();
 
 	if( enum_declaration.getName().empty() )
 	{
-		// Anonimous enum. Just create a bunch of constants for it in space, where this enum is located.
+		// Anonymous enum. Just create a bunch of constants for it in space, where this enum is located.
 
 		// Create type alias for this enum.
 		{
@@ -1120,6 +1139,7 @@ void CppAstConsumer::EmitEnum(
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;
+	if( !enumerators_range.empty() )
 	{
 		auto it= enumerators_range.begin();
 		llvm::APSInt prev_val= it->getInitVal();
@@ -1141,6 +1161,8 @@ void CppAstConsumer::EmitEnum(
 			prev_val= cur_val;
 		}
 	}
+	else
+		can_be_u_enum= false;
 
 	end_check:
 	if( can_be_u_enum )
