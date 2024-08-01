@@ -135,7 +135,6 @@ private:
 	const clang::TargetInfo &target_info_;
 	clang::DiagnosticsEngine& diagnostic_engine_;
 	const clang::LangOptions& lang_options_;
-	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;
 	const bool skip_declarations_from_includes_;
 
@@ -179,7 +178,6 @@ CppAstConsumer::CppAstConsumer(
 	, target_info_(target_info)
 	, diagnostic_engine_(diagnostic_engine)
 	, lang_options_(lang_options)
-	, printing_policy_(lang_options_)
 	, ast_context_(ast_context)
 	, skip_declarations_from_includes_(skip_declarations_from_includes)
 {
