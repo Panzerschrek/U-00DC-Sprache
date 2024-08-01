@@ -115,10 +115,10 @@ CPP Header converter:
 *) White list of converted symbols
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
-*) Add workarounds for function names conflicting with Ü keywords
+*) Avoid creating too large files (more than 65535 lines)
+*) Support negative constants in defines
 *) Add more satisfying defines conversion - where defined value is a constant expression
-*) Forbid construction of opaque structs
-*) Find a way to handle properly name conflicts between struct fileds and type names used for field types of current struct
+*) Handle some subset of C++ headers
 
 Documentation:
 *) Other languages (not only russian and english)
