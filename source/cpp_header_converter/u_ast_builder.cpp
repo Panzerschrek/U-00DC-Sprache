@@ -584,6 +584,9 @@ CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames(
 	NamedFunctionDeclarations named_declarations;
 	for( const auto function_declaration : function_declarations_ )
 	{
+		if( function_declaration->getIdentifier() == nullptr )
+			continue;
+
 		std::string name= function_declaration->getName().str();
 		if( IsKeyword( name ) || ( !name.empty() && name[0] == '_' ) )
 		{
