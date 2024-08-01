@@ -268,13 +268,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map )
 {
-	// Records, typedefs enums should have names in this map.
+	// Records, typedefs, enums should have names in this map.
 	if( const auto named_type_it= type_names_map.find( &in_type ); named_type_it != type_names_map.end() )
-	{
-		Synt::NameLookup name_lookup(g_dummy_src_loc);
-		name_lookup.name= named_type_it->second;
-		return std::move(name_lookup);
-	}
+		return StringToTypeName( named_type_it->second );
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
@@ -465,24 +461,24 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 	size_t i= 0u;
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
-		Synt::FunctionParam arg( g_dummy_src_loc );
-		arg.name= "arg" + std::to_string(i);
+		Synt::FunctionParam param( g_dummy_src_loc );
+		param.name= "arg" + std::to_string(i);
 
-		const clang::Type* arg_type= param_qual.getTypePtr();
-		if( arg_type->isReferenceType() )
+		const clang::Type* param_type= param_qual.getTypePtr();
+		if( param_type->isReferenceType() )
 		{
-			arg.reference_modifier= Synt::ReferenceModifier::Reference;
-			const clang::QualType type_qual= arg_type->getPointeeType();
-			arg_type= type_qual.getTypePtr();
+			param.reference_modifier= Synt::ReferenceModifier::Reference;
+			const clang::QualType type_qual= param_type->getPointeeType();
+			param_type= type_qual.getTypePtr();
 
 			if( type_qual.isConstQualified() )
-				arg.mutability_modifier= Synt::MutabilityModifier::Immutable;
+				param.mutability_modifier= Synt::MutabilityModifier::Immutable;
 			else
-				arg.mutability_modifier= Synt::MutabilityModifier::Mutable;
+				param.mutability_modifier= Synt::MutabilityModifier::Mutable;
 		}
 
-		arg.type= TranslateType( *arg_type, type_names_map );
-		function_type.params.push_back(std::move(arg));
+		param.type= TranslateType( *param_type, type_names_map );
+		function_type.params.push_back(std::move(param));
 		++i;
 	}
 
@@ -809,31 +805,31 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 
 	func.type.params.reserve( function_decl.param_size() );
 	size_t i= 0u;
-	for( const clang::ParmVarDecl* const param : function_decl.parameters() )
+	for( const clang::ParmVarDecl* const in_param : function_decl.parameters() )
 	{
-		Synt::FunctionParam arg( g_dummy_src_loc );
+		Synt::FunctionParam out_param( g_dummy_src_loc );
 
-		const auto src_name= param->getName();
+		const auto src_name= in_param->getName();
 		if( src_name.empty() )
-			arg.name= "arg" + std::to_string(i);
+			out_param.name= "param" + std::to_string(i);
 		else
-			arg.name= TranslateIdentifier( src_name );
+			out_param.name= TranslateIdentifier( src_name );
 
-		const clang::Type* arg_type= param->getType().getTypePtr();
-		if( arg_type->isReferenceType() )
+		const clang::Type* param_type= in_param->getType().getTypePtr();
+		if( param_type->isReferenceType() )
 		{
-			arg.reference_modifier= Synt::ReferenceModifier::Reference;
-			const clang::QualType type_qual= arg_type->getPointeeType();
-			arg_type= type_qual.getTypePtr();
+			out_param.reference_modifier= Synt::ReferenceModifier::Reference;
+			const clang::QualType type_qual= param_type->getPointeeType();
+			param_type= type_qual.getTypePtr();
 
 			if( type_qual.isConstQualified() )
-				arg.mutability_modifier= Synt::MutabilityModifier::Immutable;
+				out_param.mutability_modifier= Synt::MutabilityModifier::Immutable;
 			else
-				arg.mutability_modifier= Synt::MutabilityModifier::Mutable;
+				out_param.mutability_modifier= Synt::MutabilityModifier::Mutable;
 		}
 
-		arg.type= TranslateType( *arg_type, type_names_map );
-		func.type.params.push_back(std::move(arg));
+		out_param.type= TranslateType( *param_type, type_names_map );
+		func.type.params.push_back(std::move(out_param));
 		++i;
 	}
 
@@ -1074,20 +1070,13 @@ void CppAstConsumer::EmitEnum(
 			if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
 				underlying_type_name= GetUFundamentalType( *built_in_type );
 
-			Synt::NameLookup name_lookup(g_dummy_src_loc);
-			name_lookup.name= underlying_type_name;
-			type_alias.value= std::move(name_lookup);
+			type_alias.value= StringToTypeName( underlying_type_name );
 
 			root_program_elements_.Append( std::move(type_alias) );
 		}
 
 		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-
-		{
-			Synt::NameLookup name_lookup(g_dummy_src_loc);
-			name_lookup.name= name;
-			variables_declaration.type= std::move(name_lookup);
-		}
+		variables_declaration.type= StringToTypeName( name );
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
