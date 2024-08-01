@@ -719,14 +719,12 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 				// Add implicit "__builtin_va_list".
 				if( decl->getName() == builtin_va_list_name )
 				{
-					std::cout << "Found " << builtin_va_list_name.str() << std::endl;
 					const auto builtin_va_list_name_translated= TranslateIdentifier( builtin_va_list_name );
 
 					if( named_function_declarations.count( builtin_va_list_name_translated ) == 0 &&
 						named_record_declarations.count( builtin_va_list_name_translated ) == 0 &&
 						named_declarations.count( builtin_va_list_name_translated ) == 0 )
 					{
-						std::cout << "Insert " << builtin_va_list_name_translated << std::endl;
 						named_declarations.emplace( builtin_va_list_name_translated, decl );
 					}
 				}
