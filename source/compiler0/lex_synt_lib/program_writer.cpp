@@ -974,7 +974,7 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 		stream << "= " << Keyword( Keywords::default_ );
 		break;
 	case Function::BodyKind::BodyGenerationDisabled:
-		stream << "= " << Keyword( Keywords::break_ );
+		stream << "= " << Keyword( Keywords::delete_ );
 		break;
 	}
 }

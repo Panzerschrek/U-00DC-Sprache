@@ -100,6 +100,36 @@ struct StructWithAnonimousRecordsInside
 	} anon_struct_as_array[5];
 };
 
+struct StructWithNamedRecordsInside
+{
+	struct InnerA
+	{
+		unsigned int x;
+		float y;
+	} a_arr[2];
+
+	struct InnerB
+	{
+		char s[16];
+
+		struct InnerC
+		{
+			int sign;
+		} *c_ptr;
+	} b;
+};
+
+struct StructWithAnonUnion
+{
+	unsigned int field_before;
+	union
+	{
+		float float_val;
+		int int_val;
+	};
+	unsigned int field_after;
+};
+
 union UnionAlign1 { char c; };
 union UnionAlign2 { short s; };
 union UnionAlign4 { int i; };
@@ -181,8 +211,11 @@ struct SillyStructWithAStrangeField
 };
 
 // A function with name as Ü keyword.
-// For now it's not possible to call it, but at least current workaround fixes compilation.
+// Should ignore it.
 void yield();
+
+// Underscore functions should be ignored too.
+void _IgnoreThis();
 
 // Test for __stdcall functions under 32-bit windows.
 #ifdef _WIN32
@@ -197,6 +230,13 @@ struct SameNameForStructAndFunc1
 };
 
 void SameNameForStructAndFunc1( struct SameNameForStructAndFunc1* );
+
+struct SameNameForStructAndFunc2* SameNameForStructAndFunc2(void);
+
+struct SameNameForStructAndFunc2
+{
+	float contents;
+};
 
 typedef struct TypedefStructWithSameNameForwardDeclaration TypedefStructWithSameNameForwardDeclaration;
 
@@ -215,3 +255,18 @@ struct TypedefStructWithSameNameForwardDeclaration
 
 // Should convert function with variadic params, but skip them - Ü doesn't support C-style variadic params.
 int VariadicFunc( int x, const char* s, ...);
+
+// Should translate array params as raw pointers.
+void ArrayArg( int arg[4] );
+void IncompleteArrayArg( int arg[] );
+
+typedef int TypedefForFunctionType( int param_a, void* param_b );
+
+struct StructWithFunctionTypePtrField
+{
+	// Should translate this into proper function pointer.
+	TypedefForFunctionType* ptr;
+};
+
+// Should translate this into type alias for function pointer with no params.
+typedef int (*FunctionTypedefNoProto)();

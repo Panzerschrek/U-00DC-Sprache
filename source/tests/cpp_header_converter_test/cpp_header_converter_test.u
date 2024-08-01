@@ -106,8 +106,21 @@ fn nomangle main() : i32
 		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
 	}
 	{
+		// For now "InnerC" is declared outside "StructWithNamedRecordsInside".
+		// It's too complicated to declare it inside, as in original C code.
+		var InnerC mut inner_c= zero_init;
+		var StructWithNamedRecordsInside s
+		{
+			.a_arr[ { .x=55u, .y= 1.25f }, { .x=66u, .y= 2.5f  } ],
+			.b{ .s= zero_init, .c_ptr= $<(inner_c) }
+		};
+	}
+	{
 		var StupidStuctNaming mut s= zero_init;
 		unsafe( StupidFunc( $<(s) ) );
+	}
+	{
+		var $(StructUsedWithoutDeclaration) ptr= unsafe( FunctionReturningUnknownStruct() );
 	}
 	{
 		type UnknownStruct= StructUsedWithoutDeclaration;
@@ -126,6 +139,10 @@ fn nomangle main() : i32
 	static_assert( typeinfo</UnionAlign2/>.align_of == 2s );
 	static_assert( typeinfo</UnionAlign4/>.size_of == 4s );
 	static_assert( typeinfo</UnionAlign4/>.align_of == 4s );
+
+	{
+		var $(UnionForwardDeclaration) u_ptr= zero_init;
+	}
 
 	static_assert( i32(SequentialEnum::Red) == 0 );
 	static_assert( i32(SequentialEnum::Green) == 1 );
@@ -173,7 +190,12 @@ fn nomangle main() : i32
 	}
 
 	{
-		var SameNameForStructAndFunc1 s= zero_init;
+		var SameNameForStructAndFunc1_ mut s= zero_init;
+		unsafe( SameNameForStructAndFunc1( $<(s) ) );
+	}
+
+	{
+		var $(SameNameForStructAndFunc2_) ptr= unsafe( SameNameForStructAndFunc2() );
 	}
 
 	{
@@ -184,6 +206,26 @@ fn nomangle main() : i32
 		auto x= unsafe( VariadicFunc( 5, $<( cast_mut( "Some string\0"[0] ) ) ) );
 		halt if( x != 55 );
 	}
+
+	unsafe
+	{
+		var [ i32, 4 ] mut arr= zero_init;
+		auto arr_ptr= $<( arr[0] );
+		ArrayArg( arr_ptr );
+		IncompleteArrayArg( arr_ptr );
+	}
+
+	{
+		// Typedefs to function types can't be translated, so, expect void for them.
+		static_assert( typeinfo</ TypedefForFunctionType />.is_void );
+
+		// But ising this typedef in combination with pointer should work.
+		var StructWithFunctionTypePtrField s= zero_init;
+		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
+	}
+
+	// Should translate type alias for function pointer with no information about params.
+	static_assert( typeinfo</FunctionTypedefNoProto/>.is_function_pointer );
 
 	return 0;
 }

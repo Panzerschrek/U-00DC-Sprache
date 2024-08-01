@@ -100,6 +100,15 @@ void SillyFunction( SillyName SillyName )
 	(void) SillyName;
 }
 
+void SameNameForStructAndFunc1( struct SameNameForStructAndFunc1* )
+{
+}
+
+struct SameNameForStructAndFunc2* SameNameForStructAndFunc2(void)
+{
+	return nullptr;
+}
+
 #ifdef _WIN32
 __declspec(dllexport) int SomeDllExportedFunction(void)
 {
@@ -117,6 +126,16 @@ int VariadicFunc( int x, const char*  s, ...)
 	}
 
 	return x * len;
+}
+
+void ArrayArg( int arg[4] )
+{
+	(void)arg;
+}
+
+void IncompleteArrayArg( int arg[] )
+{
+	(void)arg;
 }
 
 } // extern "C"
