@@ -267,3 +267,6 @@ struct StructWithFunctionTypePtrField
 	// Should translate this into proper function pointer.
 	TypedefForFunctionType* ptr;
 };
+
+// Should translate this into type alias for function pointer with no params.
+typedef int (*FunctionTypedefNoProto)();

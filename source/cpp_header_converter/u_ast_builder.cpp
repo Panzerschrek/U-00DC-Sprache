@@ -51,6 +51,7 @@ private:
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
+	Synt::FunctionType TranslateFunctionType( const clang::FunctionNoProtoType& in_type, const TypeNamesMap& type_names_map );
 	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
@@ -368,6 +369,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
 			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_proto_type, type_names_map ) );
+		else if( const auto function_no_proto_type= llvm::dyn_cast<clang::FunctionNoProtoType>( function_type ) )
+			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_no_proto_type, type_names_map ) );
 	}
 	else if( llvm::isa<clang::FunctionProtoType>( &in_type ) )
 	{
@@ -477,6 +480,34 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 		function_type.params.push_back(std::move(arg));
 		++i;
 	}
+
+	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
+	if( return_type->isReferenceType() )
+	{
+		function_type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
+		const clang::QualType type_qual= return_type->getPointeeType();
+		return_type= type_qual.getTypePtr();
+
+		if( type_qual.isConstQualified() )
+			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
+		else
+			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
+	}
+	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
+
+	function_type.calling_convention= TranslateCallingConvention( in_type );
+
+	return function_type;
+}
+
+Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionNoProtoType& in_type, const TypeNamesMap& type_names_map )
+{
+	// Translate function without information about params.
+	// This is somewhat limited.
+
+	Synt::FunctionType function_type( g_dummy_src_loc );
+
+	function_type.unsafe= true; // All C/C++ functions are unsafe.
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
 	if( return_type->isReferenceType() )

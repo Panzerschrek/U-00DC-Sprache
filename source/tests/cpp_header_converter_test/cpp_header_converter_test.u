@@ -224,5 +224,8 @@ fn nomangle main() : i32
 		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
 	}
 
+	// Should translate type alias for function pointer with no information about params.
+	static_assert( typeinfo</FunctionTypedefNoProto/>.is_function_pointer );
+
 	return 0;
 }
