@@ -126,13 +126,6 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const AnonymousEnumMembersSet& anonymous_enum_members );
 
-	void EmitImplicitDefinitions(
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const TypeNamesMap& type_names_map,
-		const AnonymousEnumMembersSet& anonymous_enum_members );
-
 private:
 	Synt::ProgramElementsList::Builder& root_program_elements_;
 
@@ -237,8 +230,6 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	AnonymousEnumMembersSet anonymous_enum_members;
 	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
-
-	EmitImplicitDefinitions( record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
 	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 }
@@ -644,6 +635,31 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 			name+= "_";
 
 		named_declarations.emplace( std::move(name), typedef_decl );
+	}
+
+	// Add some implicit typedefs.
+
+	const std::string size_t_name= "size_t";
+
+	for( const auto type : ast_context_.getTypes() )
+	{
+		if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(type) )
+		{
+			if( const auto decl= typedef_type->getDecl() )
+			{
+				// Add implicit size_t.
+				if( decl->getName() == size_t_name &&
+					named_function_declarations.count( size_t_name ) == 0 &&
+					named_record_declarations.count( size_t_name ) == 0 &&
+					named_declarations.count( size_t_name ) == 0 )
+				{
+					named_declarations.emplace( size_t_name, decl );
+				}
+			}
+
+			// TODO - process __builtin_va_list
+		}
+
 	}
 
 	return named_declarations;
@@ -1306,52 +1322,6 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
 		}
 	} // for defines
-}
-
-void CppAstConsumer::EmitImplicitDefinitions(
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const TypeNamesMap& type_names_map,
-	const AnonymousEnumMembersSet& anonymous_enum_members )
-{
-	// Add implicit "size_t", if it wasn't defined explicitely.
-	std::string size_t_name= "size_t";
-	if( named_record_declarations.count( size_t_name ) == 0 &&
-		named_typedef_declarations.count( size_t_name ) == 0 &&
-		named_enum_declarations.count( size_t_name ) == 0 &&
-		anonymous_enum_members.count( size_t_name ) == 0 )
-	{
-		// HACK! Add type alias for "size_t".
-		// We can't use "size_type" from Ü, because "size_t" in C is just an alias for uint32_t or uint64_t.
-
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= std::move(size_t_name);
-		type_alias.value= TranslateType( *ast_context_.getSizeType().getTypePtr(), type_names_map );
-
-		root_program_elements_.Append( std::move(type_alias) );
-	}
-
-	// "__builtin_va_list" is also sometimes implicitely defined. Create something for it.
-	std::string va_list_name= TranslateIdentifier( "__builtin_va_list" );
-	if( named_record_declarations.count( va_list_name ) == 0 &&
-		named_typedef_declarations.count( va_list_name ) == 0 &&
-		named_enum_declarations.count( va_list_name ) == 0 &&
-		anonymous_enum_members.count( va_list_name ) == 0 )
-	{
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= std::move(va_list_name);
-
-		Synt::NameLookup void_name(g_dummy_src_loc);
-		void_name.name=  Keyword( Keywords::void_ );
-
-		Synt::RawPointerType pointer_type(g_dummy_src_loc);
-		pointer_type.element_type= std::move(void_name);
-
-		type_alias.value= std::make_unique<Synt::RawPointerType>( std::move(pointer_type) );
-
-		root_program_elements_.Append( std::move(type_alias) );
-	}
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
