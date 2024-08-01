@@ -369,6 +369,13 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
 			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_proto_type, type_names_map ) );
 	}
+	else if( llvm::isa<clang::FunctionProtoType>( &in_type ) )
+	{
+		// This is function type and not function pointer type.
+		// This is typical in typedefs.
+		// We can't transalte such types, so, use void stub.
+		return StringToTypeName( Keyword( Keywords::void_ ) );
+	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
 		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );

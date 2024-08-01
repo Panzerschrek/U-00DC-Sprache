@@ -216,6 +216,10 @@ fn nomangle main() : i32
 	}
 
 	{
+		// Typedefs to function types can't be translated, so, expect void for them.
+		static_assert( typeinfo</ TypedefForFunctionType />.is_void );
+
+		// But ising this typedef in combination with pointer should work.
 		var StructWithFunctionTypePtrField s= zero_init;
 		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
 	}
