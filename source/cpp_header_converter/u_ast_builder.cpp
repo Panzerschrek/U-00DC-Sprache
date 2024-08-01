@@ -194,6 +194,8 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
+	(void)ast_context;
+
 	// Collect subrecords.
 	// Do it via a separate step in order to process all subrecords late and avoid renaming of main records in case of naming conflicts.
 	CollectSubrecords();
@@ -229,6 +231,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitTypedefs( typedef_names, type_names_map );
 
+	// While emitting enums we may emit also variables for members of anonymous enums.
+	// Use this variables list later to avoid naming conflicts.
 	AnonymousEnumMembersSet anonymous_enum_members;
 	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
@@ -264,7 +268,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map )
 {
-	// Records and enums should have names in this map.
+	// Records, typedefs enums should have names in this map.
 	if( const auto named_type_it= type_names_map.find( &in_type ); named_type_it != type_names_map.end() )
 	{
 		Synt::NameLookup name_lookup(g_dummy_src_loc);
@@ -276,7 +280,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 	{
-		// Normally we should create entries for typedes in types map.
+		// Normally we should create entries for typedefs in types map.
 		// But if this doesn't work, use underlying type instead.
 		return TranslateType( *typedef_type->desugar().getTypePtr(), type_names_map );
 	}
@@ -395,6 +399,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( &in_type ) )
 		return TranslateType( *attributed_type->desugar().getTypePtr(), type_names_map ); // TODO - maybe process attributes?
 
+	// Fallback for some unlikely case.
 	return StringToTypeName( Keyword( Keywords::void_ ) );
 }
 
@@ -562,7 +567,7 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 
 void CppAstConsumer::CollectSubrecords()
 {
-	// use index-based for loop, since container may be modifier.
+	// Use index-based for loop, since container may be modified.
 	for( size_t i= 0; i < record_declarations_.size(); ++i )
 	{
 		const auto record_declaration= record_declarations_[i];
@@ -896,7 +901,7 @@ void CppAstConsumer::EmitRecord(
 						field.name= TranslateIdentifier( src_name );
 
 					// HACK!
-					// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
+					// For cases where field name is the same as some global name, add name suffix to avoid collisions.
 					// C allows such collisions, but Ü doesn't.
 					while(
 						named_record_declarations.count( field.name ) != 0 ||
@@ -1064,6 +1069,7 @@ void CppAstConsumer::EmitEnum(
 
 			var.name= TranslateIdentifier( enumerator->getName() );
 
+			// Avoid name conflicts.
 			while(
 				named_function_declarations.count( var.name ) != 0 ||
 				named_record_declarations.count( var.name ) != 0 ||
