@@ -138,6 +138,8 @@ private:
 	const clang::ASTContext& ast_context_;
 	const bool skip_declarations_from_includes_;
 
+	// Declaration of symbols to translate.
+	// Use vector, because we need stable order in order to perform (if necessary) consistent renaming.
 	std::vector< const clang::FunctionDecl* > function_declarations_;
 	std::vector< const clang::RecordDecl* > record_declarations_;
 	std::vector< const clang::TypedefNameDecl* > typedef_declarations_;
@@ -625,8 +627,9 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 		named_declarations.emplace( std::move(name), record_declaration );
 	}
 
-	// Create dummy definitions for opaque structs.
-	// TODO - make sure result order is stable.
+	// Collect declarations of incomplete records.
+	std::vector< const clang::RecordDecl* > incomplete_records;
+
 	for( const auto type : ast_context_.getTypes() )
 	{
 		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
@@ -636,25 +639,38 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 				// Process only incomplete records.
 				// ignore implicitely-defined records, like "_GUID".
 				if( record_type->isIncompleteType() && ! record_declaration->isImplicit() )
-				{
-					const auto src_name= record_declaration->getName();
-
-					std::string name;
-					if( src_name.empty() )
-						name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
-					else
-						name= TranslateIdentifier( src_name );
-
-					// Rename record until we have no name conflict.
-					while(
-						named_function_declarations.count( name ) != 0 ||
-						named_declarations.count( name ) != 0 )
-						name+= "_";
-
-					named_declarations.emplace( std::move(name), record_declaration );
-				}
+					incomplete_records.push_back( record_declaration );
 			}
 		}
+	}
+
+	// Sort incomplete records in order to get stable order and thus consistent renaming.
+	std::sort(
+		incomplete_records.begin(),
+		incomplete_records.end(),
+		[]( const clang::RecordDecl* const l, const clang::RecordDecl* const r )
+		{
+			return l->getSourceRange().getBegin() < r->getSourceRange().getBegin();
+		} );
+
+	// Add names of incomplete records.
+	for( const clang::RecordDecl* const incomplete_record : incomplete_records )
+	{
+		const auto src_name= incomplete_record->getName();
+
+		std::string name;
+		if( src_name.empty() )
+			name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+		else
+			name= TranslateIdentifier( src_name );
+
+		// Rename record until we have no name conflict.
+		while(
+			named_function_declarations.count( name ) != 0 ||
+			named_declarations.count( name ) != 0 )
+			name+= "_";
+
+		named_declarations.emplace( std::move(name), incomplete_record );
 	}
 
 	return named_declarations;
