@@ -120,6 +120,9 @@ fn nomangle main() : i32
 		unsafe( StupidFunc( $<(s) ) );
 	}
 	{
+		var $(StructUsedWithoutDeclaration) ptr= unsafe( FunctionReturningUnknownStruct() );
+	}
+	{
 		type UnknownStruct= StructUsedWithoutDeclaration;
 		unsafe( FunctionReturningUnknownStruct() );
 	}
@@ -136,6 +139,10 @@ fn nomangle main() : i32
 	static_assert( typeinfo</UnionAlign2/>.align_of == 2s );
 	static_assert( typeinfo</UnionAlign4/>.size_of == 4s );
 	static_assert( typeinfo</UnionAlign4/>.align_of == 4s );
+
+	{
+		var $(UnionForwardDeclaration) u_ptr= zero_init;
+	}
 
 	static_assert( i32(SequentialEnum::Red) == 0 );
 	static_assert( i32(SequentialEnum::Green) == 1 );

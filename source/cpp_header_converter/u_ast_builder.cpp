@@ -126,14 +126,6 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const AnonymousEnumMembersSet& anonymous_enum_members );
 
-	void EmitOpaqueStructs(
-		clang::ASTContext& ast_context,
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const AnonymousEnumMembersSet& anonymous_enum_members );
-
 	void EmitImplicitDefinitions(
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
@@ -245,8 +237,6 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	AnonymousEnumMembersSet anonymous_enum_members;
 	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
-
-	EmitOpaqueStructs( ast_context, function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
 
 	EmitImplicitDefinitions( record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
 
@@ -597,6 +587,38 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 		named_declarations.emplace( std::move(name), record_declaration );
 	}
 
+	// Create dummy definitions for opaque structs.
+	// TODO - make sure result order is stable.
+	for( const auto type : ast_context_.getTypes() )
+	{
+		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
+		{
+			if( const auto record_declaration= record_type->getDecl() )
+			{
+				// Process only incomplete records.
+				// ignore implicitely-defined records, like "_GUID".
+				if( record_type->isIncompleteType() && ! record_declaration->isImplicit() )
+				{
+					const auto src_name= record_declaration->getName();
+
+					std::string name;
+					if( src_name.empty() )
+						name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+					else
+						name= TranslateIdentifier( src_name );
+
+					// Rename record until we have no name conflict.
+					while(
+						named_function_declarations.count( name ) != 0 ||
+						named_declarations.count( name ) != 0 )
+						name+= "_";
+
+					named_declarations.emplace( std::move(name), record_declaration );
+				}
+			}
+		}
+	}
+
 	return named_declarations;
 }
 
@@ -783,45 +805,52 @@ void CppAstConsumer::EmitRecord(
 
 		Synt::ClassElementsList::Builder class_elements;
 
-		for( const clang::Decl* const sub_decl : record_declaration.decls() )
+		if( record_declaration.isCompleteDefinition() )
 		{
-			if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
+			for( const clang::Decl* const sub_decl : record_declaration.decls() )
 			{
-				Synt::ClassField field( g_dummy_src_loc );
-
-				const clang::Type* field_type= field_declaration->getType().getTypePtr();
-
-				if( field_type->isReferenceType() )
+				if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
 				{
-					// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
-					const clang::QualType type_qual= field_type->getPointeeType();
-					field_type= type_qual.getTypePtr();
+					Synt::ClassField field( g_dummy_src_loc );
 
-					auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-					raw_pointer_type->element_type= TranslateType( *field_type, type_names_map );
+					const clang::Type* field_type= field_declaration->getType().getTypePtr();
 
-					field.type= std::move(raw_pointer_type);
+					if( field_type->isReferenceType() )
+					{
+						// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
+						const clang::QualType type_qual= field_type->getPointeeType();
+						field_type= type_qual.getTypePtr();
+
+						auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+						raw_pointer_type->element_type= TranslateType( *field_type, type_names_map );
+
+						field.type= std::move(raw_pointer_type);
+					}
+					else
+						field.type= TranslateType( *field_type, type_names_map );
+
+					const auto src_name= field_declaration->getName();
+					if( src_name.empty() )
+						field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
+					else
+						field.name= TranslateIdentifier( src_name );
+
+					// HACK!
+					// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
+					// C allows such collisions, but Ü doesn't.
+					while(
+						named_record_declarations.count( field.name ) != 0 ||
+						named_typedef_declarations.count( field.name ) != 0 ||
+						named_enum_declarations.count( field.name ) != 0 )
+						field.name+= "_";
+
+					class_elements.Append( std::move(field) );
 				}
-				else
-					field.type= TranslateType( *field_type, type_names_map );
-
-				const auto src_name= field_declaration->getName();
-				if( src_name.empty() )
-					field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
-				else
-					field.name= TranslateIdentifier( src_name );
-
-				// HACK!
-				// For cases where field name is the same as some global name, add name suffix to avoid collsiions.
-				// C allows such collisions, but Ü doesn't.
-				while(
-					named_record_declarations.count( field.name ) != 0 ||
-					named_typedef_declarations.count( field.name ) != 0 ||
-					named_enum_declarations.count( field.name ) != 0 )
-					field.name+= "_";
-
-				class_elements.Append( std::move(field) );
 			}
+		}
+		else
+		{
+			// TODO - add deleted constructors for forward declaration.
 		}
 
 		class_.elements= class_elements.Build();
@@ -831,40 +860,48 @@ void CppAstConsumer::EmitRecord(
 	else if( record_declaration.isUnion() )
 	{
 		// Emulate union, using array of bytes with required alignment.
-
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= name;
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
-		const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
-		const auto num= ( size + byte_size - 1u ) / byte_size;
-
-		std::string byte_name;
-		switch(byte_size)
-		{
-		case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
-		case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
-		case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
-		case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
-		case 16: byte_name= Keyword( Keywords::byte128_ ); break;
-		default: U_ASSERT(false); break;
-		};
-
-		auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-		array_type->element_type= StringToTypeName( byte_name );
-
-		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.value_int= num;
-		numeric_constant.value_double= double(numeric_constant.value_int);
-		array_type->size= std::move(numeric_constant);
-
-		Synt::ClassField field( g_dummy_src_loc );
-		field.name= "union_content";
-		field.type= std::move(array_type);
-
 		Synt::ClassElementsList::Builder class_elements;
-		class_elements.Append( std::move(field) );
+
+		if( record_declaration.isCompleteDefinition() )
+		{
+			const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
+			const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
+			const auto num= ( size + byte_size - 1u ) / byte_size;
+
+			std::string byte_name;
+			switch(byte_size)
+			{
+			case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
+			case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
+			case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
+			case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
+			case 16: byte_name= Keyword( Keywords::byte128_ ); break;
+			default: U_ASSERT(false); break;
+			};
+
+			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+			array_type->element_type= StringToTypeName( byte_name );
+
+			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+			numeric_constant.value_int= num;
+			numeric_constant.value_double= double(numeric_constant.value_int);
+			array_type->size= std::move(numeric_constant);
+
+			Synt::ClassField field( g_dummy_src_loc );
+			field.name= "union_content";
+			field.type= std::move(array_type);
+
+			class_elements.Append( std::move(field) );
+		}
+		else
+		{
+			// TODO - add deleted constructors for forward declaration.
+		}
+
 		class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(class_ ) );
@@ -1269,49 +1306,6 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
 		}
 	} // for defines
-}
-
-void CppAstConsumer::EmitOpaqueStructs(
-	clang::ASTContext& ast_context,
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const AnonymousEnumMembersSet& anonymous_enum_members )
-{
-	// Create dummy definitions for opaque structs.
-	for( const auto type : ast_context.getTypes() )
-	{
-		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
-		{
-			// Process only incomplete records.
-			// ignore implicitely-defined records, like "_GUID".
-			if( record_type->isIncompleteType() && ! record_type->getDecl()->isImplicit() )
-			{
-				Synt::Class class_(g_dummy_src_loc);
-				class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-				const auto src_name= record_type->getDecl()->getName();
-				if( src_name.empty() )
-					class_.name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
-				else
-					class_.name= TranslateIdentifier( src_name );
-
-				// Rename to avoid name conflicts.
-				while(
-					named_function_declarations.count( class_.name ) != 0 ||
-					named_record_declarations.count( class_.name ) != 0 ||
-					named_typedef_declarations.count( class_.name ) != 0 ||
-					named_enum_declarations.count( class_.name ) != 0 ||
-					anonymous_enum_members.count( class_.name ) != 0 )
-					class_.name+= "_";
-
-				// TODO - add deleted default constructor?
-
-				root_program_elements_.Append( std::move(class_) );
-			}
-		}
-	}
 }
 
 void CppAstConsumer::EmitImplicitDefinitions(
