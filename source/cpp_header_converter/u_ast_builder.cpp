@@ -703,6 +703,7 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 	// Add some implicit typedefs.
 
 	const std::string size_t_name= "size_t";
+	const llvm::StringRef builtin_va_list_name= "__builtin_va_list";
 
 	for( const auto type : ast_context_.getTypes() )
 	{
@@ -718,9 +719,22 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 				{
 					named_declarations.emplace( size_t_name, decl );
 				}
-			}
 
-			// TODO - process __builtin_va_list
+				// Add implicit "__builtin_va_list".
+				if( decl->getName() == builtin_va_list_name )
+				{
+					std::cout << "Found " << builtin_va_list_name.str() << std::endl;
+					const auto builtin_va_list_name_translated= TranslateIdentifier( builtin_va_list_name );
+
+					if( named_function_declarations.count( builtin_va_list_name_translated ) == 0 &&
+						named_record_declarations.count( builtin_va_list_name_translated ) == 0 &&
+						named_declarations.count( builtin_va_list_name_translated ) == 0 )
+					{
+						std::cout << "Insert " << builtin_va_list_name_translated << std::endl;
+						named_declarations.emplace( builtin_va_list_name_translated, decl );
+					}
+				}
+			}
 		}
 
 	}
