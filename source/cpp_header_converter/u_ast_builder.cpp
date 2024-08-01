@@ -273,6 +273,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
+	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
+	{
+		// Normally we should create entries for typedes in types map.
+		// But if this doesn't work, use underlying type instead.
+		return TranslateType( *typedef_type->desugar().getTypePtr(), type_names_map );
+	}
 	else if( const auto atomic_type= llvm::dyn_cast<clang::AtomicType>(&in_type) )
 	{
 		// For now translate atomic types as underlying types.
