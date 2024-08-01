@@ -943,7 +943,12 @@ void CppAstConsumer::EmitRecord(
 		}
 		else
 		{
-			// TODO - add deleted constructors for forward declaration.
+			// Add deleted default constructor.
+			Synt::Function func(g_dummy_src_loc);
+			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
+			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
+
+			class_elements.Append( std::move(func) );
 		}
 
 		class_.elements= class_elements.Build();
@@ -992,7 +997,12 @@ void CppAstConsumer::EmitRecord(
 		}
 		else
 		{
-			// TODO - add deleted constructors for forward declaration.
+			// Add deleted default constructor.
+			Synt::Function func(g_dummy_src_loc);
+			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
+			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
+
+			class_elements.Append( std::move(func) );
 		}
 
 		class_.elements= class_elements.Build();
