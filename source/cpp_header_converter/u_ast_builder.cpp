@@ -1,3 +1,4 @@
+#include <unordered_set>
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclBase.h>

@@ -1,5 +1,6 @@
 #include <cctype>
 #include <cstring>
+#include <unordered_set>
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"

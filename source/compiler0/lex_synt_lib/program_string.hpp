@@ -1,9 +1,7 @@
 #pragma once
 #include <optional>
 #include <string>
-#include <vector>
 #include <unordered_map>
-#include <unordered_set>
 
 namespace U
 {
@@ -20,6 +18,5 @@ std::optional<uint32_t> Utf32PositionToUtf8Position( std::string_view text, uint
 
 template<class T>
 using ProgramStringMap= std::unordered_map< std::string, T >;
-using ProgramStringSet= std::unordered_set< std::string >;
 
 } // namespace U
