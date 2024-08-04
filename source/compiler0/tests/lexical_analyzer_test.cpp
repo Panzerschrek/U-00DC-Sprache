@@ -8,7 +8,7 @@ namespace U
 namespace
 {
 
-void TestLexResult( const char* const program_text, const Lexems& expected_result )
+void TestLexResult( const std::string_view program_text, const Lexems& expected_result )
 {
 	LexicalAnalysisResult lex_result = LexicalAnalysis( program_text );
 	if( !lex_result.lexems.empty() && lex_result.lexems.back().type == Lexem::Type::EndOfFile )

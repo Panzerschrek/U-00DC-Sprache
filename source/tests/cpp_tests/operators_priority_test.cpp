@@ -46,7 +46,7 @@ bool IsEqual<double>( const llvm::GenericValue& l, const llvm::GenericValue& r )
 
 template<class T, class Func>
 static void DoTest(
-	const char* const program_text,
+	const std::string_view program_text,
 	const Func& func,
 	const std::vector< std::vector<T> >& args_set )
 {
