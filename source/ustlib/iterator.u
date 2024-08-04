@@ -1,4 +1,3 @@
-import "composite.u"
 import "mixin_utils.u"
 import "optional.u"
 import "optional_ref.u"

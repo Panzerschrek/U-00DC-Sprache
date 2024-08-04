@@ -1,4 +1,3 @@
-import "helpers.u"
 import "ustlib_macros.u"
 
 namespace ust
@@ -81,7 +80,6 @@ fn hash( T& x ) : size_type
 	else
 	{
 		// Other kinds of types are not supported.
-		ignore_unused(x);
 		static_assert( false, "Unsupported type for hashing!" );
 		halt;
 	}
