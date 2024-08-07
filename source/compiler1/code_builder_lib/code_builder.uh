@@ -1366,11 +1366,12 @@ private:
 
 	// Store here mixin expansion results.
 	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
-	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::NamespaceElements/>/> namespace_mixin_expansions_;
-	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::ClassElements/>/> class_mixin_expansions_;
-	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::BlockElements/>/> block_mixin_expansions_;
-	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::TypeName/>/> type_name_mixin_expansions_;
-	ust::unordered_map</MixinExpansionKey, ust::shared_ptr_final</Synt::Expression/>/> expression_mixin_expansions_;
+	template</type T/> type MixinExpansionsMap</T/> = ust::unordered_map</ MixinExpansionKey, ust::shared_ptr_final</T/> />;
+	MixinExpansionsMap</Synt::NamespaceElements/> namespace_mixin_expansions_;
+	MixinExpansionsMap</Synt::ClassElements/> class_mixin_expansions_;
+	MixinExpansionsMap</Synt::BlockElements/> block_mixin_expansions_;
+	MixinExpansionsMap</Synt::TypeName/> type_name_mixin_expansions_;
+	MixinExpansionsMap</Synt::Expression/> expression_mixin_expansions_;
 
 	// Normalized file path to contents mapping.
 	ust::unordered_map</ ust::string8, ust::optional</ust::string8/> /> embed_cache_;

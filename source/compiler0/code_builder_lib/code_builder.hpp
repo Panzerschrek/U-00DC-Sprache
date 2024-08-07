@@ -1543,11 +1543,12 @@ private:
 	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
 	// Important note: unordered_map doesn't invalidate pointers/references to elements after new elements are inserted.
 	// This makes it safe to store somewhere pointers to elements of this container, assuming no elements are deleted.
-	std::unordered_map<MixinExpansionKey, Synt::ProgramElementsList, MixinExpansionKeyHasher> namespace_mixin_expansions_;
-	std::unordered_map<MixinExpansionKey, Synt::ClassElementsList, MixinExpansionKeyHasher> class_mixin_expansions_;
-	std::unordered_map<MixinExpansionKey, Synt::BlockElementsList, MixinExpansionKeyHasher> block_mixin_expansions_;
-	std::unordered_map<MixinExpansionKey, Synt::TypeName, MixinExpansionKeyHasher> type_name_mixin_expansions_;
-	std::unordered_map<MixinExpansionKey, Synt::Expression, MixinExpansionKeyHasher> expression_mixin_expansions_;
+	template<typename T> using MixinExpansionsMap= std::unordered_map<MixinExpansionKey, T, MixinExpansionKeyHasher>;
+	MixinExpansionsMap<Synt::ProgramElementsList> namespace_mixin_expansions_;
+	MixinExpansionsMap<Synt::ClassElementsList> class_mixin_expansions_;
+	MixinExpansionsMap<Synt::BlockElementsList> block_mixin_expansions_;
+	MixinExpansionsMap<Synt::TypeName> type_name_mixin_expansions_;
+	MixinExpansionsMap<Synt::Expression> expression_mixin_expansions_;
 
 	// Full file path to file contents map.
 	std::unordered_map<IVfs::Path, std::optional<IVfs::FileContent>> embed_files_cache_;
