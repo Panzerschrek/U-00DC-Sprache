@@ -331,10 +331,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var TypeTemplatesSet mut type_templates_set;
-	type_templates_set.syntax_elements.push_back( type_template );
-
-	names_scope.AddName( template_name, move(type_templates_set) );
+	names_scope.AddName( template_name, TypeTemplatesSet{ .syntax_elements= ust::make_array(type_template) } );
 
 	if( !class_type.empty() )
 	{
@@ -440,11 +437,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var GlobalStaticAssertsSet mut static_asserts_set;
-	static_asserts_set.push_back( static_asert );
-
 	auto mut lock= names_scope_ptr.lock_mut();
-	lock.deref().AddName( key, move(static_asserts_set) );
+	lock.deref().AddName( key, GlobalStaticAssertsSet( ust::make_array(static_asert) ) );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
@@ -509,11 +503,11 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, namespace_.deref().src_loc, name )
 	}
 
-	var NamesScopeValue mut names_scope_value( NamesScope( name, names_scope_ptr ) );
-	NamesScopeFill( names_scope_value.Get</NamesScope/>().try_to_non_nullable(), namespace_.deref().elements );
+	var NamesScopeMutPtr mut result_scope( NamesScope( name, names_scope_ptr ) );
+	NamesScopeFill( result_scope, namespace_.deref().elements );
 
 	auto mut lock= names_scope_ptr.lock_mut();
-	lock.deref().AddName( name, move(names_scope_value) );
+	lock.deref().AddName( name, move(result_scope) );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, u32 field_index )
@@ -707,8 +701,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		class_type.generated_class_data= base_template.try_take();
 	}
 
-	var NamesScopeValue mut names_scope_value( move(class_type) );
-	auto class_type_ptr= names_scope_value.Get</ClassType/>().try_to_non_nullable();
+	auto class_type_ptr= ust::make_shared_ptr( move(class_type) );
 
 	class_table_.push_back( class_type_ptr );
 
@@ -739,7 +732,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( class_name, move(names_scope_value) ).empty();
+		insert_not_ok= lock.deref().AddName( class_name, class_type_ptr ).empty();
 	}
 
 	if( insert_not_ok )
