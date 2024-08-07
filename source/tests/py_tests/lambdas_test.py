@@ -2596,3 +2596,51 @@ def AutoReturnTypeLambdaReferencePollution_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCallingConvention_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f = lambda() call_conv("C") {};
+			f();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCallingConvention_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f = lambda( i32 x ) call_conv("system") : i32 { return x * x; };
+			auto x2= f( 67 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def LambdaCallingConvention_Test2():
+	c_program_text= """
+		fn Foo( i32 y )
+		{
+			auto f = lambda[y]( i32 x ) call_conv("cold") : i32 { return x * y; };
+			auto r= f( 67 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooi", 56 )
+
+
+def LambdaCallingConvention_Test3():
+	c_program_text= """
+		fn Foo( i32 y )
+		{
+			auto f = lambda[y]( i32 x ) unsafe call_conv("fast") : i32 { return x * y; };
+			auto r= unsafe( f( -5 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooi", 56 )
