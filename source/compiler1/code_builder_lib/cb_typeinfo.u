@@ -449,18 +449,16 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8 mut name, bool is_main_class ) : ClassTypePtr
 {
 	var NamesScopeMutPtr class_members( NamesScope( move(name), root_namespace ) );
-	var TypeinfoClassDescription mut typeinfo_class_description{ .source_type = src_type, .is_main_class= is_main_class };
-	var ClassType mut class_type
-	{
-		.members= class_members,
-		.members_initial= class_members,
-		.generated_class_data( move(typeinfo_class_description) ),
-		.can_be_constexpr= true,
-	};
 
-	class_type.inner_references.push_back( InnerReferenceKind::Imut );
-
-	var ClassTypePtr class_type_ptr( move(class_type) );
+	auto class_type_ptr = ust::make_shared_ptr( ClassType
+		{
+			.members= class_members,
+			.members_initial= class_members,
+			.generated_class_data( TypeinfoClassDescription{ .source_type = src_type, .is_main_class= is_main_class } ),
+			.can_be_constexpr= true,
+			.inner_references= ust::make_array( InnerReferenceKind::Imut ),
+			.llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, g_null_string ) ),
+		} );
 
 	with( mut lock : class_members.lock_mut() )
 	{
@@ -471,11 +469,6 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 
 		// Add special member to names scope to identify it as class names scope.
 		lock.deref().SetClass( class_type_ptr );
-	}
-
-	with( mut lock : class_type_ptr.lock_mut() )
-	{
-		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, g_null_string ) );
 	}
 
 	typeinfo_class_table_.push_back( class_type_ptr );
@@ -686,18 +679,12 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
 {
 	var ust::vector</ ClassFieldForTypeinfo /> mut class_fields;
+	foreach( &member : class_type.lock_imut().deref().members.lock_imut().deref() )
 	{
-		auto class_members_ptr= class_type.lock_imut().deref().members;
-		auto class_members_lock= class_members_ptr.lock_imut();
-		var NamesScope& class_members= class_members_lock.deref();
-
-		foreach( &member : class_members )
+		auto field_ptr= member.value().Get</ClassField/>();
+		if( !field_ptr.empty() )
 		{
-			auto field_ptr= member.value().Get</ClassField/>();
-			if( !field_ptr.empty() )
-			{
-				class_fields.push_back( ClassFieldForTypeinfo{ .class_field= field_ptr.try_to_non_nullable(), .name= member.key() } );
-			}
+			class_fields.push_back( ClassFieldForTypeinfo{ .class_field= field_ptr.try_to_non_nullable(), .name= member.key() } );
 		}
 	}
 
@@ -813,10 +800,8 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 	var ust::vector</ClassInnerTypeForTypeinfo/> mut class_inner_types;
 	{
 		auto class_members_ptr= class_type.lock_imut().deref().members;
-		auto class_members_lock= class_members_ptr.lock_imut();
-		var NamesScope& class_members= class_members_lock.deref();
 
-		foreach( &class_member : class_members)
+		foreach( &class_member : class_members_ptr.lock_imut().deref() )
 		{
 			var Type mut t;
 
@@ -981,15 +966,12 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 {
 	debug_assert( element_types.size() == initializers.size(), "typeinfo list types/initializers size mismatch!" );
 
-	var TupleType mut tuple_type{ .element_types= move(element_types) };
-
-	auto mut element_llvm_types= tuple_type.element_types.iter().map( Type::GetLLVMType ).collect</ ust::vector />();
-
-	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
+	auto mut element_llvm_types= element_types.iter().map( Type::GetLLVMType ).collect</ ust::vector />();
+	var LLVMTypeRef tuple_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 
 	var Variable mut v
 	{
-		.t= move(tuple_type),
+		.t= TupleType{ .element_types= move(element_types), .llvm_type= tuple_llvm_type },
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
 		.name= "typeinfo_list", // TODO - set something more relevant?
