@@ -40,7 +40,7 @@ private:
 		} \
 		global_things_stack_.push_back( global_thing ); \
 	} \
-	GlobalsLoopsDetectorGuard glbals_loop_detector_guard( [this]{ global_things_stack_.pop_back(); } );
+	GlobalsLoopsDetectorGuard globals_loop_detector_guard( [this]{ global_things_stack_.pop_back(); } );
 
 void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
 {
