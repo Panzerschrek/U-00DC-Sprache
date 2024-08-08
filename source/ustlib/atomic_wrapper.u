@@ -15,12 +15,16 @@ public:
 	static_assert( typeinfo</T/>.is_fundamental && typeinfo</T/>.is_integer, "Only integer is_fundamental types are allowed in this class" );
 
 public:
-	// Consttruct this wrapper with a reference to mutable atomic variable.
+	// Construct this wrapper with a reference to mutable atomic variable.
 	// But result container will hold immutable logical reference
 	fn constructor( mut this, T &mut x ) @( reference_notation::pollution::param0_param_1_reference )
 		( ptr_= $<(x) )
 	{
 	}
+
+	// Allow copying.
+	fn constructor( mut this, this_type& other )= default;
+	op=( mut this, this_type& other )= default;
 
 	fn load( this ) : T
 	{
@@ -52,6 +56,8 @@ public:
 		return atomic_dec( unsafe( $>(ptr_) ) );
 	}
 
+private:
+	type this_type= atomic_wrapper</T/>;
 
 private:
 	// Use immutable tag in order to hold immutable logical reference.

@@ -1,6 +1,8 @@
 //##success_test
 import "../ustlib/assert.u"
 import "../ustlib/atomic_wrapper.u"
+import "../ustlib/stdout.u"
+import "../ustlib/string_conversions.u"
 
 fn nomangle main() : i32
 {
@@ -89,6 +91,19 @@ fn nomangle main() : i32
 
 		assert( w.dec() ==  98u );
 		assert( w.load() == 97u );
+	}
+	{ // Usage via multiple references.
+
+		var i32 mut x= 0;
+		var ust::atomic_wrapper</i32/> w0(x), w1(w0), w2(w1);
+
+		assert( w0.add(5) == 0 );
+		assert( w1.add(7) == 5 );
+		assert( w2.add(10) == 12 );
+		assert( w0.load() == 22 );
+		assert( w1.inc() == 22 );
+		assert( w2.dec() == 23 );
+		assert( w0.load() == 22 );
 	}
 
 	return 0;
