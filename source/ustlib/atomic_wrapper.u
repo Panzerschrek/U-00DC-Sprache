@@ -1,0 +1,36 @@
+import "atomic.u"
+import "container_utils.u"
+import "reference_notation.u"
+
+namespace ust
+{
+
+// A helper class for passing atomic variables to different threads.
+// It holds an immutable reference to given atomic variable, but allows to modify it by using some black-magic techniques.
+// It works for now only for types on which atomic operations are supported.
+template</type T/>
+class atomic_wrapper
+{
+public:
+	static_assert( typeinfo</T/>.is_fundamental && typeinfo</T/>.is_integer, "Only integer is_fundamental types are allowed in this class" );
+
+public:
+	// Consttruct this wrapper with a reference to mutable atomic variable.
+	// But result container will hold immutable logical reference
+	fn constructor( mut this, T &mut x ) @( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= $<(x) )
+	{
+	}
+
+	fn load( this ) : T
+	{
+		return atomic_read( unsafe( $>(ptr_) ) );
+	}
+
+private:
+	// Use immutable tag in order to hold immutable logical reference.
+	ReferenceContainerTag</ T, false /> container_tag_;
+	$(T) ptr_;
+}
+
+} // namespace ust

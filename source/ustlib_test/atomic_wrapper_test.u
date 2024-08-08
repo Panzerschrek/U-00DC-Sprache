@@ -1,0 +1,21 @@
+//##success_test
+import "../ustlib/assert.u"
+import "../ustlib/atomic_wrapper.u"
+
+fn nomangle main() : i32
+{
+	{ // Basic usage.
+		var i32 mut x= -6;
+		var ust::atomic_wrapper</i32/> w(x);
+		assert( w.load() == -6 );
+		assert( w.load() == -6 );
+	}
+	{ // Basic usage for unsigned integer.
+		var u32 mut x= 687u;
+		var ust::atomic_wrapper</u32/> w(x);
+		assert( w.load() == 687u );
+		assert( w.load() == 687u );
+	}
+
+	return 0;
+}
