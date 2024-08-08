@@ -16,6 +16,80 @@ fn nomangle main() : i32
 		assert( w.load() == 687u );
 		assert( w.load() == 687u );
 	}
+	{ // Basic load and store.
+
+		var i32 mut x= 9;
+
+		var ust::atomic_wrapper</i32/> w(x);
+		assert( w.load() == 9 );
+
+		w.store(78);
+		assert( w.load() == 78 );
+
+		w.store(-123);
+		assert( w.load() == -123 );
+	}
+	{ // Basic add.
+
+		var u32 mut x= 8u;
+
+		var ust::atomic_wrapper</u32/> w(x);
+		assert( w.load() == 8u );
+
+		assert( w.add( 7u ) == 8u );
+		assert( w.load() == 15u );
+
+		assert( w.add( 100u ) == 15u );
+		assert( w.load() == 115u );
+	}
+	{ // Basic sub.
+
+		var i32 mut x= 765;
+
+		var ust::atomic_wrapper</i32/> w(x);
+		assert( w.load() == 765 );
+
+		assert( w.sub( 5 ) == 765 );
+		assert( w.load() == 760 );
+
+		assert( w.sub( 60 ) == 760 );
+		assert( w.load() == 700 );
+
+		assert( w.sub( 1000 ) == 700 );
+		assert( w.load() == -300 );
+	}
+	{ // Basic inc.
+
+		var i32 mut x= -1;
+
+		var ust::atomic_wrapper</i32/> w(x);
+		assert( w.load() == -1 );
+
+		assert( w.inc() == -1 );
+		assert( w.load() == 0 );
+
+		assert( w.inc() ==  0 );
+		assert( w.load() == 1 );
+
+		assert( w.inc() ==  1 );
+		assert( w.load() == 2 );
+	}
+	{ // Basic dec.
+
+		var u32 mut x= 100u;
+
+		var ust::atomic_wrapper</u32/> w(x);
+		assert( w.load() == 100u );
+
+		assert( w.dec() == 100u );
+		assert( w.load() == 99u );
+
+		assert( w.dec() ==  99u );
+		assert( w.load() == 98u );
+
+		assert( w.dec() ==  98u );
+		assert( w.load() == 97u );
+	}
 
 	return 0;
 }

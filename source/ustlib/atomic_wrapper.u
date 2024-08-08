@@ -27,6 +27,32 @@ public:
 		return atomic_read( unsafe( $>(ptr_) ) );
 	}
 
+	fn store( this, T x )
+	{
+		atomic_write( unsafe( $>(ptr_) ), x );
+	}
+
+	fn add( this, T x ) : T
+	{
+		return atomic_add( unsafe( $>(ptr_) ), x );
+	}
+
+	fn sub( this, T x ) : T
+	{
+		return atomic_sub( unsafe( $>(ptr_) ), x );
+	}
+
+	fn inc( this ) : T
+	{
+		return atomic_inc( unsafe( $>(ptr_) ) );
+	}
+
+	fn dec( this ) : T
+	{
+		return atomic_dec( unsafe( $>(ptr_) ) );
+	}
+
+
 private:
 	// Use immutable tag in order to hold immutable logical reference.
 	ReferenceContainerTag</ T, false /> container_tag_;
