@@ -105,6 +105,26 @@ fn nomangle main() : i32
 		assert( w2.dec() == 23 );
 		assert( w0.load() == 22 );
 	}
+	{ // Creation function usage.
+		var i32 mut x= 0;
+		auto w= ust::make_atomic_wrapper(x);
+		assert( w.add(5) == 0 );
+		assert( w.sub(10) == 5 );
+		assert( w.load() == -5 );
+	}
+	{ // Usage via multiple references.
+
+		var u32 mut x= 128u;
+		auto w0= ust::make_atomic_wrapper(x);
+		auto w1= w0;
+
+		assert( w0.add(100u) == 128u );
+		assert( w1.sub(200u) == 228u );
+		assert( w0.load() == 28u );
+		assert( w1.load() == 28u );
+		w0.store( 12345u );
+		assert( w1.load() == 12345u );
+	}
 
 	return 0;
 }

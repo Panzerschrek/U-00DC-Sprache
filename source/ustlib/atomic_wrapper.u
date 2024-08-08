@@ -65,4 +65,11 @@ private:
 	$(T) ptr_;
 }
 
+// A helper function for atomic wrapper construction.
+template</type T/>
+fn make_atomic_wrapper( T &mut x ) : atomic_wrapper</T/> @( reference_notation::return_inner_references::param0 )
+{
+	return atomic_wrapper</T/>(x);
+}
+
 } // namespace ust
