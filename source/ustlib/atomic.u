@@ -2,7 +2,7 @@ namespace ust
 {
 
 // All atomic operations have strickest memory order - "sequentially consistent".
-// Use only 32-bit atomic operations, because its supported on all platforms.
+// Use only 32-bit atomic operations, because they are supported almost on all platforms.
 
 fn atomic_read( i32& addr ) : i32
 {
@@ -35,7 +35,7 @@ fn atomic_sub( u32 &mut x, u32 y ) : u32 { return atomic_add( x, -y ); }
 fn atomic_inc( u32 &mut x ) : u32 { return atomic_add( x,  1u ); }
 fn atomic_dec( u32 &mut x ) : u32 { return atomic_add( x, ~0u ); }
 
-// atomically compare 'expected' and 'dst'. If it's equals, set 'dst' to 'new', else - set 'expected' to content of 'dst'.
+// Aatomically compare 'expected' and 'dst'. If they are equal, set 'dst' to 'new', else - set 'expected' to content of 'dst'.
 // Returns true, if 'dst' == 'expected'.
 // "weak" versions may not write value, if 'dst' == 'expected'.
 fn atomic_compare_exchange_strong( i32 &mut dst, i32 &mut expected, i32 new ) : bool
