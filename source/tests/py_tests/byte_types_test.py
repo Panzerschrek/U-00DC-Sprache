@@ -215,7 +215,7 @@ def ByteTypesNonexistentOperations_Test3():
 		fn Foo()
 		{
 			var [i32, 128] arr= zero_init;
-			arr[b]; // Can't use byte types as array indeces.
+			arr[b]; // Can't use byte types as array indices.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

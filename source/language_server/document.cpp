@@ -133,7 +133,7 @@ Synt::MacrosByContextMap TakeMacrosFromImports( const SourceGraph& source_graph 
 	// Merge macroses of imported modules in order to parse document text properly.
 	Synt::MacrosByContextMap merged_macroses;
 
-	for( const size_t child_node_index : source_graph.nodes_storage.front().child_nodes_indeces )
+	for( const size_t child_node_index : source_graph.nodes_storage.front().child_nodes_indices )
 	{
 		for( const auto& context_macro_map_pair : *source_graph.nodes_storage[child_node_index].ast.macros )
 		{

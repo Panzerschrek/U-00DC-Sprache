@@ -164,7 +164,7 @@ fn nomangle main() : i32
 		halt if( i[1s] != 7 );
 		halt if( i[7s] != 1 );
 
-		i.swap( 2s, 2s ); // Does nothing, if indeces are equal.
+		i.swap( 2s, 2s ); // Does nothing, if indices are equal.
 	}
 	{ // "front" and "back"
 		var I32Vec mut i;

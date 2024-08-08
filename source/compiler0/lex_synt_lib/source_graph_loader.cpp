@@ -68,13 +68,13 @@ size_t LoadNode_r(
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
-	result.nodes_storage[node_index].child_nodes_indeces.resize( imports.size() );
+	result.nodes_storage[node_index].child_nodes_indices.resize( imports.size() );
 
 	std::vector<Synt::MacrosPtr> imported_macroses;
 
 	// Recursively load imports.
 	processed_files_stack.push_back( full_file_path );
-	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
+	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indices.size(); ++i )
 	{
 		const Synt::Import& import = imports[i];
 		const size_t child_node_index=
@@ -90,7 +90,7 @@ size_t LoadNode_r(
 		{
 			if( const Synt::MacrosPtr macro= result.nodes_storage[child_node_index].ast.macros; macro != nullptr )
 				imported_macroses.push_back( macro );
-			result.nodes_storage[node_index].child_nodes_indeces[i]= child_node_index;
+			result.nodes_storage[node_index].child_nodes_indices[i]= child_node_index;
 		}
 	}
 	processed_files_stack.pop_back();
@@ -183,8 +183,8 @@ SourceGraph LoadSourceGraph(
 		// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
 		// There is no reason to import prelude in all modules.
 		for( SourceGraph::Node& other_node : result.nodes_storage )
-			if( other_node.child_nodes_indeces.empty() )
-				other_node.child_nodes_indeces.push_back( prelude_node_index );
+			if( other_node.child_nodes_indices.empty() )
+				other_node.child_nodes_indices.push_back( prelude_node_index );
 
 		SourceGraph::Node prelude_node;
 		prelude_node.file_path= "compiler_generated_prelude";

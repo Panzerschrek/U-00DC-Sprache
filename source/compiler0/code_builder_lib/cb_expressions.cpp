@@ -393,7 +393,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return ErrorValue();
 		}
 
-		// For tuple indexing only constexpr indeces are valid.
+		// For tuple indexing only constexpr indices are valid.
 		if( index->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), indexation_operator.src_loc );

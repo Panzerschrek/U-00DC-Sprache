@@ -750,7 +750,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			root_class= next_root_class.try_to_non_nullable();
 		}
 
-		var [ LLVMValueRef, 2 ] mut offset_indeces
+		var [ LLVMValueRef, 2 ] mut offset_indices
 		[
 			GetZeroGEPIndex(),
 			CreateIndexValue(c_offset_field_number),
@@ -760,7 +760,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 				function_context.llvm_ir_builder,
 				root_class.lock_imut().deref().virtual_table_llvm_type,
 				virtual_table_ptr, // Reinterpretate this pointer as pointer to root table.
-				$<(offset_indeces[0]), 2u, g_null_string ) );
+				$<(offset_indices[0]), 2u, g_null_string ) );
 
 		auto offset_type= size_type_;
 		auto offset= CreateTypedLoad( function_context, offset_type, offset_ptr );

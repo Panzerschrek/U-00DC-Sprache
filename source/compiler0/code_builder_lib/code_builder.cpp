@@ -353,7 +353,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	result.names_map= std::make_unique<NamesScope>( "", nullptr );
 	result.names_map->SetErrors( global_errors_ );
 
-	if( source_graph_node.child_nodes_indeces.empty() )
+	if( source_graph_node.child_nodes_indices.empty() )
 	{
 		// Fill global names scope only for files with no imports.
 		// Files with imports should inherit contents of global namespace from imported files.
@@ -363,11 +363,11 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	U_ASSERT( node_index < source_graph.nodes_storage.size() );
 
 	// Build dependent nodes.
-	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+	for( const size_t child_node_inex : source_graph_node.child_nodes_indices )
 		BuildSourceGraphNode( source_graph, child_node_inex );
 
 	// Merge namespaces of imported files into one.
-	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+	for( const size_t child_node_inex : source_graph_node.child_nodes_indices )
 	{
 		const SourceBuildResult& child_node_build_result= compiled_sources_[ child_node_inex ];
 		MergeNameScopes( *result.names_map, *child_node_build_result.names_map, child_node_build_result.classes_members_namespaces_table );

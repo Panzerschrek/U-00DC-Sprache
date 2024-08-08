@@ -28,7 +28,7 @@ struct SourceGraph
 	{
 		IVfs::Path file_path; // normalized
 		std::string contents_hash;
-		std::vector<size_t> child_nodes_indeces;
+		std::vector<size_t> child_nodes_indices;
 		Synt::SyntaxAnalysisResult ast;
 		// Here can be placed cached module.
 	};
