@@ -125,6 +125,20 @@ fn nomangle main() : i32
 		w0.store( 12345u );
 		assert( w1.load() == 12345u );
 	}
+	{ // compare_exchange_strong
+		var i32 mut x= 111, mut y= 77;
+		auto w= ust::make_atomic_wrapper(x);
+		assert( !w.compare_exchange_strong( y, 7 ) );
+		assert( w.load() == 111 );
+		assert( y == 111 );
+	}
+	{ // compare_exchange_strong
+		var i32 mut x= 14, mut y= 14;
+		auto w= ust::make_atomic_wrapper(x);
+		assert( w.compare_exchange_strong( y, 85 ) );
+		assert( w.load() == 85 );
+		assert( y == 14 );
+	}
 
 	return 0;
 }

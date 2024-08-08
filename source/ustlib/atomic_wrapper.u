@@ -56,6 +56,16 @@ public:
 		return atomic_dec( unsafe( $>(ptr_) ) );
 	}
 
+	fn compare_exchange_strong( this, T &mut expected, T new ) : bool
+	{
+		return atomic_compare_exchange_strong( unsafe( $>(ptr_) ), expected, new );
+	}
+
+	fn compare_exchange_weak( this, T &mut expected, T new ) : bool
+	{
+		return atomic_compare_exchange_weak( unsafe( $>(ptr_) ), expected, new );
+	}
+
 private:
 	type this_type= atomic_wrapper</T/>;
 
