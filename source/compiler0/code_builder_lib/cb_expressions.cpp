@@ -2129,7 +2129,7 @@ Value CodeBuilder::AccessClassField(
 
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
 				{
-					if( std::get_if<TypeinfoClassDescription>( &field.class_->generated_class_data ) != nullptr && field_name == "type_id" )
+					if( std::holds_alternative<TypeinfoClassDescription>( field.class_->generated_class_data ) && field_name == "type_id" )
 					{
 						// HACK!
 						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.

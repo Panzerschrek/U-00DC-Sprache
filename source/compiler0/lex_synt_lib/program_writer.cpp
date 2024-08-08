@@ -714,9 +714,9 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 
 void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
 {
-	if( std::get_if<NonSyncTagNone>( &non_sync_tag ) != nullptr )
+	if( std::holds_alternative<NonSyncTagNone>( non_sync_tag ) )
 	{}
-	else if( std::get_if<NonSyncTagTrue>( &non_sync_tag ) != nullptr )
+	else if( std::holds_alternative<NonSyncTagTrue>( non_sync_tag ) )
 		stream << " " << Keyword( Keywords::non_sync_ );
 	else if( const auto expression_ptr = std::get_if< std::unique_ptr<const Expression> >( &non_sync_tag ) )
 	{
@@ -948,7 +948,7 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 	if( function.no_mangle )
 		stream << Keyword( Keywords::nomangle_ ) << " ";
 
-	if( std::get_if<EmptyVariant>(&function.condition) == nullptr )
+	if( !std::holds_alternative<EmptyVariant>(function.condition) )
 	{
 		stream << Keyword( Keywords::enable_if_ ) << "( ";
 		ElementWrite( function.condition, stream );

@@ -466,7 +466,7 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 
 const TemplateSignatureParam& CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( const OverloadingResolutionItem& item, const size_t param_index )
 {
-	if( std::get_if<const FunctionVariable*>( &item ) != nullptr )
+	if( std::holds_alternative<const FunctionVariable*>( item ) )
 		return g_dummy_template_signature_param;
 	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
 	{

@@ -414,7 +414,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 	if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
 	{
 		// Allow empty "yield" for async functions.
-		if( std::get_if<Synt::EmptyVariant>(&expression) == nullptr )
+		if( !std::holds_alternative<Synt::EmptyVariant>(expression) )
 			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names_scope.GetErrors(), src_loc );
 
 		CoroutineSuspend( names_scope, function_context, src_loc );
@@ -425,7 +425,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 
 	const Type& yield_type= coroutine_type_description->return_type;
 
-	if( std::get_if<Synt::EmptyVariant>(&expression) != nullptr )
+	if( std::holds_alternative<Synt::EmptyVariant>(expression) )
 	{
 		// Allow empty expression "yield" for void-return generators.
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )

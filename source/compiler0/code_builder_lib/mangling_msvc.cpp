@@ -407,13 +407,13 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( std::get_if< Class::BaseTemplate >( &class_type->generated_class_data ) != nullptr )
+		else if( std::holds_alternative< Class::BaseTemplate >( class_type->generated_class_data ) )
 		{
 			EncodeTemplateClassName( mangler_state, class_type );
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data ) != nullptr )
+		else if( std::holds_alternative< CoroutineTypeDescription >( class_type->generated_class_data ) )
 		{
 			EncodeCoroutineClassName( mangler_state, class_type );
 			// Finish list of name components.
@@ -675,12 +675,12 @@ void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const N
 
 	if( const ClassPtr the_class= names_scope.GetClass() )
 	{
-		if( std::get_if<Class::BaseTemplate>( &the_class->generated_class_data ) != nullptr )
+		if( std::holds_alternative<Class::BaseTemplate>( the_class->generated_class_data ) )
 		{
 			EncodeTemplateClassName( mangler_state, the_class );
 			return;
 		}
-		if(std::get_if<CoroutineTypeDescription>( &the_class->generated_class_data ) != nullptr )
+		if( std::holds_alternative<CoroutineTypeDescription>( the_class->generated_class_data ) )
 		{
 			EncodeCoroutineClassName( mangler_state, the_class );
 			return;

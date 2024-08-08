@@ -762,7 +762,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 				result_builder.Append( std::move( *type_template ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
 				result_builder.Append( std::move( *function_template ) );
-			else if( std::get_if<EmptyVariant>(&template_) )
+			else if( std::holds_alternative<EmptyVariant>(template_) )
 			{}
 			else
 			{
@@ -933,7 +933,7 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			auto call_result= ParseCall();
 			if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
 				call_operator->arguments= std::move(*args);
-			else if( std::get_if< SignatureHelpTag >( &call_result ) != nullptr )
+			else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 			{
 				auto signature_help_result= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
 				NextLexem();
@@ -1269,7 +1269,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 		{
 			Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
-			if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
+			if( std::holds_alternative<EmptyVariant>( macro_expression ) )
 				return EmptyVariant();
 
 			return macro_expression;
@@ -2068,7 +2068,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 				NextLexem();
 
 				Initializer initializer= ParseVariableInitializer();
-				if( std::get_if<EmptyVariant>(&initializer) != nullptr )
+				if( std::holds_alternative<EmptyVariant>(initializer) )
 					PushErrorMessage();
 				out_initializer.initializer= std::move(initializer);
 			}
@@ -2119,7 +2119,7 @@ Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 	auto call_result= ParseCall();
 	if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
 		result.arguments= std::move(*args);
-	else if( std::get_if< SignatureHelpTag >( &call_result ) != nullptr )
+	else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 	{
 		ConstructorInitializerSignatureHelp signature_help_result( it_->src_loc );
 		NextLexem();
@@ -2182,7 +2182,7 @@ VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 		NextLexem();
 
 		Initializer variable_initializer= ParseVariableInitializer();
-		if( std::get_if<EmptyVariant>( &variable_initializer ) == nullptr )
+		if( !std::holds_alternative<EmptyVariant>( variable_initializer ) )
 			variable_entry.initializer= std::make_unique<Initializer>( std::move(variable_initializer) );
 
 		if( it_->type == Lexem::Type::Comma )
@@ -3573,7 +3573,7 @@ Function SyntaxAnalyzer::ParseFunction()
 
 				NextLexem();
 				initializer= ParseVariableInitializer();
-				if( std::get_if<EmptyVariant>(&initializer) != nullptr )
+				if( std::holds_alternative<EmptyVariant>(initializer) )
 					PushErrorMessage();
 
 				if( it_->type == Lexem::Type::Comma )
@@ -3801,7 +3801,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			}
 
 			Initializer field_initializer= ParseVariableInitializer();
-			if( std::get_if<EmptyVariant>( &field_initializer ) == nullptr )
+			if( !std::holds_alternative<EmptyVariant>( field_initializer ) )
 				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
 			result_builder.Append( std::move( field ) );
@@ -4204,7 +4204,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 		case Macro::MatchElementKind::Expression:
 			{
 				const Expression expression= ParseExpression();
-				if( std::get_if<EmptyVariant>( &expression ) != nullptr )
+				if( std::holds_alternative<EmptyVariant>( expression ) )
 				{
 					push_macro_error();
 					return std::nullopt;

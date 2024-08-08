@@ -244,7 +244,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		const bool is_this=
 			&in_param == &function_type_name.params.front() &&
 			in_param.name == Keywords::this_ &&
-			std::get_if<Synt::EmptyVariant>(&in_param.type) != nullptr;
+			std::holds_alternative<Synt::EmptyVariant>(in_param.type);
 		if( is_this )
 		{
 			if( class_ == nullptr )

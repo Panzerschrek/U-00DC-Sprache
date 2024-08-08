@@ -240,7 +240,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_typeinfo", std::get_if<TypeinfoClassDescription>( &class_type->generated_class_data ) != nullptr );
+		add_bool_field( "is_typeinfo", std::holds_alternative<TypeinfoClassDescription>( class_type->generated_class_data ) );
 
 		if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 		{

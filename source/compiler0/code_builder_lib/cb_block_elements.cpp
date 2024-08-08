@@ -535,7 +535,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_info;
 	block_info.has_terminal_instruction_inside= true;
 
-	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression) != nullptr )
+	if( std::holds_alternative<Synt::EmptyVariant>(return_operator.expression) )
 	{
 		if( function_context.coro_suspend_bb != nullptr )
 		{
@@ -1061,7 +1061,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	if( std::get_if<Synt::EmptyVariant>( &c_style_for_operator.loop_condition ) != nullptr )
+	if( std::holds_alternative<Synt::EmptyVariant>( c_style_for_operator.loop_condition ) )
 		function_context.llvm_ir_builder.CreateBr( loop_block );
 	else
 	{
@@ -2076,7 +2076,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						for( size_t i= 0; i < 2; ++i )
 						{
 							const Synt::Expression& expression = i == 0 ? range->low : range->high;
-							if( std::get_if<Synt::EmptyVariant>( &expression ) != nullptr )
+							if( std::holds_alternative<Synt::EmptyVariant>( expression ) )
 								continue;
 
 							const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
@@ -2118,7 +2118,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					else U_ASSERT(false);
 				}
 			}
-			else if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
+			else if( std::holds_alternative<Synt::SwitchOperator::DefaultPlaceholder>( case_.values ) )
 			{
 				if( default_branch_synt_block != nullptr )
 				{
@@ -2296,7 +2296,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	for( size_t i= 0; i < switch_operator.cases.size(); ++i )
 	{
 		const Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
-		if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
+		if( std::holds_alternative<Synt::SwitchOperator::DefaultPlaceholder>( case_.values ) )
 		{
 			// Default branch - handle it later.
 			continue;

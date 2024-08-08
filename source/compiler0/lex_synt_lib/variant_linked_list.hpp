@@ -111,7 +111,7 @@ private:
 
 	static VariantElement* GetListTail( VariantElement& node )
 	{
-		if( std::get_if< EmptyNode >( &node.val ) != nullptr )
+		if( std::holds_alternative< EmptyNode >( node.val ) )
 			return &node;
 
 		return std::visit( [](auto& el ){ return GetListTailImpl(el); }, node.val );

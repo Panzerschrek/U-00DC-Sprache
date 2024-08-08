@@ -339,13 +339,13 @@ void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& nam
 {
 	if( const ClassPtr the_class= names_scope.GetClass() )
 	{
-		if( std::get_if<Class::BaseTemplate>( &the_class->generated_class_data ) != nullptr )
+		if( std::holds_alternative<Class::BaseTemplate>( the_class->generated_class_data ) )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
 			EncodeTemplateClassName( mangler_state, *the_class );
 			return;
 		}
-		else if( std::get_if<CoroutineTypeDescription>( &the_class->generated_class_data ) != nullptr )
+		else if( std::holds_alternative<CoroutineTypeDescription>( the_class->generated_class_data ) )
 		{
 			EncodeCoroutineType( mangler_state, the_class );
 			return;
@@ -662,7 +662,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 				EncodeTemplateArgs( mangler_state, typeinfo_pseudo_args );
 			}
 		}
-		else if( std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data ) != nullptr )
+		else if( std::holds_alternative< CoroutineTypeDescription >( class_type->generated_class_data ) )
 			EncodeCoroutineType( mangler_state, class_type );
 		else if( const auto base_template= std::get_if< Class::BaseTemplate >( &class_type->generated_class_data ) )
 		{

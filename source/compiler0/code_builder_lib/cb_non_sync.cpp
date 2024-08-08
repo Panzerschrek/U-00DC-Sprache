@@ -96,9 +96,9 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 		// Check "non_sync" tag existence first.
 		if( class_type->syntax_element != nullptr )
 		{
-			if( std::get_if<Synt::NonSyncTagNone>( &class_type->syntax_element->non_sync_tag ) != nullptr )
+			if( std::holds_alternative<Synt::NonSyncTagNone>( class_type->syntax_element->non_sync_tag ) )
 			{}
-			else if( std::get_if<Synt::NonSyncTagTrue>( &class_type->syntax_element->non_sync_tag ) != nullptr )
+			else if( std::holds_alternative<Synt::NonSyncTagTrue>( class_type->syntax_element->non_sync_tag ) )
 			{
 				prev_types_stack.pop_back();
 				return true;
@@ -191,9 +191,9 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 
 bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names_scope, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
 {
-	if( std::get_if<Synt::NonSyncTagNone>( &non_sync_tag ) != nullptr )
+	if( std::holds_alternative<Synt::NonSyncTagNone>( non_sync_tag ) )
 		return false;
-	if( std::get_if<Synt::NonSyncTagTrue>( &non_sync_tag ) != nullptr )
+	if( std::holds_alternative<Synt::NonSyncTagTrue>( non_sync_tag ) )
 		return true;
 	if( const auto expression_ptr= std::get_if< std::unique_ptr<const Synt::Expression> >( &non_sync_tag ) )
 		return EvaluateBoolConstantExpression( names_scope, function_context, **expression_ptr );

@@ -92,7 +92,7 @@ void CodeBuilder::PrepareTypeTemplate(
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags, signature_param.name ) );
 			global_function_context_->args_preevaluation_cache.clear();
 
-			if( std::get_if<Synt::EmptyVariant>( &signature_param.default_value ) == nullptr )
+			if( !std::holds_alternative<Synt::EmptyVariant>( signature_param.default_value ) )
 			{
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags, signature_param.default_value );
 				global_function_context_->args_preevaluation_cache.clear();

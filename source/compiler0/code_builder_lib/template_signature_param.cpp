@@ -136,17 +136,17 @@ TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplate template_ )
 
 bool TemplateSignatureParam::IsType() const
 {
-	return std::get_if<Type>( &something_ ) != nullptr;
+	return std::holds_alternative<Type>( something_ );
 }
 
 bool TemplateSignatureParam::IsVariable() const
 {
-	return std::get_if<Variable>( &something_ ) != nullptr;
+	return std::holds_alternative<Variable>( something_ );
 }
 
 bool TemplateSignatureParam::IsTemplateParam() const
 {
-	return std::get_if<TemplateParam>( &something_ ) != nullptr;
+	return std::holds_alternative<TemplateParam>( something_ );
 }
 
 const TemplateSignatureParam::Type* TemplateSignatureParam::GetType() const

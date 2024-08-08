@@ -1023,7 +1023,7 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr )
+	if( !std::holds_alternative<Synt::EmptyVariant>( func.condition ) )
 	{
 		const bool res= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition );
 		global_function_context_->args_preevaluation_cache.clear();
