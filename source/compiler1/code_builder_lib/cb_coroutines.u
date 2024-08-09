@@ -281,7 +281,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 	unsafe // Because a lot of llvm-calls.
 	{
-		var LLVMTypeRef mut pointer_type= LLVMPointerTypeInContext( llvm_context_, 0u );
+		var LLVMTypeRef pointer_type= LLVMPointerTypeInContext( llvm_context_, 0u );
 
 		var ClassTypePtr coroutine_class= function_context.function_type.return_type.GetClassType().try_deref();
 		var CoroutineTypeDescription coroutine_type_description= coroutine_class.lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();

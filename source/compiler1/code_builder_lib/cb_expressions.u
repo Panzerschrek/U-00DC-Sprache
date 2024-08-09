@@ -1654,7 +1654,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				return ErrorValue();
 			}
 
-			var LLVMValueRef mut index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+			var LLVMValueRef index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
 			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
 			if( index.constexpr_value != LLVMValueRef::Null )
 			{
@@ -2996,7 +2996,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		auto mut l_value_for_op= l_in_register;
+		auto l_value_for_op= l_in_register;
 		auto mut r_value_for_op= r_in_register;
 
 		result.t= l_type;
@@ -4271,7 +4271,7 @@ fn CodeBuilder::DoCallFunction(
 						auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_llvm_type, g_null_string ) );
 						CreateLifetimeStart( function_context, var_copy );
 
-						auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
+						auto value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
 						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
 
 						if( single_scalar_type == LLVMTypeRef::Null )
