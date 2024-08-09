@@ -5,6 +5,8 @@
 namespace U
 {
 
+struct VariantLinkedListEmptyNode{};
+
 // Single-direction (relaitvely) compact linked list of different type values.
 // Each value is stored in separate allocation.
 // Size is not stored.
@@ -35,8 +37,6 @@ public:
 	}
 
 private:
-	struct EmptyNode{}; // Indicate list end with it.
-
 	struct VariantElement;
 
 	template<typename T>
@@ -54,7 +54,7 @@ private:
 	// Such trick significantly reduces compilation type and debug binaries size.
 	struct VariantElement
 	{
-		std::variant< EmptyNode, NodePtr<ContainedTypes> ... > val;
+		std::variant< VariantLinkedListEmptyNode, NodePtr<ContainedTypes> ... > val;
 	};
 
 public:
@@ -107,17 +107,17 @@ private:
 		return GetListTail( node->next );
 	}
 
-	static VariantElement* GetListTailImpl( const EmptyNode& ) { return nullptr; }
+	static VariantElement* GetListTailImpl( const VariantLinkedListEmptyNode& ) { return nullptr; }
 
 	static VariantElement* GetListTail( VariantElement& node )
 	{
-		if( std::holds_alternative< EmptyNode >( node.val ) )
+		if( std::holds_alternative< VariantLinkedListEmptyNode >( node.val ) )
 			return &node;
 
 		return std::visit( [](auto& el ){ return GetListTailImpl(el); }, node.val );
 	}
 
-	static bool HasTailImpl( const EmptyNode& )
+	static bool HasTailImpl( const VariantLinkedListEmptyNode& )
 	{
 		return false;
 	}
@@ -125,11 +125,11 @@ private:
 	template<typename T>
 	static bool HasTailImpl( const NodePtr<T>& node )
 	{
-		return std::get_if< EmptyNode >( &node->next.val ) == nullptr;
+		return std::get_if< VariantLinkedListEmptyNode >( &node->next.val ) == nullptr;
 	}
 
 	template< typename Func >
-	static const VariantElement* IterElement( const EmptyNode&, Func& func )
+	static const VariantElement* IterElement( const VariantLinkedListEmptyNode&, Func& func )
 	{
 		(void)func;
 		return nullptr;
