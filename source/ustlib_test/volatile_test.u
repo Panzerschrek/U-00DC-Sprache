@@ -12,6 +12,25 @@ fn DoTest()
 	halt if( ust::volatile_read( x ) != T(33) );
 }
 
+template<//> type interer_type_for_byte_type</  byte8/> =   u8;
+template<//> type interer_type_for_byte_type</ byte16/> =  u16;
+template<//> type interer_type_for_byte_type</ byte32/> =  u32;
+template<//> type interer_type_for_byte_type</ byte64/> =  u64;
+template<//> type interer_type_for_byte_type</byte128/> = u128;
+
+template</type T/>
+fn DoBytesTest()
+{
+	type IntT= interer_type_for_byte_type</T/>;
+
+	var T mut x= zero_init;
+	ust::volatile_write( x, T(IntT(114)) );
+	ust::volatile_write( x, T(IntT(114)) );
+	ust::volatile_read( x );
+	ust::volatile_read( x );
+	halt if( ust::volatile_read( x ) != T(IntT(114)) );
+}
+
 fn nomangle main() : i32
 {
 	DoTest</  i8/>();
@@ -24,6 +43,12 @@ fn nomangle main() : i32
 	DoTest</ u64/>();
 	DoTest</i128/>();
 	DoTest</u128/>();
+
+	DoBytesTest</  byte8/>();
+	DoBytesTest</ byte16/>();
+	DoBytesTest</ byte32/>();
+	DoBytesTest</ byte64/>();
+	DoBytesTest</byte128/>();
 
 	return 0;
 }

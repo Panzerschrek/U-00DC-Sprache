@@ -23,6 +23,18 @@ fn volatile_write( u64 &mut addr,  u64 x) { ust_volatile_write_u64_impl ( addr, 
 fn volatile_write(i128 &mut addr, i128 x) { ust_volatile_write_i128_impl( addr, x ); }
 fn volatile_write(u128 &mut addr, u128 x) { ust_volatile_write_u128_impl( addr, x ); }
 
+fn volatile_read(  byte8& addr) :   byte8 { return ust_volatile_read_byte8_impl  ( addr ); }
+fn volatile_read( byte16& addr) :  byte16 { return ust_volatile_read_byte16_impl ( addr ); }
+fn volatile_read( byte32& addr) :  byte32 { return ust_volatile_read_byte32_impl ( addr ); }
+fn volatile_read( byte64& addr) :  byte64 { return ust_volatile_read_byte64_impl ( addr ); }
+fn volatile_read(byte128& addr) : byte128 { return ust_volatile_read_byte128_impl( addr ); }
+
+fn volatile_write(  byte8 &mut addr,   byte8 x) { ust_volatile_write_byte8_impl  ( addr, x ); }
+fn volatile_write( byte16 &mut addr,  byte16 x) { ust_volatile_write_byte16_impl ( addr, x ); }
+fn volatile_write( byte32 &mut addr,  byte32 x) { ust_volatile_write_byte32_impl ( addr, x ); }
+fn volatile_write( byte64 &mut addr,  byte64 x) { ust_volatile_write_byte64_impl ( addr, x ); }
+fn volatile_write(byte128 &mut addr, byte128 x) { ust_volatile_write_byte128_impl( addr, x ); }
+
 }
 
 // External implementation functions. Do not use directly!
@@ -48,3 +60,15 @@ fn nomangle ust_volatile_write_i64_impl ( i64 &mut addr,  i64 x);
 fn nomangle ust_volatile_write_u64_impl ( u64 &mut addr,  u64 x);
 fn nomangle ust_volatile_write_i128_impl(i128 &mut addr, i128 x);
 fn nomangle ust_volatile_write_u128_impl(u128 &mut addr, u128 x);
+
+fn nomangle ust_volatile_read_byte8_impl  (  byte8& addr) :   byte8;
+fn nomangle ust_volatile_read_byte16_impl ( byte16& addr) :  byte16;
+fn nomangle ust_volatile_read_byte32_impl ( byte32& addr) :  byte32;
+fn nomangle ust_volatile_read_byte64_impl ( byte64& addr) :  byte64;
+fn nomangle ust_volatile_read_byte128_impl(byte128& addr) : byte128;
+
+fn nomangle ust_volatile_write_byte8_impl  (  byte8 &mut addr,   byte8 x);
+fn nomangle ust_volatile_write_byte16_impl ( byte16 &mut addr,  byte16 x);
+fn nomangle ust_volatile_write_byte32_impl ( byte32 &mut addr,  byte32 x);
+fn nomangle ust_volatile_write_byte64_impl ( byte64 &mut addr,  byte64 x);
+fn nomangle ust_volatile_write_byte128_impl(byte128 &mut addr, byte128 x);
