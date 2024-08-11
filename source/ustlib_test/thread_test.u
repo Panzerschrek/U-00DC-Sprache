@@ -32,6 +32,17 @@ struct Incrementer
 	}
 }
 
+struct FloatMultiplier
+{
+	f32& f;
+	f32 x;
+
+	op()( this ) : f32
+	{
+		return f * x;
+	}
+}
+
 fn nomangle main() : i32
 {
 	{
@@ -118,6 +129,28 @@ fn nomangle main() : i32
 
 		threads.clear(); // Make join here.
 		halt if( ptr.lock_imut().deref() != 64 );
+	}
+	{
+		// Multiple concurrent threads with single reference to a stack variable.
+		var f32 mut v= 6.25f;
+
+		var ust::vector</ ust::thread</ FloatMultiplier, f32 /> /> mut threads;
+		if(false)
+		{
+			// Silence "Reference pollution for outer variables inside loop" error.
+			threads.push_back( ust::make_thread</f32/>( FloatMultiplier{ .f= v, .x= 0.0f } ) );
+		}
+
+		for( auto mut i= 0s; i < 16s; ++i )
+		{
+			threads.push_back( ust::make_thread</f32/>( FloatMultiplier{ .f= v, .x= f32(i) } ) );
+		}
+
+		for( var size_type mut i= 0s, i_end= threads.size(); i < i_end; ++i )
+		{
+			auto res= threads.pop_back().join();
+			halt if( res != f32(i_end - 1s - i) * v );
+		}
 	}
 
 	return 0;
