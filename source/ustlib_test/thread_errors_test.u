@@ -24,15 +24,26 @@ struct CallableObjectRegular
 fn nomangle main() : i32
 {
 	{ // Create thread with "non_sync"-marked function-object.
-		auto thread= ust::make_thread_void( CallableObject() ); //##expect_error TemplateContext
+		auto thread= ust::make_thread( CallableObject() ); //##expect_error TemplateContext
 	}
 	{ // Create thread with function-object, containing non-thread-safe shared_ptr class inside.
-		auto thread= ust::make_thread_void( CallableObjectShared() ); //##expect_error TemplateContext
+		auto thread= ust::make_thread( CallableObjectShared() ); //##expect_error TemplateContext
 	}
 	{
-		// thred should be moved in "join" call.
-		auto mut thread= ust::make_thread_void( CallableObjectRegular() );
+		// Thread should be moved in "join" call.
+		auto mut thread= ust::make_thread( CallableObjectRegular() );
 		thread.join(); //##expect_error CopyConstructValueOfNoncopyableType
+	}
+	{
+		var i32 mut x= 0;
+		auto mut thread= ust::make_thread( lambda[&]() { x= 55; } );
+		// Threads holds mutable reference to a value.
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{
+		var CallableObject non_sync_callable_object;
+		// Lambda captures a non-sync object by reference, which makes this lambda also non-sync.
+		ust::make_thread( lambda[&]() { non_sync_callable_object(); } ); //##expect_error TemplateContext
 	}
 
 	return 0;
