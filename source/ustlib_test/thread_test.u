@@ -47,7 +47,7 @@ fn nomangle main() : i32
 {
 	{
 		// Can create thread for function.
-		auto thread= ust::make_thread_void( Bar );
+		auto thread= ust::make_thread( Bar );
 	}
 	{
 		// Can create thread for callable object.
@@ -56,7 +56,7 @@ fn nomangle main() : i32
 		var CallableObject mut obj{ .x= x };
 
 		{
-			auto thread= ust::make_thread_void( move(obj) );
+			auto thread= ust::make_thread( move(obj) );
 			// While thread is alive, we can do something.
 			++y;
 		}
@@ -68,7 +68,7 @@ fn nomangle main() : i32
 		var IntShared x(0);
 		var i32 mut y= 0;
 
-		auto mut thread= ust::make_thread_void(
+		auto mut thread= ust::make_thread(
 			lambda[=]()
 			{
 				auto mut l= x.lock_mut();
@@ -81,7 +81,7 @@ fn nomangle main() : i32
 	}
 	{
 		// Can get result of thread.
-		auto mut thread= ust::make_thread</ i32 />( Get42 );
+		auto mut thread= ust::make_thread( Get42 );
 		var i32 res= move(thread).join();
 		halt if( res != 42 );
 	}
@@ -89,7 +89,7 @@ fn nomangle main() : i32
 		// Can create thread for lambda with captured reference.
 		var i32 mut y= 55, y_ref= y;
 
-		auto mut thread= ust::make_thread</i32/>(
+		auto mut thread= ust::make_thread(
 			lambda[&]() : i32
 			{
 				return y_ref * y_ref;
@@ -105,7 +105,7 @@ fn nomangle main() : i32
 		// Can create thread for lambda with captured mutable reference.
 		var i32 mut y= 0;
 
-		auto mut thread= ust::make_thread_void( lambda[&]() { y= 12345; } );
+		auto mut thread= ust::make_thread( lambda[&]() { y= 12345; } );
 
 		static_assert( typeinfo</typeof(thread)/>.reference_tag_count == 1s ); // Holds a reference.
 
@@ -121,7 +121,7 @@ fn nomangle main() : i32
 		while( i < 64s )
 		{
 			var Incrementer incrementer{ .ptr= ptr };
-			threads.push_back( ust::make_thread_void(incrementer) );
+			threads.push_back( ust::make_thread(incrementer) );
 			++i;
 		}
 
@@ -138,12 +138,12 @@ fn nomangle main() : i32
 		if(false)
 		{
 			// Silence "Reference pollution for outer variables inside loop" error.
-			threads.push_back( ust::make_thread</f32/>( FloatMultiplier{ .f= v, .x= 0.0f } ) );
+			threads.push_back( ust::make_thread( FloatMultiplier{ .f= v, .x= 0.0f } ) );
 		}
 
 		for( auto mut i= 0s; i < 16s; ++i )
 		{
-			threads.push_back( ust::make_thread</f32/>( FloatMultiplier{ .f= v, .x= f32(i) } ) );
+			threads.push_back( ust::make_thread( FloatMultiplier{ .f= v, .x= f32(i) } ) );
 		}
 
 		for( var size_type mut i= 0s, i_end= threads.size(); i < i_end; ++i )

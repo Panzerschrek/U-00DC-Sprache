@@ -99,18 +99,12 @@ private:
 	$(Impl) impl_;
 }
 
+// Thread creation helper.
+// Return type is deduced based on given function.
 template</ type Func />
-type thread_void= thread</ Func, void />;
-
-template</ type Func />
-fn make_thread_void( Func mut func ) : auto
-{
-	return thread_void</Func/>( move(func) );
-}
-
-template</ type ReturnType, type Func />
 fn make_thread( Func mut func ) : auto
 {
+	type ReturnType= typeof( func() );
 	return thread</ Func, ReturnType />( move(func) );
 }
 
