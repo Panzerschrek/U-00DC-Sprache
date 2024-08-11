@@ -109,13 +109,13 @@ template</ type Func />
 type thread_void= thread</ Func, void />;
 
 template</ type Func />
-fn make_thread_void( Func mut func ) : thread_void</Func/>
+fn make_thread_void( Func mut func ) : auto
 {
 	return thread_void</Func/>( move(func) );
 }
 
 template</ type ReturnType, type Func />
-fn make_thread( Func mut func ) : thread</ Func, ReturnType />
+fn make_thread( Func mut func ) : auto
 {
 	return thread</ Func, ReturnType />( move(func) );
 }

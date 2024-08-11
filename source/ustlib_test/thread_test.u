@@ -75,6 +75,23 @@ fn nomangle main() : i32
 		halt if( res != 42 );
 	}
 	{
+		// Can create thread for lambda with captured reference.
+		var i32 mut y= 55, y_ref= y;
+
+		auto mut thread= ust::make_thread</i32/>(
+			lambda[&]() : i32
+			{
+				return y_ref * y_ref;
+			} );
+
+		static_assert( typeinfo</typeof(thread)/>.reference_tag_count == 1s ); // Holds a reference.
+
+		auto res= move(thread).join();
+
+		halt if( res != 55 * 55 );
+	}
+	{
+		// Multiple concurrent threads.
 		var IntShared ptr(0);
 		var size_type mut i(0);
 		var ust::vector</ ust::thread</ Incrementer, void /> /> mut threads;
