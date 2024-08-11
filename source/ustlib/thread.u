@@ -51,6 +51,7 @@ public:
 		auto res= unsafe( $>(impl_) ).result.try_take();
 
 		// Free and zero Impl in order to avoid doing this in destructor.
+		unsafe( call_destructor( $>(impl_) ) );
 		unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
 		impl_= nullptr</Impl/>();
 
@@ -63,6 +64,7 @@ public:
 		{
 			// Join it and free Impl if it wasn't done previously.
 			halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
+			unsafe( call_destructor( $>(impl_) ) );
 			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
 		}
 	}
