@@ -41,7 +41,7 @@ public:
 	// Implement "join" as byval this-call method to enforce user to move thread to join it and avoid calling "join" again.
 	fn join( byval mut this ) : ResultType
 	{
-		join_impl();
+		halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
 
 		auto res= unsafe( $>(impl_) ).result.try_take();
 
@@ -55,7 +55,7 @@ public:
 	{
 		if( impl_ != nullptr</Impl/>() )
 		{
-			join_impl();
+			halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
 			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
 		}
 	}
@@ -79,7 +79,6 @@ private:
 	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
 
 private:
-
 	fn thread_function( $(byte8) impl_ptr ) : $(byte8)
 	{
 		unsafe
@@ -91,11 +90,6 @@ private:
 
 			return nullptr</byte8/>();
 		}
-	}
-
-	fn join_impl( mut this )
-	{
-		halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
 	}
 
 private:
