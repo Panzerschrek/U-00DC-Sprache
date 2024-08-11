@@ -1,4 +1,4 @@
-import "box_nullable.u"
+import "alloc.u"
 import "container_utils.u"
 import "optional.u"
 import "pthread.u"
@@ -14,15 +14,18 @@ class thread
 	static_assert( !non_sync</Func/>, "passing non_sync functor into another thread" );
 
 public:
-	fn constructor( mut this, Func mut func )
-	( impl_( Impl(move(func)) ) )
+	fn constructor( mut this, Func mut func ) @(c_param1_pollution)
+	( impl_= zero_init )
 	{
 		unsafe
 		{
+			impl_= $<( cast_ref_unsafe</Impl/>( memory_allocate( typeinfo</Impl/>.size_of ) ) );
+			var Impl &mut impl= $>(impl_);
+
+			move_into_uninitialized( impl, Impl( move(func) ) );
+
 			var pthread_attr_t mut attr= zero_init;
 			var pthread_t mut thread_id(0);
-
-			auto &mut impl= impl_.try_deref();
 
 			halt if( pthread_attr_init( attr ) != 0 );
 			halt if( pthread_create( thread_id, attr, thread_function, $<( cast_ref_unsafe</byte8/>(impl) ) ) != 0 );
@@ -39,16 +42,21 @@ public:
 	fn join( byval mut this ) : ResultType
 	{
 		join_impl();
-		auto res= impl_.try_deref().result.try_take();
-		impl_.reset();
+
+		auto res= unsafe( $>(impl_) ).result.try_take();
+
+		unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
+		impl_= nullptr</Impl/>();
+
 		return res;
 	}
 
 	fn destructor()
 	{
-		if( !impl_.empty() )
+		if( impl_ != nullptr</Impl/>() )
 		{
 			join_impl();
+			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
 		}
 	}
 
@@ -60,8 +68,17 @@ private:
 		optional</ResultType/> result;
 		pthread_t thread_id(0);
 
-		fn constructor( Func mut in_func ) ( func(move(in_func)) ) {}
+		fn constructor( Func mut in_func ) @(c_param1_pollution)
+			( func(move(in_func)) )
+		{}
 	}
+
+	auto constexpr c_reference_tag_count= typeinfo</Func/>.reference_tag_count;
+	static_assert( typeinfo</Func/>.reference_tag_count == typeinfo</Impl/>.reference_tag_count );
+
+	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
+
+private:
 
 	fn thread_function( $(byte8) impl_ptr ) : $(byte8)
 	{
@@ -78,12 +95,14 @@ private:
 
 	fn join_impl( mut this )
 	{
-		halt if( unsafe( pthread_join( impl_.try_deref().thread_id, nullptr</$(byte8)/>() ) ) != 0 );
+		halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
 	}
 
 private:
-	// Store content inside box, because we send raw pointer to it to thread function.
-	box_nullable</Impl/> impl_;
+	ContainerTag</Impl/> container_tag_;
+
+	// Store content indirectly, because we send raw pointer to it to thread function.
+	$(Impl) impl_;
 }
 
 template</ type Func />
