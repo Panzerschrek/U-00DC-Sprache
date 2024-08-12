@@ -130,6 +130,18 @@ def TypeofHasNoEffects_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def TypeofHasNoEffects_Test1():
+	c_program_text= """
+		fn Foo() : auto
+		{
+			var i32 mut x= 67;
+			type ReturnT= typeof( move(x) ); // Move inside typeof doesn't count.
+			return ReturnT( x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def Typeof_ChecksExpression_Test0():
 	c_program_text= """
 		type T= typeof( CallUnknownFunction() );
