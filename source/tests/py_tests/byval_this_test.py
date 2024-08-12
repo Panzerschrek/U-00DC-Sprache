@@ -516,6 +516,26 @@ def ByValThisErrors_Test11():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
 
 
+def ByValThisErrors_Test12():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			fn Foo( byval this ) : i32 { return x; }
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn Foo()
+		{
+			var S mut s{ .x= 87223 };
+			type T= typeof( s.Foo() ); // Error here - try copy-constructing "s" in non-move call inside "typeof".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 12 ) )
+
+
 def ByvalThisForConstructorOrDestructor_Test0():
 	c_program_text= """
 		struct S

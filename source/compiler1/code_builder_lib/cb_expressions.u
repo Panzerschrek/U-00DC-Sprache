@@ -4290,6 +4290,13 @@ fn CodeBuilder::DoCallFunction(
 							lock.deref().llvm_value= var_copy;
 						}
 					}
+					else
+					{
+						if( !expected_arg_type.IsCopyConstructible() )
+						{
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, expected_arg_type )
+						}
+					}
 
 					with( &mut lock : arg_node.lock_mut() )
 					{
