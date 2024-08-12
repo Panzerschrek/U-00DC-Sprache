@@ -21,6 +21,12 @@ struct CallableObjectRegular
 	{}
 }
 
+struct CallableObjectMutThis
+{
+	op()( mut this )
+	{}
+}
+
 fn nomangle main() : i32
 {
 	{ // Create thread with "non_sync"-marked function-object.
@@ -44,6 +50,10 @@ fn nomangle main() : i32
 		var CallableObject non_sync_callable_object;
 		// Lambda captures a non-sync object by reference, which makes this lambda also non-sync.
 		ust::make_thread( lambda[&]() { non_sync_callable_object(); } ); //##expect_error TemplateContext
+	}
+	{
+		// Can't create thread for function with "mut this" op().
+		ust::make_thread( CallableObjectMutThis() ); //##expect_error TemplateContext
 	}
 
 	return 0;

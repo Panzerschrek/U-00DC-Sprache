@@ -10,7 +10,7 @@ type IntShared= ust::shared_ptr_mt_mut</i32/>;
 struct CallableObject
 {
 	IntShared x;
-	op()( mut this )
+	op()( this )
 	{
 		auto mut l= x.lock_mut();
 		++l.deref();
@@ -25,7 +25,7 @@ fn Get42() : i32
 struct Incrementer
 {
 	IntShared ptr;
-	op()( mut this )
+	op()( this )
 	{
 		auto mut lock= ptr.lock_mut();
 		++lock.deref();
@@ -42,6 +42,43 @@ struct FloatMultiplier
 		return f * x;
 	}
 }
+
+class NonCopyableFunctor
+{
+public:
+	fn constructor( u32 x )
+		( x_= x )
+	{}
+
+	op()( this ) : u32
+	{
+		return x_ * x_ + 2u * x_;
+	}
+
+private:
+	u32 x_;
+}
+
+static_assert( !typeinfo</NonCopyableFunctor/>.is_copy_constructible );
+
+
+class NonCopyableByvalThisFunctor
+{
+public:
+	fn constructor( f64 x )
+		( x_= x )
+	{}
+
+	op()( byval mut this ) : f64
+	{
+		return x_ * x_ + 2.0 * x_;
+	}
+
+private:
+	f64 x_;
+}
+
+static_assert( !typeinfo</NonCopyableByvalThisFunctor/>.is_copy_constructible );
 
 fn nomangle main() : i32
 {
@@ -112,6 +149,22 @@ fn nomangle main() : i32
 		move(thread).join();
 
 		halt if( y != 12345 );
+	}
+	{
+		// Can create thread for non-copyable functional object.
+
+		auto mut thread= ust::make_thread( NonCopyableFunctor( 786u ) );
+		var u32 res= move(thread).join();
+
+		halt if( res != 786u * 786u + 2u * 786u );
+	}
+	{
+		// Can create thread for non-copyable "byval this" functional object.
+
+		auto mut thread= ust::make_thread( NonCopyableByvalThisFunctor( -7.0 ) );
+		var f64 res= move(thread).join();
+
+		halt if( res != (-7.0) * (-7.0) + 2.0 * (-7.0) );
 	}
 	{
 		// Multiple concurrent threads.
