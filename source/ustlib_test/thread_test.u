@@ -10,7 +10,7 @@ type IntShared= ust::shared_ptr_mt_mut</i32/>;
 struct CallableObject
 {
 	IntShared x;
-	op()( mut this )
+	op()( this )
 	{
 		auto mut l= x.lock_mut();
 		++l.deref();
@@ -25,18 +25,66 @@ fn Get42() : i32
 struct Incrementer
 {
 	IntShared ptr;
-	op()( mut this )
+	op()( this )
 	{
 		auto mut lock= ptr.lock_mut();
 		++lock.deref();
 	}
 }
 
+struct FloatMultiplier
+{
+	f32& f;
+	f32 x;
+
+	op()( this ) : f32
+	{
+		return f * x;
+	}
+}
+
+class NonCopyableFunctor
+{
+public:
+	fn constructor( u32 x )
+		( x_= x )
+	{}
+
+	op()( this ) : u32
+	{
+		return x_ * x_ + 2u * x_;
+	}
+
+private:
+	u32 x_;
+}
+
+static_assert( !typeinfo</NonCopyableFunctor/>.is_copy_constructible );
+
+
+class NonCopyableByvalThisFunctor
+{
+public:
+	fn constructor( f64 x )
+		( x_= x )
+	{}
+
+	op()( byval mut this ) : f64
+	{
+		return x_ * x_ + 2.0 * x_;
+	}
+
+private:
+	f64 x_;
+}
+
+static_assert( !typeinfo</NonCopyableByvalThisFunctor/>.is_copy_constructible );
+
 fn nomangle main() : i32
 {
 	{
 		// Can create thread for function.
-		auto thread= ust::make_thread_void( Bar );
+		auto thread= ust::make_thread( Bar );
 	}
 	{
 		// Can create thread for callable object.
@@ -45,7 +93,7 @@ fn nomangle main() : i32
 		var CallableObject mut obj{ .x= x };
 
 		{
-			auto thread= ust::make_thread_void( move(obj) );
+			auto thread= ust::make_thread( move(obj) );
 			// While thread is alive, we can do something.
 			++y;
 		}
@@ -57,7 +105,7 @@ fn nomangle main() : i32
 		var IntShared x(0);
 		var i32 mut y= 0;
 
-		auto mut thread= ust::make_thread_void(
+		auto mut thread= ust::make_thread(
 			lambda[=]()
 			{
 				auto mut l= x.lock_mut();
@@ -70,18 +118,63 @@ fn nomangle main() : i32
 	}
 	{
 		// Can get result of thread.
-		auto mut thread= ust::make_thread</ i32 />( Get42 );
+		auto mut thread= ust::make_thread( Get42 );
 		var i32 res= move(thread).join();
 		halt if( res != 42 );
 	}
 	{
+		// Can create thread for lambda with captured reference.
+		var i32 mut y= 55, y_ref= y;
+
+		auto mut thread= ust::make_thread(
+			lambda[&]() : i32
+			{
+				return y_ref * y_ref;
+			} );
+
+		static_assert( typeinfo</typeof(thread)/>.reference_tag_count == 1s ); // Holds a reference.
+
+		auto res= move(thread).join();
+
+		halt if( res != 55 * 55 );
+	}
+	{
+		// Can create thread for lambda with captured mutable reference.
+		var i32 mut y= 0;
+
+		auto mut thread= ust::make_thread( lambda[&]() { y= 12345; } );
+
+		static_assert( typeinfo</typeof(thread)/>.reference_tag_count == 1s ); // Holds a reference.
+
+		move(thread).join();
+
+		halt if( y != 12345 );
+	}
+	{
+		// Can create thread for non-copyable functional object.
+
+		auto mut thread= ust::make_thread( NonCopyableFunctor( 786u ) );
+		var u32 res= move(thread).join();
+
+		halt if( res != 786u * 786u + 2u * 786u );
+	}
+	{
+		// Can create thread for non-copyable "byval this" functional object.
+
+		auto mut thread= ust::make_thread( NonCopyableByvalThisFunctor( -7.0 ) );
+		var f64 res= move(thread).join();
+
+		halt if( res != (-7.0) * (-7.0) + 2.0 * (-7.0) );
+	}
+	{
+		// Multiple concurrent threads.
 		var IntShared ptr(0);
 		var size_type mut i(0);
 		var ust::vector</ ust::thread</ Incrementer, void /> /> mut threads;
 		while( i < 64s )
 		{
 			var Incrementer incrementer{ .ptr= ptr };
-			threads.push_back( ust::make_thread_void(incrementer) );
+			threads.push_back( ust::make_thread(incrementer) );
 			++i;
 		}
 
@@ -89,6 +182,28 @@ fn nomangle main() : i32
 
 		threads.clear(); // Make join here.
 		halt if( ptr.lock_imut().deref() != 64 );
+	}
+	{
+		// Multiple concurrent threads with single reference to a stack variable.
+		var f32 mut v= 6.25f;
+
+		var ust::vector</ ust::thread</ FloatMultiplier, f32 /> /> mut threads;
+		if(false)
+		{
+			// Silence "Reference pollution for outer variables inside loop" error.
+			threads.push_back( ust::make_thread( FloatMultiplier{ .f= v, .x= 0.0f } ) );
+		}
+
+		for( auto mut i= 0s; i < 16s; ++i )
+		{
+			threads.push_back( ust::make_thread( FloatMultiplier{ .f= v, .x= f32(i) } ) );
+		}
+
+		for( var size_type mut i= 0s, i_end= threads.size(); i < i_end; ++i )
+		{
+			auto res= threads.pop_back().join();
+			halt if( res != f32(i_end - 1s - i) * v );
+		}
 	}
 
 	return 0;

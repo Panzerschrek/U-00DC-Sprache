@@ -1,4 +1,4 @@
-import "box_nullable.u"
+import "alloc.u"
 import "container_utils.u"
 import "optional.u"
 import "pthread.u"
@@ -7,6 +7,11 @@ namespace ust
 {
 
 // Implementation of thread class, using "pthreads" library.
+// Given functor should be callable via ().
+// Functor classes should have op() with "byval this" or "imut this".
+// Function pointers are also supported.
+// This class supports function-like objects returning values (references for now are not supported).
+// Functors storing references inside are supported.
 
 template</ type Func, type ResultType />
 class thread
@@ -14,15 +19,19 @@ class thread
 	static_assert( !non_sync</Func/>, "passing non_sync functor into another thread" );
 
 public:
-	fn constructor( mut this, Func mut func )
-	( impl_( Impl(move(func)) ) )
+	fn constructor( mut this, Func mut func ) @(c_constructor_pollution)
+	( impl_= nullptr</Impl/>() )
 	{
 		unsafe
 		{
+			// Allocate and initialize Impl.
+			impl_= $<( cast_ref_unsafe</Impl/>( memory_allocate( typeinfo</Impl/>.size_of ) ) );
+			var Impl &mut impl= $>(impl_);
+			move_into_uninitialized( impl, Impl( move(func) ) );
+
+			// Create system thread.
 			var pthread_attr_t mut attr= zero_init;
 			var pthread_t mut thread_id(0);
-
-			auto &mut impl= impl_.try_deref();
 
 			halt if( pthread_attr_init( attr ) != 0 );
 			halt if( pthread_create( thread_id, attr, thread_function, $<( cast_ref_unsafe</byte8/>(impl) ) ) != 0 );
@@ -32,23 +41,33 @@ public:
 		}
 	}
 
+	// Thread class is obviously non-copyable.
 	fn constructor( mut this, this_type &imut other )= delete;
 	op=( mut this, this_type &imut other )= delete;
 
 	// Implement "join" as byval this-call method to enforce user to move thread to join it and avoid calling "join" again.
 	fn join( byval mut this ) : ResultType
 	{
-		join_impl();
-		auto res= impl_.try_deref().result.try_take();
-		impl_.reset();
+		halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
+
+		auto res= unsafe( $>(impl_) ).result.try_take();
+
+		// Free and zero Impl in order to avoid doing this in destructor.
+		unsafe( call_destructor( $>(impl_) ) );
+		unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
+		impl_= nullptr</Impl/>();
+
 		return res;
 	}
 
 	fn destructor()
 	{
-		if( !impl_.empty() )
+		if( impl_ != nullptr</Impl/>() )
 		{
-			join_impl();
+			// Join it and free Impl if it wasn't done previously.
+			halt if( unsafe( pthread_join( $>(impl_).thread_id, nullptr</$(byte8)/>() ) ) != 0 );
+			unsafe( call_destructor( $>(impl_) ) );
+			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(impl_) ) ) );
 		}
 	}
 
@@ -56,48 +75,45 @@ private:
 	type this_type= thread</ Func, ResultType />;
 	struct Impl
 	{
-		Func func;
+		optional</Func/> func;
 		optional</ResultType/> result;
 		pthread_t thread_id(0);
 
-		fn constructor( Func mut in_func ) ( func(move(in_func)) ) {}
+		fn constructor( Func mut in_func ) @(c_constructor_pollution)
+			( func(move(in_func)) )
+		{}
 	}
 
+	auto constexpr c_reference_tag_count= typeinfo</Func/>.reference_tag_count;
+	static_assert( typeinfo</Func/>.reference_tag_count == typeinfo</Impl/>.reference_tag_count );
+
+	auto c_constructor_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
+
+private:
 	fn thread_function( $(byte8) impl_ptr ) : $(byte8)
 	{
-		unsafe
-		{
-			auto &mut impl= cast_ref_unsafe</Impl/>( $>(impl_ptr) );
+		var Impl &mut impl= unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) );
 
-			auto mut res= impl.func();
-			impl.result.reset( move(res) );
+		// Move function in call to support non-copyable byval functors.
+		// Function is destroyed just after call.
+		impl.result.reset( impl.func.try_take()() );
 
-			return nullptr</byte8/>();
-		}
-	}
-
-	fn join_impl( mut this )
-	{
-		halt if( unsafe( pthread_join( impl_.try_deref().thread_id, nullptr</$(byte8)/>() ) ) != 0 );
+		return nullptr</byte8/>();
 	}
 
 private:
-	// Store content inside box, because we send raw pointer to it to thread function.
-	box_nullable</Impl/> impl_;
+	ContainerTag</Impl/> container_tag_;
+
+	// Store content indirectly, because we send raw pointer to it to thread function.
+	$(Impl) impl_;
 }
 
+// Thread creation helper.
+// Return type is deduced based on given function.
 template</ type Func />
-type thread_void= thread</ Func, void />;
-
-template</ type Func />
-fn make_thread_void( Func mut func ) : thread_void</Func/>
+fn make_thread( Func mut func ) : auto
 {
-	return thread_void</Func/>( move(func) );
-}
-
-template</ type ReturnType, type Func />
-fn make_thread( Func mut func ) : thread</ Func, ReturnType />
-{
+	type ReturnType= typeof( move(func)() );
 	return thread</ Func, ReturnType />( move(func) );
 }
 
