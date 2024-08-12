@@ -31,7 +31,7 @@ def main():
 		"await_operator_test",
 		"break_from_block_test",
 		"byte_types_test",
-		"byval_this",
+		"byval_this_test",
 		"c_style_for_operator_test",
 		"char_arrays_concatenation_test",
 		"char_literals_test",
