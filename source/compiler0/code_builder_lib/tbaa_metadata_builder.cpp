@@ -43,6 +43,10 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	type_descriptors_.i128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i128_ ) ), type_descriptors_.byte128_ );
 	type_descriptors_.u128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u128_ ) ), type_descriptors_.byte128_ );
 
+	const auto base_256_integer= type_descriptors_.byte128_; // TODO - crete byte256?
+	type_descriptors_.i256_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i256_ ) ), base_256_integer );
+	type_descriptors_.u256_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u256_ ) ), base_256_integer );
+
 	type_descriptors_.ssize_type_=
 		md_builder_.createTBAAScalarTypeNode(
 			StringViewToStringRef( Keyword( Keywords::ssize_type_ ) ),
@@ -149,6 +153,8 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 	case U_FundamentalType::u64_ : return type_descriptors_.u64_ ;
 	case U_FundamentalType::i128_: return type_descriptors_.i128_;
 	case U_FundamentalType::u128_: return type_descriptors_.u128_;
+	case U_FundamentalType::i256_: return type_descriptors_.i256_;
+	case U_FundamentalType::u256_: return type_descriptors_.u256_;
 	case U_FundamentalType::ssize_type_: return type_descriptors_.ssize_type_;
 	case U_FundamentalType::size_type_ : return type_descriptors_.size_type_ ;
 	case U_FundamentalType::f32_: return type_descriptors_.f32_;
@@ -186,6 +192,9 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 		return type_descriptors_.byte64_ ;
 	case U_FundamentalType::i128_:
 	case U_FundamentalType::u128_:
+		return type_descriptors_.byte128_;
+	case U_FundamentalType::i256_:
+	case U_FundamentalType::u256_:
 		return type_descriptors_.byte128_;
 	case U_FundamentalType::ssize_type_:
 	case U_FundamentalType::size_type_ :

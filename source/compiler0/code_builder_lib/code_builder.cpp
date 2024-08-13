@@ -125,6 +125,8 @@ CodeBuilder::CodeBuilder(
 	fundamental_llvm_types_.u64_ = llvm::Type::getInt64Ty ( llvm_context_ );
 	fundamental_llvm_types_.i128_= llvm::Type::getInt128Ty( llvm_context_ );
 	fundamental_llvm_types_.u128_= llvm::Type::getInt128Ty( llvm_context_ );
+	fundamental_llvm_types_.i256_= llvm::Type::getIntNTy( llvm_context_, 256 );
+	fundamental_llvm_types_.u256_= llvm::Type::getIntNTy( llvm_context_, 256 );
 
 	fundamental_llvm_types_.f32_= llvm::Type::getFloatTy( llvm_context_ );
 	fundamental_llvm_types_.f64_= llvm::Type::getDoubleTy( llvm_context_ );
@@ -1985,6 +1987,8 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	case U_FundamentalType::u64_ : return fundamental_llvm_types_.u64_ ;
 	case U_FundamentalType::i128_: return fundamental_llvm_types_.i128_;
 	case U_FundamentalType::u128_: return fundamental_llvm_types_.u128_;
+	case U_FundamentalType::i256_: return fundamental_llvm_types_.i256_;
+	case U_FundamentalType::u256_: return fundamental_llvm_types_.u256_;
 	case U_FundamentalType::ssize_type_: return fundamental_llvm_types_.ssize_type_;
 	case U_FundamentalType::size_type_ : return fundamental_llvm_types_.size_type_ ;
 	case U_FundamentalType::f32_: return fundamental_llvm_types_.f32_;
@@ -2023,6 +2027,8 @@ uint64_t CodeBuilder::GetFundamentalTypeSize( const U_FundamentalType fundamenta
 	case U_FundamentalType::u64_ : return  8u;
 	case U_FundamentalType::i128_: return 16u;
 	case U_FundamentalType::u128_: return 16u;
+	case U_FundamentalType::i256_: return 32u;
+	case U_FundamentalType::u256_: return 32u;
 	case U_FundamentalType::ssize_type_: return fundamental_llvm_types_.ssize_type_->getBitWidth() >> 3;
 	case U_FundamentalType::size_type_ : return fundamental_llvm_types_.size_type_ ->getBitWidth() >> 3;
 	case U_FundamentalType::f32_: return 4u;

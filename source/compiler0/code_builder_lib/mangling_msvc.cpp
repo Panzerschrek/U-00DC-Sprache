@@ -40,6 +40,9 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	case U_FundamentalType::u64_ : return "_K"; // C++ "uint64_t"
 	case U_FundamentalType::i128_: return "_L"; // C++ "__int128"
 	case U_FundamentalType::u128_: return "_M"; // "unsigned __int128"
+	// TODO - use different name for large integer types?
+	case U_FundamentalType::i256_: return "Ui256@@";
+	case U_FundamentalType::u256_: return "Uu256@@";
 	case U_FundamentalType::ssize_type_: return "J"; // C++ "long"
 	case U_FundamentalType::size_type_ : return "K"; // C++ "unsigned long"
 	case U_FundamentalType::f32_: return "M";  // C++ "float"
