@@ -1455,6 +1455,8 @@ private:
 		llvm::IntegerType* u128_;
 		llvm::IntegerType* i256_;
 		llvm::IntegerType* u256_;
+		llvm::IntegerType* i512_;
+		llvm::IntegerType* u512_;
 
 		// Types with width of pointer.
 		llvm::IntegerType* ssize_type_;

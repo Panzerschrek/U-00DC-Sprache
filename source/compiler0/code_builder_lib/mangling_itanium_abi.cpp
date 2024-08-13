@@ -404,6 +404,8 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	case U_FundamentalType::u128_: return "o";
 	case U_FundamentalType::i256_: return "DB256_"; // C23 signed _BitInt(256)
 	case U_FundamentalType::u256_: return "DU256_"; // C23 unsigned _BitInt(256)
+	case U_FundamentalType::i512_: return "DB512_"; // C23 signed _BitInt(512)
+	case U_FundamentalType::u512_: return "DU512_"; // C23 unsigned _BitInt(512)
 	case U_FundamentalType::ssize_type_: return "l"; // C++ long
 	case U_FundamentalType::size_type_ : return "m"; // C++ unsigned long
 	case U_FundamentalType::f32_: return "f";
