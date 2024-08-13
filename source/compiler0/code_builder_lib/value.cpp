@@ -199,7 +199,7 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 				if( const VariablePtr enum_variable= enum_member.value.GetVariable() )
 				{
 					U_ASSERT( enum_variable->constexpr_value != nullptr );
-					if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == num_value )
+					if( enum_variable->constexpr_value->getUniqueInteger() == num_value )
 						enum_member_name= name;
 				}
 			});
