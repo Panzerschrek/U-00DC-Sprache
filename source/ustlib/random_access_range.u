@@ -126,6 +126,26 @@ public:
 		return unsafe( this_type( begin_ + start_index, end_index - start_index ) );
 	}
 
+	// Returns subrange starting from given index and up to end.
+	fn subrange_start( this, size_type start_index ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		if( start_index >= size_ )
+		{
+			return this_type();
+		}
+		return unsafe( this_type( begin_ + start_index, size_ - start_index ) );
+	}
+
+	// Returns subrange up to end index.
+	fn subrange_end( this, size_type end_index ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		if( end_index >= size_ )
+		{
+			return this;
+		}
+		return unsafe( this_type( begin_, end_index ) );
+	}
+
 	fn empty( this ) : bool
 	{
 		return size_ == 0s;

@@ -111,6 +111,31 @@ fn nomangle main() : i32
 		halt if( res != 31 + 22 + 7 + 6 );
 		halt if( iterations != 4 );
 	}
+	{ // Subrange start.
+		var VecType vec= ust::make_array( 6, 8, 10, 12, 14 );
+
+		halt if( !vec.range().subrange_start(5s).empty() );
+		halt if( !vec.range().subrange_start(100s).empty() );
+		halt if( vec.range() != vec.range().subrange_start(0s) );
+
+		auto subrange_3= vec.range().subrange_start(3s);
+		halt if(subrange_3.size() != 2s );
+		halt if( subrange_3[0s] != 12 );
+		halt if( subrange_3[1s] != 14 );
+	}
+	{ // Subrange end.
+		var VecType vec= ust::make_array( 5, 4, 3, 2, 1 );
+
+		halt if( !vec.range().subrange_end(0s).empty() );
+		halt if( vec.range().subrange_end(5s) != vec.range() );
+		halt if( vec.range().subrange_end(100s) != vec.range() );
+
+		auto subrange_3= vec.range().subrange_end(3s);
+		halt if(subrange_3.size() != 3s );
+		halt if( subrange_3[0s] != 5 );
+		halt if( subrange_3[1s] != 4 );
+		halt if( subrange_3[2s] != 3 );
+	}
 
 	return 0;
 }
