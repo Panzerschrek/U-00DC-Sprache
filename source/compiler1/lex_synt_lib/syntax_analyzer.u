@@ -4162,7 +4162,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 
 		auto range_after= it_;
 		auto range_size= range_before.size() - range_after.size();
-		element.lexems.append( range_before.subrange( 0s, range_size ).iter() );
+		element.lexems.append( range_before.subrange_end( range_size ).iter() );
 
 		// Redefinition checked before, while parsing macro itself.
 		macro_variables_map.insert( match_element.name, move(element) );

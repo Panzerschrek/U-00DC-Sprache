@@ -566,7 +566,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		auto c= GetUTF8FirstChar(it);
 
 		var sprache_char mut next_c= zero_init;
-		if( it.size() > 1s ) { next_c= GetUTF8FirstChar( it.subrange( 1s, it.size() ) ); }
+		if( it.size() > 1s ) { next_c= GetUTF8FirstChar( it.subrange_start( 1s ) ); }
 
 		var Lexem mut lexem;
 
@@ -699,7 +699,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				{
 					continue;
 				}
-				auto check_range= it.subrange( 0s, s );
+				auto check_range= it.subrange_end( s );
 
 				foreach( &l : lexem_size_group )
 				{
@@ -707,7 +707,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 					{
 						lexem.text= l[0];
 						lexem.lexem_type= l[1];
-						it= it.subrange( s, it.size() );
+						it= it.subrange_start( s );
 						break label size_groups_loop;
 					}
 				}
