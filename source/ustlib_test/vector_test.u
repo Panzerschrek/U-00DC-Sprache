@@ -483,5 +483,96 @@ fn nomangle main() : i32
 		halt if( v0 == v5 );
 		halt if( v0 == v6 );
 	}
+	{ // remove_adjacent_duplicates - remove single element.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("foo");
+		v.push_back("foo");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 1s );
+		halt if( v[0s] != "foo" );
+	}
+	{ // remove_adjacent_duplicates - remove nothing.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("bar");
+		v.push_back("foo");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 2s );
+		halt if( v[0s] != "bar" );
+		halt if( v[1s] != "foo" );
+	}
+	{ // remove_adjacent_duplicates - remove 3 of 4 adjacent elements.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("bar");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("baz");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "bar" );
+		halt if( v[1s] != "foo" );
+		halt if( v[2s] != "baz" );
+	}
+	{ // remove_adjacent_duplicates - remove 3 elements in two ranges.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("one");
+		v.push_back("two");
+		v.push_back("two");
+		v.push_back("three");
+		v.push_back("four");
+		v.push_back("four");
+		v.push_back("four");
+		v.push_back("five");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 5s );
+		halt if( v[0s] != "one" );
+		halt if( v[1s] != "two" );
+		halt if( v[2s] != "three" );
+		halt if( v[3s] != "four" );
+		halt if( v[4s] != "five" );
+	}
+	{ // remove_adjacent_duplicates - remove elements at start.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("bar");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 2s );
+		halt if( v[0s] != "foo" );
+		halt if( v[1s] != "bar" );
+	}
+	{ // remove_adjacent_duplicates - remove elements at end.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("foo");
+		v.push_back("bar");
+		v.push_back("bar");
+		v.push_back("bar");
+		v.push_back("bar");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 2s );
+		halt if( v[0s] != "foo" );
+		halt if( v[1s] != "bar" );
+	}
+	{ // remove_adjacent_duplicates - remove all except one.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("77");
+		v.push_back("77");
+		v.push_back("77");
+		v.push_back("77");
+		v.push_back("77");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 1s );
+		halt if( v[0s] != "77" );
+	}
 	return 0;
 }

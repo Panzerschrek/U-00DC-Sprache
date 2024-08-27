@@ -493,6 +493,46 @@ public:
 		}
 	}
 
+	// Remove adjacent duplicates.
+	// For example, if 2 or more elements in order are equal, only one element is left and others are removed.
+	// In case if this vector is sorted or at least all equal elements are grouped together, result will contain only unique elements.
+	fn enable_if( typeinfo</T/>.is_equality_comparable )
+	remove_adjacent_duplicates( mut this )
+	{
+		if( size_ <= 1s )
+		{
+			return;
+		}
+
+		var size_type mut dst= 1s, mut src= 1s;
+		while( src < size_ )
+		{
+			if( unsafe( $>( ptr_ + src ) ) == unsafe( $>( ptr_ + (dst - 1s) ) ) )
+			{
+				// Current element is equal to previous - destroy and skip it.
+				unsafe( call_destructor( $>( ptr_ + src ) ) );
+			}
+			else
+			{
+				// Current element isn't equal to previous - move it into destination (unless destination pointer is equal source).
+				if( dst < src )
+				{
+					unsafe( memory_copy_aligned(
+						c_element_alignment_,
+						cast_ref_unsafe</byte8/>( $>(ptr_ + dst) ),
+						cast_ref_unsafe</byte8/>( $>(ptr_ + src) ),
+						c_element_size_ ) );
+				}
+				++dst;
+			}
+			++src;
+		}
+
+		// Update size - dst is less than size if elements were removed.
+		// All destructors were called previously.
+		size_= dst;
+	}
+
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</T/>.align_of;
