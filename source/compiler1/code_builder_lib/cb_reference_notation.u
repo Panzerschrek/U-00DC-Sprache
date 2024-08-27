@@ -380,29 +380,11 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, Na
 	return result;
 }
 
-// TODO - create special method in standard library for doing this.
 template</type T/>
 fn NormalizeList( ust::vector</T/> &mut v )
 {
-	if( v.size() <= 1s )
-	{
-		return;
-	}
 	ust::sort( v.range() );
-
-	var size_type mut dst(1), mut src(1), end= v.size();
-	while( src < end )
-	{
-		if( cast_imut(v)[dst - 1s] != cast_imut(v)[src] )
-		{
-			v.swap( dst, src );
-			++dst;
-		}
-		++src;
-	}
-
-	auto dummy= v.front();
-	v.resize( dst, dummy );
+	v.remove_adjacent_duplicates();
 }
 
 } // namespace U1

@@ -178,27 +178,8 @@ fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 		}
 	}
 
-	if( errors.size() <= 1s )
-	{
-		return;
-	}
-
 	ust::sort( errors.range() );
-
-	// Leave only unique errors.
-	var size_type mut dst(1), mut src(1), end= errors.size();
-	while( src < end )
-	{
-		if( cast_imut(errors)[dst - 1s] != cast_imut(errors)[src] )
-		{
-			errors.swap( dst, src );
-			++dst;
-		}
-		++src;
-	}
-
-	auto dummy= errors.front();
-	errors.resize( dst, dummy );
+	errors.remove_adjacent_duplicates();
 }
 
 } // namespace U1
