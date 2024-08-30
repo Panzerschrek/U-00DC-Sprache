@@ -38,8 +38,7 @@ fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 			( (u32(start[0s]) & c_bit_masks[5]) << 6u ) |
 			( (u32(start[1s]) & c_bit_masks[6]) << 0u ) );
 
-		start.drop_front();
-		start.drop_front();
+		start= start.subrange_start(2s);
 	}
 	else if( ( c & 0b11110000u ) == 0b11100000u )
 	{
@@ -53,9 +52,7 @@ fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 			( (u32(start[1s]) & c_bit_masks[6]) <<  6u ) |
 			( (u32(start[2s]) & c_bit_masks[6]) <<  0u ) );
 
-		start.drop_front();
-		start.drop_front();
-		start.drop_front();
+		start= start.subrange_start(3s);
 	}
 	else if( ( c & 0b11111000u ) == 0b11110000u )
 	{
@@ -70,11 +67,7 @@ fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 			( (u32(start[2s]) & c_bit_masks[6]) <<  6u ) |
 			( (u32(start[3s]) & c_bit_masks[6]) <<  0u ) );
 
-		// TODO - add method for dropping N elements in random_access_range
-		start.drop_front();
-		start.drop_front();
-		start.drop_front();
-		start.drop_front();
+		start= start.subrange_start(4s);
 	}
 	else
 	{
