@@ -97,10 +97,7 @@ fn ParseMacroUniqueIdentifier( Iterator &mut it ) : Lexem
 	var Lexem mut result;
 	result.lexem_type= Lexem::Type::MacroUniqueIdentifier;
 
-	it.drop_front(); // Skip '?'
-	it.drop_front(); // Skip '?'
-
-	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
+	it = it.subrange_start(2s); // Skip "??"
 
 	while( !it.empty() )
 	{
@@ -220,22 +217,19 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 		{
 			base_= 2u64;
 			number_func= NumberFunc2;
-			it.drop_front();
-			it.drop_front();
+			it= it.subrange_start(2s);
 		}
 		if( d == "o"c8 )
 		{
 			base_= 8u64;
 			number_func= NumberFunc8;
-			it.drop_front();
-			it.drop_front();
+			it= it.subrange_start(2s);
 		}
 		if( d == "x"c8 )
 		{
 			base_= 16u64;
 			number_func= NumberFunc16;
-			it.drop_front();
-			it.drop_front();
+			it= it.subrange_start(2s);
 		}
 	}
 
@@ -590,21 +584,18 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		// multiline comment
 		if( c == "/"c32 && next_c == "*"c32 )
 		{
-			it.drop_front();
-			it.drop_front();
+			it= it.subrange_start(2s);
 			auto mut comments_depth= 1u;
 			while( it.size() >= 2s && comments_depth > 0u )
 			{
 				if( it[0s] == "*"c8 && it[1s] == "/"c8 )
 				{
-					it.drop_front();
-					it.drop_front();
+					it= it.subrange_start(2s);
 					--comments_depth;
 				}
 				else if( it[0s] == "/"c8 && it[1s] == "*"c8 )
 				{
-					it.drop_front();
-					it.drop_front();
+					it= it.subrange_start(2s);
 					++comments_depth;
 				}
 				else
