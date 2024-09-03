@@ -1887,14 +1887,35 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 							if_var( template_arg : ValueToTemplateArg( given_class_template_args_scope, Synt::GetSrcLoc( default_param_syntax_element ), default_param_value ) )
 							{
-								// TODO - fix this, comparing variable pointers is wrong.
-								if( base_template.signature_args[i] != template_arg )
+								if_var( &variable_arg : template_arg.get</VariablePtr/>() )
 								{
-									return false;
+									// Special case - check variable params are equal. We need to compare constexpr values, not just variable pointers.
+									if_var( &base_template_variable_arg : base_template.signature_args[i].get</VariablePtr/>() )
+									{
+										// LLVM constants are deduplicated, so, comparing pointers should work.
+										if( variable_arg.lock_imut().deref().constexpr_value != base_template_variable_arg.lock_imut().deref().constexpr_value )
+										{
+											return false;
+										}
+									}
+									else
+									{
+										// Kind mismatch.
+										return false;
+									}
+								}
+								else
+								{
+									// General case for types and type templates.
+									if( base_template.signature_args[i] != template_arg )
+									{
+										return false;
+									}
 								}
 							}
 							else
 							{
+								// Failed to parse default signature param value.
 								return false;
 							}
 						}
