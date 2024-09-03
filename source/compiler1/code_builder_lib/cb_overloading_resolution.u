@@ -405,6 +405,8 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 				}
 			}
 
+			// Templates with different arg count are uincomparable.
+			// This may happen for specializations which do not specialize at least some default signature arguments.
 			if( l_specialized_template.params.size() != r_specialized_template.params.size() )
 			{
 				return ConversionsCompareResult::Incomparable;

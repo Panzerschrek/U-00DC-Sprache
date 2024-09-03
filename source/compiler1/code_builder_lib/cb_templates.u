@@ -1846,7 +1846,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		{
 			if_var( &base_template : class_type.lock_imut().deref().generated_class_data.get</ ClassType::BaseTemplate />() )
 			{
-				if( base_template.signature_args.size() != specialized_template_param.params.size() )
+				if( base_template.signature_args.size() < specialized_template_param.params.size() )
 				{
 					return false;
 				}
@@ -1858,6 +1858,42 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 						foreach( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
 						{
 							if( !MatchTemplateArgument( names_scope, template_, pair.first, pair.second ) )
+							{
+								return false;
+							}
+						}
+
+						// Check also for default arguments, if specialized template param has less params as given signature.
+						for( auto mut i= specialized_template_param.params.size(); i < base_template.signature_args.size(); ++i )
+						{
+							auto syntax_element_ptr= base_template.class_template.lock_imut().deref().syntax_element;
+							var Synt::TypeTemplate& syntax_element= syntax_element_ptr.deref();
+
+							if( syntax_element.signature_params.empty() || syntax_element.signature_params.try_deref().size() <= i )
+							{
+								return false;
+							}
+
+							var Synt::Expression& default_param_syntax_element= syntax_element.signature_params.try_deref()[i].default_value;
+							if( default_param_syntax_element.has</Synt::EmptyVariant/>() )
+							{
+								return false;
+							}
+
+							var NamesScopePtr given_class_template_args_scope= class_type.lock_imut().deref().members.lock_imut().deref().GetParent().try_to_non_nullable();
+
+							auto mut global_function_context= CreateGlobalFunctionContext();
+							var Value default_param_value= BuildExpressionCode( given_class_template_args_scope, global_function_context, default_param_syntax_element );
+
+							if_var( template_arg : ValueToTemplateArg( given_class_template_args_scope, Synt::GetSrcLoc( default_param_syntax_element ), default_param_value ) )
+							{
+								// TODO - fix this, comparing variable pointers is wrong.
+								if( base_template.signature_args[i] != template_arg )
+								{
+									return false;
+								}
+							}
+							else
 							{
 								return false;
 							}
