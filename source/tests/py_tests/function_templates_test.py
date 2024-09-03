@@ -845,6 +845,24 @@ def Specialization_Test15():
 	tests_lib.build_program( c_program_text )
 
 
+def Specialization_Test16():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ i32 /> some;
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DirectFunctionTemplateParametersSet_Test0():
 	c_program_text= """
 		template</ type T />

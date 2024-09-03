@@ -159,6 +159,31 @@ def TypeTemplatesOvelroading_Specialization_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeTemplatesOvelroading_Specialization_Test6():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</i32/>;
+		// Should select specialization for "Some".
+		static_assert( Unwrapper</ I32Some />::val == 333 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeTemplateOverloadingByTemplateParamKind_Test0():
 	c_program_text= """
 		// Fine - overload type template by param kind (type vs variable vs type template).
