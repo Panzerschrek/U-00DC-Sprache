@@ -266,7 +266,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 					return ConversionsCompareResult::Incomparable;
 			}
 
-			// Templates with different arg count is uncomparable.
+			// Templates with different arg count are uncomparable.
 			if( l_specialized_template->params.size() != r_specialized_template->params.size() )
 				return ConversionsCompareResult::Incomparable;
 

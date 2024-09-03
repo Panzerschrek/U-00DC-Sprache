@@ -184,6 +184,131 @@ def TypeTemplatesOvelroading_Specialization_Test6():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeTemplatesOvelroading_Specialization_Test7():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</f64, f64/>;
+		// Should select specialization for "Some", since second optional signature arguemnt of "Some" is equal to its default value.
+		static_assert( Unwrapper</ I32Some />::val == 333 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplatesOvelroading_Specialization_Test8():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</i32, f32/>;
+		// Should NOT select specialization for "Some", since second optional signature arguemnt of "Some" is different from default.
+		static_assert( Unwrapper</ I32Some />::val == 777 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplatesOvelroading_Specialization_Test9():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</i32/>;
+		// Should select specialization for "Some".
+		static_assert( Unwrapper</ I32Some />::val == 333 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplatesOvelroading_Specialization_Test10():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</f64, i32/>;
+		// Should select specialization for "Some", since second optional signature arguemnt of "Some" is equal to its default value.
+		static_assert( Unwrapper</ I32Some />::val == 333 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplatesOvelroading_Specialization_Test11():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</i32, f32/>;
+		// Should NOT select specialization for "Some", since second optional signature arguemnt of "Some" is different from default.
+		static_assert( Unwrapper</ I32Some />::val == 777 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeTemplateOverloadingByTemplateParamKind_Test0():
 	c_program_text= """
 		// Fine - overload type template by param kind (type vs variable vs type template).
