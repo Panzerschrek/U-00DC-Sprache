@@ -963,6 +963,54 @@ def Specialization_Test21():
 	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 13 ) )
 
 
+def Specialization_Test22():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		// Specialization for full form of "Some".
+		template</type A, type B/>
+		fn Bar( Some</A, B/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64, i32 /> some;
+			// Error - can't decide what is better "Some</A/>" or "Some</A, B/>".
+			Bar(some);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TooManySuitableOverloadedFunctions", 17 ) )
+
+
+def Specialization_Test23():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		// Specialization for full form of "Some".
+		template</type A, type B/>
+		fn Bar( Some</A, B/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64, char32 /> some;
+			// Ok, select here specialization for full "Some" form, first specialization can't be used.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DirectFunctionTemplateParametersSet_Test0():
 	c_program_text= """
 		template</ type T />

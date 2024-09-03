@@ -309,6 +309,66 @@ def TypeTemplatesOvelroading_Specialization_Test11():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeTemplatesOvelroading_Specialization_Test12():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		// Specialization for full form of "Some". This cause conflicts during instantiation.
+		template</type A, type B/>
+		struct Unwrapper</ Some</A, B/> />
+		{
+			auto val= 444;
+		}
+
+		template</type X/>
+		struct Unwrapper</X/>
+		{
+			auto val= 777;
+		}
+
+		type I32Some= Some</i32, i32/>;
+		// Error here - can't decide what is better - "Unwrapper</ Some</A/> />" or "Unwrapper</ Some</A, B/> />".
+		type I32SomeUnwrapper= Unwrapper</ I32Some />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 27 ) )
+
+
+def TypeTemplatesOvelroading_Specialization_Test13():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in template signature.
+		template</type A/>
+		struct Unwrapper</ Some</A/> />
+		{
+			auto val= 333;
+		}
+
+		// Specialization for full form of "Some".
+		template</type A, type B/>
+		struct Unwrapper</ Some</A, B/> />
+		{
+			auto val= 444;
+		}
+
+		type I32Some= Some</i32, f32/>;
+		// Ok - ignore "Unwrapper</ Some</A/> />" and select "Unwrapper</ Some</A, B/> />".
+		static_assert( Unwrapper</ I32Some />::val == 444 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeTemplateOverloadingByTemplateParamKind_Test0():
 	c_program_text= """
 		// Fine - overload type template by param kind (type vs variable vs type template).
