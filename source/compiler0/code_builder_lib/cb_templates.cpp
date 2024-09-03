@@ -921,7 +921,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		{
 			if( const auto base_template= std::get_if< Class::BaseTemplate >( &given_class_type->generated_class_data ) )
 			{
-				if( specialized_template_param.params.size() != base_template->signature_args.size() )
+				if( specialized_template_param.params.size() > base_template->signature_args.size() )
 					return false;
 
 				for( const TemplateSignatureParam& type_template_signature_param : specialized_template_param.type_templates )
@@ -931,6 +931,39 @@ bool CodeBuilder::MatchTemplateArgImpl(
 						for( size_t i= 0; i < specialized_template_param.params.size(); ++i )
 						{
 							if( !MatchTemplateArg( template_, args_names_scope, base_template->signature_args[i], specialized_template_param.params[i] ) )
+								return false;
+						}
+
+						// Check also for default arguments, if specialized template param has less params as given signature.
+						for(size_t i= specialized_template_param.params.size(); i < base_template->signature_args.size(); ++i )
+						{
+							if( base_template->class_template->syntax_element->signature_params.size() <= i )
+								return false;
+
+							const auto& default_param_syntax_element= base_template->class_template->syntax_element->signature_params[i].default_value;
+							if( std::holds_alternative<Synt::EmptyVariant>(default_param_syntax_element) )
+								return false;
+
+							NamesScope& given_class_template_args_scope= *given_class_type->members->GetParent();
+
+							const Value default_param_value=
+								BuildExpressionCode(
+									default_param_syntax_element,
+									given_class_template_args_scope,
+									*global_function_context_ );
+							global_function_context_->args_preevaluation_cache.clear();
+
+							if( const auto template_arg_opt=
+									ValueToTemplateArg(
+										default_param_value,
+										given_class_template_args_scope.GetErrors(),
+										Synt::GetSrcLoc(default_param_syntax_element) ) )
+							{
+								// Check if given class template is instantiated with optional signature params equal to their default values.
+								if( base_template->signature_args[i] != *template_arg_opt )
+									return false;
+							}
+							else
 								return false;
 						}
 
