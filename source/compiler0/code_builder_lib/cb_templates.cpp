@@ -1049,11 +1049,12 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 			U_ASSERT( template_parameters_space != nullptr );
 			if( const auto value= template_parameters_space->GetThisScopeValue( Class::c_template_class_name ) )
 			{
+				if( value->value.GetTypeAlias() != nullptr )
+					GlobalThingBuildTypeAlias( *template_parameters_space, value->value ); // Possible detect globals loop here.
 				if( const auto type= value->value.GetTypeName() )
 					return *type;
 			}
-			else
-				return std::nullopt;
+			return std::nullopt;
 		}
 		AddNewTemplateThing( std::move(template_key), template_args_namespace );
 	}
@@ -1082,10 +1083,16 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 	}
 	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )
 	{
-		const Type type= PrepareType( (*type_alias)->value, *template_args_namespace, *global_function_context_ );
-		global_function_context_->args_preevaluation_cache.clear();
-		template_args_namespace->AddName( Class::c_template_class_name, NamesScopeValue( type, src_loc /* TODO - check src_loc */ ) );
-		return type;
+		Value& type_alias_value=
+			template_args_namespace->AddName(
+				Class::c_template_class_name,
+				NamesScopeValue( TypeAlias{ type_alias->get() }, (*type_alias)->src_loc ) )->value;
+
+		// Call this function to enable globals loop detection.
+		GlobalThingBuildTypeAlias( *template_args_namespace, type_alias_value );
+
+		if(const auto type= type_alias_value.GetTypeName() )
+			return *type;
 	}
 	else U_ASSERT(false);
 

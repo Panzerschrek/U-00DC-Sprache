@@ -1016,20 +1016,30 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 
 	var ust::string8 template_class_name= "_";
 
-	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
+	with( mut cache_res : generated_template_things_.find( template_key ) )
 	{
-		if_var( result_name : prev_names_scope.lock_imut().deref().GetThisScopeValue( template_class_name ) )
+		if( !cache_res.empty() )
 		{
-			auto class_type= result_name.Get</ClassType/>();
-			if( !class_type.empty() )
+			var NamesScopePtr prev_names_scope= cache_res.try_deref();
+			move(cache_res);
+
+			if_var( result_name : prev_names_scope.lock_imut().deref().GetThisScopeValue( template_class_name ) )
 			{
-				return Type( class_type.try_to_non_nullable() );
+				auto class_type= result_name.Get</ClassType/>();
+				if( !class_type.empty() )
+				{
+					return Type( class_type.try_to_non_nullable() );
+				}
+				auto type_alias= result_name.Get</TypeAlias/>();
+				if( !type_alias.empty() )
+				{
+					auto type_alias_non_null= type_alias.try_to_non_nullable();
+					// Call this function to enable globals loop detection.
+					BuildTypeAlias( prev_names_scope, type_alias_non_null );
+					return type_alias_non_null.lock_imut().deref().t;
+				}
 			}
-			auto type_alias= result_name.Get</TypeAlias/>();
-			if( !type_alias.empty() )
-			{
-				return type_alias.try_lock_imut().deref().t;
-			}
+			return ust::null_optional;
 		}
 	}
 
@@ -1078,6 +1088,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 
 		AddNewTemplateThing( move(template_key), args_names_scope );
 
+		// Call this function to enable globals loop detection.
 		BuildTypeAlias( args_names_scope, type_alias );
 
 		return type_alias.lock_imut().deref().t;
