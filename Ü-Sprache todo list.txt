@@ -17,7 +17,7 @@ General:
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
 *) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)
-*) Variable templates
+*) Multidimensional [] operator - for accessing elements of multidimensional arrays or as overloaded operator
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -27,6 +27,7 @@ Templates:
 *) Default template arguments for short type template form
 *) enable_if for type templates
 *) Allow template value arguments of some struct types
+*) Variable templates
 
 Lambdas:
 *) Coroutine lambdas (async, generators)
@@ -46,15 +47,20 @@ Standart library:
 *) Time library - get time functions, timers
 *) File library
 *) Console input/output library
-*) Formatting library
+*) String formatting library
 *) More type traits
 *) More math functions
 *) "result"-like container for reference results
-*) Try to optimize random_access_range - use start + end pointers instead of start + size
+*) Try to optimize random_access_range - use start + end pointers instead of start + size.
+	This may improve iteration efficiency.
 *) Reference-counting immutable string class
 *) Small string optimization
+*) Support recursive types with usage of "vector" without need to use additional indirection (via "box")
+*) String/vector-like containers with limited number of elements (32-bit or 16-bit sizes)
+*) Compact vector-like container - with size/capacity stored in allocated memory block
 
 Compiler:
+*) Fix possible overflows in numeric literals
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Speed-up references graph code
