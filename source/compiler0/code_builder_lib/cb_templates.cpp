@@ -1013,7 +1013,7 @@ std::optional<Type> CodeBuilder::GenTemplateType(
 		return FinishTemplateTypeGeneration( src_loc, arguments_names_scope, *selected_template );
 	}
 
-	REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), src_loc );
+	REPORT_ERROR( CouldNotSelectMoreSpecializedTypeTemplate, arguments_names_scope.GetErrors(), src_loc );
 	return std::nullopt;
 }
 

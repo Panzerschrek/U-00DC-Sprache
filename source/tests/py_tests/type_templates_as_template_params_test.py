@@ -284,7 +284,7 @@ def TemplateParamOverloading_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 14 ) )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpecializedTypeTemplate", 14 ) )
 
 
 def TemplateParamOverloading_Test5():
@@ -322,7 +322,7 @@ def TemplateParamOverloading_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 13 ) )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpecializedTypeTemplate", 13 ) )
 
 
 def TemplateParamOverloading_Test7():

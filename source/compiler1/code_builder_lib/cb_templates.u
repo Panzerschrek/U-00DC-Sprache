@@ -875,7 +875,7 @@ fn CodeBuilder::GenTemplateType(
 	auto index= SelectMoreSpecializedTemplate( templates_for_check.range(), template_args.size() );
 	if( index == ~0s )
 	{
-		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, args_names_scope, template_instantiation_src_loc )
+		REPORT_ERROR( CouldNotSelectMoreSpecializedTypeTemplate, args_names_scope, template_instantiation_src_loc )
 		return ust::null_optional;
 	}
 

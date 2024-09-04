@@ -340,7 +340,7 @@ def TypeTemplatesOvelroading_Specialization_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 27 ) )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpecializedTypeTemplate", 27 ) )
 
 
 def TypeTemplatesOvelroading_Specialization_Test13():
@@ -496,7 +496,7 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 		fn Foo( S</ i32, i32 /> & s );  // Error, different best-specialized templates for first and second template arguments.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 5 ) )
+	assert( HasError( errors_list, "CouldNotSelectMoreSpecializedTypeTemplate", 5 ) )
 
 
 def LessSpecializedTemplateTypesNotGenerated_Test0():
