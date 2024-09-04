@@ -845,6 +845,235 @@ def Specialization_Test15():
 	tests_lib.build_program( c_program_text )
 
 
+def Specialization_Test16():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ i32 /> some;
+			// Fine, "some" has default value of the second signature argument.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Specialization_Test17():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ u16, u16 /> some;
+			// Fine, "some" has default value of the second signature argument.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Specialization_Test18():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= A/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ i32, u32 /> some;
+			// Error - specialization works only for given types with second signature argument equal to its default value.
+			Bar(some);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 13 ) )
+
+
+def Specialization_Test19():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ i32 /> some;
+			// Fine, "some" has default value of the second signature argument.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Specialization_Test20():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ u64, i32 /> some;
+			// Fine, "some" has default value of the second signature argument.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Specialization_Test21():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64, u32 /> some;
+			// Error - specialization works only for given types with second signature argument equal to its default value.
+			Bar(some);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 13 ) )
+
+
+def Specialization_Test22():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		// Specialization for full form of "Some".
+		template</type A, type B/>
+		fn Bar( Some</A, B/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64, i32 /> some;
+			// Error - can't decide what is better "Some</A/>" or "Some</A, B/>".
+			Bar(some);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TooManySuitableOverloadedFunctions", 17 ) )
+
+
+def Specialization_Test23():
+	c_program_text= """
+		template</type A, type B/>
+		struct Some</A, B= i32/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		// Specialization for full form of "Some".
+		template</type A, type B/>
+		fn Bar( Some</A, B/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64, char32 /> some;
+			// Ok, select here specialization for full "Some" form, first specialization can't be used.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Specialization_Test24():
+	c_program_text= """
+		template</type A, i32 S/>
+		struct Some</A, S= 1024/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64 /> some;
+			// Fine, "some" has default value of the second signature argument.
+			Bar(some);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Specialization_Test25():
+	c_program_text= """
+		template</type A, i32 S/>
+		struct Some</A, S= 1024/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ){}
+
+		fn Foo()
+		{
+			var Some</ f64, 17 /> some;
+			// Error, second template argument isn't equal to expected.
+			Bar(some);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 13 ) )
+
+
+def Specialization_Test26():
+	c_program_text= """
+		template</type A, i32 S/>
+		struct Some</A, S= 1024/>{}
+
+		// Skip default signature parameter of type template in function signature.
+		template</type A/>
+		fn Bar( Some</A/>& some ) : i32 { return 777; }
+
+		// An overloading for full "Some" form.
+		template</type A, i32 S/>
+		fn Bar( Some</A, S/>& some ) : i32 { return 333; }
+
+		fn Foo()
+		{
+			var Some</ f64, 17 /> some{};
+			// Should select second overloaidng.
+			static_assert( Bar(some) == 333 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DirectFunctionTemplateParametersSet_Test0():
 	c_program_text= """
 		template</ type T />
