@@ -1392,21 +1392,18 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
 						}
 
-						foreach( &src_type_template : src_type_templates_set.type_templates )
+						foreach( &src_type_template : src_type_templates_set.type_templates ) label type_templates_loop
 						{
-							var bool mut overrides= false;
 							foreach( &result_type_template : result_type_templates_set.type_templates )
 							{
 								if( src_type_template.lock_imut().deref().signature_params == result_type_template.lock_imut().deref().signature_params )
 								{
-									overrides= true;
-									break;
+									// Overrides.
+									continue label type_templates_loop;
 								}
 							}
-							if( !overrides )
-							{
-								result_type_templates_set.type_templates.push_back( src_type_template );
-							}
+
+							result_type_templates_set.type_templates.push_back( src_type_template );
 						}
 					}
 					else

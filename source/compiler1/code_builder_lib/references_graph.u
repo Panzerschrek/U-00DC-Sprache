@@ -307,12 +307,10 @@ fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 		var VariableNullablePtr parent= current_node.lock_imut().deref().parent.lock();
 		if( parent.empty() )
 		{
-			break;
+			return result;
 		}
 		current_node= parent.try_to_non_nullable();
 	}
-
-	return result;
 }
 
 fn ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
@@ -343,22 +341,18 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 			}
 		}
 
-		foreach( &src_link : branch_state.links_ )
+		foreach( &src_link : branch_state.links_ ) label src_links_loop
 		{
-			var bool mut found= false;
 			foreach( &dst_link : result.links_ )
 			{
 				if( src_link == dst_link )
 				{
-					found= true;
-					break;
+					continue label src_links_loop; // Already has this link.
 				}
 			}
 
-			if( !found )
-			{
-				result.links_.push_back( src_link );
-			}
+			// Add this link.
+			result.links_.push_back( src_link );
 		}
 	}
 

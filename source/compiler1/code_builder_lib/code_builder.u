@@ -925,20 +925,17 @@ fn CodeBuilder::CheckOverloadedOperator(
 
 	auto class_type_non_null= class_type.try_to_non_nullable();
 
-	auto mut is_this_class= false;
-	foreach( & param : func_type.params )
 	{
-		if( param.t == class_type_non_null )
+		foreach( & param : func_type.params )
 		{
-			is_this_class= true;
-			break;
+			if( param.t == class_type_non_null )
+			{
+				break label this_call_check;
+			}
 		}
-	}
 
-	if( !is_this_class )
-	{
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
-	}
+	} label this_call_check
 
 	auto ret_is_void= func_type.return_type == void_type_ && func_type.return_value_type == ValueType::Value;
 

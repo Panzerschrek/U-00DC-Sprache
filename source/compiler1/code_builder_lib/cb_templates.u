@@ -1366,7 +1366,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 
 	var FunctionsSet mut result_functions_set;
 	result_functions_set.class_= functions_set.class_;
-	foreach( &function_template_ptr : functions_set.function_templates )
+	foreach( &function_template_ptr : functions_set.function_templates ) label function_templates_loop
 	{
 		auto function_template_lock= function_template_ptr.lock_imut();
 		var FunctionTemplate& function_template= function_template_lock.deref();
@@ -1389,7 +1389,6 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 			}
 		}
 
-		auto mut all_ok= true;
 		for( auto mut i= 0s; i < template_args_finished.size(); ++i )
 		{
 			if( !MatchTemplateArgument(
@@ -1398,14 +1397,8 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 					TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( function_template.params[i].kind_data.index() ) },
 					template_args_finished[i] ) )
 			{
-				all_ok= false;
-				break;
+				continue label function_templates_loop;
 			}
-		}
-
-		if( !all_ok )
-		{
-			continue;
 		}
 
 		auto mut known_args= template_args_finished;

@@ -212,21 +212,17 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 	}
 
 	// Can convert pointer to function returning less references to pointer to function, returning more references.
-	foreach( &src_param_reference : this.return_references )
+	foreach( &src_param_reference : this.return_references ) label src_return_references_loop
 	{
-		var bool mut found= false;
 		foreach( &dst_param_reference : dst.return_references )
 		{
 			if( src_param_reference == dst_param_reference )
 			{
-				found= true;
-				break;
+				continue label src_return_references_loop;
 			}
 		}
-		if( !found )
-		{
-			return false;
-		}
+
+		return false; // Not found.
 	}
 
 	// TODO - perform checks for inner tags.
@@ -236,21 +232,17 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 	}
 
 	// Can convert function, linkink less references to function, linking more references.
-	foreach( &src_pollution : this.references_pollution )
+	foreach( &src_pollution : this.references_pollution ) label src_pollution_loop
 	{
-		var bool mut found= false;
 		foreach( &dst_pollution : dst.references_pollution )
 		{
 			if( src_pollution == dst_pollution )
 			{
-				found= true;
-				break;
+				continue label src_pollution_loop;
 			}
 		}
-		if( !found )
-		{
-			return false;
-		}
+
+		return false; // Not found.
 	}
 
 	foreach( pair : params.iter().zip( dst.params.iter() ) )
@@ -1884,12 +1876,10 @@ fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr
 		auto parent= root_names_scope.lock_imut().deref().GetParent();
 		if( parent.empty() )
 		{
-			break;
+			return root_names_scope;
 		}
 		root_names_scope= parent.try_to_non_nullable();
 	}
-
-	return root_names_scope;
 }
 
 fn GetClosestNamedSpaceOrRoot( NamesScopePtr& names_scope ) : NamesScopePtr

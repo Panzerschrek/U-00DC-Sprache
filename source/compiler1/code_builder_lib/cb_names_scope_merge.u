@@ -272,22 +272,18 @@ fn CodeBuilder::NamesScopeMergeValues(
 				ApplyOverloadedFunction( dst, function, target_names_scope, func_src_loc );
 			}
 
-			foreach( &function_template : src.function_templates )
+			foreach( &function_template : src.function_templates ) label function_templates_loop
 			{
-				var bool mut prev_found= false;
 				foreach( &prev_function_template : dst.function_templates )
 				{
 					if( function_template == prev_function_template )
 					{
-						prev_found= true;
-						break;
+						continue label function_templates_loop;
 					}
 				}
 
-				if( !prev_found )
-				{
-					dst.function_templates.push_back( function_template );
-				}
+				// Not found.
+				dst.function_templates.push_back( function_template );
 			}
 
 			return;

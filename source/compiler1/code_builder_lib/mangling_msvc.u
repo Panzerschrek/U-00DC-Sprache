@@ -398,7 +398,7 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust
 {
 	var ust::vector</FunctionType::Param/> mut back_references;
 
-	foreach( & param : params )
+	foreach( & param : params ) label params_loop
 	{
 		if( param.value_type == ValueType::Value && !param.t.GetFundamentalType().empty() )
 		{
@@ -408,32 +408,29 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust
 		else
 		{
 
-			var bool mut found = false;
 			for( auto mut i= 0s; i < back_references.size(); ++i )
 			{
 				if( param == back_references[i] )
 				{
 					mangler_state.PushElement( char8(i + size_type("0"c8)) );
-					found= true;
-					break;
+					continue label params_loop;
 				}
 			}
 
-			if( !found )
+			// Not found in back_references.
+
+			if( param.value_type != ValueType::Value )
 			{
-				if( param.value_type != ValueType::Value )
-				{
-					mangler_state.PushElement( g_reference_prefix );
-					mangler_state.PushElement( pointer_types_modifier_.range() );
-					mangler_state.PushElement( select( param.value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
-				}
+				mangler_state.PushElement( g_reference_prefix );
+				mangler_state.PushElement( pointer_types_modifier_.range() );
+				mangler_state.PushElement( select( param.value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
+			}
 
-				EncodeType( mangler_state, param.t );
+			EncodeType( mangler_state, param.t );
 
-				if( back_references.size() < g_num_back_references )
-				{
-					back_references.push_back( param );
-				}
+			if( back_references.size() < g_num_back_references )
+			{
+				back_references.push_back( param );
 			}
 		}
 	}
