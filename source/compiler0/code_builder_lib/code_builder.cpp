@@ -1185,9 +1185,15 @@ size_t CodeBuilder::PrepareFunction(
 	// Set conversion constructor.
 	func_variable.is_conversion_constructor= func.is_conversion_constructor;
 	U_ASSERT( !( func.is_conversion_constructor && !is_constructor ) );
-	if( func.is_conversion_constructor && func_variable.type.params.size() != 2u )
-		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc );
 	func_variable.is_constructor= is_constructor;
+
+	if( func.is_conversion_constructor )
+	{
+		if( func_variable.type.params.size() != 2u )
+			REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc );
+		else if( func_variable.type.params[1].type == func_variable.type.params[0].type )
+			REPORT_ERROR( ConversionConstructorSourceTypeIsIdenticalToDestinationType, names_scope.GetErrors(), func.src_loc );
+	}
 
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )

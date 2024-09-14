@@ -637,6 +637,11 @@ fn CodeBuilder::PrepareFunction(
 		if( function_variable.t.params.size() == 2s )
 		{
 			function_variable.is_conversion_constructor= true;
+
+			if( cast_imut(function_variable).t.params[1s].t == cast_imut(function_variable).t.params[0s].t )
+			{
+				REPORT_ERROR( ConversionConstructorSourceTypeIsIdenticalToDestinationType, names_scope_ptr, function_declaration.src_loc )
+			}
 		}
 		else
 		{

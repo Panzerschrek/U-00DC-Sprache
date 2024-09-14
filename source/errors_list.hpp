@@ -98,6 +98,7 @@ PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor o
 PROCESS_ERROR( ConstructorAndDestructorMustReturnVoid, "Constructors and destructors must return void." )
 PROCESS_ERROR( ByvalThisForConstructorOrDestructor, "\"byval\" \"this\" for constructor or destructor. Mutable reference should be used for \"this\" instead." )
 PROCESS_ERROR( ConversionConstructorMustHaveOneArgument, "Conversion constructor must have exactly 1 argument (except \"this\" )." )
+PROCESS_ERROR( ConversionConstructorSourceTypeIsIdenticalToDestinationType, "Conversion constructor source type is identical to destination type. Such conversion constructor is useless." )
 PROCESS_ERROR( InitializationListInNonConstructor, "Initialization list for non-constructor function ." )
 PROCESS_ERROR( ClassHasNoConstructors, "Class has no constructors." )
 PROCESS_ERROR( FieldIsNotInitializedYet, "Field \"{0}\" is not initialized yet." )

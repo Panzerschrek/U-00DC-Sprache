@@ -447,3 +447,28 @@ def DeepTypeConversionDisabled_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ConversionConstructorSourceTypeIsIdenticalToDestinationType_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn conversion_constructor( S& other );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ConversionConstructorSourceTypeIsIdenticalToDestinationType", 4 ) )
+
+
+def ConversionConstructorSourceTypeIsIdenticalToDestinationType_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn conversion_constructor( mut this, SAlias& other );
+		}
+		type SAlias= S;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ConversionConstructorSourceTypeIsIdenticalToDestinationType", 4 ) )
