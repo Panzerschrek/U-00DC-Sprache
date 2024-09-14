@@ -178,7 +178,7 @@ fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 		}
 	}
 
-	ust::sort( errors.range() );
+	ust::sort( errors );
 	errors.remove_adjacent_duplicates();
 }
 

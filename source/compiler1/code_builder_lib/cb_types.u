@@ -285,7 +285,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				res.return_references.push_back( FunctionType::ParamReference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number } );
 			}
 		}
-		ust::sort( res.return_references.range() );
+		ust::sort( res.return_references );
 	}
 
 	return res;

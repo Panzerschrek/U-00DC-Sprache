@@ -116,7 +116,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		}
 	}
 
-	ust::sort( this_virtual_functions.range() );
+	ust::sort( this_virtual_functions );
 
 	// Process functions.
 	var u32 mut own_virtual_table_index= 0u;

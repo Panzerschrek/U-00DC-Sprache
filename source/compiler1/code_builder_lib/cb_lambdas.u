@@ -631,7 +631,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		// We must sort fields in order to avoid creating fields list in hash-map iteration order (which is non-deterministic).
 		// There should be no equal elements here, because this can prevent sorting to be stable.
-		ust::sort( captured_variables.range() );
+		ust::sort( captured_variables );
 
 		var ust::unordered_map</ VariablePtr, u8 /> mut captured_variable_to_lambda_inner_reference_tag;
 

@@ -383,7 +383,7 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, Na
 template</type T/>
 fn NormalizeList( ust::vector</T/> &mut v )
 {
-	ust::sort( v.range() );
+	ust::sort( v );
 	v.remove_adjacent_duplicates();
 }
 

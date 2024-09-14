@@ -689,7 +689,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 	}
 
 	// Sort class fields in typeinfo by name, because we need strong order.
-	ust::sort( class_fields.range() );
+	ust::sort( class_fields );
 
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
@@ -759,7 +759,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 	}
 
 	// Sort class functions in typeinfo by mangled name, because we need strong order.
-	ust::sort( functions_list.range() );
+	ust::sort( functions_list );
 
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
@@ -842,7 +842,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 	}
 
 	// Sort class types in typeinfo by name, because we need strong order.
-	ust::sort( class_inner_types.range() );
+	ust::sort( class_inner_types );
 
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
@@ -918,7 +918,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 	}
 
 	// Sort enum elements in typeinfo by name, because we need strong order.
-	ust::sort( enum_elemens_list.range() );
+	ust::sort( enum_elemens_list );
 
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;

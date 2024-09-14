@@ -4,6 +4,14 @@ import "random_access_range.u"
 namespace ust
 {
 
+// Generic sort overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type T/>
+fn sort( T &mut container )
+{
+	sort( container.range() );
+}
+
 template</type T/>
 fn sort( random_access_range</T, true/> range )
 {

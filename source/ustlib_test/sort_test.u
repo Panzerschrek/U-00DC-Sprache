@@ -299,7 +299,7 @@ fn nomangle main() : i32
 			i= i32(gen.Next());
 		}
 
-		ust::sort( vec.range() );
+		ust::sort( vec );
 		halt if( !IsSorted( vec ) );
 	}
 	{ // Test for complexity. Sort already sorted array.
@@ -315,7 +315,7 @@ fn nomangle main() : i32
 			}
 		}
 
-		ust::sort( vec.range() );
+		ust::sort( vec );
 		halt if( !IsSorted( vec ) );
 	}
 	{ // Test for complexity. Sort reverse-sorted array.
@@ -331,7 +331,7 @@ fn nomangle main() : i32
 			}
 		}
 
-		ust::sort( vec.range() );
+		ust::sort( vec );
 		halt if( !IsSorted( vec ) );
 	}
 	{ // Sort, using custom comparator in form of function pointer.
