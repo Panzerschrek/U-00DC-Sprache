@@ -472,7 +472,7 @@ fn CodeBuilder::GetFunctionWithSameType( FunctionsSet & mut functions_set, Funct
 	{
 		if( function.t == function_type )
 		{
-			return ust::optional_ref_mut</ FunctionVariable />( function );
+			return function;
 		}
 	}
 

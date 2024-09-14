@@ -75,11 +75,11 @@ fn polymorph_cast( From &imut from ) : optional_ref</ To, false /> @( reference_
 		auto res= polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) );
 		if( !res.empty() )
 		{
-			return optional_ref</ To, false />( res.deref_unchecked() );
+			return res.deref_unchecked();
 		}
 		else
 		{
-			return optional_ref</ To, false />();
+			return null_optional_ref;
 		}
 	}
 }
@@ -132,7 +132,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( referen
 		static_if( same_type</ From, To /> || is_ancestor_for</ To, From />() )
 		{
 			// Derived to base cast.
-			return optional_ref</ To, true  />( from );
+			return from;
 		}
 		else
 		{
@@ -144,7 +144,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( referen
 				var $(type_id_table_element) type_id_table= virtual_table.type_id_table;
 				// Obtain pointer to allocated object.
 				var $(u8) ptr= $<( cast_ref_unsafe</u8/>( from ) ) - virtual_table.offset_of_allocated_object;
-				return optional_ref</ To, true />( polymorph_cast_r</To/>( ptr, type_id_table ) );
+				return polymorph_cast_r</To/>( ptr, type_id_table );
 			}
 		}
 	}

@@ -73,7 +73,7 @@ fn ManglerItaniumABI::MangleFunction(
 	FunctionType& function_type,
 	TemplateArgsFinished& template_args ) : ust::string8
 {
-	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>(template_args) );
+	return MangleFunctionImpl( parent_scope, name, function_type, template_args );
 }
 
 fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8

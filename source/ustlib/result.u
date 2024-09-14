@@ -160,11 +160,11 @@ public:
 	{
 		if( is_ok_ )
 		{
-			return optional_ref_mut </OkT/>( unsafe( deref_unchecked() ) );
+			return unsafe( deref_unchecked() );
 		}
 		else
 		{
-			return optional_ref_mut </OkT/>();
+			return null_optional_ref;
 		}
 	}
 
@@ -174,11 +174,11 @@ public:
 	{
 		if( is_ok_ )
 		{
-			return optional_ref_imut</OkT/>( unsafe( deref_unchecked() ) );
+			return unsafe( deref_unchecked() );
 		}
 		else
 		{
-			return optional_ref_imut</OkT/>();
+			return null_optional_ref;
 		}
 	}
 
@@ -188,11 +188,11 @@ public:
 	{
 		if( !is_ok_ )
 		{
-			return optional_ref_mut </ErrorT/>( unsafe( deref_error_unchecked() ) );
+			return unsafe( deref_error_unchecked() );
 		}
 		else
 		{
-			return optional_ref_mut </ErrorT/>();
+			return null_optional_ref;
 		}
 	}
 
@@ -202,11 +202,11 @@ public:
 	{
 		if( !is_ok_ )
 		{
-			return optional_ref_imut</ErrorT/>( unsafe( deref_error_unchecked() ) );
+			return unsafe( deref_error_unchecked() );
 		}
 		else
 		{
-			return optional_ref_imut</ErrorT/>();
+			return null_optional_ref;
 		}
 	}
 

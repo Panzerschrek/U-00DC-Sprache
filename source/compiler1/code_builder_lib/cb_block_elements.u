@@ -3298,7 +3298,7 @@ fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::option
 	{
 		if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
 		{
-			return ust::optional_ref_imut</Synt::Block/>( case_.block );
+			return case_.block;
 		}
 	}
 
