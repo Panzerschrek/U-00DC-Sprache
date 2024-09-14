@@ -93,7 +93,7 @@ fn nomangle main() : i32
 {
 	{
 		var [ i32, 1 ] mut arr[ 45254 ];
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 
@@ -103,7 +103,7 @@ fn nomangle main() : i32
 		for( auto mut i1= 0; i1 < 2; ++i1 )
 		{
 			var [ i32, 2 ] mut arr[ i0, i1 ];
-			ust::sort( IntRange(arr) );
+			ust::sort( arr );
 			halt if( !IsSorted( arr ) );
 		}
 	}
@@ -116,7 +116,7 @@ fn nomangle main() : i32
 			for( auto mut i2= 0; i2 < 3; ++i2 )
 			{
 				var [ i32, 3 ] mut arr[ i0, i1, i2 ];
-				ust::sort( IntRange(arr) );
+				ust::sort( arr );
 				halt if( !IsSorted( arr ) );
 			}
 		}
@@ -132,7 +132,7 @@ fn nomangle main() : i32
 				for( auto mut i3= 0; i3 < 4; ++i3 )
 				{
 					var [ i32, 4 ] mut arr[ i0, i1, i2, i3 ];
-					ust::sort( IntRange(arr) );
+					ust::sort( arr );
 					halt if( !IsSorted( arr ) );
 				}
 			}
@@ -151,7 +151,7 @@ fn nomangle main() : i32
 					for( auto mut i4= 0; i4 < 5; ++i4 )
 					{
 						var [ i32, 5 ] mut arr[ i0, i1, i2, i3, i4 ];
-						ust::sort( IntRange(arr) );
+						ust::sort( arr );
 						halt if( !IsSorted( arr ) );
 					}
 				}
@@ -173,7 +173,7 @@ fn nomangle main() : i32
 						for( auto mut i5= 0; i5 < 6; ++i5 )
 						{
 							var [ i32, 6 ] mut arr[ i0, i1, i2, i3, i4, i5 ];
-							ust::sort( IntRange(arr) );
+							ust::sort( arr );
 							halt if( !IsSorted( arr ) );
 						}
 					}
@@ -198,7 +198,7 @@ fn nomangle main() : i32
 							for( auto mut i6= 0; i6 < 7; ++i6 )
 							{
 								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
-								ust::sort( IntRange(arr) );
+								ust::sort( arr );
 								halt if( !IsSorted( arr ) );
 							}
 						}
@@ -210,7 +210,7 @@ fn nomangle main() : i32
 
 	{ // All elements are same.
 		var [ i32, 50 ] mut arr= zero_init;
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Cases, where all elements are same, except one element which is greater than others.
@@ -219,7 +219,7 @@ fn nomangle main() : i32
 		{
 			var [ i32, num ] mut arr= zero_init;
 			arr[ u32(i) ]= 1;
-			ust::sort( IntRange(arr) );
+			ust::sort( arr );
 			halt if( !IsSorted( arr ) );
 		}
 	}
@@ -229,7 +229,7 @@ fn nomangle main() : i32
 		{
 			var [ i32, num ] mut arr= zero_init;
 			arr[ u32(i) ]= -1;
-			ust::sort( IntRange(arr) );
+			ust::sort( arr );
 			halt if( !IsSorted( arr ) );
 		}
 	}
@@ -241,7 +241,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= i;
 		}
 		halt if( !IsSorted( arr ) );
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 
@@ -253,7 +253,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= num - i;
 		}
 
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Sort array with only two values - 0 or 1.
@@ -264,7 +264,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= i & 1;
 		}
 
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Sort sorted array with only two values - 0 or 1.
@@ -275,7 +275,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= i * 2 / num;
 		}
 
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Sort reverse-sorted array with only two values - 0 or 1.
@@ -286,7 +286,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= ( num - 1 - i ) * 2 / num;
 		}
 
-		ust::sort( IntRange(arr) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Test for complexity. Sort array of million pseudo-random numbers.
@@ -389,7 +389,7 @@ fn nomangle main() : i32
 		var [ ust::string8, num ]
 			 mut arr[ "4", "8", "15", "16", "23", "42", "quck", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "Bc", "Ba", "A", "Af", "L", "lolwat", "Zy", "XXX", "" ],
 			imut res[ "", "15", "16", "23", "4", "42", "8", "A", "Af", "Ba", "Bc", "L", "XXX", "Zy", "brown", "dog", "fox", "jumps", "lazy", "lolwat", "over", "quck", "the" ];
-		ust::sort( ust::array_view_mut</ ust::string8 />( arr ) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 
 		for( auto mut i= 0s; i < num; ++i )
@@ -402,17 +402,17 @@ fn nomangle main() : i32
 
 	{ // Sort array with "NaN" in random positions.
 		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, nan_f, 1.3f, nan_f, 256.66f, -999.0f, nan_f ];
-		ust::sort( ust::array_view_mut</ f32 />( arr ) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Sort array with "NaN" at start.
 		var [ f32, 8 ] mut arr[ nan_f, nan_f, nan_f, 0.0f, -5.0f, 1.3f, 256.66f, -999.0f ];
-		ust::sort( ust::array_view_mut</ f32 />( arr ) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 	{ // Sort array with "NaN" at end.
 		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, 1.3f, 256.66f, -999.0f, nan_f, nan_f, nan_f ];
-		ust::sort( ust::array_view_mut</ f32 />( arr ) );
+		ust::sort( arr );
 		halt if( !IsSorted( arr ) );
 	}
 

@@ -12,6 +12,13 @@ fn sort( T &mut container )
 	sort( container.range() );
 }
 
+// Sorting overloading for arrays.
+template</type T, size_type S/>
+fn sort( [ T, S ] &mut arr )
+{
+	sort( random_access_range</T, true/>( arr ) );
+}
+
 template</type T/>
 fn sort( random_access_range</T, true/> range )
 {
