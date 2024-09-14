@@ -122,7 +122,12 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 			return expr_result.constexpr_value;
 		}
 
-		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, variable.t, expr_result.t, src_loc ) )
+		if_var( &conversion_constructor_ :
+			GetConversionConstructor(
+				names_scope,
+				variable.t,
+				VariableTypeExtended{ .t= expr_result.t, .value_type= expr_result.value_type },
+				src_loc ) )
 		{
 			// Create temp variables storage for preventing of destruction of "expr".
 			WithVariablesFrame(

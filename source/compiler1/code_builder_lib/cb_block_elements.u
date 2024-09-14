@@ -692,7 +692,12 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
 		if( expr_initial_type.ReferenceIsConvertibleTo( ret_type ) )
 		{}
-		else if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, ret_type, expr_initial_type, return_operator.src_loc ) )
+		else if_var( &conversion_constructor_ :
+			GetConversionConstructor(
+				names_scope,
+				ret_type,
+				VariableTypeExtended{ .t= expr_initial_type, .value_type= expr_ptr.lock_imut().deref().value_type },
+				return_operator.src_loc ) )
 		{
 			expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, ret_type, conversion_constructor_, return_operator.src_loc );
 		}

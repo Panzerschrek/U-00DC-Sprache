@@ -692,7 +692,7 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
 					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().try_deref() ) ) && // Disable conversion for copy constructor.
-					HasConversionConstructor( names_scope, dst_type, src_type, src_loc ) )
+					HasConversionConstructor( names_scope, dst_type, actual_args_corrected[arg_n], src_loc ) )
 				{} // Ok, can convert arg.
 				else
 				{
@@ -954,7 +954,7 @@ fn CodeBuilder::GetOverloadedOperator(
 	return ust::null_optional;
 }
 
-fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended mut src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	if( !EnsureTypeComplete( dst ) )
 	{
@@ -976,7 +976,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	var [ VariableTypeExtended, 2 ] constructor_args
 	[
 		{ .t= dst, .value_type= ValueType::ReferenceMut },
-		{ .t= src, .value_type= ValueType::ReferenceImut },
+		move(src),
 	];
 
 	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
@@ -998,7 +998,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	return ust::null_optional;
 }
 
-fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool
+fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended mut src, SrcLoc& src_loc ) : bool
 {
 	if( !EnsureTypeComplete( dst ) )
 	{
@@ -1020,7 +1020,7 @@ fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	var [ VariableTypeExtended, 2 ] constructor_args
 	[
 		{ .t= dst, .value_type= ValueType::ReferenceMut },
-		{ .t= src, .value_type= ValueType::ReferenceImut },
+		move(src),
 	];
 
 	var ust::vector</OverloadingResolutionItem/> mut matched_functions;

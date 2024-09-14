@@ -1003,10 +1003,10 @@ private:
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	// Fetch and select overloaded conversion constructor.
-	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	// Check existance of conversion constuctor, but do not trigger its building.
-	fn HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool;
+	fn HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended src, SrcLoc& src_loc ) : bool;
 
 	// Returns index of more specialized or ~0s
 	fn SelectMoreSpecializedTemplate(
