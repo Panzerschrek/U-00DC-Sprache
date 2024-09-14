@@ -1127,14 +1127,14 @@ private:
 
 	// Fetch and select overloaded conversion constructor.
 	const FunctionVariable* GetConversionConstructor(
-		const Type& src_type,
+		const FunctionType::Param& src_type_extended,
 		const Type& dst_type,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
 	// Check existance of conversion constuctor, but do not trigger its building.
 	bool HasConversionConstructor(
-		const Type& src_type,
+		const FunctionType::Param& src_type_extended,
 		const Type& dst_type,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );

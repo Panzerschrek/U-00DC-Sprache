@@ -447,7 +447,12 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		{
 			if( expression_result->type.ReferenceIsConvertibleTo( yield_type ) )
 			{}
-			else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names_scope.GetErrors(), src_loc ) )
+			else if( const auto conversion_contructor=
+					GetConversionConstructor(
+						FunctionType::Param{ expression_result->type, expression_result->value_type },
+						yield_type,
+						names_scope.GetErrors(),
+						src_loc ) )
 				expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names_scope, function_context, src_loc );
 			else
 			{
@@ -558,7 +563,12 @@ void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& functio
 	{
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
-		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names_scope.GetErrors(), src_loc ) )
+		else if( const auto conversion_contructor=
+				GetConversionConstructor(
+					FunctionType::Param{ expression_result->type, expression_result->value_type },
+					return_type,
+					names_scope.GetErrors(),
+					src_loc ) )
 			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names_scope, function_context, src_loc );
 		else
 		{

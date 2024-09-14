@@ -496,7 +496,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					names_scope.GetErrors(), src_loc, variable->llvm_value, value_for_copy, variable->type.GetClassType(), function_context );
 			}
 		}
-		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result->type, variable->type, names_scope.GetErrors(), src_loc ) )
+		else if( const FunctionVariable* const conversion_constructor=
+				GetConversionConstructor(
+					FunctionType::Param{ expression_result->type, expression_result->value_type },
+					variable->type,
+					names_scope.GetErrors(),
+					src_loc ) )
 		{
 			// Type conversion required.
 			// Call conversion constructor directly with "variable" as destination.
