@@ -70,18 +70,7 @@ fn polymorph_cast( From & mut from ) : optional_ref</ To, true  /> @( reference_
 template</ type To, type From />
 fn polymorph_cast( From &imut from ) : optional_ref</ To, false /> @( reference_notation::return_inner_references::param0 )
 {
-	unsafe
-	{
-		auto res= polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) );
-		if( !res.empty() )
-		{
-			return res.deref_unchecked();
-		}
-		else
-		{
-			return null_optional_ref;
-		}
-	}
+	return unsafe( polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) ) );
 }
 
 namespace polymorph_impl

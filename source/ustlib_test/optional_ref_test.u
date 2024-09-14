@@ -36,6 +36,18 @@ fn nomangle main() : i32
 		}
 		halt if( x != 1234 );
 	}
+	{ // 'optional_ref_imut' is implicitly constructible from 'optional_ref_mut'.
+		auto mut x= 55567;
+		var IntRefMut ref_mut = x;
+		var IntRefImut ref_imut= ref_mut;
+		halt if(ref_imut.empty());
+		halt if(ref_imut.try_deref() != 55567 );
+	}
+	{ // 'optional_ref_imut' is implicitly constructible from 'optional_ref_mut'.
+		var IntRefMut ref_mut;
+		var IntRefImut ref_imut= ref_mut;
+		halt if(!ref_imut.empty());
+	}
 	{  // Mutable 'optional_ref'.
 		auto mut x= 55;
 		{
