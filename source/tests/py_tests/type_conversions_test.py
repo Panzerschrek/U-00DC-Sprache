@@ -353,16 +353,14 @@ def TypeConversion_InReturn_Test4():
 
 def ConversionConstructorForMutableReferences_Test0():
 	c_program_text= """
-		 var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 		struct S
 		{
 			i32 &mut ref;
 			fn conversion_constructor( i32 &mut x ) @(pollution)
 				( ref= x )
-			{
-			}
+			{}
 		}
-
 		fn Set66( S s )
 		{
 			s.ref= 66;
@@ -370,13 +368,167 @@ def ConversionConstructorForMutableReferences_Test0():
 		fn Foo() : i32
 		{
 			var i32 mut x= 0;
-			Set66( x ); // Perform implicit type conversion here "i32 &mut -> S".
+			Set66( x ); // Perform implicit type conversion "i32 &mut -> S" in function call.
 			return x;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 66 )
+
+
+def ConversionConstructorForMutableReferences_Test1():
+	c_program_text= """
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32 &mut ref;
+			fn conversion_constructor( i32 &mut x ) @(pollution)
+				( ref= x )
+			{}
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn Wrap( i32 &mut x ) : S @(return_inner_references)
+		{
+			return x; // Perform implicit type conversion "i32 &mut -> S" in return.
+		}
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			Wrap(x).ref= 56765;
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 56765 )
+
+
+def ConversionConstructorForMutableReferences_Test2():
+	c_program_text= """
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32 &mut ref;
+			fn conversion_constructor( i32 &mut x ) @(pollution)
+				( ref= x )
+			{}
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			{
+				var S s= x; // Perform implicit type conversion "i32 &mut -> S" in expression initialization.
+				s.ref= 8989;
+			}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 8989 )
+
+
+def ConversionConstructorForMutableReferences_Test3():
+	c_program_text= """
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32 &mut ref;
+			fn conversion_constructor( i32 &mut x ) @(pollution)
+				( ref= x )
+			{}
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn async Wrap( i32 &mut x ) : S @(return_inner_references)
+		{
+			return x; // Perform implicit type conversion "i32 &mut -> S" in async return.
+		}
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			{
+				auto mut f= Wrap(x);
+				if_coro_advance( s : f )
+				{
+					s.ref= 1357;
+				}
+			}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1357 )
+
+
+def ConversionConstructorForMutableReferences_Test4():
+	c_program_text= """
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32 &mut ref;
+			fn conversion_constructor( i32 &mut x ) @(pollution)
+				( ref= x )
+			{}
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator Wrap( i32 &mut x ) : S @(return_inner_references)
+		{
+			yield x; // Perform implicit type conversion "i32 &mut -> S" in yield.
+		}
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			{
+				auto mut f= Wrap(x);
+				if_coro_advance( s : f )
+				{
+					s.ref= 88778899;
+				}
+			}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 88778899 )
+
+
+def ConversionConstructorForMutableReferences_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 res;
+
+			// Mutability-based conversion constructor overloading.
+			fn conversion_constructor( i32 &mut x )
+				( res= -x )
+			{
+				x= 0;
+			}
+
+			fn conversion_constructor( i32 &imut x )
+				( res= x )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 789, imut y= 987;
+
+			var S s_x= x; // Call here mutable version of coversion cosntructor.
+			halt if( x != 0 );
+			halt if( s_x.res != -789 );
+
+			var S s_y= y; // Call here immutable version of coversion cosntructor.
+			halt if( y != 987 );
+			halt if( s_y.res != 987 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ConversionConstructorMustHaveOneArgument_Test0():
