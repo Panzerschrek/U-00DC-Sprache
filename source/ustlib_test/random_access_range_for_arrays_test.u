@@ -35,10 +35,19 @@ fn nomangle main() : i32
 		auto size= GetIntRangeSize( arr );
 		halt if( size != 16s );
 	}
-	{ // Can implicitly convert mut array to range.
-		var [ i32, 16 ] mut arr= zero_init;
-		auto size= GetIntRangeSize( arr );
-		halt if( size != 16s );
+	{ // Can implicitly convert mut array to mut range.
+		var [ i32, 3 ] mut arr[1, 22, 333];
+		{
+			var IntRangeMut mut r= arr;
+			halt if( r.size() != 3s );
+			foreach( &mut i : r )
+			{
+				i= -i;
+			}
+		}
+		halt if(arr[0] != -1);
+		halt if(arr[1] != -22);
+		halt if(arr[2] != -333);
 	}
 	{ // Can convert mut range to imut range.
 		var [ i32, 16 ] mut arr= zero_init;
