@@ -351,6 +351,34 @@ def TypeConversion_InReturn_Test4():
 	assert( errors_list[0].src_loc.line == 14 )
 
 
+def ConversionConstructorForMutableReferences_Test0():
+	c_program_text= """
+		 var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		struct S
+		{
+			i32 &mut ref;
+			fn conversion_constructor( i32 &mut x ) @(pollution)
+				( ref= x )
+			{
+			}
+		}
+
+		fn Set66( S s )
+		{
+			s.ref= 66;
+		}
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			Set66( x ); // Perform implicit type conversion here "i32 &mut -> S".
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66 )
+
+
 def ConversionConstructorMustHaveOneArgument_Test0():
 	c_program_text= """
 		struct IntWrapper
