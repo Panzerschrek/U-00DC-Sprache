@@ -144,7 +144,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( referen
 				var $(type_id_table_element) type_id_table= virtual_table.type_id_table;
 				// Obtain pointer to allocated object.
 				var $(u8) ptr= $<( cast_ref_unsafe</u8/>( from ) ) - virtual_table.offset_of_allocated_object;
-				return polymorph_cast_r</To/>( ptr, type_id_table );
+				return optional_ref</ To, true />( polymorph_cast_r</To/>( ptr, type_id_table ) );
 			}
 		}
 	}
