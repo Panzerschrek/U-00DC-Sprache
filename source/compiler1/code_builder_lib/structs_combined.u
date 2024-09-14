@@ -338,7 +338,7 @@ fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType /> @( ret
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</ArrayType/>/>() )
 	{
-		return ust::optional_ref_imut</ArrayType/>( b.deref() );
+		return b.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -348,7 +348,7 @@ fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType /> @( ret
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</TupleType/>/>() )
 	{
-		return ust::optional_ref_imut</TupleType/>( b.deref() );
+		return b.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -358,7 +358,7 @@ fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</RawPointerType/>/>() )
 	{
-		return ust::optional_ref_imut</RawPointerType/>( b.deref() );
+		return b.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -368,7 +368,7 @@ fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionP
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</FunctionPointerType/>/>() )
 	{
-		return ust::optional_ref_imut</FunctionPointerType/>( b.deref() );
+		return b.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1282,7 +1282,7 @@ fn TemplateSignatureParam::GetArray(this) : ust::optional_ref_imut</ Array /> @(
 {
 	if_var( &array_type_param : something_.get</ ust::shared_ptr_final</Array/> />() )
 	{
-		return ust::optional_ref_imut</ Array />(array_type_param.deref());
+		return array_type_param.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1292,7 +1292,7 @@ fn TemplateSignatureParam::GetTuple(this) : ust::optional_ref_imut</ Tuple /> @(
 {
 	if_var( &tuple_type_param : something_.get</ ust::shared_ptr_final</Tuple/> />() )
 	{
-		return ust::optional_ref_imut</ Tuple />(tuple_type_param.deref());
+		return tuple_type_param.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1302,7 +1302,7 @@ fn TemplateSignatureParam::GetRawPointer(this) : ust::optional_ref_imut</ RawPoi
 {
 	if_var( &raw_pointer_type_param : something_.get</ ust::shared_ptr_final</RawPointer/> />() )
 	{
-		return ust::optional_ref_imut</ RawPointer />(raw_pointer_type_param.deref());
+		return raw_pointer_type_param.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1312,7 +1312,7 @@ fn TemplateSignatureParam::GetFunction(this) : ust::optional_ref_imut</ Function
 {
 	if_var( &function_type_param : something_.get</ ust::shared_ptr_final</Function/> />() )
 	{
-		return ust::optional_ref_imut</ Function />(function_type_param.deref());
+		return function_type_param.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1322,7 +1322,7 @@ fn TemplateSignatureParam::GetCoroutine(this) : ust::optional_ref_imut</ Corouti
 {
 	if_var( &coroutine_type_param : something_.get</ ust::shared_ptr_final</Coroutine/> />() )
 	{
-		return ust::optional_ref_imut</ Coroutine />(coroutine_type_param.deref());
+		return coroutine_type_param.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1332,7 +1332,7 @@ fn TemplateSignatureParam::GetSpecializedTemplate(this) : ust::optional_ref_imut
 {
 	if_var( &specialized_template_param : something_.get</ ust::shared_ptr_final</SpecializedTemplate/> />() )
 	{
-		return ust::optional_ref_imut</ SpecializedTemplate />(specialized_template_param.deref());
+		return specialized_template_param.deref();
 	}
 
 	return ust::null_optional_ref;
@@ -1679,7 +1679,7 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 		return ust::null_optional_ref;
 	}
 
-	return ust::optional_ref_mut</ NamesScopeValue />( names_map_.insert(move(name), move(value) ) );
+	return names_map_.insert(move(name), move(value) );
 }
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>

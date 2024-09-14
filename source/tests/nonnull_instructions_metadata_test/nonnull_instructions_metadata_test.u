@@ -24,8 +24,8 @@ fn GetOptForRange( ust::array_view_imut</i32/> a ) : ust::optional_ref_imut</i32
 		return ust::null_optional_ref;
 	}
 
-	// Since a reference to first element is otained here, internal pointer of "optional_ref" is considered to be non-null.
-	return ust::optional_ref_imut</i32/>( a.front() );
+	// Since a reference to first element is obtained here, internal pointer of "optional_ref" is considered to be non-null.
+	return a.front();
 }
 
 //

@@ -662,7 +662,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
-		else if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, return_type, names_scope.GetErrors(), return_operator.src_loc ) )
+		else if( const auto conversion_contructor=
+				GetConversionConstructor(
+					FunctionType::Param{ expression_result->type, expression_result->value_type },
+					return_type,
+					names_scope.GetErrors(),
+					return_operator.src_loc ) )
 			expression_result= ConvertVariable( expression_result, return_type, *conversion_contructor, names_scope, function_context, return_operator.src_loc );
 		else
 		{

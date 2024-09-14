@@ -96,7 +96,7 @@ public:
 			{
 				return null_optional_ref;
 			}
-			return optional_ref_imut</ T />( next_res.try_deref().key() );
+			return next_res.try_deref().key();
 		}
 
 	private:

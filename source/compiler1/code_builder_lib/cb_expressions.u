@@ -4178,9 +4178,17 @@ fn CodeBuilder::DoCallFunction(
 				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].deref() ) );
 
 		// Convert variable in function call.
+
 		if( arg_ptr.lock_imut().deref().t != expected_arg_type )
 		{
-			if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, expected_arg_type, arg_ptr.lock_imut().deref().t, src_loc ) )
+			auto t= arg_ptr.lock_imut().deref().t;
+			auto value_type= arg_ptr.lock_imut().deref().value_type;
+			if_var( &conversion_constructor_ :
+				GetConversionConstructor(
+					names_scope,
+					expected_arg_type,
+					VariableTypeExtended{ .t= t, .value_type= value_type },
+					src_loc ) )
 			{
 				arg_ptr= ConvertVariable( names_scope, function_context, arg_ptr, expected_arg_type, conversion_constructor_, src_loc );
 			}

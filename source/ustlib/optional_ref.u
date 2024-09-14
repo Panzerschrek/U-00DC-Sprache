@@ -32,15 +32,22 @@ public:
 
 	// Construct from reference
 	fn enable_if( is_mutable )
-	constructor( mut this, T &  mut ref ) @( reference_notation::pollution::param0_param_1_reference )
+	conversion_constructor( mut this, T &  mut ref ) @( reference_notation::pollution::param0_param_1_reference )
 		( ptr_= $<(ref) )
 	{
 	}
 
-	// Construct 'imut' reference from 'mut' reference.
+	// Construct from reference
 	fn enable_if( !is_mutable )
-	constructor( mut this, T &imut ref ) @( reference_notation::pollution::param0_param_1_reference )
+	conversion_constructor( mut this, T &imut ref ) @( reference_notation::pollution::param0_param_1_reference )
 		( ptr_= $<( unsafe( cast_mut(ref) ) ) )
+	{
+	}
+
+	// Construct "optional_ref_imut" from "optional_ref_mut".
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, optional_ref</T, true/> r ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( ptr_= unsafe( r.get_ptr() ) )
 	{
 	}
 
@@ -94,7 +101,7 @@ public:
 	}
 
 	// "try_take" methods are added for compatibility with "optional".
-	// For optional_ref it is just a alais for "try_deref.
+	// For optional_ref it is just a alais for "try_deref".
 
 	fn enable_if( is_mutable )
 	try_take( this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )

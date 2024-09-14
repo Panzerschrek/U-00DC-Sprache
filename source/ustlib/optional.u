@@ -186,7 +186,7 @@ public:
 	{
 		if( has_value_ )
 		{
-			return optional_ref_mut</T/>( unsafe( deref_unchecked() ) );
+			return unsafe( deref_unchecked() );
 		}
 		else
 		{
@@ -200,7 +200,7 @@ public:
 	{
 		if( has_value_ )
 		{
-			return optional_ref_imut</T/>( unsafe( deref_unchecked() ) );
+			return unsafe( deref_unchecked() );
 		}
 		else
 		{

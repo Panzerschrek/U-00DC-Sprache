@@ -162,7 +162,7 @@ public:
 			var ptr_type table_value_ptr= find_key( key );
 			if( !is_nullptr(table_value_ptr) )
 			{
-				return optional_ref</ value_type, true  />( $>(table_value_ptr).value_storage );
+				return $>(table_value_ptr).value_storage;
 			}
 		}
 

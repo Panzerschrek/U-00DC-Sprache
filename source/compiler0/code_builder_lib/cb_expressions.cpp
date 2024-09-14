@@ -3736,7 +3736,7 @@ Value CodeBuilder::DoCallFunction(
 		if( param.value_type != ValueType::Value )
 		{
 			if( !ReferenceIsConvertible( expr->type, param.type, names_scope.GetErrors(), call_src_loc ) &&
-				!HasConversionConstructor( expr->type, param.type, names_scope.GetErrors(), src_loc ) )
+				!HasConversionConstructor( FunctionType::Param{ expr->type, expr->value_type }, param.type, names_scope.GetErrors(), src_loc ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, param.type, expr->type );
 				continue;
@@ -3782,7 +3782,13 @@ Value CodeBuilder::DoCallFunction(
 						llvm_args[arg_number]= CreateReferenceCast( llvm_args[arg_number], expr->type, param.type, function_context );
 					else
 					{
-						const auto conversion_constructor= GetConversionConstructor( expr->type, param.type, names_scope.GetErrors(), src_loc );
+						const auto conversion_constructor=
+							GetConversionConstructor(
+								FunctionType::Param{ expr->type, expr->value_type },
+								param.type,
+								names_scope.GetErrors(),
+								src_loc );
+
 						U_ASSERT( conversion_constructor != nullptr );
 						expr= ConvertVariable( expr, param.type, *conversion_constructor, names_scope, function_context, src_loc );
 						llvm_args[arg_number]= expr->llvm_value;
@@ -3819,7 +3825,7 @@ Value CodeBuilder::DoCallFunction(
 			function_context.variables_state.AddNode( arg_node );
 
 			if( !ReferenceIsConvertible( expr->type, param.type, names_scope.GetErrors(), call_src_loc ) &&
-				!HasConversionConstructor( expr->type, param.type, names_scope.GetErrors(), src_loc ) )
+				!HasConversionConstructor( FunctionType::Param{ expr->type, expr->value_type }, param.type, names_scope.GetErrors(), src_loc ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, param.type, expr->type );
 				continue;
@@ -3830,7 +3836,13 @@ Value CodeBuilder::DoCallFunction(
 				if( expr->type.ReferenceIsConvertibleTo( param.type ) ){}
 				else
 				{
-					const auto conversion_constructor= GetConversionConstructor( expr->type, param.type, names_scope.GetErrors(), src_loc );
+					const auto conversion_constructor=
+						GetConversionConstructor(
+							FunctionType::Param{ expr->type, expr->value_type },
+							param.type,
+							names_scope.GetErrors(),
+							src_loc );
+
 					U_ASSERT( conversion_constructor != nullptr );
 					expr= ConvertVariable( expr, param.type, *conversion_constructor, names_scope, function_context, src_loc );
 				}
