@@ -531,6 +531,64 @@ def ConversionConstructorForMutableReferences_Test5():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ConversionConstructorForMutableReferences_Test6():
+	c_program_text= """
+		struct S
+		{
+			i32 res;
+
+			// Only mutable reference constructor is implicit.
+			// Immutable reference constructor is explicit.
+			fn conversion_constructor( i32 &mut x )
+				( res= -x )
+			{
+				x= 0;
+			}
+
+			fn constructor( i32 &imut x )
+				( res= x )
+			{}
+		}
+		fn Foo()
+		{
+			var i32 x= 66;
+			var S s= x; // Error, there is no implicit conversion for "i32 &imut".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 21 ) )
+
+
+def ConversionConstructorForMutableReferences_Test7():
+	c_program_text= """
+		struct S
+		{
+			i32 res;
+
+			// Only immutable reference constructor is implicit.
+			// Mutable reference constructor is explicit.
+			fn constructor( i32 &mut x )
+				( res= -x )
+			{
+				x= 0;
+			}
+
+			fn conversion_constructor( i32 &imut x )
+				( res= x )
+			{}
+		}
+		fn Foo()
+		{
+			var i32 mut x= 98789;
+			var S s= x; // Implicit conversion may be performed, but with conversion to an immutable referece. This is ambigous, so, no conversion is performed at all.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 21 ) )
+
+
 def ConversionConstructorMustHaveOneArgument_Test0():
 	c_program_text= """
 		struct IntWrapper
