@@ -20,6 +20,22 @@ fn nomangle main() : i32
 		halt if( ref.empty() );
 		halt if( ref.try_deref() != 44 );
 	}
+	{ // 'optional_ref' is implicitly constructible from reference.
+		auto x= 88;
+		var IntRefImut ref = x;
+		halt if( ref.empty() );
+		halt if( ref.try_deref() != 88 );
+	}
+	{ // 'optional_ref' is implicitly constructible from mutable reference.
+		auto mut x= 67;
+		{
+			var IntRefMut ref = x;
+			halt if( ref.empty() );
+			halt if( ref.try_deref() != 67 );
+			ref.try_deref()= 1234;
+		}
+		halt if( x != 1234 );
+	}
 	{  // Mutable 'optional_ref'.
 		auto mut x= 55;
 		{

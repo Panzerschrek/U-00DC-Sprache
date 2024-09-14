@@ -32,14 +32,14 @@ public:
 
 	// Construct from reference
 	fn enable_if( is_mutable )
-	constructor( mut this, T &  mut ref ) @( reference_notation::pollution::param0_param_1_reference )
+	conversion_constructor( mut this, T &  mut ref ) @( reference_notation::pollution::param0_param_1_reference )
 		( ptr_= $<(ref) )
 	{
 	}
 
 	// Construct 'imut' reference from 'mut' reference.
 	fn enable_if( !is_mutable )
-	constructor( mut this, T &imut ref ) @( reference_notation::pollution::param0_param_1_reference )
+	conversion_constructor( mut this, T &imut ref ) @( reference_notation::pollution::param0_param_1_reference )
 		( ptr_= $<( unsafe( cast_mut(ref) ) ) )
 	{
 	}
