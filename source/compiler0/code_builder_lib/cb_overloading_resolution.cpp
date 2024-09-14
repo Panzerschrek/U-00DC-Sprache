@@ -859,7 +859,7 @@ OverloadedFunctionsSetPtr CodeBuilder::GetConstructors(
 }
 
 const FunctionVariable* CodeBuilder::GetConversionConstructor(
-	const FunctionType::Param& src_type_extended,
+	FunctionType::Param src_type_extended,
 	const Type& dst_type,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
@@ -873,7 +873,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	FunctionType::Param actual_args[2];
 	actual_args[0u].type= dst_type;
 	actual_args[0u].value_type= ValueType::ReferenceMut;
-	actual_args[1u]= src_type_extended;
+	actual_args[1u]= std::move(src_type_extended);
 
 	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
 	FetchMatchedOverloadedFunctions( *constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
@@ -892,7 +892,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 }
 
 bool CodeBuilder::HasConversionConstructor(
-	const FunctionType::Param& src_type_extended,
+	FunctionType::Param src_type_extended,
 	const Type& dst_type,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
@@ -904,7 +904,7 @@ bool CodeBuilder::HasConversionConstructor(
 	FunctionType::Param actual_args[2];
 	actual_args[0u].type= dst_type;
 	actual_args[0u].value_type= ValueType::ReferenceMut;
-	actual_args[1u]= src_type_extended;
+	actual_args[1u]= std::move(src_type_extended);
 
 	// Perform fetch of conversions constructors, but do not trigger its building.
 	// This is needed, since check for conversion constructor existence may be requested without further conversion constructor usage.
