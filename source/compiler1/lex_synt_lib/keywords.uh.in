@@ -8,7 +8,6 @@ enum Keyword
 @KEYWORDS_LIST@
 }
 
-fn IsKeyword( ust::string8& str ) : bool;
 fn IsKeyword( ust::string_view8& str ) : bool;
 fn KeywordToString( Keyword k ) : ust::string_view8;
 

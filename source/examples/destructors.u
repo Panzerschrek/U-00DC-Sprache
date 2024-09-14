@@ -44,7 +44,7 @@ struct S
 		var ust::string8 mut s= "S::destructor ";
 		s+= ust::to_string8(x);
 		s+= "\n";
-		ust::stdout_print( s.range() );
+		ust::stdout_print( s );
 	}
 }
 

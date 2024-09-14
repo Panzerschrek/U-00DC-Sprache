@@ -73,7 +73,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 
 	auto& func_name= function.deref().name.back();
-	NamesScopeFillFunction( names_scope_ptr, function, func_name.range(), class_type, visibility );
+	NamesScopeFillFunction( names_scope_ptr, function, func_name, class_type, visibility );
 }
 
 fn CodeBuilder::NamesScopeFillFunction( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::string_view8 func_name, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )

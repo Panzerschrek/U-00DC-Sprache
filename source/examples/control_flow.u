@@ -12,7 +12,7 @@ fn nomangle main() : i32
 	for( auto mut i= 0u; i <= 75u; ++i )
 	{
 		auto mask= GetDiv15Mask(i);
-		ust::stdout_print( ( "Mask for " + ust::to_string8(i) + " is " + ust::to_string8(mask) + "\n" ).range() );
+		ust::stdout_print( "Mask for " + ust::to_string8(i) + " is " + ust::to_string8(mask) + "\n" );
 	}
 
 	return 0;
@@ -25,7 +25,7 @@ fn SimpleLoop()
 	loop
 	{
 		i+= i;
-		ust::stdout_print( ( "Loop iteration counter: " + ust::to_string8(i) + "\n" ).range() );
+		ust::stdout_print( "Loop iteration counter: " + ust::to_string8(i) + "\n" );
 		if( i > 100 )
 		{
 			break;
@@ -43,10 +43,10 @@ fn WhileLoop( u32 x )
 		i+= i / 5u;
 		if( i % 7u < 2u )
 		{
-			ust::stdout_print( ( "While loop skip iteration " + ust::to_string8(i) + "\n" ).range() );
+			ust::stdout_print( "While loop skip iteration " + ust::to_string8(i) + "\n" );
 			continue; // Go direct to the next loop iteration.
 		}
-		ust::stdout_print( ( "While loop iteration counter: " + ust::to_string8(i) + "\n" ).range() );
+		ust::stdout_print( "While loop iteration counter: " + ust::to_string8(i) + "\n" );
 	}
 }
 
@@ -61,10 +61,10 @@ fn ForLoop( f32 x )
 	{
 		if( (i32(i) & 3) == 0 )
 		{
-			ust::stdout_print( ( "For loop skip iteration " + ust::to_string8( i32(i) ) + "\n" ).range() );
+			ust::stdout_print(  "For loop skip iteration " + ust::to_string8( i32(i) ) + "\n" );
 			continue; // Go to the loop iteration part.
 		}
-		ust::stdout_print( ( "For loop iteration counter: " + ust::to_string8( i32(i) ) + "\n" ).range() );
+		ust::stdout_print( "For loop iteration counter: " + ust::to_string8( i32(i) ) + "\n" );
 	}
 }
 

@@ -851,11 +851,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var LLVMTypeRef element_llvm_type= GetFundamentalLLVMType( element_type );
 
 	// Use contents hash-based names for embed arrays.
-	var ust::string8 mut name= "_embed_array_" + CalculateSourceFileContentsHash( loaded_file.range() );
+	var ust::string8 mut name= "_embed_array_" + CalculateSourceFileContentsHash( loaded_file );
 	name.push_back( "\0"c8 );
 
 	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
-	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name.range(), LLVMTypeOf( constexpr_value ), constexpr_value ) );
+	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name, LLVMTypeOf( constexpr_value ), constexpr_value ) );
 
 	name.pop_back();
 
@@ -1841,7 +1841,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if_var( &t : function.get</Type/>() )
 	{
-		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args.range(), call_operator.src_loc );
+		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args, call_operator.src_loc );
 	}
 	if_var( & in_functions_set : function.get</FunctionsSetPtr/>() )
 	{
@@ -1869,13 +1869,13 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				function_pointer_type.function_type,
 				function_value,
 				false, // Call via pointer is not constexpr.
-				call_operator.args.range(),
+				call_operator.args,
 				call_operator.src_loc );
 		}
 
 		// Try to call overloaded () operator.
 		// Do it here and not call "CallFunctionsSet" to allow non-this-call operator ().
-		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Call, variable_ptr, call_operator.args.range(), call_operator.src_loc ) )
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Call, variable_ptr, call_operator.args, call_operator.src_loc ) )
 		{
 			return take(res);
 		}
@@ -1887,7 +1887,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
-	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_to_non_nullable(), call_operator.args.range(), call_operator.src_loc );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_to_non_nullable(), call_operator.args, call_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -1921,7 +1921,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	if( member_access_operator.template_args.empty() &&
 		class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() )
 	{
-		var VariableNullablePtr fetch_result_opt= TryFetchTypeinfoClassLazyField( variable.t, member_access_operator.member_name.range() );
+		var VariableNullablePtr fetch_result_opt= TryFetchTypeinfoClassLazyField( variable.t, member_access_operator.member_name );
 		if( !fetch_result_opt.empty() )
 		{
 			var VariablePtr fetch_result= fetch_result_opt.try_to_non_nullable();
@@ -3510,7 +3510,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, src_loc );
 	}
 
-	if_var( &overloaded_operator : GetOverloadedOperator( args_ref.range(), operator, names_scope, src_loc ) )
+	if_var( &overloaded_operator : GetOverloadedOperator( args_ref, operator, names_scope, src_loc ) )
 	{
 		if( overloaded_operator.is_deleted )
 		{
@@ -3932,7 +3932,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			function_context.is_functionless_context= prev_is_functionless_context;
 		} );
 
-	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
+	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
 		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 
@@ -4008,7 +4008,7 @@ fn CodeBuilder::CallFunctionsSet(
 	auto function_selected_opt=
 		GetOverloadedFunction(
 			functions_set.lock_imut().deref(),
-			args_evaluated.range(),
+			args_evaluated,
 			!this_.empty(),
 			names_scope,
 			src_loc );
@@ -4091,7 +4091,7 @@ fn CodeBuilder::DoCallFunction(
 		function_type,
 		function,
 		is_constexpr,
-		preevaluated_args.range(),
+		preevaluated_args,
 		args,
 		ArgsEvaluationOrder::Direct,
 		src_loc );
@@ -4423,7 +4423,7 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args.range() ) )
+		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args ) )
 		{
 			Ok(constant) ->
 			{

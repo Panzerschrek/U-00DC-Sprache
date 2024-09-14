@@ -51,7 +51,7 @@ fn nomangle main() : i32
 	// It's possible to iterate over a vector.
 	foreach( &el : float_vec )
 	{
-		ust::stdout_print( ust::to_string8( i32(el) ).range() );
+		ust::stdout_print( ust::to_string8( i32(el) ) );
 		ust::stdout_print( "\n" );
 	}
 

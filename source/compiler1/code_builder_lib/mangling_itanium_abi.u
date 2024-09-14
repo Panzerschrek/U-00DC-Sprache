@@ -132,7 +132,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 				ADD_NODE( state_ )
 				{
 					EncodeNamespacePrefix_r( state_, parent_scope );
-					state_.Push( name_prefixed.range() );
+					state_.Push( name_prefixed );
 				}
 
 				EncodeTemplateArgs( state_, template_args );
@@ -142,7 +142,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 			{
 				ADD_NODE( state_ )
 				{
-					state_.Push( name_prefixed.range() );
+					state_.Push( name_prefixed );
 				}
 
 				EncodeTemplateArgs( state_, template_args );
@@ -156,12 +156,12 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 		{
 			state_.Push( "N" );
 			EncodeNamespacePrefix_r( state_, parent_scope );
-			state_.Push( name_prefixed.range() );
+			state_.Push( name_prefixed );
 			state_.Push( "E" );
 		}
 		else
 		{
-			state_.Push( name_prefixed.range() );
+			state_.Push( name_prefixed );
 		}
 	}
 
@@ -239,7 +239,7 @@ fn ManglerState::PushDecimalNumber( mut this, u64 n )
 	}
 	else
 	{
-		Push( ust::to_string8( n ).range() );
+		Push( ust::to_string8( n ) );
 	}
 }
 
@@ -324,7 +324,7 @@ fn Base36Digit( u32 value ) : char8
 	}
 }
 
-fn EncodeNestedName( ManglerState &mut mangler_state, ust::string8& name, NamesScope& parent_scope )
+fn EncodeNestedName( ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& parent_scope )
 {
 	ADD_NODE( mangler_state )
 	{
@@ -332,12 +332,12 @@ fn EncodeNestedName( ManglerState &mut mangler_state, ust::string8& name, NamesS
 		{
 			mangler_state.Push( "N" );
 			EncodeNamespacePrefix_r( mangler_state, parent_scope );
-			mangler_state.PushLengthPrefixed( name.range() );
+			mangler_state.PushLengthPrefixed( name );
 			mangler_state.Push( "E" );
 		}
 		else
 		{
-			mangler_state.PushLengthPrefixed( name.range() );
+			mangler_state.PushLengthPrefixed( name );
 		}
 	}
 }
@@ -560,7 +560,7 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 			EncodeNamespacePrefix_r( mangler_state, parent.try_lock_imut().deref() );
 		}
 
-		mangler_state.PushLengthPrefixed( base_template.class_template.lock_imut().deref().syntax_element.deref().name.range() );
+		mangler_state.PushLengthPrefixed( base_template.class_template.lock_imut().deref().syntax_element.deref().name );
 	}
 
 	EncodeTemplateArgs( mangler_state, base_template.signature_args );
@@ -588,7 +588,7 @@ fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type
 					}
 				}
 
-				mangler_state.PushLengthPrefixed( members.GetThisNamespaceName().range() );
+				mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
 			}
 		}
 		else
@@ -610,7 +610,7 @@ fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type
 						}
 					}
 
-					mangler_state.PushLengthPrefixed( members.GetThisNamespaceName().range() );
+					mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
 				}
 
 				EncodeTemplateArgs( mangler_state, lambda_class_data.template_args );
@@ -627,7 +627,7 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName().range() );
+			mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
 		}
 
 		// Encode coroutine type as template with several arguments.
@@ -737,7 +737,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			{
 				ADD_NODE( mangler_state )
 				{
-					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName().range() );
+					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
 				}
 				ADD_NODE( mangler_state )
 				{
@@ -900,7 +900,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 			}
 		}
 
-		mangler_state.PushLengthPrefixed( names_scope.GetThisNamespaceName().range() );
+		mangler_state.PushLengthPrefixed( names_scope.GetThisNamespaceName() );
 	}
 }
 

@@ -579,7 +579,7 @@ fn CodeBuilder::PrepareFunction(
 		llvm_function_name=
 			mangler_.deref().MangleFunction(
 				names_scope_ptr.lock_imut().deref(),
-				func_name.range(),
+				func_name,
 				function_type );
 	}
 
@@ -1527,7 +1527,7 @@ fn CodeBuilder::BuildFuncCode(
 		}
 
 		// Reuse names scope of args for root function block.
-		auto block_build_info= BuildBlockElements( args_names_scope_ptr, function_context, block.elements.range() );
+		auto block_build_info= BuildBlockElements( args_names_scope_ptr, function_context, block.elements );
 		if( !block_build_info.has_terminal_instruction_inside )
 		{
 			if( func_variable.kind == FunctionVariable::Kind::Generator )

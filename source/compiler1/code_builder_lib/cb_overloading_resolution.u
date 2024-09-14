@@ -732,7 +732,7 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 
 	foreach( &parameterized_function_template : functions_set.parameterized_function_templates )
 	{
-		if_var( mut preparation_result : PrepareTemplateFunction( parameterized_function_template.base_template, parameterized_function_template.known_args.range(), actual_args, first_actual_arg_is_this, src_loc ) )
+		if_var( mut preparation_result : PrepareTemplateFunction( parameterized_function_template.base_template, parameterized_function_template.known_args, actual_args, first_actual_arg_is_this, src_loc ) )
 		{
 			out_matched_functions.push_back( move(preparation_result) );
 		}
@@ -871,7 +871,7 @@ fn CodeBuilder::GetOverloadedFunction(
 {
 	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
 	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, matched_functions );
-	var size_type function_index= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, matched_functions.range() );
+	var size_type function_index= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, matched_functions );
 	if( function_index < matched_functions.size() )
 	{
 		return FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc );
@@ -932,7 +932,7 @@ fn CodeBuilder::GetOverloadedOperator(
 
 	if( !matched_functions.empty() )
 	{
-		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, matched_functions.range() );
+		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, matched_functions );
 		if( function_index < matched_functions.size() )
 		{
 			auto result= FinalizeSelectedFunction( matched_functions[function_index], names_scope, src_loc );
@@ -983,7 +983,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, matched_functions );
 	if( !matched_functions.empty() )
 	{
-		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, matched_functions.range() );
+		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, matched_functions );
 		if( function_index < matched_functions.size() )
 		{
 			if_var( function_selected : FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc ) )
