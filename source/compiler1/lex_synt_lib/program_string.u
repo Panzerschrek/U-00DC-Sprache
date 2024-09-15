@@ -22,12 +22,12 @@ fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 	var u32 c( start.front() );
 	var sprache_char mut code(0);
 
-	if( ( c & 0b10000000u ) == 0u )
+	if( c < 0b10000000u )
 	{
 		code= sprache_char(c);
 		start.drop_front();
 	}
-	else if( ( c & 0b11100000u ) == 0b11000000u )
+	else if( c < 0b11100000u )
 	{
 		if( start.size() < 2s )
 		{
@@ -40,7 +40,7 @@ fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 
 		start= start.subrange_start(2s);
 	}
-	else if( ( c & 0b11110000u ) == 0b11100000u )
+	else if( c < 0b11110000u )
 	{
 		if( start.size() < 3s )
 		{
@@ -54,7 +54,7 @@ fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 
 		start= start.subrange_start(3s);
 	}
-	else if( ( c & 0b11111000u ) == 0b11110000u )
+	else if( c < 0b11111000u )
 	{
 		if( start.size() < 4s )
 		{

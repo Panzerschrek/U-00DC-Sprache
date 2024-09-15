@@ -38,15 +38,15 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 		(1 << 8) - 1,
 	};
 
-	const char c= *start;
+	const sprache_char c= static_cast<unsigned char>(*start);
 	sprache_char code = 0;
 
-	if( ( c & 0b10000000 ) == 0 )
+	if( c < 0b10000000u )
 	{
 		code= sprache_char(c);
 		++start;
 	}
-	else if( ( c & 0b11100000 ) == 0b11000000 )
+	else if( c < 0b11100000u )
 	{
 		if( start + 2 > end )
 		{
@@ -60,7 +60,7 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 
 		start+= 2;
 	}
-	else if( ( c & 0b11110000 ) == 0b11100000 )
+	else if( c < 0b11110000u )
 	{
 		if( start + 3 > end )
 		{
@@ -75,7 +75,7 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 
 		start+= 3;
 	}
-	else if( ( c & 0b11111000 ) == 0b11110000 )
+	else if( c < 0b11111000u )
 	{
 		if( start + 4 > end )
 		{
