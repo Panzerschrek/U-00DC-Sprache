@@ -122,7 +122,7 @@ void PushCharToUTF8String( const sprache_char c, std::string& str )
 	}
 	else if( c <= 0x10FFFFu )
 	{
-		str.push_back( char( 0b11110000u | ((c >> 18u) &  7u) ) );
+		str.push_back( char( 0b11110000u |  (c >> 18u) ) );
 		str.push_back( char( 0b10000000u | ((c >> 12u) & 63u) ) );
 		str.push_back( char( 0b10000000u | ((c >>  6u) & 63u) ) );
 		str.push_back( char( 0b10000000u |  (c  & 63u) ) );

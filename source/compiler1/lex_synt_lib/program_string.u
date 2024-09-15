@@ -104,7 +104,7 @@ fn PushCharToUTF8String( sprache_char c, ust::string8 &mut str )
 	}
 	else if( cc <= 0x10FFFFu )
 	{
-		str.push_back( char8( 0b11110000u | ((cc >> 18u) &  7u) ) );
+		str.push_back( char8( 0b11110000u |  (cc >> 18u) ) );
 		str.push_back( char8( 0b10000000u | ((cc >> 12u) & 63u) ) );
 		str.push_back( char8( 0b10000000u | ((cc >>  6u) & 63u) ) );
 		str.push_back( char8( 0b10000000u |  (cc  & 63u) ) );
