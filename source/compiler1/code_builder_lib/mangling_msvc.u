@@ -157,7 +157,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 			EncodeTemplateArgs( template_mangler_state, template_args );
 		}
 		// Do not create backreference for template name, just push template name instead.
-		mangler_state.PushElement( template_mangler_state.TakeRes().range() );
+		mangler_state.PushElement( template_mangler_state.TakeRes() );
 	}
 	else
 	{
@@ -242,7 +242,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 			// Finish list of template arguments.
 			template_mangler_state.PushElement( g_terminator );
 
-			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 		}
 		// Finish class name.
 		mangler_state.PushElement( g_terminator );
@@ -266,12 +266,12 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 				var ManglerState mut template_mangler_state;
 
 				template_mangler_state.PushElement( g_template_prefix );
-				template_mangler_state.EncodeName( class_members_ref.GetThisNamespaceName().range() );
+				template_mangler_state.EncodeName( class_members_ref.GetThisNamespaceName() );
 				EncodeType( template_mangler_state, typeinfo_class_description.source_type );
 				// Finish list of template arguments.
 				template_mangler_state.PushElement( g_terminator );
 
-				mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+				mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 			}
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
@@ -296,7 +296,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 		}
 		else
 		{
-			EncodeFullName( mangler_state, class_members_ref.GetThisNamespaceName().range(), class_members_ref.GetParent().try_lock_imut().deref() );
+			EncodeFullName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 		}
 	}
 	else if_var( &enum_type : t.GetEnumType() )
@@ -307,12 +307,12 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 		auto enum_members= enum_type.lock_imut().deref().names_scope;
 		auto enum_members_lock= enum_members.lock_imut();
 		auto& enum_members_ref= enum_members_lock.deref();
-		EncodeFullName( mangler_state, enum_members_ref.GetThisNamespaceName().range(), enum_members_ref.GetParent().try_lock_imut().deref() );
+		EncodeFullName( mangler_state, enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().try_lock_imut().deref() );
 	}
 	else if_var( &raw_poiter_type : t.GetRawPointerType() )
 	{
 		mangler_state.PushElement( g_pointer_prefix );
-		mangler_state.PushElement( pointer_types_modifier_.range() );
+		mangler_state.PushElement( pointer_types_modifier_ );
 		mangler_state.PushElement( g_mut_prefix );
 		EncodeType( mangler_state, raw_poiter_type.element_type );
 	}
@@ -332,7 +332,7 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerState &mut mangler_state, Funct
 	if( function_type.return_value_type != ValueType::Value )
 	{
 		mangler_state.PushElement( g_reference_prefix );
-		mangler_state.PushElement( pointer_types_modifier_.range() );
+		mangler_state.PushElement( pointer_types_modifier_ );
 		mangler_state.PushElement( select( function_type.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 	}
 	else if(
@@ -422,7 +422,7 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust
 			if( param.value_type != ValueType::Value )
 			{
 				mangler_state.PushElement( g_reference_prefix );
-				mangler_state.PushElement( pointer_types_modifier_.range() );
+				mangler_state.PushElement( pointer_types_modifier_ );
 				mangler_state.PushElement( select( param.value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 			}
 
@@ -512,7 +512,7 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Ty
 	with( &t : type_template.lock_imut().deref() )
 	{
 		mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
-		EncodeFullName( mangler_state, t.syntax_element.deref().name.range(), t.parent_names_scope.lock().try_lock_imut().deref() );
+		EncodeFullName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.lock().try_lock_imut().deref() );
 
 		// Do not mangle template signature params to distinguish between different overloaded type templates.
 		// it's not required, since only sets with one type template may be used as template arguments.
@@ -614,7 +614,7 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state,
 		}
 	}
 
-	mangler_state.EncodeName( scope.GetThisNamespaceName().range() );
+	mangler_state.EncodeName( scope.GetThisNamespaceName() );
 
 	EncodeNamespacePostfix_r( mangler_state, scope.GetParent().try_lock_imut().deref() );
 }
@@ -630,10 +630,10 @@ fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, 
 		var ManglerState mut template_mangler_state;
 
 		template_mangler_state.PushElement( g_template_prefix );
-		template_mangler_state.EncodeName( type_template.syntax_element.deref().name.range() );
+		template_mangler_state.EncodeName( type_template.syntax_element.deref().name );
 		EncodeTemplateArgs( template_mangler_state, base_template.signature_args );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 	}
 
 	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.lock().try_lock_imut().deref() );
@@ -647,7 +647,7 @@ fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, Cl
 	{
 		if( lambda_class_data.template_args.empty() )
 		{
-			mangler_state.EncodeName( members.GetThisNamespaceName().range() );
+			mangler_state.EncodeName( members.GetThisNamespaceName() );
 			EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref() );
 		}
 		else
@@ -655,10 +655,10 @@ fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, Cl
 			var ManglerState mut template_mangler_state;
 
 			template_mangler_state.PushElement( g_template_prefix );
-			template_mangler_state.EncodeName( members.GetThisNamespaceName().range() );
+			template_mangler_state.EncodeName( members.GetThisNamespaceName() );
 			EncodeTemplateArgs( template_mangler_state, lambda_class_data.template_args );
 
-			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 
 			EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref().GetParent().try_lock_imut().deref() );
 		}
@@ -673,13 +673,13 @@ fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state,
 	var ManglerState mut template_mangler_state;
 
 	template_mangler_state.PushElement( g_template_prefix );
-	template_mangler_state.EncodeName( the_class.members.lock_imut().deref().GetThisNamespaceName().range() );
+	template_mangler_state.EncodeName( the_class.members.lock_imut().deref().GetThisNamespaceName() );
 
 	// Return value.
 	if( coroutine_type_description.return_value_type != ValueType::Value )
 	{
 		template_mangler_state.PushElement( g_reference_prefix );
-		template_mangler_state.PushElement( pointer_types_modifier_.range() );
+		template_mangler_state.PushElement( pointer_types_modifier_ );
 		template_mangler_state.PushElement( select( coroutine_type_description.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 	}
 	EncodeType( template_mangler_state, coroutine_type_description.return_type );
@@ -712,7 +712,7 @@ fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state,
 	// Finish list of template arguments.
 	template_mangler_state.PushElement( g_terminator );
 
-	mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+	mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, i64 num )
@@ -799,7 +799,7 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 	}
 	// Finish class name.
 	mangler_state.PushElement( g_terminator );
@@ -836,7 +836,7 @@ fn ManglerMSVC::EncodeReturnReferences( this, ManglerState &mut mangler_state, F
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 	}
 	// Finish class name.
 	mangler_state.PushElement( g_terminator );
@@ -886,7 +886,7 @@ fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_sta
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
 	}
 	// Finish class name.
 	mangler_state.PushElement( g_terminator );

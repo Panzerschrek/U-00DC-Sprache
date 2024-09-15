@@ -335,7 +335,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 	}
 
-	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_, key.tuple_for_indices.range() ), parent_scope ) );
+	var NamesScopeMutPtr class_members( NamesScope( GetLambdaBaseName( lambda_, key.tuple_for_indices ), parent_scope ) );
 
 	var ClassTypePtr class_type_ptr(
 		ClassType

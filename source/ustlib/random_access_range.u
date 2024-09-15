@@ -45,6 +45,32 @@ public:
 		( begin_= unsafe( src_range.data() ), size_= src_range.size() )
 	{}
 
+	// Implement constructors for a generic type template with single type argument equal to the range contained type.
+	// This is needed in order to support implicit conversion to range for containers like "vector" or "string".
+	// We can't create such constructors directly to avoid creating imports loop.
+	// This doesn't work for containers like "unordered_set" and a compilation error may be generated if such conversion constructor is used.
+	// It's technically possible to perform deep type inspection in "enable_if" of these conversion constructors in order to check if given type has "range" method with proper signature.
+	// But it isn't done in order to speed-up compilation.
+	// This constructor is used too often and thus it can be too costly to perform complex check for each its instantiation.
+
+	// Explicit constructor from a container with "range" method.
+	template</type template Container/>
+	fn enable_if( is_mutable )
+	conversion_constructor( mut this, Container</T/> & mut container ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		// If you see a compilation error here, invalid implicit conversion is used somewhere in user code (in function call, return, initiaization, etc.).
+		this = container.range();
+	}
+
+	// Explicit constructor from a container with "range" method.
+	template</type template Container/>
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, Container</T/> &imut container ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		// If you see a compilation error here, invalid implicit conversion is used somewhere in user code (in function call, return, initiaization, etc.).
+		this = container.range();
+	}
+
 	// Construct from raw parts.
 	fn constructor( $(T) begin, size_type size ) unsafe
 		( begin_(begin), size_(size) )

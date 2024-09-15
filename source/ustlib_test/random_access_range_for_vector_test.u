@@ -136,6 +136,27 @@ fn nomangle main() : i32
 		halt if( subrange_3[1s] != 4 );
 		halt if( subrange_3[2s] != 3 );
 	}
+	{ // Can construct immutable range from a vector.
+		var VecType vec= ust::make_array( 7, 66, 555, 4444 );
+		var ust::array_view_imut</i32/> r= vec;
+		halt if( r.size() != 4s );
+		halt if( r[0s] != 7 );
+		halt if( r[1s] != 66 );
+		halt if( r[2s] != 555 );
+		halt if( r[3s] != 4444 );
+	}
+	{ // Can construct a mutable range from a vector.
+		var VecType mut vec= ust::make_array( 11, 222, 3333 );
+		var ust::array_view_mut</i32/> mut r= vec;
+		halt if( r.size() != 3s );
+		foreach( &mut x : r )
+		{
+			x*= -2;
+		}
+		halt if( r[0s] != -22 );
+		halt if( r[1s] != -444 );
+		halt if( r[2s] != -6666 );
+	}
 
 	return 0;
 }

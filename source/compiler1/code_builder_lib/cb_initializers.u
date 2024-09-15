@@ -566,7 +566,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 
 fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
-	return ApplyConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args.range(), constructor_initializer.src_loc );
+	return ApplyConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args, constructor_initializer.src_loc );
 }
 
 fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
@@ -1298,7 +1298,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		}
 		else if( exact_type_functions.size() > 1s )
 		{
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params.range() ) )
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params ) )
 		}
 		else if( functions_with_conversion.size() == 1s )
 		{
@@ -1321,11 +1321,11 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		}
 		else if( functions_with_conversion.empty() )
 		{
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params.range() ) )
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params ) )
 		}
 		else
 		{
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params.range() ) )
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params ) )
 		}
 		return LLVMValueRef::Null;
 	}

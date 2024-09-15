@@ -15,7 +15,7 @@ fn nomangle main() : i32
 	var ust::string8 mut s= "Async execution result is ";
 	s+= ust::to_string8(res);
 	s+= ".\n";
-	ust::stdout_print( s.range() );
+	ust::stdout_print( s );
 
 	return 0;
 }

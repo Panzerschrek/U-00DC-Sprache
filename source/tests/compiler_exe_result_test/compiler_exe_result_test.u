@@ -8,10 +8,10 @@ import "../../ustlib/string_conversions.u"
 fn nomangle main() : i32
 {
 	var ust::string8 msg= "Compiler exe result test: " + ust::to_string8( compiler::generation ) + "\n";
-	ust::stdout_print( msg.range() );
+	ust::stdout_print( msg );
 
 	var ust::string8 tan_89= ust::to_string8( i32(ust::tan( 89.0f / 180.0f * 3.1415926535f ) ) );
-	ust::stdout_print( ("tan(89)= " + tan_89 + "\n").range() );
+	ust::stdout_print( "tan(89)= " + tan_89 + "\n" );
 
 	return 0;
 }

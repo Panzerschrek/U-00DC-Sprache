@@ -3,11 +3,6 @@ import "/keywords.uh"
 namespace U1
 {
 
-fn IsKeyword( ust::string8& str ) : bool
-{
-	return IsKeyword( str.range() );
-}
-
 fn IsKeyword( ust::string_view8& str ) : bool
 {
 	for( &el : typeinfo</Keyword/>.elements_list )

@@ -136,15 +136,15 @@ fn TBAAMetadataBuilder::CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadata
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{
-		return unsafe( MakeTBAATypeDescriptor( llvm_context_, GetEnumTypeBaseTypeDescriptor(enum_type), name.range() ) );
+		return unsafe( MakeTBAATypeDescriptor( llvm_context_, GetEnumTypeBaseTypeDescriptor(enum_type), name ) );
 	}
 	if( !t.GetRawPointerType().empty() )
 	{
-		return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.ptr, name.range() ) );
+		return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.ptr, name ) );
 	}
 	if( !t.GetFunctionPointerType().empty() )
 	{
-		return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.ptr, name.range() ) );
+		return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.ptr, name ) );
 	}
 
 	// TODO - support other types.

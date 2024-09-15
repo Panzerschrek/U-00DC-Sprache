@@ -327,8 +327,8 @@ fn SyntaxAnalyzer::constructor(
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut macro_unique_identifiers_base_name ) @(constructor_pollution)
 	(
-		it_initial_= lexems.range(),
-		it_= lexems.range(),
+		it_initial_= lexems,
+		it_= lexems,
 		last_error_it_= it_,
 		macros_(move(macros)),
 		macro_expansion_contexts_(move(macro_expansion_contexts)),

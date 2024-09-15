@@ -33,5 +33,5 @@ fn PrintFibNumber( u32 index, u32 num )
 	s += ust::to_string8(num);
 	s += "\n";
 
-	ust::stdout_print( s.range() );
+	ust::stdout_print( s );
 }

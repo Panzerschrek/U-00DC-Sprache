@@ -47,7 +47,7 @@ fn CodeBuilder::BuildBlockImpl( mut this, NamesScopePtr& names_scope, FunctionCo
 
 	auto prev_debug_info_block= debug_info_builder_.try_deref().StartBlock( function_context, block.src_loc );
 
-	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements.range() );
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements );
 	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, block.end_src_loc );
@@ -115,7 +115,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 			references_graphs_for_merge.push_back( function_context.references_graph );
 		}
 
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, scope_block.block.end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, scope_block.block.end_src_loc );
 
 		function_context.loops_stack.pop_back();
 
@@ -1128,7 +1128,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 	if( !references_graphs.empty() )
 	{
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs.range(), names_scope, if_operator.end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs, names_scope, if_operator.end_src_loc );
 	}
 
 	return block_element_build_info;
@@ -1450,7 +1450,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 			}
 
 			// Reuse names scope of the variable for the block.
-			if_block_build_info= self.BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.elements.range() );
+			if_block_build_info= self.BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.elements );
 			if( !if_block_build_info.has_terminal_instruction_inside )
 			{
 				// Destroy coro result variable.
@@ -1529,7 +1529,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	if( !references_graphs.empty() )
 	{
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs.range(), names_scope, if_coro_advance_operator.end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs, names_scope, if_coro_advance_operator.end_src_loc );
 	}
 
 	return block_element_build_info;
@@ -2080,7 +2080,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	}
 	else
 	{
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( breances_states_after_case.range(), names_scope, switch_operator.end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( breances_states_after_case, names_scope, switch_operator.end_src_loc );
 	}
 
 	return block_build_info;
@@ -2154,7 +2154,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	// Result graph state is combination of graph state before loop and graph state of all branches terminated with "break".
 	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
 	references_graphs_for_merge.push_back( move( references_graph_before_loop ) );
-	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, while_operator.block.end_src_loc );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, while_operator.block.end_src_loc );
 
 	function_context.loops_stack.pop_back();
 
@@ -2199,7 +2199,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 	// Result graph state is combination of graph state of all branches terminated with "break".
 	var ust::vector</ReferencesGraph/> references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
-	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, loop_operator.block.end_src_loc );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, loop_operator.block.end_src_loc );
 
 	function_context.loops_stack.pop_back();
 
@@ -2389,7 +2389,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 					function_context.loops_stack.back().variable_frames_stack_size= function_context.variables_frames.size() - 1s; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 					// Reuse names scope of tuple element variable for the block.
-					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.elements.range() );
+					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.elements );
 					if( !block_build_info.has_terminal_instruction_inside )
 					{
 						self.CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc ); // destroy loop variable
@@ -2402,7 +2402,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 			var bool continue_branches_is_empty= function_context.loops_stack.back().continue_references_graphs.empty();
 			if( !continue_branches_is_empty )
 			{
-				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.end_src_loc );
+				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs, names_scope, range_for_operator.block.end_src_loc );
 			}
 
 			references_graphs_for_merge.append( function_context.loops_stack.back().break_references_graphs );
@@ -2457,7 +2457,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 		// References graph state after tuple-for is combination of graph state of all branches with "break" of all iterations.
 		else if( !references_graphs_for_merge.empty() )
 		{
-			function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, range_for_operator.block.end_src_loc );
+			function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, range_for_operator.block.end_src_loc );
 		}
 		else
 		{
@@ -2570,7 +2570,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	// References graph state before loop iteration block is combination of references graph states of each branch terminated with "continue".
 	if( loop_iteration_block_is_reachable )
 	{
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs, names_scope, c_style_for_operator.block.end_src_loc );
 	}
 	else
 	{
@@ -2605,7 +2605,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 		CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.end_src_loc );
 	}
 
-	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.end_src_loc );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, c_style_for_operator.block.end_src_loc );
 
 	// Block after loop.
 	unsafe
@@ -2848,7 +2848,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	}
 
 	// Build block. Reuse scope of with variable for this block.
-	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.elements.range() );
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.elements );
 
 	if( !block_element_build_info.has_terminal_instruction_inside )
 	{
@@ -3005,7 +3005,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, 
 {
 	if_var( &block_elements : ExpandBlockMixin( names_scope, function_context, mixin_ ) )
 	{
-		return BuildBlockElements( names_scope, function_context, block_elements.range() );
+		return BuildBlockElements( names_scope, function_context, block_elements );
 	}
 
 	return BlockElementBuildInfo();

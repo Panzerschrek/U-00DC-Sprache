@@ -92,7 +92,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	else
 	{
 		result+= "( ";
-		result+= FunctionParamsToString( function_type.params.range() );
+		result+= FunctionParamsToString( function_type.params );
 		result+= " )";
 	}
 
