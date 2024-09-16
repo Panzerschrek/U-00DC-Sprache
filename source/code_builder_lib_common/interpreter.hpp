@@ -166,7 +166,7 @@ private:
 
 	llvm::StringMap<CustomFunction> custom_functions_;
 
-	llvm::SmallVector<const llvm::Function*, 8> call_stack_;
+	llvm::SmallVector<const llvm::CallInst*, 8> call_stack_;
 
 	std::vector<std::string> errors_;
 };

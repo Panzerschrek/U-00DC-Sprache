@@ -185,9 +185,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	call_stack_.push_back( &llvm_function );
 	llvm::GenericValue res= CallFunctionImpl( &*bb.begin(), stack_depth );
-	call_stack_.pop_back();
 
 	return res;
 }
@@ -226,7 +224,12 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 			break;
 
 		case llvm::Instruction::Call:
-			ProcessCall( llvm::dyn_cast<llvm::CallInst>(instruction), stack_depth );
+			{
+				const auto call_instruction= llvm::dyn_cast<llvm::CallInst>(instruction);
+				call_stack_.push_back( call_instruction );
+				ProcessCall( call_instruction, stack_depth );
+				call_stack_.pop_back();
+			}
 			break;
 
 		case llvm::Instruction::Br:
@@ -1743,35 +1746,83 @@ void Interpreter::ReportError( const std::string_view text )
 
 std::string Interpreter::GetCurrentCallStackDescription()
 {
+	const auto format_index=
+		[]( const size_t index )
+		{
+			std::string index_str= std::to_string(index);
+			index_str.insert(index_str.begin(), '#' );
+			while(index_str.size() < 6)
+				index_str.insert(index_str.begin(), ' ' );
+			return index_str;
+		};
+
 	std::string call_stack;
 
-	for(auto it= call_stack_.rbegin(); it != call_stack_.rend(); ++it)
+	// First print current function, using its own location.
+	if( !call_stack_.empty() )
 	{
-		const llvm::Function& function= **it;
-		const auto index= it - call_stack_.rbegin();
-
-		std::string index_str= std::to_string(index);
-		index_str.insert(index_str.begin(), '#' );
-		while(index_str.size() < 6)
-			index_str.insert(index_str.begin(), ' ' );
+		const llvm::CallInst* const call_instruction= call_stack_.back();
 
 		std::string function_description;
 		function_description+= "\t";
-		function_description+= index_str;
+		function_description+= format_index( 0 );
 		function_description+= " ";
 
-		if(const llvm::DISubprogram * const subprogram= function.getSubprogram() )
+		if( const llvm::Function* const function= llvm::dyn_cast<llvm::Function>(call_instruction->getCalledOperand()) )
 		{
-			function_description+= subprogram->getName();
-			function_description+= " ( ";
-			function_description+= subprogram->getLinkageName();
-			function_description+= " ) ";
-			function_description+= subprogram->getFilename();
-			function_description+= ":";
-			function_description+= std::to_string(subprogram->getLine());
+			if(const llvm::DISubprogram * const subprogram= function->getSubprogram() )
+			{
+				function_description+= subprogram->getName();
+				function_description+= " ( ";
+				function_description+= subprogram->getLinkageName();
+				function_description+= " ) ";
+				function_description+= subprogram->getFilename();
+				function_description+= ":";
+				function_description+= std::to_string(subprogram->getLine());
+			}
+			else
+				function_description+= function->getName();
 		}
 		else
-			function_description+= function.getName();
+			function_description+= "<unknown function>";
+
+		call_stack+= "\n";
+		call_stack+= function_description;
+	}
+
+	// Than print stack of call sites.
+	for(auto it= call_stack_.rbegin(); it != call_stack_.rend(); ++it)
+	{
+		const llvm::CallInst* const call_instruction= *it;
+
+		std::string function_description;
+		function_description+= "\t";
+		function_description+= format_index( size_t(1 + it - call_stack_.rbegin()) );
+		function_description+= " ";
+
+		if( const llvm::Function* const call_site_function= call_instruction->getParent()->getParent() )
+		{
+			if(const llvm::DISubprogram * const subprogram= call_site_function->getSubprogram() )
+			{
+				function_description+= subprogram->getName();
+				function_description+= " ( ";
+				function_description+= subprogram->getLinkageName();
+				function_description+= " ) ";
+			}
+			else
+				function_description+= call_site_function->getName();
+		}
+		else
+			function_description+= "<unknown function> ";
+
+		if(const llvm::DILocation* const di_location = call_instruction->getDebugLoc().get() )
+		{
+			function_description+= di_location->getFilename();
+			function_description+= ":";
+			function_description+= std::to_string(di_location->getLine());
+			function_description+= ":";
+			function_description+= std::to_string(di_location->getColumn());
+		}
 
 		call_stack+= "\n";
 		call_stack+= function_description;
