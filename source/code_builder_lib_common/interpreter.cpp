@@ -1762,69 +1762,69 @@ std::string Interpreter::GetCurrentCallStackDescription()
 	{
 		const llvm::CallInst* const call_instruction= call_stack_.back();
 
-		std::string function_description;
-		function_description+= "\t";
-		function_description+= format_index( 0 );
-		function_description+= " ";
+		std::string description;
+		description+= "\t";
+		description+= format_index( 0 );
+		description+= " ";
 
 		if( const llvm::Function* const function= llvm::dyn_cast<llvm::Function>(call_instruction->getCalledOperand()) )
 		{
 			if(const llvm::DISubprogram * const subprogram= function->getSubprogram() )
 			{
-				function_description+= subprogram->getName();
-				function_description+= " ( ";
-				function_description+= subprogram->getLinkageName();
-				function_description+= " ) ";
-				function_description+= subprogram->getFilename();
-				function_description+= ":";
-				function_description+= std::to_string(subprogram->getLine());
+				description+= subprogram->getName();
+				description+= " ( ";
+				description+= subprogram->getLinkageName();
+				description+= " ) ";
+				description+= subprogram->getFilename();
+				description+= ":";
+				description+= std::to_string(subprogram->getLine());
 			}
 			else
-				function_description+= function->getName();
+				description+= function->getName();
 		}
 		else
-			function_description+= "<unknown function>";
+			description+= "<unknown function>";
 
 		call_stack+= "\n";
-		call_stack+= function_description;
+		call_stack+= description;
 	}
 
-	// Than print stack of call sites.
+	// Then print stack of call sites (in reverse order).
 	for(auto it= call_stack_.rbegin(); it != call_stack_.rend(); ++it)
 	{
 		const llvm::CallInst* const call_instruction= *it;
 
-		std::string function_description;
-		function_description+= "\t";
-		function_description+= format_index( size_t(1 + it - call_stack_.rbegin()) );
-		function_description+= " ";
+		std::string description;
+		description+= "\t";
+		description+= format_index( size_t( 1 + it - call_stack_.rbegin() ) );
+		description+= " ";
 
 		if( const llvm::Function* const call_site_function= call_instruction->getParent()->getParent() )
 		{
 			if(const llvm::DISubprogram * const subprogram= call_site_function->getSubprogram() )
 			{
-				function_description+= subprogram->getName();
-				function_description+= " ( ";
-				function_description+= subprogram->getLinkageName();
-				function_description+= " ) ";
+				description+= subprogram->getName();
+				description+= " ( ";
+				description+= subprogram->getLinkageName();
+				description+= " ) ";
 			}
 			else
-				function_description+= call_site_function->getName();
+				description+= call_site_function->getName();
 		}
 		else
-			function_description+= "<unknown function> ";
+			description+= "<unknown function> ";
 
-		if(const llvm::DILocation* const di_location = call_instruction->getDebugLoc().get() )
+		if( const llvm::DILocation* const di_location = call_instruction->getDebugLoc().get() )
 		{
-			function_description+= di_location->getFilename();
-			function_description+= ":";
-			function_description+= std::to_string(di_location->getLine());
-			function_description+= ":";
-			function_description+= std::to_string(di_location->getColumn());
+			description+= di_location->getFilename();
+			description+= ":";
+			description+= std::to_string(di_location->getLine());
+			description+= ":";
+			description+= std::to_string(di_location->getColumn());
 		}
 
 		call_stack+= "\n";
-		call_stack+= function_description;
+		call_stack+= description;
 	}
 
 	return call_stack;
