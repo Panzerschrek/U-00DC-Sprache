@@ -125,6 +125,8 @@ private:
 	void ReportGlobalsStackOverflow();
 
 	void ReportError(std::string_view text, const llvm::Instruction& instruction );
+	void ReportError(std::string_view text );
+	std::string GetCurrentCallStackDescription();
 
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
