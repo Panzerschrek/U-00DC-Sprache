@@ -185,7 +185,11 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	return CallFunctionImpl( &*bb.begin(), stack_depth );
+	call_stack_.push_back( &llvm_function );
+	llvm::GenericValue res= CallFunctionImpl( &*bb.begin(), stack_depth );
+	call_stack_.pop_back();
+
+	return res;
 }
 
 llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction, const size_t stack_depth )
@@ -1699,7 +1703,6 @@ void Interpreter::ReportError(std::string_view text, const llvm::Instruction& in
 {
 	if(const llvm::DILocation* const di_location = instruction.getDebugLoc().get() )
 	{
-		// If we have debug information, extract it to provide more info aboit error point.
 		std::string text_extended= di_location->getFilename().str();
 		text_extended+= di_location->getFilename();
 		text_extended+= ":";
@@ -1708,6 +1711,37 @@ void Interpreter::ReportError(std::string_view text, const llvm::Instruction& in
 		text_extended+= std::to_string(di_location->getColumn());
 		text_extended+= ": ";
 		text_extended+= text;
+
+
+		// If we have debug information, extract it to provide more info aboit error point.
+		std::string call_stack;
+
+		for(auto it= call_stack_.rbegin(); it != call_stack_.rend(); ++it)
+		{
+			const llvm::Function& function= **it;
+			if(const llvm::DISubprogram * const subprogram= function.getSubprogram() )
+			{
+				std::string function_description;
+				function_description+= "\t";
+				function_description+= subprogram->getFilename();
+				function_description+= ":";
+				function_description+= std::to_string(subprogram->getLine());
+				function_description+= ":";
+				function_description+= subprogram->getName();
+				function_description+= " ( ";
+				function_description+= subprogram->getLinkageName();
+				function_description+= " )";
+
+				call_stack+= "\n";
+				call_stack+= function_description;
+			}
+		}
+
+		if( !call_stack.empty() )
+		{
+			text_extended+= "\nCall stack:";
+			text_extended+= call_stack;
+		}
 
 		errors_.push_back( std::move(text_extended) );
 	}
