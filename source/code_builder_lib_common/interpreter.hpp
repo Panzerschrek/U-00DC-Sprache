@@ -124,6 +124,8 @@ private:
 	void ReportDataStackOverflow();
 	void ReportGlobalsStackOverflow();
 
+	void ReportError(std::string_view text, const llvm::Instruction& instruction );
+
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
 

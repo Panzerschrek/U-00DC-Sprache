@@ -1,5 +1,6 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Intrinsics.h>
@@ -313,7 +314,7 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 			break;
 
 		case llvm::Instruction::Unreachable:
-			errors_.push_back( "executing Unreachable instruction" );
+			ReportError( "executing Unreachable instruction", *instruction );
 			return llvm::GenericValue();
 
 		default:
@@ -323,7 +324,7 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 				ProcessBinaryArithmeticInstruction(instruction);
 			else
 			{
-				errors_.push_back( std::string( "executing unknown instruction \"" ) + instruction->getOpcodeName() + "\"" );
+				ReportError( std::string( "executing unknown instruction \"" ) + instruction->getOpcodeName() + "\"", *instruction );
 				return llvm::GenericValue();
 			}
 		};
@@ -643,7 +644,7 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 		const size_t new_heap_size= heap_.size() + element_size;
 		if( new_heap_size >= g_max_heap_segment_size )
 		{
-			errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+			ReportError( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached", *instruction );
 			return;
 		}
 		heap_.resize( new_heap_size );
@@ -811,7 +812,7 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 
 	if( function == nullptr )
 	{
-		errors_.push_back( "Calling zero functon pointer" );
+		ReportError( "Calling zero functon pointer", *instruction );
 		return;
 	}
 
@@ -959,7 +960,7 @@ void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 	const size_t new_size= offset + size + g_malloc_header_size;
 	if( new_size >= g_max_heap_segment_size )
 	{
-		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+		ReportError( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached", *instruction );
 		return;
 	}
 	heap_.resize( new_size );
@@ -998,7 +999,7 @@ void Interpreter::ProcessRealloc( const llvm::CallInst* const instruction )
 	const size_t new_size= offset + size + g_malloc_header_size;
 	if( new_size >= g_max_heap_segment_size )
 	{
-		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+		ReportError( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached", *instruction );
 		return;
 	}
 	heap_.resize( new_size );
@@ -1414,7 +1415,7 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 				std::memcpy(&val.FloatVal, bytes, sizeof(float));
 			}
 			else
-				errors_.push_back( "Invalid int to float cast" );
+				ReportError( "Invalid int to float cast", *instruction );
 		}
 		else if( dst_type->isIntegerTy() && src_type->isFloatingPointTy() )
 		{
@@ -1435,7 +1436,7 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 				val.IntVal= llvm::APInt( sizeof(float) * 8, uint64_t(v) );
 			}
 			else
-				errors_.push_back( "Invalid float to int cast" );
+				ReportError( "Invalid float to int cast", *instruction );
 		}
 		else
 		{
@@ -1445,7 +1446,7 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	default:
-		errors_.push_back( std::string( "executing unknown unary instruction \"" ) + instruction->getOpcodeName() + "\"" );
+		ReportError( std::string( "executing unknown unary instruction \"" ) + instruction->getOpcodeName() + "\"", *instruction );
 		break;
 	}
 
@@ -1481,7 +1482,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.sdiv(op1.IntVal);
 		else
-			errors_.push_back( "constexpr division by zero" );
+			ReportError( "constexpr division by zero", *instruction );
 		break;
 
 	case llvm::Instruction::UDiv:
@@ -1489,7 +1490,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.udiv(op1.IntVal);
 		else
-			errors_.push_back( "constexpr division by zero" );
+			ReportError( "constexpr division by zero", *instruction );
 		break;
 
 	case llvm::Instruction::SRem:
@@ -1497,7 +1498,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.srem(op1.IntVal);
 		else
-			errors_.push_back( "constexpr division by zero" );
+			ReportError( "constexpr division by zero", *instruction );
 		break;
 
 	case llvm::Instruction::URem:
@@ -1505,7 +1506,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.urem(op1.IntVal);
 		else
-			errors_.push_back( "constexpr division by zero" );
+			ReportError( "constexpr division by zero", *instruction );
 		break;
 
 	case llvm::Instruction::And:
@@ -1668,7 +1669,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 				new_value.IntVal= load_result.IntVal ^ op1.IntVal;
 				break;
 			default:
-				errors_.push_back( ( std::string("Unsupported atomic operation \"") + llvm::AtomicRMWInst::getOperationName(operation) + "\"" ).str() );
+				ReportError( ( std::string("Unsupported atomic operation \"") + llvm::AtomicRMWInst::getOperationName(operation) + "\"" ).str(), *instruction );
 				new_value= op1;
 				break;
 			}
@@ -1677,7 +1678,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	default:
-		errors_.push_back( std::string("executing unknown binary instruction \"") + instruction->getOpcodeName() + "\"" );
+		ReportError( std::string("executing unknown binary instruction \"") + instruction->getOpcodeName() + "\"", *instruction );
 		break;
 	};
 
@@ -1692,6 +1693,26 @@ void Interpreter::ReportDataStackOverflow()
 void Interpreter::ReportGlobalsStackOverflow()
 {
 	errors_.push_back( "Max globals stack size (" + std::to_string( g_max_globals_stack_size ) + ") reached" );
+}
+
+void Interpreter::ReportError(std::string_view text, const llvm::Instruction& instruction )
+{
+	if(const llvm::DILocation* const di_location = instruction.getDebugLoc().get() )
+	{
+		// If we have debug information, extract it to provide more info aboit error point.
+		std::string text_extended= di_location->getFilename().str();
+		text_extended+= di_location->getFilename();
+		text_extended+= ":";
+		text_extended+= std::to_string(di_location->getLine());
+		text_extended+= ":";
+		text_extended+= std::to_string(di_location->getColumn());
+		text_extended+= ": ";
+		text_extended+= text;
+
+		errors_.push_back( std::move(text_extended) );
+	}
+	else
+		errors_.emplace_back( text );
 }
 
 } // namespace U
