@@ -1748,22 +1748,33 @@ std::string Interpreter::GetCurrentCallStackDescription()
 	for(auto it= call_stack_.rbegin(); it != call_stack_.rend(); ++it)
 	{
 		const llvm::Function& function= **it;
+		const auto index= it - call_stack_.rbegin();
+
+		std::string index_str= std::to_string(index);
+		index_str.insert(index_str.begin(), '#' );
+		while(index_str.size() < 6)
+			index_str.insert(index_str.begin(), ' ' );
+
+		std::string function_description;
+		function_description+= "\t";
+		function_description+= index_str;
+		function_description+= " ";
+
 		if(const llvm::DISubprogram * const subprogram= function.getSubprogram() )
 		{
-			std::string function_description;
-			function_description+= "\t";
-			function_description+= subprogram->getFilename();
-			function_description+= ":";
-			function_description+= std::to_string(subprogram->getLine());
-			function_description+= ":";
 			function_description+= subprogram->getName();
 			function_description+= " ( ";
 			function_description+= subprogram->getLinkageName();
-			function_description+= " )";
-
-			call_stack+= "\n";
-			call_stack+= function_description;
+			function_description+= " ) ";
+			function_description+= subprogram->getFilename();
+			function_description+= ":";
+			function_description+= std::to_string(subprogram->getLine());
 		}
+		else
+			function_description+= function.getName();
+
+		call_stack+= "\n";
+		call_stack+= function_description;
 	}
 
 	return call_stack;
