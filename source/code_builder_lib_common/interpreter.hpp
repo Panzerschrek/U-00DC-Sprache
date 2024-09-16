@@ -67,9 +67,8 @@ public:
 private:
 	ResultConstexpr PrepareResultAndClear();
 
-	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
-	llvm::GenericValue CallFunctionImpl( const llvm::Instruction* instruction, size_t stack_depth );
-
+	llvm::GenericValue CallFunction( const llvm::Function& llvm_function );
+	llvm::GenericValue CallFunctionImpl( const llvm::Instruction* instruction );
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
@@ -91,7 +90,7 @@ private:
 	void DoStore( std::byte* ptr, const llvm::GenericValue& val, llvm::Type* t );
 
 	void ProcessGEP( const llvm::Instruction* instruction );
-	void ProcessCall( const llvm::CallInst* instruction, size_t stack_depth );
+	void ProcessCall( const llvm::CallInst* instruction );
 	void ProcessMemmove( const llvm::Instruction* instruction );
 	void ProcessMalloc( const llvm::CallInst* instruction );
 	void ProcessRealloc( const llvm::CallInst* instruction );
@@ -104,8 +103,8 @@ private:
 	void ProcessCoroBegin( const llvm::CallInst* instruction );
 	void ProcessCoroEnd( const llvm::CallInst* instruction );
 	void ProcessCoroSuspend( const llvm::CallInst* instruction );
-	void ProcessCoroResume( const llvm::CallInst* instruction, size_t stack_depth );
-	void ProcessCoroDestroy( const llvm::CallInst* instruction, size_t stack_depth );
+	void ProcessCoroResume( const llvm::CallInst* instruction );
+	void ProcessCoroDestroy( const llvm::CallInst* instruction );
 	void ProcessCoroDone( const llvm::CallInst* instruction );
 	void ProcessCoroPromise( const llvm::CallInst* instruction );
 
@@ -116,13 +115,17 @@ private:
 	void ProcessSMulWithOverflow( const llvm::CallInst* instruction );
 	void ProcessUMulWithOverflow( const llvm::CallInst* instruction );
 
-	void ResumeCoroutine( const llvm::CallInst* instruction, size_t stack_depth, bool destroy );
+	void ResumeCoroutine( const llvm::CallInst* instruction, bool destroy );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
 	void ReportDataStackOverflow();
 	void ReportGlobalsStackOverflow();
+
+	void ReportError(std::string_view text, const llvm::Instruction& instruction );
+	void ReportError(std::string_view text );
+	std::string GetCurrentCallStackDescription();
 
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
@@ -161,6 +164,8 @@ private:
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 
 	llvm::StringMap<CustomFunction> custom_functions_;
+
+	llvm::SmallVector<const llvm::CallInst*, 8> call_stack_;
 
 	std::vector<std::string> errors_;
 };
