@@ -1706,20 +1706,19 @@ void Interpreter::ReportError( const std::string_view text, const llvm::Instruct
 {
 	if(const llvm::DILocation* const di_location = instruction.getDebugLoc().get() )
 	{
-		std::string text_extended= di_location->getFilename().str();
+		std::string text_extended( text );
+		text_extended+= "\n\tAt ";
 		text_extended+= di_location->getFilename();
 		text_extended+= ":";
 		text_extended+= std::to_string(di_location->getLine());
 		text_extended+= ":";
 		text_extended+= std::to_string(di_location->getColumn());
-		text_extended+= ": ";
-		text_extended+= text;
 
 		const std::string call_stack= GetCurrentCallStackDescription();
 
 		if( !call_stack.empty() )
 		{
-			text_extended+= "\nCall stack:";
+			text_extended+= "\n\tCall stack:";
 			text_extended+= call_stack;
 		}
 
@@ -1736,7 +1735,7 @@ void Interpreter::ReportError( const std::string_view text )
 	if( !call_stack.empty() )
 	{
 		std::string text_extended( text );
-		text_extended+= "\nCall stack:";
+		text_extended+= "\n\tCall stack:";
 		text_extended+= call_stack;
 		errors_.push_back( std::move(text_extended) );
 	}
