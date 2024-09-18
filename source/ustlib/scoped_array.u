@@ -2,6 +2,30 @@ import "container_utils.u"
 import "random_access_range.u"
 import "reference_notation.u"
 
+// A macro for scoped array creation.
+// It creates an array-like object with dynamic size specified on construction.
+// Memory is allocated via compiler built-in operator "alloca", which may use cheap stack allocation.
+//
+// This macro is entended for declaring dynamic arrays with small size in function context.
+//
+// Usage example:
+//		scoped_array( i32, 16s, 0 ) // Creates array of i32 elements of size 16 and fills it with zeros
+//
+?macro <? scoped_array:block ( ?m:opt<? mut ?> ?var_name:ident, ?element_type:ty, ?size:expr ?constructor_arg:opt<? , ?a:expr ?> ) ?>
+->
+<?
+	type ??T= ?element_type;
+	var size_type ??s= ?size;
+	// Use unique identifier for the owning container to prevent accessing it in user code and potential moving it.
+	auto ?m<? mut ?> ??arr=
+		unsafe( ::ust::array_over_external_memory</??T/>(
+			alloca</??T/>(??s),
+			??s
+			?constructor_arg<? , safe( ?a ) ?> ) );
+	// Create immutable range for required variable name.
+	auto ?var_name= ??arr.range();
+?>
+
 namespace ust
 {
 

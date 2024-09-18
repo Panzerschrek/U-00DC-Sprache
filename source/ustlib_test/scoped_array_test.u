@@ -128,6 +128,63 @@ fn nomangle main() : i32
 		assert( arr[3s] == 9u );
 		assert( arr[4s] ==16u );
 	}
+	{ // scoped_array macro
+		scoped_array( ints, i32, 40s, 878 )
+		static_assert( same_type</ typeof(ints), ust::array_view_imut</i32/> /> );
 
+		assert( ints.size() == 40s );
+		assert( !ints.empty() );
+		foreach( x : ints )
+		{
+			assert( x == 878 );
+		}
+	}
+	{ // scoped_array macro for default-constructible type.
+		scoped_array( arr, DefaultConstructible, 7s )
+		static_assert( same_type</ typeof(arr), ust::array_view_imut</DefaultConstructible/> /> );
+
+		assert( arr.size() == 7s );
+		assert( !arr.empty() );
+		foreach( &s : arr )
+		{
+			assert( s.x == -8.5f );
+			assert( s.y == 5555u );
+		}
+	}
+	{ // scoped_array for mutable array.
+		scoped_array( mut squares, u32, 12s, 0u )
+		static_assert( same_type</ typeof(squares), ust::array_view_mut</u32/> /> );
+
+		assert( !squares.empty() );
+		assert( squares.size() == 12s );
+
+		auto mut i= 0u;
+		foreach( &mut n : squares.iter() )
+		{
+			n= i * i;
+			++i;
+		}
+
+		assert( squares[0s] ==   0u );
+		assert( squares[1s] ==   1u );
+		assert( squares[2s] ==   4u );
+		assert( squares[3s] ==   9u );
+		assert( squares[4s] ==  16u );
+		assert( squares[10s]== 100u );
+		assert( squares[11s]== 121u );
+	}
+	{ // scoped_array - construct from iterator.
+		var [ ust::string8, 3 ] strings[ "Quick", "Brown", "Fox" ];
+		var ust::array_view_imut</ust::string8/> strings_view= strings;
+
+		scoped_array( arr, ust::string8, strings_view.size(), strings_view.iter() )
+		static_assert( same_type</ typeof(arr), ust::array_view_imut</ust::string8/> /> );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 3s );
+		assert( arr[0s] == "Quick" );
+		assert( arr[1s] == "Brown" );
+		assert( arr[2s] == "Fox" );
+	}
 	return 0;
 }
