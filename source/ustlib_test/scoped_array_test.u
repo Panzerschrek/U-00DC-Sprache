@@ -9,6 +9,14 @@ struct DefaultConstructible
 	u32 y= 5555u;
 }
 
+struct IntWrapper
+{
+	i32 x;
+	fn conversion_constructor( i32 in_x )
+		( x= in_x )
+	{}
+}
+
 // This container is lightweight - contains only pointer and size.
 static_assert(
 	typeinfo</ ust::array_over_external_memory</i32/> />.size_of ==
@@ -185,6 +193,20 @@ fn nomangle main() : i32
 		assert( arr[0s] == "Quick" );
 		assert( arr[1s] == "Brown" );
 		assert( arr[2s] == "Fox" );
+	}
+	{ // scoped_array - construct from iterator of compatible type.
+		var [ i32, 4 ] ints[ 55, 66, 77, 88 ];
+		var ust::array_view_imut</i32/> ints_view= ints;
+
+		scoped_array( arr, IntWrapper, ints_view.size(), ints_view.iter() )
+		static_assert( same_type</ typeof(arr), ust::array_view_imut</IntWrapper/> /> );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 4s );
+		assert( arr[0s] == 55 );
+		assert( arr[1s] == 66 );
+		assert( arr[2s] == 77 );
+		assert( arr[3s] == 88 );
 	}
 	return 0;
 }

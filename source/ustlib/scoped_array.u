@@ -71,7 +71,9 @@ public:
 
 		for( var size_type mut i(0); i < size_; ++i )
 		{
-			var T mut value= it.next().try_deref(); // Halts if has not enough elements.
+			// Halts if has not enough elements.
+			// Type conversion is possible here.
+			var T mut value= it.next().try_deref();
 			unsafe( move_into_uninitialized( $>(ptr_ + i), move(value) ) );
 		}
 	}
