@@ -1,0 +1,67 @@
+//##success_test
+import "../ustlib/assert.u"
+import "../ustlib/scoped_array.u"
+
+struct DefaultConstructible
+{
+	f32 x= -8.5f;
+	u32 y= 5555u;
+}
+
+// This container is lightweight - contains only pointer and size.
+static_assert(
+	typeinfo</ ust::array_over_external_memory</i32/> />.size_of ==
+	2s * typeinfo</size_type/>.size_of );
+
+fn nomangle main() : i32
+{
+	// Filler constructor.
+	unsafe
+	{
+		var [ i32, 16 ] mut storage= zero_init;
+
+		var ust::array_over_external_memory</i32/> arr( $<(storage[0]), 8s, 33 );
+		assert( arr.size() == 8s );
+		assert( !arr.empty() );
+		foreach( x : arr )
+		{
+			assert( x == 33 );
+		}
+	}
+
+	// Filler constructor for zero elements.
+	unsafe
+	{
+		var [ i32, 16 ] mut storage= zero_init;
+
+		var ust::array_over_external_memory</i32/> arr( $<(storage[0]), 0s, 33 );
+		assert( arr.size() == 0s );
+	}
+
+	// Default constructor.
+	unsafe
+	{
+		var [ DefaultConstructible, 4 ] mut storage= zero_init;
+
+		var ust::array_over_external_memory</DefaultConstructible/> arr( $<(storage[0]), 3s );
+		assert( arr.size() == 3s );
+		assert( !arr.empty() );
+		foreach( &s : arr )
+		{
+			assert( s.x == -8.5f );
+			assert( s.y == 5555u );
+		}
+	}
+
+	// Default constructor with zero elements.
+	unsafe
+	{
+		var [ DefaultConstructible, 4 ] mut storage= zero_init;
+
+		var ust::array_over_external_memory</DefaultConstructible/> arr( $<(storage[0]), 0s );
+		assert( arr.size() == 0s );
+		assert( arr.empty() );
+	}
+
+	return 0;
+}

@@ -1,0 +1,187 @@
+import "container_utils.u"
+import "random_access_range.u"
+import "reference_notation.u"
+
+namespace ust
+{
+
+// A class for creation of an owned array with dynamic size over external memory.
+// Given memory block should live not less than this class instance.
+template</type T/>
+class array_over_external_memory
+{
+public:
+
+	// Construct with given filler.
+	fn constructor( mut this, $(T) ptr, size_type size, T& value ) @( c_param3_pollution ) unsafe
+		( ptr_= ptr, size_= size )
+	{
+		unsafe
+		{
+			for( var size_type mut i(0); i < size_; ++i )
+			{
+				move_into_uninitialized( $>(ptr_ + i), value ); // Copy-constructor is called here.
+			}
+		}
+	}
+
+	// Constructor with size only (for default-constructible elements).
+	fn enable_if( typeinfo</T/>.is_default_constructible ) constructor( mut this, $(T) ptr, size_type size ) unsafe
+		( ptr_= ptr, size_= size )
+	{
+		unsafe
+		{
+			for( var size_type mut i(0); i < size_; ++i )
+			{
+				call_default_constructor( $>(ptr_ + i) );
+			}
+		}
+	}
+
+	// Since this class is an owning container, it calls destructors of its elements.
+	fn destructor()
+	{
+		for( var size_type mut i(0); i < size_; ++i )
+		{
+			unsafe( call_destructor( $>(ptr_ + i) ) );
+		}
+	}
+
+	// Size request methods.
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == 0s;
+	}
+
+	// Indexing
+
+	op[](  mut this, size_type index )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	op[]( imut this, size_type index )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	fn index_unchecked(  mut this, size_type index ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + index) );
+	}
+
+	fn index_unchecked( imut this, size_type index ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + index) );
+	}
+
+	// front/back
+
+	fn front(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn front( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn back(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked() );
+	}
+
+	fn back( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked() );
+	}
+
+	fn front_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn front_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn back_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + size_ - 1s) );
+	}
+
+	fn back_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + size_ - 1s) );
+	}
+
+	fn enable_if( c_reference_tag_count == 0s )
+	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
+	}
+
+	fn enable_if( c_reference_tag_count == 0s )
+	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
+	}
+
+	fn enable_if( c_reference_tag_count == 0s )
+	iter(  mut this ) : auto
+	{
+		return range().iter();
+	}
+
+	fn enable_if( c_reference_tag_count == 0s )
+	iter( imut this ) : auto
+	{
+		return range().iter();
+	}
+
+	// Access raw data.
+	fn data( mut this ) unsafe : $(T)
+	{
+		return ptr_;
+	}
+
+private:
+	auto constexpr c_reference_tag_count= typeinfo</T/>.reference_tag_count;
+
+	auto c_param3_pollution= reference_notation::pollution::param_n_param_m_all_inner_references</ c_reference_tag_count />( 0u8, 3u8 );
+	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_reference_tag_count />();
+
+private:
+	ContainerTag</ T /> container_tag_;
+
+	$(T) imut ptr_;
+	size_type imut size_;
+}
+
+} // namespace ust
