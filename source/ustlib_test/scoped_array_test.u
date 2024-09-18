@@ -1,6 +1,7 @@
 //##success_test
 import "../ustlib/assert.u"
 import "../ustlib/scoped_array.u"
+import "../ustlib/shared_ptr.u"
 import "../ustlib/string.u"
 
 struct DefaultConstructible
@@ -15,6 +16,19 @@ struct IntWrapper
 	fn conversion_constructor( i32 in_x )
 		( x= in_x )
 	{}
+}
+
+struct SharedIntDecrementer
+{
+	ust::shared_ptr_mut</i32/> ptr;
+
+	fn destructor()
+	{
+		with( mut lock : ptr.lock_mut() )
+		{
+			-- lock.deref();
+		}
+	}
 }
 
 // This container is lightweight - contains only pointer and size.
@@ -207,6 +221,17 @@ fn nomangle main() : i32
 		assert( arr[1s] == 66 );
 		assert( arr[2s] == 77 );
 		assert( arr[3s] == 88 );
+	}
+	{
+		var SharedIntDecrementer decrementer{ .ptr(100) };
+
+		{
+			// Create 16 copies of decerementer.
+			scoped_array( decrementers, SharedIntDecrementer, 16s, decrementer )
+		} // Destructors should be called here.
+
+		// Shared value should be modified.
+		assert( decrementer.ptr.lock_imut().deref() == 100 - 16 )
 	}
 	return 0;
 }
