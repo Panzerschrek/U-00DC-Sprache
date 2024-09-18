@@ -708,6 +708,17 @@ void CodeBuilder::CallDestructorsImpl(
 		}
 		function_context.variables_state.RemoveNode( stored_variable );
 	}
+
+	// Destroy all dynamic stack allocations created on this stack frame (in reverse order, obviously).
+	for( auto it = stack_variables_storage.allocas_.rbegin(); it != stack_variables_storage.allocas_.rend(); ++it )
+	{
+		if( !function_context.is_functionless_context )
+		{
+			function_context.llvm_ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::stackrestore ),
+				{ it->stacksave_result } );
+		}
+	}
 }
 
 void CodeBuilder::CallDestructors(

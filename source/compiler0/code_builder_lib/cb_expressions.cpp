@@ -1802,7 +1802,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// TODO - allow only in unsafe code.
 	// TODO - allow only byte types.
 	// TODO - implement heap fallback for lage sizes.
-	// TODO - call "llvm.stacksave"/"llvm.stackrestore" if necessary.
 
 	const Type type= ValueToType( names_scope, ResolveValue( names_scope, function_context, alloca.type ), alloca.src_loc );
 
@@ -1820,6 +1819,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	llvm::Value* const size= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
+
+	// Call "llvm.stacksave" before performing allocation.
+	AllocaInfo alloca_info;
+
+	if( !function_context.is_functionless_context )
+		alloca_info.stacksave_result=
+			function_context.llvm_ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::stacksave ),
+				{},
+				"alloca_stacksave_result" );
 
 	// Create allocation in current block, not in function allocations block.
 	llvm::Value* const alloca_result=
@@ -1842,6 +1851,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			alloca_result );
 
 	function_context.variables_state.AddNode( result );
+
+	// TODO - check this.
+	// We should perform allocation using nearest stable stack variables stack of a {} scope, not expression scope.
+	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2 ]->allocas_.push_back( std::move(alloca_info) );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;

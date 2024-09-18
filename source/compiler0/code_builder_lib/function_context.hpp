@@ -9,6 +9,11 @@
 namespace U
 {
 
+struct AllocaInfo
+{
+	llvm::Value* stacksave_result= nullptr;
+};
+
 struct FunctionContext;
 
 // Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
@@ -24,6 +29,7 @@ public:
 public:
 	FunctionContext& function_context_;
 	std::vector<VariablePtr> variables_;
+	std::vector<AllocaInfo> allocas_;
 };
 
 struct LoopFrame
