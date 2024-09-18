@@ -1797,6 +1797,59 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::Alloca& alloca )
+{
+	// TODO - allow only in unsafe code.
+	// TODO - allow only byte types.
+	// TODO - implement heap fallback for lage sizes.
+	// TODO - call "llvm.stacksave"/"llvm.stackrestore" if necessary.
+
+	const Type type= ValueToType( names_scope, ResolveValue( names_scope, function_context, alloca.type ), alloca.src_loc );
+
+	if( !EnsureTypeComplete( type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), alloca.src_loc, type );
+		return ErrorValue();
+	}
+
+	const VariablePtr size_variable= BuildExpressionCodeEnsureVariable( alloca.size, names_scope, function_context );
+	if( size_variable->type != size_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), alloca.src_loc, size_type_, size_variable->type );
+		return ErrorValue();
+	}
+
+	llvm::Value* const size= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
+
+	// Create allocation in current block, not in function allocations block.
+	llvm::Value* const alloca_result=
+		function_context.is_functionless_context
+			? nullptr
+			: function_context.llvm_ir_builder.CreateAlloca( type.GetLLVMType(), size, "alloca_op" );
+
+	// TODO - call lifetime start?
+
+	RawPointerType pointer_type;
+	pointer_type.element_type= type;
+	pointer_type.llvm_type= type.GetLLVMType()->getPointerTo();
+
+	const VariableMutPtr result=
+		Variable::Create(
+			std::move(pointer_type),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			"alloca_op",
+			alloca_result );
+
+	function_context.variables_state.AddNode( result );
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::TypeInfo& typeinfo )
 {
 	const Type type= PrepareType( typeinfo.type, names_scope, function_context );

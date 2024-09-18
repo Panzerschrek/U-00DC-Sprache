@@ -432,6 +432,18 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( embed->expression, stream );
 			stream << " )";
 		}
+		void operator()( const std::unique_ptr<const Alloca>& alloca ) const
+		{
+			stream << "alloca";
+
+			stream << "</";
+			ElementWrite( alloca->type, stream );
+			stream << "/>";
+
+			stream << "( ";
+			ElementWrite( alloca->size, stream );
+			stream << " )";
+		}
 		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
 		{
 			stream << "</ ";

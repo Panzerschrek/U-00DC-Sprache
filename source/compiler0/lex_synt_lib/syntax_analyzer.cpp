@@ -1213,6 +1213,19 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(embed);
 		}
+		if( it_->text == "alloca" )
+		{
+			auto alloca= std::make_unique<Alloca>( it_->src_loc );
+			NextLexem();
+
+			ExpectLexem( Lexem::Type::TemplateBracketLeft );
+			alloca->type= ParseComplexName();
+			ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+			alloca->size= ParseExpressionInBrackets();
+
+			return std::move(alloca);
+		}
 		if( it_->text == Keywords::typeinfo_ )
 		{
 			auto typeinfo_= std::make_unique<TypeInfo>(it_->src_loc );
