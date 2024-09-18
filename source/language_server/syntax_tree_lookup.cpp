@@ -253,6 +253,12 @@ void FindImpl( const Synt::Embed& embed )
 	FindImpl( embed.expression );
 }
 
+void FindImpl( const Synt::Alloca& alloca )
+{
+	FindImpl( alloca.type );
+	FindImpl( alloca.size );
+}
+
 void FindImpl( const Synt::TypeInfo& type_info )
 {
 	FindImpl( type_info.type );
