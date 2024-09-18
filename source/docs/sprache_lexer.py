@@ -132,6 +132,7 @@ class SpracheLexer(RegexLexer):
 			(r'cast_ref_unsafe(?![a-zA-Z_0-9])', token.Keyword),
 			(r'cast_imut(?![a-zA-Z_0-9])', token.Keyword),
 			(r'cast_mut(?![a-zA-Z_0-9])', token.Keyword),
+			(r'alloca(?![a-zA-Z_0-9])', token.Keyword),
 			(r'as(?![a-zA-Z_0-9])', token.Keyword),
 			(r'is(?![a-zA-Z_0-9])', token.Keyword),
 			(r'import(?![a-zA-Z_0-9])', token.Keyword),

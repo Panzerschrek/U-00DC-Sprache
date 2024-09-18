@@ -1213,7 +1213,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(embed);
 		}
-		if( it_->text == "alloca" )
+		if( it_->text == Keywords::alloca_ )
 		{
 			auto alloca= std::make_unique<Alloca>( it_->src_loc );
 			NextLexem();

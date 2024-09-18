@@ -434,7 +434,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const Alloca>& alloca ) const
 		{
-			stream << "alloca";
+			stream << Keyword( Keywords::alloca_ );
 
 			stream << "</";
 			ElementWrite( alloca->type, stream );

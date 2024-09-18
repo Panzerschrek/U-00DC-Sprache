@@ -1847,7 +1847,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			std::move(pointer_type),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"alloca_op",
+			std::string( Keyword( Keywords::alloca_ ) ),
 			alloca_result );
 
 	function_context.variables_state.AddNode( result );
