@@ -16,8 +16,7 @@ static_assert(
 
 fn nomangle main() : i32
 {
-	// Filler constructor.
-	{
+	{ // Filler constructor.
 		auto arr= unsafe( ust::array_over_external_memory</i32/>( alloca</i32/>(8s), 8s, 33 ) );
 		assert( arr.size() == 8s );
 		assert( !arr.empty() );
@@ -26,15 +25,12 @@ fn nomangle main() : i32
 			assert( x == 33 );
 		}
 	}
-
-	// Filler constructor for zero elements.
-	{
+	{ // Filler constructor for zero elements.
 		auto arr= unsafe( ust::array_over_external_memory</i32/>( alloca</i32/>(0s), 0s, 33 ) );
 		assert( arr.size() == 0s );
 	}
 
-	// Default constructor.
-	{
+	{ // Default constructor.
 		auto arr= unsafe( ust::array_over_external_memory</DefaultConstructible/>( alloca</DefaultConstructible/>(3s), 3s ) );
 		assert( arr.size() == 3s );
 		assert( !arr.empty() );
@@ -44,16 +40,12 @@ fn nomangle main() : i32
 			assert( s.y == 5555u );
 		}
 	}
-
-	// Default constructor with zero elements.
-	{
+	{ // Default constructor with zero elements.
 		auto arr= unsafe( ust::array_over_external_memory</DefaultConstructible/>( alloca</DefaultConstructible/>(0s), 0s ) );
 		assert( arr.size() == 0s );
 		assert( arr.empty() );
 	}
-
-	// Construct from iterator.
-	{
+	{ // Construct from iterator.
 		var [ ust::string8, 3 ] strings[ "Quick", "Brown", "Fox" ];
 		var ust::array_view_imut</ust::string8/> strings_view= strings;
 
@@ -69,9 +61,7 @@ fn nomangle main() : i32
 		assert( arr[1s] == "Brown" );
 		assert( arr[2s] == "Fox" );
 	}
-
-	// Construct from iterator greater than needed.
-	{
+	{ // Construct from iterator greater than needed.
 		var [ f32, 5 ] floats[ 1.0f, 2.0f, 4.0f, 8.0f, 16.0f ];
 		var ust::array_view_imut</f32/> floats_view= floats;
 
@@ -86,6 +76,57 @@ fn nomangle main() : i32
 		assert( arr[0s] == 1.0f );
 		assert( arr[1s] == 2.0f );
 		assert( arr[2s] == 4.0f );
+	}
+	{ // Construct mutable array.
+		auto mut arr= unsafe( ust::array_over_external_memory</u32/>( alloca</u32/>(24s), 24s, 0u ) );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 24s );
+		for( auto mut i= 0s; i < arr.size(); ++i )
+		{
+			arr[i]= u32(i);
+		}
+
+		auto mut i= 0u;
+		foreach( &n : arr )
+		{
+			assert( n == i );
+			++i;
+		}
+	}
+	{ // Front/back methods.
+		var [ f32, 4 ] floats[ -1.0f, -2.0f, -4.0f, -8.0f ];
+		var ust::array_view_imut</f32/> floats_view= floats;
+
+		auto arr=
+			unsafe( ust::array_over_external_memory</f32/>(
+				alloca</f32/>(4s),
+				4s,
+				floats_view.iter() ) );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 4s );
+		assert( arr.front() == -1.0f );
+		assert( arr.back() == -8.0f );
+	}
+	{ // Construct mutable array - modify it in foreach loop.
+		auto mut arr= unsafe( ust::array_over_external_memory</u32/>( alloca</u32/>(5s), 5s, 0u ) );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 5s );
+
+		auto mut i= 0u;
+		foreach( &mut n : arr )
+		{
+			n= i * i;
+			++i;
+		}
+
+		assert( arr[0s] == 0u );
+		assert( arr[1s] == 1u );
+		assert( arr[2s] == 4u );
+		assert( arr[3s] == 9u );
+		assert( arr[4s] ==16u );
 	}
 
 	return 0;
