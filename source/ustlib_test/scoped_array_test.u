@@ -1,6 +1,7 @@
 //##success_test
 import "../ustlib/assert.u"
 import "../ustlib/scoped_array.u"
+import "../ustlib/string.u"
 
 struct DefaultConstructible
 {
@@ -49,6 +50,42 @@ fn nomangle main() : i32
 		auto arr= unsafe( ust::array_over_external_memory</DefaultConstructible/>( alloca</DefaultConstructible/>(0s), 0s ) );
 		assert( arr.size() == 0s );
 		assert( arr.empty() );
+	}
+
+	// Construct from iterator.
+	{
+		var [ ust::string8, 3 ] strings[ "Quick", "Brown", "Fox" ];
+		var ust::array_view_imut</ust::string8/> strings_view= strings;
+
+		auto arr=
+			unsafe( ust::array_over_external_memory</ust::string8/>(
+				alloca</ust::string8/>(strings_view.size()),
+				strings_view.size(),
+				strings_view.iter() ) );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 3s );
+		assert( arr[0s] == "Quick" );
+		assert( arr[1s] == "Brown" );
+		assert( arr[2s] == "Fox" );
+	}
+
+	// Construct from iterator greater than needed.
+	{
+		var [ f32, 5 ] floats[ 1.0f, 2.0f, 4.0f, 8.0f, 16.0f ];
+		var ust::array_view_imut</f32/> floats_view= floats;
+
+		auto arr=
+			unsafe( ust::array_over_external_memory</f32/>(
+				alloca</f32/>(3s),
+				3s,
+				floats_view.iter() ) );
+
+		assert( !arr.empty() );
+		assert( arr.size() == 3s );
+		assert( arr[0s] == 1.0f );
+		assert( arr[1s] == 2.0f );
+		assert( arr[2s] == 4.0f );
 	}
 
 	return 0;

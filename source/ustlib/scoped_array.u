@@ -38,6 +38,20 @@ public:
 		}
 	}
 
+	// Construct from iterator.
+	// Given iterator should produce number of elements not less than given size.
+	template</ type RawIterator />
+	fn constructor( mut this, $(T) ptr, size_type size, iterator</RawIterator/> mut it )  unsafe
+		( ptr_= ptr, size_= size )
+	{
+
+		for( var size_type mut i(0); i < size_; ++i )
+		{
+			var T mut value= it.next().try_deref(); // Halts if has not enough elements.
+			unsafe( move_into_uninitialized( $>(ptr_ + i), move(value) ) );
+		}
+	}
+
 	// Since this class is an owning container, it calls destructors of its elements.
 	fn destructor()
 	{
