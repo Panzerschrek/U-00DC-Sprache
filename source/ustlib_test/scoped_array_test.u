@@ -16,11 +16,8 @@ static_assert(
 fn nomangle main() : i32
 {
 	// Filler constructor.
-	unsafe
 	{
-		var [ i32, 16 ] mut storage= zero_init;
-
-		var ust::array_over_external_memory</i32/> arr( $<(storage[0]), 8s, 33 );
+		auto arr= unsafe( ust::array_over_external_memory</i32/>( alloca</i32/>(8s), 8s, 33 ) );
 		assert( arr.size() == 8s );
 		assert( !arr.empty() );
 		foreach( x : arr )
@@ -30,20 +27,14 @@ fn nomangle main() : i32
 	}
 
 	// Filler constructor for zero elements.
-	unsafe
 	{
-		var [ i32, 16 ] mut storage= zero_init;
-
-		var ust::array_over_external_memory</i32/> arr( $<(storage[0]), 0s, 33 );
+		auto arr= unsafe( ust::array_over_external_memory</i32/>( alloca</i32/>(0s), 0s, 33 ) );
 		assert( arr.size() == 0s );
 	}
 
 	// Default constructor.
-	unsafe
 	{
-		var [ DefaultConstructible, 4 ] mut storage= zero_init;
-
-		var ust::array_over_external_memory</DefaultConstructible/> arr( $<(storage[0]), 3s );
+		auto arr= unsafe( ust::array_over_external_memory</DefaultConstructible/>( alloca</DefaultConstructible/>(3s), 3s ) );
 		assert( arr.size() == 3s );
 		assert( !arr.empty() );
 		foreach( &s : arr )
@@ -54,11 +45,8 @@ fn nomangle main() : i32
 	}
 
 	// Default constructor with zero elements.
-	unsafe
 	{
-		var [ DefaultConstructible, 4 ] mut storage= zero_init;
-
-		var ust::array_over_external_memory</DefaultConstructible/> arr( $<(storage[0]), 0s );
+		auto arr= unsafe( ust::array_over_external_memory</DefaultConstructible/>( alloca</DefaultConstructible/>(0s), 0s ) );
 		assert( arr.size() == 0s );
 		assert( arr.empty() );
 	}
