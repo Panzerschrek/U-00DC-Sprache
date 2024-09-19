@@ -1837,6 +1837,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// TODO - free memory allocated from heap, if necessary.
 		const uint64_t c_min_bytes_for_heap_allocation= 4096u;
 
+		// Create a pointer-type stack variable in order to store possible heap allocation result in it.
+		// Initialize it with zero at function start.
+		llvm::Value* const heap_allocation_to_free_variable=
+			function_context.alloca_ir_builder.CreateAlloca( element_llvm_type->getPointerTo(), nullptr, "heap_allocation_to_free_variable" );
+		function_context.alloca_ir_builder.CreateStore( llvm::Constant::getNullValue( element_llvm_type->getPointerTo() ), heap_allocation_to_free_variable );
+
+		function_context.heap_allocations_to_free_at_return.push_back( heap_allocation_to_free_variable );
+
 		llvm::Value* const num_elements= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
 
 		llvm::Value* const memory_size=
@@ -1870,6 +1878,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
 		llvm::Value* const heap_allocation=
 			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
+		// Since "alloca" in a loop isn't possible, this should be single store into this variable (except initial nullptr store).
+		function_context.llvm_ir_builder.CreateStore( heap_allocation, heap_allocation_to_free_variable );
 		function_context.llvm_ir_builder.CreateBr( end_block );
 
 		// End block.
@@ -1879,13 +1889,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		alloca_result= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "alloca_res" );
 		alloca_result->addIncoming( stack_allocation, stack_allocation_block );
 		alloca_result->addIncoming( heap_allocation, heap_allocation_block );
-
-		llvm::PHINode* const heap_allocation_to_free= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "heap_allocation_to_free" );
-		heap_allocation_to_free->addIncoming( llvm::Constant::getNullValue( element_llvm_type->getPointerTo() ), stack_allocation_block );
-		heap_allocation_to_free->addIncoming( heap_allocation, heap_allocation_block );
-
-		// Save pointer to heap allocation to free it at return.
-		function_context.heap_allocations_to_free_at_return.push_back( heap_allocation_to_free );
 	}
 
 	// TODO - call lifetime start?

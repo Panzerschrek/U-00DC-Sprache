@@ -796,8 +796,13 @@ void CodeBuilder::CallDestructorsBeforeReturn( NamesScope& names_scope, Function
 	// Free also all heap allocations, made in this function.
 	if( !function_context.is_functionless_context )
 	{
-		for( llvm::Value* const heap_allocation_to_free : function_context.heap_allocations_to_free_at_return )
+		for( llvm::Value* const heap_allocation_to_free_ptr : function_context.heap_allocations_to_free_at_return )
 		{
+			llvm::Value* const heap_allocation_to_free=
+				function_context.llvm_ir_builder.CreateLoad(
+					llvm::PointerType::get( llvm_context_, 0u ),
+					heap_allocation_to_free_ptr );
+
 			llvm::Value* const is_null=
 				function_context.llvm_ir_builder.CreateICmpEQ(
 					heap_allocation_to_free,
