@@ -921,27 +921,90 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 
 	var LLVMTypeRef element_llvm_type= t.GetLLVMType();
+	var LLVMTypeRef ptr_llvm_type= unsafe( LLVMPointerType( element_llvm_type, 0u ) );
 
 	var LLVMValueRef mut alloca_result= LLVMValueRef::Null;
 
 	if( !function_context.is_functionless_context )
 	{
+		// Perform stack allocation for small blocks.
+		// Perform heap allocation for large memory blocks.
+		var u64 constexpr c_min_bytes_for_heap_allocation( 4096 );
+
+		// Create a pointer-type stack variable in order to store possible heap allocation result in it.
+		// Initialize it with zero at function start.
+		var LLVMValueRef heap_allocation_to_free_variable=
+			unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, ptr_llvm_type, "heap_allocation_to_free_variable\0"[0] ) );
+		unsafe( LLVMBuildStore( function_context.alloca_ir_builder, LLVMConstNull(ptr_llvm_type), heap_allocation_to_free_variable ) );
+
+		function_context.heap_allocations_to_free_at_return.push_back( heap_allocation_to_free_variable );
+
 		var LLVMValueRef num_elements= CreateMoveToLLVMRegisterInstruction( size_variable, function_context );
 
-		alloca_result= unsafe( LLVMBuildArrayAlloca( function_context.llvm_ir_builder, element_llvm_type, num_elements, "alloca_stack\0"[0] ) );
+		var LLVMValueRef mut memory_size=
+			unsafe( LLVMBuildMul(
+				function_context.llvm_ir_builder,
+				num_elements,
+				LLVMConstInt(
+					fundamental_llvm_types_.size_type_,
+					LLVMABISizeOfType( data_layout_, element_llvm_type ),
+					LLVMBool::False ),
+				"alloca_num_bytes\0"[0] ) );
 
-		// TODO - use heap fallback.
+		var LLVMValueRef less_than_limit=
+			unsafe( LLVMBuildICmp(
+				function_context.llvm_ir_builder,
+				LLVMIntPredicate::ULT,
+				memory_size,
+				LLVMConstInt(
+					fundamental_llvm_types_.size_type_,
+					c_min_bytes_for_heap_allocation,
+					LLVMBool::False ),
+				"alloca_less_than_stack_allocation_limit\0"[0] ) );
+
+		var LLVMBasicBlockRef stack_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_block\0"[0] ) );
+		var LLVMBasicBlockRef heap_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "heap_allocation_block\0"[0] ) );
+		var LLVMBasicBlockRef end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, less_than_limit, stack_allocation_block, heap_allocation_block ) );
+
+		// Stack allocation block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block ) );
+		var LLVMValueRef stack_allocation= unsafe( LLVMBuildArrayAlloca( function_context.llvm_ir_builder, element_llvm_type, num_elements, "alloca_stack\0"[0] ) );
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+		// Heap allocation block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block ) );
+		var LLVMValueRef heap_allocation=
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType( malloc_function_ ),
+				malloc_function_,
+				$<(memory_size),
+				1u,
+				"alloca_heap\0"[0] ) );
+
+		unsafe( LLVMBuildStore( function_context.llvm_ir_builder, heap_allocation, heap_allocation_to_free_variable ) );
+
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+		// End block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
+
+		alloca_result= unsafe( LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_res\0"[0] ) );
+
+		var [ LLVMValueRef, 2 ] mut incoming_values[ stack_allocation, heap_allocation ];
+		var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+		unsafe( LLVMAddIncoming( alloca_result, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u ) );
 	}
 
 	var VariablePtr result_ptr=
 		Variable
 		{
-			.t=
-				RawPointerType
-				{
-					.element_type= t,
-					.llvm_type= unsafe( LLVMPointerType( element_llvm_type, 0u ) ),
-				},
+			.t= RawPointerType{ .element_type= t, .llvm_type= ptr_llvm_type},
 			.location= Variable::Location::LLVMRegister,
 			.value_type= ValueType::Value,
 			.llvm_value= alloca_result,

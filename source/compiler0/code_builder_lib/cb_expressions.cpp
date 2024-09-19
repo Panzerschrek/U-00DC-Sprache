@@ -1841,7 +1841,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		// Perform stack allocation for small blocks.
 		// Perform heap allocation for large memory blocks.
-		// TODO - free memory allocated from heap, if necessary.
 		const uint64_t c_min_bytes_for_heap_allocation= 4096u;
 
 		// Create a pointer-type stack variable in order to store possible heap allocation result in it.

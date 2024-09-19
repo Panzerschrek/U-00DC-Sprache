@@ -119,6 +119,10 @@ public:
 	LLVMBasicBlockRef destructor_end_block= LLVMBasicBlockRef::Null; // For destructors only - used for "Br" instead of "ret"
 
 	ust::vector</LoopFrame/> loops_stack;
+
+	// Contains pointers to stack variables with pointers needed to be freed.
+	ust::vector</LLVMValueRef/> heap_allocations_to_free_at_return;
+
 	bool is_in_unsafe_block= false;
 
 	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
