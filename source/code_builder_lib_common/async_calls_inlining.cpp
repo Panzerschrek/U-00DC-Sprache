@@ -455,6 +455,8 @@ std::optional<CoroutineFunctionInfo> CollectCoroutineFunctionInfo( llvm::Functio
 		bool is_alloca_block= false;
 		for( const llvm::Instruction& instruction : basic_block )
 		{
+			// The only way an "alloca" instruction may be outside "alloca" block is for "alloca" language operator.
+			// But such operator is disabled for coroutines (including async functions).
 			if( llvm::dyn_cast<llvm::AllocaInst>(&instruction) != nullptr )
 			{
 				is_alloca_block= true;
