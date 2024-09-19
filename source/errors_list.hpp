@@ -266,3 +266,6 @@ PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence.
 
 // Embed
 PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
+
+// Alloca
+PROCESS_ERROR( AllocaOutsideUnsafeBlock, "Alloca operator outside unsafe block or expression." )

@@ -73,3 +73,59 @@ def AllocaOperator_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AllocaOutsideUnsafeBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto ptr= alloca</i32/>(4s);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaOutsideUnsafeBlock", 4 ) )
+
+
+def AllocaOutsideUnsafeBlock_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				safe
+				{
+					auto ptr= alloca</i32/>(4s);
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaOutsideUnsafeBlock", 8 ) )
+
+
+def AllocaOutsideUnsafeBlock_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				auto ptr= safe( alloca</i32/>(4s) );
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaOutsideUnsafeBlock", 6 ) )
+
+
+def AllocaOutsideUnsafeBlock_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			// Ok - use unsafe expression.
+			auto ptr= unsafe( alloca</i32/>(4s) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

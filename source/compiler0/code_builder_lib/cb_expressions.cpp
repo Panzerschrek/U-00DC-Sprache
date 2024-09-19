@@ -1799,9 +1799,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::Alloca& alloca )
 {
-	// TODO - allow only in unsafe code.
 	// TODO - allow only byte types.
 	// TODO - implement heap fallback for lage sizes.
+
+	if( !function_context.is_in_unsafe_block )
+		REPORT_ERROR( AllocaOutsideUnsafeBlock, names_scope.GetErrors(), alloca.src_loc );
 
 	const Type type= ValueToType( names_scope, ResolveValue( names_scope, function_context, alloca.type ), alloca.src_loc );
 
