@@ -881,6 +881,15 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	return result_ptr;
 }
 
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Alloca& alloca_ ) : Value
+{
+	// TODO
+	ust::ignore_unused(names_scope);
+	ust::ignore_unused(function_context);
+	ust::ignore_unused(alloca_);
+	return ErrorValue();
+}
+
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
 {
 	auto prev_unsafe= function_context.is_in_unsafe_block;

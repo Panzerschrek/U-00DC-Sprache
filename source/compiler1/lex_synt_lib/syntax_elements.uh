@@ -149,6 +149,13 @@ struct Embed
 	Expression expression;
 }
 
+struct Alloca
+{
+	SrcLoc src_loc;
+	ComplexName type_name;
+	Expression size;
+}
+
 struct SafeExpression
 {
 	SrcLoc src_loc;
@@ -292,6 +299,7 @@ type Expression= ust::variant</ tup[
 	ust::box</CastImut/>,
 	ust::box</CastMut/>,
 	ust::box</Embed/>,
+	ust::box</Alloca/>,
 	ust::box</SafeExpression/>,
 	ust::box</UnsafeExpression/>,
 	MoveOperator,
