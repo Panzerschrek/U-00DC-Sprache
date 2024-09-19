@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/scoped_array.u"
 import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
@@ -790,15 +791,20 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	{
 		var ClassType &mut class_type= class_lock.deref();
 
-		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
-		foreach( &field_pair : class_type.fields_order )
-		{
-			with( &field : field_pair[1].lock_imut().deref() )
-			{
-				var LLVMTypeRef llvm_type= field.t.GetLLVMType();
-				fields_llvm_types.push_back( select( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type ) );
-			}
-		}
+		scoped_array(
+			mut fields_llvm_types,
+			LLVMTypeRef,
+			class_type.fields_order.size(),
+			class_type.fields_order.iter().map(
+				lambda( tup[ust::string8, ClassFieldPtr]& field_pair ) : LLVMTypeRef
+				{
+					with( &field : field_pair[1].lock_imut().deref() )
+					{
+						var LLVMTypeRef llvm_type= field.t.GetLLVMType();
+						return select( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type );
+					}
+				} ) )
+
 		unsafe( LLVMStructSetBody( class_type.llvm_type, fields_llvm_types.data(), u32( fields_llvm_types.size() ), LLVMBool::False ) );
 
 		class_type.is_complete= true;

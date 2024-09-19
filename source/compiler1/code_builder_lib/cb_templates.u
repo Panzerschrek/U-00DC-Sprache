@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/scoped_array.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -99,8 +100,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
 	// Fill signature params and check correctness.
-	var ust::vector</bool/> mut template_params_usage_flags;
-	template_params_usage_flags.resize( template_params.size(), false );
+	scoped_array( mut template_params_usage_flags, bool, template_params.size(), false )
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
 
@@ -208,8 +208,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
-	var ust::vector</bool/> mut template_params_usage_flags;
-	template_params_usage_flags.resize( template_params.size(), false );
+	scoped_array( mut template_params_usage_flags, bool, template_params.size(), false )
 
 	// Create signature params.
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
@@ -455,11 +454,14 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 						// Try to match this type alias params against given signature params.
 
-						var ust::vector</TemplateSignatureParam/> mut alias_template_params_to_signature_params_mapping(
+						scoped_array(
+							mut alias_template_params_to_signature_params_mapping,
+							TemplateSignatureParam,
 							type_alias_template_params.size(),
-							TemplateSignatureParam::Type() );
+							TemplateSignatureParam::Type() )
 
-						var ust::vector</bool/> mut param_known_flags( type_alias_template_params.size(), false );
+						scoped_array( mut param_known_flags, bool, type_alias_template_params.size(), false )
+
 						var bool mut params_matching_ok= true;
 
 						foreach( pair : single_type_template.lock_imut().deref().signature_params.iter().zip( specialized_template_params.iter() ) )
@@ -532,7 +534,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 						if( params_matching_ok )
 						{
-							var ust::vector</bool/> mut alias_template_parameters_usage_flags( type_alias_template_params.size(), false );
+							scoped_array( mut alias_template_parameters_usage_flags, bool, type_alias_template_params.size(), false )
 
 							var TemplateSignatureParam alias_body_signature_param=
 								CreateTemplateSignatureParam(
@@ -866,11 +868,15 @@ fn CodeBuilder::GenTemplateType(
 		return FinishTypeTemplateGeneration( candidate_type_templates.front(), args_names_scope, template_instantiation_src_loc );
 	}
 
-	var ust::vector</TypeTemplatePtr/> mut templates_for_check;
-	foreach( &candidate : candidate_type_templates )
-	{
-		templates_for_check.push_back( candidate.type_template );
-	}
+	scoped_array(
+		templates_for_check,
+		TypeTemplatePtr,
+		candidate_type_templates.size(),
+		candidate_type_templates.iter().map(
+			lambda( TemplateTypeArgsEvaluationResult& candidate ) : TypeTemplatePtr
+			{
+				return candidate.type_template;
+			}) )
 
 	auto index= SelectMoreSpecializedTemplate( templates_for_check, template_args.size() );
 	if( index == ~0s )

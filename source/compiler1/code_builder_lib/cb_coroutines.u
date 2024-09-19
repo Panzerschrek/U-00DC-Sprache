@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/scoped_array.u"
 import "/sort.u"
 import "/keywords.uh"
 import "code_builder.uh"
@@ -62,8 +63,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 
 	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
 
-	var ust::vector</size_type/> mut param_to_first_inner_reference_tag;
-	param_to_first_inner_reference_tag.resize( coroutine_function_type.params.size(), 0s );
+	scoped_array( mut param_to_first_inner_reference_tag, size_type, coroutine_function_type.params.size(), 0s )
 
 	var FunctionType::ReturnInnerReferences mut coroutine_return_inner_ferences;
 
