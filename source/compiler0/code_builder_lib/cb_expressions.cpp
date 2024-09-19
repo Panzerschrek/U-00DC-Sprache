@@ -1811,6 +1811,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( !function_context.loops_stack.empty() )
 		REPORT_ERROR( AllocaInsideLoop, names_scope.GetErrors(), alloca.src_loc );
 
+	if( function_context.coro_suspend_bb != nullptr )
+	{
+		// "alloca" is impossible to use inside a coroutine, since coroutines require fixed stack size.
+		REPORT_ERROR( AllocaInsideCorouine, names_scope.GetErrors(), alloca.src_loc );
+		return ErrorValue();
+	}
+
 	const Type type= ValueToType( names_scope, ResolveValue( names_scope, function_context, alloca.type ), alloca.src_loc );
 
 	if( !EnsureTypeComplete( type ) )

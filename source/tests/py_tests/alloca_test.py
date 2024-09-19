@@ -196,3 +196,27 @@ def AllocaInsideLoop_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "AllocaInsideLoop", 6 ) )
+
+
+def AllocaInsideCorouine_Test0():
+	c_program_text= """
+		fn async Foo()
+		{
+			auto ptr= unsafe( alloca</f32/>(16s) );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaInsideCorouine", 4 ) )
+
+
+def AllocaInsideCorouine_Test1():
+	c_program_text= """
+		fn generator Foo()
+		{
+			auto ptr= unsafe( alloca</u32/>(8s) );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaInsideCorouine", 4 ) )
