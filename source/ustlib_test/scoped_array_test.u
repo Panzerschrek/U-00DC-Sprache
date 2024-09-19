@@ -233,5 +233,26 @@ fn nomangle main() : i32
 		// Shared value should be modified.
 		assert( decrementer.ptr.lock_imut().deref() == 100 - 16 )
 	}
+	{ // scoped_array for very large mutable array. Heap fallback should be used.
+		scoped_array( mut squares, u32, 1024s * 1024s * 16s, 0u )
+		static_assert( same_type</ typeof(squares), ust::array_view_mut</u32/> /> );
+
+		assert( !squares.empty() );
+		assert( squares.size() == 1024s * 1024s * 16s );
+
+		auto mut i= 0u;
+		foreach( &mut n : squares.iter() )
+		{
+			n= i * i;
+			++i;
+		}
+
+		i= 0u;
+		foreach( n : squares )
+		{
+			assert( n == i * i );
+			++i;
+		}
+	}
 	return 0;
 }
