@@ -269,3 +269,4 @@ PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
 
 // Alloca
 PROCESS_ERROR( AllocaOutsideUnsafeBlock, "Alloca operator outside unsafe block or expression." )
+PROCESS_ERROR( AllocaInsideLoop, "Alloca operator inside a loop. For now it's not supported." )

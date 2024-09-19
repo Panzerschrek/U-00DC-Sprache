@@ -1799,11 +1799,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::Alloca& alloca )
 {
-	// TODO - allow only byte types.
+	// For now we can't manage properly lifetime of the allocation and call "llvm.stacksave"/"llvm.stackrestore" properly.
+	// So, the only way to free allocated memory is to return from the function.
+	// Because of that the lifetime of all "alloca" memory is bounded to function end.
+	// But this makes using "alloca" inside a loop dangerous - it's easy to allocate too much memory without freeing it.
+	// Thus we disable usage of "alloca" inside loops.
+
 	// TODO - implement heap fallback for lage sizes.
 
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( AllocaOutsideUnsafeBlock, names_scope.GetErrors(), alloca.src_loc );
+
+	if( !function_context.loops_stack.empty() )
+		REPORT_ERROR( AllocaInsideLoop, names_scope.GetErrors(), alloca.src_loc );
 
 	const Type type= ValueToType( names_scope, ResolveValue( names_scope, function_context, alloca.type ), alloca.src_loc );
 

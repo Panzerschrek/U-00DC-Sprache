@@ -129,3 +129,52 @@ def AllocaOutsideUnsafeBlock_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AllocaInsideLoop_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			loop
+			{
+				auto ptr= unsafe( alloca</i32/>(4s) );
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaInsideLoop", 6 ) )
+
+
+def AllocaInsideLoop_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 10; ++i )
+			{
+				if( i % 2 != 0 )
+				{
+					auto ptr= unsafe( alloca</i32/>(4s) );
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaInsideLoop", 8 ) )
+
+
+def AllocaInsideLoop_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			while( Bar() )
+			{
+				auto ptr= unsafe( alloca</f32/>(16s) );
+			}
+		}
+		fn Bar() : bool;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AllocaInsideLoop", 6 ) )
