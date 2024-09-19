@@ -1805,8 +1805,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// But this makes using "alloca" inside a loop dangerous - it's easy to allocate too much memory without freeing it.
 	// Thus we disable usage of "alloca" inside loops.
 
-	// TODO - implement heap fallback for lage sizes.
-
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( AllocaOutsideUnsafeBlock, names_scope.GetErrors(), alloca.src_loc );
 
@@ -1828,20 +1826,66 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	llvm::Value* const size= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
+	llvm::Type* const element_llvm_type= type.GetLLVMType();
 
+	llvm::PHINode* alloca_result= nullptr;
 
-	// Create allocation in current block, not in function allocations block.
-	llvm::Value* const alloca_result=
-		function_context.is_functionless_context
-			? nullptr
-			: function_context.llvm_ir_builder.CreateAlloca( type.GetLLVMType(), size, "alloca_op" );
+	if( !function_context.is_functionless_context )
+	{
+		// Perform stack allocation for small blocks.
+		// Perform heap allocation for large memory blocks.
+		// TODO - free memory allocated from heap, if necessary.
+		const uint64_t c_min_bytes_for_heap_allocation= 4096u;
+
+		llvm::Value* const num_elements= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
+
+		llvm::Value* const memory_size=
+			function_context.llvm_ir_builder.CreateMul(
+				num_elements,
+				llvm::ConstantInt::get(
+					fundamental_llvm_types_.size_type_,
+					uint64_t( data_layout_.getTypeAllocSize( element_llvm_type ) ) ) );
+
+		llvm::Value* const less_than_limit=
+			function_context.llvm_ir_builder.CreateICmpULT(
+				memory_size,
+					llvm::ConstantInt::get(
+						fundamental_llvm_types_.size_type_,
+						c_min_bytes_for_heap_allocation ) );
+
+		llvm::BasicBlock* const stack_allocation_block= llvm::BasicBlock::Create( llvm_context_, "stack_allocation_block" );
+		llvm::BasicBlock* const heap_allocation_block= llvm::BasicBlock::Create( llvm_context_, "heap_allocation_block" );
+		llvm::BasicBlock* const end_block= llvm::BasicBlock::Create( llvm_context_ );
+
+		function_context.llvm_ir_builder.CreateCondBr( less_than_limit, stack_allocation_block, heap_allocation_block );
+
+		// Stack allocation block.
+		function_context.function->getBasicBlockList().push_back( stack_allocation_block );
+		function_context.llvm_ir_builder.SetInsertPoint( stack_allocation_block );
+		llvm::Value* const stack_allocation= function_context.llvm_ir_builder.CreateAlloca( element_llvm_type, num_elements, "alloca_stack" );
+		function_context.llvm_ir_builder.CreateBr( end_block );
+
+		// Heap allocation block.
+		function_context.function->getBasicBlockList().push_back( heap_allocation_block );
+		function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
+		llvm::Value* const heap_allocation=
+			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
+		function_context.llvm_ir_builder.CreateBr( end_block );
+
+		// End block.
+		function_context.function->getBasicBlockList().push_back( end_block );
+		function_context.llvm_ir_builder.SetInsertPoint( end_block );
+
+		alloca_result= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "alloca_res" );
+		alloca_result->addIncoming( stack_allocation, stack_allocation_block );
+		alloca_result->addIncoming( heap_allocation, heap_allocation_block );
+	}
 
 	// TODO - call lifetime start?
 
 	RawPointerType pointer_type;
 	pointer_type.element_type= type;
-	pointer_type.llvm_type= type.GetLLVMType()->getPointerTo();
+	pointer_type.llvm_type= element_llvm_type->getPointerTo();
 
 	const VariableMutPtr result=
 		Variable::Create(
