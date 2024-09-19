@@ -29,36 +29,32 @@ import "reference_notation.u"
 namespace ust
 {
 
-// A class for creation of an owned array with dynamic size over external memory.
+// A class for creation of an owned array with size specified at construction which uses external memory.
 // Given memory block should live not less than this class instance.
 template</type T/>
 class array_over_external_memory
 {
 public:
 
-	// Construct with given filler.
-	fn constructor( mut this, $(T) ptr, size_type size, T& value ) @( c_param3_pollution ) unsafe
+	// Construct with given filler (for copy-constructible elements).
+	fn enable_if( typeinfo</T/>.is_copy_constructible )
+	constructor( mut this, $(T) ptr, size_type size, T& value ) @( c_param3_pollution ) unsafe
 		( ptr_= ptr, size_= size )
 	{
-		unsafe
+		for( var size_type mut i(0); i < size_; ++i )
 		{
-			for( var size_type mut i(0); i < size_; ++i )
-			{
-				move_into_uninitialized( $>(ptr_ + i), value ); // Copy-constructor is called here.
-			}
+			unsafe( move_into_uninitialized( $>(ptr_ + i), value ) ); // Copy-constructor is called here.
 		}
 	}
 
 	// Constructor with size only (for default-constructible elements).
-	fn enable_if( typeinfo</T/>.is_default_constructible ) constructor( mut this, $(T) ptr, size_type size ) unsafe
+	fn enable_if( typeinfo</T/>.is_default_constructible )
+	constructor( mut this, $(T) ptr, size_type size ) unsafe
 		( ptr_= ptr, size_= size )
 	{
-		unsafe
+		for( var size_type mut i(0); i < size_; ++i )
 		{
-			for( var size_type mut i(0); i < size_; ++i )
-			{
-				call_default_constructor( $>(ptr_ + i) );
-			}
+			unsafe( call_default_constructor( $>(ptr_ + i) ) );
 		}
 	}
 
@@ -181,6 +177,8 @@ public:
 		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
 
+	// Range and iteration.
+
 	fn enable_if( c_reference_tag_count == 0s )
 	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
@@ -220,6 +218,7 @@ private:
 private:
 	ContainerTag</ T /> container_tag_;
 
+	// Both pointer and size are immutable - it's impossible to resize or relocate this container.
 	$(T) imut ptr_;
 	size_type imut size_;
 }
