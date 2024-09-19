@@ -1879,6 +1879,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		alloca_result= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "alloca_res" );
 		alloca_result->addIncoming( stack_allocation, stack_allocation_block );
 		alloca_result->addIncoming( heap_allocation, heap_allocation_block );
+
+		llvm::PHINode* const heap_allocation_to_free= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "heap_allocation_to_free" );
+		heap_allocation_to_free->addIncoming( llvm::Constant::getNullValue( element_llvm_type->getPointerTo() ), stack_allocation_block );
+		heap_allocation_to_free->addIncoming( heap_allocation, heap_allocation_block );
+
+		// Save pointer to heap allocation to free it at return.
+		function_context.heap_allocations_to_free_at_return.push_back( heap_allocation_to_free );
 	}
 
 	// TODO - call lifetime start?

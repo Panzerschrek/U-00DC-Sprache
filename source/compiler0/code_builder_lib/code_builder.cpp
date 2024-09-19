@@ -792,6 +792,33 @@ void CodeBuilder::CallDestructorsBeforeReturn( NamesScope& names_scope, Function
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
 		CallDestructorsImpl( **it, function_context, names_scope.GetErrors(), src_loc );
+
+	// Free also all heap allocations, made in this function.
+	if( !function_context.is_functionless_context )
+	{
+		for( llvm::Value* const heap_allocation_to_free : function_context.heap_allocations_to_free_at_return )
+		{
+			llvm::Value* const is_null=
+				function_context.llvm_ir_builder.CreateICmpEQ(
+					heap_allocation_to_free,
+					llvm::Constant::getNullValue( heap_allocation_to_free->getType() ) );
+
+			llvm::BasicBlock* const needs_to_free_block= llvm::BasicBlock::Create( llvm_context_ );
+			llvm::BasicBlock* const end_block= llvm::BasicBlock::Create( llvm_context_ );
+
+			function_context.llvm_ir_builder.CreateCondBr( is_null, end_block, needs_to_free_block );
+
+			// Needs to free block.
+			function_context.function->getBasicBlockList().push_back( needs_to_free_block );
+			function_context.llvm_ir_builder.SetInsertPoint( needs_to_free_block );
+			function_context.llvm_ir_builder.CreateCall( free_func_, { heap_allocation_to_free } );
+			function_context.llvm_ir_builder.CreateBr( end_block );
+
+			// End block.
+			function_context.function->getBasicBlockList().push_back( end_block );
+			function_context.llvm_ir_builder.SetInsertPoint( end_block );
+		}
+	}
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )

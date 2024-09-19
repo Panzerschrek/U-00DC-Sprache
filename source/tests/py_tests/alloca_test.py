@@ -75,6 +75,24 @@ def AllocaOperator_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def AllocaOperator_Test4():
+	c_program_text= """
+		fn Foo(u32 size)
+		{
+			// Potentially use heap fallback.
+			unsafe
+			{
+				var $(byte8) mem= alloca</ byte8 />( size_type(size) );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 80 )
+	tests_lib.run_function( "_Z3Fooj", 800 )
+	tests_lib.run_function( "_Z3Fooj", 8000 )
+	tests_lib.run_function( "_Z3Fooj", 80000 )
+
+
 def AllocaOutsideUnsafeBlock_Test0():
 	c_program_text= """
 		fn Foo()
