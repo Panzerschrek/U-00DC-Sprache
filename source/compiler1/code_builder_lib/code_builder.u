@@ -1965,6 +1965,51 @@ fn CodeBuilder::CallDestructorsForAllVariablesFrames( mut this, NamesScopePtr& n
 	{
 		CallDestructorsForVariablesFrame( names_scope, function_context, i - 1s, src_loc );
 	}
+
+	// Free also all heap allocations, made in this function.
+	if( !function_context.is_functionless_context )
+	{
+		foreach( heap_allocation_to_free_ptr : function_context.heap_allocations_to_free_at_return )
+		{
+			var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
+
+			var LLVMValueRef mut heap_allocation_to_free=
+				unsafe( LLVMBuildLoad2(
+					function_context.llvm_ir_builder,
+					pointer_type,
+					heap_allocation_to_free_ptr,
+					g_null_string ) );
+
+			var LLVMValueRef is_null=
+				unsafe( LLVMBuildICmp(
+					function_context.llvm_ir_builder,
+					LLVMIntPredicate::EQ,
+					heap_allocation_to_free,
+					LLVMConstNull( pointer_type ),
+					g_null_string ) );
+
+			var LLVMBasicBlockRef needs_to_free_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+			var LLVMBasicBlockRef end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+			unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, is_null, end_block, needs_to_free_block ) );
+
+			// Needs to free block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, needs_to_free_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, needs_to_free_block ) );
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType( free_function_ ),
+				free_function_,
+				$<(heap_allocation_to_free),
+				1u,
+				g_null_string ) );
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+			// End block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
+		}
+	}
 }
 
 fn CodeBuilder::CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variable_frames_stack_size, SrcLoc& src_loc )
