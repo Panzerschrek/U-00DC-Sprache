@@ -1,3 +1,4 @@
+import "/scoped_array.u"
 import "/string_conversions.u"
 import "debug_info_builder.uh"
 
@@ -353,7 +354,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 		return stub_type_;
 	}
 
-	var ust::vector</LLVMMetadataRef/> mut elements;
+	scoped_array( mut elements, LLVMMetadataRef, t.element_types.size(), LLVMMetadataRef::Null )
 
 	auto di_file= source_file_entries_.front();
 
@@ -364,7 +365,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 		var LLVMMetadataRef element_di_type= CreateDIType( element_type );
 		var LLVMTypeRef llvm_element_type= element_type.GetLLVMType();
 
-		elements.push_back(
+		elements[i]=
 			unsafe( LLVMDIBuilderCreateMemberType(
 				builder_,
 				di_file,
@@ -375,7 +376,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 				LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
 				LLVMOffsetOfElement( data_layout_, t.llvm_type, u32(i) ) * 8u64,
 				LLVMDIFlags(0),
-				element_di_type) ) );
+				element_di_type) );
 	}
 
 	var ust::string8 name= Type(t).ToString();
