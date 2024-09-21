@@ -16,10 +16,12 @@ import "reference_notation.u"
 <?
 	type ??T= ?element_type;
 	var size_type ??s= ?size;
+	// Allocate scoped memory block. It should outlive result wrapper container.
+	alloca ??T ??ptr[ ??s ];
 	// Use unique identifier for the owning container to prevent accessing it in user code and potential moving it.
 	auto ?m<? mut ?> ??arr=
 		unsafe( ::ust::array_over_external_memory</??T/>(
-			alloca</??T/>(??s),
+			??ptr,
 			??s
 			?constructor_arg<? , safe( ?a ) ?> ) );
 	// Create immutable range for required variable name.
