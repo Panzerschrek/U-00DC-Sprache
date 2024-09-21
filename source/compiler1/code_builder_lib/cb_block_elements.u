@@ -546,6 +546,27 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 	}
 }
 
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAllocaDeclarationImpl( names_scope, function_context, alloca_declaration.deref() );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, alloca_declaration.deref().src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AllocaDeclaration& alloca_declaration )
+{
+	// TODO
+	ust::ignore_unused(names_scope);
+	ust::ignore_unused(function_context);
+	ust::ignore_unused(alloca_declaration);
+}
+
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(

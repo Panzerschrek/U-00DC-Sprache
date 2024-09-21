@@ -2282,6 +2282,7 @@ AllocaDeclaration SyntaxAnalyzer::ParseAllocaDeclaration()
 	if( it_->type == Lexem::Type::Identifier )
 	{
 		result.name= it_->text;
+		result.src_loc= it_->src_loc;
 		NextLexem();
 	}
 	else
