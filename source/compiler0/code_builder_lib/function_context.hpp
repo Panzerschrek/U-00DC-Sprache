@@ -11,6 +11,13 @@ namespace U
 
 struct FunctionContext;
 
+struct AllocaInfo
+{
+	// A boolean value.
+	llvm::Value* is_stack_allocation= nullptr;
+	llvm::Value* ptr_for_free= nullptr; // Pointer for free or for llvm.stackrestore.
+};
+
 // Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
 // But you still need call "CallDestructors" manually.
 struct StackVariablesStorage
@@ -24,6 +31,7 @@ public:
 public:
 	FunctionContext& function_context_;
 	std::vector<VariablePtr> variables_;
+	std::vector<AllocaInfo> allocas_;
 };
 
 struct LoopFrame

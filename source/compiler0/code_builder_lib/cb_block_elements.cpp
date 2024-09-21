@@ -571,14 +571,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Perform heap allocation for large memory blocks.
 		const uint64_t c_min_bytes_for_heap_allocation= 4096u;
 
-		// Create a pointer-type stack variable in order to store possible heap allocation result in it.
-		// Initialize it with zero at function start.
-		llvm::Value* const heap_allocation_to_free_variable=
-			function_context.alloca_ir_builder.CreateAlloca( element_llvm_type->getPointerTo(), nullptr, "heap_allocation_to_free_variable" );
-		function_context.alloca_ir_builder.CreateStore( llvm::Constant::getNullValue( element_llvm_type->getPointerTo() ), heap_allocation_to_free_variable );
-
-		function_context.heap_allocations_to_free_at_return.push_back( heap_allocation_to_free_variable );
-
 		llvm::Value* const num_elements= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
 
 		llvm::Value* const memory_size=
@@ -604,6 +596,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Stack allocation block.
 		function_context.function->getBasicBlockList().push_back( stack_allocation_block );
 		function_context.llvm_ir_builder.SetInsertPoint( stack_allocation_block );
+		llvm::Value* const stacksave_result=
+			function_context.llvm_ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::stacksave ),
+				{},
+				"alloca_stacksave_result" );
 		llvm::Value* const stack_allocation= function_context.llvm_ir_builder.CreateAlloca( element_llvm_type, num_elements, "alloca_stack" );
 		// TODO - call lifetime start?
 		function_context.llvm_ir_builder.CreateBr( end_block );
@@ -614,7 +611,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		llvm::Value* const heap_allocation=
 			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
 		// Since "alloca" in a loop isn't possible, this should be single store into this variable (except initial nullptr store).
-		function_context.llvm_ir_builder.CreateStore( heap_allocation, heap_allocation_to_free_variable );
 		function_context.llvm_ir_builder.CreateBr( end_block );
 
 		// End block.
@@ -624,6 +620,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		alloca_result= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "alloca_res" );
 		alloca_result->addIncoming( stack_allocation, stack_allocation_block );
 		alloca_result->addIncoming( heap_allocation, heap_allocation_block );
+
+		llvm::PHINode* const ptr_for_free=
+			function_context.llvm_ir_builder.CreatePHI( llvm::PointerType::get( llvm_context_, 0 ), 2, "alloca_ptr_for_free" );
+		ptr_for_free->addIncoming( stacksave_result, stack_allocation_block );
+		ptr_for_free->addIncoming( heap_allocation, heap_allocation_block );
+
+		AllocaInfo alloca_info;
+		alloca_info.is_stack_allocation= less_than_limit;
+		alloca_info.ptr_for_free= ptr_for_free;
+		prev_variables_storage.allocas_.push_back( std::move(alloca_info) );
 	}
 
 	RawPointerType pointer_type;

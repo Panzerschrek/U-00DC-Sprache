@@ -27,7 +27,7 @@ def AllocaDeclaration_Test1():
 	tests_lib.run_function( "_Z3Fooj", 128 )
 
 
-def AllocaDeclarationr_Test2():
+def AllocaDeclaration_Test2():
 	c_program_text= """
 		fn Foo(u32 size)
 		{
@@ -44,7 +44,7 @@ def AllocaDeclarationr_Test2():
 	tests_lib.run_function( "_Z3Fooj", 34 )
 
 
-def AllocaDeclarationr_Test3():
+def AllocaDeclaration_Test3():
 	c_program_text= """
 		fn Foo(u32 size)
 		{
@@ -57,6 +57,57 @@ def AllocaDeclarationr_Test3():
 	tests_lib.run_function( "_Z3Fooj", 800 )
 	tests_lib.run_function( "_Z3Fooj", 8000 )
 	tests_lib.run_function( "_Z3Fooj", 80000 )
+
+
+def AllocaDeclaration_Test4():
+	c_program_text= """
+		fn Foo(u32 size)
+		{
+			// Create two allocations.
+			var size_type s(size);
+			alloca u32 ints[ s ];
+			alloca f64 floats[ s ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 33 )
+
+
+def AllocaDeclaration_Test5():
+	c_program_text= """
+		fn Foo(u32 size)
+		{
+			// Create two allocations in different branches.
+			var size_type s(size);
+			if( size % 2u == 0u )
+			{
+				alloca u32 ints[ s ];
+			}
+			else
+			{
+				alloca f64 floats[ s ];
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 33 )
+	tests_lib.run_function( "_Z3Fooj", 34 )
+
+
+def AllocaDeclaration_Test6():
+	c_program_text= """
+		fn Foo(u32 size)
+		{
+			// Alloca declaration in loop.
+			// It's fine since it's scoped and memory is releazed after each iteration.
+			for( auto mut i= 0u; i < size; ++i )
+			{
+				alloca char16 mem[ size_type(size) ];
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 10 )
 
 
 def AllocaOperator_Test0():
