@@ -531,6 +531,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::AllocaDeclaration& alloca_declaration )
+{
+	// TODO
+	U_UNUSED(names_scope);
+	U_UNUSED(function_context);
+	U_UNUSED(alloca_declaration);
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::ReturnOperator& return_operator )
 {
 	BlockBuildInfo block_info;

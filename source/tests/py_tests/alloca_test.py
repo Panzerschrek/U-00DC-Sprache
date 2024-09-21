@@ -1,6 +1,19 @@
 from py_tests_common import *
 
 
+def AllocaDeclaration_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Size is static.
+			alloca i32 arr[ 16s ];
+			static_assert( same_type</ arr, $(i32) /> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def AllocaOperator_Test0():
 	c_program_text= """
 		fn Foo()
