@@ -2274,7 +2274,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 	function_context.references_graph.TryAddInnerLinks( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 
-	function_context.variables_frames.back().push_back( sequence_lock_node );
+	function_context.variables_frames.back().variables.push_back( sequence_lock_node );
 
 	if_var( &tuple_type : sequence_expression.t.GetTupleType() )
 	{

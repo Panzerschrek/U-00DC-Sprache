@@ -151,7 +151,7 @@ fn CodeBuilder::BuildExpressionCodeForValueReturn(
 								auto mut found_in_variables= false;
 								foreach( & frame : function_context.variables_frames ) label variable_frames_loop
 								{
-									foreach( &frame_variable : frame )
+									foreach( &frame_variable : frame.variables )
 									{
 										if( frame_variable == variable_for_move )
 										{
@@ -1168,7 +1168,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto mut found_in_variables= false;
 	foreach( & frame : function_context.variables_frames ) label variable_frames_loop
 	{
-		foreach( &frame_variable : frame )
+		foreach( &frame_variable : frame.variables )
 		{
 			if( frame_variable == variable_for_move )
 			{

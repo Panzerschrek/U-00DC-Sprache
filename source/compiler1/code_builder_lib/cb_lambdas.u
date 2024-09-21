@@ -992,7 +992,7 @@ fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_c
 	var ust::unordered_set</VariablePtr/> mut result;
 	foreach( &variables_frame : function_context.variables_frames )
 	{
-		foreach( &variable : variables_frame )
+		foreach( &variable : variables_frame.variables )
 		{
 			result.insert( variable );
 		}

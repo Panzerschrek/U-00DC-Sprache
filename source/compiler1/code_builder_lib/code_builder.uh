@@ -103,11 +103,11 @@ private:
 	template</type Func/>
 	fn WithVariablesFrame( mut this, FunctionContext &mut function_context, Func mut func ) : auto
 	{
-		function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
+		function_context.variables_frames.push_back( VariablesFrame() );
 
 		auto result= move(func)( this, function_context );
 
-		foreach( &variable : function_context.variables_frames.back() )
+		foreach( &variable : function_context.variables_frames.back().variables )
 		{
 			function_context.references_graph.RemoveNode( variable );
 		}
