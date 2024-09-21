@@ -4,9 +4,16 @@ import "references_graph.uh"
 namespace U1
 {
 
+struct AllocaInfo
+{
+	LLVMValueRef is_stack_allocation; // A boolean value.
+	LLVMValueRef ptr_for_free; // Pointer for free or for llvm.stackrestore.
+}
+
 struct VariablesFrame
 {
 	ust::vector</ VariablePtr /> variables;
+	ust::vector</ AllocaInfo /> allocas;
 }
 
 struct LoopFrame

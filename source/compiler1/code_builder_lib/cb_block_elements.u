@@ -629,6 +629,14 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 		// Stack allocation block.
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block ) );
+		var LLVMValueRef stacksave_result=
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType(stacksave_intrinsic_),
+				stacksave_intrinsic_,
+				ust::nullptr</LLVMValueRef/>(),
+				0u,
+				"alloca_stacksave_result\0"[0] ) );
 		var LLVMValueRef stack_allocation= unsafe( LLVMBuildArrayAlloca( function_context.llvm_ir_builder, element_llvm_type, num_elements, "alloca_stack\0"[0] ) );
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
 
@@ -650,10 +658,22 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
 
 		alloca_result= unsafe( LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_res\0"[0] ) );
+		{
+			var [ LLVMValueRef, 2 ] mut incoming_values[ stack_allocation, heap_allocation ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+			unsafe( LLVMAddIncoming( alloca_result, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u ) );
+		}
 
-		var [ LLVMValueRef, 2 ] mut incoming_values[ stack_allocation, heap_allocation ];
-		var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
-		unsafe( LLVMAddIncoming( alloca_result, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u ) );
+		var LLVMValueRef ptr_for_free= unsafe( LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_ptr_for_free\0"[0] ) );
+		{
+			var [ LLVMValueRef, 2 ] mut incoming_values[ stacksave_result, heap_allocation ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+			unsafe( LLVMAddIncoming( ptr_for_free, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u ) );
+		}
+
+		var size_type frame_index= function_context.variables_frames.size() - 2s;
+		function_context.variables_frames[frame_index].allocas.push_back(
+			AllocaInfo{ .is_stack_allocation= less_than_limit, .ptr_for_free= ptr_for_free } );
 	}
 
 	var Type variable_type= RawPointerType{ .element_type= t, .llvm_type= ptr_llvm_type };

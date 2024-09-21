@@ -1362,6 +1362,9 @@ private:
 	LLVMValueRef malloc_function_= LLVMValueRef::Null;
 	LLVMValueRef free_function_= LLVMValueRef::Null;
 
+	LLVMValueRef stacksave_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef stackrestore_intrinsic_= LLVMValueRef::Null;
+
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;
 
