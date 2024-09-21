@@ -311,7 +311,7 @@ def AllocaInsideCorouine_Test0():
 	c_program_text= """
 		fn async Foo()
 		{
-			auto ptr= unsafe( alloca</f32/>(16s) );
+			alloca f32 ptr[16s];
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -323,7 +323,7 @@ def AllocaInsideCorouine_Test1():
 	c_program_text= """
 		fn generator Foo()
 		{
-			auto ptr= unsafe( alloca</u32/>(8s) );
+			alloca u32 ptr[8s];
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
