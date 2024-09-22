@@ -573,6 +573,9 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 		return;
 	}
 
+	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't contexpr types.
+	function_context.has_non_constexpr_operations_inside= true;
+
 	var Type t= PrepareType( names_scope, function_context, alloca_declaration.t );
 	if( !EnsureTypeComplete( t ) )
 	{

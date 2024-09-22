@@ -543,6 +543,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
+	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't contexpr types.
+	function_context.has_non_constexpr_operations_inside= true;
+
 	// Destruction frame for temporary variables of size/type expressions.
 	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );

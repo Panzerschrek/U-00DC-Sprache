@@ -187,6 +187,19 @@ def AllocaVariableIsImmutable_Test2():
 	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 5 ) )
 
 
+def AllocaDeclaration_IsNotConstexpr_Test0():
+	c_program_text= """
+		fn constexpr Foo()
+		{
+			// For now can't use "alloca" in constexpr functions.
+			alloca i32 arr[ 16s ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+
+
 def AllocaOperator_Test0():
 	c_program_text= """
 		fn Foo()
