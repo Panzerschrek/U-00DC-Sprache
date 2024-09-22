@@ -3833,7 +3833,7 @@ fn CodeBuilder::ConcatenateCharArrays(
 	{
 		// TODO - speed-up this, handle the case where both constexpr values are llvm::ConstantDataArray instances.
 
-		scoped_array( mut constants, LLVMValueRef, size_type(result_array_type.element_count), LLVMValueRef::Null )
+		scoped_array LLVMValueRef mut constants[ size_type(result_array_type.element_count) ]( LLVMValueRef::Null );
 
 		for( auto mut i= 0u; i < u32(l_array_type.element_count); ++i )
 		{
@@ -4159,7 +4159,7 @@ fn CodeBuilder::DoCallFunction(
 		is_constexpr= false; // Can't call constexpr function, returning reference.
 	}
 
-	scoped_array( mut args_nodes, VariableNullablePtr, total_args )
+	scoped_array VariableNullablePtr mut args_nodes[total_args];
 
 	var ust::vector</LLVMValueRef/> mut value_args_for_lifetime_end_call;
 

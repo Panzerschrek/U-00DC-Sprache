@@ -930,7 +930,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		with( &class_ : class_type.lock_imut().deref() )
 		{
 			// Perform additional checks.
-			scoped_array( mut reference_tags_usage_flags, bool, class_.inner_references.size(), false )
+			scoped_array bool mut reference_tags_usage_flags[ class_.inner_references.size() ]( false );
 
 			foreach( &parent : class_.parents )
 			{

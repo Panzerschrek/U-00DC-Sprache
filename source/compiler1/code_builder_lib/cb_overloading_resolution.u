@@ -754,7 +754,7 @@ fn CodeBuilder::SelectOverloadedFunction(
 		return ~0s;
 	}
 
-	scoped_array( mut best_functions, bool, matched_functions.size(), true )
+	scoped_array bool mut best_functions[ matched_functions.size() ]( true );
 
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
@@ -1051,7 +1051,7 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 		return 0s;
 	}
 
-	scoped_array( mut best_templates, bool, type_templates.size(), true )
+	scoped_array bool mut best_templates[ type_templates.size() ]( true );
 
 	for( auto mut arg_n= 0s; arg_n < signature_args_to_check; ++arg_n )
 	{

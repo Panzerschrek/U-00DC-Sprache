@@ -9,9 +9,9 @@ import "reference_notation.u"
 // This macro is entended for declaring dynamic arrays with small size in function context.
 //
 // Usage example:
-//		scoped_array( i32, 16s, 0 ) // Creates array of i32 elements of size 16 and fills it with zeros
+//		scoped_array i32 some_array[16s]( 0 ); // Creates array of i32 elements of size 16 and fills it with zeros.
 //
-?macro <? scoped_array:block ( ?m:opt<? mut ?> ?var_name:ident, ?element_type:ty, ?size:expr ?constructor_arg:opt<? , ?a:expr ?> ) ?>
+?macro <? scoped_array:block ?element_type:ty ?m:opt<? mut ?> ?var_name:ident [ ?size:expr ] ?constructor_arg:opt<? ( ?a:expr ) ?> ; ?>
 ->
 <?
 	type ??T= ?element_type;

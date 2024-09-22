@@ -618,7 +618,7 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
-	scoped_array( mut list_initializers, LLVMValueRef, tuple_type.element_types.size(), LLVMValueRef::Null )
+	scoped_array LLVMValueRef mut list_initializers[ tuple_type.element_types.size() ]( LLVMValueRef::Null );
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
@@ -647,7 +647,7 @@ fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_na
 fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
-	scoped_array( mut list_initializers, LLVMValueRef, function_type.params.size(), LLVMValueRef::Null )
+	scoped_array LLVMValueRef mut list_initializers[ function_type.params.size() ]( LLVMValueRef::Null );
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
@@ -967,7 +967,7 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 {
 	debug_assert( element_types.size() == initializers.size(), "typeinfo list types/initializers size mismatch!" );
 
-	scoped_array( mut element_llvm_types, LLVMTypeRef, element_types.size(), element_types.iter().map( Type::GetLLVMType ) )
+	scoped_array LLVMTypeRef mut element_llvm_types[ element_types.size() ]( element_types.iter().map( Type::GetLLVMType ) );
 
 	var LLVMTypeRef tuple_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 

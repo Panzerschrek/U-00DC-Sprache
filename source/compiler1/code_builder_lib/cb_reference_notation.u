@@ -268,7 +268,7 @@ fn CodeBuilder::NormalizeReferencesPollution( FunctionType::ReferencesPollution 
 
 fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences& return_references ) : ReferenceNotationConstant
 {
-	scoped_array( mut constant_initializers, LLVMValueRef, return_references.size(), LLVMValueRef::Null )
+	scoped_array LLVMValueRef mut constant_initializers[ return_references.size() ]( LLVMValueRef::Null );
 
 	for( auto mut i= 0s; i < return_references.size(); ++i )
 	{
@@ -291,8 +291,8 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant
 {
 	var TupleType mut tuple_type;
-	scoped_array( mut elements_llvm_types, LLVMTypeRef, return_inner_references.size(), LLVMTypeRef::Null )
-	scoped_array( mut constant_initializers, LLVMValueRef, return_inner_references.size(), LLVMValueRef::Null )
+	scoped_array LLVMTypeRef mut elements_llvm_types[ return_inner_references.size() ]( LLVMTypeRef::Null );
+	scoped_array LLVMValueRef mut constant_initializers[ return_inner_references.size() ]( LLVMValueRef::Null );
 
 	for( auto mut i= 0s; i < return_inner_references.size(); ++i )
 	{
@@ -311,7 +311,7 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInne
 
 fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant
 {
-	scoped_array( mut constant_initializers, LLVMValueRef, references_pollution.size(), LLVMValueRef::Null )
+	scoped_array LLVMValueRef mut constant_initializers[ references_pollution.size() ]( LLVMValueRef::Null );
 
 	var LLVMTypeRef pair_element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
 	for( auto mut i= 0s; i < references_pollution.size(); ++i )

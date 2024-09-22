@@ -354,7 +354,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 		return stub_type_;
 	}
 
-	scoped_array( mut elements, LLVMMetadataRef, t.element_types.size(), LLVMMetadataRef::Null )
+	scoped_array LLVMMetadataRef mut elements[ t.element_types.size() ]( LLVMMetadataRef::Null );
 
 	auto di_file= source_file_entries_.front();
 

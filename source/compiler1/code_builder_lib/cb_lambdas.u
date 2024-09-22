@@ -791,10 +791,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 	{
 		var ClassType &mut class_type= class_lock.deref();
 
-		scoped_array(
-			mut fields_llvm_types,
-			LLVMTypeRef,
-			class_type.fields_order.size(),
+		scoped_array LLVMTypeRef mut fields_llvm_types[ class_type.fields_order.size() ](
 			class_type.fields_order.iter().map(
 				lambda( tup[ust::string8, ClassFieldPtr]& field_pair ) : LLVMTypeRef
 				{
@@ -803,7 +800,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 						var LLVMTypeRef llvm_type= field.t.GetLLVMType();
 						return select( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type );
 					}
-				} ) )
+				} ) );
 
 		unsafe( LLVMStructSetBody( class_type.llvm_type, fields_llvm_types.data(), u32( fields_llvm_types.size() ), LLVMBool::False ) );
 

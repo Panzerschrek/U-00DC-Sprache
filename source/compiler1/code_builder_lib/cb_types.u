@@ -105,7 +105,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		out_tuple_type.element_types.push_back( PrepareType( names_scope, function_context, element ) );
 	}
 
-	scoped_array( mut element_llvm_types, LLVMTypeRef, out_tuple_type.element_types.size(), out_tuple_type.element_types.iter().map( Type::GetLLVMType ) )
+	scoped_array LLVMTypeRef mut element_llvm_types[ out_tuple_type.element_types.size() ]( out_tuple_type.element_types.iter().map( Type::GetLLVMType ) );
 
 	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 

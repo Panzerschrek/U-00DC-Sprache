@@ -160,7 +160,7 @@ fn nomangle main() : i32
 		assert( arr[4s] ==16u );
 	}
 	{ // scoped_array macro
-		scoped_array( ints, i32, 40s, 878 )
+		scoped_array i32 ints[40s]( 878 );
 		static_assert( same_type</ typeof(ints), ust::array_view_imut</i32/> /> );
 
 		assert( ints.size() == 40s );
@@ -171,7 +171,7 @@ fn nomangle main() : i32
 		}
 	}
 	{ // scoped_array macro for default-constructible type.
-		scoped_array( arr, DefaultConstructible, 7s )
+		scoped_array DefaultConstructible arr[7s];
 		static_assert( same_type</ typeof(arr), ust::array_view_imut</DefaultConstructible/> /> );
 
 		assert( arr.size() == 7s );
@@ -183,7 +183,7 @@ fn nomangle main() : i32
 		}
 	}
 	{ // scoped_array for mutable array.
-		scoped_array( mut squares, u32, 12s, 0u )
+		scoped_array u32 mut squares[ 12s ]( 0u );
 		static_assert( same_type</ typeof(squares), ust::array_view_mut</u32/> /> );
 
 		assert( !squares.empty() );
@@ -208,7 +208,7 @@ fn nomangle main() : i32
 		var [ ust::string8, 3 ] strings[ "Quick", "Brown", "Fox" ];
 		var ust::array_view_imut</ust::string8/> strings_view= strings;
 
-		scoped_array( arr, ust::string8, strings_view.size(), strings_view.iter() )
+		scoped_array ust::string8 arr[ strings_view.size() ]( strings_view.iter() );
 		static_assert( same_type</ typeof(arr), ust::array_view_imut</ust::string8/> /> );
 
 		assert( !arr.empty() );
@@ -221,7 +221,7 @@ fn nomangle main() : i32
 		var [ i32, 4 ] ints[ 55, 66, 77, 88 ];
 		var ust::array_view_imut</i32/> ints_view= ints;
 
-		scoped_array( arr, IntWrapper, ints_view.size(), ints_view.iter() )
+		scoped_array IntWrapper arr[ ints_view.size()]( ints_view.iter() );
 		static_assert( same_type</ typeof(arr), ust::array_view_imut</IntWrapper/> /> );
 
 		assert( !arr.empty() );
@@ -236,14 +236,14 @@ fn nomangle main() : i32
 
 		{
 			// Create 16 copies of decerementer.
-			scoped_array( decrementers, SharedIntDecrementer, 16s, decrementer )
+			scoped_array SharedIntDecrementer decrementers[ 16s ]( decrementer );
 		} // Destructors should be called here.
 
 		// Shared value should be modified.
 		assert( decrementer.ptr.lock_imut().deref() == 100 - 16 )
 	}
 	{ // scoped_array for very large mutable array. Heap fallback should be used.
-		scoped_array( mut squares, u32, 1024s * 1024s * 16s, 0u )
+		scoped_array u32 mut squares[1024s * 1024s * 16s](0u);
 		static_assert( same_type</ typeof(squares), ust::array_view_mut</u32/> /> );
 
 		assert( !squares.empty() );

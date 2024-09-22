@@ -100,7 +100,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
 	// Fill signature params and check correctness.
-	scoped_array( mut template_params_usage_flags, bool, template_params.size(), false )
+	scoped_array bool mut template_params_usage_flags[ template_params.size() ]( false );
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
 
@@ -208,7 +208,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
-	scoped_array( mut template_params_usage_flags, bool, template_params.size(), false )
+	scoped_array bool mut template_params_usage_flags[ template_params.size() ]( false );
 
 	// Create signature params.
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
@@ -454,13 +454,8 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 						// Try to match this type alias params against given signature params.
 
-						scoped_array(
-							mut alias_template_params_to_signature_params_mapping,
-							TemplateSignatureParam,
-							type_alias_template_params.size(),
-							TemplateSignatureParam::Type() )
-
-						scoped_array( mut param_known_flags, bool, type_alias_template_params.size(), false )
+						scoped_array TemplateSignatureParam mut alias_template_params_to_signature_params_mapping[ type_alias_template_params.size() ]( TemplateSignatureParam::Type() );
+						scoped_array bool mut param_known_flags[ type_alias_template_params.size() ]( false );
 
 						var bool mut params_matching_ok= true;
 
@@ -534,7 +529,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 						if( params_matching_ok )
 						{
-							scoped_array( mut alias_template_parameters_usage_flags, bool, type_alias_template_params.size(), false )
+							scoped_array bool mut alias_template_parameters_usage_flags[ type_alias_template_params.size() ]( false );
 
 							var TemplateSignatureParam alias_body_signature_param=
 								CreateTemplateSignatureParam(
@@ -868,15 +863,12 @@ fn CodeBuilder::GenTemplateType(
 		return FinishTypeTemplateGeneration( candidate_type_templates.front(), args_names_scope, template_instantiation_src_loc );
 	}
 
-	scoped_array(
-		templates_for_check,
-		TypeTemplatePtr,
-		candidate_type_templates.size(),
+	scoped_array TypeTemplatePtr templates_for_check[ candidate_type_templates.size() ](
 		candidate_type_templates.iter().map(
 			lambda( TemplateTypeArgsEvaluationResult& candidate ) : TypeTemplatePtr
 			{
 				return candidate.type_template;
-			}) )
+			}) );
 
 	auto index= SelectMoreSpecializedTemplate( templates_for_check, template_args.size() );
 	if( index == ~0s )
