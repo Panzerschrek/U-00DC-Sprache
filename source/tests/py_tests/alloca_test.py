@@ -110,6 +110,83 @@ def AllocaDeclaration_Test6():
 	tests_lib.run_function( "_Z3Fooj", 10 )
 
 
+def UsingKeywordAsName_ForAllocaDeclaration_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			alloca i32 virtual[ 16s ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def Redefinition_ForAllocaDeclaration_Test0():
+	c_program_text= """
+		fn Foo( i32 some_var )
+		{
+			alloca i32 some_var[ 16s ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "Redefinition", 4 ) )
+
+
+def Redefinition_ForAllocaDeclaration_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var f64 some_var = zero_init;
+			alloca i32 some_var[ 16s ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "Redefinition", 5 ) )
+
+
+def AllocaVariableIsImmutable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			alloca i32 arr[ 16s ];
+			move(arr); // Can't move - "arr" is immutable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def AllocaVariableIsImmutable_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			alloca i32 arr[ 16s ];
+			Bar(ptr); // Can't call this function - it requires mutable reference.
+		}
+		fn Bar( $(i32) &mut ptr );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 5 ) )
+
+
+def AllocaVariableIsImmutable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			alloca i32 arr[ 16s ];
+			var $(i32) &mut ref= arr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 5 ) )
+
+
 def AllocaOperator_Test0():
 	c_program_text= """
 		fn Foo()
