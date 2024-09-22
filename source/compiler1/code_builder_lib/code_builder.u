@@ -1958,7 +1958,7 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 	if( !function_context.is_functionless_context )
 	{
 		// Free memory allocated for "alloca" declarations.
-		// It's important to do this in reverse order, since allocations are madely mostly by manipulation of the program stack.
+		// It's important to do this in reverse order, since allocations are made mostly by manipulation of the program stack.
 		for( auto mut i= function_context.variables_frames[variables_frame_index].allocas.size(); i > 0s; --i )
 		{
 			var AllocaInfo& alloca_info= function_context.variables_frames[variables_frame_index].allocas[ i - 1s ];

@@ -131,7 +131,6 @@ public:
 	LLVMBasicBlockRef destructor_end_block= LLVMBasicBlockRef::Null; // For destructors only - used for "Br" instead of "ret"
 
 	ust::vector</LoopFrame/> loops_stack;
-
 	bool is_in_unsafe_block= false;
 
 	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.

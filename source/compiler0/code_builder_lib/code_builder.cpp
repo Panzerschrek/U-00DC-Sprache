@@ -709,9 +709,10 @@ void CodeBuilder::CallDestructorsImpl(
 		function_context.variables_state.RemoveNode( stored_variable );
 	}
 
-	// Free memory allocated for "alloca" declarations.
 	if( !function_context.is_functionless_context )
 	{
+		// Free memory allocated for "alloca" declarations.
+		// It's important to do this in reverse order, since allocations are made mostly by manipulation of the program stack.
 		for( auto it = stack_variables_storage.allocas_.rbegin(); it != stack_variables_storage.allocas_.rend(); ++it )
 		{
 			const AllocaInfo& alloca_info= *it;
