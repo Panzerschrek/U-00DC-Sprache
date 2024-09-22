@@ -187,6 +187,43 @@ def AllocaVariableIsImmutable_Test2():
 	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 5 ) )
 
 
+def TypesMismatch_ForAllocaDeclaration_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			alloca i32 some_var[ 67 ]; // Size needs to be "size_type"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
+
+
+def TypesMismatch_ForAllocaDeclaration_Test1():
+	c_program_text= """
+		fn Foo(f32 x )
+		{
+			alloca i32 some_var[ x ]; // Size needs to be "size_type"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
+
+
+def TypesMismatch_ForAllocaDeclaration_Test2():
+	c_program_text= """
+		fn Foo( S s )
+		{
+			alloca i32 some_var[ s ]; // Size needs to be "size_type"
+		}
+		struct S{ size_type v; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
+
+
 def AllocaDeclaration_IsNotConstexpr_Test0():
 	c_program_text= """
 		fn constexpr Foo()
