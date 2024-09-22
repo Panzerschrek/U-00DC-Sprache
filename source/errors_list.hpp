@@ -268,6 +268,4 @@ PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence.
 PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
 
 // Alloca
-PROCESS_ERROR( AllocaOutsideUnsafeBlock, "Alloca operator outside unsafe block or expression." )
-PROCESS_ERROR( AllocaInsideLoop, "Alloca operator inside a loop. For now it's not supported." )
 PROCESS_ERROR( AllocaInsideCorouine, "Alloca operator inside a coroutine function (async function or generator)" )

@@ -81,7 +81,6 @@ struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
 struct Embed;
-struct Alloca;
 
 // Initializers
 struct ZeroInitializer;
@@ -206,7 +205,6 @@ using Expression= std::variant<
 	std::unique_ptr<const CastRef>,
 	std::unique_ptr<const CastRefUnsafe>,
 	std::unique_ptr<const Embed>,
-	std::unique_ptr<const Alloca>,
 	// Type name in expression context.
 	RootNamespaceNameLookup,
 	RootNamespaceNameLookupCompletion,
@@ -798,16 +796,6 @@ struct Embed
 	SrcLoc src_loc;
 	std::optional<ComplexName> element_type;
 	Expression expression;
-};
-
-struct Alloca
-{
-	explicit Alloca( const SrcLoc& src_loc )
-		: src_loc(src_loc), type(NameLookup(src_loc)) {}
-
-	SrcLoc src_loc;
-	ComplexName type;
-	Expression size;
 };
 
 struct ZeroInitializer

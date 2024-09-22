@@ -929,17 +929,6 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 		return ust::make_box( Embed{ .src_loc= src_loc, .element_type= move(element_type), .expression(ParseExpressionInBrackets()) } );
 	}
-	if( IsKeyword( it_.front(), Keyword::alloca_ ) )
-	{
-		auto src_loc= it_.front().src_loc;
-		NextLexem();
-
-		ExpectLexem( Lexem::Type::TemplateBracketLeft );
-		var ComplexName mut type_name= ParseComplexName();
-		ExpectLexem( Lexem::Type::TemplateBracketRight );
-
-		return ust::make_box( Alloca{ .src_loc= src_loc, .type_name= move(type_name), .size(ParseExpressionInBrackets()) } );
-	}
 	if( IsKeyword( it_.front(), Keyword::safe_ ) )
 	{
 		auto src_loc= it_.front().src_loc;

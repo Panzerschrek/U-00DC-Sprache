@@ -99,9 +99,6 @@ public:
 
 	std::vector<LoopFrame> loops_stack;
 
-	// Contains pointers to stack variables with pointers needed to be freed.
-	std::vector<llvm::Value*> heap_allocations_to_free_at_return;
-
 	// Stack for stack variables.
 	// First entry is set of function arguments.
 	// Each block adds new storage for it`s variables.
