@@ -531,6 +531,159 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::AllocaDeclaration& alloca_declaration )
+{
+	if( IsKeyword( alloca_declaration.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), alloca_declaration.src_loc );
+
+	if( function_context.coro_suspend_bb != nullptr )
+	{
+		// "alloca" is impossible to use inside a coroutine, since coroutines require fixed stack size.
+		REPORT_ERROR( AllocaInsideCorouine, names_scope.GetErrors(), alloca_declaration.src_loc );
+		return BlockBuildInfo();
+	}
+
+	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't constexpr types.
+	function_context.has_non_constexpr_operations_inside= true;
+
+	// Destruction frame for temporary variables of size/type expressions.
+	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	const Type type= PrepareType( alloca_declaration.type, names_scope, function_context );
+
+	if( !EnsureTypeComplete( type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), alloca_declaration.src_loc, type );
+		return BlockBuildInfo();
+	}
+
+	const VariablePtr size_variable= BuildExpressionCodeEnsureVariable( alloca_declaration.size, names_scope, function_context );
+	if( size_variable->type != size_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), alloca_declaration.src_loc, size_type_, size_variable->type );
+		return BlockBuildInfo();
+	}
+
+	llvm::Type* const element_llvm_type= type.GetLLVMType();
+	llvm::PointerType* const ptr_llvm_type= element_llvm_type->getPointerTo();
+
+	llvm::PHINode* alloca_result= nullptr;
+
+	{
+		// Perform stack allocation for small blocks.
+		// Perform heap allocation for large memory blocks.
+		const uint64_t c_min_bytes_for_heap_allocation= 4096u;
+
+		llvm::Value* const num_elements= CreateMoveToLLVMRegisterInstruction( *size_variable, function_context );
+
+		llvm::Value* const memory_size=
+			function_context.llvm_ir_builder.CreateMul(
+				num_elements,
+				llvm::ConstantInt::get(
+					fundamental_llvm_types_.size_type_,
+					uint64_t( data_layout_.getTypeAllocSize( element_llvm_type ) ) ) );
+
+		llvm::Value* const less_than_limit=
+			function_context.llvm_ir_builder.CreateICmpULT(
+				memory_size,
+				llvm::ConstantInt::get(
+					fundamental_llvm_types_.size_type_,
+					c_min_bytes_for_heap_allocation ) );
+
+		llvm::BasicBlock* const stack_allocation_block= llvm::BasicBlock::Create( llvm_context_, "stack_allocation_block" );
+		llvm::BasicBlock* const heap_allocation_block= llvm::BasicBlock::Create( llvm_context_, "heap_allocation_block" );
+		llvm::BasicBlock* const end_block= llvm::BasicBlock::Create( llvm_context_ );
+
+		function_context.llvm_ir_builder.CreateCondBr( less_than_limit, stack_allocation_block, heap_allocation_block );
+
+		// Stack allocation block.
+		function_context.function->getBasicBlockList().push_back( stack_allocation_block );
+		function_context.llvm_ir_builder.SetInsertPoint( stack_allocation_block );
+		llvm::Value* const stacksave_result=
+			function_context.llvm_ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::stacksave ),
+				{},
+				"alloca_stacksave_result" );
+		llvm::Value* const stack_allocation= function_context.llvm_ir_builder.CreateAlloca( element_llvm_type, num_elements, "alloca_stack" );
+		// TODO - call lifetime start?
+		function_context.llvm_ir_builder.CreateBr( end_block );
+
+		// Heap allocation block.
+		function_context.function->getBasicBlockList().push_back( heap_allocation_block );
+		function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
+		llvm::Value* const heap_allocation=
+			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
+		function_context.llvm_ir_builder.CreateBr( end_block );
+
+		// End block.
+		function_context.function->getBasicBlockList().push_back( end_block );
+		function_context.llvm_ir_builder.SetInsertPoint( end_block );
+
+		alloca_result= function_context.llvm_ir_builder.CreatePHI( ptr_llvm_type, 2, "alloca_res" );
+		alloca_result->addIncoming( stack_allocation, stack_allocation_block );
+		alloca_result->addIncoming( heap_allocation, heap_allocation_block );
+
+		llvm::PHINode* const ptr_for_free=
+			function_context.llvm_ir_builder.CreatePHI( llvm::PointerType::get( llvm_context_, 0 ), 2, "alloca_ptr_for_free" );
+		ptr_for_free->addIncoming( stacksave_result, stack_allocation_block );
+		ptr_for_free->addIncoming( heap_allocation, heap_allocation_block );
+
+		AllocaInfo alloca_info;
+		alloca_info.is_stack_allocation= less_than_limit;
+		alloca_info.ptr_for_free= ptr_for_free;
+		prev_variables_storage.allocas_.push_back( std::move(alloca_info) );
+	}
+
+	llvm::Value* const alloca_variable_address=
+		function_context.alloca_ir_builder.CreateAlloca( ptr_llvm_type, nullptr, alloca_declaration.name );
+	CreateLifetimeStart( function_context, alloca_variable_address );
+
+	function_context.llvm_ir_builder.CreateStore( alloca_result, alloca_variable_address );
+
+	RawPointerType pointer_type;
+	pointer_type.element_type= type;
+	pointer_type.llvm_type= ptr_llvm_type;
+	const Type variable_type= std::move(pointer_type);
+
+	const VariableMutPtr variable=
+		Variable::Create(
+			variable_type,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			alloca_declaration.name + " variable itself",
+			alloca_variable_address );
+	function_context.variables_state.AddNode( variable );
+	prev_variables_storage.RegisterVariable( variable );
+
+	debug_info_builder_->CreateVariableInfo( *variable, alloca_declaration.name, alloca_declaration.src_loc, function_context );
+
+	const VariableMutPtr variable_reference=
+		Variable::Create(
+			variable_type,
+			ValueType::ReferenceImut, // "alloca" declaration result is always immutable variable.
+			Variable::Location::Pointer,
+			alloca_declaration.name,
+			alloca_variable_address );
+	function_context.variables_state.AddNode( variable_reference );
+	prev_variables_storage.RegisterVariable( variable_reference );
+
+	function_context.variables_state.AddLink( variable, variable_reference );
+
+	const NamesScopeValue* const inserted_value=
+		names_scope.AddName( alloca_declaration.name, NamesScopeValue( variable_reference, alloca_declaration.src_loc ) );
+	if( inserted_value == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), alloca_declaration.src_loc, alloca_declaration.name );
+
+	// After lock of references we can call destructors.
+	CallDestructors( temp_variables_storage, names_scope, function_context, alloca_declaration.src_loc );
+
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::ReturnOperator& return_operator )
 {
 	BlockBuildInfo block_info;

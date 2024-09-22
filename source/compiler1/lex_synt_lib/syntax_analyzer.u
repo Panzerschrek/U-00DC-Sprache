@@ -196,6 +196,7 @@ private:
 	fn ParseIfAlternative( mut this ) : IfAlternative;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
+	fn ParseAllocaDeclaration( mut this ) : AllocaDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
 	fn ParseYieldOperator( mut this ) : YieldOperator;
 	fn ParseIfOperator( mut this ) : IfOperator;
@@ -2140,6 +2141,10 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		{
 			block_elements.push_back( ParseAutoVariableDeclaration() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::alloca_ ) )
+		{
+			block_elements.push_back( ust::make_box( ParseAllocaDeclaration() ) );
+		}
 		else if( IsKeyword( it_.front(), Keyword::return_ ) )
 		{
 			block_elements.push_back( ParseReturnOperator() );
@@ -2462,6 +2467,35 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 	ExpectSemicolon();
 
 	return variable_declaration;
+}
+
+fn SyntaxAnalyzer::ParseAllocaDeclaration( mut this ) : AllocaDeclaration
+{
+	var AllocaDeclaration mut alloca_declaration;
+
+	debug_assert( IsKeyword( it_.front(), Keyword::alloca_ ) );
+	NextLexem(); // alloca
+
+	alloca_declaration.t= ParseTypeName();
+
+	if( it_.front().lexem_type == Lexem::Type::Identifier )
+	{
+		alloca_declaration.name= it_.front().text;
+		alloca_declaration.src_loc= it_.front().src_loc;
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+	}
+
+	ExpectLexem( Lexem::Type::SquareBracketLeft );
+	alloca_declaration.size= ParseExpression();
+	ExpectLexem( Lexem::Type::SquareBracketRight );
+
+	ExpectSemicolon();
+
+	return alloca_declaration;
 }
 
 fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator

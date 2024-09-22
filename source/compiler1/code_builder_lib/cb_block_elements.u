@@ -546,6 +546,189 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 	}
 }
 
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAllocaDeclarationImpl( names_scope, function_context, alloca_declaration.deref() );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, alloca_declaration.deref().src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AllocaDeclaration& alloca_declaration )
+{
+	if( IsKeyword( alloca_declaration.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, alloca_declaration.src_loc )
+	}
+
+	if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
+	{
+		// "alloca" is impossible to use inside a coroutine, since coroutines require fixed stack size.
+		REPORT_ERROR( AllocaInsideCorouine, names_scope, alloca_declaration.src_loc )
+		return;
+	}
+
+	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't constexpr types.
+	function_context.has_non_constexpr_operations_inside= true;
+
+	var Type t= PrepareType( names_scope, function_context, alloca_declaration.t );
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, alloca_declaration.src_loc, t )
+		return;
+	}
+
+	var VariableLite size_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, alloca_declaration.size );
+	if( size_variable.t != size_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, alloca_declaration.src_loc, size_type_, size_variable.t )
+		return;
+	}
+
+	var LLVMTypeRef element_llvm_type= t.GetLLVMType();
+	var LLVMTypeRef ptr_llvm_type= unsafe( LLVMPointerType( element_llvm_type, 0u ) );
+
+	var LLVMValueRef mut alloca_result= LLVMValueRef::Null;
+
+	{
+		// Perform stack allocation for small blocks.
+		// Perform heap allocation for large memory blocks.
+		var u64 constexpr c_min_bytes_for_heap_allocation( 4096 );
+
+		var LLVMValueRef num_elements= CreateMoveToLLVMRegisterInstruction( size_variable, function_context );
+
+		var LLVMValueRef mut memory_size=
+			unsafe( LLVMBuildMul(
+				function_context.llvm_ir_builder,
+				num_elements,
+				LLVMConstInt(
+					fundamental_llvm_types_.size_type_,
+					LLVMABISizeOfType( data_layout_, element_llvm_type ),
+					LLVMBool::False ),
+				"alloca_num_bytes\0"[0] ) );
+
+		var LLVMValueRef less_than_limit=
+			unsafe( LLVMBuildICmp(
+				function_context.llvm_ir_builder,
+				LLVMIntPredicate::ULT,
+				memory_size,
+				LLVMConstInt(
+					fundamental_llvm_types_.size_type_,
+					c_min_bytes_for_heap_allocation,
+					LLVMBool::False ),
+				"alloca_less_than_stack_allocation_limit\0"[0] ) );
+
+		var LLVMBasicBlockRef stack_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_block\0"[0] ) );
+		var LLVMBasicBlockRef heap_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "heap_allocation_block\0"[0] ) );
+		var LLVMBasicBlockRef end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, less_than_limit, stack_allocation_block, heap_allocation_block ) );
+
+		// Stack allocation block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block ) );
+		var LLVMValueRef stacksave_result=
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType(stacksave_intrinsic_),
+				stacksave_intrinsic_,
+				ust::nullptr</LLVMValueRef/>(),
+				0u,
+				"alloca_stacksave_result\0"[0] ) );
+		var LLVMValueRef stack_allocation= unsafe( LLVMBuildArrayAlloca( function_context.llvm_ir_builder, element_llvm_type, num_elements, "alloca_stack\0"[0] ) );
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+		// Heap allocation block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block ) );
+		var LLVMValueRef heap_allocation=
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType( malloc_function_ ),
+				malloc_function_,
+				$<(memory_size),
+				1u,
+				"alloca_heap\0"[0] ) );
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+		// End block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
+
+		alloca_result= unsafe( LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_res\0"[0] ) );
+		{
+			var [ LLVMValueRef, 2 ] mut incoming_values[ stack_allocation, heap_allocation ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+			unsafe( LLVMAddIncoming( alloca_result, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u ) );
+		}
+
+		var LLVMValueRef ptr_for_free= unsafe( LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_ptr_for_free\0"[0] ) );
+		{
+			var [ LLVMValueRef, 2 ] mut incoming_values[ stacksave_result, heap_allocation ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+			unsafe( LLVMAddIncoming( ptr_for_free, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u ) );
+		}
+
+		var size_type frame_index= function_context.variables_frames.size() - 2s;
+		function_context.variables_frames[frame_index].allocas.push_back(
+			AllocaInfo{ .is_stack_allocation= less_than_limit, .ptr_for_free= ptr_for_free } );
+	}
+
+	var LLVMValueRef alloca_variable_address=
+		unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, ptr_llvm_type, (alloca_declaration.name + "\0").front() ) );
+	CreateLifetimeStart( function_context, alloca_variable_address );
+	unsafe( LLVMBuildStore( function_context.llvm_ir_builder, alloca_result, alloca_variable_address ) );
+
+	var Type variable_type= RawPointerType{ .element_type= t, .llvm_type= ptr_llvm_type };
+
+	var Variable mut variable
+	{
+		.t= variable_type,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.llvm_value= alloca_variable_address,
+		.name= alloca_declaration.name,
+	};
+
+	debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, alloca_declaration.name, alloca_declaration.src_loc );
+
+	var VariablePtr variable_ptr= move(variable).CreatePtr();
+
+	function_context.references_graph.AddNode( variable_ptr );
+	RegisterFrameVariable( function_context, variable_ptr, 1s );
+
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= variable_type,
+			.value_type= ValueType::ReferenceImut, // "alloca" declaration result is always immutable variable.
+			.location= Variable::Location::Pointer,
+			.llvm_value= alloca_variable_address,
+			.name= alloca_declaration.name,
+			.src_loc= alloca_declaration.src_loc,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( variable_reference );
+	RegisterFrameVariable( function_context, variable_reference, 1s );
+
+	function_context.references_graph.AddLink( variable_ptr, variable_reference );
+
+	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
+	{
+		insert_not_ok= lock.deref().AddName( alloca_declaration.name, move(variable_reference) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, alloca_declaration.src_loc, alloca_declaration.name )
+	}
+}
+
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
@@ -2253,7 +2436,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 	function_context.references_graph.TryAddInnerLinks( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 
-	function_context.variables_frames.back().push_back( sequence_lock_node );
+	function_context.variables_frames.back().variables.push_back( sequence_lock_node );
 
 	if_var( &tuple_type : sequence_expression.t.GetTupleType() )
 	{

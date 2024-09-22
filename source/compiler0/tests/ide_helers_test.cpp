@@ -783,6 +783,27 @@ U_TEST( GoToDefinition_Test24 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 12 ) == SrcLoc( 0, 2, 14 ) );
 }
 
+U_TEST( GoToDefinition_Test25 )
+{
+	// Should go to definition of "alloca" variable.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			alloca f32 arr[ 16s ];
+			{
+				var i32 y= 0;
+				auto ptr= arr;
+			}
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text, true );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 8, 14 ) == SrcLoc( 0, 5, 14 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=

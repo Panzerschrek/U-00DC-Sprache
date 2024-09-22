@@ -891,6 +891,12 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 		case llvm::Intrinsic::umul_with_overflow:
 			ProcessUMulWithOverflow( instruction );
 			return;
+		case llvm::Intrinsic::stacksave:
+			ProcessStacksave( instruction );
+			return;
+		case llvm::Intrinsic::stackrestore:
+			ProcessStackrestore( instruction );
+			return;
 		default:
 			break;
 		};
@@ -1259,6 +1265,20 @@ void Interpreter::ProcessUMulWithOverflow( const llvm::CallInst* const instructi
 	llvm::GenericValue val;
 	val.AggregateVal= { result_val, overflow_val };
 	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessStacksave( const llvm::CallInst* const instruction )
+{
+	// For now just do not bother with it - produce nullptr.
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(0) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessStackrestore( const llvm::CallInst* const instruction )
+{
+	// For now ignore this instruction.
+	U_UNUSED(instruction);
 }
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool destroy )

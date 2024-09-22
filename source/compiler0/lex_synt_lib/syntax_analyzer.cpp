@@ -217,6 +217,7 @@ private:
 
 	VariablesDeclaration ParseVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
+	AllocaDeclaration ParseAllocaDeclaration();
 
 	ReturnOperator ParseReturnOperator();
 	YieldOperator ParseYieldOperator();
@@ -2269,6 +2270,33 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	return result;
 }
 
+AllocaDeclaration SyntaxAnalyzer::ParseAllocaDeclaration()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::alloca_ );
+
+	AllocaDeclaration result( it_->src_loc );
+	NextLexem();
+
+	result.type= ParseTypeName();
+
+	if( it_->type == Lexem::Type::Identifier )
+	{
+		result.name= it_->text;
+		result.src_loc= it_->src_loc;
+		NextLexem();
+	}
+	else
+		PushErrorMessage();
+
+	ExpectLexem( Lexem::Type::SquareBracketLeft );
+	result.size= ParseExpression();
+	ExpectLexem( Lexem::Type::SquareBracketRight );
+
+	ExpectSemicolon();
+
+	return result;
+}
+
 ReturnOperator SyntaxAnalyzer::ParseReturnOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ );
@@ -2886,6 +2914,8 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 			result_builder.Append( ParseVariablesDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 			result_builder.Append( ParseAutoVariableDeclaration() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::alloca_ )
+			result_builder.Append( ParseAllocaDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
 			result_builder.Append( ParseReturnOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::yield_ )

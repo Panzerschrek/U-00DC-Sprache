@@ -4,6 +4,18 @@ import "references_graph.uh"
 namespace U1
 {
 
+struct AllocaInfo
+{
+	LLVMValueRef is_stack_allocation; // A boolean value indicating stack or heap allocation.
+	LLVMValueRef ptr_for_free; // Pointer for free or for llvm.stackrestore.
+}
+
+struct VariablesFrame
+{
+	ust::vector</ VariablePtr /> variables;
+	ust::vector</ AllocaInfo /> allocas;
+}
+
 struct LoopFrame
 {
 	LLVMBasicBlockRef block_for_break;
@@ -127,7 +139,6 @@ public:
 
 	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
 
-	type VariablesFrame= ust::vector</ VariablePtr />;
 	ust::vector</VariablesFrame/> variables_frames;
 	ReferencesGraph references_graph;
 

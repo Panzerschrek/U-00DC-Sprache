@@ -146,7 +146,6 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "nounwind" );
 
-
 	unsafe // Prepare heap allocations functions
 	{
 		// Use some temporary names for allocation functions.
@@ -164,6 +163,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 			"__U_ust_memory_free_impl\0"[0],
 			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool::False ) );
 	}
+
+	// Get stacksave/stackrestore functions.
+	stacksave_intrinsic_= GetIntrinsic( "llvm.stacksave", ust::empty_range );
+	stackrestore_intrinsic_= GetIntrinsic( "llvm.stackrestore", ust::empty_range );
 
 	if( create_lifetimes_ )
 	{
@@ -1921,9 +1924,9 @@ fn CodeBuilder::VariableExistanceMayHaveSideEffects( Type& variable_type ) : boo
 fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )
 {
 	// Call destructors in reverse order.
-	for( auto mut i= function_context.variables_frames[variables_frame_index].size(); i > 0s; --i )
+	for( auto mut i= function_context.variables_frames[variables_frame_index].variables.size(); i > 0s; --i )
 	{
-		auto variable_ptr= function_context.variables_frames[variables_frame_index][i - 1s];
+		auto variable_ptr= function_context.variables_frames[variables_frame_index].variables[i - 1s];
 		auto variable_lock= variable_ptr.lock_imut();
 		var Variable& variable= variable_lock.deref();
 
@@ -1950,6 +1953,52 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 		}
 
 		function_context.references_graph.RemoveNode( variable_ptr );
+	}
+
+	if( !function_context.is_functionless_context )
+	{
+		// Free memory allocated for "alloca" declarations.
+		// It's important to do this in reverse order, since allocations are madely mostly by manipulation of the program stack.
+		for( auto mut i= function_context.variables_frames[variables_frame_index].allocas.size(); i > 0s; --i )
+		{
+			var AllocaInfo& alloca_info= function_context.variables_frames[variables_frame_index].allocas[ i - 1s ];
+
+			var LLVMValueRef mut ptr_for_free= alloca_info.ptr_for_free;
+
+			var LLVMBasicBlockRef stack_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_free_block\0"[0] ) );
+			var LLVMBasicBlockRef heap_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "heap_allocation_free_block\0"[0] ) );
+			var LLVMBasicBlockRef end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+			unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, alloca_info.is_stack_allocation, stack_allocation_block, heap_allocation_block ) );
+
+			// Stack allocation block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block ) );
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType( stackrestore_intrinsic_ ),
+				stackrestore_intrinsic_,
+				$<(ptr_for_free),
+				1u,
+				g_null_string ) );
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+			// Heap allocation block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block ) );
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType( free_function_ ),
+				free_function_,
+				$<(ptr_for_free),
+				1u,
+				g_null_string ) );
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+
+			// End block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
+		}
 	}
 }
 
@@ -2027,10 +2076,10 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 	loop
 	{
 		// Perform removal with total order preservation.
-		var size_type s= function_context.variables_frames.back().size(), mut i_src(0), mut i_dst(0);
+		var size_type s= function_context.variables_frames.back().variables.size(), mut i_src(0), mut i_dst(0);
 		for( ; i_src < s; ++i_src )
 		{
-			var VariablePtr variable_ptr= function_context.variables_frames.back()[i_src];
+			var VariablePtr variable_ptr= function_context.variables_frames.back().variables[i_src];
 			auto variable_lock= variable_ptr.lock_imut();
 			var Variable& variable= variable_lock.deref();
 
@@ -2047,7 +2096,7 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 				else
 				{
 					// Preserve this variable in the container.
-					function_context.variables_frames.back()[i_dst]= variable_ptr;
+					function_context.variables_frames.back().variables[i_dst]= variable_ptr;
 					++i_dst;
 				}
 			}
@@ -2074,7 +2123,7 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 			else
 			{
 				// Preserve this variable in the container.
-				function_context.variables_frames.back()[i_dst]= variable_ptr;
+				function_context.variables_frames.back().variables[i_dst]= variable_ptr;
 				++i_dst;
 			}
 		}
@@ -2085,13 +2134,13 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 			return;
 		}
 
-		function_context.variables_frames.back().drop_back( s - i_dst );
+		function_context.variables_frames.back().variables.drop_back( s - i_dst );
 	}
 }
 
 fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, VariablePtr mut variable )
 {
-	function_context.variables_frames.back().push_back( move(variable) );
+	function_context.variables_frames.back().variables.push_back( move(variable) );
 }
 
 fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr mut variable )
@@ -2102,7 +2151,7 @@ fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context,
 fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr mut variable, size_type frame_index_from_top )
 {
 	auto frame_index= function_context.variables_frames.size() - frame_index_from_top - 1s;
-	function_context.variables_frames[frame_index].push_back( move(variable) );
+	function_context.variables_frames[frame_index].variables.push_back( move(variable) );
 }
 
 fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
