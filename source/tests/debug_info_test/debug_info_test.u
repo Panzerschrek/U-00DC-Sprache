@@ -372,6 +372,18 @@ fn MixinsTest()
 
 mixin( "fn MixinFunction( i32 x ) : i32 { return x * x + x; }" );
 
+fn AllocaTestImpl( size_type s )
+{
+	alloca u32 arr[ s ];
+	return;
+}
+
+fn AllocaTest()
+{
+	AllocaTestImpl( 20s );
+	AllocaTestImpl( 16s * 1024s );
+}
+
 fn nomangle main() : i32
 {
 	FundamentalTypesTest();
@@ -399,5 +411,6 @@ fn nomangle main() : i32
 	GeneratorsTest();
 	LambdasTest();
 	MixinsTest();
+	AllocaTest();
 	return 0;
 }
