@@ -929,17 +929,6 @@ struct VariablesDeclaration
 	std::vector<VariableEntry> variables;
 };
 
-struct AllocaDeclaration
-{
-	explicit AllocaDeclaration( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	TypeName type;
-	std::string name;
-	Expression size;
-};
-
 struct AutoVariableDeclaration
 {
 	explicit AutoVariableDeclaration( const SrcLoc& src_loc )
@@ -950,6 +939,17 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+};
+
+struct AllocaDeclaration
+{
+	explicit AllocaDeclaration( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	TypeName type;
+	std::string name;
+	Expression size;
 };
 
 struct ReturnOperator

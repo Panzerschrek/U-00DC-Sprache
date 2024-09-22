@@ -543,7 +543,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't contexpr types.
+	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't constexpr types.
 	function_context.has_non_constexpr_operations_inside= true;
 
 	// Destruction frame for temporary variables of size/type expressions.
@@ -566,6 +566,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	llvm::Type* const element_llvm_type= type.GetLLVMType();
+	llvm::PointerType* const ptr_llvm_type= element_llvm_type->getPointerTo();
 
 	llvm::PHINode* alloca_result= nullptr;
 
@@ -586,9 +587,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		llvm::Value* const less_than_limit=
 			function_context.llvm_ir_builder.CreateICmpULT(
 				memory_size,
-					llvm::ConstantInt::get(
-						fundamental_llvm_types_.size_type_,
-						c_min_bytes_for_heap_allocation ) );
+				llvm::ConstantInt::get(
+					fundamental_llvm_types_.size_type_,
+					c_min_bytes_for_heap_allocation ) );
 
 		llvm::BasicBlock* const stack_allocation_block= llvm::BasicBlock::Create( llvm_context_, "stack_allocation_block" );
 		llvm::BasicBlock* const heap_allocation_block= llvm::BasicBlock::Create( llvm_context_, "heap_allocation_block" );
@@ -613,14 +614,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
 		llvm::Value* const heap_allocation=
 			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
-		// Since "alloca" in a loop isn't possible, this should be single store into this variable (except initial nullptr store).
 		function_context.llvm_ir_builder.CreateBr( end_block );
 
 		// End block.
 		function_context.function->getBasicBlockList().push_back( end_block );
 		function_context.llvm_ir_builder.SetInsertPoint( end_block );
 
-		alloca_result= function_context.llvm_ir_builder.CreatePHI( element_llvm_type->getPointerTo(), 2, "alloca_res" );
+		alloca_result= function_context.llvm_ir_builder.CreatePHI( ptr_llvm_type, 2, "alloca_res" );
 		alloca_result->addIncoming( stack_allocation, stack_allocation_block );
 		alloca_result->addIncoming( heap_allocation, heap_allocation_block );
 
@@ -635,16 +635,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		prev_variables_storage.allocas_.push_back( std::move(alloca_info) );
 	}
 
-	RawPointerType pointer_type;
-	pointer_type.element_type= type;
-	pointer_type.llvm_type= element_llvm_type->getPointerTo();
-	const Type variable_type= std::move(pointer_type);
-
 	llvm::Value* const alloca_variable_address=
-		function_context.alloca_ir_builder.CreateAlloca( variable_type.GetLLVMType(), nullptr, alloca_declaration.name );
+		function_context.alloca_ir_builder.CreateAlloca( ptr_llvm_type, nullptr, alloca_declaration.name );
 	CreateLifetimeStart( function_context, alloca_variable_address );
 
 	function_context.llvm_ir_builder.CreateStore( alloca_result, alloca_variable_address );
+
+	RawPointerType pointer_type;
+	pointer_type.element_type= type;
+	pointer_type.llvm_type= ptr_llvm_type;
+	const Type variable_type= std::move(pointer_type);
 
 	const VariableMutPtr variable=
 		Variable::Create(
@@ -655,6 +655,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			alloca_variable_address );
 	function_context.variables_state.AddNode( variable );
 	prev_variables_storage.RegisterVariable( variable );
+
+	debug_info_builder_->CreateVariableInfo( *variable, alloca_declaration.name, alloca_declaration.src_loc, function_context );
 
 	const VariableMutPtr variable_reference=
 		Variable::Create(

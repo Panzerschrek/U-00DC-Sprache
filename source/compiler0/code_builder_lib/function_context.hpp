@@ -13,8 +13,7 @@ struct FunctionContext;
 
 struct AllocaInfo
 {
-	// A boolean value.
-	llvm::Value* is_stack_allocation= nullptr;
+	llvm::Value* is_stack_allocation= nullptr; // A boolean value indicating stack or heap allocation.
 	llvm::Value* ptr_for_free= nullptr; // Pointer for free or for llvm.stackrestore.
 };
 
