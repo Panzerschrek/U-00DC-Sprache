@@ -63,7 +63,8 @@ public:
 	// Construct from iterator.
 	// Given iterator should produce number of elements not less than given size.
 	template</ type RawIterator />
-	fn constructor( mut this, $(T) ptr, size_type size, iterator</RawIterator/> mut it )  unsafe
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here.
+	constructor( mut this, $(T) ptr, size_type size, iterator</RawIterator/> mut it ) unsafe
 		( ptr_= ptr, size_= size )
 	{
 
