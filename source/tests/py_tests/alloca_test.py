@@ -110,6 +110,75 @@ def AllocaDeclaration_Test6():
 	tests_lib.run_function( "_Z3Fooj", 10 )
 
 
+def AllocaDeclaration_Test7():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			f32 y;
+		}
+		static_assert( !typeinfo</C/>.is_default_constructible );
+		fn Foo(u32 size)
+		{
+			// No constructors are called for "alloca".
+			// So, it doesn't matter if this class isn't default-constructible at all.
+			alloca C arr[ size_type(size) ];
+
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 10 )
+
+
+def AllocaDeclaration_Test8():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			f32 y;
+			// This constructor will crash.
+			fn constructor()
+				( x(0), y(0) )
+			{
+				halt;
+			}
+		}
+		fn Foo(u32 size)
+		{
+			// No constructors are called for "alloca".
+			// So no crash because of constructor call is possible.
+			alloca C arr[ size_type(size) ];
+
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 10 )
+
+
+def AllocaDeclaration_Test9():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			f32 y;
+			// This destructor will crash.
+			fn destructor()
+			{
+				halt;
+			}
+		}
+		fn Foo(u32 size)
+		{
+			// No destructors are called for "alloca".
+			// So no crash because of destructor call is possible.
+			alloca C arr[ size_type(size) ];
+
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Fooj", 10 )
+
+
 def UsingKeywordAsName_ForAllocaDeclaration_Test0():
 	c_program_text= """
 		fn Foo()
