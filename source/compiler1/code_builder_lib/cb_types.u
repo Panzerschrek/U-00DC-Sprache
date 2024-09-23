@@ -1,4 +1,5 @@
 import "/sort.u"
+import "/scoped_array.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -104,7 +105,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		out_tuple_type.element_types.push_back( PrepareType( names_scope, function_context, element ) );
 	}
 
-	auto mut element_llvm_types= out_tuple_type.element_types.iter().map( Type::GetLLVMType ).collect</ ust::vector />();
+	scoped_array LLVMTypeRef mut element_llvm_types[ out_tuple_type.element_types.size() ]( out_tuple_type.element_types.iter().map( Type::GetLLVMType ) );
 
 	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 

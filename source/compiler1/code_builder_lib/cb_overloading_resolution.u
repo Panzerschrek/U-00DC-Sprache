@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/scoped_array.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -753,8 +754,7 @@ fn CodeBuilder::SelectOverloadedFunction(
 		return ~0s;
 	}
 
-	var ust::vector</bool/> mut best_functions;
-	best_functions.resize( matched_functions.size(), true );
+	scoped_array bool mut best_functions[ matched_functions.size() ]( true );
 
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
@@ -1051,8 +1051,7 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 		return 0s;
 	}
 
-	var ust::vector</bool/> mut best_templates;
-	best_templates.resize( type_templates.size(), true );
+	scoped_array bool mut best_templates[ type_templates.size() ]( true );
 
 	for( auto mut arg_n= 0s; arg_n < signature_args_to_check; ++arg_n )
 	{

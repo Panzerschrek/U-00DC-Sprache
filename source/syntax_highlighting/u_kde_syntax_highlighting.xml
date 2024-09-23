@@ -76,6 +76,7 @@
 			<item>enum</item>
 			<item>cast_ref</item>
 			<item>cast_imut</item>
+			<item>alloca</item>
 			<item>as</item>
 			<item>is</item>
 			<item>import</item>

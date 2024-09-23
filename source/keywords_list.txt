@@ -108,6 +108,7 @@ cast_ref
 cast_ref_unsafe
 cast_imut
 cast_mut
+alloca
 as
 is
 import

@@ -708,6 +708,40 @@ void CodeBuilder::CallDestructorsImpl(
 		}
 		function_context.variables_state.RemoveNode( stored_variable );
 	}
+
+	if( !function_context.is_functionless_context )
+	{
+		// Free memory allocated for "alloca" declarations.
+		// It's important to do this in reverse order, since allocations are made mostly by manipulation of the program stack.
+		for( auto it = stack_variables_storage.allocas_.rbegin(); it != stack_variables_storage.allocas_.rend(); ++it )
+		{
+			const AllocaInfo& alloca_info= *it;
+
+			llvm::BasicBlock* const stack_allocation_block= llvm::BasicBlock::Create( llvm_context_, "stack_allocation_free_block" );
+			llvm::BasicBlock* const heap_allocation_block= llvm::BasicBlock::Create( llvm_context_, "heap_allocation_free_block" );
+			llvm::BasicBlock* const end_block= llvm::BasicBlock::Create( llvm_context_ );
+
+			function_context.llvm_ir_builder.CreateCondBr( alloca_info.is_stack_allocation, stack_allocation_block, heap_allocation_block );
+
+			// Stack allocation block.
+			function_context.function->getBasicBlockList().push_back( stack_allocation_block );
+			function_context.llvm_ir_builder.SetInsertPoint( stack_allocation_block );
+			function_context.llvm_ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::stackrestore ),
+				{ alloca_info.ptr_for_free } );
+			function_context.llvm_ir_builder.CreateBr( end_block );
+
+			// Heap allocation block.
+			function_context.function->getBasicBlockList().push_back( heap_allocation_block );
+			function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
+			function_context.llvm_ir_builder.CreateCall( free_func_, { alloca_info.ptr_for_free } );
+			function_context.llvm_ir_builder.CreateBr( end_block );
+
+			// End block.
+			function_context.function->getBasicBlockList().push_back( end_block );
+			function_context.llvm_ir_builder.SetInsertPoint( end_block );
+		}
+	}
 }
 
 void CodeBuilder::CallDestructors(

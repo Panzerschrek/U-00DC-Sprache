@@ -45,4 +45,5 @@ Contents
    mixins
    embed
    c_interaction
+   alloca
    unsafe_code_requirements

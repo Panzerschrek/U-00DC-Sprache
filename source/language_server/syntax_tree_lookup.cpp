@@ -458,6 +458,12 @@ void FindImpl( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 	FindImpl( auto_variable_declaration.initializer_expression );
 }
 
+void FindImpl( const Synt::AllocaDeclaration& alloca_declaration )
+{
+	FindImpl( alloca_declaration.type );
+	FindImpl( alloca_declaration.size );
+}
+
 void FindImpl( const Synt::StaticAssert& static_assert_ )
 {
 	FindImpl( static_assert_.expression );

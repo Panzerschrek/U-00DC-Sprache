@@ -45,5 +45,6 @@
    mixins
    embed
    c_interaction
+   alloca
    unsafe_code_requirements
    language_limitations

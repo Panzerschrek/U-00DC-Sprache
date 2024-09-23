@@ -95,6 +95,7 @@ struct Block;
 struct ScopeBlock;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
+struct AllocaDeclaration;
 struct ReturnOperator;
 struct YieldOperator;
 struct WhileOperator;
@@ -244,6 +245,7 @@ using BlockElementsList= VariantLinkedList<
 	ScopeBlock,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
+	AllocaDeclaration,
 	ReturnOperator,
 	YieldOperator,
 	WhileOperator,
@@ -925,6 +927,17 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+};
+
+struct AllocaDeclaration
+{
+	explicit AllocaDeclaration( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	TypeName type;
+	std::string name;
+	Expression size;
 };
 
 struct ReturnOperator

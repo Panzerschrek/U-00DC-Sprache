@@ -115,6 +115,9 @@ private:
 	void ProcessSMulWithOverflow( const llvm::CallInst* instruction );
 	void ProcessUMulWithOverflow( const llvm::CallInst* instruction );
 
+	void ProcessStacksave( const llvm::CallInst* instruction );
+	void ProcessStackrestore( const llvm::CallInst* instruction );
+
 	void ResumeCoroutine( const llvm::CallInst* instruction, bool destroy );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );

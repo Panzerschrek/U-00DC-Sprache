@@ -966,6 +966,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AllocaDeclaration& alloca_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ReturnOperator& return_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::YieldOperator& yield_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RangeForOperator& range_for_operator );

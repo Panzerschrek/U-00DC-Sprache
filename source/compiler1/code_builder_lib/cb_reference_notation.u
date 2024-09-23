@@ -1,3 +1,4 @@
+import "/scoped_array.u"
 import "/sort.u"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -267,10 +268,11 @@ fn CodeBuilder::NormalizeReferencesPollution( FunctionType::ReferencesPollution 
 
 fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences& return_references ) : ReferenceNotationConstant
 {
-	var ust::vector</LLVMValueRef/> mut constant_initializers;
-	foreach( &return_reference : return_references )
+	scoped_array LLVMValueRef mut constant_initializers[ return_references.size() ]( LLVMValueRef::Null );
+
+	for( auto mut i= 0s; i < return_references.size(); ++i )
 	{
-		constant_initializers.push_back( GetParamReferenceConstant( return_reference ) );
+		constant_initializers[i]= GetParamReferenceConstant( return_references[i] );
 	}
 
 	var LLVMTypeRef element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
@@ -289,15 +291,15 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant
 {
 	var TupleType mut tuple_type;
-	var ust::vector</LLVMTypeRef/> mut elements_llvm_types;
-	var ust::vector</LLVMValueRef/> mut constant_initializers;
+	scoped_array LLVMTypeRef mut elements_llvm_types[ return_inner_references.size() ]( LLVMTypeRef::Null );
+	scoped_array LLVMValueRef mut constant_initializers[ return_inner_references.size() ]( LLVMValueRef::Null );
 
-	foreach( &return_references : return_inner_references )
+	for( auto mut i= 0s; i < return_inner_references.size(); ++i )
 	{
-		auto return_references_contant= GetReturnReferencesConstant( return_references );
+		auto return_references_contant= GetReturnReferencesConstant( return_inner_references[i] );
 		tuple_type.element_types.push_back( return_references_contant[0] );
-		elements_llvm_types.push_back( return_references_contant[0].GetLLVMType() );
-		constant_initializers.push_back( return_references_contant[1] );
+		elements_llvm_types[i]= return_references_contant[0].GetLLVMType();
+		constant_initializers[i]= return_references_contant[1];
 	}
 
 	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, elements_llvm_types.data(), u32(elements_llvm_types.size()), LLVMBool::False ) );
@@ -309,17 +311,18 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInne
 
 fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant
 {
-	var ust::vector</LLVMValueRef/> mut constant_initializers;
+	scoped_array LLVMValueRef mut constant_initializers[ references_pollution.size() ]( LLVMValueRef::Null );
 
 	var LLVMTypeRef pair_element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
-	foreach( &pollution : references_pollution )
+	for( auto mut i= 0s; i < references_pollution.size(); ++i )
 	{
+		var FunctionType::ReferencePollution& pollution= references_pollution[i];
 		var [ LLVMValueRef, 2 ] mut initializer
 		[
 			GetParamReferenceConstant( pollution.dst ),
 			GetParamReferenceConstant( pollution.src ),
 		];
-		constant_initializers.push_back( unsafe( LLVMConstArray( pair_element_llvm_type, $<(initializer[0]), 2u ) ) );
+		constant_initializers[i]= unsafe( LLVMConstArray( pair_element_llvm_type, $<(initializer[0]), 2u ) );
 	}
 
 	var LLVMTypeRef element_llvm_type= reference_notation_pollution_element_type_.GetLLVMType();

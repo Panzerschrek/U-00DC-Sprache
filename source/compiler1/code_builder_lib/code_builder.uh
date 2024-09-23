@@ -103,11 +103,11 @@ private:
 	template</type Func/>
 	fn WithVariablesFrame( mut this, FunctionContext &mut function_context, Func mut func ) : auto
 	{
-		function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
+		function_context.variables_frames.push_back( VariablesFrame() );
 
 		auto result= move(func)( this, function_context );
 
-		foreach( &variable : function_context.variables_frames.back() )
+		foreach( &variable : function_context.variables_frames.back().variables )
 		{
 			function_context.references_graph.RemoveNode( variable );
 		}
@@ -398,6 +398,8 @@ private:
 	fn BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t );
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
 	fn BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
+	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo;
+	fn BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AllocaDeclaration& alloca_declaration );
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
 	fn BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo;
@@ -1358,6 +1360,9 @@ private:
 
 	LLVMValueRef malloc_function_= LLVMValueRef::Null;
 	LLVMValueRef free_function_= LLVMValueRef::Null;
+
+	LLVMValueRef stacksave_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef stackrestore_intrinsic_= LLVMValueRef::Null;
 
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;

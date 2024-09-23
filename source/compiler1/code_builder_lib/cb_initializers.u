@@ -1,4 +1,5 @@
 import "/helpers.u"
+import "/scoped_array.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -376,8 +377,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		constant_initializers.resize( num_llvm_fields, LLVMValueRef::Null );
 	}
 
-	var ust::vector</bool/> mut initialized_fields;
-	initialized_fields.resize( num_llvm_fields, false );
+	scoped_array bool mut initialized_fields[ num_llvm_fields ]( false );
 
 	var ust::vector</VariablePtr/> mut temp_initialized_variables;
 
@@ -760,7 +760,7 @@ fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 		if( constant_initializer != LLVMValueRef::Null )
 		{
-			var ust::vector</LLVMValueRef/> mut initializers( size_type(array_type.element_count), constant_initializer );
+			scoped_array LLVMValueRef mut initializers[ size_type(array_type.element_count) ]( constant_initializer );
 			return unsafe( LLVMConstArray( array_type.element_type.GetLLVMType(), initializers.data(), u32(initializers.size()) ) );
 		}
 		return LLVMValueRef::Null;
@@ -1423,8 +1423,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto base_class= class_type.lock_imut().deref().base_class;
 
 	// Check for errors, build list of initialized fields.
-	var ust::vector</bool/> mut initialized_fields;
-	initialized_fields.resize( size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ), false );
+	scoped_array bool mut initialized_fields[ size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ) ]( false );
 
 	auto mut has_fields_errors= false;
 	auto mut base_initialized= false;

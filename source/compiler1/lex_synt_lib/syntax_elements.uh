@@ -484,6 +484,14 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 }
 
+struct AllocaDeclaration
+{
+	SrcLoc src_loc;
+	TypeName t;
+	ust::string8 name;
+	Expression size;
+}
+
 struct ReturnOperator
 {
 	SrcLoc src_loc;
@@ -690,6 +698,7 @@ type BlockElement = ust::variant</ tup[
 	ust::box</ScopeBlock/>,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
+	ust::box</AllocaDeclaration/>, // Boxed because it's too big.
 	ReturnOperator,
 	YieldOperator,
 	AssignmentOperator,

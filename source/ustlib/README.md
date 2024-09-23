@@ -39,6 +39,7 @@ Other functionality:
 * Functions for polymorph objects manipulation (polymorph.u)
 * Pthread library prototypes (used internally) (pthread.u)
 * Reference notation helpers (reference_notation.u)
+* Helper classes and macros for scoped arrays creation (scoped_array.u)
 * Sorting routines (sort.u)
 * stdout support (unfinished) (stdout.u)
 * Number to string conversion utilities (string_conversions.u)
