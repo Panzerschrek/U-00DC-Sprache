@@ -550,7 +550,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Type type= PrepareType( alloca_declaration.type, names_scope, function_context );
-
 	if( !EnsureTypeComplete( type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), alloca_declaration.src_loc, type );

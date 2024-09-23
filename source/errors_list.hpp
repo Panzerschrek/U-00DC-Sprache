@@ -246,6 +246,7 @@ PROCESS_ERROR( VirtualCoroutine, "coroutine method can't be virtual." )
 PROCESS_ERROR( AutoReturnCoroutine, "auto return is not supported for coroutine functions." )
 PROCESS_ERROR( CoroutineSpecialMethod, "Special method can't be coroutine." )
 PROCESS_ERROR( CoroutineNonSyncRequired, "Coroutine has non-sync arguments and/or return value - \"non_sync\" tag required for it." )
+PROCESS_ERROR( AllocaInsideCorouine, "Alloca operator inside a coroutine function (async function or generator)." )
 
 // Await operator
 PROCESS_ERROR( ImmediateValueExpectedInAwaitOperator, "Expected immediate value in \"await\" operator." )
@@ -266,6 +267,3 @@ PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence.
 
 // Embed
 PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
-
-// Alloca
-PROCESS_ERROR( AllocaInsideCorouine, "Alloca operator inside a coroutine function (async function or generator)" )

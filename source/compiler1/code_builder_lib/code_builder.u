@@ -1965,39 +1965,42 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 
 			var LLVMValueRef mut ptr_for_free= alloca_info.ptr_for_free;
 
-			var LLVMBasicBlockRef stack_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_free_block\0"[0] ) );
-			var LLVMBasicBlockRef heap_allocation_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "heap_allocation_free_block\0"[0] ) );
-			var LLVMBasicBlockRef end_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+			unsafe // Because of LLVM callse
+			{
+				var LLVMBasicBlockRef stack_allocation_block= LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_free_block\0"[0] );
+				var LLVMBasicBlockRef heap_allocation_block= LLVMCreateBasicBlockInContext( llvm_context_, "heap_allocation_free_block\0"[0] );
+				var LLVMBasicBlockRef end_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
-			unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, alloca_info.is_stack_allocation, stack_allocation_block, heap_allocation_block ) );
+				LLVMBuildCondBr( function_context.llvm_ir_builder, alloca_info.is_stack_allocation, stack_allocation_block, heap_allocation_block );
 
-			// Stack allocation block.
-			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block ) );
-			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block ) );
-			unsafe( LLVMBuildCall2(
-				function_context.llvm_ir_builder,
-				U1_GetFunctionType( stackrestore_intrinsic_ ),
-				stackrestore_intrinsic_,
-				$<(ptr_for_free),
-				1u,
-				g_null_string ) );
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+				// Stack allocation block.
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block );
+				LLVMBuildCall2(
+					function_context.llvm_ir_builder,
+					U1_GetFunctionType( stackrestore_intrinsic_ ),
+					stackrestore_intrinsic_,
+					$<(ptr_for_free),
+					1u,
+					g_null_string );
+				LLVMBuildBr( function_context.llvm_ir_builder, end_block );
 
-			// Heap allocation block.
-			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block ) );
-			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block ) );
-			unsafe( LLVMBuildCall2(
-				function_context.llvm_ir_builder,
-				U1_GetFunctionType( free_function_ ),
-				free_function_,
-				$<(ptr_for_free),
-				1u,
-				g_null_string ) );
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+				// Heap allocation block.
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block );
+				LLVMBuildCall2(
+					function_context.llvm_ir_builder,
+					U1_GetFunctionType( free_function_ ),
+					free_function_,
+					$<(ptr_for_free),
+					1u,
+					g_null_string );
+				LLVMBuildBr( function_context.llvm_ir_builder, end_block );
 
-			// End block.
-			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block ) );
-			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
+				// End block.
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block );
+			}
 		}
 	}
 }
