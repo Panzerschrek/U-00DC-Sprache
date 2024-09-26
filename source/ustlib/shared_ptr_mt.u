@@ -27,10 +27,18 @@ public:
 	{
 		unsafe
 		{
-			value_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_into_uninitialized( $>(value_), move(value) );
+			// Allocate counter and object in single allocation.
+			// Counter goes first, than goes the object itself (with proper alignment).
+			// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
+			auto constexpr counter_size= typeinfo</ shared_ptr_mt_impl::counter />.size_of;
+			auto constexpr object_size= typeinfo</T/>.size_of;
+			auto constexpr object_alignment= typeinfo</T/>.align_of;
+			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
+			auto constexpr allocation_size= object_offset + object_size;
 
-			counter_= $<( cast_ref_unsafe</ shared_ptr_mt_impl::counter />( memory_allocate( typeinfo</ shared_ptr_mt_impl::counter />.size_of ) ) );
+			var byte8 &mut mem= memory_allocate( allocation_size );
+
+			counter_= $<( cast_ref_unsafe</ shared_ptr_mt_impl::counter />( mem ) );
 			$>(counter_).use_count_total = 1u;
 			$>(counter_).use_count_strong= 1u;
 
@@ -38,6 +46,9 @@ public:
 			halt if( pthread_rwlockattr_init( attr ) != 0 );
 			halt if( pthread_rwlock_init( $>(counter_).rwlock, attr ) != 0 );
 			halt if( pthread_rwlockattr_destroy( attr ) != 0 );
+
+			value_= $<( cast_ref_unsafe</T/>( $>( $<(mem) + object_offset ) ) );
+			move_into_uninitialized( $>(value_), move(value) );
 		}
 	}
 
@@ -121,11 +132,11 @@ public:
 			if( atomic_dec( $>(counter_).use_count_strong ) == 1u )
 			{
 				call_destructor( $>(value_) );
-				memory_free( cast_ref_unsafe</byte8/>( polymorph_restore_original_ref( $>(value_) ) ) );
 			}
 			if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 			{
 				halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
+				// Free counter together with initial allocated object.
 				memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 			}
 		}
@@ -346,6 +357,7 @@ public:
 				if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 				{
 					halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
+					// Free counter together with initial allocated object.
 					memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 				}
 			}
