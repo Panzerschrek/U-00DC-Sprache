@@ -6,6 +6,7 @@ General:
 *) build-in "for" for array types.
 *) Disassembly operator - declare variables with initializer as members of value of composite type.
 *) More float types ( 16 bit, 128 bit )
+*) More integer types ( 256 bit, 512 bit )
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, string manipulations
@@ -44,6 +45,7 @@ Standart library:
 *) More iterator class methods - like "enumerate" and others
 *) Vector drain iterator
 *) Reverse iterators for random_access_range, unordered_map, etc.
+*) shared_ptr - store single pointer for non-polymorph types
 *) Time library - get time functions, timers
 *) File library
 *) Console input/output library
@@ -83,6 +85,8 @@ Compiler:
 *) More calling conventions (including platform-dependent)
 *) Generate errors about unused function templates
 *) Built-in compiler optimization hints ("assume", "likely", "unlikely", etc.)
+*) Alloca declaration - allow to specify heap fallback size limit -
+	even zero (always use heap) or infinity (always use stack)
 
 Interpreter:
 *) Support entry point with args and add possibility to provide such args (argc, argv?)
