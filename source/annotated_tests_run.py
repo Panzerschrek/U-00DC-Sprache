@@ -226,7 +226,6 @@ def main():
 	parser.add_argument( "--input-file", help= "input Ü test source", type=str )
 	parser.add_argument( "--input-dir", help= "input Ü test sources directory", type=str )
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str )
-	parser.add_argument( "--cpp-compiler-executable", help= "path to c++ compiler/linker executable", type=str )
 	parser.add_argument( "--use-position-independent-code", help= "use or not position independent code", action="store_true" )
 
 	args= parser.parse_args()
