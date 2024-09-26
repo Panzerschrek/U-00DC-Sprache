@@ -34,6 +34,7 @@ public:
 			auto constexpr object_size= typeinfo</T/>.size_of;
 			auto constexpr object_alignment= typeinfo</T/>.align_of;
 			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
+			static_assert(object_offset % object_alignment == 0s);
 			auto constexpr allocation_size= object_offset + object_size;
 
 			var byte8 &mut mem= memory_allocate( allocation_size );
