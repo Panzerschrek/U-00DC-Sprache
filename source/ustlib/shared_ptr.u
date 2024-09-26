@@ -21,13 +21,24 @@ public:
 	{
 		unsafe
 		{
-			value_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_into_uninitialized( $>(value_), move(value) );
+			// Allocate counter and object in single allocation.
+			// Counter goes first, than goes the object itself (with proper alignment).
+			// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
+			auto constexpr counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
+			auto constexpr object_size= typeinfo</T/>.size_of;
+			auto constexpr object_alignment= typeinfo</T/>.align_of;
+			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
+			auto constexpr allocation_size= object_offset + object_size;
 
-			counter_= $<( cast_ref_unsafe</ shared_ptr_impl::counter />( memory_allocate( typeinfo</ shared_ptr_impl::counter />.size_of ) ) );
+			var byte8 &mut mem= memory_allocate( allocation_size );
+
+			counter_= $<( cast_ref_unsafe</ shared_ptr_impl::counter />( mem ) );
 			$>(counter_).use_count_total= 1u;
 			$>(counter_).use_count_strong= 1u;
 			$>(counter_).lock_count= 0;
+
+			value_= $<( cast_ref_unsafe</T/>( $>( $<(mem) + object_offset ) ) );
+			move_into_uninitialized( $>(value_), move(value) );
 		}
 	}
 
@@ -111,12 +122,12 @@ public:
 			if( $>(counter_).use_count_strong == 0u )
 			{
 				call_destructor( $>(value_) );
-				memory_free( polymorph_restore_original_ref( $>(value_) ) );
 			}
 
 			shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 			if( $>(counter_).use_count_total == 0u )
 			{
+				// Free counter together with initial allocated object.
 				memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 			}
 		}
