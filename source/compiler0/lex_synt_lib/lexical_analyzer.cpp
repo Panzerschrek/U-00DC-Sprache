@@ -656,6 +656,8 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				{
 					it+= s;
 					lexem.type= lexem_it->second;
+					// It's not expensive to store lexem text, since std::string (usually) has small string optimization - without heap usage.
+					// So, store text even for fixed lexems in order to simplify working with parsed lexems.
 					lexem.text= fixed_lexem_str;
 					goto push_lexem;
 				}
