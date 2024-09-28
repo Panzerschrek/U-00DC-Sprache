@@ -33,6 +33,7 @@ def ConstexprFunctionEvaluationError_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
 	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].text.find( "Max call stack depth" ) != -1 )
 
 
 def ConstexprFunctionEvaluationError_Test4():
@@ -48,6 +49,47 @@ def ConstexprFunctionEvaluationError_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
 	assert( errors_list[0].src_loc.line == 7 )
+
+
+def ConstexprFunctionEvaluationError_Test5():
+	c_program_text= """
+		fn constexpr Foo() : i32
+		{
+			loop{} // This loop runs forever.
+		}
+		fn Bar()
+		{
+			Foo(); // Try to execute here infinite loop.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].src_loc.line == 8 )
+	assert( errors_list[0].text.find( "Interpreter instructions limit" ) != -1 )
+
+
+def ConstexprFunctionEvaluationError_Test6():
+	c_program_text= """
+		fn constexpr Sum( u64 to ) : u64
+		{
+			var u64 mut res(0);
+			for( var u64 mut i(0); i < to; ++i )
+			{
+				res+= i;
+			}
+			return res;
+		}
+		fn Bar()
+		{
+			Sum(1000000000u64); // Executing isn't infinite, but still too long.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].src_loc.line == 13 )
+	assert( errors_list[0].text.find( "Interpreter instructions limit" ) != -1 )
 
 
 def ConstexprFunctionsMustHaveBody_Test0():

@@ -14,6 +14,13 @@
 namespace U
 {
 
+struct InterpreterOptions
+{
+	// Default limits intended to be used in constexpr evaluator.
+	size_t max_call_stack_depth= 1024;
+	uint64_t max_instructions_executed= uint64_t(1) << 24;
+};
+
 /*
 	This class is simple virtual machine for llvm functions executing.
 	It has some limitations and supports subset ob instructions, using in Ü compiler.
@@ -47,7 +54,7 @@ public:
 	using CustomFunction= llvm::GenericValue (*)( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> );
 
 public:
-	Interpreter( const llvm::DataLayout& data_layout );
+	explicit Interpreter( const llvm::DataLayout& data_layout, InterpreterOptions options= InterpreterOptions() );
 	Interpreter( const Interpreter& ) = delete;
 	Interpreter& operator=( const Interpreter& )= delete;
 
@@ -153,6 +160,7 @@ private:
 private:
 	const llvm::DataLayout data_layout_;
 	const uint32_t pointer_size_in_bits_;
+	const InterpreterOptions options_;
 
 	CallFrame current_function_frame_;
 
@@ -169,6 +177,7 @@ private:
 	llvm::StringMap<CustomFunction> custom_functions_;
 
 	llvm::SmallVector<const llvm::CallInst*, 8> call_stack_;
+	uint64_t instructions_executed_= 0;
 
 	std::vector<std::string> errors_;
 };

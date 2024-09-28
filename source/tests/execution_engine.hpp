@@ -36,7 +36,7 @@ class ExecutionEngine
 {
 public:
 	explicit ExecutionEngine( std::unique_ptr<llvm::Module> module ): module_( std::move(module) )
-		, interpreter_( module_->getDataLayout() )
+		, interpreter_( module_->getDataLayout(), GetInterpreterOptions() )
 	{
 		RegisterCustomFunction( "__U_halt", HaltCalled );
 	}
@@ -78,6 +78,14 @@ private:
 	{
 		// Return from interpreter, using native exception.
 		throw HaltException();
+	}
+
+	static InterpreterOptions GetInterpreterOptions()
+	{
+		InterpreterOptions options;
+		// Slightly increase execution limit compared to default.
+		options.max_instructions_executed= uint64_t(1) << 40;
+		return options;
 	}
 
 private:

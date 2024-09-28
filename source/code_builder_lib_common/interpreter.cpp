@@ -25,18 +25,20 @@ constexpr size_t g_max_globals_stack_size =1024u * 1024u * 64u; // 64 Megabytes 
 constexpr size_t g_heap_segment_offset= g_globals_segment_offset + g_max_globals_stack_size + 16u;
 constexpr size_t g_max_heap_segment_size= 1024u * 1024u * 64u - 16u; // 64 Megabytes will be enough for heap.
 
-constexpr size_t g_max_call_stack_depth = 1024u;
-
 }
 
-Interpreter::Interpreter( const llvm::DataLayout& data_layout )
-	: data_layout_(data_layout), pointer_size_in_bits_( data_layout_.getPointerSizeInBits() )
+Interpreter::Interpreter( const llvm::DataLayout& data_layout, InterpreterOptions options )
+	: data_layout_(data_layout)
+	, pointer_size_in_bits_( data_layout_.getPointerSizeInBits() )
+	, options_( std::move(options) )
 {}
 
 Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<const llvm::Constant*> args )
 {
+	instructions_executed_= 0;
+
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
@@ -120,6 +122,8 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<llvm::GenericValue> args )
 {
+	instructions_executed_= 0;
+
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
@@ -172,9 +176,9 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with no body" );
 		return llvm::GenericValue();
 	}
-	if( call_stack_.size() >= g_max_call_stack_depth )
+	if( call_stack_.size() >= options_.max_call_stack_depth )
 	{
-		ReportError( "Max call stack depth (" + std::to_string( g_max_call_stack_depth ) + ") reached" );
+		ReportError( "Max call stack depth (" + std::to_string( options_.max_call_stack_depth ) + ") reached" );
 		return llvm::GenericValue();
 	}
 
@@ -185,9 +189,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	llvm::GenericValue res= CallFunctionImpl( &*bb.begin() );
-
-	return res;
+	return CallFunctionImpl( &*bb.begin() );
 }
 
 llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction )
@@ -202,6 +204,13 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 		if( instruction == nullptr )
 		{
 			ReportError( "Reached null instruction!" );
+			break;
+		}
+
+		++instructions_executed_;
+		if( instructions_executed_ >= options_.max_instructions_executed )
+		{
+			ReportError( "Interpreter instructions limit (" + std::to_string( instructions_executed_ ) + ") reached", *instruction );
 			break;
 		}
 
@@ -339,6 +348,8 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 		// If this is not a terminal instruction, just advance to next instruction in block.
 		instruction= instruction->getNextNode();
 	}
+
+	// Return a dummy in case of errors.
 	return llvm::GenericValue();
 }
 
