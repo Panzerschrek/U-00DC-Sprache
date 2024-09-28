@@ -33,6 +33,7 @@ def ConstexprFunctionEvaluationError_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
 	assert( errors_list[0].src_loc.line == 9 )
+	assert( errors_list[0].text.find( "Max call stack depth" ) != -1 )
 
 
 def ConstexprFunctionEvaluationError_Test4():
