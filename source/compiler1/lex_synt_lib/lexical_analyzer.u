@@ -696,7 +696,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				{
 					if( check_range == l[0] )
 					{
-						lexem.text= l[0];
+						// Do not store text for trivial lexems.
 						lexem.lexem_type= l[1];
 						it= it.subrange_start( s );
 						break label size_groups_loop;
