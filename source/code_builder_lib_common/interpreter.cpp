@@ -37,6 +37,8 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<const llvm::Constant*> args )
 {
+	instructions_executed_= 0;
+
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
@@ -120,6 +122,8 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<llvm::GenericValue> args )
 {
+	instructions_executed_= 0;
+
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
@@ -202,6 +206,13 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 		if( instruction == nullptr )
 		{
 			ReportError( "Reached null instruction!" );
+			break;
+		}
+
+		++instructions_executed_;
+		if( instructions_executed_ >= options_.max_instructions_executed )
+		{
+			ReportError( "Interpreter instructions limit (" + std::to_string( instructions_executed_ ) + ") reached" );
 			break;
 		}
 

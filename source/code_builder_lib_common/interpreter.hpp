@@ -16,7 +16,9 @@ namespace U
 
 struct InterpreterOptions
 {
+	// Default limits intended to be used in constexpr evaluator.
 	size_t max_call_stack_depth= 1024;
+	uint64_t max_instructions_executed= uint64_t(1) << 24;
 };
 
 /*
@@ -175,6 +177,7 @@ private:
 	llvm::StringMap<CustomFunction> custom_functions_;
 
 	llvm::SmallVector<const llvm::CallInst*, 8> call_stack_;
+	uint64_t instructions_executed_= 0;
 
 	std::vector<std::string> errors_;
 };
