@@ -189,9 +189,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	llvm::GenericValue res= CallFunctionImpl( &*bb.begin() );
-
-	return res;
+	return CallFunctionImpl( &*bb.begin() );
 }
 
 llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction )
@@ -350,6 +348,8 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 		// If this is not a terminal instruction, just advance to next instruction in block.
 		instruction= instruction->getNextNode();
 	}
+
+	// Return a dummy in case of errors.
 	return llvm::GenericValue();
 }
 
