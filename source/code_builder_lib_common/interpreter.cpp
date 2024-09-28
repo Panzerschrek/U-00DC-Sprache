@@ -210,7 +210,7 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 		++instructions_executed_;
 		if( instructions_executed_ >= options_.max_instructions_executed )
 		{
-			ReportError( "Interpreter instructions limit (" + std::to_string( instructions_executed_ ) + ") reached" );
+			ReportError( "Interpreter instructions limit (" + std::to_string( instructions_executed_ ) + ") reached", *instruction );
 			break;
 		}
 
