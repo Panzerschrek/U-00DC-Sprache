@@ -57,12 +57,15 @@ def ConstexprFunctionEvaluationError_Test5():
 		{
 			loop{} // This loop runs forever.
 		}
-		auto constexpr foo_res= Foo(); // Try to execute here infinite loop.
+		fn Bar()
+		{
+			Foo(); // Try to execute here infinite loop.
+		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].src_loc.line == 6 )
+	assert( errors_list[0].src_loc.line == 8 )
 	assert( errors_list[0].text.find( "Interpreter instructions limit" ) != -1 )
 
 
@@ -77,12 +80,15 @@ def ConstexprFunctionEvaluationError_Test6():
 			}
 			return res;
 		}
-		auto constexpr big_sum= Sum(1000000000u64); // Executing isn't infinite, but still too long.
+		fn Bar()
+		{
+			Sum(1000000000u64); // Executing isn't infinite, but still too long.
+		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].src_loc.line == 11 )
+	assert( errors_list[0].src_loc.line == 13 )
 	assert( errors_list[0].text.find( "Interpreter instructions limit" ) != -1 )
 
 
