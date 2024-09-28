@@ -425,7 +425,11 @@ int Main( int argc, const char* argv[] )
 	}
 	else
 	{
-		g_interpreter= std::make_unique<Interpreter>( data_layout );
+		InterpreterOptions options;
+		// Leave execution limit, but make it reasonable big.
+		options.max_instructions_executed= uint64_t(1) << 40;
+
+		g_interpreter= std::make_unique<Interpreter>( data_layout, options );
 
 		// Memory functions are supported internally (inside interpreter), for other needed functions register our own handlers.
 		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
