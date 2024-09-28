@@ -107,13 +107,14 @@ struct Lexem
 	}
 
 	// Contains text for non-fixed lexems (identifiers, strings, etc.).
+	// For fixed lexems is emplty.
 	// For numbers contains data of "struct NumberLexemData".
 	ust::string8 text;
 
 	SrcLoc src_loc;
 	Type lexem_type= Type::None;
 
-	// It's not exact, but enough for errors messagng.
+	// It's not exact, but enough for errors messaging.
 	fn ToDiagnosticString(this) : ust::string8;
 }
 

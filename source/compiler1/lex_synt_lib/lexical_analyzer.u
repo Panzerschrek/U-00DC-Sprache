@@ -21,7 +21,7 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 	}
 	if( lexem_type == Lexem::Type::String )
 	{
-		// TODO - add escape-sequences?
+		// For now ignore escape sequences (for simplicity).
 		return "\"" + text + "\"";
 	}
 	if( lexem_type == Lexem::Type::Number )
@@ -42,7 +42,7 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 
 	// Text is not stored for fixed lexems.
 	// So, extract this text from the fixed lexems table.
-	foreach( &lexem_size_group : c_fixed_lexems_table ) label size_groups_loop
+	foreach( &lexem_size_group : c_fixed_lexems_table )
 	{
 		foreach( &l : lexem_size_group )
 		{
@@ -749,7 +749,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				{
 					if( check_range == l[0] )
 					{
-						// Do not store text for trivial lexems.
+						// Do not store text for trivial lexems (for performance reasons).
 						lexem.lexem_type= l[1];
 						it= it.subrange_start( s );
 						break label size_groups_loop;
