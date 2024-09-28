@@ -19,8 +19,6 @@ struct Lexem
 	{
 		None,
 
-		Comment,
-
 		Identifier,
 		MacroIdentifier,
 		MacroUniqueIdentifier,
@@ -104,8 +102,6 @@ struct Lexem
 		PointerToReference, // $>
 
 		Ellipsis, // ...
-
-		// TODO - add other lexems.
 
 		EndOfFile,
 	}
