@@ -4357,7 +4357,7 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
 	if( errors_.empty() || errors_.back().src_loc != it_.front().src_loc )
 	{
-		errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" ) );
+		errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().ToString() + "\"" ) );
 	}
 
 	// HACK! Advance current position if we report about error in current position multiple times.
