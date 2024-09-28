@@ -113,7 +113,8 @@ struct Lexem
 	SrcLoc src_loc;
 	Type lexem_type= Type::None;
 
-	fn ToString(this) : ust::string8;
+	// It's not exact, but enough for errors messagng.
+	fn ToDiagnosticString(this) : ust::string8;
 }
 
 type Lexems= ust::vector</Lexem/>;

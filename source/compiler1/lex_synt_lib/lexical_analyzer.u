@@ -1,10 +1,11 @@
+import "/string_conversions.u"
 import "lexical_analyzer.uh"
 import "program_string.uh"
 
 namespace U1
 {
 
-fn Lexem::ToString(this) : ust::string8
+fn Lexem::ToDiagnosticString(this) : ust::string8
 {
 	if( lexem_type == Lexem::Type::Identifier )
 	{
@@ -25,8 +26,10 @@ fn Lexem::ToString(this) : ust::string8
 	}
 	if( lexem_type == Lexem::Type::Number )
 	{
-		// TODO
-		return "num";
+		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
+		auto& number_lexem_data= unsafe( cast_ref_unsafe</NumberLexemData/>( text.front() ) );
+		// For now just print only integer part. It's enough for something like errors indication.
+		return ust::to_string8( number_lexem_data.value_int );
 	}
 	if( lexem_type == Lexem::Type::LiteralSuffix )
 	{
