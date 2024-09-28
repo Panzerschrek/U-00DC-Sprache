@@ -1,8 +1,61 @@
+import "/string_conversions.u"
 import "lexical_analyzer.uh"
 import "program_string.uh"
 
 namespace U1
 {
+
+fn Lexem::ToDiagnosticString(this) : ust::string8
+{
+	if( lexem_type == Lexem::Type::Identifier )
+	{
+		return text;
+	}
+	if( lexem_type == Lexem::Type::MacroIdentifier )
+	{
+		return "?" + text;
+	}
+	if( lexem_type == Lexem::Type::MacroUniqueIdentifier )
+	{
+		return "??" + text;
+	}
+	if( lexem_type == Lexem::Type::String )
+	{
+		// For now ignore escape sequences (for simplicity).
+		return "\"" + text + "\"";
+	}
+	if( lexem_type == Lexem::Type::Number )
+	{
+		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
+		auto& number_lexem_data= unsafe( cast_ref_unsafe</NumberLexemData/>( text.front() ) );
+		// For now just print only integer part. It's enough for something like errors indication.
+		return ust::to_string8( number_lexem_data.value_int );
+	}
+	if( lexem_type == Lexem::Type::LiteralSuffix )
+	{
+		return text;
+	}
+	if( lexem_type == Lexem::Type::EndOfFile )
+	{
+		return "EOF";
+	}
+
+	// Text is not stored for fixed lexems.
+	// So, extract this text from the fixed lexems table.
+	foreach( &lexem_size_group : c_fixed_lexems_table )
+	{
+		foreach( &l : lexem_size_group )
+		{
+			if( lexem_type == l[1] )
+			{
+				return l[0];
+			}
+		}
+	}
+
+	// Unhandled lexem type.
+	halt;
+}
 
 type Iterator= ust::string_view8;
 
@@ -696,7 +749,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				{
 					if( check_range == l[0] )
 					{
-						lexem.text= l[0];
+						// Do not store text for trivial lexems (for performance reasons).
 						lexem.lexem_type= l[1];
 						it= it.subrange_start( s );
 						break label size_groups_loop;
