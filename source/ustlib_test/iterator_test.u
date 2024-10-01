@@ -139,6 +139,17 @@ fn generator FirstNInts( u32 n ) : u32
 	}
 }
 
+fn generator VecEvenElements( ust::vector</u32/> &mut vec ) : u32 &mut
+{
+	foreach( &mut el : vec )
+	{
+		if( el % 2u == 0u )
+		{
+			yield el;
+		}
+	}
+}
+
 fn nomangle main() : i32
 {
 	{ // Basic iteration.
@@ -994,6 +1005,28 @@ fn nomangle main() : i32
 		{
 			halt if( it.next() != i );
 		}
+	}
+	// Iterator for generator which captures a reference.
+	{
+		var ust::vector</u32/> mut v= ust::make_array( 7u, 88u, 65u, 17u, 1u, 55u, 78u, 66u );
+		{
+			auto mut it= ust::make_iterator_for_generator( VecEvenElements(v) );
+			loop
+			{
+				if_var( &mut el : it.next() )
+				{
+					halt if( el % 2u != 0u );
+					el= 0u;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		halt if( v[1s] != 0u );
+		halt if( v[6s] != 0u );
+		halt if( v[7s] != 0u );
 	}
 
 	return 0;

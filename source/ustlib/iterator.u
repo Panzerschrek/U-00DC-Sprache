@@ -323,7 +323,7 @@ fn wrap_raw_iterator( T mut t ) : auto
 template</type T/>
 fn make_iterator_for_generator( T mut t ) : auto
 {
-	return iterator_impl::generator_iterator</T/>( move(t) );
+	return wrap_raw_iterator( iterator_impl::generator_iterator</T/>( move(t) ) );
 }
 
 namespace iterator_impl
@@ -789,6 +789,8 @@ private:
 template</type Gen/>
 class generator_iterator
 {
+	static_assert( typeinfo</Gen/>.is_generator );
+
 public:
 	fn constructor( mut this, Gen mut gen )
 		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
@@ -800,11 +802,33 @@ public:
 	fn next( mut this ) : auto
 	{
 		type Ret= typeof( typeinfo</Gen/>.coroutine_return_type )::src_type;
-		if_coro_advance( mut v : gen_ )
+		static_if( typeinfo</Gen/>.coroutine_return_value_is_reference )
 		{
-			return optional</Ret/>( move(v) );
+			static_if( typeinfo</Gen/>.coroutine_return_value_is_mutable )
+			{
+				if_coro_advance( &mut v : gen_ )
+				{
+					return optional_ref_mut</Ret/>( v );
+				}
+				return optional_ref_mut</Ret/>();
+			}
+			else
+			{
+				if_coro_advance( &v : gen_ )
+				{
+					return optional_ref_imut</Ret/>( v );
+				}
+				return optional_ref_imut</Ret/>();
+			}
 		}
-		return optional</Ret/>();
+		else
+		{
+			if_coro_advance( mut v : gen_ )
+			{
+				return optional</Ret/>( move(v) );
+			}
+			return optional</Ret/>();
+		}
 	}
 
 private:
