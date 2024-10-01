@@ -131,6 +131,14 @@ fn SquareInt( i32 x ) : i32
 	return x * x;
 }
 
+fn generator FirstNInts( u32 n ) : u32
+{
+	for( auto mut i= 0u; i < n; ++i )
+	{
+		yield i;
+	}
+}
+
 fn nomangle main() : i32
 {
 	{ // Basic iteration.
@@ -978,6 +986,14 @@ fn nomangle main() : i32
 			}
 		}
 		halt if( i != 10 );
+	}
+	// Iterator for generator.
+	{
+		auto mut it= ust::make_iterator_for_generator( FirstNInts(6u) );
+		for( auto mut i= 0u; i < 6u; ++i )
+		{
+			halt if( it.next() != i );
+		}
 	}
 
 	return 0;
