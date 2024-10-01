@@ -64,7 +64,7 @@
 					break;
 				}
 				// Unwrap "optional" or "optional_ref".
-				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??next_res.try_take() ) )
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??next_res.try_take() )
 				{
 					?b
 				}
