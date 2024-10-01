@@ -1,8 +1,8 @@
+import "/stdout.u"
 import "/string_conversions.u"
 import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
 import "../code_builder_lib/source_file_contents_hash_wrapper.uh"
-import "print.uh"
 import "funcs_u.uh"
 
 fn nomangle U1_BuildProgram(
@@ -376,9 +376,10 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 
 fn PrintLexSyntErrors( SourceGraph& source_graph )
 {
+	var ust::string8 mut str;
 	foreach( &err : source_graph.errors )
 	{
-		var ust::string8 mut str;
+		str.clear();
 
 		auto file_index= size_type(err.src_loc.GetFileIndex());
 		if( file_index < source_graph.nodes.size() )
@@ -392,16 +393,18 @@ fn PrintLexSyntErrors( SourceGraph& source_graph )
 		str+= ust::to_string8( err.src_loc.GetColumn() );
 		str+= ": error: ";
 		str+= err.text;
-		str+= "\n\0";
-		unsafe( U1_PrintStr( U1_GetCerr(), str.front() ) );
+		str+= "\n";
+		ust::stderr_print( str );
 	}
 }
 
 fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 {
+	var ust::string8 mut str;
+
 	foreach( & err : errors )
 	{
-		var ust::string8 mut str;
+		str.clear();
 
 		auto file_index= size_type(err.src_loc.GetFileIndex());
 		if( file_index < source_graph.nodes.size() )
@@ -415,8 +418,8 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 		str+= ust::to_string8( err.src_loc.GetColumn() );
 		str+= ": error: ";
 		str+= err.text;
-		str+= "\n\0";
-		unsafe( U1_PrintStr( U1_GetCerr(), str.front() ) );
+		str+= "\n";
+		ust::stderr_print( str );
 	}
 }
 

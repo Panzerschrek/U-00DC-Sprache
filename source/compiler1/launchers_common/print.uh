@@ -1,6 +1,0 @@
-// If contents of this file changed, print.cpp must be changed too!
-
-enum CppIoStreamRef : size_type { Null }
-
-fn nomangle U1_GetCerr() unsafe : CppIoStreamRef;
-fn nomangle U1_PrintStr( CppIoStreamRef stream, char8& string_null_termainated ) unsafe;
