@@ -252,8 +252,8 @@ private:
 
 	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
 
-	template</type Func/>
-	fn ExpandMacro( mut this, Macro& macro, Func parse_function ) : auto
+	template</type T/>
+	fn ExpandMacro( mut this, Macro& macro, ( fn ( SyntaxAnalyzer &mut self_ ) : T ) parse_method ) : T
 	{
 		var SrcLoc expansion_src_loc= it_.front().src_loc;
 
@@ -273,7 +273,7 @@ private:
 			macro_expansion_contexts_,
 			move(macro_unique_identifiers_base_name) );
 
-		auto result= parse_function( syntax_analyzer );
+		auto result= parse_method( syntax_analyzer );
 
 		errors_.append( syntax_analyzer.errors_ );
 		return result;
