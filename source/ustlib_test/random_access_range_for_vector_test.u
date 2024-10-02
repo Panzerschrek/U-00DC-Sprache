@@ -35,7 +35,7 @@ fn nomangle main() : i32
 		vec.push_back( 1 );
 		vec.push_back( 55 );
 		var i32 mut sum= 0;
-		foreach( &x : vec )
+		foreach( &x : cast_imut(vec) )
 		{
 			sum+= x + cast_imut(vec).front();
 		}

@@ -239,7 +239,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(source_graph_nodes_build_results_).front().names_scope.try_lock_imut().deref() );
-	foreach( &name_value_pair : generated_template_things_ )
+	foreach( &name_value_pair : cast_imut(generated_template_things_) )
 	{
 		SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
 	}

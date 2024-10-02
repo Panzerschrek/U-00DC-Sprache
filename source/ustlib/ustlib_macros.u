@@ -29,14 +29,14 @@
 ?>
 
 //
-// "foreach" - used for iteration over containers, iterators (partially), arrays, tuples.
+// "foreach" - used for iteration over containers, iterators, arrays, tuples.
 //
 ?macro <? foreach:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?l:opt<? label ?l:ident ?> ?b:block ?>
 ->
 <?
-	with( & ?m<? mut ?> ??e_result : ?e )
+	static_if( typeinfo</ typeof(?e) />.is_array )
 	{
-		static_if( typeinfo</ typeof(??e_result) />.is_array )
+		with( & ?m<? mut ?> ??e_result : ?e )
 		{
 			for( var size_type mut ??i(0u); ??i < typeinfo</ typeof(??e_result) />.element_count; ++ ??i ) ?l<? label ?l ?>
 			{
@@ -44,16 +44,21 @@
 				?b
 			}
 		}
-		else static_if( typeinfo</ typeof(??e_result) />.is_tuple )
+	}
+	else static_if( typeinfo</ typeof(?e) />.is_tuple )
+	{
+		with( & ?m<? mut ?> ??e_result : ?e )
 		{
 			for( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result ) ?l<? label ?l ?>
 			?b
 		}
-		else
+	}
+	else
+	{
+		// Generic iteration code.
+		// Call "iter" method to obtain iterator object.
+		with( mut ??it : ?e.iter() )
 		{
-			// Generic iteration code.
-			// First call "iter" method to obtain iterator object.
-			auto mut ??it= ??e_result.iter();
 			loop ?l<? label ?l ?>
 			{
 				// Obtain next result - "optional" or "optional_ref".

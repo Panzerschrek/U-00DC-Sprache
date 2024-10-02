@@ -578,9 +578,10 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 
 	auto mut lambda_preprocessing_context_lock= lambda_preprocessing_context_ptr.try_lock_mut();
 	var LambdaPreprocessingContext &mut lambda_preprocessing_context= lambda_preprocessing_context_lock.deref();
+	auto& captured_external_variables= lambda_preprocessing_context.captured_external_variables;
 
 	// Process captured variables destinations.
-	foreach( &dst_captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+	foreach( &dst_captured_variable_pair : captured_external_variables )
 	{
 		LambdaPreprocessingEnsureCapturedVariableRegistered( function_context, dst_captured_variable_pair.value() );
 		var VariablePtr& captured_variable= dst_captured_variable_pair.value().reference_node;
@@ -615,7 +616,7 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					}
 
 					// Process captured variables sources.
-					foreach( &src_captured_variable_pair : lambda_preprocessing_context.captured_external_variables )
+					foreach( &src_captured_variable_pair : captured_external_variables )
 					{
 						if( accessible_variable_node == src_captured_variable_pair.value().variable_node )
 						{
