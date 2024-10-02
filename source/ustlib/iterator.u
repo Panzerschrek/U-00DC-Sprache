@@ -320,6 +320,12 @@ fn wrap_raw_iterator( T mut t ) : auto
 	return iterator</T/>( move(t) );
 }
 
+template</type T/>
+fn make_iterator_for_generator( T mut t ) : auto
+{
+	return wrap_raw_iterator( iterator_impl::generator_iterator</T/>( move(t) ) );
+}
+
 namespace iterator_impl
 {
 
@@ -663,7 +669,7 @@ private:
 template</type BaseIterator/>
 class limit_raw_iterator
 {
-	public:
+public:
 	fn constructor( mut this, BaseIterator mut base_iterator, size_type limit )
 		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
 		( base_iterator_= move(base_iterator), limit_(limit) )
@@ -778,6 +784,58 @@ private:
 private:
 	BaseIterator @(c_base_iterator_tags) base_iterator_;
 	Func @(c_func_tags) func_;
+}
+
+template</type Gen/>
+class generator_iterator
+{
+	static_assert( typeinfo</Gen/>.is_generator );
+
+public:
+	fn constructor( mut this, Gen mut gen )
+		@( reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />() )
+		( gen_= move(gen) )
+	{}
+
+	// Iterators for generators aren't copyable.
+
+	fn next( mut this ) : auto
+	{
+		type Ret= typeof( typeinfo</Gen/>.coroutine_return_type )::src_type;
+		static_if( typeinfo</Gen/>.coroutine_return_value_is_reference )
+		{
+			static_if( typeinfo</Gen/>.coroutine_return_value_is_mutable )
+			{
+				if_coro_advance( &mut v : gen_ )
+				{
+					return optional_ref_mut</Ret/>( v );
+				}
+				return optional_ref_mut</Ret/>();
+			}
+			else
+			{
+				if_coro_advance( &v : gen_ )
+				{
+					return optional_ref_imut</Ret/>( v );
+				}
+				return optional_ref_imut</Ret/>();
+			}
+		}
+		else
+		{
+			if_coro_advance( mut v : gen_ )
+			{
+				return optional</Ret/>( move(v) );
+			}
+			return optional</Ret/>();
+		}
+	}
+
+private:
+	auto c_reference_tag_count= typeinfo</Gen/>.reference_tag_count;
+
+private:
+	Gen gen_;
 }
 
 // Use template overloading and template signature params matching to detect if given type is optional or optional_ref.
