@@ -134,7 +134,7 @@ fn ReferencesGraph::TryAddInnerLinksForTupleElement( mut this, VariablePtr& from
 			auto& tuple_type= from_val.t.GetTupleType().try_deref();
 
 			var size_type mut offset= 0s;
-			foreach_iterator( &element_type : tuple_type.element_types.iter().limit( element_index ) )
+			foreach( &element_type : tuple_type.element_types.iter().limit( element_index ) )
 			{
 				offset+= size_type( element_type.ReferenceTagCount() );
 			}

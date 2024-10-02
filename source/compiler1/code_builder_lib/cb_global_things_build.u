@@ -727,7 +727,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				{
 					auto s= ust::max( class_.inner_references.size(), parent_class.inner_references.size() );
 					class_.inner_references.resize( s, InnerReferenceKind::Imut );
-					foreach_iterator( pair : class_.inner_references.iter().zip( parent_class.inner_references.iter() ) )
+					foreach( pair : class_.inner_references.iter().zip( parent_class.inner_references.iter() ) )
 					{
 						auto& mut t= pair.first;
 						t= ust::max( t, pair.second );
@@ -918,7 +918,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			foreach( &parent : class_.parents )
 			{
-				foreach_iterator( &mut tag : reference_tags_usage_flags.iter().limit( parent.class_.lock_imut().deref().inner_references.size()  ) )
+				foreach( &mut tag : reference_tags_usage_flags.iter().limit( parent.class_.lock_imut().deref().inner_references.size()  ) )
 				{
 					tag = true;
 				}

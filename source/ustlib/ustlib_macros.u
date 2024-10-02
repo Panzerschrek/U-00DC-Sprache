@@ -77,29 +77,3 @@
 		}
 	}
 ?>
-
-//
-// "foreach" specialization for iterators, which works for non-copyable iterators and generally is slightly simpler.
-//
-?macro <? foreach_iterator:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?l:opt<? label ?l:ident ?> ?b:block ?>
-->
-<?
-	with( &mut ??it : ?e )
-	{
-		loop ?l<? label ?l ?>
-		{
-			// Obtain next result - "optional" or "optional_ref".
-			auto mut ??next_res= ??it.next();
-			if( ??next_res.empty() )
-			{
-				// End iteration if "next" call result is empty.
-				break;
-			}
-			// Unwrap "optional" or "optional_ref".
-			with( ?r<? & ?> ?m<? mut ?> ?var_name : ??next_res.try_take() )
-			{
-				?b
-			}
-		}
-	}
-?>

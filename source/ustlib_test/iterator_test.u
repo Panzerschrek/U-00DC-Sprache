@@ -1036,7 +1036,7 @@ fn nomangle main() : i32
 	// Iterator for generator which captures a reference.
 	{
 		var ust::vector</u32/> mut v= ust::make_array( 7u, 88u, 65u, 17u, 1u, 55u, 78u, 66u );
-		foreach_iterator( &mut el : ust::make_iterator_for_generator( VecEvenElements(v) ) )
+		foreach( &mut el : ust::make_iterator_for_generator( VecEvenElements(v) ) )
 		{
 			halt if( el % 2u != 0u );
 			el= 0u;
@@ -1048,7 +1048,7 @@ fn nomangle main() : i32
 	// "foreach" macro for non-copyable iterator.
 	{
 		var ust::vector</u32/> mut vec;
-		foreach_iterator( n : ust::wrap_raw_iterator( NonCopyableIterator(5u) ) )
+		foreach( n : ust::wrap_raw_iterator( NonCopyableIterator(5u) ) )
 		{
 			vec.push_back(n);
 		}

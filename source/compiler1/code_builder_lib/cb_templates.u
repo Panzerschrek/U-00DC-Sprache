@@ -459,7 +459,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 						var bool mut params_matching_ok= true;
 
-						foreach_iterator( pair : single_type_template.lock_imut().deref().signature_params.iter().zip( specialized_template_params.iter() ) )
+						foreach( pair : single_type_template.lock_imut().deref().signature_params.iter().zip( specialized_template_params.iter() ) )
 						{
 							var TemplateSignatureParam& dst_param= pair.first;
 							var TemplateSignatureParam& src_param= pair.second;
@@ -1712,7 +1712,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			foreach_iterator( piar : tuple_type_param.element_types.iter().zip( given_tuple_type.element_types.iter() ) )
+			foreach( piar : tuple_type_param.element_types.iter().zip( given_tuple_type.element_types.iter() ) )
 			{
 				if( !MatchTemplateArgument( names_scope, template_, piar.first, piar.second ) )
 				{
@@ -1774,7 +1774,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			foreach_iterator( pair : function_type_param.params.iter().zip( given_function_type.params.iter() ) )
+			foreach( pair : function_type_param.params.iter().zip( given_function_type.params.iter() ) )
 			{
 				auto& expected_param= pair.first;
 				auto& given_arg= pair.second;
@@ -1846,7 +1846,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				{
 					if( MatchTemplateArgument( names_scope, template_, type_template_signature_param, base_template.class_template ) )
 					{
-						foreach_iterator( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
+						foreach( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
 						{
 							if( !MatchTemplateArgument( names_scope, template_, pair.first, pair.second ) )
 							{

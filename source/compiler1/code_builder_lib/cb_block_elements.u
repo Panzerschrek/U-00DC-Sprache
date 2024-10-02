@@ -1519,7 +1519,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 				with( &inner_references : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
 				{
-					foreach_iterator( pair : variable_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
+					foreach( pair : variable_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
 					{
 						var VariablePtr& variable_inner_reference= pair.first;
 						foreach( &param_reference : pair.second )
@@ -2129,7 +2129,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	var bool mut all_branches_are_terminal= true;
 
 	var LLVMTypeRef switch_llvm_type= switch_type.GetLLVMType();
-	foreach_iterator( pair : switch_operator.cases.iter().zip( branches_ranges.iter() ) )
+	foreach( pair : switch_operator.cases.iter().zip( branches_ranges.iter() ) )
 	{
 		var Synt::SwitchOperator::Case& case_= pair.first;
 		if( case_.values.has</Synt::SwitchOperator::DefaultPlaceholder/>() )

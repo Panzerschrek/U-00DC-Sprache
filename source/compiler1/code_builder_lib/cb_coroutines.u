@@ -825,7 +825,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 	{
 		with( &inner_references : async_func_variable_ptr.lock_imut().deref().inner_reference_nodes )
 		{
-			foreach_iterator( pair : result_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
+			foreach( pair : result_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
 			{
 				foreach( &param_reference : pair.second )
 				{

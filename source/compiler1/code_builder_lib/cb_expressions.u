@@ -1810,7 +1810,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			if( element_type_reference_tag_count > 0u )
 			{
 				var size_type mut offset= 0s;
-				foreach_iterator( &element_type : tuple_type.element_types.iter().limit( size_type(type_index) ) )
+				foreach( &element_type : tuple_type.element_types.iter().limit( size_type(type_index) ) )
 				{
 					offset+= size_type( element_type.ReferenceTagCount() );
 				}
@@ -2585,7 +2585,7 @@ fn CodeBuilder::AccessDirectClassField(
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
 
-		foreach_iterator( tag : field.inner_reference_tags.iter().limit( size_type( field.t.ReferenceTagCount() ) ) )
+		foreach( tag : field.inner_reference_tags.iter().limit( size_type( field.t.ReferenceTagCount() ) ) )
 		{
 			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( tag ) ] );
 		}
@@ -4561,7 +4561,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 	with( &result_inner_reference_nodes : result_ptr.lock_imut().deref().inner_reference_nodes )
 	{
-		foreach_iterator( pair : result_inner_reference_nodes.iter().zip( function_type.return_inner_references.iter() ) )
+		foreach( pair : result_inner_reference_nodes.iter().zip( function_type.return_inner_references.iter() ) )
 		{
 			var VariablePtr& result_inner_reference_node= pair.first;
 			foreach( &param_reference : pair.second )

@@ -272,7 +272,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			}
 
 			auto mut result= ConversionsCompareResult::Same;
-			foreach_iterator( pair : l_tuple_type.element_types.iter().zip( r_tuple_type.element_types.iter() ) )
+			foreach( pair : l_tuple_type.element_types.iter().zip( r_tuple_type.element_types.iter() ) )
 			{
 				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
 				if( param_result == ConversionsCompareResult::Incomparable )
@@ -324,7 +324,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			halt if( l_function_type.params.size() != r_function_type.params.size() );
 
 			auto mut result= CompareTemplateSpecialization( l_function_type.return_type, r_function_type.return_type );
-			foreach_iterator( pair : l_function_type.params.iter().zip( r_function_type.params.iter() ) )
+			foreach( pair : l_function_type.params.iter().zip( r_function_type.params.iter() ) )
 			{
 				auto param_result= CompareTemplateSpecialization( pair.first.t, pair.second.t );
 				if( param_result == ConversionsCompareResult::Incomparable )
@@ -413,7 +413,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 				return ConversionsCompareResult::Incomparable;
 			}
 
-			foreach_iterator( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
+			foreach( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
 			{
 				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
 				if( param_result == ConversionsCompareResult::Incomparable )
@@ -518,7 +518,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 			}
 
 			auto mut arg_is_same_count= 0s;
-			foreach_iterator( pair : function_type.params.iter().zip( set_function_type.params.iter() ) )
+			foreach( pair : function_type.params.iter().zip( set_function_type.params.iter() ) )
 			{
 				auto& param= pair.first;
 				auto& set_param= pair.second;
