@@ -190,7 +190,7 @@ fn nomangle main() : i32
 		assert( squares.size() == 12s );
 
 		auto mut i= 0u;
-		foreach( &mut n : squares.iter() )
+		foreach( &mut n : squares )
 		{
 			n= i * i;
 			++i;
@@ -250,7 +250,7 @@ fn nomangle main() : i32
 		assert( squares.size() == 1024s * 1024s * 16s );
 
 		auto mut i= 0u;
-		foreach( &mut n : squares.iter() )
+		foreach( &mut n : squares )
 		{
 			n= i * i;
 			++i;
