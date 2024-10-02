@@ -1127,7 +1127,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 	}
 
 	// Compare all args except "this" normally.
-	foreach( pair : tl.params.iter().zip( tr.params.iter() ).skip( 1s ) )
+	foreach_iterator( pair : tl.params.iter().zip( tr.params.iter() ).skip( 1s ) )
 	{
 		if( pair.first != pair.second )
 		{
@@ -1558,7 +1558,7 @@ fn TemplateArgsEquals( TemplateArgsFinished& l, TemplateArgsFinished& r ) : bool
 		return false;
 	}
 
-	foreach( pair : l.iter().zip( r.iter() ) )
+	foreach_iterator( pair : l.iter().zip( r.iter() ) )
 	{
 		if( !TemplateArgEquals( pair.first, pair.second ) )
 		{

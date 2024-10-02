@@ -201,7 +201,7 @@ fn CodeBuilder::InitializeLambdaField(
 	else
 	{
 		// Link references (before performing potential move).
-		foreach( pair : v.inner_reference_nodes.iter().zip( result.lock_imut().deref().inner_reference_nodes.iter() ) )
+		foreach_iterator( pair : v.inner_reference_nodes.iter().zip( result.lock_imut().deref().inner_reference_nodes.iter() ) )
 		{
 			function_context.references_graph.TryAddLink( pair.first, pair.second, names_scope, src_loc );
 		}
@@ -725,7 +725,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			return_inner_references.resize( lambda_preprocessing_context_result.captured_variables_return_inner_references.size() );
 		}
 
-		foreach( pair : return_inner_references.iter().zip( lambda_preprocessing_context_result.captured_variables_return_inner_references.iter() ) )
+		foreach_iterator( pair : return_inner_references.iter().zip( lambda_preprocessing_context_result.captured_variables_return_inner_references.iter() ) )
 		{
 			foreach( &captured_variable_return_inner_reference : pair.second )
 			{
