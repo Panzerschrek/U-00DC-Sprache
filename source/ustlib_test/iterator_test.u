@@ -150,6 +150,33 @@ fn generator VecEvenElements( ust::vector</u32/> &mut vec ) : u32 &mut
 	}
 }
 
+class NonCopyableIterator
+{
+public:
+	fn constructor( u32 limit )
+		( limit_= limit, current_= 0u )
+	{
+	}
+
+	fn next( mut this ) : ust::optional</u32/>
+	{
+		if( current_ == limit_ )
+		{
+			return ust::null_optional;
+		}
+		var u32 res= current_ * current_ + current_;
+		++current_;
+		return res;
+	}
+
+private:
+	u32 limit_;
+	u32 current_;
+}
+
+static_assert( !typeinfo</NonCopyableIterator/>.is_copy_constructible );
+static_assert( !typeinfo</NonCopyableIterator/>.is_copy_assignable );
+
 fn nomangle main() : i32
 {
 	{ // Basic iteration.
@@ -1009,24 +1036,28 @@ fn nomangle main() : i32
 	// Iterator for generator which captures a reference.
 	{
 		var ust::vector</u32/> mut v= ust::make_array( 7u, 88u, 65u, 17u, 1u, 55u, 78u, 66u );
+		foreach( &mut el : ust::make_iterator_for_generator( VecEvenElements(v) ) )
 		{
-			auto mut it= ust::make_iterator_for_generator( VecEvenElements(v) );
-			loop
-			{
-				if_var( &mut el : it.next() )
-				{
-					halt if( el % 2u != 0u );
-					el= 0u;
-				}
-				else
-				{
-					break;
-				}
-			}
+			halt if( el % 2u != 0u );
+			el= 0u;
 		}
 		halt if( v[1s] != 0u );
 		halt if( v[6s] != 0u );
 		halt if( v[7s] != 0u );
+	}
+	// "foreach" macro for non-copyable iterator.
+	{
+		var ust::vector</u32/> mut vec;
+		foreach( n : ust::wrap_raw_iterator( NonCopyableIterator(5u) ) )
+		{
+			vec.push_back(n);
+		}
+		halt if( vec.size() != 5s );
+		halt if( vec[0s] != 0u );
+		halt if( vec[1s] != 2u );
+		halt if( vec[2s] != 6u );
+		halt if( vec[3s] != 12u );
+		halt if( vec[4s] != 20u );
 	}
 
 	return 0;

@@ -35,7 +35,7 @@ fn nomangle main() : i32
 		vec.push_back( 1 );
 		vec.push_back( 55 );
 		var i32 mut sum= 0;
-		foreach( &x : vec )
+		foreach( &x : cast_imut(vec) )
 		{
 			sum+= x + cast_imut(vec).front();
 		}
@@ -156,6 +156,17 @@ fn nomangle main() : i32
 		halt if( r[0s] != -22 );
 		halt if( r[1s] != -444 );
 		halt if( r[2s] != -6666 );
+	}
+	{ // "foreach" macro for immutable "array_view_mut".
+		var VecType mut vec= ust::make_array( 6, -3, 17 );
+		var ust::array_view_mut</i32/> r= vec;
+		foreach( &mut x : r )
+		{
+			x*= x;
+		}
+		halt if( r[0s] != 36 );
+		halt if( r[1s] != 9 );
+		halt if( r[2s] != 289 );
 	}
 
 	return 0;

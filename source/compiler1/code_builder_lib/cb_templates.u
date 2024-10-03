@@ -1402,7 +1402,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 		auto mut known_args= template_args_finished;
 
 		// Try to add further args, which was calculated indirectly.
-		foreach( &param : function_template.params.range().subrange_start( known_args.size() ).iter() )
+		foreach( &param : function_template.params.range().subrange_start( known_args.size() ) )
 		{
 			if_var( & val : result_names_scope.lock_imut().deref().GetThisScopeValue( param.name ) )
 			{
