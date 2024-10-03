@@ -463,6 +463,32 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
 	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 4 ) )
 
 
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test5():
+	# Reuse immutable tag "a" from parent for mutable reference field.
+	c_program_text= """
+		class T polymorph { i32 &imut @("a"c8) x; }
+		class S : T
+		{
+			i32 &mut @("a"c8) y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
+
+
+def MixingMutableAndImmutableReferencesInSameReferenceTag_Test6():
+	# Reuse mutable tag "a" from parent for immutable reference field.
+	c_program_text= """
+		class T polymorph { i32 &mut @("a"c8) x; }
+		class S : T
+		{
+			i32 &imut @("a"c8) y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixingMutableAndImmutableReferencesInSameReferenceTag", 3 ) )
+
+
 def StructMultipleInnerReferenceTags_Test0():
 	c_program_text= """
 		struct S{}

@@ -685,7 +685,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		for( const Class::Parent& parent : the_class.parents )
 		{
 			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
+			{
 				reference_tags_usage_flags[i]= true;
+				if( parent.class_->inner_references[i] != the_class.inner_references[i] )
+				{
+					std::string s;
+					s.push_back( char( 'a' + i ) );
+					REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+				}
+			}
 		}
 
 		the_class.members->ForEachValueInThisScope(
