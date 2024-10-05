@@ -15,6 +15,9 @@ else()
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 endif()
 
+# Use a CPU from year 2015 or newer. It seems to be fine to avoid using older CPUs.
+set( SPRACHE_COMPILER_ARCH_OPTIONS -mcpu=skylake )
+
 # Build rule for "Ü" files.
 function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
@@ -32,7 +35,7 @@ function( CompileUSource u_source_file out_object )
 				-o ${current_subdir}/${u_source_file_relative}.bc
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 				--verify-module
-				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
+				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
@@ -51,7 +54,7 @@ function( CompileUSource u_source_file out_object )
 				-o ${current_subdir}/${u_source_file_relative}.o
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 				--verify-module
-				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
+				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 				--symbols-visibility=hidden # Make functions and variables hidden to avoid exporting them in ELF shared libraries (*.so)
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
@@ -148,7 +151,7 @@ if( COMPILER1_LTO )
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${LEX_SYNT_LIB_OBJECTS} ${CODE_BUILDER_LIB_OBJECTS} ${LAUNCHERS_COMMON_OBJECTS}
-			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
+			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
 			-lto-mode=link
