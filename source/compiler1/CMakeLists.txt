@@ -15,8 +15,6 @@ else()
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 endif()
 
-# Use a CPU from year 2015 or newer. It seems to be fine to avoid using older CPUs.
-set( SPRACHE_COMPILER_ARCH_OPTIONS -mcpu=skylake )
 
 # Build rule for "Ü" files.
 function( CompileUSource u_source_file out_object )

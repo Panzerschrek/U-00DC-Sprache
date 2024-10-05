@@ -36,6 +36,19 @@ if( MSVC )
 endif()
 
 #
+# Global codegen options (for both Ü and dependencies).
+#
+
+# Use a CPU from year 2015 or newer. It seems to be fine to avoid using older CPUs.
+set( SPRACHE_TARGET_CPU_NAME skylake )
+set( SPRACHE_COMPILER_ARCH_OPTIONS -mcpu=${SPRACHE_TARGET_CPU_NAME} )
+
+if(MSVC)
+else()
+	add_compile_options( -march=${SPRACHE_TARGET_CPU_NAME} )
+endif()
+
+#
 # External dependencies
 #
 
