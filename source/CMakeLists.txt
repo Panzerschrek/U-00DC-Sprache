@@ -44,6 +44,7 @@ set( SPRACHE_TARGET_CPU_NAME skylake )
 set( SPRACHE_COMPILER_ARCH_OPTIONS -mcpu=${SPRACHE_TARGET_CPU_NAME} )
 
 if(MSVC)
+	add_compile_options( /arch:AVX2 )
 else()
 	add_compile_options( -march=${SPRACHE_TARGET_CPU_NAME} )
 endif()
