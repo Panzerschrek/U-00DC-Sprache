@@ -36,6 +36,27 @@ if( MSVC )
 endif()
 
 #
+# Global codegen options (for both Ü and dependencies).
+#
+
+if( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" )
+	message( "Target architecture seems to be x86_64 (${CMAKE_SYSTEM_PROCESSOR}), turn on modern instructions support" )
+
+	# Use a CPU from year 2015 or newer. It seems to be fine to avoid using older CPUs.
+	set( SPRACHE_TARGET_CPU_NAME skylake )
+	set( SPRACHE_COMPILER_ARCH_OPTIONS -mcpu=${SPRACHE_TARGET_CPU_NAME} )
+
+	if(MSVC)
+		add_compile_options( /arch:AVX2 )
+	else()
+		add_compile_options( -march=${SPRACHE_TARGET_CPU_NAME} )
+	endif()
+
+else()
+	message( "Target architecture is not x86_64 (${CMAKE_SYSTEM_PROCESSOR})" )
+endif()
+
+#
 # External dependencies
 #
 
