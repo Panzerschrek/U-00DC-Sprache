@@ -995,7 +995,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 		}
 		else if( IsSignedInteger( fundamental_type.fundamental_type ) )
 		{
-			var ust::string8 mut suffix;
+			var ust::string_view8 mut suffix;
 			if( fundamental_type.fundamental_type == U_FundamentalType::i32_ )
 			{  suffix= "";  }
 			else
@@ -1005,17 +1005,17 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 		}
 		else if( IsUnsignedInteger( fundamental_type.fundamental_type ) )
 		{
-			var ust::string8 mut suffix;
+			var ust::string_view8 mut suffix;
 			if( fundamental_type.fundamental_type == U_FundamentalType::u32_ )
 			{  suffix= "u";  }
 			else
 			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
 
-			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) )  + suffix;
+			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) ) + suffix;
 		}
 		else if( IsChar( fundamental_type.fundamental_type ) )
 		{
-			var ust::string8 mut suffix;
+			var ust::string_view8 mut suffix;
 			switch( fundamental_type.fundamental_type )
 			{
 				U_FundamentalType::char8_  -> {  suffix= "c8" ;  },
