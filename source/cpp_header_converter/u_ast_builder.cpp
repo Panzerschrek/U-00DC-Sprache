@@ -49,6 +49,7 @@ private:
 	void ProcessDecl( const clang::Decl& decl );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
+	Synt::TypeName MakeRawPointerType( const clang::Type& element_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
@@ -330,18 +331,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
 	{
 		// Translate incomplete array types as raw pointers.
-		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
-
-		return std::move(raw_pointer_type);
+		return MakeRawPointerType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
 	}
 	else if( const auto decayed_type= llvm::dyn_cast<clang::DecayedType>(&in_type) )
 	{
 		// Decayed type - implicit array to pointer conversion.
-		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-		raw_pointer_type->element_type= TranslateType( *decayed_type->getPointeeType().getTypePtr(), type_names_map );
-
-		return std::move(raw_pointer_type);
+		return MakeRawPointerType( *decayed_type->getPointeeType().getTypePtr(), type_names_map );
 	}
 	else if( in_type.isFunctionPointerType() )
 	{
@@ -381,12 +376,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		return StringToTypeName( Keyword( Keywords::void_ ) );
 	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
-	{
-		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-		raw_pointer_type->element_type= TranslateType( *pointer_type->getPointeeType().getTypePtr(), type_names_map );
-
-		return std::move(raw_pointer_type);
-	}
+		return MakeRawPointerType( *pointer_type->getPointeeType().getTypePtr(), type_names_map );
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr(), type_names_map );
 	else if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( &in_type ) )
@@ -398,6 +388,22 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 	// Fallback for some unlikely case.
 	return StringToTypeName( Keyword( Keywords::void_ ) );
+}
+
+Synt::TypeName CppAstConsumer::MakeRawPointerType( const clang::Type& element_type, const TypeNamesMap& type_names_map )
+{
+	auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+	raw_pointer_type->element_type= TranslateType( element_type, type_names_map );
+
+	// Replace C "void*" pointers with Ü "$(byte8)" pointers.
+	// It's needed, since $(void) isn't a universal pointer as "void*" in C.
+	if(const auto named_type_name= std::get_if<Synt::NameLookup>( &raw_pointer_type->element_type ) )
+	{
+		if( named_type_name->name == Keyword( Keywords::void_ ) )
+			named_type_name->name= Keyword( Keywords::byte8_ );
+	}
+
+	return std::move(raw_pointer_type);
 }
 
 std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
