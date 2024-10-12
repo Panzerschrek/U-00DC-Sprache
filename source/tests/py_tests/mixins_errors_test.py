@@ -130,6 +130,15 @@ def MixinInvalidUTF8_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def MixinInvalidUTF8_Test3():
+	c_program_text= """
+		mixin( s );
+		var[ char8, 5 ] s[ "$"c8, "Q"c8, 199c8, "b"c8, 177c8 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "MixinInvalidUTF8", 2 ) )
+
+
 def MixinLexicalError_Test0():
 	c_program_text= """
 		mixin( " auto s= \\"\\\\urrrr\\"; " );

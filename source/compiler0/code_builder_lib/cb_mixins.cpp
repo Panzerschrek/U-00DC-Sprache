@@ -417,9 +417,8 @@ void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionCont
 	if( const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( variable->constexpr_value ) )
 	{
 		const llvm::StringRef mixin_text= constant_data->getRawDataValues();
-		if( !llvm::isLegalUTF8Sequence(
-				reinterpret_cast<const llvm::UTF8*>(mixin_text.data()),
-				reinterpret_cast<const llvm::UTF8*>(mixin_text.data()) + mixin_text.size() ) )
+		auto ptr= reinterpret_cast<const llvm::UTF8*>(mixin_text.data());
+		if( !llvm::isLegalUTF8String( &ptr, ptr + mixin_text.size() ) )
 		{
 			REPORT_ERROR( MixinInvalidUTF8, names_scope.GetErrors(), syntax_element.src_loc );
 			return;

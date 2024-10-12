@@ -476,7 +476,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 		{
 			var size_type mut str_length= 0s;
 			var $(char8) str_start= unsafe( LLVMGetAsString( variable.constexpr_value, str_length ) );
-			if( !U1_IsLegalUTF8Sequence( str_start, str_length ) )
+			if( !U1_IsLegalUTF8String( str_start, str_length ) )
 			{
 				REPORT_ERROR( MixinInvalidUTF8, names_scope_ptr, syntax_element.deref().src_loc )
 				return;

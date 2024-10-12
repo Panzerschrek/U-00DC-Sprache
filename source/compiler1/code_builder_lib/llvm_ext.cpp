@@ -59,11 +59,10 @@ void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32
 		f->addParamAttrs(index - llvm::AttributeList::FirstArgIndex, builder);
 }
 
-bool U1_IsLegalUTF8Sequence( const char* const start, const size_t length )
+bool U1_IsLegalUTF8String( const char* const start, const size_t length )
 {
-	return llvm::isLegalUTF8Sequence(
-		reinterpret_cast<const llvm::UTF8*>(start),
-		reinterpret_cast<const llvm::UTF8*>(start) + length ) != 0;
+	auto ptr= reinterpret_cast<const llvm::UTF8*>(start);
+	return llvm::isLegalUTF8String( &ptr, ptr + length ) != 0;
 }
 
 LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data, const size_t size, const size_t element_count)

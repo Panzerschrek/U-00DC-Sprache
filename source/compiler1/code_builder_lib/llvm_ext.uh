@@ -16,7 +16,7 @@ fn nomangle U1_InsertInstructionAfterAnother(LLVMValueRef src_instructuon, LLVMV
 
 fn nomangle U1_FunctionAddDereferenceableAttr(LLVMValueRef function, u32 index, u64 bytes) unsafe;
 
-fn nomangle U1_IsLegalUTF8Sequence( $(char8) start, size_type length ) unsafe : bool;
+fn nomangle U1_IsLegalUTF8String( $(char8) start, size_type length ) unsafe : bool;
 
 fn nomangle U1_ConstDataArray(LLVMTypeRef t, $(byte8) data, size_type data_size, size_type element_count) unsafe : LLVMValueRef;
 
