@@ -1354,9 +1354,9 @@ void CodeBuilder::CheckOverloadedOperator(
 	}
 
 	bool is_this_class= false;
-	for( const FunctionType::Param& arg : func_type.params )
+	for( const FunctionType::Param& param : func_type.params )
 	{
-		if( arg.type == base_class )
+		if( param.type == base_class )
 		{
 			is_this_class= true;
 			break;
@@ -1521,10 +1521,10 @@ void CodeBuilder::BuildFuncCode(
 
 	// Ensure completeness only for functions body.
 	// Require full completeness even for reference arguments.
-	for( const FunctionType::Param& arg : function_type.params )
+	for( const FunctionType::Param& param : function_type.params )
 	{
-		if( !EnsureTypeComplete( arg.type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, arg.type );
+		if( !EnsureTypeComplete( param.type ) )
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, param.type );
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
@@ -1541,18 +1541,18 @@ void CodeBuilder::BuildFuncCode(
 		if( !EnsureTypeComplete( coroutine_type_description->return_type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc,  coroutine_type_description->return_type  );
 
-		for( const FunctionType::Param& arg : function_type.params )
+		for( const FunctionType::Param& param : function_type.params )
 		{
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for coroutines.
 			// Do this now, because it's impossible to check this in coroutine declaration, because this check requires complete types of parameters.
-			if( arg.value_type != ValueType::Value && arg.type.ReferenceTagCount() > 0u )
+			if( param.value_type != ValueType::Value && param.type.ReferenceTagCount() > 0u )
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
 
 			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
-			if( !coroutine_type_description->non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc ) )
+			if( !coroutine_type_description->non_sync && GetTypeNonSync( param.type, parent_names_scope, params.front().src_loc ) )
 				REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
 		}
 
