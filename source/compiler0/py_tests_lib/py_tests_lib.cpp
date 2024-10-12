@@ -95,7 +95,7 @@ PyObject* BuildSrcLoc( const SrcLoc& src_loc )
 	return dict;
 }
 
-PyObject* BuildString( const std::string& str )
+PyObject* BuildString( const std::string_view str )
 {
 	return PyUnicode_DecodeUTF8( str.data(), Py_ssize_t(str.size()), nullptr );
 }
@@ -109,10 +109,7 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 		PyObject* const dict= PyDict_New();
 
 		PyDict_SetItemString( dict, "src_loc", BuildSrcLoc( error.src_loc ) );
-
-		const std::string_view error_code_str= CodeBuilderErrorCodeToString( error.code );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str.data(), Py_ssize_t(error_code_str.size()), nullptr ) );
-
+		PyDict_SetItemString( dict, "code", BuildString( CodeBuilderErrorCodeToString( error.code ) ) );
 		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
 
 		if( error.template_context != nullptr )
