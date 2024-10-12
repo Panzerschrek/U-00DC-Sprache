@@ -2,6 +2,7 @@ import "/assert.u"
 import "/helpers.u"
 import "/scoped_array.u"
 import "/keywords.uh"
+import "../lex_synt_lib/program_string.uh"
 import "error_reporting.uh"
 import "source_file_contents_hash_wrapper.uh"
 import "code_builder.uh"
@@ -360,7 +361,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	auto element_llvm_type= GetFundamentalLLVMType(char_type);
 
-	var ust::string8 mut string_literal_value = string_literal.value; // HACK! Create copy of string to fix ReferenceProtection error.
+	var ust::string8& string_literal_value = string_literal.value;
 	if( is_array )
 	{
 		auto mut array_size= 0s;
@@ -371,7 +372,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		{
 			if( char_type == U_FundamentalType::char8_ )
 			{
-				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal_value.data(), u32(string_literal_value.size()), LLVMBool::True );
+				constexpr_value= LLVMConstStringInContext( llvm_context_, cast_mut(string_literal_value).data(), u32(string_literal_value.size()), LLVMBool::True );
 				array_size= string_literal_value.size();
 
 				if( string_literals_cache_[0].find( string_literal_value ).empty() )
@@ -386,13 +387,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
-				var ust::string16 mut buff;
-				auto buff_size= string_literal_value.size() * 4s;
-				buff.resize( buff_size, "\0"c16 ); // Reserve enough space.
+				var ust::string16 mut buff= ConvertUTF8ToUTF16( string_literal_value );
 
-				array_size= U1_ConvertUTF8ToUTF16( string_literal_value.data(), string_literal_value.size(), buff.data(), buff_size );
-				halt if(array_size > buff.size());
-				buff.resize( array_size, "\0"c16 );
+				array_size= buff.size();
 
 				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</byte8/>(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
 
@@ -408,13 +405,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
-				var ust::string32 mut buff;
-				auto buff_size= string_literal_value.size() * 4s;
-				buff.resize( buff_size, "\0"c32 ); // Reserve enough space.
+				var ust::string32 mut buff= ConvertUTF8ToUTF32( string_literal_value );
 
-				array_size= U1_ConvertUTF8ToUTF32( string_literal_value.data(), string_literal_value.size(), buff.data(), buff_size );
-				halt if(array_size > buff.size());
-				buff.resize( array_size, "\0"c32 );
+				array_size= buff.size();
 
 				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</byte8/>(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
 
@@ -471,27 +464,25 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
-				var char16 mut c= zero_init;
-				if( string_literal_value.empty() ||
-					U1_ConvertUTF8ToUTF16( string_literal_value.data(), string_literal_value.size(), $<(c), 1s ) != 1s )
+				var ust::string16 s= ConvertUTF8ToUTF16( string_literal_value );
+				if( s.size() != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
 					return ErrorValue();
 				}
 
-				constexpr_value= LLVMConstInt( element_llvm_type, u64(c), LLVMBool::False );
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(s.front()), LLVMBool::False );
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
-				var char32 mut c= zero_init;
-				if( string_literal_value.empty() ||
-					U1_ConvertUTF8ToUTF32( string_literal_value.data(), string_literal_value.size(), $<(c), 1s ) != 1s )
+				var ust::string32 s= ConvertUTF8ToUTF32( string_literal_value );
+				if( s.size() != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
 					return ErrorValue();
 				}
 
-				constexpr_value= LLVMConstInt( element_llvm_type, u64(c), LLVMBool::False );
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(s.front()), LLVMBool::False );
 			}
 			else{ halt; }
 		}

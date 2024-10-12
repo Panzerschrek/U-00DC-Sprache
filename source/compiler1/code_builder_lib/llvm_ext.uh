@@ -16,16 +16,6 @@ fn nomangle U1_InsertInstructionAfterAnother(LLVMValueRef src_instructuon, LLVMV
 
 fn nomangle U1_FunctionAddDereferenceableAttr(LLVMValueRef function, u32 index, u64 bytes) unsafe;
 
-// Returns number of elements.
-fn nomangle U1_ConvertUTF8ToUTF16(
-	$(char8) src_buff, size_type src_buff_size,
-	$(char16) dst_buff, size_type dst_buff_size ) unsafe : size_type;
-
-// Returns number of elements.
-fn nomangle U1_ConvertUTF8ToUTF32(
-	$(char8) src_buff, size_type src_buff_size,
-	$(char32) dst_buff, size_type dst_buff_size ) unsafe : size_type;
-
 fn nomangle U1_IsLegalUTF8Sequence( $(char8) start, size_type length ) unsafe : bool;
 
 fn nomangle U1_ConstDataArray(LLVMTypeRef t, $(byte8) data, size_type data_size, size_type element_count) unsafe : LLVMValueRef;

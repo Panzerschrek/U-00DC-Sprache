@@ -59,36 +59,6 @@ void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32
 		f->addParamAttrs(index - llvm::AttributeList::FirstArgIndex, builder);
 }
 
-size_t U1_ConvertUTF8ToUTF16(
-	const char* const src_buff, const size_t src_buff_size,
-	llvm::UTF16* const dst_buff, const size_t dst_buff_size )
-{
-	llvm::SmallVector<llvm::UTF16, 32> str;
-	llvm::convertUTF8ToUTF16String( llvm::StringRef(src_buff, src_buff_size), str );
-
-	std::memcpy( dst_buff, str.data(), std::min( dst_buff_size, str.size() ) * sizeof(llvm::UTF16) );
-	return str.size();
-}
-
-size_t U1_ConvertUTF8ToUTF32(
-	const llvm::UTF8* src_buff, const size_t src_buff_size,
-	llvm::UTF32* dst_buff, const size_t dst_buff_size )
-{
-	const auto src_buff_end= src_buff + src_buff_size;
-	const auto dst_buff_start= dst_buff;
-	const auto dst_buff_end= dst_buff + dst_buff_size;
-
-	const llvm::ConversionResult res= llvm::ConvertUTF8toUTF32(
-		&src_buff, src_buff_end,
-		&dst_buff, dst_buff_end,
-		llvm::ConversionFlags() );
-
-	if( res == llvm::conversionOK && src_buff == src_buff_end )
-		return size_t(dst_buff - dst_buff_start);
-	else
-		return dst_buff_size + 1; // Size is unknown, but greater than expected.
-}
-
 bool U1_IsLegalUTF8Sequence( const char* const start, const size_t length )
 {
 	return llvm::isLegalUTF8Sequence(

@@ -127,4 +127,36 @@ fn PushCharToUTF8String( sprache_char c, ust::string8 &mut str )
 	}
 }
 
+fn ConvertUTF8ToUTF16( ust::string_view8 mut s ) : ust::string16
+{
+	var ust::string16 mut res;
+	while( !s.empty() )
+	{
+		var sprache_char code_point= ReadNextUTF8Char(s);
+		if(code_point < sprache_char(0xD800) || (code_point > sprache_char(0xDFFF) && code_point < sprache_char(0x10000)))
+		{
+			res.push_back( char16( code_point ) );
+		}
+		else
+		{
+			var u32 c= u32(code_point) - 0x10000u;
+			res.push_back( char16( ( c >> 10u ) + 0xD800u ) );
+			res.push_back( char16( ( c & 0x3FFu ) + 0xDC00u ) );
+		}
+	}
+
+	return res;
+}
+
+fn ConvertUTF8ToUTF32( ust::string_view8 mut s ) : ust::string32
+{
+	var ust::string32 mut res;
+	while( !s.empty() )
+	{
+		res.push_back( ReadNextUTF8Char(s) );
+	}
+
+	return res;
+}
+
 } // namespace U1
