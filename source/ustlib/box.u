@@ -18,7 +18,7 @@ public:
 	fn constructor()= delete;
 
 	fn constructor( mut this, T mut val )
-		( ptr_= $<( unsafe( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) ) )
+		( ptr_= unsafe( byte_ptr_cast</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) )
 	{
 		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
 	}
@@ -38,7 +38,7 @@ public:
 		unsafe
 		{
 			call_destructor( $>(ptr_) );
-			memory_free( polymorph_restore_original_ref( $>(ptr_) ) );
+			memory_free( $<( polymorph_restore_original_ref( $>(ptr_) ) ) );
 		}
 	}
 
@@ -75,10 +75,9 @@ public:
 	{
 		unsafe
 		{
-			auto ptr= get_ptr();
 			var T mut t= uninitialized;
-			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>($>(ptr)), typeinfo</T/>.size_of );
-			memory_free( polymorph_restore_original_ref( $>(ptr) ) ); // Free memory block, that was used for box.
+			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8(ptr_), typeinfo</T/>.size_of );
+			memory_free( $<( polymorph_restore_original_ref( $>(ptr_) ) ) ); // Free memory block, that was used for box.
 			move_into_nowhere( move(this) ); // Forget about the box.
 			return t;
 		}

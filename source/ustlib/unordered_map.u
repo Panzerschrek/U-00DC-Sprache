@@ -50,7 +50,7 @@ public:
 		clear();
 		if( !is_nullptr(table_) )
 		{
-			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(table_) ) ) );
+			unsafe( memory_free( ptr_cast_to_byte8( table_ ) ) );
 		}
 	}
 
@@ -133,7 +133,7 @@ public:
 				table_value.cell_content= TableValue::CellContent::ValueRemoved;
 				call_destructor( table_value.key_storage );
 				var value_type mut r= uninitialized;
-				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, cast_ref_unsafe</byte8/>( r ), cast_ref_unsafe</byte8/>( table_value.value_storage ), typeinfo</ typeof(table_value.value_storage) />.size_of );
+				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
 				return r;
 			}
 		}
@@ -227,7 +227,7 @@ private:
 			// Because of that it's impossible to get sizeof * capacity multiplication overflow here.
 			// Maximum allocation limit will be reached first.
 			// Allocate and initialize new table.
-			auto new_table= $<( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
+			auto new_table= byte_ptr_cast</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) );
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
 				$>(new_table + i).cell_content= TableValue::CellContent::Empty;
@@ -252,8 +252,8 @@ private:
 							if( new_value.cell_content == TableValue::CellContent::Empty )
 							{
 								new_value.cell_content= TableValue::CellContent::HaveValue;
-								memory_copy_aligned( typeinfo</ key_type   />.align_of, cast_ref_unsafe</byte8/>( new_value.key_storage   ), cast_ref_unsafe</byte8/>( old_value.key_storage   ), typeinfo</ key_type   />.size_of );
-								memory_copy_aligned( typeinfo</ value_type />.align_of, cast_ref_unsafe</byte8/>( new_value.value_storage ), cast_ref_unsafe</byte8/>( old_value.value_storage ), typeinfo</ value_type />.size_of );
+								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
+								memory_copy_aligned( typeinfo</ value_type />.align_of, ptr_cast_to_byte8( $<(new_value.value_storage ) ), ptr_cast_to_byte8( $<( old_value.value_storage ) ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
 							}
 							key_hash_wrapped= ( key_hash_wrapped + 1s ) & new_capacity_mask;
@@ -263,7 +263,7 @@ private:
 				} // for all old table.
 
 				// All value moved, so, we can free old memory.
-				memory_free( cast_ref_unsafe</byte8/>( $>(table_) ) );
+				memory_free( ptr_cast_to_byte8( table_) );
 			}
 			capacity_= new_capacity;
 			table_= new_table;

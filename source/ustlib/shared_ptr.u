@@ -31,14 +31,14 @@ public:
 			static_assert(object_offset % object_alignment == 0s);
 			auto constexpr allocation_size= object_offset + object_size;
 
-			var byte8 &mut mem= memory_allocate( allocation_size );
+			var $(byte8) mem= memory_allocate( allocation_size );
 
-			counter_= $<( cast_ref_unsafe</ shared_ptr_impl::counter />( mem ) );
+			counter_= byte_ptr_cast</ shared_ptr_impl::counter />( mem );
 			$>(counter_).use_count_total= 1u;
 			$>(counter_).use_count_strong= 1u;
 			$>(counter_).lock_count= 0;
 
-			value_= $<( cast_ref_unsafe</T/>( $>( $<(mem) + object_offset ) ) );
+			value_= byte_ptr_cast</T/>( mem + object_offset );
 			move_into_uninitialized( $>(value_), move(value) );
 		}
 	}
@@ -129,7 +129,7 @@ public:
 			if( $>(counter_).use_count_total == 0u )
 			{
 				// Free counter together with initial allocated object.
-				memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
+				memory_free( ptr_cast_to_byte8( counter_ ) );
 			}
 		}
 	}
@@ -351,7 +351,7 @@ public:
 				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 				if( $>(counter_).use_count_total == 0u )
 				{
-					memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
+					memory_free( ptr_cast_to_byte8( counter_ ) );
 				}
 			}
 		}

@@ -22,7 +22,7 @@ public:
 	{
 		unsafe
 		{
-			ptr_= $<( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
+			ptr_= byte_ptr_cast</storage/>( memory_allocate( typeinfo</storage/>.size_of ) );
 			move_into_uninitialized( $>(ptr_).value, move(value) );
 			$>(ptr_).counter= 1u;
 		}
@@ -60,7 +60,7 @@ public:
 			if( $>(ptr_).counter == 0u )
 			{
 				call_destructor( $>(ptr_).value );
-				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
+				memory_free( ptr_cast_to_byte8( ptr_ ) );
 			}
 		}
 	}

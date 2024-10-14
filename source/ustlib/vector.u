@@ -50,7 +50,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, other.size_ );
 			// Multiplication overflow is not possible here because allocation of source container should not overflow.
-			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= byte_ptr_cast</T/>( memory_allocate( capacity_ * c_element_size_ ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
@@ -69,7 +69,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, size_ );
 			// Multiplication overflow check is needed here.
-			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+			ptr_= byte_ptr_cast</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
@@ -88,7 +88,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, size_ );
 			// Multiplication overflow check is needed here.
-			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+			ptr_= byte_ptr_cast</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
@@ -108,7 +108,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, size_ );
 			// Multiplication overflow check is needed here.
-			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+			ptr_= byte_ptr_cast</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 
 			move_into_uninitialized( cast_ref_unsafe</ [ T, S ] />( $>(ptr_) ), move(arr) );
 		}
@@ -135,11 +135,11 @@ public:
 					auto num_bytes = mul_overflow_check_halt( capacity_, c_element_size_ );
 					if( is_nullptr(ptr_) )
 					{
-						ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( num_bytes ) ) );
+						ptr_= byte_ptr_cast</T/>( memory_allocate( num_bytes ) );
 					}
 					else
 					{
-						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), num_bytes ) ) );
+						ptr_= byte_ptr_cast</T/>( memory_reallocate( ptr_cast_to_byte8( ptr_ ), num_bytes ) );
 					}
 				}
 
@@ -170,7 +170,7 @@ public:
 		}
 		if( !is_nullptr(ptr_) )
 		{
-			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) ) );
+			unsafe( memory_free( ptr_cast_to_byte8( ptr_ ) ) );
 		}
 	}
 
@@ -290,8 +290,8 @@ public:
 		// Just copy memory from other vector to end of this vector.
 		unsafe( memory_copy_aligned(
 			c_element_alignment_,
-			cast_ref_unsafe</byte8/>( $>( ptr_ + size_ ) ),
-			cast_ref_unsafe</byte8/>( $>( other.ptr_ ) ),
+			ptr_cast_to_byte8( ptr_ + size_ ),
+			ptr_cast_to_byte8( other.ptr_ ),
 			c_element_size_ * other.size_ ) );
 
 		// Increase size of this vector, zero size of other vector.
@@ -382,7 +382,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( $>(ptr_ + size_) ), c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( $<(result) ), ptr_cast_to_byte8( ptr_ + size_ ), c_element_size_ );
 			return result;
 		}
 	}
@@ -393,7 +393,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( $>(ptr_ + size_) ), c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( $<(result) ), ptr_cast_to_byte8( ptr_ + size_ ), c_element_size_ );
 			return result;
 		}
 	}
@@ -481,13 +481,12 @@ public:
 			{
 				if( capacity_ == 0s )
 				{
-					memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
+					memory_free( ptr_cast_to_byte8( ptr_ ) );
 					ptr_= nullptr</T/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
-					ptr_= $<( ref );
+					ptr_= byte_ptr_cast</T/>( memory_reallocate( ptr_cast_to_byte8( ptr_ ), capacity_ * c_element_size_ ) );
 				}
 			}
 		}
@@ -519,8 +518,8 @@ public:
 				{
 					unsafe( memory_copy_aligned(
 						c_element_alignment_,
-						cast_ref_unsafe</byte8/>( $>(ptr_ + dst) ),
-						cast_ref_unsafe</byte8/>( $>(ptr_ + src) ),
+						ptr_cast_to_byte8( ptr_ + dst ),
+						ptr_cast_to_byte8( ptr_ + src ),
 						c_element_size_ ) );
 				}
 				++dst;
@@ -556,14 +555,14 @@ private:
 			{
 				capacity_= max( c_first_allocation_size_, new_size );
 				// Multiplication overflow check is needed here.
-				ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+				ptr_= byte_ptr_cast</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 			}
 			else // if( capacity_ < new_size )
 			{
 				// It's impossible to get capacity overflow here, because "new_size" can't be greater than address space size.
 				while( capacity_ < new_size ) { capacity_*= 2s; }
 				// Multiplication overflow check is needed here.
-				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+				ptr_= byte_ptr_cast</T/>( memory_reallocate( ptr_cast_to_byte8( ptr_ ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 			}
 		}
 	}

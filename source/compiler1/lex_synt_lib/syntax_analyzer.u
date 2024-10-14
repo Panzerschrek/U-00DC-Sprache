@@ -787,7 +787,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			var NumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
 			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
 
-			unsafe( ust::memory_copy( cast_ref_unsafe</byte8/>( numeric_constant.num ), cast_ref_unsafe</byte8/>( it_.front().text.front() ), typeinfo</NumberLexemData/>.size_of ) );
+			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</NumberLexemData/>.size_of ) );
 
 			NextLexem();
 

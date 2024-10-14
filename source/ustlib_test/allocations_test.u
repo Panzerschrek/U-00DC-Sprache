@@ -6,18 +6,18 @@ fn nomangle main() : i32
 	unsafe
 	{
 		// Should return nonzero reference.
-		auto& r0= ust::memory_allocate( 64s );
-		halt if( ust::ref_to_int(r0) == 0s );
+		var $(byte8) ptr0= ust::memory_allocate( 64s );
+		halt if( ust::is_nullptr(ptr0) );
 
 		// Should reallocate with new size bigger, than previous
-		auto& r1= ust::memory_reallocate( r0, 128s );
-		halt if( ust::ref_to_int(r1) == 0s );
+		var $(byte8) ptr1= ust::memory_reallocate( ptr0, 128s );
+		halt if( ust::is_nullptr(ptr1) );
 
 		// Should reallocate with new size less, than previous
-		auto& r2= ust::memory_reallocate( cast_ref_unsafe</byte8/>( r1 ), 32s );
-		halt if( ust::ref_to_int(r2) == 0s );
+		var $(byte8) ptr2= ust::memory_reallocate( ptr1, 32s );
+		halt if( ust::is_nullptr(ptr2) );
 
-		ust::memory_free( r2 );
+		ust::memory_free( ptr2 );
 	}
 
 	return 0;

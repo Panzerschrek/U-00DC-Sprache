@@ -20,7 +20,7 @@ fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, $(char8) hash_d
 	unsafe
 	{
 		auto result_ptr= cast_ref_unsafe</$(ust::string8)/>(data);
-		var ust::string8 &mut result_ref= cast_ref_unsafe</ust::string8/>( $>(result_ptr) );
+		var ust::string8 &mut result_ref= $>(result_ptr);
 		result_ref= ust::string_view8( hash_data, hash_size );
 	}
 }

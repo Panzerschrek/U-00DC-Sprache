@@ -7,8 +7,13 @@ fn ref_to_int( T& v ) : size_type
 {
 	unsafe
 	{
-		auto ptr= $<(cast_mut(v));
-		return cast_ref_unsafe</size_type/>(ptr); // Cast reference to pointer to reference to integer, read integer value.
+		auto ptr= $<( cast_mut(v) );
+		// Cast reference to $(T) to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( ptr );
+		// Cast byte-type reference to size_type type and load it.
+		// Casting byte-type rerefernce to reference to size_type is not UB.
+		return cast_ref_unsafe</ size_type />( ptr_storage );
 	}
 }
 
@@ -17,49 +22,120 @@ fn int_to_ref( size_type i ) unsafe : T&
 {
 	unsafe
 	{
-		auto ptr= cast_ref_unsafe</$(T)/>(i); // Cast reference to integer to reference to pointer, read pointer value.
+		// Cast reference to size_type to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to size_type to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( i );
+		// Cast byte-type reference to $(T) type and load it.
+		// Casting byte-type rerefernce to reference to any pointer type is not UB.
+		auto ptr= cast_ref_unsafe</ $(T) />( ptr_storage );
 		return $>(ptr);
 	}
 }
 
 // Base integer to raw pointer and back conversion functions.
 template</type T/>
-fn ptr_to_int( $(T) v ) : size_type
+fn ptr_to_int( $(T) ptr ) : size_type
 {
-	return unsafe( cast_ref_unsafe</size_type/>(v) ); // Cast reference to pointer to reference to integer, read integer value.
+	unsafe
+	{
+		// Cast reference to $(T) to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to pointer to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( ptr );
+		// Cast byte-type reference to size_type type and load it.
+		// Casting byte-type rerefernce to reference to size_type is not UB.
+		return cast_ref_unsafe</ size_type />( ptr_storage );
+	}
 }
 
 template</type T/>
 fn int_to_ptr( size_type i ) unsafe : $(T)
 {
-	return unsafe( cast_ref_unsafe</$(T)/>(i) ); // Cast reference to integer to reference to pointer, read pointer value.
+	unsafe
+	{
+		// Cast reference to size_type to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to size_type to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( i );
+		// Cast byte-type reference to $(T) type and load it.
+		// Casting byte-type rerefernce to reference to any pointer type is not UB.
+		return cast_ref_unsafe</ $(T) />( ptr_storage );
+	}
 }
 
-fn memory_copy( byte8 &mut dst, byte8 & src, size_type size_bytes ) unsafe
+// Performs cast of a pointer of given type to a pointer to provided byte-type.
+template</type Dst, type Src/>
+fn ptr_cast_to_byte( $(Src) ptr ) unsafe : $(Dst)
 {
-	unsafe( ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes ) );
+	static_assert( typeinfo</Dst/>.is_byte );
+	static_assert( typeinfo</Dst/>.align_of <= typeinfo</Src/>.align_of, "Destination type alignment shouldn't be greater than source type alignment" );
+
+	unsafe
+	{
+		// Cast reference to $(Src) to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to pointer to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( ptr );
+		// Cast byte-type reference to $(Dst) type and load it.
+		// Casting byte-type rerefernce to reference to any pointer type is not UB.
+		return cast_ref_unsafe</ $(Dst) />( ptr_storage );
+	}
 }
 
-fn memory_copy_aligned( size_type alignment, byte8 &mut dst, byte8 & src, size_type size_bytes ) unsafe
+template</type Src/>
+fn ptr_cast_to_byte8( $(Src) ptr ) unsafe : $(byte8)
+{
+	unsafe
+	{
+		// Cast reference to $(Src) to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to pointer to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( ptr );
+		// Cast byte-type reference to $(byte8) type and load it.
+		// Casting byte-type rerefernce to reference to any pointer type is not UB.
+		return cast_ref_unsafe</ $(byte8) />( ptr_storage );
+	}
+}
+
+// Performs cast of a byte-type pointer to a pointer of given type.
+template</type Dst, type Src/>
+fn byte_ptr_cast( $(Src) ptr ) unsafe : $(Dst)
+{
+	static_assert( typeinfo</Src/>.is_byte );
+	static_assert( typeinfo</Dst/>.align_of >= typeinfo</Src/>.align_of, "Destination type alignment shouldn't be less than source type alignment" );
+
+	unsafe
+	{
+		// Cast reference to $(Src) to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Casting a reference to pointer to a byte-type reference is not UB.
+		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( ptr );
+		// Cast byte-type reference to $(Dst) type and load it.
+		// Casting byte-type rerefernce to reference to any pointer type is not UB.
+		return cast_ref_unsafe</ $(Dst) />( ptr_storage );
+	}
+}
+
+fn memory_copy( $(byte8) dst, $(byte8) src, size_type size_bytes ) unsafe
+{
+	unsafe( ust_memory_copy_impl( dst, src, size_bytes ) );
+}
+
+fn memory_copy_aligned( size_type alignment, $(byte8) dst, $(byte8) src, size_type size_bytes ) unsafe
 {
 	// For most cases this function will be called with constexpr alignment. So, i hope this branching will be optimized.
 	unsafe
 	{
 		switch( alignment )
 		{
-			1s -> {  ust_memory_copy_align_1_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			2s -> {  ust_memory_copy_align_2_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			4s -> {  ust_memory_copy_align_4_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			8s -> {  ust_memory_copy_align_8_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			16s -> {  ust_memory_copy_align_16_impl( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			default-> {  ust_memory_copy_align_1_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
+			1s -> {  ust_memory_copy_align_1_impl ( dst, src, size_bytes );  },
+			2s -> {  ust_memory_copy_align_2_impl ( dst, src, size_bytes );  },
+			4s -> {  ust_memory_copy_align_4_impl ( dst, src, size_bytes );  },
+			8s -> {  ust_memory_copy_align_8_impl ( dst, src, size_bytes );  },
+			16s -> {  ust_memory_copy_align_16_impl( dst, src, size_bytes );  },
+			default-> {  ust_memory_copy_align_1_impl ( dst, src, size_bytes );  },
 		}
 	}
 }
 
-fn memory_equals( byte8& a, byte8& b, size_type size ) unsafe : bool
+fn memory_equals( $(byte8) a, $(byte8) b, size_type size ) unsafe : bool
 {
-	return unsafe( ust_memory_compare_impl( $<(cast_mut(a)), $<(cast_mut(b)), size ) ) == 0;
+	return unsafe( ust_memory_compare_impl( a, b, size ) ) == 0;
 }
 
 template</type T/>
@@ -116,6 +192,20 @@ fn ref_cmp_ge( T& l, T& r ) : bool
 {
 	return unsafe( $<(cast_mut(l)) >= $<(cast_mut(r)) );
 }
+
+namespace memory_impl
+{
+
+type pointer_size_byte_type= get_byte_type_for_size</ typeinfo</ $(byte8) />.size_of />;
+static_assert( typeinfo</ pointer_size_byte_type />.size_of == typeinfo</ $(byte8) />.size_of );
+
+template<//> type get_byte_type_for_size</ 1s/> = byte8  ;
+template<//> type get_byte_type_for_size</ 2s/> = byte16 ;
+template<//> type get_byte_type_for_size</ 4s/> = byte32 ;
+template<//> type get_byte_type_for_size</ 8s/> = byte64 ;
+template<//> type get_byte_type_for_size</16s/> = byte128;
+
+} // namespace memory_impl
 
 } // namespace ust
 

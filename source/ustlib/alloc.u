@@ -6,31 +6,25 @@ namespace ust
 // Allocation-deallocation functions.
 // If allocation function can not allocate memory block with requested size - program will be halted.
 
-fn memory_allocate( size_type size_bytes ) unsafe : byte8 &mut
+fn memory_allocate( size_type size_bytes ) unsafe : $(byte8)
 {
 	alloc_impl::allocation_size_check( size_bytes );
-	unsafe
-	{
-		auto ptr= ust_memory_allocate_impl( size_bytes );
-		halt if( is_nullptr(ptr) );
-		return $>(ptr);
-	}
+	auto ptr= unsafe( ust_memory_allocate_impl( size_bytes ) );
+	halt if( is_nullptr(ptr) ); // TODO - is it needed? Some allocators can return non-null, but memory may not be available.
+	return ptr;
 }
 
-fn memory_reallocate( byte8& mem, size_type new_size_bytes ) unsafe : byte8 &mut
+fn memory_reallocate( $(byte8) mem, size_type new_size_bytes ) unsafe : $(byte8)
 {
 	alloc_impl::allocation_size_check( new_size_bytes );
-	unsafe
-	{
-		auto ptr= ust_memory_reallocate_impl( $<(cast_mut(mem)), new_size_bytes );
-		halt if( is_nullptr(ptr) );
-		return $>(ptr);
-	}
+	auto ptr= unsafe( ust_memory_reallocate_impl( mem, new_size_bytes ) );
+	halt if( is_nullptr(ptr) ); // TODO - is it needed? Some allocators can return non-null, but memory may not be available.
+	return ptr;
 }
 
-fn memory_free( byte8& mem ) unsafe
+fn memory_free( $(byte8) mem ) unsafe
 {
-	unsafe( ust_memory_free_impl( $<(cast_mut(mem)) ) );
+	unsafe( ust_memory_free_impl( mem ) );
 }
 
 namespace alloc_impl
