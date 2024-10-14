@@ -391,7 +391,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 				array_size= buff.size();
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</byte8/>(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte</byte8/>(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
 
 				if( string_literals_cache_[1].find( buff ).empty() )
 				{
@@ -409,7 +409,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 				array_size= buff.size();
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</byte8/>(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte</byte8/>(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
 
 				if( string_literals_cache_[2].find( buff ).empty() )
 				{
@@ -4812,15 +4812,6 @@ fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_s
 
 		return unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64;
 	}
-}
-
-// Various helpers.
-
-template</type Dst, type Src/>
-fn CastPtr( $(Src) src ) unsafe : $(Dst)
-{
-	// Cast reference to pointer to reference to pointer of other type.
-	return unsafe( cast_ref_unsafe</$(Dst)/>(src) );
 }
 
 fn AreCharArraysWithSameElementType( Type& l, Type& r ) : bool
