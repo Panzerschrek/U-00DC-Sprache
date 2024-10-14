@@ -5,13 +5,13 @@ namespace ust
 {
 
 template</type T/>
-fn polymorph_restore_original_ref( T &mut ref ) : byte8 &mut
+fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
 {
-	return unsafe( cast_mut( polymorph_restore_original_ref( cast_imut(ref) ) ) );
+	return unsafe( polymorph_restore_original_ref( cast_mut(ref) ) );
 }
 
 template</type T/>
-fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
+fn polymorph_restore_original_ref( T &mut ref ) : byte8 &mut
 {
 	static_if( polymorph_impl::is_polymorph</T/>() )
 	{
@@ -20,8 +20,8 @@ fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
 			// Virtual table pointer is always first field in class.
 			auto offset= cast_ref_unsafe</ polymorph_impl::virtual_class />(ref).vptr.offset_of_allocated_object;
 
-			auto original_ptr= $<( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
-			return cast_ref_unsafe</ byte8 />( $>(original_ptr) );
+			auto original_ptr= $<( cast_ref_unsafe</byte8/>(ref) ) - offset;
+			return $>(original_ptr);
 		}
 	}
 	else
@@ -138,7 +138,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( referen
 				auto& virtual_table= cast_ref_unsafe</ virtual_class />(from).vptr;
 				var $(type_id_table_element) type_id_table= virtual_table.type_id_table;
 				// Obtain pointer to allocated object.
-				var $(u8) ptr= $<( cast_ref_unsafe</u8/>( from ) ) - virtual_table.offset_of_allocated_object;
+				var $(byte8) ptr= $<( cast_ref_unsafe</byte8/>( from ) ) - virtual_table.offset_of_allocated_object;
 				return optional_ref</ To, true />( polymorph_cast_r</To/>( ptr, type_id_table ) );
 			}
 		}
@@ -152,7 +152,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( referen
 
 // Recursively try to find destination class in "type_id" tables of class and all its ancestors. If found - perform cast and return result.
 template</ type To />
-fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : $(To)
+fn polymorph_cast_r( $(byte8) ptr, $(type_id_table_element) mut type_id_table ) : $(To)
 {
 	unsafe
 	{
@@ -160,7 +160,7 @@ fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : $
 		var $(size_type) size_type_address= $<( $>(type_id_table).parent_offset );
 		if( size_type_address == $<( cast_mut( typeinfo</To/>.type_id ) ) )
 		{
-			return $<( cast_ref_unsafe</To/>( $>(ptr) ) );
+			return byte_ptr_cast</To/>( ptr );
 		}
 
 		// Iterate over all parents and try to find target class.
