@@ -26,7 +26,7 @@ public:
 	{
 		unsafe
 		{
-			ptr_= $<( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
+			ptr_= byte_ptr_cast</storage/>( memory_allocate( typeinfo</storage/>.size_of ) );
 			move_into_uninitialized( $>(ptr_).value, move(value) );
 			$>(ptr_).counter= 1u;
 		}

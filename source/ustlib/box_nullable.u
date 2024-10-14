@@ -21,7 +21,7 @@ public:
 
 	// Construct with value.
 	fn constructor( mut this, T mut val )
-		( ptr_= $<( unsafe( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) ) )
+		( ptr_= unsafe( byte_ptr_cast</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) )
 	{
 		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
 	}
@@ -125,7 +125,7 @@ public:
 		{
 			if( empty() )
 			{
-				ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+				ptr_= byte_ptr_cast</T/>( memory_allocate( typeinfo</T/>.size_of ) );
 				move_into_uninitialized( $>(ptr_), move(val) );
 			}
 			else
@@ -137,7 +137,7 @@ public:
 					// because dynamic type info of allocated class is used for deallocation of "ptr_".
 					// So, just deallocate initial "ptr" and allocate new one.
 					reset();
-					ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+					ptr_= byte_ptr_cast</T/>( memory_allocate( typeinfo</T/>.size_of ) );
 					move_into_uninitialized( $>(ptr_), move(val) );
 				}
 				else

@@ -47,7 +47,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, other.size_ );
 			// Multiplication overflow is not possible here because allocation of source string should not overflow.
-			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
 
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr_) ), cast_ref_unsafe</byte8/>( $>(other.ptr_) ), size_ * c_element_size_ );
 		}
@@ -64,7 +64,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, array_size );
 			// It's impossible to get multiplication overflow here - source array should not occupy more than address space size.
-			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
 
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr_) ), cast_ref_unsafe</byte8/>( array ), size_ * c_element_size_ );
 		}
@@ -80,7 +80,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, size_ );
 			// It's impossible to get multiplication overflow here - source range should not occupy more than address space size.
-			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
 
 			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr_) ), cast_ref_unsafe</byte8/>( $>(range.data()) ), size_ * c_element_size_ );
 		}
@@ -96,7 +96,7 @@ public:
 		{
 			capacity_= max( c_first_allocation_size_, size_ );
 			// Multiplication overflow check is needed here.
-			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
@@ -510,7 +510,7 @@ private:
 			{
 				capacity_= max( c_first_allocation_size_, new_size );
 				// Multiplication overflow check is needed here.
-				ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+				ptr_= byte_ptr_cast</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 			}
 			else // if( capacity_ < new_size )
 			{

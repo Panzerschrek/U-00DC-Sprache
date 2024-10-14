@@ -25,7 +25,7 @@ public:
 		unsafe
 		{
 			// Allocate and initialize Impl.
-			impl_= $<( cast_ref_unsafe</Impl/>( memory_allocate( typeinfo</Impl/>.size_of ) ) );
+			impl_= byte_ptr_cast</Impl/>( memory_allocate( typeinfo</Impl/>.size_of ) );
 			var Impl &mut impl= $>(impl_);
 			move_into_uninitialized( impl, Impl( move(func) ) );
 

@@ -18,7 +18,7 @@ public:
 	fn constructor()= delete;
 
 	fn constructor( mut this, T mut val )
-		( ptr_= $<( unsafe( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) ) )
+		( ptr_= unsafe( byte_ptr_cast</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) )
 	{
 		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
 	}

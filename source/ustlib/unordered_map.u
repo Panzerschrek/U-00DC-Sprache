@@ -227,7 +227,7 @@ private:
 			// Because of that it's impossible to get sizeof * capacity multiplication overflow here.
 			// Maximum allocation limit will be reached first.
 			// Allocate and initialize new table.
-			auto new_table= $<( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
+			auto new_table= byte_ptr_cast</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) );
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
 				$>(new_table + i).cell_content= TableValue::CellContent::Empty;
