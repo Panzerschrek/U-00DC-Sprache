@@ -49,7 +49,7 @@ public:
 			// Multiplication overflow is not possible here because allocation of source string should not overflow.
 			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
 
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr_) ), cast_ref_unsafe</byte8/>( $>(other.ptr_) ), size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( ptr_ ), ptr_cast_to_byte</byte8/>( other.ptr_ ), size_ * c_element_size_ );
 		}
 	}
 
@@ -66,7 +66,7 @@ public:
 			// It's impossible to get multiplication overflow here - source array should not occupy more than address space size.
 			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
 
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr_) ), cast_ref_unsafe</byte8/>( array ), size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( ptr_ ), ptr_cast_to_byte</byte8/>( $<( cast_mut(array) ) ), size_ * c_element_size_ );
 		}
 	}
 
@@ -82,7 +82,7 @@ public:
 			// It's impossible to get multiplication overflow here - source range should not occupy more than address space size.
 			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
 
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr_) ), cast_ref_unsafe</byte8/>( $>(range.data()) ), size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( ptr_ ), ptr_cast_to_byte</byte8/>( range.data() ), size_ * c_element_size_ );
 		}
 	}
 
@@ -125,7 +125,7 @@ public:
 		{
 			ensure_capacity( range.size() );
 			size_= range.size();
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(this.ptr_) ), cast_ref_unsafe</byte8/>(  $>(range.data()) ), size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( this.ptr_ ), ptr_cast_to_byte</byte8/>( range.data() ), size_ * c_element_size_ );
 		}
 	}
 
@@ -441,8 +441,8 @@ public:
 			auto result_size= l.size_ + range.size();
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(result.ptr_) ), cast_ref_unsafe</byte8/>( $>(l.ptr_) ), l.size_ * c_element_size_ );
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</byte8/>( $>(range.data()) ), range.size() * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( result.ptr_ ), ptr_cast_to_byte</byte8/>( l.ptr_ ), l.size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( result.ptr_ + l.size_ ), ptr_cast_to_byte</byte8/>( range.data() ), range.size() * c_element_size_ );
 		}
 
 		return result;
@@ -457,8 +457,8 @@ public:
 			auto result_size= range.size() + r.size_;
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(result.ptr_) ), cast_ref_unsafe</byte8/>( $>(range.data()) ), range.size() * c_element_size_ );
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(result.ptr_ + range.size()) ), cast_ref_unsafe</byte8/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( result.ptr_ ), ptr_cast_to_byte</byte8/>( range.data() ), range.size() * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( result.ptr_ + range.size() ), ptr_cast_to_byte</byte8/>( r.ptr_ ), r.size_ * c_element_size_ );
 		}
 
 		return result;
@@ -484,7 +484,7 @@ public:
 			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
 			auto new_size= this.size_ + range.size();
 			ensure_capacity( new_size );
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>( ptr_ + size_ ) ), cast_ref_unsafe</byte8/>( $>(range.data()) ), range.size() * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte</byte8/>( ptr_ + size_ ), ptr_cast_to_byte</byte8/>( range.data() ), range.size() * c_element_size_ );
 			size_= new_size;
 		}
 	}

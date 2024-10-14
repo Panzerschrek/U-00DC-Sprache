@@ -57,24 +57,24 @@ fn byte_ptr_cast( $(Src) ptr ) unsafe : $(Dst)
 	return unsafe( cast_ref_unsafe</ $(Dst) />(ptr) );
 }
 
-fn memory_copy( byte8 &mut dst, byte8 & src, size_type size_bytes ) unsafe
+fn memory_copy( $(byte8) dst, $(byte8) src, size_type size_bytes ) unsafe
 {
-	unsafe( ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes ) );
+	unsafe( ust_memory_copy_impl( dst, src, size_bytes ) );
 }
 
-fn memory_copy_aligned( size_type alignment, byte8 &mut dst, byte8 & src, size_type size_bytes ) unsafe
+fn memory_copy_aligned( size_type alignment, $(byte8) dst, $(byte8) src, size_type size_bytes ) unsafe
 {
 	// For most cases this function will be called with constexpr alignment. So, i hope this branching will be optimized.
 	unsafe
 	{
 		switch( alignment )
 		{
-			1s -> {  ust_memory_copy_align_1_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			2s -> {  ust_memory_copy_align_2_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			4s -> {  ust_memory_copy_align_4_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			8s -> {  ust_memory_copy_align_8_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			16s -> {  ust_memory_copy_align_16_impl( $<(dst), $<(cast_mut(src)), size_bytes );  },
-			default-> {  ust_memory_copy_align_1_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  },
+			1s -> {  ust_memory_copy_align_1_impl ( dst, src, size_bytes );  },
+			2s -> {  ust_memory_copy_align_2_impl ( dst, src, size_bytes );  },
+			4s -> {  ust_memory_copy_align_4_impl ( dst, src, size_bytes );  },
+			8s -> {  ust_memory_copy_align_8_impl ( dst, src, size_bytes );  },
+			16s -> {  ust_memory_copy_align_16_impl( dst, src, size_bytes );  },
+			default-> {  ust_memory_copy_align_1_impl ( dst, src, size_bytes );  },
 		}
 	}
 }

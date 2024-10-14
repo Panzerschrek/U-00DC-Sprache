@@ -133,7 +133,7 @@ public:
 				table_value.cell_content= TableValue::CellContent::ValueRemoved;
 				call_destructor( table_value.key_storage );
 				var value_type mut r= uninitialized;
-				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, cast_ref_unsafe</byte8/>( r ), cast_ref_unsafe</byte8/>( table_value.value_storage ), typeinfo</ typeof(table_value.value_storage) />.size_of );
+				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte</byte8/>( $<(r) ), ptr_cast_to_byte</byte8/>( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
 				return r;
 			}
 		}
@@ -252,8 +252,8 @@ private:
 							if( new_value.cell_content == TableValue::CellContent::Empty )
 							{
 								new_value.cell_content= TableValue::CellContent::HaveValue;
-								memory_copy_aligned( typeinfo</ key_type   />.align_of, cast_ref_unsafe</byte8/>( new_value.key_storage   ), cast_ref_unsafe</byte8/>( old_value.key_storage   ), typeinfo</ key_type   />.size_of );
-								memory_copy_aligned( typeinfo</ value_type />.align_of, cast_ref_unsafe</byte8/>( new_value.value_storage ), cast_ref_unsafe</byte8/>( old_value.value_storage ), typeinfo</ value_type />.size_of );
+								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte</byte8/>( $<(new_value.key_storage   ) ), ptr_cast_to_byte</byte8/>( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
+								memory_copy_aligned( typeinfo</ value_type />.align_of, ptr_cast_to_byte</byte8/>( $<(new_value.value_storage ) ), ptr_cast_to_byte</byte8/>( $<( old_value.value_storage ) ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
 							}
 							key_hash_wrapped= ( key_hash_wrapped + 1s ) & new_capacity_mask;

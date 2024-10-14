@@ -104,7 +104,7 @@ fn move_into_uninitialized( T& mut uninitialized_dst, T mut src ) unsafe
 {
 	unsafe
 	{
-		memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>( uninitialized_dst ), cast_ref_unsafe</byte8/>( src ), typeinfo</T/>.size_of );
+		memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte</byte8/>( $<(uninitialized_dst) ), ptr_cast_to_byte</byte8/>( $<(src) ), typeinfo</T/>.size_of );
 		move_into_nowhere( move(src) );
 	}
 }
