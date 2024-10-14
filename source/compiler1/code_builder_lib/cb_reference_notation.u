@@ -348,7 +348,7 @@ fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& p
 				? "_"c8
 				: char8( u32( "a"c8 ) + u32( param_reference.reference_index ) ) ),
 	];
-	return unsafe( U1_ConstDataArray( fundamental_llvm_types_.char8_, $<( cast_ref_unsafe</byte8/>( initializer[0] ) ), 2s, 2s ) );
+	return unsafe( U1_ConstDataArray( fundamental_llvm_types_.char8_, ust::ptr_cast_to_byte8( $<(initializer) ), 2s, 2s ) );
 }
 
 fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, NamesScopePtr& names_scope, SrcLoc& src_loc ) : ust::optional</ FunctionType::ParamReference />
