@@ -407,8 +407,7 @@ public:
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</char_type/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
-					ptr_= $<(ref);
+					ptr_= byte_ptr_cast</char_type/>( memory_reallocate( ptr_cast_to_byte</byte8/>( ptr_ ), capacity_ * c_element_size_ ) );
 				}
 			}
 		}
@@ -517,7 +516,7 @@ private:
 				// It's impossible to get capacity overflow here, because "new_size" can't be greater than address space size.
 				while( capacity_ < new_size ) { capacity_*= 2s; }
 				// Multiplication overflow check is needed here.
-				ptr_= $<( cast_ref_unsafe</char_type/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+				ptr_= byte_ptr_cast</char_type/>( memory_reallocate( ptr_cast_to_byte</byte8/>(ptr_), mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
 			}
 		}
 	}
