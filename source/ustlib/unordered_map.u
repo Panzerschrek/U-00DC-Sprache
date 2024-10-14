@@ -50,7 +50,7 @@ public:
 		clear();
 		if( !is_nullptr(table_) )
 		{
-			unsafe( memory_free( ptr_cast_to_byte8( table_) ) );
+			unsafe( memory_free( ptr_cast_to_byte8( table_ ) ) );
 		}
 	}
 

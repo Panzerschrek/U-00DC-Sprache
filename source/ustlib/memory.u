@@ -52,7 +52,6 @@ fn ptr_cast_to_byte8( $(Src) ptr ) unsafe : $(byte8)
 	return unsafe( cast_ref_unsafe</ $(byte8) />(ptr) );
 }
 
-
 // Performs cast of a byte-type pointer to a pointer of given type.
 template</type Dst, type Src/>
 fn byte_ptr_cast( $(Src) ptr ) unsafe : $(Dst)

@@ -170,7 +170,7 @@ public:
 		}
 		if( !is_nullptr(ptr_) )
 		{
-			unsafe( memory_free( ptr_cast_to_byte8( ptr_) ) );
+			unsafe( memory_free( ptr_cast_to_byte8( ptr_ ) ) );
 		}
 	}
 

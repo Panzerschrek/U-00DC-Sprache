@@ -54,7 +54,7 @@ public:
 
 		// Free and zero Impl in order to avoid doing this in destructor.
 		unsafe( call_destructor( $>(impl_) ) );
-		unsafe( memory_free( ptr_cast_to_byte8( impl_) ) );
+		unsafe( memory_free( ptr_cast_to_byte8( impl_ ) ) );
 		impl_= nullptr</Impl/>();
 
 		return res;
