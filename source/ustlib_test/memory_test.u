@@ -3,7 +3,13 @@ import "../ustlib/memory.u"
 
 fn nomangle main() : i32
 {
-
+	{
+		var i32 mut x= 0;
+		auto x_ptr= $<(x);
+		var $(byte8) b_ptr= unsafe( ust::ptr_cast_to_byte8( x_ptr ) );
+		var $(i32) x_ptr_back_casted= unsafe( ust::byte_ptr_cast</i32/>( b_ptr ) );
+		halt if( x_ptr_back_casted != x_ptr );
+	}
 	{
 		var i32 mut x= 0;
 		auto x_ptr= $<(x);

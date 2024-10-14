@@ -156,7 +156,7 @@ public:
 		{
 			static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
 			var box</T/> mut result= uninitialized;
-			memory_copy_aligned( typeinfo</ box</T/> />.align_of, ptr_cast_to_byte</byte8/>( $<(result) ), ptr_cast_to_byte</byte8/>( $<(this) ), typeinfo</ box</T/> />.size_of );
+			memory_copy_aligned( typeinfo</ box</T/> />.align_of, ptr_cast_to_byte8( $<(result) ), ptr_cast_to_byte8( $<(this) ), typeinfo</ box</T/> />.size_of );
 			move_into_nowhere( move(this) );
 			return result;
 		}
@@ -172,7 +172,7 @@ public:
 		{
 			auto ptr= get_ptr();
 			var T mut t= uninitialized;
-			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte</byte8/>($<(t)), ptr_cast_to_byte</byte8/>(ptr), typeinfo</T/>.size_of ); // Copy contents into the result.
+			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8(ptr), typeinfo</T/>.size_of ); // Copy contents into the result.
 			memory_free( $<( polymorph_restore_original_ref( $>(ptr) ) ) ); // Free memory block, that was used for box.
 			ptr_= nullptr</T/>(); // Reset box storage pointer. Now it is empty.
 			return t;

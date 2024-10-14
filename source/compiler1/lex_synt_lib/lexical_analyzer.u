@@ -432,7 +432,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	var Lexem mut result_lexem;
 	result_lexem.lexem_type= Lexem::Type::Number;
 	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, "\0"c8 );
-	unsafe( ust::memory_copy( ust::ptr_cast_to_byte</byte8/>(result_lexem.text.data()), ust::ptr_cast_to_byte</byte8/>( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
 	return result_lexem;
 }
 

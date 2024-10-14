@@ -216,7 +216,7 @@ public:
 		unsafe
 		{
 			var T mut t= uninitialized;
-			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte</byte8/>($<(t)), ptr_cast_to_byte</byte8/>( $<(storage_) ), typeinfo</T/>.size_of );
+			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8( $<(storage_) ), typeinfo</T/>.size_of );
 			return t;
 		}
 	}

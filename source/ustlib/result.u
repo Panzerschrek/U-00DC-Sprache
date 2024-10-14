@@ -218,7 +218,7 @@ public:
 			var OkT mut t= uninitialized;
 			{
 				auto &mut ref= try_deref(); // try_deref will halt if result contains error.
-				memory_copy_aligned( typeinfo</OkT/>.align_of, ptr_cast_to_byte</byte8/>($<(t)), ptr_cast_to_byte</byte8/>( $<( ref ) ), typeinfo</OkT/>.size_of ); // Copy contents into the result.
+				memory_copy_aligned( typeinfo</OkT/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8( $<( ref ) ), typeinfo</OkT/>.size_of ); // Copy contents into the result.
 			}
 			move_into_nowhere( move(this) ); // Forget about the result container.
 			return t;
@@ -233,7 +233,7 @@ public:
 			var ErrorT mut t= uninitialized;
 			{
 				auto &mut ref= try_deref_error(); // try_deref will halt if result contains no error.
-				memory_copy_aligned( typeinfo</ErrorT/>.align_of, ptr_cast_to_byte</byte8/>($<(t)), ptr_cast_to_byte</byte8/>( $<( ref ) ), typeinfo</ErrorT/>.size_of ); // Copy contents into the result.
+				memory_copy_aligned( typeinfo</ErrorT/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8( $<( ref ) ), typeinfo</ErrorT/>.size_of ); // Copy contents into the result.
 			}
 			move_into_nowhere( move(this) ); // Forget about the result container.
 			return t;

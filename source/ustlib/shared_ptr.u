@@ -129,7 +129,7 @@ public:
 			if( $>(counter_).use_count_total == 0u )
 			{
 				// Free counter together with initial allocated object.
-				memory_free( ptr_cast_to_byte</byte8/>( counter_ ) );
+				memory_free( ptr_cast_to_byte8( counter_ ) );
 			}
 		}
 	}
@@ -351,7 +351,7 @@ public:
 				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 				if( $>(counter_).use_count_total == 0u )
 				{
-					memory_free( ptr_cast_to_byte</byte8/>( counter_ ) );
+					memory_free( ptr_cast_to_byte8( counter_ ) );
 				}
 			}
 		}

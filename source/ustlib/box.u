@@ -76,7 +76,7 @@ public:
 		unsafe
 		{
 			var T mut t= uninitialized;
-			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte</byte8/>($<(t)), ptr_cast_to_byte</byte8/>(ptr_), typeinfo</T/>.size_of );
+			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8(ptr_), typeinfo</T/>.size_of );
 			memory_free( $<( polymorph_restore_original_ref( $>(ptr_) ) ) ); // Free memory block, that was used for box.
 			move_into_nowhere( move(this) ); // Forget about the box.
 			return t;

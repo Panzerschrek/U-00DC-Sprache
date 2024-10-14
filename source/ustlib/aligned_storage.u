@@ -38,9 +38,9 @@ fn swap( T &mut a, T &mut b ) unsafe
 	unsafe
 	{
 		var aligned_storage</ size, alignment /> mut temp= uninitialized;
-		memory_copy_aligned( alignment, ptr_cast_to_byte</byte8/>( $<(temp) ), ptr_cast_to_byte</byte8/>(    $<(a) ), size );
-		memory_copy_aligned( alignment, ptr_cast_to_byte</byte8/>(    $<(a) ), ptr_cast_to_byte</byte8/>(    $<(b) ), size );
-		memory_copy_aligned( alignment, ptr_cast_to_byte</byte8/>(    $<(b) ), ptr_cast_to_byte</byte8/>( $<(temp) ), size );
+		memory_copy_aligned( alignment, ptr_cast_to_byte8( $<(temp) ), ptr_cast_to_byte8(    $<(a) ), size );
+		memory_copy_aligned( alignment, ptr_cast_to_byte8(    $<(a) ), ptr_cast_to_byte8(    $<(b) ), size );
+		memory_copy_aligned( alignment, ptr_cast_to_byte8(    $<(b) ), ptr_cast_to_byte8( $<(temp) ), size );
 	}
 }
 
