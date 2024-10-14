@@ -5,6 +5,12 @@ namespace ust
 {
 
 template</type T/>
+fn polymorph_restore_original_ref( T &mut ref ) : byte8 &mut
+{
+	return unsafe( cast_mut( polymorph_restore_original_ref( cast_imut(ref) ) ) );
+}
+
+template</type T/>
 fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
 {
 	static_if( polymorph_impl::is_polymorph</T/>() )
