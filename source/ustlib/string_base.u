@@ -279,7 +279,7 @@ public:
 		if( l.size() != r.size() ) { return false; }
 
 		auto size= l.size();
-		return unsafe( memory_equals( cast_ref_unsafe</byte8/>( $>(l.ptr_) ), cast_ref_unsafe</byte8/>( $>(r.data()) ), size * c_element_size_ ) );
+		return unsafe( memory_equals( ptr_cast_to_byte</byte8/>( l.ptr_ ), ptr_cast_to_byte</byte8/>( r.data() ), size * c_element_size_ ) );
 	}
 
 	op==( range_imut l, this_type& r ) : bool

@@ -79,9 +79,9 @@ fn memory_copy_aligned( size_type alignment, $(byte8) dst, $(byte8) src, size_ty
 	}
 }
 
-fn memory_equals( byte8& a, byte8& b, size_type size ) unsafe : bool
+fn memory_equals( $(byte8) a, $(byte8) b, size_type size ) unsafe : bool
 {
-	return unsafe( ust_memory_compare_impl( $<(cast_mut(a)), $<(cast_mut(b)), size ) ) == 0;
+	return unsafe( ust_memory_compare_impl( a, b, size ) ) == 0;
 }
 
 template</type T/>
