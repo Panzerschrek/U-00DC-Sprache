@@ -138,7 +138,7 @@ public:
 			{
 				halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
 				// Free counter together with initial allocated object.
-				memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
+				memory_free( ptr_cast_to_byte</byte8/>( counter_ ) );
 			}
 		}
 	}
@@ -359,7 +359,7 @@ public:
 				{
 					halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
 					// Free counter together with initial allocated object.
-					memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
+					memory_free( ptr_cast_to_byte</byte8/>( counter_) );
 				}
 			}
 		}

@@ -17,7 +17,7 @@ fn nomangle main() : i32
 		var $(byte8) ptr2= ust::memory_reallocate( ptr1, 32s );
 		halt if( ust::is_nullptr(ptr2) );
 
-		ust::memory_free( $>(ptr2) );
+		ust::memory_free( ptr2 );
 	}
 
 	return 0;

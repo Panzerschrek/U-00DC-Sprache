@@ -50,7 +50,7 @@ public:
 		clear();
 		if( !is_nullptr(table_) )
 		{
-			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(table_) ) ) );
+			unsafe( memory_free( ptr_cast_to_byte</byte8/>( table_) ) );
 		}
 	}
 
@@ -263,7 +263,7 @@ private:
 				} // for all old table.
 
 				// All value moved, so, we can free old memory.
-				memory_free( cast_ref_unsafe</byte8/>( $>(table_) ) );
+				memory_free( ptr_cast_to_byte</byte8/>( table_) );
 			}
 			capacity_= new_capacity;
 			table_= new_table;

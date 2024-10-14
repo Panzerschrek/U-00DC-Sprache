@@ -170,7 +170,7 @@ public:
 		}
 		if( !is_nullptr(ptr_) )
 		{
-			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) ) );
+			unsafe( memory_free( ptr_cast_to_byte</byte8/>( ptr_) ) );
 		}
 	}
 
@@ -481,7 +481,7 @@ public:
 			{
 				if( capacity_ == 0s )
 				{
-					memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
+					memory_free( ptr_cast_to_byte</byte8/>( ptr_ ) );
 					ptr_= nullptr</T/>();
 				}
 				else

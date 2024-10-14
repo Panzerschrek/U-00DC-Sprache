@@ -63,7 +63,7 @@ public:
 			if( shared_ptr_mt_final_impl::counter_dec( $>(ptr_).counter ) == 0u )
 			{
 				call_destructor( $>(ptr_).value );
-				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
+				memory_free( ptr_cast_to_byte</byte8/>( ptr_ ) );
 			}
 		}
 	}

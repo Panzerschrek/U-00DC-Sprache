@@ -22,9 +22,9 @@ fn memory_reallocate( $(byte8) mem, size_type new_size_bytes ) unsafe : $(byte8)
 	return ptr;
 }
 
-fn memory_free( byte8& mem ) unsafe
+fn memory_free( $(byte8) mem ) unsafe
 {
-	unsafe( ust_memory_free_impl( $<(cast_mut(mem)) ) );
+	unsafe( ust_memory_free_impl( mem ) );
 }
 
 namespace alloc_impl

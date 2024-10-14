@@ -38,7 +38,7 @@ public:
 		unsafe
 		{
 			call_destructor( $>(ptr_) );
-			memory_free( polymorph_restore_original_ref( $>(ptr_) ) );
+			memory_free( $<( cast_mut( polymorph_restore_original_ref( $>(ptr_) ) ) ) );
 		}
 	}
 
@@ -78,7 +78,7 @@ public:
 			auto ptr= get_ptr();
 			var T mut t= uninitialized;
 			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>($>(ptr)), typeinfo</T/>.size_of );
-			memory_free( polymorph_restore_original_ref( $>(ptr) ) ); // Free memory block, that was used for box.
+			memory_free( $<( cast_mut( polymorph_restore_original_ref( $>(ptr) ) ) ) ); // Free memory block, that was used for box.
 			move_into_nowhere( move(this) ); // Forget about the box.
 			return t;
 		}
