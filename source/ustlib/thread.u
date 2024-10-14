@@ -34,7 +34,7 @@ public:
 			var pthread_t mut thread_id(0);
 
 			halt if( pthread_attr_init( attr ) != 0 );
-			halt if( pthread_create( thread_id, attr, thread_function, $<( cast_ref_unsafe</byte8/>(impl) ) ) != 0 );
+			halt if( pthread_create( thread_id, attr, thread_function, ptr_cast_to_byte8(impl_) ) != 0 );
 			halt if( pthread_attr_destroy( attr ) != 0 );
 
 			impl.thread_id= thread_id;
@@ -90,7 +90,7 @@ private:
 	auto c_constructor_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
 
 private:
-	fn thread_function( $(byte8) impl_ptr ) : $(byte8)
+	fn thread_function( $(byte8) impl_ptr ) unsafe : $(byte8)
 	{
 		var Impl &mut impl= unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) );
 

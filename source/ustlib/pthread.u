@@ -7,7 +7,7 @@ type pthread_attr_t  = [ byte64, 8 ];
 type pthread_rwlock_t= [ byte64, 8 ];
 type pthread_rwlockattr_t= [ byte64, 8 ];
 
-type pthread_start_function= fn( $(byte8) arg ) : $(byte8);
+type pthread_start_function= fn( $(byte8) arg ) unsafe : $(byte8);
 
 fn nomangle pthread_attr_init( pthread_attr_t& mut thread_attr ) unsafe : i32;
 fn nomangle pthread_attr_destroy( pthread_attr_t& mut thread_attr ) unsafe : i32;
