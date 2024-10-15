@@ -201,6 +201,8 @@ struct ClassType
 		u32 parent_virtual_table_index;
 	}
 
+	type FieldOrdered= tup[ust::string8, ClassFieldPtr];
+
 	//
 	// Methods
 	//
@@ -223,7 +225,7 @@ struct ClassType
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
 
 	// This class fields names ordered by offset.
-	ust::vector</tup[ust::string8, ClassFieldPtr]/> fields_order;
+	ust::vector</FieldOrdered/> fields_order;
 	u32 field_count= 0u;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;

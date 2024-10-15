@@ -613,7 +613,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			current_offset+= u32( unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) ) );
 		}
 
-		var ust::vector</tup[ust::string8, ClassFieldPtr]/> mut fields_order;
+		var ust::vector</ClassType::FieldOrdered/> mut fields_order;
 		if( syntax_element.keep_fields_order )
 		{
 			// Sort fields by original index.

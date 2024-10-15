@@ -793,7 +793,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		scoped_array LLVMTypeRef mut fields_llvm_types[ class_type.fields_order.size() ](
 			class_type.fields_order.iter().map(
-				lambda( tup[ust::string8, ClassFieldPtr]& field_pair ) : LLVMTypeRef
+				lambda( ClassType::FieldOrdered& field_pair ) : LLVMTypeRef
 				{
 					with( &field : field_pair[1].lock_imut().deref() )
 					{
@@ -823,10 +823,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		// Calculate constexpr property.
 		class_type.can_be_constexpr=
-			class_type.fields_order.
-			iter()
-			.all(
-				lambda( tup[ust::string8, ClassFieldPtr]& field_pair ) : bool
+			class_type.fields_order.iter().all(
+				lambda( ClassType::FieldOrdered& field_pair ) : bool
 				{
 					with( &field : field_pair[1].lock_imut().deref() )
 					{
