@@ -99,14 +99,14 @@ fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::s
 	EncodeType( mangler_state, t );
 	mangler_state.PushElement( select( is_constant ? g_imut_prefix : g_mut_prefix ) );
 
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
+	return MakeNullTerminatedString( move(mangler_state).TakeResult() );
 }
 
 fn ManglerMSVC::MangleType( mut this, Type& t ) : ust::string8
 {
 	var ManglerState mut mangler_state;
 	EncodeType( mangler_state, t );
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
+	return MakeNullTerminatedString( move(mangler_state).TakeResult() );
 }
 
 fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
@@ -121,7 +121,7 @@ fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
 	mangler_state.PushElement( g_imut_prefix );
 	mangler_state.PushElement( g_terminator );
 
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
+	return MakeNullTerminatedString( move(mangler_state).TakeResult() );
 }
 
 fn ManglerMSVC::MangleFunctionImpl(
@@ -157,7 +157,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 			EncodeTemplateArgs( template_mangler_state, template_args );
 		}
 		// Do not create backreference for template name, just push template name instead.
-		mangler_state.PushElement( template_mangler_state.TakeRes() );
+		mangler_state.PushElement( move(template_mangler_state).TakeResult() );
 	}
 	else
 	{
@@ -183,7 +183,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 	auto encode_full_function_type= false;
 	EncodeFunctionType( mangler_state, function_type, encode_full_function_type );
 
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
+	return MakeNullTerminatedString( move(mangler_state).TakeResult() );
 }
 
 fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
@@ -242,7 +242,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 			// Finish list of template arguments.
 			template_mangler_state.PushElement( g_terminator );
 
-			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+			mangler_state.EncodeChildState( move(template_mangler_state) );
 		}
 		// Finish class name.
 		mangler_state.PushElement( g_terminator );
@@ -271,7 +271,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 				// Finish list of template arguments.
 				template_mangler_state.PushElement( g_terminator );
 
-				mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+				mangler_state.EncodeChildState( move(template_mangler_state) );
 			}
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
@@ -633,7 +633,7 @@ fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, 
 		template_mangler_state.EncodeName( type_template.syntax_element.deref().name );
 		EncodeTemplateArgs( template_mangler_state, base_template.signature_args );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+		mangler_state.EncodeChildState( move(template_mangler_state) );
 	}
 
 	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.lock().try_lock_imut().deref() );
@@ -658,7 +658,7 @@ fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, Cl
 			template_mangler_state.EncodeName( members.GetThisNamespaceName() );
 			EncodeTemplateArgs( template_mangler_state, lambda_class_data.template_args );
 
-			mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+			mangler_state.EncodeChildState( move(template_mangler_state) );
 
 			EncodeNamespacePostfix_r( mangler_state, members.GetParent().try_lock_imut().deref().GetParent().try_lock_imut().deref() );
 		}
@@ -712,7 +712,7 @@ fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state,
 	// Finish list of template arguments.
 	template_mangler_state.PushElement( g_terminator );
 
-	mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+	mangler_state.EncodeChildState( move(template_mangler_state) );
 }
 
 fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, i64 num )
@@ -799,7 +799,7 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+		mangler_state.EncodeChildState( move(template_mangler_state) );
 	}
 	// Finish class name.
 	mangler_state.PushElement( g_terminator );
@@ -836,7 +836,7 @@ fn ManglerMSVC::EncodeReturnReferences( this, ManglerState &mut mangler_state, F
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+		mangler_state.EncodeChildState( move(template_mangler_state) );
 	}
 	// Finish class name.
 	mangler_state.PushElement( g_terminator );
@@ -886,7 +886,7 @@ fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_sta
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
 
-		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes() );
+		mangler_state.EncodeChildState( move(template_mangler_state) );
 	}
 	// Finish class name.
 	mangler_state.PushElement( g_terminator );
@@ -923,9 +923,10 @@ public:
 		EncodeNameImpl( str, true );
 	}
 
-	fn EncodeNameNoTerminator( mut this, ust::string_view8 str )
+	// Encode child state. This requires moving it, since this class is non-copyable.
+	fn EncodeChildState( mut this, ManglerState mut child_state )
 	{
-		EncodeNameImpl( str, false );
+		EncodeNameImpl( move(child_state).TakeResult(), false );
 	}
 
 	// Push non-name element (no need to create backreferences for it).
@@ -939,7 +940,8 @@ public:
 		res_.push_back( c );
 	}
 
-	fn TakeRes( mut this ) : ust::string8
+	// Take result. Since this method is "byval" and this class is non-copyable, moving is required to call this method.
+	fn TakeResult( byval mut this ) : ust::string8
 	{
 		return take(res_);
 	}
