@@ -587,7 +587,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		}
 
 		auto mut lock= lambda_preprocessing_context_ptr.lock_mut();
-		var LambdaPreprocessingContext &mut lambda_preprocessing_context_result= lock.deref();
+		var LambdaPreprocessingContext& lambda_preprocessing_context_result= lock.deref();
 
 		has_preprocessing_errors= lambda_preprocessing_context_result.has_preprocessing_errors;
 
@@ -606,7 +606,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 		// Extract captured variables and sort them to ensure stable order.
 		var ust::vector</ CapturedVariableForSorting /> mut captured_variables;
-		foreach( &captured_variable_pair : cast_imut(lambda_preprocessing_context_result.captured_external_variables) )
+		foreach( &captured_variable_pair : lambda_preprocessing_context_result.captured_external_variables )
 		{
 			var bool mut capture_by_reference= lambda_preprocessing_context_result.capture_by_reference;
 			if_var( &explicit_captures : lambda_preprocessing_context_result.explicit_captures )
