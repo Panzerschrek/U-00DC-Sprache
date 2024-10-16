@@ -790,6 +790,13 @@ def TypeinfoList_ClassFunctionsList_Test0():
 			fn constructor(this)= default;
 			fn constructor(this, S& other)= default;
 			op+( S& a, S& b ) {}
+
+			op()( this ){}
+			op()( mut this, i32 x, f32 y ){}
+			op()( byval mut this, char8 &mut c ) {}
+
+			op[]( imut this, size_type x ) : i32 { return 0; }
+			op[](  mut this, size_type x ) : i32 { return 0; }
 		}
 
 		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Foo" ) == 1s );
@@ -798,6 +805,8 @@ def TypeinfoList_ClassFunctionsList_Test0():
 		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "destructor" ) == 1s );
 		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "+" ) == 1s );
 		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "-" ) == 0s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "()" ) == 3s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "[]" ) == 2s );
 		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "UnknownFunc" ) == 0s );
 	"""
 	tests_lib.build_program( c_program_text )
