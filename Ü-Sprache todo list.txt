@@ -1,5 +1,5 @@
 ﻿Here are some language features for future development of the language itself and its
-compiler. Features are grouped and sorted by priority inside each group.
+compiler. Features are (sometimes) grouped and sorted by priority inside each group.
 Delete the features from the list as soon as they are implemented.
 
 General:
@@ -19,6 +19,10 @@ General:
 *) Provide calling convention in typeinfo for function types
 *) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)
 *) Multidimensional [] operator - for accessing elements of multidimensional arrays or as overloaded operator
+*) Allow unsafe code and raw pointers in constexpr functions and perform additional safety checks during constexpr
+	execution in order to check no UB or non-determinism is possible, like uninitialized memory usage, pointer
+	comparison across allocation boundaries, etc.
+*) Allow "auto-constexpr" for any function/method with body known
 
 References:
 *) Separate reference checking for array elements while accessing via constexpr index
@@ -50,6 +54,7 @@ Standart library:
 *) File library
 *) Console input/output library
 *) String formatting library
+*) Executor for async functions, possible multithreaded
 *) More type traits
 *) More math functions
 *) "result"-like container for reference results
@@ -60,6 +65,8 @@ Standart library:
 *) Support recursive types with usage of "vector" without need to use additional indirection (via "box")
 *) String/vector-like containers with limited number of elements (32-bit or 16-bit sizes)
 *) Compact vector-like container - with size/capacity stored in allocated memory block
+*) Priority heap support
+*) Binary search routines
 
 Compiler:
 *) Fix possible overflows in numeric literals
@@ -132,3 +139,4 @@ CPP Header converter:
 Documentation:
 *) Other languages (not only russian and english)
 *) Describe more language details
+*) Describe undefined behavior
