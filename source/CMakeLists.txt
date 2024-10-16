@@ -40,7 +40,7 @@ endif()
 #
 
 if( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" )
-	message( "Target architecture seems to be x86_64 (${CMAKE_SYSTEM_PROCESSOR}), turn on modern instructions support" )
+	message( STATUS "Target architecture seems to be x86_64 (${CMAKE_SYSTEM_PROCESSOR}), turn on modern instructions support" )
 
 	# Use a CPU from year 2015 or newer. It seems to be fine to avoid using older CPUs.
 	set( SPRACHE_TARGET_CPU_NAME skylake )
@@ -53,7 +53,7 @@ if( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL 
 	endif()
 
 else()
-	message( "Target architecture is not x86_64 (${CMAKE_SYSTEM_PROCESSOR})" )
+	message( STATUS "Target architecture is not x86_64 (${CMAKE_SYSTEM_PROCESSOR})" )
 endif()
 
 #
