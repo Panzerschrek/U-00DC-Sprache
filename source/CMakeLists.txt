@@ -2,8 +2,6 @@
 
 project(Sprache)
 
-option( U_EMSCRIPTEN "Build for emscripten" NO )
-
 option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
 option( U_BUILD_TESTS "Enable compilation of base tests" YES )
 option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )

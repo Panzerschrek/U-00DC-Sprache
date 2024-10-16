@@ -1,7 +1,7 @@
 file( GLOB_RECURSE SOURCES "*.cpp" )
 file( GLOB_RECURSE HEADERS "*.hpp" )
 
-if( U_EMSCRIPTEN )
+if( CMAKE_SYSTEM_NAME STREQUAL "Emscripten" )
 	set( CMAKE_EXECUTABLE_SUFFIX ".js" )
 	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/shell.js --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib@/" )
 	file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/Interpreter_launcher.js DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
