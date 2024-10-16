@@ -286,10 +286,10 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 		}
 	}
 
-	functions_set.hass_unbuilt_constexpr_functions= false;
+	functions_set.has_unbuilt_constexpr_functions= false;
 	foreach( &function : functions_set.functions )
 	{
-		functions_set.hass_unbuilt_constexpr_functions |= function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete;
+		functions_set.has_unbuilt_constexpr_functions |= function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
 
 	// Update functions set after prepareation process.
@@ -332,7 +332,7 @@ fn CodeBuilder::PrepareFunctionsSetAndBuildConstexprBodies( mut this, NamesScope
 	// Prepare functions before building.
 	PrepareFunctionsSet( names_scope_ptr, functions_set_ptr );
 
-	if( !functions_set_ptr.lock_imut().deref().hass_unbuilt_constexpr_functions )
+	if( !functions_set_ptr.lock_imut().deref().has_unbuilt_constexpr_functions )
 	{
 		// Nothing to do.
 		return;
@@ -341,7 +341,7 @@ fn CodeBuilder::PrepareFunctionsSetAndBuildConstexprBodies( mut this, NamesScope
 	// Reset the flag in order to avoid recursion.
 	with( mut lock : functions_set_ptr.lock_mut() )
 	{
-		lock.deref().hass_unbuilt_constexpr_functions= false;
+		lock.deref().has_unbuilt_constexpr_functions= false;
 	}
 
 	// Take copy, and make manipulations only with it. Update value inside shareed pointer in one operation.

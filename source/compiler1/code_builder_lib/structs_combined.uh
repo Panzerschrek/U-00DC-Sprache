@@ -497,7 +497,7 @@ struct FunctionsSet
 
 	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
 
-	bool hass_unbuilt_constexpr_functions= false;
+	bool has_unbuilt_constexpr_functions= false;
 
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
