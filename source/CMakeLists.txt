@@ -3,9 +3,6 @@
 project(Sprache)
 
 option( U_EMSCRIPTEN "Build for emscripten" NO )
-if( U_EMSCRIPTEN )
-	set( CMAKE_CROSSCOMPILING YES )
-endif()
 
 option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
 option( U_BUILD_TESTS "Enable compilation of base tests" YES )
