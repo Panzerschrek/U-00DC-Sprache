@@ -593,7 +593,7 @@ void FindImpl( const Synt::Block& block )
 
 void FindImpl( const Synt::ScopeBlock& scope_block )
 {
-	FindImpl( static_cast<const Synt::Block&>(scope_block) );
+	FindImpl( scope_block.block );
 }
 
 void FindImpl( const Synt::ReturnOperator& return_operator )

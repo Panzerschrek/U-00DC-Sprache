@@ -2939,7 +2939,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			ScopeBlock block= ParseBlock();
+			ScopeBlock block( ParseBlock() );
 			block.safety= ScopeBlock::Safety::Safe;
 			block.label= TryParseLabel();
 			result_builder.Append( std::move( block ) );
@@ -2948,14 +2948,14 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			ScopeBlock block= ParseBlock();
+			ScopeBlock block( ParseBlock() );
 			block.safety= ScopeBlock::Safety::Unsafe;
 			block.label= TryParseLabel();
 			result_builder.Append( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::BraceLeft )
 		{
-			ScopeBlock block= ParseBlock();
+			ScopeBlock block( ParseBlock() );
 			block.label= TryParseLabel();
 			result_builder.Append( std::move(block) );
 		}
@@ -3109,7 +3109,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 				if( block.safety == ScopeBlock::Safety::None && block.label == std::nullopt )
 				{
 					// Accept only pure blocks without safety modifiers and labels.
-					return std::make_unique<IfAlternative>( std::move(block) );
+					return std::make_unique<IfAlternative>( std::move(block.block) );
 				}
 				else
 				{

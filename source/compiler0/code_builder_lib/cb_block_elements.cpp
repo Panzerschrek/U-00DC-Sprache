@@ -144,7 +144,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		AddLoopFrame( names_scope, function_context, break_block, nullptr, block.label );
 	}
 
-	BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, block );
+	BlockBuildInfo block_build_info= BuildBlock( names_scope, function_context, block.block );
 
 	if( break_block != nullptr )
 	{
@@ -152,7 +152,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !block_build_info.has_terminal_instruction_inside )
 			variables_state_for_merge.push_back( function_context.variables_state );
 
-		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), block.end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), block.block.end_src_loc );
 
 		function_context.loops_stack.pop_back();
 

@@ -879,10 +879,10 @@ struct Block
 };
 
 // Block inside scope - with additional properties.
-struct ScopeBlock final : public Block
+struct ScopeBlock
 {
-	ScopeBlock( Block block )
-		: Block(std::move(block)) {}
+	explicit ScopeBlock( Block block )
+		: src_loc(block.src_loc), block(std::move(block)) {}
 
 	enum class Safety : uint8_t
 	{
@@ -892,6 +892,7 @@ struct ScopeBlock final : public Block
 	};
 
 	SrcLoc src_loc;
+	Block block;
 	std::optional<Label> label;
 	Safety safety= Safety::None;
 };
