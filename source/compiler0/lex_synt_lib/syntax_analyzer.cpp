@@ -3660,7 +3660,7 @@ Class SyntaxAnalyzer::ParseClass()
 	Class result= ParseClassBody();
 	result.src_loc= class_src_loc;
 	result.name= std::move(name);
-	result.kind_attribute_= class_kind_attribute;
+	result.kind_attribute= class_kind_attribute;
 	result.non_sync_tag= std::move(non_sync_tag);
 	result.keep_fields_order= keep_fields_order;
 	result.parents= std::move(parents_list);
@@ -4057,7 +4057,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			Class class_= ParseClassBody();
 			class_.src_loc= template_thing_src_loc;
 			class_.name= "_"; // // Give special name for all template classes
-			class_.kind_attribute_= class_kind_attribute;
+			class_.kind_attribute= class_kind_attribute;
 			class_.non_sync_tag= std::move(non_sync_tag);
 			class_.keep_fields_order= keep_fields_order;
 			class_.parents= std::move(class_parents_list);

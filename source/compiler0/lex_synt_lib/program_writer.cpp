@@ -669,10 +669,10 @@ void ElementWrite( const Function& function, std::ostream& stream )
 
 void ElementWrite( const Class& class_, std::ostream& stream )
 {
-	stream << Keyword(class_.kind_attribute_ == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
+	stream << Keyword(class_.kind_attribute == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
 	stream << " " << class_.name;
 
-	switch( class_.kind_attribute_ )
+	switch( class_.kind_attribute )
 	{
 	case ClassKindAttribute::Struct:
 	case ClassKindAttribute::Class:

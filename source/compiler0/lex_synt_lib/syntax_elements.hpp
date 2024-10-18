@@ -1309,7 +1309,7 @@ struct Class
 	std::string name;
 	std::vector<ComplexName> parents;
 	NonSyncTag non_sync_tag;
-	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
+	ClassKindAttribute kind_attribute = ClassKindAttribute::Struct;
 	bool keep_fields_order= false;
 };
 

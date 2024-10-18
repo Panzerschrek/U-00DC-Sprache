@@ -472,12 +472,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
-	if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
-		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ||
-		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
+	if( class_declaration.kind_attribute == Synt::ClassKindAttribute::Polymorph ||
+		class_declaration.kind_attribute == Synt::ClassKindAttribute::Interface ||
+		class_declaration.kind_attribute == Synt::ClassKindAttribute::Abstract ||
 		!class_declaration.parents.empty() )
 		the_class.kind= Class::Kind::PolymorphNonFinal;
-	else if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+	else if( class_declaration.kind_attribute == Synt::ClassKindAttribute::Struct )
 		the_class.kind= Class::Kind::Struct;
 	else
 		the_class.kind= Class::Kind::NonPolymorph;
@@ -768,9 +768,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// If class has at least one parent, reuse it's virtual table pointer.
 	bool allocate_virtual_table_pointer= false;
 	if( the_class.parents.empty() && (
-		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
-		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
-		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ) )
+		class_declaration.kind_attribute == Synt::ClassKindAttribute::Abstract ||
+		class_declaration.kind_attribute == Synt::ClassKindAttribute::Polymorph ||
+		class_declaration.kind_attribute == Synt::ClassKindAttribute::Interface ) )
 	{
 		U_ASSERT( fields_llvm_types.empty() );
 		fields_llvm_types.emplace_back( fundamental_llvm_types_.void_->getPointerTo() ); // set exact type later.
@@ -951,7 +951,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	// Check given kind attribute and actual class properties.
-	switch( class_declaration.kind_attribute_ )
+	switch( class_declaration.kind_attribute )
 	{
 	case Synt::ClassKindAttribute::Struct:
 		U_ASSERT( class_declaration.parents.empty() );

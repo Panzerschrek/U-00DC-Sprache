@@ -192,7 +192,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	FillClassNamesScope(
 		class_type,
 		class_name,
-		class_declaration.kind_attribute_,
+		class_declaration.kind_attribute,
 		class_declaration.elements,
 		// Members are public by-default, until first visibility label.
 		ClassMemberVisibility::Public );

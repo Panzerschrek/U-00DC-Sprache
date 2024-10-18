@@ -232,7 +232,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	std::string_view class_name;
 	if( class_type->syntax_element != nullptr )
 	{
-		class_kind= class_type->syntax_element->kind_attribute_;
+		class_kind= class_type->syntax_element->kind_attribute;
 		class_name= class_type->syntax_element->name;
 	}
 	else

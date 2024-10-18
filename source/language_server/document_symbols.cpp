@@ -337,7 +337,7 @@ struct Visitor
 		symbol.name= class_.name;
 		symbol.range= MakeRange( class_.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
-		symbol.kind= class_.kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
+		symbol.kind= class_.kind_attribute == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
 		symbol.children= BuildProgramModel_r( class_.elements, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
