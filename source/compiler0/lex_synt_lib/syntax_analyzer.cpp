@@ -3877,7 +3877,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	NextLexem();
 
 	// TemplateBase parameters
-	std::vector<TemplateBase::Param> params;
+	std::vector<TemplateParam> params;
 
 	ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
@@ -3897,13 +3897,13 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 			{
 				NextLexem();
-				params.back().kind_data= TemplateBase::TypeTemplateParamData{};
+				params.back().kind_data= TemplateParam::TypeTemplateParamData{};
 			}
 			else
-				params.back().kind_data= TemplateBase::TypeParamData{};
+				params.back().kind_data= TemplateParam::TypeParamData{};
 		}
 		else
-			params.back().kind_data= TemplateBase::VariableParamData{ ParseTypeName() };
+			params.back().kind_data= TemplateParam::VariableParamData{ ParseTypeName() };
 
 		if( it_->type != Lexem::Type::Identifier )
 		{

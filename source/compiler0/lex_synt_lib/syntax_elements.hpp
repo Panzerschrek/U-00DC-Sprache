@@ -1334,11 +1334,9 @@ struct ClassVisibilityLabel
 	const ClassMemberVisibility visibility;
 };
 
-struct TemplateBase
-{
-	explicit TemplateBase( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
 
+struct TemplateParam
+{
 	struct TypeParamData{};
 
 	struct TypeTemplateParamData{};
@@ -1349,32 +1347,30 @@ struct TemplateBase
 		TypeName type;
 	};
 
-	struct Param
-	{
-		SrcLoc src_loc;
-		// Type param or type template param or variable param with given type.
-		std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
-		std::string name;
-	};
-
+public:
 	SrcLoc src_loc;
-	std::vector<Param> params;
+	// Type param or type template param or variable param with given type.
+	std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
+	std::string name;
 };
 
-struct TypeTemplate : public TemplateBase
+struct TypeTemplate
 {
-	explicit TypeTemplate( const SrcLoc& src_loc )
-		: TemplateBase(src_loc) {}
-
-	// Argument in template signature.
+	// Param in template signature.
 	struct SignatureParam
 	{
 		Expression name;
 		Expression default_value;
 	};
 
-	std::vector<SignatureParam> signature_params;
+	explicit TypeTemplate( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
 	std::string name;
+
+	std::vector<TemplateParam> params;
+	std::vector<SignatureParam> signature_params;
 
 	std::variant<std::unique_ptr<const Class>, std::unique_ptr<const TypeAlias>> something;
 
@@ -1382,10 +1378,13 @@ struct TypeTemplate : public TemplateBase
 	bool is_short_form= false;
 };
 
-struct FunctionTemplate final : public TemplateBase
+struct FunctionTemplate
 {
 	explicit FunctionTemplate( const SrcLoc& src_loc )
-		: TemplateBase(src_loc) {}
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::vector<TemplateParam> params;
 
 	std::unique_ptr<const Function> function;
 };

@@ -372,7 +372,7 @@ private:
 		ClassPtr base_class );
 
 	void ProcessTemplateParams(
-		llvm::ArrayRef<Synt::TemplateBase::Param> params,
+		llvm::ArrayRef<Synt::TemplateParam> params,
 		NamesScope& names_scope,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );

@@ -187,7 +187,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 }
 
 void CodeBuilder::ProcessTemplateParams(
-	const llvm::ArrayRef<Synt::TemplateBase::Param> params,
+	const llvm::ArrayRef<Synt::TemplateParam> params,
 	NamesScope& names_scope,
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags )
@@ -196,7 +196,7 @@ void CodeBuilder::ProcessTemplateParams(
 	U_ASSERT( template_parameters_usage_flags.empty() );
 
 	// Check and fill template parameters.
-	for( const Synt::TemplateBase::Param& param : params )
+	for( const Synt::TemplateParam& param : params )
 	{
 		// Check redefinition
 		for( const auto& prev_param : template_parameters )
@@ -212,11 +212,11 @@ void CodeBuilder::ProcessTemplateParams(
 		out_param.name= param.name;
 		out_param.src_loc= param.src_loc;
 
-		if( std::holds_alternative< Synt::TemplateBase::TypeParamData >( param.kind_data ) )
+		if( std::holds_alternative< Synt::TemplateParam::TypeParamData >( param.kind_data ) )
 			out_param.kind_data= TemplateBase::TypeParamData{};
-		else if( std::holds_alternative< Synt::TemplateBase::TypeTemplateParamData >( param.kind_data ) )
+		else if( std::holds_alternative< Synt::TemplateParam::TypeTemplateParamData >( param.kind_data ) )
 			out_param.kind_data= TemplateBase::TypeTemplateParamData{};
-		else if( std::holds_alternative< Synt::TemplateBase::VariableParamData >( param.kind_data ) )
+		else if( std::holds_alternative< Synt::TemplateParam::VariableParamData >( param.kind_data ) )
 			out_param.kind_data= TemplateBase::VariableParamData(); // Set type of variable later.
 		else U_ASSERT(false);
 
@@ -229,7 +229,7 @@ void CodeBuilder::ProcessTemplateParams(
 
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
-		if( const auto variable_param_data = std::get_if<Synt::TemplateBase::VariableParamData>( &params[i].kind_data ) )
+		if( const auto variable_param_data = std::get_if<Synt::TemplateParam::VariableParamData>( &params[i].kind_data ) )
 		{
 			auto variable_param_type=
 				CreateTemplateSignatureParameter(
