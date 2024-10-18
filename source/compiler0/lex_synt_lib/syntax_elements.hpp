@@ -495,9 +495,6 @@ struct ArrayTypeName
 	Expression size;
 };
 
-using FunctionReferencesPollution= std::pair< std::string, std::string >;
-using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
-
 struct FunctionParam
 {
 	FunctionParam( const SrcLoc& src_loc )
