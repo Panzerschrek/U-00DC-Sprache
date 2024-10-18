@@ -1199,10 +1199,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::NumericConstant& numeric_constant )
 {
 	U_FundamentalType type= U_FundamentalType::InvalidType;
-	const std::string type_suffix= numeric_constant.type_suffix.data();
+
+	const NumberLexemData& num= numeric_constant.num;
+	const std::string type_suffix= num.type_suffix.data();
 
 	if( type_suffix.empty() )
-		type= numeric_constant.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_;
+		type= num.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_;
 	else if( type_suffix == "u" )
 		type= U_FundamentalType::u32_;
 	// Suffix for size_type
@@ -1223,7 +1225,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( type == U_FundamentalType::InvalidType )
 	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix.data() );
+		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
 		return ErrorValue();
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
@@ -1233,14 +1235,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"numeric constant " + std::to_string(numeric_constant.value_double) );
+			"numeric constant " + std::to_string(num.value_double) );
 
 	if( IsInteger( type ) || IsChar( type ) )
 		result->constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), numeric_constant.value_int ) );
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value_int ) );
 	else if( IsFloatingPoint( type ) )
 		result->constexpr_value=
-			llvm::ConstantFP::get( llvm_type, numeric_constant.value_double );
+			llvm::ConstantFP::get( llvm_type, num.value_double );
 	else
 		U_ASSERT(false);
 

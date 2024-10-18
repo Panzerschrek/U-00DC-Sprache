@@ -399,12 +399,13 @@ struct NameLookupCompletion
 	std::string name;
 };
 
-struct NumericConstant : public NumberLexemData
+struct NumericConstant
 {
 	NumericConstant( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
+	NumberLexemData num;
 };
 
 struct BooleanConstant

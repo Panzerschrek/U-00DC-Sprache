@@ -293,17 +293,17 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const NumericConstant& numeric_constant ) const
 		{
 			stream.precision( std::numeric_limits<double>::digits10 + 1 );
-			if( numeric_constant.has_fractional_point )
+			if( numeric_constant.num.has_fractional_point )
 			{
 				stream.flags( stream.flags() | std::ios_base::showpoint );
-				stream << numeric_constant.value_double;
+				stream << numeric_constant.num.value_double;
 			}
 			else
 			{
 				stream.flags( stream.flags() & (~std::ios_base::showpoint) );
-				stream << numeric_constant.value_int;
+				stream << numeric_constant.num.value_int;
 			}
-			stream << numeric_constant.type_suffix.data();
+			stream << numeric_constant.num.type_suffix.data();
 		}
 		void operator()( const std::unique_ptr<const StringLiteral>& string_literal ) const
 		{

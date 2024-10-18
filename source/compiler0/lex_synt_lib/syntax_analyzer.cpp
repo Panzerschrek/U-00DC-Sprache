@@ -856,7 +856,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	
 	NumericConstant result( it_->src_loc );
 	
-	std::memcpy( static_cast<NumberLexemData*>(&result), it_->text.data(), sizeof(NumberLexemData) );
+	std::memcpy( &result.num, it_->text.data(), sizeof(NumberLexemData) );
 	
 	NextLexem();
 	return result;
