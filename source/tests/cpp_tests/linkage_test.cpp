@@ -411,6 +411,60 @@ U_TEST( VariableLinkage_Test2 )
 	U_TEST_ASSERT( !some_var->hasComdat() );
 }
 
+U_TEST( VariableLinkage_Test3 )
+{
+	// Mutable global variables, that are defined in imported files, should have external linkage.
+	// Additionaly comdat must be present in order to merge identical mutable variables in different modules.
+	// This works also for global mutable variables within templates.
+	static const char c_program_text_a[]=
+	R"(
+		template</type T/> struct Box
+		{
+			// Has external linkage for all instantiations.
+			var T mut global_template_var(444);
+		}
+
+		type IntBox= Box</i32/>;
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		type DoubleBox= Box</f64/>;
+
+		template</type T/> struct LocalBox
+		{
+			// Has private linkage for all instantiations.
+			var T mut global_template_var(444);
+		}
+
+		type LocalU32Box= LocalBox</u32/>;
+	)";
+
+	const auto engine= CreateEngine( BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" ) );
+
+	const llvm::GlobalVariable* const x_i32= engine->FindGlobalVariableNamed( "_ZN3BoxIiE19global_template_varE", true );
+	U_TEST_ASSERT( x_i32 != nullptr );
+	U_TEST_ASSERT( x_i32->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( x_i32->hasComdat() );
+
+	const llvm::GlobalVariable* const x_f64= engine->FindGlobalVariableNamed( "_ZN3BoxIdE19global_template_varE", true );
+	U_TEST_ASSERT( x_f64 != nullptr );
+	U_TEST_ASSERT( x_f64->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( x_f64->hasComdat() );
+
+	const llvm::GlobalVariable* const x_local= engine->FindGlobalVariableNamed( "_ZN8LocalBoxIjE19global_template_varE", true );
+	U_TEST_ASSERT( x_local != nullptr );
+	U_TEST_ASSERT( x_local->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+	U_TEST_ASSERT( !x_local->hasComdat() );
+}
+
 U_TEST( PolymorphClassesDataLinkage_Test0 )
 {
 	// Virtaul functions table should have private linkage.
