@@ -1430,25 +1430,10 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 	GLOBALS_LOOP_DETECT( enum_type )
 
-	var NamesScopePtr enum_inernal_names_scope= enum_type.lock_imut().deref().names_scope;
-
 	auto enum_declaration_ptr= enum_type.lock_imut().deref().syntax_element;
 	auto& enum_declaration= enum_declaration_ptr.deref();
 
 	var FundamentalType mut underlying_type;
-	if( enum_declaration.elements.size() <= 256s )
-	{
-		underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
-
-	}
-	else if( enum_declaration.elements.size() <= 65536s )
-	{
-		underlying_type= FundamentalType( U_FundamentalType::u16_, fundamental_llvm_types_.u16_ );
-	}
-	else
-	{
-		underlying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
-	}
 
 	if_var( &underlying_type_name : enum_declaration.underlying_type )
 	{
@@ -1460,12 +1445,46 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		{
 			// SPRACHE_TODO - maybe allow inheritance of enums?
 			REPORT_ERROR( TypesMismatch, names_scope_ptr, enum_declaration.src_loc, ust::string8("any integer type"), t )
+			underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
 		}
 		else
 		{
 			underlying_type= fundamental_type.try_deref();
 		}
+
+		var u64 bit_width( GetFundamentalTypeSize( underlying_type.fundamental_type ) * 8u );
+		if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
+		{
+			auto max_value_plus_one=
+				1u64 << ( bit_width - select( IsSignedInteger( underlying_type.fundamental_type ) ? 1u64 : 0u64 ) );
+			auto max_value= max_value_plus_one - 1u64;
+
+			if( u64(enum_declaration.elements.size()) > max_value )
+			{
+				REPORT_ERROR( UnderlyingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.src_loc, enum_declaration.elements.size() - 1s, max_value )
+			}
+		}
 	}
+	else
+	{
+		switch( enum_declaration.elements.size() )
+		{
+			0s ->
+			{
+				// Technically this branch is unreachable due to syntax analyzer limitations - it always should parse at least one element.
+				REPORT_ERROR( NotImplemented, names_scope_ptr, enum_declaration.src_loc, "zero element enums" )
+				underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
+			},
+			1s ... 256s ->
+			{ underlying_type= FundamentalType( U_FundamentalType::u8_ , fundamental_llvm_types_.u8_  ); },
+			257s ... 65536s ->
+			{ underlying_type= FundamentalType( U_FundamentalType::u16_, fundamental_llvm_types_.u16_ ); },
+			65537s ... ->
+			{ underlying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ ); },
+		}
+	}
+
+	var NamesScopePtr enum_inernal_names_scope= enum_type.lock_imut().deref().names_scope;
 
 	var ust::unordered_map</ ust::string8, Enum::Element /> mut enum_elements;
 	foreach( &element : enum_declaration.elements )
@@ -1487,19 +1506,6 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlying_type.llvm_type, out_element.constexpr_value );
 
 		enum_elements.insert( element.name, move(out_element) );
-	}
-
-	var u64 bit_width( GetFundamentalTypeSize( underlying_type.fundamental_type ) * 8u );
-	if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
-	{
-		auto max_value_plus_one=
-			1u64 << ( bit_width - select( IsSignedInteger( underlying_type.fundamental_type ) ? 1u64 : 0u64 ) );
-		auto max_value= max_value_plus_one - 1u64;
-
-		if( u64(enum_elements.size()) > max_value )
-		{
-			REPORT_ERROR( UnderlyingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.src_loc, enum_elements.size() - 1s, max_value )
-		}
 	}
 
 	// Finally, update enum itself.
