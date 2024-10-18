@@ -632,11 +632,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					}
 				}
 
-				auto field_ptr= fields_left[min_index_index];
-
 				auto fields_left_size= fields_left.size();
 				fields_left.swap( min_index_index, fields_left_size - 1s );
-				fields_left.pop_back();
+				auto field_ptr= fields_left.pop_back();
 
 				auto mut field_lock= field_ptr.lock_mut();
 				var ClassField &mut field= field_lock.deref();
@@ -680,11 +678,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					}
 				}
 
-				auto field_ptr= fields_left[best_padding_field_index];
-
 				auto fields_left_size= fields_left.size();
 				fields_left.swap( best_padding_field_index, fields_left_size - 1s );
-				fields_left.pop_back();
+				auto field_ptr= fields_left.pop_back();
 
 				auto mut field_lock= field_ptr.lock_mut();
 				var ClassField &mut field= field_lock.deref();
@@ -1546,10 +1542,8 @@ fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust
 
 	while( !type_templates_set.syntax_elements.empty() )
 	{
-		auto syntax_element= type_templates_set.syntax_elements.back();
+		auto syntax_element= type_templates_set.syntax_elements.pop_back();
 		PrepareTypeTemplate( names_scope, syntax_element, type_templates_set );
-
-		type_templates_set.syntax_elements.pop_back();
 	}
 
 	// Finally, update value in shared pointer.

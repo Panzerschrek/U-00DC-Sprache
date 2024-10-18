@@ -535,7 +535,7 @@ fn ReferencesGraph::RemoveNodeLinks( mut this, VariablePtr& node )
 		{
 			auto back= links_.size() - 1s;
 			links_.swap( i, back );
-			links_.pop_back();
+			links_.drop_back();
 		}
 		else
 		{

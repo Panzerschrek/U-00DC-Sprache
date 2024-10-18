@@ -127,7 +127,7 @@ fn TBAAMetadataBuilder::CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadata
 	// Remove trailing null char. We do not need it here.
 	if( !name.empty() && name.back() == char8(0) )
 	{
-		name.pop_back();
+		name.drop_back();
 	}
 
 	if_var( &fundamental_type : t.GetFundamentalType() )

@@ -172,7 +172,7 @@ fn LoadSourceGraph_r(
 			node_children.push_back(child);
 		}
 	}
-	imports_stack.pop_back();
+	imports_stack.drop_back();
 
 	// Merge macros.
 	with( mut lock : node_macros_ptr.lock_mut() )

@@ -849,7 +849,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
 	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name, LLVMTypeOf( constexpr_value ), constexpr_value ) );
 
-	name.pop_back();
+	name.drop_back();
 
 	var VariablePtr result_ptr=
 		Variable

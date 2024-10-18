@@ -356,6 +356,7 @@ public:
 		}
 	}
 
+	// Remove last element. Prefer using this method over "pop_back" if it's not necessary to obtain element removed.
 	fn drop_back( mut this )
 	{
 		halt if(empty());
@@ -375,6 +376,7 @@ public:
 		}
 	}
 
+	// Remove last element and return it.
 	fn pop_back( mut this ) : T @(c_return_inner_references)
 	{
 		halt if(empty());

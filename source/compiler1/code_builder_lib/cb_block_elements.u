@@ -117,7 +117,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, scope_block.block.end_src_loc );
 
-		function_context.loops_stack.pop_back();
+		function_context.loops_stack.drop_back();
 
 		if( !block_element_build_info.has_terminal_instruction_inside )
 		{
@@ -2339,7 +2339,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	references_graphs_for_merge.push_back( move( references_graph_before_loop ) );
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, while_operator.block.end_src_loc );
 
-	function_context.loops_stack.pop_back();
+	function_context.loops_stack.drop_back();
 
 	// Block after while code.
 	unsafe
@@ -2384,7 +2384,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	var ust::vector</ReferencesGraph/> references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, loop_operator.block.end_src_loc );
 
-	function_context.loops_stack.pop_back();
+	function_context.loops_stack.drop_back();
 
 	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
 	// Any code, that follows infinite loop without "break" inside is unreachable.
@@ -2590,7 +2590,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 			references_graphs_for_merge.append( function_context.loops_stack.back().break_references_graphs );
 
-			function_context.loops_stack.pop_back();
+			function_context.loops_stack.drop_back();
 
 			// Clear args preevaluation cache because we evaluationg same expressions multiple times in different context.
 			function_context.args_preevaluation_cache.clear();
@@ -2765,7 +2765,7 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
 	references_graphs_for_merge.push_back( move(references_graph_after_test_block) );
 
-	function_context.loops_stack.pop_back();
+	function_context.loops_stack.drop_back();
 
 	// Loop iteration block.
 	unsafe

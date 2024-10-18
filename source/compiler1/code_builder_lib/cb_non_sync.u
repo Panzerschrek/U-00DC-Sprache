@@ -72,13 +72,13 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 		}
 	}
 
-	// Do not forget to call "pop_back" before return!
+	// Do not forget to call "drop_back" before return!
 	prev_types_stack.push_back( t );
 
 	if_var( &array_type : t.GetArrayType() )
 	{
 		var bool is_non_sync= GetTypeNonSyncImpl( prev_types_stack, array_type.element_type, names_scope, src_loc );
-		prev_types_stack.pop_back();
+		prev_types_stack.drop_back();
 		return is_non_sync;
 	}
 
@@ -88,12 +88,12 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 		{
 			if( GetTypeNonSyncImpl( prev_types_stack, element_type, names_scope, src_loc ) )
 			{
-				prev_types_stack.pop_back();
+				prev_types_stack.drop_back();
 				return true;
 			}
 		}
 
-		prev_types_stack.pop_back();
+		prev_types_stack.drop_back();
 		return false;
 	}
 
@@ -109,7 +109,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 			{}
 			if( syntax_element.non_sync_tag.has</Synt::NonSyncTagTrue/>() )
 			{
-				prev_types_stack.pop_back();
+				prev_types_stack.drop_back();
 				return true;
 			}
 			if_var( &expression_ptr : syntax_element.non_sync_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
@@ -125,7 +125,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 					var Type dependent_type= PrepareType( class_parent_scope, function_context, non_sync_expression.deref().type_name );
 					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
-						prev_types_stack.pop_back();
+						prev_types_stack.drop_back();
 						return true;
 					}
 				}
@@ -133,7 +133,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 				{
 					if( EvaluateBoolConstantExpression( class_parent_scope, function_context, expression ) )
 					{
-						prev_types_stack.pop_back();
+						prev_types_stack.drop_back();
 						return true;
 					}
 				}
@@ -144,7 +144,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 		{
 			if( coroutine_type_description.non_sync_ )
 			{
-				prev_types_stack.pop_back();
+				prev_types_stack.drop_back();
 				return true;
 			}
 		}
@@ -157,7 +157,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 		{
 			if( GetTypeNonSyncImpl( prev_types_stack, parent.class_, names_scope, src_loc ) )
 			{
-				prev_types_stack.pop_back();
+				prev_types_stack.drop_back();
 				return true;
 			}
 		}
@@ -167,7 +167,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 		if( !EnsureTypeComplete( t ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
-			prev_types_stack.pop_back();
+			prev_types_stack.drop_back();
 			return false;
 		}
 
@@ -178,12 +178,12 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 			var Type field_type= field[1].lock_imut().deref().t; // Copy type to avoid recursive call under class field lock.
 			if( GetTypeNonSyncImpl( prev_types_stack, field_type, names_scope, src_loc ) )
 			{
-				prev_types_stack.pop_back();
+				prev_types_stack.drop_back();
 				return true;
 			}
 		}
 
-		prev_types_stack.pop_back();
+		prev_types_stack.drop_back();
 		return false;
 	}
 
