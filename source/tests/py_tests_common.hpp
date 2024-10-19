@@ -281,7 +281,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	if( !PyArg_Parse( func_name_arg, "s", &func_name ) )
 		return nullptr; // Parse will raise
 
-	if( FilterTestImpl( func_name ) > 0 )
+	if( FilterTestImpl( func_name ) )
 	{
 		Py_INCREF(Py_False);
 		return Py_False;
