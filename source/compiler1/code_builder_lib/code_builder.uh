@@ -652,20 +652,20 @@ private:
 	fn PrepareTemplateParams(
 		mut this,
 		NamesScopePtr& names_scope,
-		ust::array_view_imut</Synt::TemplateParam/> in_params ) : ust::vector</ TemplateBase::Param />;
+		ust::array_view_imut</Synt::TemplateParam/> in_params ) : ust::vector</ TemplateParam />;
 
 	fn FillVariableTemplateParamsTypes(
 		mut this,
 		NamesScopePtr& names_scope,
 		ust::array_view_imut</Synt::TemplateParam/> in_params,
-		ust::array_view_mut</TemplateBase::Param/> template_params,
+		ust::array_view_mut</TemplateParam/> template_params,
 		ust::array_view_mut</bool/> template_params_usage_flags );
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::Expression& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -673,7 +673,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::ComplexName& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -681,7 +681,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::TypeName& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -689,7 +689,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::ArrayType& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -697,7 +697,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::TupleType& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -705,7 +705,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::RawPointerType& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -713,7 +713,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::FunctionType& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -721,7 +721,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::array_view_imut</TemplateBase::Param/> template_params,
+		ust::array_view_imut</TemplateParam/> template_params,
 		Synt::CoroutineType& signature_param,
 		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -800,77 +800,77 @@ private:
 	fn MatchTemplateArgument(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam& param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::TemplateParam& template_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::Type& type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::Variable& variable_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::TypeTemplate& type_template_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::Array& array_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::Tuple& tuple_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::RawPointer& raw_pointer_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::Function& function_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::Coroutine& coroutine_type_param,
 		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
-		TemplateBase& template_,
+		ust::array_view_imut</TemplateParam/> template_params,
 		TemplateSignatureParam::SpecializedTemplate& specialized_template_param,
 		TemplateArgFinished& given_arg ) : bool;
 

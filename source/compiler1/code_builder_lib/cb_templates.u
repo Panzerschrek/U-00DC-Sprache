@@ -242,10 +242,10 @@ fn CodeBuilder::PrepareFunctionTemplate(
 fn CodeBuilder::PrepareTemplateParams(
 	mut this,
 	NamesScopePtr& names_scope,
-	ust::array_view_imut</Synt::TemplateParam/> in_params ) : ust::vector</ TemplateBase::Param />
+	ust::array_view_imut</Synt::TemplateParam/> in_params ) : ust::vector</ TemplateParam />
 {
 	// Check for template params redefinition, fill params vector.
-	var ust::vector</ TemplateBase::Param /> mut template_params;
+	var ust::vector</ TemplateParam /> mut template_params;
 	foreach( &param : in_params )
 	{
 		foreach( &prev_param : template_params )
@@ -256,20 +256,20 @@ fn CodeBuilder::PrepareTemplateParams(
 			}
 		}
 
-		var TemplateBase::Param mut out_param{ .name= param.name };
+		var TemplateParam mut out_param{ .name= param.name };
 
 		if( param.kind_data.has</ Synt::TemplateParam::TypeParamData />() )
 		{
-			out_param.kind_data = TemplateBase::TypeParamData{};
+			out_param.kind_data = TemplateParam::TypeParamData{};
 		}
 		else if( param.kind_data.has</ Synt::TemplateParam::TypeTemplateParamData />() )
 		{
-			out_param.kind_data = TemplateBase::TypeTemplateParamData{};
+			out_param.kind_data = TemplateParam::TypeTemplateParamData{};
 		}
 		else if( param.kind_data.has</ Synt::TemplateParam::VariableParamData />() )
 		{
 			// Set actual type later.
-			out_param.kind_data = TemplateBase::VariableParamData{ .t= TemplateSignatureParam::Type{} };
+			out_param.kind_data = TemplateParam::VariableParamData{ .t= TemplateSignatureParam::Type{} };
 		}
 		else{ halt; }
 
@@ -283,7 +283,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 	mut this,
 	NamesScopePtr& names_scope,
 	ust::array_view_imut</Synt::TemplateParam/> in_params,
-	ust::array_view_mut</TemplateBase::Param/> template_params,
+	ust::array_view_mut</TemplateParam/> template_params,
 	ust::array_view_mut</bool/> template_params_usage_flags )
 {
 	halt if( in_params.size() != template_params.size() );
@@ -300,7 +300,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 
 			CheckSignatureParamIsValidForTemplateValueArgumentType( param, names_scope, in_params[i].name, in_params[i].src_loc );
 
-			template_params[i].kind_data= TemplateBase::VariableParamData{ .t= move(param) };
+			template_params[i].kind_data= TemplateParam::VariableParamData{ .t= move(param) };
 		}
 	}
 }
@@ -335,7 +335,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::Expression& param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -373,7 +373,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::ComplexName& param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -398,7 +398,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			{
 				auto& template_param= template_params[i];
 				if( name_lookup.name == template_param.name &&
-					template_param.kind_data.has</ TemplateBase::TypeTemplateParamData />() )
+					template_param.kind_data.has</ TemplateParam::TypeTemplateParamData />() )
 				{
 					template_params_usage_flags[i]= true;
 
@@ -569,7 +569,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::TypeName& param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -606,7 +606,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::ArrayType& param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -628,7 +628,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::TupleType& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -655,7 +655,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::RawPointerType& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -676,7 +676,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::FunctionType& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -735,7 +735,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::array_view_imut</TemplateBase::Param/> template_params,
+	ust::array_view_imut</TemplateParam/> template_params,
 	Synt::CoroutineType& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
@@ -943,7 +943,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
 			result_signature_template_args.push_back( template_args[i] );
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args[i] );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template.params, type_template.signature_params[i], result_signature_template_args[i] );
 		}
 		debug_assert( result_signature_template_args.size() == template_args.size(), "Wrong args count!" );
 	}
@@ -974,7 +974,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 
 				with( &type_template : type_template_ptr.lock_imut().deref() )
 				{
-					all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back() );
+					all_ok&= MatchTemplateArgument( result_names_scope, type_template.params, type_template.signature_params[i], result_signature_template_args.back() );
 				}
 			}
 		}
@@ -1166,7 +1166,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 			continue;
 		}
 
-		all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.t );
+		all_ok&= MatchTemplateArgument( result_names_scope, function_template.params, param, arg.t );
 	}
 
 	if( !all_ok )
@@ -1391,7 +1391,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 		{
 			if( !MatchTemplateArgument(
 					result_names_scope,
-					function_template,
+					function_template.params,
 					TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( function_template.params[i].kind_data.index() ) },
 					template_args_finished[i] ) )
 			{
@@ -1454,49 +1454,49 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 fn CodeBuilder::MatchTemplateArgument(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam& param,
 	TemplateArgFinished& given_arg ) : bool
 {
 	if_var( &template_param : param.GetTemplateParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, template_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, template_param, given_arg );
 	}
 	if_var( &type_param : param.GetType() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, type_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, type_param, given_arg );
 	}
 	if_var( &variable_param : param.GetVariable() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, variable_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, variable_param, given_arg );
 	}
 	if_var( &type_template_param_param : param.GetTypeTemplate() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, type_template_param_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, type_template_param_param, given_arg );
 	}
 	if_var( &array_type_param : param.GetArray() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, array_type_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, array_type_param, given_arg );
 	}
 	if_var( &tuple_type_param : param.GetTuple() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, tuple_type_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, tuple_type_param, given_arg );
 	}
 	if_var( &raw_pointer_type_param : param.GetRawPointer() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, raw_pointer_type_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, raw_pointer_type_param, given_arg );
 	}
 	if_var( &function_type_param : param.GetFunction() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, function_type_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, function_type_param, given_arg );
 	}
 	if_var( &coroutine_type_param : param.GetCoroutine() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, coroutine_type_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, coroutine_type_param, given_arg );
 	}
 	if_var( &specialized_template_param : param.GetSpecializedTemplate() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, specialized_template_param, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, template_params, specialized_template_param, given_arg );
 	}
 
 	halt;
@@ -1505,20 +1505,20 @@ fn CodeBuilder::MatchTemplateArgument(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::TemplateParam& template_param,
 	TemplateArgFinished& given_arg ) : bool
 {
-	auto& param_name= template_.params[ size_type(template_param.index) ].name;
+	auto& param_name= template_params[ size_type(template_param.index) ].name;
+	auto& kind_data= template_params[ size_type(template_param.index) ].kind_data;
+
 	auto template_arg_value= names_scope.lock_imut().deref().GetThisScopeValue( param_name ).try_deref();
 	auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
 	auto mut template_arg_lock= template_arg_ptr.try_lock_mut();
 	auto &mut template_arg= template_arg_lock.deref();
 
-	auto& kind_data= template_.params[ size_type(template_param.index) ].kind_data;
-
-	if_var( &variable_param_data : kind_data.get</ TemplateBase::VariableParamData />() )
+	if_var( &variable_param_data : kind_data.get</ TemplateParam::VariableParamData />() )
 	{
 		// Value param
 		if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
@@ -1532,7 +1532,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, variable_param_data.t, given_variable.t ) )
+			if( !MatchTemplateArgument( names_scope, template_params, variable_param_data.t, given_variable.t ) )
 			{
 				return false;
 			}
@@ -1564,7 +1564,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			}
 		}
 	}
-	else if( kind_data.has</ TemplateBase::TypeParamData />() )
+	else if( kind_data.has</ TemplateParam::TypeParamData />() )
 	{
 		// Type param
 		if_var( &given_type : given_arg.get</Type/>() )
@@ -1580,7 +1580,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			}
 		}
 	}
-	else if( kind_data.has</ TemplateBase::TypeTemplateParamData />() )
+	else if( kind_data.has</ TemplateParam::TypeTemplateParamData />() )
 	{
 		// Type template param.
 		if_var( &given_type_template : given_arg.get</TypeTemplatePtr/>() )
@@ -1604,12 +1604,12 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::Type& type_param,
 	TemplateArgFinished& given_arg ) : bool
 {
 	ust::ignore_unused(names_scope);
-	ust::ignore_unused(template_);
+	ust::ignore_unused(template_params);
 
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1621,12 +1621,12 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::Variable& variable_param,
 	TemplateArgFinished& given_arg ) : bool
 {
 	ust::ignore_unused( names_scope );
-	ust::ignore_unused( template_ );
+	ust::ignore_unused( template_params );
 
 	if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 	{
@@ -1645,12 +1645,12 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::TypeTemplate& type_template_param,
 	TemplateArgFinished& given_arg ) : bool
 {
 	ust::ignore_unused( names_scope );
-	ust::ignore_unused( template_ );
+	ust::ignore_unused( template_params );
 
 	if_var( &given_type_template : given_arg.get</TypeTemplatePtr/>() )
 	{
@@ -1663,7 +1663,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::Array& array_type_param,
 	TemplateArgFinished& given_arg ) : bool
 {
@@ -1671,7 +1671,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	{
 		if_var( &given_array_type : given_type.GetArrayType() )
 		{
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_type, given_array_type.element_type ) )
+			if( !MatchTemplateArgument( names_scope, template_params, array_type_param.element_type, given_array_type.element_type ) )
 			{
 				return false;
 			}
@@ -1686,7 +1686,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			size_var.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.size_type_, given_array_type.element_count, LLVMBool::False ) );
 			size_var.llvm_value= size_var.constexpr_value;
 
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, VariablePtr( move(size_var) ) ) )
+			if( !MatchTemplateArgument( names_scope, template_params, array_type_param.element_count, VariablePtr( move(size_var) ) ) )
 			{
 				return false;
 			}
@@ -1699,7 +1699,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::Tuple& tuple_type_param,
 	TemplateArgFinished& given_arg ) : bool
 {
@@ -1714,7 +1714,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			foreach( piar : tuple_type_param.element_types.iter().zip( given_tuple_type.element_types.iter() ) )
 			{
-				if( !MatchTemplateArgument( names_scope, template_, piar.first, piar.second ) )
+				if( !MatchTemplateArgument( names_scope, template_params, piar.first, piar.second ) )
 				{
 					return false;
 				}
@@ -1730,7 +1730,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::RawPointer& raw_pointer_type_param,
 	TemplateArgFinished& given_arg ) : bool
 {
@@ -1738,7 +1738,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	{
 		if_var( &given_raw_pointer_type : given_type.GetRawPointerType() )
 		{
-			return MatchTemplateArgument( names_scope, template_, raw_pointer_type_param.element_type, given_raw_pointer_type.element_type );
+			return MatchTemplateArgument( names_scope, template_params, raw_pointer_type_param.element_type, given_raw_pointer_type.element_type );
 		}
 	}
 	return false;
@@ -1747,7 +1747,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::Function& function_type_param,
 	TemplateArgFinished& given_arg ) : bool
 {
@@ -1764,7 +1764,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, function_type_param.return_type, given_function_type.return_type ) )
+			if( !MatchTemplateArgument( names_scope, template_params, function_type_param.return_type, given_function_type.return_type ) )
 			{
 				return false;
 			}
@@ -1783,7 +1783,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.t ) )
+				if( !MatchTemplateArgument( names_scope, template_params, expected_param.t, given_arg.t ) )
 				{
 					return false;
 				}
@@ -1799,7 +1799,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::Coroutine& coroutine_type_param,
 	TemplateArgFinished& given_arg ) : bool
 {
@@ -1816,7 +1816,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 					coroutine_type_description.return_references == coroutine_type_param.return_references &&
 					coroutine_type_description.return_inner_references == coroutine_type_param.return_inner_references &&
 					coroutine_type_description.non_sync_ == coroutine_type_param.non_sync_ &&
-					MatchTemplateArgument( names_scope, template_, coroutine_type_param.return_type, coroutine_type_description.return_type );
+					MatchTemplateArgument( names_scope, template_params, coroutine_type_param.return_type, coroutine_type_description.return_type );
 			}
 		}
 	}
@@ -1827,7 +1827,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
-	TemplateBase& template_,
+	ust::array_view_imut</TemplateParam/> template_params,
 	TemplateSignatureParam::SpecializedTemplate& specialized_template_param,
 	TemplateArgFinished& given_arg ) : bool
 {
@@ -1844,11 +1844,11 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 				foreach( &type_template_signature_param : specialized_template_param.type_templates )
 				{
-					if( MatchTemplateArgument( names_scope, template_, type_template_signature_param, base_template.class_template ) )
+					if( MatchTemplateArgument( names_scope, template_params, type_template_signature_param, base_template.class_template ) )
 					{
 						foreach( pair : specialized_template_param.params.iter().zip( base_template.signature_args.iter() ) )
 						{
-							if( !MatchTemplateArgument( names_scope, template_, pair.first, pair.second ) )
+							if( !MatchTemplateArgument( names_scope, template_params, pair.first, pair.second ) )
 							{
 								return false;
 							}

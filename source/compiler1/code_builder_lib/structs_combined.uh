@@ -627,7 +627,7 @@ struct LambdaClassData
 // Templates
 //
 
-class TemplateBase polymorph
+struct TemplateParam
 {
 	struct TypeParamData{}
 
@@ -639,12 +639,13 @@ class TemplateBase polymorph
 		TemplateSignatureParam t;
 	}
 
-	struct Param
-	{
-		ust::string8 name;
-		ust::variant</ tup[ TypeParamData, TypeTemplateParamData, VariableParamData ] /> kind_data;
-	}
-	ust::vector</Param/> params;
+	ust::string8 name;
+	ust::variant</ tup[ TypeParamData, TypeTemplateParamData, VariableParamData ] /> kind_data;
+}
+
+class TemplateBase polymorph
+{
+	ust::vector</TemplateParam/> params;
 
 	ust::vector</ TemplateSignatureParam /> signature_params;
 
@@ -653,7 +654,7 @@ class TemplateBase polymorph
 	ust::weak_ptr_imut</NamesScope/> parent_names_scope;
 
 	fn constructor(
-		ust::vector</Param/> mut in_params,
+		ust::vector</TemplateParam/> mut in_params,
 		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
 		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope )
 		(
@@ -673,7 +674,7 @@ class TypeTemplate final : TemplateBase
 	bool used= false;
 
 	fn constructor(
-		ust::vector</TemplateBase::Param/> mut in_params,
+		ust::vector</TemplateParam/> mut in_params,
 		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
 		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
 		ust::shared_ptr_final</Synt::TypeTemplate/> mut in_syntax_element,
@@ -705,7 +706,7 @@ class FunctionTemplate final : TemplateBase
 	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
 
 	fn constructor(
-		ust::vector</TemplateBase::Param/> mut in_params,
+		ust::vector</TemplateParam/> mut in_params,
 		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
 		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
 		ust::shared_ptr_final</Synt::FunctionTemplate/> mut in_syntax_element,
@@ -744,7 +745,7 @@ public:
 	struct TemplateParam
 	{
 		u32 index;
-		// See TemplateBase::TemplateParameter::kind_data.
+		// See TemplateParameter::kind_data.
 		u32 kind_index;
 	}
 
