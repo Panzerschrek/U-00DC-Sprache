@@ -233,19 +233,19 @@ private:
 	void InstantiateFunctionTemplateWithDummyArgs( const FunctionTemplatePtr& function_template );
 
 	// This function is basically reverse of "MatchTemplateArg".
-	TemplateArg CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Type& type_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Variable& variable_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeTemplate& type_template_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Array& array_type_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Tuple& tuple_type_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::RawPointer& raw_pointer_type_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Function& function_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Coroutine& coroutine_param );
-	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::SpecializedTemplate& specialized_template_param );
+	TemplateArg CreateDummyTemplateSignatureArg( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::Type& type_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::Variable& variable_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::TypeTemplate& type_template_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::Array& array_type_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::Tuple& tuple_type_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::RawPointer& raw_pointer_type_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::Function& function_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::Coroutine& coroutine_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateSignatureParam::SpecializedTemplate& specialized_template_param );
 
-	TemplateArg CreateDummyTemplateSignatureArgForTemplateParam( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateBase::TemplateParameter& param );
+	TemplateArg CreateDummyTemplateSignatureArgForTemplateParam( llvm::ArrayRef<TemplateParameter> template_params, NamesScope& args_names_scope, const TemplateParameter& param );
 
 	Type GetStubTemplateArgType();
 
@@ -374,7 +374,7 @@ private:
 	void ProcessTemplateParams(
 		llvm::ArrayRef<Synt::TemplateParam> params,
 		NamesScope& names_scope,
-		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		std::vector<TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
 	// Handler for ComplexName/TypeName/Expression.
@@ -382,7 +382,7 @@ private:
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		const llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const std::variant< VariantArgs ... >& template_parameter )
 	{
@@ -397,7 +397,7 @@ private:
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const std::unique_ptr<T>& el )
 	{
@@ -409,7 +409,7 @@ private:
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const T& el )
 	{
@@ -423,56 +423,56 @@ private:
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::EmptyVariant& empty_variant );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::ArrayTypeName& array_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::FunctionType& function_pointer_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::TupleType& tuple_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::RawPointerType& raw_pointer_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::CoroutineType& coroutine_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::NameLookup& name_lookup );
 
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::TemplateParameterization& template_parameterization );
 
@@ -480,67 +480,67 @@ private:
 
 	// Returns "true" if all ok.
 	bool MatchTemplateArg(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam& template_signature_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::Type& type_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::Variable& variable_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::TypeTemplate& type_template_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::TemplateParam& template_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::Array& array_type_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::Tuple& tuple_type_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::RawPointer& raw_pointer_type_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::Function& function_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::Coroutine& coroutine_param );
 
 	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
+		llvm::ArrayRef<TemplateParameter> template_params,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const TemplateSignatureParam::SpecializedTemplate& specialized_template_param );
@@ -602,13 +602,6 @@ private:
 		NamesScope& target_namespace );
 
 	void AddNewTemplateThing( TemplateKey key, NamesScopePtr thing );
-
-	void CreateTemplateErrorsContext(
-		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& src_loc,
-		const NamesScopePtr& template_args_namespace,
-		const TemplateBase& template_,
-		std::string_view template_name );
 
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( ClassPtr class_type );

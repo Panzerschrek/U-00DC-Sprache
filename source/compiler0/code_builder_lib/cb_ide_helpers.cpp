@@ -512,7 +512,7 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 	TemplateArgs signature_args;
 	signature_args.reserve( type_template->signature_params.size() );
 	for( const TemplateSignatureParam& signature_param : type_template->signature_params )
-		signature_args.push_back( CreateDummyTemplateSignatureArg( *type_template, *template_args_scope, signature_param ) );
+		signature_args.push_back( CreateDummyTemplateSignatureArg( type_template->template_params, *template_args_scope, signature_param ) );
 
 	{
 		const TemplateKey template_key{ type_template, signature_args };
@@ -556,8 +556,8 @@ void CodeBuilder::InstantiateFunctionTemplateWithDummyArgs( const FunctionTempla
 	// perform direct args filling.
 	TemplateArgs template_args;
 	template_args.reserve( function_template->template_params.size() );
-	for( const TemplateBase::TemplateParameter& param : function_template->template_params )
-		template_args.push_back( CreateDummyTemplateSignatureArgForTemplateParam( *function_template, *template_args_scope, param ) );
+	for( const TemplateParameter& param : function_template->template_params )
+		template_args.push_back( CreateDummyTemplateSignatureArgForTemplateParam( function_template->template_params, *template_args_scope, param ) );
 
 	// Do not care here about signature params filling.
 	// For function templates they are used mostly for overloaded resolition.
@@ -574,22 +574,32 @@ void CodeBuilder::InstantiateFunctionTemplateWithDummyArgs( const FunctionTempla
 	skip_building_generated_functions_= prev_skip_building_generated_functions;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArg(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam& signature_param )
 {
-	return signature_param.Visit( [&]( const auto& el ) { return CreateDummyTemplateSignatureArgImpl( template_, args_names_scope, el ); } );
+	return signature_param.Visit(
+		[&]( const auto& el ) { return CreateDummyTemplateSignatureArgImpl( template_params, args_names_scope, el ); } );
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Type& type_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::Type& type_param )
 {
-	(void)template_;
+	(void)template_params;
 	(void)args_names_scope;
 
 	return type_param.t;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Variable& variable_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::Variable& variable_param )
 {
-	(void)template_;
+	(void)template_params;
 	(void)args_names_scope;
 
 	TemplateVariableArg arg;
@@ -599,26 +609,35 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return std::move(arg);
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeTemplate& type_template_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::TypeTemplate& type_template_param )
 {
-	(void)template_;
+	(void)template_params;
 	(void)args_names_scope;
 
 	return type_template_param.type_template;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::TemplateParam& template_param )
 {
-	if( template_param.index < template_.template_params.size() )
-		return CreateDummyTemplateSignatureArgForTemplateParam( template_, args_names_scope, template_.template_params[ template_param.index ] );
+	if( template_param.index < template_params.size() )
+		return CreateDummyTemplateSignatureArgForTemplateParam( template_params, args_names_scope, template_params[ template_param.index ] );
 
 	return invalid_type_;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Array& array_type_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::Array& array_type_param )
 {
-	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *array_type_param.element_type );
-	const TemplateArg element_count= CreateDummyTemplateSignatureArg( template_, args_names_scope, *array_type_param.element_count );
+	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *array_type_param.element_type );
+	const TemplateArg element_count= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *array_type_param.element_count );
 
 	if( const auto t= std::get_if<Type>( &element_type ) )
 	{
@@ -635,7 +654,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return invalid_type_;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Tuple& tuple_type_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::Tuple& tuple_type_param )
 {
 	TupleType tuple_type;
 	tuple_type.element_types.reserve( tuple_type_param.element_types.size() );
@@ -644,7 +666,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 
 	for( const TemplateSignatureParam& element_param : tuple_type_param.element_types )
 	{
-		const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, element_param );
+		const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, element_param );
 		if( const auto t= std::get_if<Type>( &element_type ) )
 		{
 			tuple_type.element_types.push_back( *t );
@@ -659,9 +681,12 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return Type( std::move(tuple_type) );
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::RawPointer& raw_pointer_type_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::RawPointer& raw_pointer_type_param )
 {
-	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *raw_pointer_type_param.element_type );
+	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *raw_pointer_type_param.element_type );
 	if( const auto t= std::get_if<Type>( &element_type ) )
 	{
 		RawPointerType raw_pointer;
@@ -674,7 +699,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return invalid_type_;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Function& function_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::Function& function_param )
 {
 	FunctionType function_type;
 
@@ -682,7 +710,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	{
 		FunctionType::Param out_param;
 
-		const TemplateArg param_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param.type );
+		const TemplateArg param_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *param.type );
 		if( const auto t= std::get_if<Type>( &param_type ) )
 			out_param.type= *t;
 		else
@@ -692,7 +720,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 		function_type.params.push_back( std::move(out_param) );
 	}
 
-	const TemplateArg return_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *function_param.return_type );
+	const TemplateArg return_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *function_param.return_type );
 	if( const auto t= std::get_if<Type>( &return_type ) )
 		function_type.return_type= *t;
 	else
@@ -705,9 +733,12 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return Type( FunctionPointerType{ std::move(function_type), llvm::PointerType::get( llvm_context_, 0 ) } );
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::Coroutine& coroutine_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::Coroutine& coroutine_param )
 {
-	const TemplateArg return_type_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *coroutine_param.return_type );
+	const TemplateArg return_type_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *coroutine_param.return_type );
 	if( const auto t= std::get_if<Type>( &return_type_type ) )
 	{
 		CoroutineTypeDescription coroutine_type_description;
@@ -723,18 +754,24 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase
 	return invalid_type_;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::SpecializedTemplate& specialized_template_param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateSignatureParam::SpecializedTemplate& specialized_template_param )
 {
 	std::vector<TemplateArg> args;
 	args.reserve( specialized_template_param.params.size() );
 	for( const TemplateSignatureParam& param : specialized_template_param.params )
-		args.push_back( CreateDummyTemplateSignatureArg( template_, args_names_scope, param ) );
+		args.push_back( CreateDummyTemplateSignatureArg( template_params, args_names_scope, param ) );
 
 	// TODO - instantiate some type template here.
 	return invalid_type_;
 }
 
-TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateBase::TemplateParameter& param )
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam(
+	const llvm::ArrayRef<TemplateParameter> template_params,
+	NamesScope& args_names_scope,
+	const TemplateParameter& param )
 {
 	if( const auto inserted_arg= args_names_scope.GetThisScopeValue( param.name ) )
 	{
@@ -746,10 +783,10 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 	}
 	else
 	{
-		if( const auto variable_param = std::get_if<TemplateBase::VariableParamData>( &param.kind_data ) )
+		if( const auto variable_param = std::get_if<TemplateParameter::VariableParamData>( &param.kind_data ) )
 		{
 			// Create variable arg.
-			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, variable_param->type );
+			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_params, args_names_scope, variable_param->type );
 			if( const auto t= std::get_if<Type>( &type_arg ) )
 			{
 				TemplateVariableArg arg;
@@ -769,7 +806,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 				return std::move(arg);
 			}
 		}
-		else if( std::holds_alternative< TemplateBase::TypeParamData >( param.kind_data ) )
+		else if( std::holds_alternative< TemplateParameter::TypeParamData >( param.kind_data ) )
 		{
 			// Create type arg. Use stub type for this.
 
@@ -777,7 +814,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const 
 			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
 			return t;
 		}
-		else if( std::holds_alternative< TemplateBase::TypeTemplateParamData >( param.kind_data ) )
+		else if( std::holds_alternative< TemplateParameter::TypeTemplateParamData >( param.kind_data ) )
 		{
 			// It's too complex to create dummy type template arg.
 			// And this has little reason too, since such dummy will be practically unusable because of likely signature mismatch.

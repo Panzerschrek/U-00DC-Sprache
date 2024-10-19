@@ -38,7 +38,7 @@ public:
 	{
 		size_t index= ~0u;
 
-		// See TemplateBase::TemplateParameter::kind_data.
+		// See TemplateParameter::kind_data.
 		size_t kind_index= ~0u;
 
 		bool operator==( const TemplateParam& other ) const;

@@ -31,10 +31,8 @@ inline bool operator!=( const TemplateVariableArg& l, const TemplateVariableArg&
 using TemplateArg= std::variant< TemplateVariableArg, Type, TypeTemplatePtr >;
 using TemplateArgs= llvm::SmallVector<TemplateArg, 2>;
 
-struct TemplateBase
+struct TemplateParameter
 {
-	virtual ~TemplateBase()= default;
-
 	struct TypeParamData{};
 
 	struct TypeTemplateParamData{};
@@ -45,12 +43,14 @@ struct TemplateBase
 		TemplateSignatureParam type;
 	};
 
-	struct TemplateParameter
-	{
-		SrcLoc src_loc;
-		std::string name;
-		std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
-	};
+	SrcLoc src_loc;
+	std::string name;
+	std::variant<TypeParamData, TypeTemplateParamData, VariableParamData> kind_data;
+};
+
+struct TemplateBase
+{
+	virtual ~TemplateBase()= default;
 
 	std::vector<TemplateParameter> template_params;
 	std::vector<TemplateSignatureParam> signature_params; // Function params for function templates.
