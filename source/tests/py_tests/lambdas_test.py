@@ -352,11 +352,31 @@ def Lambda_ReturnReferenceToCapturedVariable_Test3():
 					var R r{ .r= x };
 					return r; // Return reference to captured variable "x" inside "R".
 				};
+
 			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 0s );
+
+			var tup[ [ [ char8, 2 ], 1 ] ] expected_return_inner_references[ [ "0_" ] ];
+			static_assert( GetCallOpReturnInnerReferences</ typeof(f) /> () == expected_return_inner_references );
+
 			var R r= f();
 			halt if( r.r != 6543 );
 			x= 77; // Change source variable, but captured in lambda by value variable should not be changed.
 			halt if( r.r != 6543 );
+		}
+
+		template</type T/>
+		fn GetCallOpReturnInnerReferences() : auto
+		{
+			for( &func_info : typeinfo</T/>.functions_list )
+			{
+				static_if( typeinfo</ typeof( func_info.name ) />.element_count == 2s )
+				{
+					static_if( func_info.name == "()" )
+					{
+						return func_info.type.return_inner_references;
+					}
+				}
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -453,11 +473,31 @@ def LambdaCaptureAllByReference_Test4():
 						var R r{ .x= x };
 						return r;
 					};
+
 				static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+
+				var tup[ [ [ char8, 2 ], 1 ] ] expected_return_inner_references[ [ "0a" ] ];
+				static_assert( GetCallOpReturnInnerReferences</ typeof(f) /> () == expected_return_inner_references );
+
 				auto r= f();
 				r.x /= 4;
 			}
 			halt if( x != 676767 / 4 );
+		}
+
+		template</type T/>
+		fn GetCallOpReturnInnerReferences() : auto
+		{
+			for( &func_info : typeinfo</T/>.functions_list )
+			{
+				static_if( typeinfo</ typeof( func_info.name ) />.element_count == 2s )
+				{
+					static_if( func_info.name == "()" )
+					{
+						return func_info.type.return_inner_references;
+					}
+				}
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
