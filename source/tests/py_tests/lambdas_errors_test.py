@@ -444,6 +444,24 @@ def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test1():
 	assert( HasError( errors_list, "MovedVariableHasReferences", 13 ) )
 
 
+def ReturnedFromLambdaReferenceIsLinkedToLambdaItself_Test2():
+	c_program_text= """
+		struct R{ i32& mut r; }
+		fn Foo()
+		{
+			auto mut f= lambda[x= 42] mut () : R
+			{
+				return R{ .r= x }; // Return a reference to lambda field "x" inside "R" struct.
+			};
+			var R r= f(); // "r" now contains a mutable reference to "lambda.x".
+			f(); // Error - accessing the lambda (including "x" ) but a reference to "x" is also stored inside "r".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
 def ReturnedFromLambdaReferenceIsLinkedToCapturedVariableInnerReference_Test0():
 	c_program_text= """
 		struct R
@@ -504,6 +522,26 @@ def LambdaCapturesReferences_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def LambdaCapturesReferences_Test3():
+	c_program_text= """
+		struct R{ i32& mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// This lambda captures a mutable reference to "x".
+			auto f= lambda[&]() : R
+			{
+				return R{ .r= x }; // Return captured mutable to "x" inside "R" struct.
+			};
+			var R r= f(); // "r" now contains a mutable reference to "x".
+			f(); // Error - accessing reference to "x" captured inside the lambda, but "x" is also stored inside "r".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
 
 
 def LambdaModifyCapturedVariable_Test0():
