@@ -302,6 +302,20 @@ def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test2():
 	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 3 ) )
 
 
+def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		// No reference notation is specified here for inner return references.
+		// It should be ok, but returning something from this function isn't possible.
+		fn Foo( S& s ) : S & @(return_references)
+		{
+			halt; // For avoiding "missing return" error.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def FunctionReferenceNotationIsNormalized_Test0():
 	c_program_text= """
 		// Order of pollution doesn't matter.

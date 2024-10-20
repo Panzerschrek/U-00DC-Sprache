@@ -94,6 +94,26 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
+U_TEST( ReferncesTagsTest_TryReturnUnallowedReference2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		// No reference notation is specified here for inner return references.
+		fn Foo( S& s ) : S & @(return_references)
+		{
+			// Returning "0a" inside "s" - it's not allowed.
+			return s;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 8u ) );
+}
+
 U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant0 )
 {
 	static const char c_program_text[]=
