@@ -183,7 +183,7 @@ fn LoadSourceGraph_r(
 			var SourceGraph::Node& src_node= source_graph.nodes[child_index];
 			foreach( &context_and_macro : src_node.synt_result.macros.lock_imut().deref() )
 			{
-				if( macros.find( context_and_macro.key() ).empty() )
+				if( !macros.exists( context_and_macro.key() ) )
 				{
 					macros.insert( context_and_macro.key(), context_and_macro.value() );
 					continue;
@@ -192,7 +192,7 @@ fn LoadSourceGraph_r(
 				var Synt::MacroMap &mut dst_map= macros[context_and_macro.key()];
 				foreach( &macro : context_and_macro.value() )
 				{
-					if( dst_map.find( macro.key() ).empty() )
+					if( !dst_map.exists( macro.key() ) )
 					{
 						dst_map.insert( macro.key(), macro.value() );
 					}

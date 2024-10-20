@@ -68,6 +68,34 @@ fn nomangle main() : i32
 		m.erase( 1256 ); halt if( !m.find( 1256 ).empty() );
 		m.erase(   58 ); halt if( !m.find(   58 ).empty() );
 	}
+	{ // There is "exists" method.
+
+		var ust::unordered_map</ i32, f32 /> mut m;
+
+		halt if( m.exists( 55 ) );
+		m.insert( 55, 0.25f );
+		halt if( !m.exists( 55 ) );
+
+		halt if( m.exists( -24 ) );
+		m.insert( -24, 789.0f );
+		halt if( !m.exists( -24 ) );
+		halt if( !m.exists( 55 ) );
+
+		halt if( m.exists( 79110 ) );
+		m.insert( 79110, -0.33f );
+		halt if( !m.exists( 79110 ) );
+		halt if( !m.exists( -24 ) );
+		halt if( !m.exists( 55 ) );
+
+		m.erase( -24 );
+		halt if( m.exists( -24 ) );
+
+		m.erase( 79110 );
+		halt if( m.exists( 79110 ) );
+
+		m.erase( 55 );
+		halt if( m.exists( 55 ) );
+	}
 	{ // Test for hash collisions. Key type 'OneBitHash' have only 1 bit for hash.
 		var ust::unordered_map</ OneBitHash, i32 /> mut m;
 

@@ -375,14 +375,14 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				constexpr_value= LLVMConstStringInContext( llvm_context_, cast_mut(string_literal_value).data(), u32(string_literal_value.size()), LLVMBool::True );
 				array_size= string_literal_value.size();
 
-				if( string_literals_cache_[0].find( string_literal_value ).empty() )
+				if( !string_literals_cache_[0].exists( string_literal_value ) )
 				{
 					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
 					string_literals_cache_[0].insert( string_literal_value, global_value );
 				}
 				else
 				{
-					global_value= string_literals_cache_[0].find( string_literal_value ).try_deref();
+					global_value= string_literals_cache_[0][string_literal_value];
 				}
 			}
 			else if( char_type == U_FundamentalType::char16_ )
@@ -393,14 +393,14 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
 
-				if( string_literals_cache_[1].find( buff ).empty() )
+				if( !string_literals_cache_[1].exists( buff ) )
 				{
 					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
 					string_literals_cache_[1].insert( buff, global_value );
 				}
 				else
 				{
-					global_value= string_literals_cache_[1].find( buff ).try_deref();
+					global_value= string_literals_cache_[1][buff];
 				}
 			}
 			else if( char_type == U_FundamentalType::char32_ )
@@ -411,14 +411,14 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
 
-				if( string_literals_cache_[2].find( buff ).empty() )
+				if( !string_literals_cache_[2].exists( buff ) )
 				{
 					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
 					string_literals_cache_[2].insert( buff, global_value );
 				}
 				else
 				{
-					global_value= string_literals_cache_[2].find( buff ).try_deref();
+					global_value= string_literals_cache_[2][buff];
 				}
 			}
 			else { halt; }
@@ -3414,7 +3414,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 			foreach( &in_arg : in_args )
 			{
-				if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
+				if( !function_context.args_preevaluation_cache.exists( in_arg ) )
 				{
 					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
 					{
@@ -3982,7 +3982,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 			foreach( &arg : args )
 			{
-				if( function_context.args_preevaluation_cache.find( arg ).empty() )
+				if( !function_context.args_preevaluation_cache.exists( arg ) )
 				{
 					with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
 					{

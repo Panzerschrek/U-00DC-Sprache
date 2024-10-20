@@ -76,7 +76,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue(
 	ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue
 {
 	// Take copy of internal class namespace to prevent modification of source namespace.
-	auto src_namespace= src_classes_members_namespaces_table.find( class_type ).try_deref();
+	auto src_namespace= src_classes_members_namespaces_table[ class_type ];
 	auto src_lock= src_namespace.lock_imut();
 	auto& src= src_lock.deref();
 
@@ -302,7 +302,7 @@ fn CodeBuilder::NamesScopeMergeValues(
 			{
 				// Merge changes made in internal namespace of the class.
 				// This affects almost only functions sets.
-				auto src_namespace= src_classes_members_namespaces_table.find( src_class_type_ptr.try_to_non_nullable() ).try_deref();
+				auto src_namespace= src_classes_members_namespaces_table[ src_class_type_ptr.try_to_non_nullable() ];
 				NamesScopeMerge( dst_class_type_ptr.try_lock_imut().deref().members, src_namespace.lock_imut().deref(), src_classes_members_namespaces_table );
 			}
 			return;

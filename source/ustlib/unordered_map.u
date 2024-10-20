@@ -145,6 +145,12 @@ public:
 		erase(key);
 	}
 
+	// Check if given key exists in this unordered_map.
+	fn exists( this, key_type& key ) : bool
+	{
+		return !is_nullptr( unsafe( cast_mut(this).find_key( key ) ) );
+	}
+
 	fn find( imut this, key_type& key ) : optional_ref</ value_type, false /> @( reference_notation::return_inner_references::param0 )
 	{
 		unsafe

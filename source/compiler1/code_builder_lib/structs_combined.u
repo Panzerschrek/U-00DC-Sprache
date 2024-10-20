@@ -921,7 +921,7 @@ fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::Cl
 {
 	if( visibility == Synt::ClassVisibility::Public )
 	{
-		if( !members_visibility.find( member_name ).empty() )
+		if( members_visibility.exists( member_name ) )
 		{
 			members_visibility.drop( member_name );
 		}
@@ -1674,7 +1674,7 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 
 fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags)
 {
-	if( !names_map_.find(name).empty() )
+	if( names_map_.exists(name) )
 	{
 		return ust::null_optional_ref;
 	}

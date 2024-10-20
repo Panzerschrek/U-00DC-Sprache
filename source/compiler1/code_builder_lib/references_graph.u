@@ -7,7 +7,7 @@ namespace U1
 
 fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
-	debug_assert( nodes_.find( node ).empty(), "Node is already registered!" );
+	debug_assert( !nodes_.exists( node ), "Node is already registered!" );
 
 	nodes_.insert( node, NodeState{ .moved= false } );
 
@@ -35,7 +35,7 @@ fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
 
 fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 {
-	if( nodes_.find( node ).empty() )
+	if( !nodes_.exists( node ) )
 	{
 		return;
 	}
@@ -67,8 +67,8 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )
 {
-	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
-	debug_assert( !nodes_.find( to ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( from ), "Node is not registered!" );
+	debug_assert( nodes_.exists( to ), "Node is not registered!" );
 
 	if( from == to )
 	{
@@ -171,7 +171,7 @@ fn ReferencesGraph::TryAddInnerLinksForClassField( mut this, VariablePtr& from, 
 
 fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
-	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( node ), "Node is not registered!" );
 
 	with( &mut node_state : nodes_[node] )
 	{
@@ -192,7 +192,7 @@ fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 			if( !child.empty() )
 			{
 				var VariablePtr child_non_null= child.try_to_non_nullable();
-				if( !nodes_.find(child_non_null).empty() ) // Children nodes are lazily-added.
+				if( nodes_.exists(child_non_null) ) // Children nodes are lazily-added.
 				{
 					MoveNode( child_non_null );
 				}
@@ -205,14 +205,14 @@ fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::NodeIsMoved( this, VariablePtr& node ) : bool
 {
-	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( node ), "Node is not registered!" );
 
 	return nodes_[node].moved;
 }
 
 fn ReferencesGraph::HasOutgoingLinks( this, VariablePtr& from ) : bool
 {
-	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( from ), "Node is not registered!" );
 
 	// Check if any parent has links and any child (including children of children) has links.
 	// Doesn't count sibling nodes and other indirect relatives.
@@ -238,7 +238,7 @@ fn ReferencesGraph::HasOutgoingLinks( this, VariablePtr& from ) : bool
 
 fn ReferencesGraph::HasOutgoingMutableNodes( this, VariablePtr& from ) : bool
 {
-	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( from ), "Node is not registered!" );
 
 	// Check if any parent has mutable links and any child (including children of children) has mutable links.
 	// Doesn't count sibling nodes and other indirect relatives.
@@ -280,7 +280,7 @@ fn ReferencesGraph::EnsureHasNoOutgoingMutableNodes( this, VariablePtr& from, Na
 
 fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet
 {
-	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( node ), "Node is not registered!" );
 
 	var NodesSet mut nodes_set;
 	GetAllAccessibleVariableNodes_r( node, nodes_set );
@@ -289,7 +289,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : N
 
 fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 {
-	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
+	debug_assert( nodes_.exists( node ), "Node is not registered!" );
 
 	var NodesSet mut result;
 
@@ -329,7 +329,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 			var VariablePtr& node= node_pair.key();
 			var NodeState& src_node= node_pair.value();
 
-			if( result.nodes_.find( node ).empty() )
+			if( !result.nodes_.exists( node ) )
 			{
 				result.nodes_.insert( node, src_node );
 			}
@@ -448,7 +448,7 @@ fn ReferencesGraph::HasOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr&
 		if( !child.empty() )
 		{
 			var VariablePtr child_non_null= child.try_to_non_nullable();
-			if( !nodes_.find( child_non_null ).empty() && // Children nodes are lazily-added.
+			if( nodes_.exists( child_non_null ) && // Children nodes are lazily-added.
 				HasOutgoingLinksIncludingChildrenLinks_r( child_non_null ) )
 			{
 				return true;
@@ -484,7 +484,7 @@ fn ReferencesGraph::HasOutgoingMutableNodesIncludingChildrenNodes_r( this, Varia
 		if( !child.empty() )
 		{
 			var VariablePtr child_non_null= child.try_to_non_nullable();
-			if( !nodes_.find( child_non_null ).empty() && // Children nodes are lazily-added.
+			if( nodes_.exists( child_non_null ) && // Children nodes are lazily-added.
 				HasOutgoingMutableNodesIncludingChildrenNodes_r( child_non_null ) )
 			{
 				return true;

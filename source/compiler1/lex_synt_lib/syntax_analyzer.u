@@ -3726,13 +3726,13 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	auto mut macros_lock= macros_copy.lock_mut();
 	var MacrosByContextMap &mut macros_by_context= macros_lock.deref();
 
-	if( macros_by_context.find( macro_context ).empty() )
+	if( !macros_by_context.exists( macro_context ) )
 	{
 		macros_by_context.insert( macro_context, MacroMap() );
 	}
 	var MacroMap &mut macro_map= macros_by_context[ macro_context ];
 
-	if( macro_map.find( macro.name ).empty() )
+	if( !macro_map.exists( macro.name ) )
 	{
 		macro_map.insert( ust::string8(macro.name), ust::make_shared_ptr_final( move(macro) ) );
 	}
@@ -4209,7 +4209,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 		{
 			if( result_element.lexem.lexem_type == Lexem::Type::MacroUniqueIdentifier )
 			{
-				if( unique_macro_indentifiers_map.find( result_element.lexem.text ).empty() )
+				if( !unique_macro_indentifiers_map.exists( result_element.lexem.text ) )
 				{
 					var ust::string8 mut name= "_macro_ident_";
 					name+= result_element.lexem.text;

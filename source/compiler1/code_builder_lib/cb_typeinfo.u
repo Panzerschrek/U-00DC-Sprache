@@ -247,7 +247,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 
 fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 {
-	var VariablePtr typeinfo_variable_ptr= typeinfo_cache_.find(t).try_deref().variable;
+	var VariablePtr typeinfo_variable_ptr= typeinfo_cache_[t].variable;
 
 	var ClassTypePtr typeinfo_class= typeinfo_variable_ptr.lock_imut().deref().t.GetClassType().try_deref();
 	if( typeinfo_class.lock_imut().deref().is_complete )
@@ -524,7 +524,7 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 		return VariableNullablePtr();
 	}
 
-	var TypeinfoCacheElement mut cache_element= typeinfo_cache_.find( source_type ).try_deref();
+	var TypeinfoCacheElement mut cache_element= typeinfo_cache_[ source_type ];
 
 	var NamesScopePtr root_namespace= GetRootNamespace( class_type.lock_imut().deref().members );
 

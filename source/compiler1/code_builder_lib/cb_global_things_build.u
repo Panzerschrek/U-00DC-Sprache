@@ -1494,7 +1494,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, element.src_loc )
 		}
 
-		if( !enum_elements.find( element.name ).empty() )
+		if( enum_elements.exists( element.name ) )
 		{
 			REPORT_ERROR( Redefinition,  names_scope_ptr, element.src_loc, element.name )
 		}

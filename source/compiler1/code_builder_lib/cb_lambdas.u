@@ -519,7 +519,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 						if( !variable_ptr_nullable.empty() )
 						{
 							var VariablePtr variable_ptr= variable_ptr_nullable.try_to_non_nullable();
-							if( !explicit_captures.find( variable_ptr ).empty() )
+							if( explicit_captures.exists( variable_ptr ) )
 							{
 								REPORT_ERROR( DuplicatedCapture, names_scope, capture.src_loc, capture.name )
 							}
@@ -597,7 +597,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			foreach( &capture : capture_list )
 			{
-				if( lambda_preprocessing_context_result.captured_external_variables.find( capture.name ).empty() )
+				if( !lambda_preprocessing_context_result.captured_external_variables.exists( capture.name ) )
 				{
 					REPORT_ERROR( UnusedCapture, names_scope, capture.src_loc, capture.name )
 				}
@@ -1007,7 +1007,7 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 
 	if( lambda_preprocessing_context.external_variables.exists( variable ) &&
 		!lambda_preprocessing_context.explicit_captures.empty() &&
-		lambda_preprocessing_context.explicit_captures.try_deref().find( variable ).empty() )
+		!lambda_preprocessing_context.explicit_captures.try_deref().exists( variable ) )
 	{
 		REPORT_ERROR( VariableIsNotCapturedByLambda, names_scope, src_loc, name )
 		lambda_preprocessing_context.has_preprocessing_errors= true;
@@ -1053,7 +1053,7 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 
 	var size_type reference_tag_count( v.t.ReferenceTagCount() );
 
-	if( lambda_preprocessing_context.captured_external_variables.find( name ).empty() )
+	if( !lambda_preprocessing_context.captured_external_variables.exists( name ) )
 	{
 		// Do not set "constexpr" values - make "constexpr" captured variables non-constexpr in lambdas.
 

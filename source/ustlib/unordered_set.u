@@ -56,7 +56,7 @@ public:
 
 	fn exists( this, T& key ) : bool
 	{
-		return !impl_.find( key ).empty();
+		return impl_.exists(key);
 	}
 
 	fn drop( mut this, T& key )
