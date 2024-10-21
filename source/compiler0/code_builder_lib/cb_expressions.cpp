@@ -2177,6 +2177,18 @@ Value CodeBuilder::AccessClassField(
 		U_ASSERT( field.reference_tag < variable->inner_reference_nodes.size() );
 		function_context.variables_state.TryAddLink( variable->inner_reference_nodes[ field.reference_tag ], result, names_scope.GetErrors(), src_loc );
 
+		// Setup inner reference node links for reference fields with references inside.
+		// Only reference-fields with single inner reference tag are supported.
+		const size_t reference_tag_count= field.type.ReferenceTagCount();
+		if( reference_tag_count == 1 )
+		{
+			for( const VariablePtr& accessible_node : function_context.variables_state.GetAllAccessibleVariableNodes( variable->inner_reference_nodes[ field.reference_tag ] ) )
+			{
+				if( accessible_node->inner_reference_nodes.size() == 1 )
+					function_context.variables_state.TryAddLink( accessible_node->inner_reference_nodes.front(), result->inner_reference_nodes.front(), names_scope.GetErrors(), src_loc );
+			}
+		}
+
 		RegisterTemporaryVariable( function_context, result );
 		return result;
 	}
