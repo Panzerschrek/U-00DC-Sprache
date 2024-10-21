@@ -1153,8 +1153,11 @@ fn CodeBuilder::BuildFuncCode(
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
-	// Perform notation checks only after requesting type completeness.
-	CheckCompleteFunctionReferenceNotation( func_variable.t, names_scope, body_syntax_element.src_loc );
+	if( function_context.reference_notation_deduction_context.empty() )
+	{
+		// Perform notation checks only after requesting type completeness.
+		CheckCompleteFunctionReferenceNotation( func_variable.t, names_scope, body_syntax_element.src_loc );
+	}
 
 	if( func_variable.IsCoroutine() )
 	{

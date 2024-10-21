@@ -1529,9 +1529,12 @@ void CodeBuilder::BuildFuncCode(
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
-	// Call this after types completion request.
-	// Perform this check while function body building, since the check requires type completeness, which can't be requested during prototype preparation.
-	CheckCompleteFunctionReferenceNotation( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
+	if( reference_notation_deduction_context == nullptr )
+	{
+		// Call this after types completion request.
+		// Perform this check while function body building, since the check requires type completeness, which can't be requested during prototype preparation.
+		CheckCompleteFunctionReferenceNotation( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
+	}
 
 	if( func_variable.IsCoroutine() )
 	{
