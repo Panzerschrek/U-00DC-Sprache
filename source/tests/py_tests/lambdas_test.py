@@ -288,9 +288,29 @@ def Lambda_ReturnReferenceToCapturedVariable_Test0():
 		fn Foo()
 		{
 			var i32 mut x= 12345;
+
 			auto f= lambda[=]() : i32& { return x; };
+
+			var [ [ char8, 2 ], 1 ] expected_return_references [ "0_" ];
+			static_assert( GetCallOpReturnReferences</ typeof(f) /> () == expected_return_references );
+
 			auto& ref= f();
 			halt if( ref != 12345 );
+		}
+
+		template</type T/>
+		fn GetCallOpReturnReferences() : auto
+		{
+			for( &func_info : typeinfo</T/>.functions_list )
+			{
+				static_if( typeinfo</ typeof( func_info.name ) />.element_count == 2s )
+				{
+					static_if( func_info.name == "()" )
+					{
+						return func_info.type.return_references;
+					}
+				}
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -325,12 +345,32 @@ def Lambda_ReturnReferenceToCapturedVariable_Test2():
 				var R r { .r= x };
 				// Return inner reference of captured variable.
 				auto f= lambda[=]() : f64 &mut { return r.r; };
+
 				static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
+
+				var [ [ char8, 2 ], 1 ] expected_return_references [ "0a" ];
+				static_assert( GetCallOpReturnReferences</ typeof(f) /> () == expected_return_references );
+
 				auto &mut ref= f();
 				halt if( ref != 1234.5 );
 				ref= 5.25;
 			}
 			halt if( x != 5.25 );
+		}
+
+		template</type T/>
+		fn GetCallOpReturnReferences() : auto
+		{
+			for( &func_info : typeinfo</T/>.functions_list )
+			{
+				static_if( typeinfo</ typeof( func_info.name ) />.element_count == 2s )
+				{
+					static_if( func_info.name == "()" )
+					{
+						return func_info.type.return_references;
+					}
+				}
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
