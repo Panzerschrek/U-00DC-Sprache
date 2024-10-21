@@ -515,8 +515,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
 					return;
 				}
-				if( class_field->type.ReferenceTagCount() > 0u )
-					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
+				// TODO - disable reference indirection depth more than 1 for types of reference fields.
+				//if( class_field->type.ReferenceTagCount() > 0u )
+				//	REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
 			}
 			else if( class_field->type.IsAbstract() )
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
@@ -558,18 +559,23 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					return;
 
 				if( field->is_reference )
-					reference_fields.push_back(field);
-
-				if( field->type.ReferenceTagCount() > 0 )
-					fields_with_references_inside.push_back(field);
+				{
+					if( field->type.ReferenceTagCount() == 0 )
+						reference_fields.push_back(field);
+				}
 				else
 				{
-					if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
+					if( field->type.ReferenceTagCount() > 0 )
+						fields_with_references_inside.push_back(field);
+					else
 					{
-						if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+						if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
 						{
-							if( reference_tags->size() != 0 )
-								REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
+							if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+							{
+								if( reference_tags->size() != 0 )
+									REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
+							}
 						}
 					}
 				}

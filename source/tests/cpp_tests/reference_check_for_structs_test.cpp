@@ -477,24 +477,52 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 		struct B{ A   &imut x; }
 	)";
 
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
+	BuildProgram( c_program_text );
 }
 
 U_TEST( TwoLevelsOfIndirection_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
+		struct A{ i32 &imut x; }
+		struct B{ A   &mut x; }
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ThreeLevelsOfIndirection_Test0 )
+{
+	DISABLE_TEST;
+
+	static const char c_program_text[]=
+	R"(
 		struct A{ i32 &mut x; }
 		struct B{ A   &imut x; }
+		struct C{ B   &imut x; }
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 3u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 4u ) );
+}
+
+U_TEST( ThreeLevelsOfIndirection_Test1 )
+{
+	DISABLE_TEST;
+
+	static const char c_program_text[]=
+	R"(
+		struct A{ i32 &mut x; }
+		struct B{ A   &imut x; }
+		struct C{ B   &imut x; }
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside, 4u ) );
 }
 
 U_TEST( ReferencePollutionTest0 )
