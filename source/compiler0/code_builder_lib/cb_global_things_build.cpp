@@ -560,8 +560,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				if( field->is_reference )
 				{
-					if( field->type.ReferenceTagCount() == 0 )
-						reference_fields.push_back(field);
+					reference_fields.push_back(field);
 				}
 				else
 				{
@@ -723,19 +722,21 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 					}
 				}
-
-				U_ASSERT( field->inner_reference_tags.size() == field->type.ReferenceTagCount() );
-				for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
+				else
 				{
-					const size_t tag= field->inner_reference_tags[i];
-					U_ASSERT( tag < the_class.inner_references.size() );
-					reference_tags_usage_flags[ tag ]= true;
-
-					if( field->type.GetInnerReferenceKind(i) != the_class.inner_references[tag] )
+					U_ASSERT( field->inner_reference_tags.size() == field->type.ReferenceTagCount() );
+					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
-						std::string s;
-						s.push_back( char( 'a' + tag ) );
-						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+						const size_t tag= field->inner_reference_tags[i];
+						U_ASSERT( tag < the_class.inner_references.size() );
+						reference_tags_usage_flags[ tag ]= true;
+
+						if( field->type.GetInnerReferenceKind(i) != the_class.inner_references[tag] )
+						{
+							std::string s;
+							s.push_back( char( 'a' + tag ) );
+							REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+						}
 					}
 				}
 			} );

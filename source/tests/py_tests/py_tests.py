@@ -86,6 +86,7 @@ def main():
 		"references_graph_test",
 		"references_graph_child_nodes_test",
 		"same_type_test",
+		"second_order_references_inside_structs_test",
 		"size_type_test",
 		"static_if_test",
 		"stack_variables_move_errors_test",
