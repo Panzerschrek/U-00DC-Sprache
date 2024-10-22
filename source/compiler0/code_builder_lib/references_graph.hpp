@@ -47,6 +47,8 @@ public:
 	NodesSet GetAllAccessibleVariableNodes( const VariablePtr& node ) const;
 	NodesSet GetNodeInputLinks( const VariablePtr& node ) const;
 
+	NodesSet GetAllAccessibleNonInnerNodes( const VariablePtr& node ) const;
+
 	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
 	// Than create link between "from" and this node.
 	void TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
@@ -78,6 +80,8 @@ private:
 
 	void RemoveNodeLinks( const VariablePtr& node );
 	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+
+	void GetAllAccessibleNonInnerNodes_r( const VariablePtr& node, NodesSet& result_set ) const;
 
 	void TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 

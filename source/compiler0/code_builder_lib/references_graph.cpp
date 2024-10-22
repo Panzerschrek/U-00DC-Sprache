@@ -223,6 +223,14 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 	return result;
 }
 
+// TODO - maybe use other name for this method?
+ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleNonInnerNodes( const VariablePtr& node ) const
+{
+	NodesSet result;
+	GetAllAccessibleNonInnerNodes_r( node, result );
+	return result;
+}
+
 void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, to, errors_container, src_loc );
@@ -409,6 +417,23 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 		GetAllAccessibleVariableNodes_r( parent, visited_nodes_set, result_set );
 
 	// Children nodes can't have input links. So, ignore them.
+}
+
+void ReferencesGraph::GetAllAccessibleNonInnerNodes_r( const VariablePtr& node, NodesSet& result_set ) const
+{
+	for( const auto& link : links_ )
+	{
+		if( link.dst == node )
+		{
+			if( link.src->is_variable_inner_reference_node )
+				GetAllAccessibleNonInnerNodes_r( link.src, result_set );
+			else
+			{
+				// Do not go further if a variable/reference or child node is reached.
+				result_set.insert( link.src );
+			}
+		}
+	}
 }
 
 void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
