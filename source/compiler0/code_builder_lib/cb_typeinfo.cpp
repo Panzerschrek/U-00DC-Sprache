@@ -49,7 +49,8 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
-	typeinfo_class->inner_references.push_back( InnerReferenceKind::Imut ); // Almost all typeinfo have references to another typeinfo.
+	// TODO - setup also second order references?
+	typeinfo_class->inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) ); // Almost all typeinfo have references to another typeinfo.
 
 	return typeinfo_class;
 }

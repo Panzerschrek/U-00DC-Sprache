@@ -374,7 +374,7 @@ InnerReferenceKind Type::GetInnerReferenceKind( const size_t index ) const
 	if( const auto class_type= GetClassType() )
 	{
 		U_ASSERT( index < class_type->inner_references.size() );
-		return class_type->inner_references[index];
+		return class_type->inner_references[index].kind;
 	}
 	else if( const auto array_type= GetArrayType() )
 		return array_type->element_type.GetInnerReferenceKind(index);
@@ -405,8 +405,8 @@ bool Type::ContainsMutableReferences() const
 		return false;
 	else if( const auto class_type= GetClassType() )
 	{
-		for( const InnerReferenceKind kind : class_type->inner_references )
-			if( kind == InnerReferenceKind::Mut )
+		for( const InnerReference& inner_reference : class_type->inner_references )
+			if( inner_reference.kind == InnerReferenceKind::Mut )
 				return true;
 	}
 	else if( const auto array_type= GetArrayType() )

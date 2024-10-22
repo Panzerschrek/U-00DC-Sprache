@@ -535,13 +535,13 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Determine inner references.
 	{
 		// Inherit inner references of parents.
-		// Normally any reference may be inhhereted only from base, but not interfaces.
+		// Normally any reference may be inhereted only from base, but not interfaces.
 		the_class.inner_references.clear();
 		for( const Class::Parent& parent : the_class.parents )
 		{
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), parent.class_->inner_references.size() ) );
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), parent.class_->inner_references.size() ), InnerReference( InnerReferenceKind::Imut ) );
 			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
-				the_class.inner_references[i]= std::max( the_class.inner_references[i], parent.class_->inner_references[i] );
+				the_class.inner_references[i].kind= std::max( the_class.inner_references[i].kind, parent.class_->inner_references[i].kind );
 		}
 		const bool has_parents_with_references_inside= !the_class.inner_references.empty();
 
@@ -593,8 +593,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			field.reference_tag= uint8_t(0u);
 
 			if( the_class.inner_references.empty() )
-				the_class.inner_references.push_back( InnerReferenceKind::Imut );
-			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
+			the_class.inner_references.front().kind= std::max( the_class.inner_references.front().kind, field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 		}
 		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
@@ -606,9 +606,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( size_t i= 0; i < reference_tag_count; ++i )
 				field.inner_reference_tags[i]= uint8_t(i);
 
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReferenceKind::Imut );
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReference( InnerReferenceKind::Imut ) );
 			for( size_t i= 0; i < reference_tag_count; ++i )
-				the_class.inner_references[i]= std::max( the_class.inner_references[i], field.type.GetInnerReferenceKind(i) );
+				the_class.inner_references[i].kind= std::max( the_class.inner_references[i].kind, field.type.GetInnerReferenceKind(i) );
 		}
 		else
 		{
@@ -626,8 +626,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				{
 					reference_field->reference_tag= *reference_tag;
 
-					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReferenceKind::Imut );
-					InnerReferenceKind& t= the_class.inner_references[ size_t(*reference_tag) ];
+					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReference( InnerReferenceKind::Imut ) );
+					InnerReferenceKind& t= the_class.inner_references[ size_t(*reference_tag) ].kind;
 					t= std::max( t, reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				}
 				else
@@ -636,8 +636,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					reference_field->reference_tag= uint8_t(0u);
 
 					if( the_class.inner_references.empty() )
-						the_class.inner_references.push_back( InnerReferenceKind::Imut );
-					the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+						the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
+					the_class.inner_references.front().kind= std::max( the_class.inner_references.front().kind, reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				}
 			}
 
@@ -663,8 +663,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
 						const size_t tag= field->inner_reference_tags[i];
-						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReferenceKind::Imut );
-						InnerReferenceKind& t= the_class.inner_references[ tag ];
+						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReference( InnerReferenceKind::Imut ) );
+						InnerReferenceKind& t= the_class.inner_references[ tag ].kind;
 						t= std::max( t, field->type.GetInnerReferenceKind(i) );
 					}
 				}
@@ -675,8 +675,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					field->inner_reference_tags.resize( reference_tag_count, uint8_t(0) );
 
 					if( the_class.inner_references.empty() )
-						the_class.inner_references.push_back( InnerReferenceKind::Imut );
-					InnerReferenceKind& t= the_class.inner_references.front();
+						the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
+					InnerReferenceKind& t= the_class.inner_references.front().kind;
 					for( size_t i= 0; i < reference_tag_count; ++i )
 						t= std::max( t, field->type.GetInnerReferenceKind(i) );
 				}
@@ -692,7 +692,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
 			{
 				reference_tags_usage_flags[i]= true;
-				if( parent.class_->inner_references[i] != the_class.inner_references[i] )
+				if( parent.class_->inner_references[i].kind != the_class.inner_references[i].kind )
 				{
 					std::string s;
 					s.push_back( char( 'a' + i ) );
@@ -714,8 +714,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					reference_tags_usage_flags[ field->reference_tag ]= true;
 
 					if(
-						(  field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceKind::Imut ) ||
-						( !field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceKind:: Mut ) )
+						(  field->is_mutable && the_class.inner_references[ field->reference_tag ].kind == InnerReferenceKind::Imut ) ||
+						( !field->is_mutable && the_class.inner_references[ field->reference_tag ].kind == InnerReferenceKind:: Mut ) )
 					{
 						std::string s;
 						s.push_back( char( 'a' + field->reference_tag ) );
@@ -731,7 +731,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						U_ASSERT( tag < the_class.inner_references.size() );
 						reference_tags_usage_flags[ tag ]= true;
 
-						if( field->type.GetInnerReferenceKind(i) != the_class.inner_references[tag] )
+						if( field->type.GetInnerReferenceKind(i) != the_class.inner_references[tag].kind )
 						{
 							std::string s;
 							s.push_back( char( 'a' + tag ) );

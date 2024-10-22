@@ -553,7 +553,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 				// Create a reference tag for captured reference.
 				field->reference_tag= uint8_t( class_->inner_references.size() );
-				class_->inner_references.push_back( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				class_->inner_references.push_back( InnerReference( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
 				if( reference_tag_cout > 0 )
 					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope.GetErrors(), lambda.src_loc, captured_variable.name );
@@ -573,7 +573,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				{
 					const uint8_t reference_tag= uint8_t( class_->inner_references.size() );
 					field->inner_reference_tags.push_back( reference_tag );
-					class_->inner_references.push_back( type.GetInnerReferenceKind(i) );
+					class_->inner_references.push_back( InnerReference( type.GetInnerReferenceKind(i) ) );
 
 					captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.accessible_variables[i], reference_tag );
 				}

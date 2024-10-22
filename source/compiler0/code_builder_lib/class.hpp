@@ -76,7 +76,7 @@ public:
 
 	uint32_t field_count= 0u;
 	Kind kind= Kind::Struct;
-	llvm::SmallVector<InnerReferenceKind, 4> inner_references;
+	llvm::SmallVector<InnerReference, 4> inner_references;
 
 	bool parents_list_prepared= false;
 	bool is_complete= false;
