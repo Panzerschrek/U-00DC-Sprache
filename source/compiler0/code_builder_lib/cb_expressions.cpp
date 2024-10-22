@@ -3829,59 +3829,6 @@ Value CodeBuilder::DoCallFunction(
 			arg_node->preserve_temporary= true;
 			RegisterTemporaryVariable( function_context, arg_node );
 			args_nodes[arg_number]= arg_node;
-
-			// Create second order lock nodes.
-			const size_t reference_tag_count= param.type.ReferenceTagCount();
-			for(size_t i= 0; i < reference_tag_count; ++i )
-			{
-				const auto accessible_non_inner_nodes= function_context.variables_state.GetAllAccessibleNonInnerNodes( arg_node->inner_reference_nodes[i] );
-				if( !accessible_non_inner_nodes.empty() )
-				{
-					// TODO - check if this is a correct way to determine second order reference mutability.
-					// TODO - maybe use type information in order to do this?
-					ValueType value_type= ValueType::ReferenceImut;
-					bool has_some= false;
-					for( const VariablePtr& accessible_non_inner_node : accessible_non_inner_nodes )
-					{
-						if( accessible_non_inner_node->inner_reference_nodes.size() == 1 )
-						{
-							const VariablePtr& inner_node= accessible_non_inner_node->inner_reference_nodes.front();
-							U_ASSERT( inner_node->value_type != ValueType::Value );
-							if( inner_node->value_type == ValueType::ReferenceMut )
-								value_type= ValueType::ReferenceMut;
-							has_some= true;
-						}
-					}
-
-					if( !has_some )
-						continue;
-
-					const VariableMutPtr second_order_reference_node=
-						Variable::Create(
-						void_type_,
-						value_type,
-						Variable::Location::Pointer,
-						"second order inner reference " + std::to_string(i) + " of arg " + std::to_string(arg_number) );
-					second_order_reference_node->preserve_temporary= true;
-
-					second_order_reference_nodes.resize( arg_count );
-					second_order_reference_nodes[arg_number].resize( reference_tag_count );
-					second_order_reference_nodes[arg_number][i]= second_order_reference_node;
-
-					function_context.variables_state.AddNode( second_order_reference_node );
-					for( const VariablePtr& accessible_non_inner_node : accessible_non_inner_nodes )
-					{
-						if( accessible_non_inner_node->inner_reference_nodes.size() == 1 )
-							function_context.variables_state.TryAddLink(
-								accessible_non_inner_node->inner_reference_nodes.front(),
-								second_order_reference_node,
-								names_scope.GetErrors(),
-								src_loc );
-					}
-
-					RegisterTemporaryVariable( function_context, second_order_reference_node );
-				}
-			}
 		}
 		else
 		{
@@ -4020,6 +3967,59 @@ Value CodeBuilder::DoCallFunction(
 			arg_node->preserve_temporary= true;
 			RegisterTemporaryVariable( function_context, arg_node );
 			args_nodes[arg_number]= arg_node;
+		}
+
+		// Create second order lock nodes (for both value and reference args).
+		const size_t reference_tag_count= param.type.ReferenceTagCount();
+		for(size_t i= 0; i < reference_tag_count; ++i )
+		{
+			const auto accessible_non_inner_nodes= function_context.variables_state.GetAllAccessibleNonInnerNodes( args_nodes[arg_number]->inner_reference_nodes[i] );
+			if( !accessible_non_inner_nodes.empty() )
+			{
+				// TODO - check if this is a correct way to determine second order reference mutability.
+				// TODO - maybe use type information in order to do this?
+				ValueType value_type= ValueType::ReferenceImut;
+				bool has_some= false;
+				for( const VariablePtr& accessible_non_inner_node : accessible_non_inner_nodes )
+				{
+					if( accessible_non_inner_node->inner_reference_nodes.size() == 1 )
+					{
+						const VariablePtr& inner_node= accessible_non_inner_node->inner_reference_nodes.front();
+						U_ASSERT( inner_node->value_type != ValueType::Value );
+						if( inner_node->value_type == ValueType::ReferenceMut )
+							value_type= ValueType::ReferenceMut;
+						has_some= true;
+					}
+				}
+
+				if( !has_some )
+					continue;
+
+				const VariableMutPtr second_order_reference_node=
+					Variable::Create(
+					void_type_,
+					value_type,
+					Variable::Location::Pointer,
+					"second order inner reference " + std::to_string(i) + " of arg " + std::to_string(arg_number) );
+				second_order_reference_node->preserve_temporary= true;
+
+				second_order_reference_nodes.resize( arg_count );
+				second_order_reference_nodes[arg_number].resize( reference_tag_count );
+				second_order_reference_nodes[arg_number][i]= second_order_reference_node;
+
+				function_context.variables_state.AddNode( second_order_reference_node );
+				for( const VariablePtr& accessible_non_inner_node : accessible_non_inner_nodes )
+				{
+					if( accessible_non_inner_node->inner_reference_nodes.size() == 1 )
+						function_context.variables_state.TryAddLink(
+							accessible_non_inner_node->inner_reference_nodes.front(),
+							second_order_reference_node,
+							names_scope.GetErrors(),
+							src_loc );
+				}
+
+				RegisterTemporaryVariable( function_context, second_order_reference_node );
+			}
 		}
 
 		// Destroy unused temporary variables after each argument evaluation.

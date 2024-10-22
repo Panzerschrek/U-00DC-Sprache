@@ -375,3 +375,223 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test3():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B b0, B b1 );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" twice will lead to sharing inner mutable reference of "a" twice.
+			Bar( b, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test4():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B b, A a );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "a" and "b" will lead to sharing inner mutable reference of "a" twice.
+			Bar( b, a );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test5():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( A a, B b );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "a" and "b" will lead to sharing inner mutable reference of "a" twice.
+			Bar( a, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test6():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B& b, i32 &mut x );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( b, x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test7():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( i32 &mut x, B b );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( x, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test8():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B b, i32& x );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( b, x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test9():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( i32& x, B& b );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( x, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test10():
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct B{ A &imut a; }
+		fn Bar( B b, i32 &mut x );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( b, x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test11():
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct B{ A &imut a; }
+		fn Bar( i32 &mut x, B& b );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( x, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test12():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B b, i32 &mut x );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( b, a.x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test13():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( i32 &mut x, B& b );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "b" will lead to sharing inner reference of "a" and "x".
+			Bar( a.x, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
