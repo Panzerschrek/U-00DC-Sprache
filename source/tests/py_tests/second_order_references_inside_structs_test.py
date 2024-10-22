@@ -312,3 +312,66 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test13():
 	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 14 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B& b0, B& b1 );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error here. Passing "b" as immutable reference twice is ok.
+			// Passing it twice is also ok, since it contains only an immutable reference inside.
+			// But it's not ok, since second order reference is mutable.
+			// So, passing "b" twice may lead to mutable sharid "b.a.x".
+			Bar( b, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B& b, A& a );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "a" and "b" will lead to sharing inner mutable reference of "a" twice.
+			Bar( b, a );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test2():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( A& a, B& b );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			// Error - passing "a" and "b" will lead to sharing inner mutable reference of "a" twice.
+			Bar( a, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
