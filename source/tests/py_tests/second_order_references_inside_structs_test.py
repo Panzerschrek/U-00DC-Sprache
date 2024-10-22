@@ -595,3 +595,87 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test13():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test0():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		fn Foo( B& b ) : i32 &
+		{
+			return b.a.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test1():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		fn Foo( B b ) : i32 &
+		{
+			return b.a.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test2():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		fn Foo( B& b ) : A // Return second order reference inside "A".
+		{
+			return b.a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test3():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		fn Foo( B b ) : A // Return second order reference inside "A".
+		{
+			return b.a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test4():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		fn Foo( B& b ) : A // Return second order reference inside "A".
+		{
+			return A{ .x= b.a.x };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test5():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		fn Foo( B b ) : A // Return second order reference inside "A".
+		{
+			return A{ .x= b.a.x };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
