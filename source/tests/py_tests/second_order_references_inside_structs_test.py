@@ -78,6 +78,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
 
@@ -99,6 +100,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
 
@@ -120,6 +122,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
 
@@ -186,5 +189,126 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 14 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test9():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut @("b"c8) a; i32 &mut @("a"c8) y; i32 &imut @("c"c8) z; }
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y=0 , imut z= 0;
+			var A a{ .x= x };
+			var B b{ .a= a, .y= y, .z= z };
+
+			var A& a0= b.a; // "a0.x" points to "a.x".
+			var A& a1= b.a; // Error - creating second node pointing to "a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test10():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a;}
+		struct BWrapper{ B @("c") b; i32 &mut @("a"c8) y; i32 &imut @("b"c8) z; }
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y=0 , imut z= 0;
+			var A a{ .x= x };
+			var BWrapper b_wrapper{ .b{ .a= a }, .y= y, .z= z };
+			var BWrapper& b_wrapper_ref= b_wrapper;
+			var B& b_ref= b_wrapper.b;
+
+			var A& a0= b_ref.a; // "a0.x" points to "a.x".
+			var A& a1= b_ref.a; // Error - creating second node pointing to "a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test11():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct Q{ A a; f32 &mut y; }
+		struct B{ A   &imut a; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var Q q{ .a{ .x= x }, .y= y };
+			var B b{ .a= q.a };
+
+			var A& a0= b.a; // "a0.x" points to "q.a.x".
+			var A& a1= b.a; // Error - creating second node pointing to "q.a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 13 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test12():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct Q{ A a; f32 &mut y; }
+		struct B{ A   &imut a; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var Q q{ .a{ .x= x }, .y= y };
+			var Q& q_ref= q;
+			var B b{ .a= q_ref.a };
+
+			var A& a0= b.a; // "a0.x" points to "q.a.x".
+			var A& a1= b.a; // Error - creating second node pointing to "q.a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test13():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct Q{ A a; f32 &mut y; }
+		struct B{ A   &imut a; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var f32 mut y= 0.0f;
+			var Q q{ .a{ .x= x }, .y= y };
+			var Q& q_ref= q;
+			var A& a_ref= q_ref.a;
+			var B b{ .a= a_ref };
+
+			var A& a0= b.a; // "a0.x" points to "q.a.x".
+			var A& a1= b.a; // Error - creating second node pointing to "q.a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 14 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
