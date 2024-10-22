@@ -90,6 +90,8 @@ VariableMutPtr Variable::Create(
 				result->name + " inner reference " + std::to_string(i),
 				nullptr,
 				nullptr ) );
+
+		inner_reference_node->is_inner_reference_node= true;
 		inner_reference_node->is_variable_inner_reference_node= result->value_type == ValueType::Value;
 
 		result->inner_reference_nodes[i]= inner_reference_node;

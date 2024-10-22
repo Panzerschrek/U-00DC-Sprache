@@ -425,7 +425,7 @@ void ReferencesGraph::GetAllAccessibleNonInnerNodes_r( const VariablePtr& node, 
 	{
 		if( link.dst == node )
 		{
-			if( link.src->is_variable_inner_reference_node )
+			if( link.src->is_inner_reference_node )
 				GetAllAccessibleNonInnerNodes_r( link.src, result_set );
 			else
 			{
