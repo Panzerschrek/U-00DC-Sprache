@@ -126,6 +126,7 @@ public:
 
 	size_t ReferenceTagCount() const;
 	InnerReferenceKind GetInnerReferenceKind(size_t index) const;
+	SecondOrderInnerReferenceKind GetSecondOrderInnerReferenceKind( size_t index ) const;
 	bool ContainsMutableReferences() const;
 
 	llvm::Type* GetLLVMType() const;

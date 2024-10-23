@@ -536,6 +536,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		// Inherit inner references of parents.
 		// Normally any reference may be inhereted only from base, but not interfaces.
+		// TODO - inherit second order inner references.
 		the_class.inner_references.clear();
 		for( const Class::Parent& parent : the_class.parents )
 		{
@@ -679,6 +680,31 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					InnerReferenceKind& t= the_class.inner_references.front().kind;
 					for( size_t i= 0; i < reference_tag_count; ++i )
 						t= std::max( t, field->type.GetInnerReferenceKind(i) );
+				}
+			}
+		}
+
+		// Setup second order inner references.
+		// TODO - detect possible errors.
+		for( size_t i= 0; i < the_class.inner_references.size(); ++i )
+		{
+			for( const ClassFieldPtr& field : reference_fields )
+			{
+				if( field->reference_tag == i && field->type.ReferenceTagCount() > 0 )
+				{
+					the_class.inner_references[i].second_order_kind=
+						field->type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
+							? SecondOrderInnerReferenceKind::Imut
+							: SecondOrderInnerReferenceKind::Mut;
+				}
+			}
+
+			for( const ClassFieldPtr& field : fields_with_references_inside )
+			{
+				for( size_t j= 0; j < field->inner_reference_tags.size(); ++j )
+				{
+					if( field->inner_reference_tags[j] == i )
+						the_class.inner_references[i].second_order_kind= field->type.GetSecondOrderInnerReferenceKind(j);
 				}
 			}
 		}

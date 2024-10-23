@@ -396,6 +396,35 @@ InnerReferenceKind Type::GetInnerReferenceKind( const size_t index ) const
 	return InnerReferenceKind::Imut;
 }
 
+SecondOrderInnerReferenceKind Type::GetSecondOrderInnerReferenceKind( const size_t index ) const
+{
+	U_ASSERT( index < ReferenceTagCount() );
+
+	if( const auto class_type= GetClassType() )
+	{
+		U_ASSERT( index < class_type->inner_references.size() );
+		return class_type->inner_references[index].second_order_kind;
+	}
+	else if( const auto array_type= GetArrayType() )
+		return array_type->element_type.GetSecondOrderInnerReferenceKind(index);
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		size_t offset= 0;
+		for( const Type& element : tuple_type->element_types )
+		{
+			const size_t count= element.ReferenceTagCount();
+			if( index >= offset && index < offset + count )
+				return element.GetSecondOrderInnerReferenceKind( index - offset );
+			offset+= count;
+		}
+		U_ASSERT(false); // Unreachable.
+		return SecondOrderInnerReferenceKind::None;
+	}
+
+	U_ASSERT(false); // Unreachable - other types have 0 reference tags.
+	return SecondOrderInnerReferenceKind::None;
+}
+
 bool Type::ContainsMutableReferences() const
 {
 	if( GetFundamentalType() != nullptr ||
