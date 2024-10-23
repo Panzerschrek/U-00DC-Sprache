@@ -1704,6 +1704,10 @@ void CodeBuilder::BuildFuncCode(
 				function_context.variables_state.AddNode( second_order_accesible_variable );
 
 				function_context.variables_state.AddLink( second_order_accesible_variable, accessible_variable_inner_reference );
+
+				function_context.args_second_order_nodes.resize( function_type.params.size() );
+				function_context.args_second_order_nodes[ arg_number ].resize( reference_tag_count );
+				function_context.args_second_order_nodes[ arg_number ][i]= second_order_accesible_variable;
 			}
 		}
 

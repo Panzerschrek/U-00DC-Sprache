@@ -117,6 +117,66 @@ def SecondOrderReferenceInsideStructUsage_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def SecondOrderReferenceInsideStructUsage_Test6():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		// Return a reference to contents of an argument.
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Bar( B& b ) : A & @(return_references)
+		{
+			return b.a;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 87;
+			{
+				var A a{ .x= x };
+				var B b{ .a= a };
+
+				Bar(b).x -= 10;
+				halt if( a.x != 77 );
+			}
+			halt if( x != 77 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderReferenceInsideStructUsage_Test7():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		struct C{ i32 & @("a"c8) i; B @("b") b; }
+
+		// Return a reference to contents of an argument.
+		var [ [ char8, 2 ], 1 ] return_references[ "1b" ];
+		fn Bar( i32& y, C& c ) : A & @(return_references)
+		{
+			return c.b.a;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 765;
+			{
+				var A a{ .x= x };
+				var i32 i= 88;
+				var C c{ .i= i, .b{ .a= a } };
+
+				Bar( 7, c ).x /= 5;
+				halt if( a.x != 765 / 5 );
+			}
+			halt if( x != 765 / 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }

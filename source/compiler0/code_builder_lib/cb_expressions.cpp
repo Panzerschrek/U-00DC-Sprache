@@ -4204,7 +4204,11 @@ Value CodeBuilder::DoCallFunction(
 
 	for( const auto& nodes : second_order_reference_nodes )
 		for( const VariablePtr node : nodes )
-			function_context.variables_state.MoveNode( node );
+		{
+			if( node != nullptr )
+				function_context.variables_state.MoveNode( node );
+		}
+
 	second_order_reference_nodes.clear();
 
 	DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );

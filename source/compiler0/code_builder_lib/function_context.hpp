@@ -85,6 +85,9 @@ public:
 	// arg variable node + inner reference nodes.
 	ArgsVector< std::pair< VariablePtr, llvm::SmallVector< VariablePtr, 1 > > > args_nodes;
 
+	// For each argument and each argument type reference tag store optional second order variable node (to support second order references).
+	ArgsVector< llvm::SmallVector< VariablePtr, 1 > > args_second_order_nodes;
+
 	llvm::Value* s_ret= nullptr; // Value for assignment for "sret" functions. Also it is a promise for coroutines.
 
 	// Specific for coroutines data.
