@@ -4135,15 +4135,18 @@ Value CodeBuilder::DoCallFunction(
 			// Setup also second order references.
 			// Do this specially since we have for now no special notation to specify returning of second order references.
 			if( arg_reference.second != FunctionType::c_param_reference_number &&
-				result->inner_reference_nodes.size() == 1 &&
-				arg_reference.first < second_order_reference_nodes.size())
+				arg_reference.first < second_order_reference_nodes.size() )
 			{
 				const auto& arg_second_order_reference_nodes= second_order_reference_nodes[ arg_reference.first ];
 				if( arg_reference.second < arg_second_order_reference_nodes.size() )
 				{
-					const VariablePtr& node= arg_second_order_reference_nodes[arg_reference.second];
+					const VariablePtr& node= arg_second_order_reference_nodes[ arg_reference.second ];
 					if( node != nullptr )
-						function_context.variables_state.TryAddLink( node, result->inner_reference_nodes.front(), names_scope.GetErrors(), call_src_loc );
+					{
+						// Perform linking for all result inner references, we have no way to pick only some of them.
+						for( const VariablePtr& inner_reference_node : result->inner_reference_nodes )
+							function_context.variables_state.TryAddLink( node, inner_reference_node, names_scope.GetErrors(), call_src_loc );
+					}
 				}
 			}
 

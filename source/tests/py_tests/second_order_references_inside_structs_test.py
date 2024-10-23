@@ -957,6 +957,45 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test15():
 	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test16():
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct DoubleA{ A @("a") first; A @("b") second; }
+
+		struct C{ DoubleA @("aa") double_a; }
+		struct B{ C& c; }
+
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn Bar( B& b ) : DoubleA & @(return_references)
+		{
+			return b.c.double_a;
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A& mut a, i32& x ) @(reference_pollution)
+		{
+		}
+
+		fn Foo()
+		{
+			var i32 f= 0;
+			var A mut outer_a{ .x= f };
+			{
+				var i32 x= 0, y= 0;
+				var C c{ .double_a{ .first{ .x= x }, .second{ .x= y } } };
+				var B b{ .c= c };
+
+				var DoubleA& double_a_ref= Bar(b); // Inner reference of "double_a_ref" points to "x" and "y".
+
+				MakePollution( outer_a, double_a_ref.first.x ); // Save references to "x" and "y" inside "outer_a".
+			} // Error - destroyed variables "x" and "y" have reference inside "outer_a".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 31 ) )
+
+
 def ReturningUnallowedReference_ForSecondOrderReference_Test0():
 	c_program_text= """
 		struct A{ i32 & x; }
