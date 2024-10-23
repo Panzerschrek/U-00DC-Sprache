@@ -1,6 +1,122 @@
 from py_tests_common import *
 
 
+def SecondOrderReferenceInsideStructUsage_Test0():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		// Reference field of type with a reference inside.
+		struct B{ A &imut a; }
+		fn Foo()
+		{
+			var i32 mut x= 17;
+			{
+				var A a{ .x= x };
+				var B b{ .a= a };
+
+				b.a.x -= 5;
+				halt if( a.x != 12 );
+			}
+			halt if( x != 12 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderReferenceInsideStructUsage_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Foo()
+		{
+			var i32 mut x= 987;
+			{
+				var A a{ .x= x };
+				var A& a_ref= a;
+				var B b{ .a= a_ref };
+				var B& b_ref= b;
+
+				b_ref.a.x /= 3;
+				halt if( a_ref.x != 987 / 3 );
+			}
+			halt if( x != 987 / 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderReferenceInsideStructUsage_Test2():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Bar( B& b )
+		{
+			// Access second order reference of an argument to modify referenced value.
+			b.a.x *= 5;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 13;
+			{
+				var A a{ .x= x };
+				var B b{ .a= a };
+
+				Bar( b );
+				halt if( a.x != 13 * 5 );
+			}
+			halt if( x != 13 * 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderReferenceInsideStructUsage_Test4():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		// Return a reference to a variable with second order references inside.
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Pass( B& b ) : B @(return_inner_references) & @(return_references)
+		{
+			return b;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 1765;
+			{
+				var A a{ .x= x };
+				var B b{ .a= a };
+
+				Pass(b).a.x += 15;
+				halt if( a.x != 1765 + 15 );
+			}
+			halt if( x != 1765 + 15 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderReferenceInsideStructUsage_Test5():
+	# Second order references inside global variables.
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct B{ A &imut a; }
+
+		var i32 x= 78;
+		var A a{ .x= x };
+		static_assert( a.x == 78 );
+		var B b{ .a= a };
+		static_assert( b.a.x == 78 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
@@ -312,6 +428,64 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test13():
 	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 14 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test14():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		// Return a reference to a variable with second order references inside.
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Pass( B& b ) : B @(return_inner_references) & @(return_references)
+		{
+			return b;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 1765;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			var i32 &mut x_ref0= Pass(b).a.x;
+			var i32 &mut x_ref1= a.x; // Error - creating second mutable reference to "a.x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test15():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		// Return a reference to a variable with second order references inside.
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Pass( B& b ) : B @(return_inner_references) & @(return_references)
+		{
+			return b;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 1765;
+			var A a{ .x= x };
+			var B b{ .a= a };
+
+			var i32 &mut x_ref= a.x;
+			Pass(b); // Error - creating second mutable reference to "a.x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
 
 
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
