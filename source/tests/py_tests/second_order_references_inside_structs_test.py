@@ -548,6 +548,72 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test15():
 	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test16():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		type ATup3= tup[ A, A, A ];
+
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references[ [ "0a", "0b", "0c" ] ];
+		fn Bar( ATup3& a_tup ) : A @(return_inner_references) & @(return_references );
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0, mut z= 0;
+			// This variable has 3 inner reference tags inside.
+			var ATup3 a_tup[ { .x= x }, { .x= y }, { .x= z } ];
+			// "b.a" has a derived from "a_tup" reference, but because of function indirection not from a "a_tup" element.
+			var B b{ .a= Bar( a_tup ) };
+
+			var A& a0= b.a; // "a0.x" points to "a_tup.x".
+			var A& a1= b.a; // Error - creating second node pointing to "a_tup.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 15 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test17():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		type ATup3= tup[ A, A, A ];
+
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 3 ] ] return_inner_references[ [ "0a", "0b", "0c" ] ];
+		fn Bar( ATup3& a_tup ) : A @(return_inner_references) & @(return_references );
+
+		fn Baz( B& b0, B& b1 );
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0, mut z= 0;
+			// This variable has 3 inner reference tags inside.
+			var ATup3 a_tup[ { .x= x }, { .x= y }, { .x= z } ];
+			// "b.a" has a derived from "a_tup" reference, but because of function indirection not from a "a_tup" element.
+			var B b{ .a= Bar( a_tup ) };
+
+			// Error here. Passing "b" as immutable reference twice is ok.
+			// Passing it twice is also ok, since it contains only an immutable reference inside.
+			// But it's not ok, since second order reference is mutable.
+			// So, passing "b" twice may lead to mutable sharid "b.a.x".
+			Baz( b, b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 25 ) )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }

@@ -2182,11 +2182,13 @@ Value CodeBuilder::AccessClassField(
 		const size_t reference_tag_count= field.type.ReferenceTagCount();
 		if( reference_tag_count == 1 )
 		{
-			// TODO - check if such nodes search method is correct.
 			for( const VariablePtr& accessible_node : function_context.variables_state.GetAllAccessibleNonInnerNodes( variable->inner_reference_nodes[ field.reference_tag ] ) )
 			{
-				if( accessible_node->inner_reference_nodes.size() == 1 )
-					function_context.variables_state.TryAddLink( accessible_node->inner_reference_nodes.front(), result->inner_reference_nodes.front(), names_scope.GetErrors(), src_loc );
+				// Usually we should have here only one inner reference node.
+				// But it may be more if a member of a composite value is referenced.
+				// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+				for( const VariablePtr& node : accessible_node->inner_reference_nodes )
+					function_context.variables_state.TryAddLink( node, result->inner_reference_nodes.front(), names_scope.GetErrors(), src_loc );
 			}
 		}
 
@@ -3992,12 +3994,12 @@ Value CodeBuilder::DoCallFunction(
 				for( const VariablePtr& accessible_non_inner_node :
 					function_context.variables_state.GetAllAccessibleNonInnerNodes( args_nodes[arg_number]->inner_reference_nodes[i] ) )
 				{
-					if( accessible_non_inner_node->inner_reference_nodes.size() == 1 )
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					for( const VariablePtr& node : accessible_non_inner_node->inner_reference_nodes )
 						function_context.variables_state.TryAddLink(
-							accessible_non_inner_node->inner_reference_nodes.front(),
-							second_order_reference_node,
-							names_scope.GetErrors(),
-							src_loc );
+							node, second_order_reference_node, names_scope.GetErrors(), src_loc );
 				}
 
 				RegisterTemporaryVariable( function_context, second_order_reference_node );
