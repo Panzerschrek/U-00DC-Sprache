@@ -831,6 +831,66 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test13():
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test14():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		struct C{ i32 & @("a"c8) i; B @("b") b; }
+
+		// Return a reference to contents of an argument.
+		var [ [ char8, 2 ], 1 ] return_references[ "1b" ];
+		fn Bar( i32& y, C& c ) : A & @(return_references)
+		{
+			return c.b.a;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 765;
+			var A a{ .x= x };
+			var i32 i= 88;
+			var C c{ .i= i, .b{ .a= a } };
+
+			var i32 &mut x_ref0= Bar( 7, c ).x; // "x" points to "a.x"
+			var i32 &mut x_ref1= a.x; // Error - creating second mutable reference to "a.x".
+
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 20 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 21 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test15():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		struct C{ i32 & @("a"c8) i; B @("b") b; }
+
+		// Return a reference to contents of an argument.
+		var [ [ char8, 2 ], 1 ] return_references[ "0b" ];
+		fn Bar( C& c ) : A & @(return_references)
+		{
+			return c.b.a;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 765;
+			var A a{ .x= x };
+			var C c{ .i= i, .b{ .a= a } };
+
+			var i32& x_ref0= Bar( c ).x; // "x" points to "a.x"
+			var i32 &mut x_ref1= a.x; // Error - creating second mutable reference to "a.x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
+
+
 def ReturningUnallowedReference_ForSecondOrderReference_Test0():
 	c_program_text= """
 		struct A{ i32 & x; }

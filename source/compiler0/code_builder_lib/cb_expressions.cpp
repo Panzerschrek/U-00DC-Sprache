@@ -4130,6 +4130,21 @@ Value CodeBuilder::DoCallFunction(
 	{
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
+			// Setup also second order references.
+			// Do this specially since we have for now no special notation to specify returning of second order references.
+			if( arg_reference.second != FunctionType::c_param_reference_number &&
+				result->inner_reference_nodes.size() == 1 &&
+				arg_reference.first < second_order_reference_nodes.size())
+			{
+				const auto& arg_second_order_reference_nodes= second_order_reference_nodes[ arg_reference.first ];
+				if( arg_reference.second < arg_second_order_reference_nodes.size() )
+				{
+					const VariablePtr& node= arg_second_order_reference_nodes[arg_reference.second];
+					if( node != nullptr )
+						function_context.variables_state.TryAddLink( node, result->inner_reference_nodes.front(), names_scope.GetErrors(), call_src_loc );
+				}
+			}
+
 			if( arg_reference.first < args_nodes.size() )
 			{
 				const auto& arg_node= args_nodes[arg_reference.first];
