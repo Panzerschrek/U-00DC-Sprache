@@ -679,3 +679,33 @@ def ReturningUnallowedReference_ForSecondOrderReference_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test6():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &a; }
+		struct BWrapper{ B b; }
+		fn Foo( BWrapper& b_wrapper ) : i32 &
+		{
+			return b_wrapper.b.a.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 7 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test7():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct AWrapper{ A a; }
+		struct B{ AWrapper & a_wrapper; }
+		fn Foo( B& b ) : i32 &
+		{
+			return b.a_wrapper.a.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 7 ) )
