@@ -200,6 +200,8 @@ bool FilterTestImpl( const char* const test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		"ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0",
+		"ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test1",
 	};
 
 	return c_test_to_disable.count( test_name_str ) > 0;

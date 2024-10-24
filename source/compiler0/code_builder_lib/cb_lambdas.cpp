@@ -553,10 +553,19 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 				// Create a reference tag for captured reference.
 				field->reference_tag= uint8_t( class_->inner_references.size() );
-				class_->inner_references.push_back( InnerReference( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
+				InnerReference inner_reference( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				if( reference_tag_cout > 0 )
-					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope.GetErrors(), lambda.src_loc, captured_variable.name );
+					inner_reference.second_order_kind=
+						type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
+							? SecondOrderInnerReferenceKind::Imut
+							: SecondOrderInnerReferenceKind::Mut;
+
+				class_->inner_references.push_back( std::move(inner_reference) );
+
+				// TODO - allow only first order references and only with one reference tag.
+				//if( reference_tag_cout > 0 )
+				//	REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope.GetErrors(), lambda.src_loc, captured_variable.name );
 
 				// Captured by reference variable points to one of the inner reference tags of lambda this.
 				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, field->reference_tag );
@@ -573,7 +582,10 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				{
 					const uint8_t reference_tag= uint8_t( class_->inner_references.size() );
 					field->inner_reference_tags.push_back( reference_tag );
-					class_->inner_references.push_back( InnerReference( type.GetInnerReferenceKind(i) ) );
+					class_->inner_references.push_back(
+							InnerReference(
+								type.GetInnerReferenceKind(i),
+								type.GetSecondOrderInnerReferenceKind(i) ) );
 
 					captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.accessible_variables[i], reference_tag );
 				}

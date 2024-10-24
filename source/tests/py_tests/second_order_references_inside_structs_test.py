@@ -177,6 +177,133 @@ def SecondOrderReferenceInsideStructUsage_Test7():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SecondOrderReference_InLambdaCapture_Test0():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+
+		fn Foo()
+		{
+			var i32 mut x= 7867;
+			var A a{ .x= x };
+			auto f = lambda[&]() : i32
+			{
+				// Implicitly capture here "a" by reference.
+				auto prev= a.x;
+				a.x/= 3;
+				return prev;
+			};
+			halt if( f() != 7867 );
+			halt if( a.x != 7867 / 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SecondOrderReference_InLambdaCapture_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+
+		fn Foo()
+		{
+			var i32 mut x= 165;
+			var A a{ .x= x };
+			auto f = lambda[&a]() : i32 // Explicitly capture here "a" by reference.
+			{
+				auto prev= a.x;
+				a.x/= 5;
+				return prev;
+			};
+			halt if( f() != 165 );
+			halt if( a.x != 165 / 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SecondOrderReference_InLambdaCapture_Test2():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 mut x= 897;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f = lambda[=]() : i32
+			{
+				// Implicitly capture here "b" by value.
+				auto prev= b.a.x;
+				b.a.x/= 17;
+				return prev;
+			};
+			halt if( f() != 897 );
+			halt if( a.x != 897 / 17 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SecondOrderReference_InLambdaCapture_Test3():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 mut x= -865;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f = lambda[b]() : i32 // Explicitly capture here "b" by value.
+			{
+				auto prev= b.a.x;
+				b.a.x/= 12;
+				return prev;
+			};
+			halt if( f() != -865 );
+			halt if( a.x != -865 / 12 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SecondOrderReference_InLambdaCapture_Test4():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+
+		fn Foo()
+		{
+			var i32 mut x= 87;
+			var A a{ .x= x };
+			auto f = lambda[&]() : A&
+			{
+				// Return reference to captured reference to type with a reference inside.
+				return a;
+			};
+			halt if( f().x != 87 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SecondOrderReference_InLambdaCapture_Test5():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 mut x= 7891;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f = lambda[b]() : A&
+			{
+				// Return inner reference of captured variable, which has second order reference inside.
+				return b.a;
+			};
+			halt if( f().x != 7891 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
