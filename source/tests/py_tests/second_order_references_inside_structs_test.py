@@ -1376,3 +1376,115 @@ def ReturningUnallowedReference_ForSecondOrderReference_Test23():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReturningUnallowedReference", 10 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test0():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		fn Foo( B& b, i32& y )
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test1():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct AWrapper{ A a; }
+		struct B{ AWrapper &mut a_wrapper; }
+		fn Foo( B& b, i32& y )
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a_wrapper.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test2():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		struct BWrapper{ B b; }
+		fn Foo( BWrapper& b_wrapper, i32& y )
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b_wrapper.b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test3():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		fn Foo( B b, i32& y )
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test4():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct AWrapper{ A a; }
+		struct B{ AWrapper &mut a_wrapper; }
+		fn Foo( B b, i32& y )
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a_wrapper.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test5():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		struct BWrapper{ B b; }
+		fn Foo( BWrapper b_wrapper, i32& y )
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b_wrapper.b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
