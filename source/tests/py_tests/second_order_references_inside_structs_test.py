@@ -1488,3 +1488,212 @@ def UnallowedReferencePollution_ForSecondOrderReference_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test6():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		fn Foo( B& b, i32& y ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test7():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct AWrapper{ A a; }
+		struct B{ AWrapper &mut a_wrapper; }
+		fn Foo( B& b, i32& y ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a_wrapper.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test8():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		struct BWrapper{ B b; }
+		fn Foo( BWrapper& b_wrapper, i32& y ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b_wrapper.b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test9():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		fn Foo( B b, i32& y ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test10():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct AWrapper{ A a; }
+		struct B{ AWrapper &mut a_wrapper; }
+		fn Foo( B b, i32& y ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b.a_wrapper.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test11():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		struct BWrapper{ B b; }
+		fn Foo( BWrapper b_wrapper, i32& y ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution for indirectly accessible variable, which isn't allowed.
+			MakePollution( b_wrapper.b.a, y );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test12():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		fn Foo()
+		{
+			auto f= lambda[]( B& b, i32& y ) // Reference notation deduction is enabled for lambdas.
+			{
+				// Perform pollution for indirectly accessible variable, which isn't allowed.
+				MakePollution( b.a, y );
+			};
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 10 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test13():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &imut a; }
+		fn Foo( A& mut a, B& b )
+		{
+			// Perform pollution with indirectly-accessible source, which for now isn't possible.
+			MakePollution( a, b.a.x );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test14():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct AWrapper{ A a; }
+		struct B{ A &imut a; }
+		fn Foo( AWrapper& mut a_wrapper, B& b )
+		{
+			// Perform pollution with indirectly-accessible source, which for now isn't possible.
+			MakePollution( a_wrapper.a, b.a.x );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 9 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test15():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &imut a; }
+		fn Foo( A& mut a, B& b ) : auto // Enable reference notation deduction via "auto".
+		{
+			// Perform pollution with indirectly-accessible source, which for now isn't possible.
+			MakePollution( a, b.a.x );
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 8 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test16():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &imut a; }
+		fn Foo()
+		{
+			auto f= lambda[]( A& mut a, B& b ) // Reference notation deduction is enabled for lambdas.
+			{
+				// Perform pollution with indirectly-accessible source, which for now isn't possible.
+				MakePollution( a, b.a.x );
+			};
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 10 ) )
