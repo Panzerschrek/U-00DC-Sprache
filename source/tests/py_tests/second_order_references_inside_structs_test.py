@@ -741,6 +741,129 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test17():
 	assert( HasError( errors_list, "ReferenceProtectionError", 25 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test18():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			auto f= lambda[&a]() : A& // Explicitly capture "a" by reference. "f" holds a second order reference to "x" via "a".
+			{
+				return a;
+			};
+
+			auto& a0= f(); // Creating a reference to "a" with inner reference pointing to "x".
+			f(); // This call requires creating second mutable reference to "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 13 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test19():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			auto f= lambda[&]()
+			{
+				// Implicitly capture "a" by reference. "f" holds a second order reference to "x" via "a".
+				auto& a_ref= a;
+			};
+
+			auto& x_ref= a.x; // Fine, take reference to "x".
+			f(); // This call requires creating second mutable reference to "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 10 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test20():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			auto f= lambda[&a]() : A& // Explicitly capture "a" by reference. "f" holds a second order reference to "x" via "a".
+			{
+				return a;
+			};
+
+			auto& a0= f(); // Creating a reference to "a" with inner reference pointing to "x".
+			auto &mut x_ref= a.x; // Creating second mutable reference to "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 13 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test21():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f= lambda[=]() : A& // Explicitly capture "b" by copy. "f" holds a second order reference to "x" via "b.a".
+			{
+				return b.a;
+			};
+
+			auto& a0= f(); // Creating a reference to "a" with inner reference pointing to "x".
+			auto &mut x_ref= a.x; // Creating second mutable reference to "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 9 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 14 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test22():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			auto f= lambda[ b= B{ .a= a } ]() // Create capture variable which captures reference to "a".
+			{
+				auto& b_ref= b;
+			};
+
+			auto &mut x_ref= a.x; // Creating a mutable reference to "x".
+			f(); // Error - this call will create internally second mutable reference to "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
@@ -1505,6 +1628,123 @@ def ReturningUnallowedReference_ForSecondOrderReference_Test23():
 	assert( HasError( errors_list, "ReturningUnallowedReference", 10 ) )
 
 
+def ReturningUnallowedReference_ForSecondOrderReference_Test24():
+	c_program_text= """
+		struct A{ i32 & x; }
+		fn Foo( A& a )
+		{
+			auto f= lambda[&a]() : i32& // Explicitly capture "a" by reference.
+			{
+				// Inner reference of a captured by reference variable is second order reference.
+				// It's impossible to return it.
+				return a.x;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 9 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test25():
+	c_program_text= """
+		struct A{ i32 & x; }
+		fn Foo( A& a )
+		{
+			auto f= lambda[&]() : i32&
+			{
+				// Implicitle capture "a" by reference.
+				// Inner reference of a captured by reference variable is second order reference.
+				// It's impossible to return it.
+				return a.x;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 10 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test26():
+	c_program_text= """
+		struct A{ i32& x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f= lambda[b]() : i32& // Explicitly capture "b" by copy.
+			{
+				// Can't return second order reference.
+				return b.a.x;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 12 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test27():
+	c_program_text= """
+		struct A{ i32& x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f= lambda[=]() : i32&
+			{
+				// Implicitly capture "b" by value.
+				// Can't return second order reference.
+				return b.a.x;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 13 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test28():
+	c_program_text= """
+		struct A{ i32& x; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A a{ .x= x };
+			auto f= lambda[&a]() : A // Explicitly capture "a" by reference.
+			{
+				// Can't return a second order reference inside return value.
+				return a;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 10 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test29():
+	c_program_text= """
+		struct A{ i32& x; }
+		struct B{ A& a; }
+		fn Foo( B& b )
+		{
+			auto f= lambda[b]() : A // Explicitly capture "b" by value.
+			{
+				// Can't return a second order reference inside return value.
+				return b.a;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 9 ) )
+
+
 def UnallowedReferencePollution_ForSecondOrderReference_Test0():
 	c_program_text= """
 		struct A{ i32 & x; }
@@ -1824,3 +2064,72 @@ def UnallowedReferencePollution_ForSecondOrderReference_Test16():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UnallowedReferencePollution", 10 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test17():
+	c_program_text= """
+		struct A{ i32 & x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A mut a{ .x= x };
+			auto f= lambda[&]( i32& y )
+			{
+				// Implicitly capture "a" and create pollution for it.
+				// It's impossible, because captured in lambda reference creates second order pollution.
+				MakePollution( a, y );
+			};
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 12 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test18():
+	c_program_text= """
+		struct A{ i32 & x; }
+		struct B{ A &mut a; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A mut a{ .x= x };
+			auto f= lambda[ b= B{ .a= a } ]( i32& y ) // "a" is captured inside inside "b".
+			{
+				// It's impossible to perform pollution, because captured in lambda reference creates second order pollution.
+				MakePollution( b.a, y );
+			};
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 12 ) )
+
+
+def UnallowedReferencePollution_ForSecondOrderReference_Test19():
+	c_program_text= """
+		struct A{ i32 & x; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A outer_a{ .x= x };
+			auto f= lambda[&]( A& mut dst_a )
+			{
+				// Implicitly capture "outer_a" by reference.
+				// Pollution source is second order reference, so, it's impossible.
+				MakePollution( dst_a, outer_a.x );
+			};
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A &mut a, i32& x ) @(pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnallowedReferencePollution", 12 ) )
