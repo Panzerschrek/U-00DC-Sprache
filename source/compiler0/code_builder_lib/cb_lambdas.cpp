@@ -556,16 +556,17 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 				InnerReference inner_reference( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				if( reference_tag_cout > 0 )
+				{
 					inner_reference.second_order_kind=
 						type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
 							? SecondOrderInnerReferenceKind::Imut
 							: SecondOrderInnerReferenceKind::Mut;
 
-				class_->inner_references.push_back( std::move(inner_reference) );
+					if( type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
+						REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), lambda.src_loc, 2, captured_variable.name );
+				}
 
-				// TODO - allow only first order references and only with one reference tag.
-				//if( reference_tag_cout > 0 )
-				//	REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope.GetErrors(), lambda.src_loc, captured_variable.name );
+				class_->inner_references.push_back( std::move(inner_reference) );
 
 				// Captured by reference variable points to one of the inner reference tags of lambda this.
 				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, field->reference_tag );

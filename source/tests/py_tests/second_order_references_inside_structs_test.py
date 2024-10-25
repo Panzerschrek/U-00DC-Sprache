@@ -2365,3 +2365,42 @@ def UnallowedReferencePollution_ForSecondOrderReference_Test19():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UnallowedReferencePollution", 12 ) )
+
+
+def ReferenceIndirectionDepthExceeded_Test0():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut x; }
+		struct C{ B &imut x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
+
+
+def ReferenceIndirectionDepthExceeded_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ [ A, 2 ] &imut x; }
+		struct C{ tup[ B, i32, f32 ] &imut x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
+
+
+def ReferenceIndirectionDepthExceeded_Test2():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut x; }
+		fn Foo( B& b )
+		{
+			auto f= lambda[&]() // Error - capturing reference of type with second order references inside.
+			{
+				auto& b_ref= b;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 6 ) )

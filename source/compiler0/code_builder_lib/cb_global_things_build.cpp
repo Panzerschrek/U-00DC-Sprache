@@ -515,9 +515,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
 					return;
 				}
-				// TODO - disable reference indirection depth more than 1 for types of reference fields.
-				//if( class_field->type.ReferenceTagCount() > 0u )
-				//	REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
+
+				if( class_field->type.ReferenceTagCount() > 0u &&
+					class_field->type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
+					REPORT_ERROR( ReferenceIndirectionDepthExceeded, class_parent_namespace.GetErrors(), in_field.src_loc, 2, in_field.name );
 			}
 			else if( class_field->type.IsAbstract() )
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );

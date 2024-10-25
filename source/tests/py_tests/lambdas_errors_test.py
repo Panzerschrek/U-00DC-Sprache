@@ -754,35 +754,62 @@ def LambdaMoveCapturedVariable_Test4():
 	assert( HasError( errors_list, "ExpectedVariable", 8 ) )
 
 
-def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test0():
+def ReferenceIndirectionDepthExceeded_ForLambdas_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
 		fn Foo( R r )
 		{
-			// Since captured by reference variable becames a reference field
-			// it's not possible to capture by reference a variable with references inside.
-			// It's still not allowed to create reference fields of types with references inside.
+			// It's fine to capture "R" by reference - it contains no second order inner references.
 			auto f= lambda[&]() { auto& r_ref= r; };
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 8 ) )
+	tests_lib.build_program( c_program_text )
 
 
-def ReferenceFieldOfTypeWithReferencesInside_ForLambdas_Test1():
+def ReferenceIndirectionDepthExceeded_ForLambdas_Test1():
 	c_program_text= """
 		fn Foo()
 		{
 			var i32 x= 0;
 			auto f0= lambda[&]() : i32 { return x; };
-			// Capture another lambda by reference, which contains references inside.
+			// It's fine to capture "f0" by reference - it contains no second order inner references.
 			auto f1= lambda[&]() : i32 { return f0(); };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceIndirectionDepthExceeded_ForLambdas_Test2():
+	c_program_text= """
+		struct T{ i32& x; }
+		struct R{ T& t; }
+		fn Foo( R r )
+		{
+			// Since captured by reference variable becomes a reference field
+			// it's not possible to capture by reference a variable with second order references inside.
+			auto f= lambda[&]() { auto& r_ref= r; };
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 7 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 8 ) )
+
+
+def ReferenceIndirectionDepthExceeded_ForLambdas_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto f0= lambda[&]() : i32 { return x; }; // "f0" captures a reference.
+			auto f1= lambda[&]() : i32 { return f0(); }; // "f1" captures a reference to "f0" and thus has a second order reference inside.
+			auto f2= lambda[&]() : i32 { return f1(); }; // Error here - reference indirection limit reached.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceIndirectionDepthExceeded", 5 ) )
+	assert( not HasError( errors_list, "ReferenceIndirectionDepthExceeded", 6 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 7 ) )
 
 
 def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
