@@ -2404,3 +2404,58 @@ def ReferenceIndirectionDepthExceeded_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 6 ) )
+
+
+def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInside_Test0():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			A &imut a;
+
+			fn destructor()
+			{
+				auto& t= this; // Error here. Since a second order mutable reference is stored inside this struct, whole "this" in destructor isn't available.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ThisUnavailable", 9 ) )
+
+
+def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInside_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			A &imut a;
+
+			fn destructor()
+			{
+				auto& a_ref= a; // Error here. Prevent accessing second order mutable reference in field "a".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MutableReferenceFieldAccessInDestructor", 9 ) )
+
+
+def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInside_Test2():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A& a; }
+		struct BWrapper
+		{
+			B b;
+
+			fn destructor()
+			{
+				auto& b_ref= b; // Error here. Prevent accessing second order mutable reference in field "b".
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 10 ) )

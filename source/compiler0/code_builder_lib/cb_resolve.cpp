@@ -332,7 +332,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		if( function_context.destructor_end_block != nullptr )
 		{
 			// Forbid accessing mutable references in destructor in order to avoid possible invalidation of still alive derived references.
-			if( field->is_reference && field->is_mutable )
+			if( field->is_reference && ( field->is_mutable || field->type.ContainsMutableReferences() ) )
 				REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names.GetErrors(), src_loc );
 			if( !field->is_reference && field->type.ContainsMutableReferences() )
 				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names.GetErrors(), src_loc );

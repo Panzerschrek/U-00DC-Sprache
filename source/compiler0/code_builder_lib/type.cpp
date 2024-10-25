@@ -435,7 +435,7 @@ bool Type::ContainsMutableReferences() const
 	else if( const auto class_type= GetClassType() )
 	{
 		for( const InnerReference& inner_reference : class_type->inner_references )
-			if( inner_reference.kind == InnerReferenceKind::Mut )
+			if( inner_reference.kind == InnerReferenceKind::Mut || inner_reference.second_order_kind == SecondOrderInnerReferenceKind::Mut )
 				return true;
 	}
 	else if( const auto array_type= GetArrayType() )
