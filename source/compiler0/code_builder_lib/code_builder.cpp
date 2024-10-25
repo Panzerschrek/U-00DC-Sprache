@@ -1547,11 +1547,16 @@ void CodeBuilder::BuildFuncCode(
 		for( const FunctionType::Param& param : function_type.params )
 		{
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's forbidden to create types with references inside to types with other references inside.
-			// So, check if this rule is not violated for coroutines.
-			// Do this now, because it's impossible to check this in coroutine declaration, because this check requires complete types of parameters.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
 			if( param.value_type != ValueType::Value && param.type.ReferenceTagCount() > 0u )
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
+			{
+				std::string field_name= "param ";
+				field_name+= std::to_string( size_t( &param - function_type.params.data() ) );
+				field_name+= " of type ";
+				field_name+= param.type.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, parent_names_scope.GetErrors(), params.front().src_loc, 1, field_name ); // TODO - use separate error code?
+			}
 
 			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
