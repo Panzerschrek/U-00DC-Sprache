@@ -1387,6 +1387,97 @@ def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test0():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 31 ) )
 
 
+def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test1():
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct B{ A& a; }
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A& mut a, i32& x ) @(reference_pollution);
+
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A mut outer_a{ .x= x };
+			{
+				var i32 y= 0;
+				var A inner_a{ .x= y };
+				var B b{ .a= inner_a };
+
+				// "b.a.x" points to "y". A reference to it is saved inside "outer_a".
+				MakePollution( outer_a, b.a.x );
+			} // Error here - destroyed variable "y" still has a reference (inside "outer_a").
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 19 ) )
+
+
+def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test2():
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct B{ A& a; }
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A& mut a, i32& x ) @(reference_pollution);
+
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Pass( B& b ) : B @(return_inner_references) & @(return_references );
+
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A mut outer_a{ .x= x };
+			{
+				var i32 y= 0;
+				var A inner_a{ .x= y };
+				var B b{ .a= inner_a };
+
+				// "Pass(b).a.x" points to "y". A reference to it is saved inside "outer_a".
+				MakePollution( outer_a, Pass(b).a.x );
+			} // Error here - destroyed variable "y" still has a reference (inside "outer_a").
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 23 ) )
+
+
+def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test3():
+	c_program_text= """
+		struct A{ i32 &imut x; }
+		struct B{ A& a; }
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A& mut a, i32& x ) @(reference_pollution);
+
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn GetA( B& b ) : A & @(return_references )
+		{
+			return b.a;
+		}
+
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A mut outer_a{ .x= x };
+			{
+				var i32 y= 0;
+				var A inner_a{ .x= y };
+				var B b{ .a= inner_a };
+
+				// "GetA(b).x" points to "y". A reference to it is saved inside "outer_a".
+				MakePollution( outer_a, GetA(b).x );
+			} // Error here - destroyed variable "y" still has a reference (inside "outer_a").
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 25 ) )
+
+
 def ReturningUnallowedReference_ForSecondOrderReference_Test0():
 	c_program_text= """
 		struct A{ i32 & x; }
