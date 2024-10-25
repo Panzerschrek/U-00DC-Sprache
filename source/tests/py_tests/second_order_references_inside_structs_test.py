@@ -1005,6 +1005,123 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test26():
 	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test27():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Foo(B& b)
+		{
+			auto f= lambda [b]()
+			{
+				auto& x= b.a.x; // Create a reference to second order reference of a captured by value variable.
+				b.a; // Error, create inner reference for "b.a" pointing to "x".
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test28():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Foo(B& b)
+		{
+			auto f= lambda [b] byval ()
+			{
+				auto& x= b.a.x; // Create a reference to second order reference of a captured by value variable.
+				b.a; // Error, create inner reference for "b.a" pointing to "x".
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test29():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Foo(B& b)
+		{
+			auto f= lambda [b] byval mut ()
+			{
+				auto& x= b.a.x; // Create a reference to second order reference of a captured by value variable.
+				b.a; // Error, create inner reference for "b.a" pointing to "x".
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test30():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo(A& a)
+		{
+			auto f= lambda [&]()
+			{
+				auto& x_ref= a.x; // Create a reference to second order reference of a captured by reference variable.
+				auto &mut x_ref1= a.x; // Error, create a mutable reference to "x", when an immutable reference already exists.
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test31():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo(A& a)
+		{
+			auto f= lambda [&] byval ()
+			{
+				auto& x_ref= a.x; // Create a reference to second order reference of a captured by reference variable.
+				auto &mut x_ref1= a.x; // Error, create a mutable reference to "x", when an immutable reference already exists.
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test32():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo(A& a)
+		{
+			auto f= lambda [&] byval mut ()
+			{
+				auto& x_ref= a.x; // Create a reference to second order reference of a captured by reference variable.
+				auto &mut x_ref1= a.x; // Error, create a mutable reference to "x", when an immutable reference already exists.
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }

@@ -1800,15 +1800,46 @@ void CodeBuilder::BuildFuncCode(
 						for( size_t i= 0; i < reference_tag_count; ++i )
 						{
 							// Create root variable.
-							const VariablePtr accesible_variable=
+							const VariableMutPtr accesible_variable=
 								Variable::Create(
 									invalid_type_,
 									ValueType::Value,
 									Variable::Location::Pointer,
 									field_name + " referenced variable " + std::to_string(i) );
+
+							const SecondOrderInnerReferenceKind second_order_inner_reference_kind= class_field.type.GetSecondOrderInnerReferenceKind(i);
+							VariableMutPtr accessible_variable_inner_reference;
+							if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+							{
+								VariableMutPtr accessible_variable_inner_reference=
+									Variable::Create(
+										invalid_type_,
+										second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+										Variable::Location::Pointer,
+										field_name + " referenced variable " + std::to_string(i) + " inner reference" );
+								accessible_variable_inner_reference->is_inner_reference_node= true;
+								accessible_variable_inner_reference->is_variable_inner_reference_node= true;
+
+								U_ASSERT( accesible_variable->inner_reference_nodes.empty() );
+								accesible_variable->inner_reference_nodes.push_back( accessible_variable_inner_reference );
+							}
+
 							function_context.variables_state.AddNode( accesible_variable );
 							function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 							function_context.variables_state.AddLink( variable->inner_reference_nodes[i], variable_reference->inner_reference_nodes[i] );
+
+							if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+							{
+								const VariablePtr second_order_accesible_variable=
+									Variable::Create(
+										invalid_type_,
+										ValueType::Value,
+										Variable::Location::Pointer,
+										field_name + " second order referenced variable " + std::to_string(i) );
+								function_context.variables_state.AddNode( second_order_accesible_variable );
+
+								function_context.variables_state.AddLink( second_order_accesible_variable, accessible_variable_inner_reference );
+							}
 						}
 
 						function_names.AddName( field_name, NamesScopeValue( variable_reference, block.src_loc ) );
