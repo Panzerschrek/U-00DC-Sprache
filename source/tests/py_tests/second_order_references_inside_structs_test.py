@@ -177,6 +177,67 @@ def SecondOrderReferenceInsideStructUsage_Test7():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SecondOrderReferenceInsideStructUsage_Test8():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		// Return a reference to type with references inside inside a struct.
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Bar( B& b ) : B @(return_inner_references)
+		{
+			return b;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 15;
+			{
+				var A a{ .x= x };
+				var B b{ .a= a };
+
+				var B b_copy= Bar(b);
+				b_copy.a.x -= 76;
+				halt if( b.a.x != 15 - 76 );
+			}
+			halt if( x != 15 - 76 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderReferenceInsideStructUsage_Test9():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		struct BWrapper{ B b; }
+
+		// Return a reference to type with references inside inside a struct.
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Bar( BWrapper b_wrapper ) : B @(return_inner_references)
+		{
+			return b_wrapper.b;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 159972;
+			{
+				var A a{ .x= x };
+				var BWrapper b_wrapper{ .b{ .a= a } };
+
+				var B b_copy= Bar(b_wrapper);
+				b_copy.a.x /= 31;
+				halt if( b_wrapper.b.a.x != 159972 / 31 );
+			}
+			halt if( x != 159972 / 31 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def SecondOrderReference_InLambdaCapture_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
@@ -862,6 +923,86 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test22():
 	assert( not HasError( errors_list, "ReferenceProtectionError", 8 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test23():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Foo( B& b )
+		{
+			auto& x= b.a.x; // Create a mutable reference to second order reference of an argument.
+			b.a; // Error here - accessing reference field "a" creates for it a mutable inner reference pointing to second order reference of this argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test24():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+		fn Foo( B& b )
+		{
+			auto& x= b.a.x; // Create a mutable reference to second order reference of an argument.
+			Bar(b); // Error here - calling a function creates a second mutable reference to second order reference of an argument.
+		}
+		fn Bar( B& b );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test25():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			A& a;
+
+			fn constructor( mut this, A& in_a ) @(reference_pollution)
+				( a= in_a )
+			{}
+
+			var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b(a); // Create pollution via a constructor.
+
+			var A& a0= b.a; // "a0.x" points to "a.x".
+			var A& a1= b.a; // Error - creating second node pointing to "a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test26():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		fn Foo( A& a )
+		{
+			auto f= lambda[&]()
+			{
+				auto& x= a.x; // Create a mutable reference to second order reference of lambda "this".
+				a.x; // Error here - accessing reference field "a" of lambda creates for it a mutable inner reference pointing to second order reference of this argument.
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 7 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
