@@ -516,9 +516,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					return;
 				}
 
-				if( class_field->type.ReferenceTagCount() > 0u &&
-					class_field->type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
-					REPORT_ERROR( ReferenceIndirectionDepthExceeded, class_parent_namespace.GetErrors(), in_field.src_loc, 2, in_field.name );
+				const size_t reference_tag_count= class_field->type.ReferenceTagCount();
+				if( reference_tag_count > 0 )
+				{
+					if( class_field->type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
+						REPORT_ERROR( ReferenceIndirectionDepthExceeded, class_parent_namespace.GetErrors(), in_field.src_loc, 2, in_field.name );
+
+					if( reference_tag_count > 1 )
+						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
+				}
 			}
 			else if( class_field->type.IsAbstract() )
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );

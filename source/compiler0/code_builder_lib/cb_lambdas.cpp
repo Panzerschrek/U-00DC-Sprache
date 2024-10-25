@@ -543,7 +543,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			auto field= std::make_shared<ClassField>( captured_variable.name, class_, type, index, true, false );
 			class_->fields_order.push_back( field );
 
-			const auto reference_tag_cout= type.ReferenceTagCount();
+			const auto reference_tag_count= type.ReferenceTagCount();
 
 			if( captured_variable.capture_by_reference )
 			{
@@ -555,7 +555,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				field->reference_tag= uint8_t( class_->inner_references.size() );
 
 				InnerReference inner_reference( field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
-				if( reference_tag_cout > 0 )
+				if( reference_tag_count > 0 )
 				{
 					inner_reference.second_order_kind=
 						type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
@@ -564,6 +564,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 					if( type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
 						REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), lambda.src_loc, 2, captured_variable.name );
+
+					if( reference_tag_count > 1 )
+						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope.GetErrors(), lambda.src_loc, captured_variable.name );
 				}
 
 				class_->inner_references.push_back( std::move(inner_reference) );
@@ -577,9 +580,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
 
 				// Each reference tag of each captured variable get its own reference tag in result lambda class.
-				U_ASSERT( captured_variable.data.accessible_variables.size() == reference_tag_cout );
-				field->inner_reference_tags.reserve( reference_tag_cout );
-				for( size_t i= 0; i < reference_tag_cout; ++i )
+				U_ASSERT( captured_variable.data.accessible_variables.size() == reference_tag_count );
+				field->inner_reference_tags.reserve( reference_tag_count );
+				for( size_t i= 0; i < reference_tag_count; ++i )
 				{
 					const uint8_t reference_tag= uint8_t( class_->inner_references.size() );
 					field->inner_reference_tags.push_back( reference_tag );

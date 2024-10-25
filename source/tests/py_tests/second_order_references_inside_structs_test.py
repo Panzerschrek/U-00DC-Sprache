@@ -2406,6 +2406,73 @@ def ReferenceIndirectionDepthExceeded_Test2():
 	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 6 ) )
 
 
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test0():
+	c_program_text= """
+		struct A
+		{
+			i32 & @("a"c8) x;
+			f32 & @("b"c8) y;
+		}
+		struct B
+		{
+			A &imut x; // Error - "A" contains more than one inner reference tag inside.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 9 ) )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			tup[ A, A ] &imut x; // A tuple contains number of inner references equal to sum of its elements inner references.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 5 ) )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test2():
+	c_program_text= """
+		struct A
+		{
+			i32 & @("a"c8) x;
+			f32 & @("b"c8) y;
+		}
+		fn Foo(A& a)
+		{
+			// Error - capturing "a" by reference creates a reference field in the lambda class, which isn't possible for types with more than one inner reference tag inside.
+			auto f= lambda[&]()
+			{
+				auto& a_ref= a;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 10 ) )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test3():
+	c_program_text= """
+		struct A // This struct have two references inside, but they use the same inner reference tag.
+		{
+			i32 & @("a"c8) x;
+			f32 & @("a"c8) y;
+		}
+		struct B
+		{
+			A &imut x; // Fine - "A" contains only one inner reference tag inside.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInside_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
