@@ -542,15 +542,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Determine inner references.
 	{
 		// Inherit inner references of parents.
-		// Normally any reference may be inhereted only from base, but not interfaces.
-		// TODO - inherit second order inner references.
-		the_class.inner_references.clear();
-		for( const Class::Parent& parent : the_class.parents )
-		{
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), parent.class_->inner_references.size() ), InnerReference( InnerReferenceKind::Imut ) );
-			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
-				the_class.inner_references[i].kind= std::max( the_class.inner_references[i].kind, parent.class_->inner_references[i].kind );
-		}
+		// Normally any reference may be inhereted only from base, but not interfaces, since interfaces have no fields.
+		if( the_class.base_class != nullptr )
+			the_class.inner_references= the_class.base_class->inner_references;
+
 		const bool has_parents_with_references_inside= !the_class.inner_references.empty();
 
 		// Collect fields for which reference notation is required.
