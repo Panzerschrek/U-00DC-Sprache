@@ -162,6 +162,7 @@ PROCESS_ERROR( ParamNumberOutOfRange, "Param number {0} is out of range of funct
 PROCESS_ERROR( ReferenceTagOutOfRange, "Reference tag number {0} is out of range of type {1} ({2})." )
 PROCESS_ERROR( UnusedReferenceTag, "Reference tag \"{0}\" is not used. Make sure there is no gaps in reference tags of the class." )
 PROCESS_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, "Reference tag \"{0}\" points both to mutable and immutable references." )
+PROCESS_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, "Second order reference of tag \"{0}\" points both to mutable and immutable references." )
 PROCESS_ERROR( ReferenceNotationViolatesImmutability, "Reference notation violates immutability (immutable references are linked with mutable)." )
 
 // Operators overloading

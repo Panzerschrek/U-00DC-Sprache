@@ -2473,6 +2473,110 @@ def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test0():
+	c_program_text= """
+		struct A { i32 &imut r; }
+		struct B { i32 &mut  r; }
+		struct C
+		{
+			A& @("a"c8) a;
+			B& @("a"c8) b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag", 4 ) )
+
+
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test1():
+	c_program_text= """
+		struct A { i32 &imut r; }
+		struct B { i32 &imut r; }
+		struct C // Fine - second order inner references are both immutable.
+		{
+			A& @("a"c8) a;
+			B& @("a"c8) b;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test2():
+	c_program_text= """
+		struct A { i32 &mut r; }
+		struct B { i32 &mut r; }
+		struct C // Fine - second order inner references are both mutable.
+		{
+			A& @("a"c8) a;
+			B& @("a"c8) b;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test3():
+	c_program_text= """
+		struct A { i32 &imut r; }
+		struct B { i32 &mut  r; }
+		struct C { A& a; }
+		struct D { B& b; }
+		struct E
+		{
+			C @("a") c;
+			D @("a") d;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag", 6 ) )
+
+
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test4():
+	c_program_text= """
+		struct A { i32 &imut r; }
+		struct B { i32 &imut r; }
+		struct C { A& a; }
+		struct D { B& b; }
+		struct E // Fine - second order inner references are both immutable.
+		{
+			C @("a") c;
+			D @("a") d;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test5():
+	c_program_text= """
+		struct A { i32 &mut r; }
+		struct B { i32 &mut r; }
+		struct C { A& a; }
+		struct D { B& b; }
+		struct E // Fine - second order inner references are both mutable.
+		{
+			C @("a") c;
+			D @("a") d;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test6():
+	c_program_text= """
+		struct A { i32 &imut r; }
+		struct B { i32 &mut  r; }
+		struct C { A& a; }
+		struct E
+		{
+			C @("a") c;
+			B & @("a"c8) b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag", 5 ) )
+
+
 def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInside_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }

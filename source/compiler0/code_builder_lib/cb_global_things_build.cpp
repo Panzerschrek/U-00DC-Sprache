@@ -692,17 +692,27 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		}
 
 		// Setup second order inner references.
-		// TODO - detect possible errors.
 		for( size_t i= 0; i < the_class.inner_references.size(); ++i )
 		{
+			InnerReference& inner_reference= the_class.inner_references[i];
+
 			for( const ClassFieldPtr& field : reference_fields )
 			{
 				if( field->reference_tag == i && field->type.ReferenceTagCount() > 0 )
 				{
-					the_class.inner_references[i].second_order_kind=
+					const SecondOrderInnerReferenceKind second_order_kind=
 						field->type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
 							? SecondOrderInnerReferenceKind::Imut
 							: SecondOrderInnerReferenceKind::Mut;
+
+					if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+						inner_reference.second_order_kind= second_order_kind;
+					else if( inner_reference.second_order_kind != second_order_kind )
+					{
+						std::string s;
+						s.push_back( char( 'a' + i ) );
+						REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					}
 				}
 			}
 
@@ -711,7 +721,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				for( size_t j= 0; j < field->inner_reference_tags.size(); ++j )
 				{
 					if( field->inner_reference_tags[j] == i )
-						the_class.inner_references[i].second_order_kind= field->type.GetSecondOrderInnerReferenceKind(j);
+					{
+						const SecondOrderInnerReferenceKind second_order_kind= field->type.GetSecondOrderInnerReferenceKind(j);
+
+						if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+							inner_reference.second_order_kind= second_order_kind;
+						else if( inner_reference.second_order_kind != second_order_kind )
+						{
+							std::string s;
+							s.push_back( char( 'a' + i ) );
+							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+						}
+					}
 				}
 			}
 		}
