@@ -425,6 +425,42 @@ SecondOrderInnerReferenceKind Type::GetSecondOrderInnerReferenceKind( const size
 	return SecondOrderInnerReferenceKind::None;
 }
 
+size_t Type::GetReferenceIndirectionDepth() const
+{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
+		return 0; // There types don't contain references inside.
+
+	if( const auto class_type= GetClassType() )
+	{
+		size_t depth= 0;
+		for( const InnerReference& inner_reference : class_type->inner_references )
+		{
+			// For now no more than depth 2 is possible.
+			depth= std::max( depth, size_t(1) + size_t(inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0 : 1 ) );
+		}
+
+		return depth;
+	}
+
+	if( const auto array_type= GetArrayType() )
+		return array_type->element_type.GetReferenceIndirectionDepth();
+
+	if( const auto tuple_type= GetTupleType() )
+	{
+		size_t depth= 0;
+		for( const Type& element_type : tuple_type->element_types )
+			depth= std::max( depth, element_type.GetReferenceIndirectionDepth() );
+
+		return depth;
+	}
+
+	U_ASSERT(false); // Unreachable type kind.
+	return 0;
+}
+
 bool Type::ContainsMutableReferences() const
 {
 	if( GetFundamentalType() != nullptr ||

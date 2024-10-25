@@ -1251,3 +1251,52 @@ def TypeinfoForReferencePollution_Test1():
 		static_assert( typeinfo</FnPtr/>.references_pollution == expected_reference_pollution );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferenceIndirectionDepthInTypeinfo_Test0():
+	c_program_text= """
+		// Fundamental types - no reference indirection.
+		static_assert( typeinfo</ void />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ i32 />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ tup[ char8, size_type ] />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ [ f64, 16 ] />.reference_indirection_depth == 0s );
+
+		// Struct with no references - no reference indirection.
+		struct S{ i32 x; f32 y; }
+		static_assert( typeinfo</ S />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ tup[ S ] />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ tup[ i32, S, f32 ] />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ [ S, 4 ] />.reference_indirection_depth == 0s );
+		static_assert( typeinfo</ [ S, 0 ] />.reference_indirection_depth == 0s );
+
+		// Struct with reference of first indirection level.
+		struct A{ i32& x; }
+		static_assert( typeinfo</ A />.reference_indirection_depth == 1s );
+		static_assert( typeinfo</ tup[ A, S ] />.reference_indirection_depth == 1s );
+		static_assert( typeinfo</ tup[ A, A ] />.reference_indirection_depth == 1s );
+		static_assert( typeinfo</ [ A, 4 ] />.reference_indirection_depth == 1s );
+		static_assert( typeinfo</ [ A, 0 ] />.reference_indirection_depth == 1s );
+
+		// Struct with reference of second indirection level.
+		struct B{ A& a; }
+		static_assert( typeinfo</ B />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ tup[ B, S ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ tup[ A, B ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ tup[ B, B ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ [ B, 4 ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ [ B, 0 ] />.reference_indirection_depth == 2s );
+
+		// Struct with reference of second indirection level.
+		struct C
+		{
+			A& @("a"c8) a;
+			i32& @("b"c8) x;
+		}
+		static_assert( typeinfo</ C />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ tup[ i32, C ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ tup[ A, C ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ tup[ C, B, C, A ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ [ C, 4 ] />.reference_indirection_depth == 2s );
+		static_assert( typeinfo</ [ C, 0 ] />.reference_indirection_depth == 2s );
+	"""
+	tests_lib.build_program( c_program_text )

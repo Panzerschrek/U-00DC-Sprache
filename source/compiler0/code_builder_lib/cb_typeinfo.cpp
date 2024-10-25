@@ -149,6 +149,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	}
 
 	add_size_field( "reference_tag_count", type.ReferenceTagCount() );
+	add_size_field( "reference_indirection_depth", type.GetReferenceIndirectionDepth() );
 
 	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
 	{
