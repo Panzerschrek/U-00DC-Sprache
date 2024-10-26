@@ -1156,6 +1156,84 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test32():
 	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test33():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+
+		class B polymorph
+		{
+			A &imut a;
+
+			fn constructor( mut this, A& in_a ) @(reference_pollution)
+				( a= in_a )
+			{}
+
+			var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		}
+
+		class BWrapper : B
+		{
+			fn constructor( mut this, A& in_a ) @(reference_pollution)
+				( base( in_a ) )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var BWrapper b_wrapper( a );
+
+			var A& a0= b_wrapper.a; // "a0.x" points to "a.x".
+			var A& a1= b_wrapper.a; // Error - creating second node pointing to "a.x" inside "a1".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 28 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 29 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test34():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+
+		class B polymorph
+		{
+			A &imut a;
+
+			fn constructor( mut this, A& in_a ) @(reference_pollution)
+				( a= in_a )
+			{}
+
+			var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		}
+
+		class BWrapper : B
+		{
+			fn constructor( mut this, A& in_a ) @(reference_pollution)
+				( base( in_a ) )
+			{}
+
+			fn Bar( this );
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var BWrapper b_wrapper( a );
+
+			var i32& x_ref = b_wrapper.a.x; // "x_ref" points to "x".
+			b_wrapper.Bar(); // Method call of a class with references inside causes creation of mutable lock node for second order reference to "x".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 30 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 31 ) )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
