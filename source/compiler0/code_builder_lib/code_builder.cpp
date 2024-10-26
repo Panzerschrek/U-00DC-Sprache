@@ -1816,7 +1816,7 @@ void CodeBuilder::BuildFuncCode(
 							VariableMutPtr accessible_variable_inner_reference;
 							if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
 							{
-								VariableMutPtr accessible_variable_inner_reference=
+								accessible_variable_inner_reference=
 									Variable::Create(
 										invalid_type_,
 										second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
