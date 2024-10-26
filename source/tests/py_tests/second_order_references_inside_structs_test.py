@@ -238,6 +238,40 @@ def SecondOrderReferenceInsideStructUsage_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SecondOrderReferenceInsideStructUsage_Test10():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B{ A &imut a; }
+
+		// Return a reference to contents of an argument.
+		fn Bar( B& b ) : auto &
+		{
+			return b.a;
+		}
+
+		var [ [ char8, 2 ], 1 ] expected_return_references[ "0a" ];
+		var tup[ [ [ char8, 2 ], 0 ] ] expected_return_inner_references[ [] ];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
+		// Inner references list is empty, since it's impossible to list in it second order reference.
+		static_assert( typeinfo</ typeof(Bar) />.return_inner_references == expected_return_inner_references );
+
+		fn Foo()
+		{
+			var i32 mut x= 987;
+			{
+				var A a{ .x= x };
+				var B b{ .a= a };
+
+				Bar(b).x -= 10;
+				halt if( a.x != 977 );
+			}
+			halt if( x != 977 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def SecondOrderReference_InLambdaCapture_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }

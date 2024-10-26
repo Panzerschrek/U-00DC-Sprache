@@ -1300,3 +1300,24 @@ def ReferenceIndirectionDepthInTypeinfo_Test0():
 		static_assert( typeinfo</ [ C, 0 ] />.reference_indirection_depth == 2s );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferenceIndirectionDepthInTypeinfo_Test1():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			// Capture single value - has no references inside.
+			auto f0= lambda[=]() : i32 { return 0; };
+			static_assert( typeinfo</ typeof(f0) />.reference_indirection_depth == 0s );
+
+			// Capture a reference to other lambda - has a reference inside.
+			auto f1= lambda[&]() : i32 { return f0(); };
+			static_assert( typeinfo</ typeof(f1) />.reference_indirection_depth == 1s );
+
+			// Capture a reference to other lambda with references inside.
+			auto f2= lambda[&]() : i32 { return f1(); };
+			static_assert( typeinfo</ typeof(f2) />.reference_indirection_depth == 2s );
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
