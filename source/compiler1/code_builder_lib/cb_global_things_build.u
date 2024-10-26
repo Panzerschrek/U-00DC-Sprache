@@ -742,15 +742,25 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				if( field.is_reference )
 				{
 					reference_fields.push_back( field_ptr );
-				}
 
-				if( field.t.ReferenceTagCount() > 0u )
-				{
-					fields_with_references_inside.push_back( field_ptr );
+					if( !field.syntax_element.deref().inner_reference_tags_expression.has</Synt::EmptyVariant/>() )
+					{
+						// Reference tags of a struct are used only for reference fields or value fields with references inside.
+						// They are not used for second order references.
+						// So, they are useless or even confusing.
+						REPORT_ERROR( InnerReferenceTagsForReferenceField, class_members, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
+					}
 				}
 				else
 				{
-					fields_with_no_references_inside_but_inner_references_notation.push_back( field_ptr );
+					if( field.t.ReferenceTagCount() > 0u )
+					{
+						fields_with_references_inside.push_back( field_ptr );
+					}
+					else
+					{
+						fields_with_no_references_inside_but_inner_references_notation.push_back( field_ptr );
+					}
 				}
 
 				has_fields_with_reference_notation |=
@@ -770,7 +780,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				{
 					if( !reference_tags.empty() )
 					{
-						REPORT_ERROR( InnerReferenceTagCountMismatch,class_members, field.syntax_element.deref().src_loc, 0, reference_tags.size() )
+						REPORT_ERROR( InnerReferenceTagCountMismatch, class_members, field.syntax_element.deref().src_loc, 0, reference_tags.size() )
 					}
 				}
 			}
