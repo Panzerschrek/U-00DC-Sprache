@@ -25,6 +25,16 @@ fn nomangle main() : i32
 		auto x= 0;
 		var IntRefMut ref(x); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{
+		var i32 mut x= 0;
+		var IntRefMut x_ref(x);
+
+		var ust::optional_ref_imut</ IntRefMut /> x_ref_ref( x_ref );
+
+		auto& xxx= x_ref_ref.try_deref().try_deref(); // Create a reference pointing to original "x".
+		// Call to a second order "optional_ref" creates a mutable lock node for "x", which creates an error. Even in this particular case nothing bad can happen.
+		x_ref_ref.empty(); //##expect_error ReferenceProtectionError
+	}
 
 	return 0;
 }

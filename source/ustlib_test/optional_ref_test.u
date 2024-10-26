@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/optional_ref.u"
+import "../ustlib/random_access_range.u"
 
 type IntRefImut= ust::optional_ref</ i32, false />;
 type IntRefMut = ust::optional_ref</ i32, true  />;
@@ -104,6 +105,61 @@ fn nomangle main() : i32
 
 		halt if( non_empty_ref == ust::null_optional_ref );
 		halt if( ust::null_optional_ref == non_empty_ref );
+	}
+	{ // optional_ref for type with references inside.
+
+		var i32 mut x= 0;
+		{
+			var IntRefMut x_ref= x;
+
+			var ust::optional_ref_imut</ IntRefMut /> mut x_ref_ref;
+			halt if( !x_ref_ref.empty() );
+
+			x_ref_ref.reset( x_ref );
+			halt if( x_ref_ref.empty() );
+
+			x_ref_ref.try_deref().try_deref()= 78;
+		}
+		halt if( x != 78 );
+	}
+	{ // optional_ref for type with references inside.
+
+		var i32 x= 0;
+
+		var IntRefImut mut x_ref= x;
+		halt if( x_ref.empty() );
+
+		{
+			var ust::optional_ref_mut</ IntRefImut /> mut x_ref_ref( x_ref );
+			halt if( x_ref_ref.empty() );
+
+			x_ref_ref.try_deref().reset();
+		}
+
+		halt if( !x_ref.empty() );
+	}
+	{ // optional_ref for type with references inside.
+
+		var [ char8, 3 ] mut s= "lol";
+		{
+			var ust::array_view_mut</char8/> mut s_ref= s;
+
+			{
+				var ust::optional_ref_mut</ ust::array_view_mut</char8/> /> s_ref_ref= s_ref;
+				halt if( s_ref_ref.empty() );
+
+				s_ref_ref.try_deref().drop_front();
+
+				foreach( &mut c : s_ref_ref.try_deref() )
+				{
+					c= char8( u32(c) + (u32("A"c8) - u32("a"c8)) );
+				}
+			}
+
+			halt if( s_ref != ust::array_view_imut</char8/>( "OL" ) );
+		}
+
+		halt if( s != "lOL" );
 	}
 
 	return 0;

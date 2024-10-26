@@ -12,6 +12,8 @@ var null_optional_ref_type constexpr null_optional_ref{};
 template</ type T, bool is_mutable />
 class optional_ref
 {
+	static_assert( typeinfo</T/>.reference_indirection_depth <= 1s, "This container doesn't support types with second order references inside" );
+
 public:
 	type this_type= optional_ref</T, is_mutable/>;
 
