@@ -209,6 +209,62 @@ fn nomangle main() : i32
 		IntRangeMut(a).reverse();
 		halt if( a != ust::make_array</i32/>() );
 	}
+	{ // random_access_range for a type with references inside.
+		var [ ust::array_view_imut</ char8 />, 4 ] mut strings_array[ "lol", "foo", "qwerty", "123ABC!" ];
+
+		{
+			var ust::array_view_mut</ ust::array_view_imut</ char8 /> /> mut strings_array_view= strings_array;
+			strings_array_view.drop_front();
+
+			foreach( &mut view : strings_array_view )
+			{
+				view.drop_back();
+			}
+		}
+
+		halt if( strings_array[0] != "lol" ); // Remains unchanged.
+		halt if( strings_array[1] != "fo" );
+		halt if( strings_array[2] != "qwert" );
+		halt if( strings_array[3] != "123ABC" );
+	}
+	{
+		var [ [ i32, 3 ], 4 ] mut matrix[ [ 1, 2, 3 ], [ 10, 20, 30 ], [ 100, 200, 300 ], [ 1000, 2000, 3000 ] ];
+		var [ i32, 3 ] mut single_row[ 111, 222, 333 ];
+
+		{
+			var [ ust::array_view_mut</ [ i32, 3 ] />, 2 ] rows_array[ ust::array_view_mut</ [ i32, 3 ] />( matrix ), ust::single_element_array_view(single_row) ];
+			halt if( rows_array[0].size() != 4s );
+			halt if( rows_array[1].size() != 1s );
+
+			var ust::array_view_imut</ ust::array_view_mut</ [ i32, 3 ] /> /> rows_view= rows_array;
+
+			foreach( &row_group : rows_view )
+			{
+				foreach( &mut row : row_group )
+				{
+					foreach( &mut el : row )
+					{
+						el*= 3;
+					}
+				}
+			}
+		}
+		halt if( matrix[0][0] != 3 );
+		halt if( matrix[0][1] != 6 );
+		halt if( matrix[0][2] != 9 );
+		halt if( matrix[1][0] != 30 );
+		halt if( matrix[1][1] != 60 );
+		halt if( matrix[1][2] != 90 );
+		halt if( matrix[2][0] != 300 );
+		halt if( matrix[2][1] != 600 );
+		halt if( matrix[2][2] != 900 );
+		halt if( matrix[3][0] != 3000 );
+		halt if( matrix[3][1] != 6000 );
+		halt if( matrix[3][2] != 9000 );
+		halt if( single_row[0] != 333 );
+		halt if( single_row[1] != 666 );
+		halt if( single_row[2] != 999 );
+	}
 
 	return 0;
 }
