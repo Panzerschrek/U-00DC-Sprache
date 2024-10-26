@@ -272,7 +272,7 @@ public:
 	}
 
 	// ==
-	op enable_if( typeinfo</T/>.is_equality_comparable && typeinfo</T/>.reference_indirection_depth <= 1s )
+	op enable_if( typeinfo</T/>.is_equality_comparable && c_enable_range )
 	==( this_type& l, this_type& r ) : bool
 	{
 		return l.range() == r.range();
@@ -435,25 +435,25 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
+	fn enable_if( c_enable_range )
 	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
-	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
+	fn enable_if( c_enable_range )
 	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
 	}
 
-	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
+	fn enable_if( c_enable_range )
 	iter(  mut this ) : auto
 	{
 		return range().iter();
 	}
 
-	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
+	fn enable_if( c_enable_range )
 	iter( imut this ) : auto
 	{
 		return range().iter();
@@ -543,6 +543,8 @@ private:
 	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
 	auto c_param2_pollution= reference_notation::pollution::param_n_param_m_all_inner_references</ c_reference_tag_count />( 0u8, 2u8 );
 	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_reference_tag_count />();
+
+	var bool c_enable_range= typeinfo</T/>.reference_indirection_depth <= 1s && typeinfo</T/>.reference_tag_count <= 1s;
 
 private:
 	fn ensure_capacity( mut this, size_type new_size ) unsafe

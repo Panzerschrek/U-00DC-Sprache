@@ -181,7 +181,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
+	enable_if( c_enable_as_ref )
 	as_ref( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( has_value_ )
@@ -195,7 +195,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
+	enable_if( c_enable_as_ref )
 	as_ref( imut this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		if( has_value_ )
@@ -282,6 +282,8 @@ private:
 	auto constexpr c_reference_tag_count= typeinfo</T/>.reference_tag_count;
 	auto c_param1_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
 	auto c_return_inner_references= reference_notation::return_inner_references::param0_all_inner_references</ c_reference_tag_count />();
+
+	var bool c_enable_as_ref= typeinfo</T/>.reference_indirection_depth <= 1s && typeinfo</T/>.reference_tag_count <= 1s;
 
 private:
 	ContainerTag</ T /> container_tag_;
