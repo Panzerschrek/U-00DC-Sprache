@@ -2781,3 +2781,42 @@ def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInsid
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 10 ) )
+
+
+def InnerReferenceTagsForReferenceField_Test0():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			A @("a") &  a_ref;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "InnerReferenceTagsForReferenceField", 5 ) )
+
+
+def InnerReferenceTagsForReferenceField_Test1():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			A @("a") & @("a"c8) a_ref;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "InnerReferenceTagsForReferenceField", 5 ) )
+
+
+def InnerReferenceTagsForReferenceField_Test2():
+	c_program_text= """
+		struct A{ i32 &mut x; }
+		struct B
+		{
+			A @("b") & @("a"c8) a_ref;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "InnerReferenceTagsForReferenceField", 5 ) )

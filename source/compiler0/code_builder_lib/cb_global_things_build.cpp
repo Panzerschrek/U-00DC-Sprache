@@ -564,6 +564,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				if( field->is_reference )
 				{
 					reference_fields.push_back(field);
+
+					if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
+					{
+						// Reference tags of a struct are used only for reference fields or value fields with references inside.
+						// They are not used for second order references.
+						// So, they are useless or even confusing.
+						REPORT_ERROR( InnerReferenceTagsForReferenceField, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
+					}
 				}
 				else
 				{
