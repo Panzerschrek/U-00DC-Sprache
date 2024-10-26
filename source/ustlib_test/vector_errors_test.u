@@ -75,5 +75,21 @@ fn nomangle main() : i32
 		var ust::vector</C/> a, b;
 		a == b; //##expect_error OperationNotSupportedForThisType
 	}
+	{
+		var [ i32, 3 ] mut arr0[ 1, 2, 3 ];
+		var [ i32, 4 ] mut arr1[ 4, 5, 6, 7 ];
+
+		var [ ust::array_view_mut</ i32 />, 2 ] view_arr[ arr0, arr1 ];
+
+		var ust::array_view_imut</ ust::array_view_mut</ i32 /> /> view_for_view_arr= view_arr;
+		halt if( view_for_view_arr.size() != 2s );
+
+		var ust::vector</ ust::array_view_imut</ ust::array_view_mut</ i32 /> /> /> mut v;
+		v.push_back( view_for_view_arr );
+
+		var i32& x= v[0s][1s][2s]; // Create a reference pointing to "arr0" and "arr1".
+		// Error - this call creates a temporary lock node for second order reference pointing to "arr0" and "arr1".
+		v.size(); //expect_error ReferenceProtectionError
+	}
 	return 0;
 }

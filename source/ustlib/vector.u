@@ -272,7 +272,7 @@ public:
 	}
 
 	// ==
-	op enable_if( typeinfo</T/>.is_equality_comparable )
+	op enable_if( typeinfo</T/>.is_equality_comparable && typeinfo</T/>.reference_indirection_depth <= 1s )
 	==( this_type& l, this_type& r ) : bool
 	{
 		return l.range() == r.range();
@@ -435,25 +435,25 @@ public:
 		}
 	}
 
-	fn enable_if( c_reference_tag_count == 0s )
+	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
 	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
-	fn enable_if( c_reference_tag_count == 0s )
+	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
 	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
 	}
 
-	fn enable_if( c_reference_tag_count == 0s )
+	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
 	iter(  mut this ) : auto
 	{
 		return range().iter();
 	}
 
-	fn enable_if( c_reference_tag_count == 0s )
+	fn enable_if( typeinfo</T/>.reference_indirection_depth <= 1s )
 	iter( imut this ) : auto
 	{
 		return range().iter();
