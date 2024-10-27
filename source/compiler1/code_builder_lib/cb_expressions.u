@@ -4586,6 +4586,28 @@ fn CodeBuilder::DoCallFunction(
 		foreach( &param_reference : function_type.return_references )
 		{
 			var size_type i(param_reference.param_index);
+
+			// Setup also second order references.
+			// Do this specially since we have for now no special notation to specify returning of second order references.
+			if( param_reference.reference_index != FunctionType::c_param_reference_number &&
+				i < second_order_reference_nodes.size() )
+			{
+				auto& arg_second_order_reference_nodes= second_order_reference_nodes[i];
+				if( size_type( param_reference.reference_index ) < arg_second_order_reference_nodes.size() )
+				{
+					var VariableNullablePtr& node= arg_second_order_reference_nodes[ size_type( param_reference.reference_index ) ];
+					if( !node.empty() )
+					{
+						var VariablePtr node_non_null= node.try_to_non_nullable();
+						// Perform linking for all result inner references, we have no way to pick only some of them.
+						foreach( & inner_reference_node : result_ptr.lock_imut().deref().inner_reference_nodes )
+						{
+							function_context.references_graph.TryAddLink( node_non_null, inner_reference_node, names_scope, src_loc );
+						}
+					}
+				}
+			}
+
 			if( i >= args_nodes.size() || args_nodes[i].empty() )
 			{
 				continue;
