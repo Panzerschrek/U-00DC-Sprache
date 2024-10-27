@@ -569,7 +569,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					{
 						// Reference tags of a struct are used only for reference fields or value fields with references inside.
 						// They are not used for second order references.
-						// So, they are useless or even confusing.
+						// So, specifying inner reference tags for a reference field is useless or even confusing.
 						REPORT_ERROR( InnerReferenceTagsForReferenceField, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
 					}
 				}

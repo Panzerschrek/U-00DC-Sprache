@@ -2179,10 +2179,10 @@ Value CodeBuilder::AccessClassField(
 
 		// Setup inner reference node links for reference fields with references inside.
 		// Only reference-fields with single inner reference tag are supported.
-		const size_t reference_tag_count= field.type.ReferenceTagCount();
-		if( reference_tag_count == 1 )
+		if( field.type.ReferenceTagCount() == 1 )
 		{
-			for( const VariablePtr& accessible_node : function_context.variables_state.GetAllAccessibleNonInnerNodes( variable->inner_reference_nodes[ field.reference_tag ] ) )
+			for( const VariablePtr& accessible_node :
+				function_context.variables_state.GetAllAccessibleNonInnerNodes( variable->inner_reference_nodes[ field.reference_tag ] ) )
 			{
 				// Usually we should have here only one inner reference node.
 				// But it may be more if a member of a composite value is referenced.
@@ -4223,11 +4223,13 @@ Value CodeBuilder::DoCallFunction(
 	args_nodes.clear();
 
 	for( const auto& nodes : second_order_reference_nodes )
+	{
 		for( const VariablePtr node : nodes )
 		{
 			if( node != nullptr )
 				function_context.variables_state.MoveNode( node );
 		}
+	}
 
 	second_order_reference_nodes.clear();
 

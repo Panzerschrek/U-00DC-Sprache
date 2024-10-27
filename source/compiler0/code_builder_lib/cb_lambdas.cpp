@@ -587,9 +587,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 					const uint8_t reference_tag= uint8_t( class_->inner_references.size() );
 					field->inner_reference_tags.push_back( reference_tag );
 					class_->inner_references.push_back(
-							InnerReference(
-								type.GetInnerReferenceKind(i),
-								type.GetSecondOrderInnerReferenceKind(i) ) );
+						InnerReference( type.GetInnerReferenceKind(i), type.GetSecondOrderInnerReferenceKind(i) ) );
 
 					captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.accessible_variables[i], reference_tag );
 				}

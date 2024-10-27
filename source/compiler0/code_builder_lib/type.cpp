@@ -431,7 +431,7 @@ size_t Type::GetReferenceIndirectionDepth() const
 		GetEnumType() != nullptr ||
 		GetRawPointerType() != nullptr ||
 		GetFunctionPointerType() != nullptr )
-		return 0; // There types don't contain references inside.
+		return 0; // These type kinds don't contain references inside.
 
 	if( const auto class_type= GetClassType() )
 	{

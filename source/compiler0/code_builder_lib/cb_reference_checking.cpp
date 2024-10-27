@@ -289,8 +289,8 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 	if( function_context.function_type.return_value_type != ValueType::Value )
 	{
 		// Process specially inner references of returning reference.
-		// Allow avoiding specifying return inner references in case if an arg inner reference is returned.
-		// This is done in order to support returning references to types with references inside (second order).
+		// Allow skipping return inner references in case if an arg inner reference is returned.
+		// This is done in order to support returning references to types with references inside (second order references support).
 		for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_references )
 		{
 			if( param_and_tag.second != FunctionType::c_param_reference_number )
