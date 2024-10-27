@@ -45,6 +45,8 @@ public:
 	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
 	fn GetNodeInputLinks( this, VariablePtr& node ) : NodesSet;
 
+	fn GetAllAccessibleNonInnerNodes( this, VariablePtr& node ) : NodesSet;
+
 	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
 	// Than create link between "from" and this node.
 	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
@@ -60,6 +62,8 @@ private:
 
 	fn HasDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
 	fn HasOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
+
+	fn GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut result_set );
 
 	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 

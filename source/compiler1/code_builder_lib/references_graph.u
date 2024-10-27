@@ -313,6 +313,13 @@ fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 	}
 }
 
+fn ReferencesGraph::GetAllAccessibleNonInnerNodes( this, VariablePtr& node ) : NodesSet
+{
+	var NodesSet mut result;
+	GetAllAccessibleNonInnerNodes_r( node, result );
+	return result;
+}
+
 fn ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
 	TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, to, names_scope, src_loc );
@@ -493,6 +500,25 @@ fn ReferencesGraph::HasOutgoingMutableNodesIncludingChildrenNodes_r( this, Varia
 	}
 
 	return false;
+}
+
+fn ReferencesGraph::GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut result_set )
+{
+	foreach( &link : links_ )
+	{
+		if( link.dst == node )
+		{
+			if( link.src.lock_imut().deref().is_inner_reference_node )
+			{
+				GetAllAccessibleNonInnerNodes_r( link.src, result_set );
+			}
+			else
+			{
+				// Do not go further if a variable/reference or child node is reached.
+				result_set.insert( link.src );
+			}
+		}
+	}
 }
 
 fn ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )

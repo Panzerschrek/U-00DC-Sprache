@@ -1037,6 +1037,7 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 			.location= Variable::Location::Pointer,
 			.name= move(name),
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
+			.is_inner_reference_node= true,
 		};
 
 		this.inner_reference_nodes.push_back( VariablePtr( move(node_src) ) );
