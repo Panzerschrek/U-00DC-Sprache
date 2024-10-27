@@ -4169,6 +4169,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	scoped_array VariableNullablePtr mut args_nodes[total_args];
+	scoped_array ust::vector</VariableNullablePtr/> mut second_order_reference_nodes[total_args];
 
 	var ust::vector</LLVMValueRef/> mut value_args_for_lifetime_end_call;
 
@@ -4398,6 +4399,45 @@ fn CodeBuilder::DoCallFunction(
 			function_context.references_graph.TryAddLink( arg_ptr, arg_node, names_scope, src_loc );
 			function_context.references_graph.TryAddInnerLinks( arg_ptr, arg_node, names_scope, src_loc );
 			RegisterTemporaryVariable( function_context, arg_node );
+		}
+
+		// Create second order lock nodes (for both value and reference args).
+		auto reference_tag_count= size_type( param.t.ReferenceTagCount() );
+		for( auto mut i= 0s; i < reference_tag_count; ++i )
+		{
+			var SecondOrderInnerReferenceKind second_order_inner_reference_kind= param.t.GetSecondOrderInnerReferenceKind(i);
+			if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+			{
+				var VariablePtr second_order_reference_node=
+					Variable
+					{
+						.t= void_type_,
+						.value_type=
+							select( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+								? ValueType::ReferenceImut
+								: ValueType::ReferenceMut ),
+						.location= Variable::Location::Pointer,
+						.preserve_temporary= true,
+					}.CreatePtr();
+
+				second_order_reference_nodes[arg_n].resize( reference_tag_count );
+				second_order_reference_nodes[arg_n][i]= second_order_reference_node;
+
+				function_context.references_graph.AddNode( second_order_reference_node );
+
+				foreach( &accessible_non_inner_node :
+					function_context.references_graph.GetAllAccessibleNonInnerNodes( args_nodes[arg_n].try_lock_imut().deref().inner_reference_nodes[i] ) )
+				{
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					foreach( & src_node : accessible_non_inner_node.lock_imut().deref().inner_reference_nodes )
+					{
+						function_context.references_graph.TryAddLink(
+							src_node, second_order_reference_node, names_scope, src_loc );
+					}
+				}
+			}
 		}
 
 		// Destroy unused temporary variables after each arg evaluation.
@@ -4659,6 +4699,17 @@ fn CodeBuilder::DoCallFunction(
 		if( !node.empty() )
 		{
 			function_context.references_graph.MoveNode( node.try_to_non_nullable() );
+		}
+	}
+
+	foreach( & nodes : second_order_reference_nodes )
+	{
+		foreach( &node : nodes )
+		{
+			if( !node.empty() )
+			{
+				function_context.references_graph.MoveNode( node.try_to_non_nullable() );
+			}
 		}
 	}
 
