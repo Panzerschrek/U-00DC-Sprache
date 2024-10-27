@@ -653,6 +653,34 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	halt; // Unreachable.
 }
 
+fn Type::GetSecondOrderInnerReferenceKind( this, size_type index ) : SecondOrderInnerReferenceKind
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.GetSecondOrderInnerReferenceKind(index);
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		var size_type mut offset= 0s;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			var size_type count( element_type.ReferenceTagCount() );
+			if( index >= offset && index < offset + count )
+			{
+				return element_type.GetSecondOrderInnerReferenceKind( index - offset );
+			}
+			offset+= count;
+		}
+		halt; // Unreachable.
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().inner_references[index].second_order_kind;
+	}
+
+	halt; // Unreachable.
+}
+
 fn Type::ContainsMutableReferences( this ) : bool
 {
 	if_var( &array_type : GetArrayType() )
