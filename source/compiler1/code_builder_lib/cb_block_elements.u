@@ -1949,7 +1949,19 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		return BlockElementBuildInfo(); // Some error generated before.
 	}
 
-	var ust::optional_ref_imut</Synt::Block/> default_branch_synt_block= GetSwitchDefaultBranch( switch_operator );
+	auto default_branch_synt_block=
+		lambda[&]() : ust::optional_ref_imut</Synt::Block/>
+		{
+			foreach( &case_ : switch_operator.cases )
+			{
+				if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
+				{
+					return case_.block;
+				}
+			}
+
+			return ust::null_optional_ref;
+		} ();
 
 	// Perform checks of ranges.
 	{
@@ -3474,19 +3486,6 @@ fn SingleExpressionIsUselessImpl( Synt::TupleType& e ) : bool { ust::ignore_unus
 fn SingleExpressionIsUselessImpl( Synt::RawPointerType& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::CoroutineType& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( ust::shared_ptr_final</Synt::Mixin/>& e ) : bool { ust::ignore_unused(e); return true; }
-
-fn GetSwitchDefaultBranch( Synt::SwitchOperator& switch_operator ) : ust::optional_ref_imut</ Synt::Block /> @( ust::reference_notation::return_inner_references::param0 )
-{
-	foreach( &case_ : switch_operator.cases )
-	{
-		if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
-		{
-			return case_.block;
-		}
-	}
-
-	return ust::null_optional_ref;
-}
 
 type SwitchCaseValues= ust::vector</SwitchCaseRange/>;
 
