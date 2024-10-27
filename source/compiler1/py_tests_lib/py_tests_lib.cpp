@@ -160,11 +160,6 @@ bool FilterTestImpl( const char* const test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"UnallowedReferencePollution_ForSecondOrderReference_Test13",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test14",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test15",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test16",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test19",
 	};
 
 	return c_test_to_disable.count( test_name_str ) > 0;

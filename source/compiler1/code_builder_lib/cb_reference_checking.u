@@ -352,25 +352,22 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 						}
 					}
 
-					if( param_reference.empty() )
+					if( !param_reference.empty() )
 					{
-						continue;
-					}
-
-					var FunctionType::ReferencePollution actual_reference_pollution
-					{
-						.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
-						.src= param_reference.try_deref(),
-					};
-
-					foreach( &reference_pollution : function_type.references_pollution )
-					{
-						if( actual_reference_pollution == reference_pollution )
+						var FunctionType::ReferencePollution actual_reference_pollution
 						{
-							continue label accessible_nodes_loop;
+							.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
+							.src= param_reference.try_deref(),
+						};
+
+						foreach( &reference_pollution : function_type.references_pollution )
+						{
+							if( actual_reference_pollution == reference_pollution )
+							{
+								continue label accessible_nodes_loop;
+							}
 						}
 					}
-
 
 					REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
 				}
