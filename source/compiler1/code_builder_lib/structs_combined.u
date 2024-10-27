@@ -738,7 +738,8 @@ fn Type::ContainsMutableReferences( this ) : bool
 	{
 		foreach( &inner_reference : class_type.lock_imut().deref().inner_references )
 		{
-			if( inner_reference.kind == InnerReferenceKind::Mut )
+			if( inner_reference.kind == InnerReferenceKind::Mut ||
+				inner_reference.second_order_kind == SecondOrderInnerReferenceKind::Mut )
 			{
 				return true;
 			}
