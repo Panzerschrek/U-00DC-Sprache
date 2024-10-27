@@ -703,7 +703,10 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					{
 						auto reference_tag= u8( class_type.inner_references.size() );
 						field.inner_reference_tags.push_back( reference_tag );
-						class_type.inner_references.push_back( InnerReference{ .kind= source_variable.t.GetInnerReferenceKind(i) } );
+						class_type.inner_references.push_back(
+							InnerReference{
+								.kind= source_variable.t.GetInnerReferenceKind(i),
+								.second_order_kind= source_variable.t.GetSecondOrderInnerReferenceKind(i) } );
 
 						captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.accessible_variables[i], reference_tag );
 					}
