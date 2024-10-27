@@ -176,6 +176,30 @@ fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names
 
 fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool
 {
+	if( function_context.function_type.return_value_type != ValueType::Value )
+	{
+		// Process specially inner references of returning reference.
+		// Allow skipping return inner references in case if an arg inner reference is returned.
+		// This is done in order to support returning references to types with references inside (second order references support).
+		foreach( &param_reference : function_context.function_type.return_references )
+		{
+			if( param_reference.reference_index != FunctionType::c_param_reference_number )
+			{
+				// Returning inner arg reference.
+				if( size_type( param_reference.param_index ) < function_context.args_second_order_nodes.size() )
+				{
+					auto& arg_second_order_nodes= function_context.args_second_order_nodes[ size_type( param_reference.param_index ) ];
+					if( size_type(param_reference.reference_index) < arg_second_order_nodes.size() &&
+						arg_second_order_nodes[ size_type(param_reference.reference_index) ] == variable_node )
+					{
+						// Allow returning this node - it's correct second order variable node.
+						return true;
+					}
+				}
+			}
+		}
+	}
+
 	if( index >= function_context.function_type.return_inner_references.size() )
 	{
 		return false;
