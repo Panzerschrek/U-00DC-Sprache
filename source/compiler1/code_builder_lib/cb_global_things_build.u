@@ -544,11 +544,25 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.deref().src_loc, field.t )
 				continue;
 			}
-			if( field.is_reference && field.t.ReferenceTagCount() > 0u )
+			if( field.is_reference )
 			{
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
-				field.t= invalid_type_;
-				continue;
+				auto reference_tag_count= field.t.ReferenceTagCount();
+				if( reference_tag_count > 0u )
+				{
+					if( field.t.GetSecondOrderInnerReferenceKind(0s) != SecondOrderInnerReferenceKind::None )
+					{
+						REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope_ptr, field.syntax_element.deref().src_loc, 2, field.syntax_element.deref().name )
+						field.t= invalid_type_;
+						continue;
+					}
+
+					if( reference_tag_count > 1u )
+					{
+						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
+						field.t= invalid_type_;
+						continue;
+					}
+				}
 			}
 		}
 	}

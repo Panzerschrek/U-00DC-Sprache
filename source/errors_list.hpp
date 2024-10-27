@@ -151,7 +151,6 @@ PROCESS_ERROR( UnallowedReferencePollution, "Unallowed reference pollution." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyConstructor, "Explicit reference pollution for copy constructor. Reference pollution for copy constructors generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, "Explicit reference pollution for equality compare operator. Reference pollution for such operators is not allowed." )
-PROCESS_ERROR( ReferenceFieldOfTypeWithReferencesInside, "Reference field \"{0}\" has type, with other references inside." ) // TODO - remove this error code - it's now obsolete.
 PROCESS_ERROR( ReferenceIndirectionDepthExceeded, "Reference indirection depth \"{0}\" is exceeded for field \"{1}\"." )
 PROCESS_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, "Reference field \"{0}\" is of type with more than one inner reference tags inside. No more than one tag is allowed." )
 PROCESS_ERROR( ExpectedReferenceNotation, "Expected reference notation for field \"{0}\"." )

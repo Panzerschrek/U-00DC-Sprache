@@ -648,7 +648,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				auto source_variable_lock= captured_variable.data.source_variable.lock_imut();
 				var Variable& source_variable= source_variable_lock.deref();
 
-				auto reference_tag_cout= size_type( source_variable.t.ReferenceTagCount() );
+				auto reference_tag_count= size_type( source_variable.t.ReferenceTagCount() );
 
 				var ClassField mut field
 				{
@@ -667,13 +667,28 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 					// Create a reference tag for captured reference.
 					field.reference_tag= u8( class_type.inner_references.size() );
-					class_type.inner_references.push_back(
-						InnerReference{ .kind= select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) } );
 
-					if( reference_tag_cout > 0s )
+					var InnerReference mut inner_reference{ .kind= select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) };
+
+					if( reference_tag_count > 0s )
 					{
-						REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, lambda_.src_loc, captured_variable.name )
+						inner_reference.second_order_kind=
+							select( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
+								? SecondOrderInnerReferenceKind::Imut
+								: SecondOrderInnerReferenceKind::Mut );
+
+						if( field.t.GetSecondOrderInnerReferenceKind(0s) != SecondOrderInnerReferenceKind::None )
+						{
+							REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, lambda_.src_loc, 2, captured_variable.name )
+						}
+
+						if( reference_tag_count > 1s )
+						{
+							REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope, lambda_.src_loc, captured_variable.name )
+						}
 					}
+
+					class_type.inner_references.push_back( move(inner_reference) );
 
 					// Captured by reference variable points to one of inner the reference tags of lambda this.
 					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, field.reference_tag );
@@ -684,7 +699,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
 
 					// Each reference tag of each captured variable get its own reference tag in result lambda class.
-					for( auto mut i= 0s; i < reference_tag_cout; ++i )
+					for( auto mut i= 0s; i < reference_tag_count; ++i )
 					{
 						auto reference_tag= u8( class_type.inner_references.size() );
 						field.inner_reference_tags.push_back( reference_tag );
