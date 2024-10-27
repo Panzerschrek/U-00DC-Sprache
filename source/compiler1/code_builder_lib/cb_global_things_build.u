@@ -731,18 +731,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// Inherit inner references of parents.
 			// Normally any reference may be inhhereted only from base, but not interfaces.
 			class_.inner_references.clear();
-			foreach( &parent : class_.parents )
+			if( !class_.base_class.empty() )
 			{
-				with( &parent_class : parent.class_.lock_imut().deref() )
-				{
-					auto s= ust::max( class_.inner_references.size(), parent_class.inner_references.size() );
-					class_.inner_references.resize( s, InnerReference{ .kind= InnerReferenceKind::Imut } );
-					foreach( pair : class_.inner_references.iter().zip( parent_class.inner_references.iter() ) )
-					{
-						auto& mut t= pair.first.kind;
-						t= ust::max( t, pair.second.kind );
-					}
-				}
+				class_.inner_references= class_.base_class.try_lock_imut().deref().inner_references;
 			}
 			has_parents_with_references_inside= !class_.inner_references.empty();
 
