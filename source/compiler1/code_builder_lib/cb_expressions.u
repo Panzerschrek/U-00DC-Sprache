@@ -3922,7 +3922,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	WithVariablesFrame(
 		function_context,
-		lambda[synt_args, &names_scope, &args, &src_loc]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
 			var bool prev_is_functionless_context= function_context.is_functionless_context;
 			function_context.is_functionless_context= true;
@@ -3983,7 +3983,7 @@ fn CodeBuilder::CallFunctionsSet(
 	var ust::vector</VariableTypeExtended/> mut args_evaluated;
 	WithVariablesFrame(
 		function_context,
-		lambda[&this_, args, &names_scope, &args_evaluated, &src_loc]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
 			var bool prev_is_functionless_context= function_context.is_functionless_context;
 			function_context.is_functionless_context= true;
