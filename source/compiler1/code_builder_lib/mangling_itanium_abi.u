@@ -402,7 +402,7 @@ fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& pa
 	}
 }
 
-fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionType::Param/>& params )
+fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::array_view_imut</FunctionType::Param/> params )
 {
 	foreach( &param : params )
 	{
