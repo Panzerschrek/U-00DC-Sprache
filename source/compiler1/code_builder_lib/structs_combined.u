@@ -647,7 +647,7 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().deref().inner_references[index];
+		return class_type.lock_imut().deref().inner_references[index].kind;
 	}
 
 	halt; // Unreachable.
@@ -665,9 +665,9 @@ fn Type::ContainsMutableReferences( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		foreach( inner_reference_kind : class_type.lock_imut().deref().inner_references )
+		foreach( &inner_reference : class_type.lock_imut().deref().inner_references )
 		{
-			if( inner_reference_kind == InnerReferenceKind::Mut )
+			if( inner_reference.kind == InnerReferenceKind::Mut )
 			{
 				return true;
 			}

@@ -667,7 +667,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 					// Create a reference tag for captured reference.
 					field.reference_tag= u8( class_type.inner_references.size() );
-					class_type.inner_references.push_back( select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+					class_type.inner_references.push_back(
+						InnerReference{ .kind= select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) } );
 
 					if( reference_tag_cout > 0s )
 					{
@@ -687,7 +688,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					{
 						auto reference_tag= u8( class_type.inner_references.size() );
 						field.inner_reference_tags.push_back( reference_tag );
-						class_type.inner_references.push_back( source_variable.t.GetInnerReferenceKind(i) );
+						class_type.inner_references.push_back( InnerReference{ .kind= source_variable.t.GetInnerReferenceKind(i) } );
 
 						captured_variable_to_lambda_inner_reference_tag.insert( captured_variable.data.accessible_variables[i], reference_tag );
 					}

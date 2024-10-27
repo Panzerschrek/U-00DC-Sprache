@@ -30,6 +30,19 @@ enum InnerReferenceKind
 	Mut, // Type has mutable inner reference
 }
 
+enum SecondOrderInnerReferenceKind
+{
+	None, // No second order reference.
+	Imut,
+	Mut,
+}
+
+struct InnerReference
+{
+	InnerReferenceKind kind;
+	SecondOrderInnerReferenceKind second_order_kind= SecondOrderInnerReferenceKind::None;
+}
+
 struct FundamentalType
 {
 	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
@@ -240,7 +253,7 @@ struct ClassType
 	bool has_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
 
-	ust::vector</InnerReferenceKind/> inner_references;
+	ust::vector</InnerReference/> inner_references;
 	Kind kind= Kind::Struct;
 
 	ust::shared_ptr_nullable_mut</ClassType/> base_class;
