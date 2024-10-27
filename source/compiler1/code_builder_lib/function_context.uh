@@ -115,6 +115,10 @@ public:
 	// arg variable node + inner reference nodes.
 	ust::vector</ tup[ VariablePtr, ust::vector</VariablePtr /> ] /> args_nodes;
 
+	// For each argument and each argument type reference tag store optional second order variable node (to support second order references).
+	// This container may have less elements than "arg_nodes" and some values may be null.
+	ust::vector</ ust::vector</ VariableNullablePtr /> /> args_second_order_nodes;
+
 	LLVMValueRef s_ret= LLVMValueRef::Null; // Also promise for coroutines
 
 	// Specific for coroutines data.
