@@ -377,6 +377,33 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 			}
 		}
 	}
+
+	// For now disable all pollution for accessible variables inner reference nodes.
+	for( auto mut arg_index= 0s; arg_index < function_context.args_nodes.size(); ++arg_index )
+	{
+		auto& nodes_pair= function_context.args_nodes[arg_index];
+		if( arg_index < function_context.args_second_order_nodes.size() )
+		{
+			auto& arg_second_order_nodes= function_context.args_second_order_nodes[arg_index];
+			for( auto mut inner_reference_index= 0s; inner_reference_index < nodes_pair[1].size(); ++inner_reference_index )
+			{
+				if( inner_reference_index < arg_second_order_nodes.size() )
+				{
+					var VariableNullablePtr& second_order_variable_node= arg_second_order_nodes[ inner_reference_index ];
+					foreach( & inner_node : nodes_pair[1][ inner_reference_index ].lock_imut().deref().inner_reference_nodes )
+					{
+						foreach( &v : function_context.references_graph.GetAllAccessibleVariableNodes( inner_node ) )
+						{
+							if( v != second_order_variable_node )
+							{
+								REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node )

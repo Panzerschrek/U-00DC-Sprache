@@ -160,25 +160,10 @@ bool FilterTestImpl( const char* const test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"UnallowedReferencePollution_ForSecondOrderReference_Test0",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test1",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test2",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test3",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test4",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test5",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test6",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test7",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test8",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test9",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test10",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test11",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test12",
 		"UnallowedReferencePollution_ForSecondOrderReference_Test13",
 		"UnallowedReferencePollution_ForSecondOrderReference_Test14",
 		"UnallowedReferencePollution_ForSecondOrderReference_Test15",
 		"UnallowedReferencePollution_ForSecondOrderReference_Test16",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test17",
-		"UnallowedReferencePollution_ForSecondOrderReference_Test18",
 		"UnallowedReferencePollution_ForSecondOrderReference_Test19",
 	};
 
