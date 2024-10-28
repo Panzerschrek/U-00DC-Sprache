@@ -695,47 +695,46 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		}
 
 		// Setup second order inner references.
-		for( size_t i= 0; i < the_class.inner_references.size(); ++i )
+
+		for( const ClassFieldPtr& field : reference_fields )
 		{
-			InnerReference& inner_reference= the_class.inner_references[i];
-
-			for( const ClassFieldPtr& field : reference_fields )
+			if( field->type.ReferenceTagCount() > 0 )
 			{
-				if( field->reference_tag == i && field->type.ReferenceTagCount() > 0 )
-				{
-					const SecondOrderInnerReferenceKind second_order_kind=
-						field->type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
-							? SecondOrderInnerReferenceKind::Imut
-							: SecondOrderInnerReferenceKind::Mut;
+				const size_t i= field->reference_tag;
+				InnerReference& inner_reference= the_class.inner_references[i];
 
-					if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
-						inner_reference.second_order_kind= second_order_kind;
-					else if( inner_reference.second_order_kind != second_order_kind )
-					{
-						std::string s;
-						s.push_back( char( 'a' + i ) );
-						REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
-					}
+				const SecondOrderInnerReferenceKind second_order_kind=
+					field->type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
+						? SecondOrderInnerReferenceKind::Imut
+						: SecondOrderInnerReferenceKind::Mut;
+
+				if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+					inner_reference.second_order_kind= second_order_kind;
+				else if( inner_reference.second_order_kind != second_order_kind )
+				{
+					std::string s;
+					s.push_back( char( 'a' + i ) );
+					REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 				}
 			}
+		}
 
-			for( const ClassFieldPtr& field : fields_with_references_inside )
+		for( const ClassFieldPtr& field : fields_with_references_inside )
+		{
+			for( size_t j= 0; j < field->inner_reference_tags.size(); ++j )
 			{
-				for( size_t j= 0; j < field->inner_reference_tags.size(); ++j )
-				{
-					if( field->inner_reference_tags[j] == i )
-					{
-						const SecondOrderInnerReferenceKind second_order_kind= field->type.GetSecondOrderInnerReferenceKind(j);
+				const size_t i= field->inner_reference_tags[j];
+				InnerReference& inner_reference= the_class.inner_references[i];
 
-						if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
-							inner_reference.second_order_kind= second_order_kind;
-						else if( inner_reference.second_order_kind != second_order_kind )
-						{
-							std::string s;
-							s.push_back( char( 'a' + i ) );
-							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
-						}
-					}
+				const SecondOrderInnerReferenceKind second_order_kind= field->type.GetSecondOrderInnerReferenceKind(j);
+
+				if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+					inner_reference.second_order_kind= second_order_kind;
+				else if( inner_reference.second_order_kind != second_order_kind )
+				{
+					std::string s;
+					s.push_back( char( 'a' + i ) );
+					REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 				}
 			}
 		}

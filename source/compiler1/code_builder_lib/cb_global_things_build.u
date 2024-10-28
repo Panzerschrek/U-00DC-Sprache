@@ -927,57 +927,55 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			var ClassType& mut class_= class_lock.deref();
 
 			// Setup second order inner references.
-			// TODO - simplify this?
-			for( auto mut i= 0s; i < class_.inner_references.size(); ++i )
+
+			foreach( &field_ptr : reference_fields )
 			{
-				var InnerReference& mut inner_reference= class_.inner_references[i];
-
-				foreach( &field_ptr : reference_fields )
+				with( &field : field_ptr.lock_imut().deref() )
 				{
-					with( &field : field_ptr.lock_imut().deref() )
+					if( field.t.ReferenceTagCount() > 0u )
 					{
-						if( size_type(field.reference_tag) == i && field.t.ReferenceTagCount() > 0u )
-						{
-							var SecondOrderInnerReferenceKind second_order_kind=
-								select( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
-									? SecondOrderInnerReferenceKind::Imut
-									: SecondOrderInnerReferenceKind::Mut );
+						auto i= size_type(field.reference_tag);
+						var InnerReference& mut inner_reference= class_.inner_references[i];
 
-							if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
-							{
-								inner_reference.second_order_kind= second_order_kind;
-							}
-							else if( inner_reference.second_order_kind != second_order_kind )
-							{
-								var ust::string8 mut s;
-								s.push_back( char8( size_type("a"c8) + i ) );
-								REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
-							}
+						var SecondOrderInnerReferenceKind second_order_kind=
+							select( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
+								? SecondOrderInnerReferenceKind::Imut
+								: SecondOrderInnerReferenceKind::Mut );
+
+						if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+						{
+							inner_reference.second_order_kind= second_order_kind;
+						}
+						else if( inner_reference.second_order_kind != second_order_kind )
+						{
+							var ust::string8 mut s;
+							s.push_back( char8( size_type("a"c8) + i ) );
+							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 						}
 					}
 				}
+			}
 
-				foreach( &field_ptr : fields_with_references_inside )
+			foreach( &field_ptr : fields_with_references_inside )
+			{
+				with( &field : field_ptr.lock_imut().deref() )
 				{
-					with( &field : field_ptr.lock_imut().deref() )
+					for( auto mut j= 0s; j < field.inner_reference_tags.size(); ++j )
 					{
-						for( auto mut j= 0s; j < field.inner_reference_tags.size(); ++j )
-						{
-							if( size_type(field.inner_reference_tags[j]) == i )
-							{
-								var SecondOrderInnerReferenceKind second_order_kind= field.t.GetSecondOrderInnerReferenceKind(j);
+						auto i= size_type(field.inner_reference_tags[j]);
+						var InnerReference& mut inner_reference= class_.inner_references[i];
 
-								if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
-								{
-									inner_reference.second_order_kind= second_order_kind;
-								}
-								else if( inner_reference.second_order_kind != second_order_kind )
-								{
-									var ust::string8 mut s;
-									s.push_back( char8( size_type("a"c8) + i ) );
-									REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
-								}
-							}
+						var SecondOrderInnerReferenceKind second_order_kind= field.t.GetSecondOrderInnerReferenceKind(j);
+
+						if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+						{
+							inner_reference.second_order_kind= second_order_kind;
+						}
+						else if( inner_reference.second_order_kind != second_order_kind )
+						{
+							var ust::string8 mut s;
+							s.push_back( char8( size_type("a"c8) + i ) );
+							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 						}
 					}
 				}
