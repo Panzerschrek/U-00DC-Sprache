@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/alloc.u"
+import "../ustlib/memory.u"
 
 fn nomangle main() : i32
 {

@@ -1,5 +1,3 @@
-import "memory.u"
-
 namespace ust
 {
 
@@ -10,7 +8,9 @@ fn memory_allocate( size_type size_bytes ) unsafe : $(byte8)
 {
 	alloc_impl::allocation_size_check( size_bytes );
 	auto ptr= unsafe( ust_memory_allocate_impl( size_bytes ) );
-	halt if( is_nullptr(ptr) ); // TODO - is it needed? Some allocators can return non-null, but memory may not be available.
+	// Do not bother checking allocation result against null, since null may not be returned in out of memory case.
+	// Even if underlying implementation returns null, such check is almost useless,
+	// since this memory is almost always immediately used, which triggers program crash anyway.
 	return ptr;
 }
 
@@ -18,7 +18,9 @@ fn memory_reallocate( $(byte8) mem, size_type new_size_bytes ) unsafe : $(byte8)
 {
 	alloc_impl::allocation_size_check( new_size_bytes );
 	auto ptr= unsafe( ust_memory_reallocate_impl( mem, new_size_bytes ) );
-	halt if( is_nullptr(ptr) ); // TODO - is it needed? Some allocators can return non-null, but memory may not be available.
+	// Do not bother checking allocation result against null, since null may not be returned in out of memory case.
+	// Even if underlying implementation returns null, such check is almost useless,
+	// since this memory is almost always immediately used, which triggers program crash anyway.
 	return ptr;
 }
 
@@ -34,7 +36,7 @@ fn allocation_size_check( size_type size )
 {
 	if( typeinfo</size_type/>.size_of == 8s )
 	{
-		// It's almost impossible to get pointer difference overflow on 64bit platform. So, ignore allocation size check  here.
+		// It's almost impossible to get pointer difference overflow on 64bit platform. So, ignore allocation size check here.
 	}
 	else
 	{
