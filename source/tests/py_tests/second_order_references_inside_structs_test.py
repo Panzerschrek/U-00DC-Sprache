@@ -1234,6 +1234,57 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test34():
 	assert( HasError( errors_list, "ReferenceProtectionError", 31 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_Test35():
+	c_program_text= """
+		struct A
+		{
+			i32 &mut x;
+			fn constructor();
+		}
+		struct B
+		{
+			A &imut a;
+			fn constructor();
+		}
+		fn Foo( bool cond )
+		{
+			var i32 mut x= 0;
+			var A mut a;
+			var B mut b;
+			// Test here effects of variables state merging after branching for second order references.
+			if( cond )
+			{
+				MakePollution( a, x );
+				auto& x_ref= b.a.x; // "x_ref" points here to nothing, since inner reference of "b" points to nothing.
+				auto& a_ref= b.a; // Inner reference of "a" points here to nothing.
+			}
+			else
+			{
+				MakePollution( b, a );
+			}
+			// Here it's assumed that "b" points to "a" and "a" points to "x".
+			{
+				auto& x_ref= x; // Error - can't create a reference to "x", since a mutable reference to it exists inside "a".
+			}
+			{
+				auto& x_ref= b.a.x; // Fine - access "x".
+				auto& a_ref= b.a; // Error - creating mutable inner reference node pointing to "x".
+			}
+		}
+
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( A& mut a, i32 &mut x ) @(reference_pollution);
+		fn MakePollution( B& mut b, A &imut a ) @(reference_pollution);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 21 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 22 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 30 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 33 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 34 ) )
+
+
 def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }
