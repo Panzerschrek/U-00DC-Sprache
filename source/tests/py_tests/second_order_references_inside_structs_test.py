@@ -2257,6 +2257,50 @@ def ReturningUnallowedReference_ForSecondOrderReference_Test29():
 	assert( HasError( errors_list, "ReturningUnallowedReference", 9 ) )
 
 
+def ReturningUnallowedReference_ForSecondOrderReference_Test30():
+	c_program_text= """
+		struct A{ i32& x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f= lambda[=] byval mut () : i32&
+			{
+				// Implicitly capture "b" by value.
+				// Can't return second order reference.
+				return b.a.x;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 13 ) )
+
+
+def ReturningUnallowedReference_ForSecondOrderReference_Test31():
+	c_program_text= """
+		struct A{ i32& x; }
+		struct B{ A& a; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			var A a{ .x= x };
+			var B b{ .a= a };
+			auto f= lambda[=] byval mut () : A
+			{
+				// Implicitly capture "b" by value.
+				// Can't return second order reference inside "A".
+				return b.a;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 13 ) )
+
+
 def UnallowedReferencePollution_ForSecondOrderReference_Test0():
 	c_program_text= """
 		struct A{ i32 & x; }
