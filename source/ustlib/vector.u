@@ -21,7 +21,8 @@ public:
 	// Factory method for creating vector from given iterator.
 	// Input iterator should produce elements equal to "T" or convertible to it.
 	template</type RawIterator/>
-	fn from_iterator( iterator</RawIterator/> mut it ) : auto
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	from_iterator( iterator</RawIterator/> mut it ) : auto
 	{
 		var this_type mut result;
 		loop
@@ -304,7 +305,8 @@ public:
 
 	// Append contents of an iterator.
 	template</type RawIterator/>
-	fn append( mut this, iterator</RawIterator/> mut it )
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	append( mut this, iterator</RawIterator/> mut it )
 	{
 		// TODO - if possible, reserve place before this loop.
 		loop
