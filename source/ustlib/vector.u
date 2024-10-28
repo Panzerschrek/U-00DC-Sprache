@@ -107,8 +107,8 @@ public:
 		unsafe
 		{
 			capacity_= max( c_first_allocation_size_, size_ );
-			// Multiplication overflow check is needed here.
-			ptr_= byte_ptr_cast</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
+			// It's impossible to get multiplication overflow here - source array should not occupy more than address space size.
+			ptr_= byte_ptr_cast</T/>( memory_allocate( capacity_ * c_element_size_ ) );
 
 			move_into_uninitialized( cast_ref_unsafe</ [ T, S ] />( $>(ptr_) ), move(arr) );
 		}
@@ -131,8 +131,8 @@ public:
 				if( capacity_ < other.size_ )
 				{
 					capacity_= other.size_;
-					// Multiplication overflow check is needed here.
-					auto num_bytes = mul_overflow_check_halt( capacity_, c_element_size_ );
+					// Multiplication overflow check isn't needed here - source vector size is already correct.
+					auto num_bytes = capacity_ * c_element_size_;
 					if( is_nullptr(ptr_) )
 					{
 						ptr_= byte_ptr_cast</T/>( memory_allocate( num_bytes ) );
