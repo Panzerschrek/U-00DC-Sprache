@@ -1003,6 +1003,118 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop11 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( UnconditionalLoopMergeTest_PollutionInsideLoop0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s, i32& mut x ) @(pollution);
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			loop
+			{
+				Link( s, y );
+			} // Error - pollution while continuing to the next iteration.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 13u ) );
+}
+
+U_TEST( UnconditionalLoopMergeTest_PollutionInsideLoop1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Cond() : bool;
+		struct S { i32 &mut x; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s, i32& mut x ) @(pollution);
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			loop
+			{
+				if( Cond() )
+				{
+					Link( s, y );
+					continue;
+				} // Error - pollution while continuing to the next iteration.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 18u ) );
+}
+
+U_TEST( UnconditionalLoopMergeTest_PollutionInsideLoop2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Cond() : bool;
+		struct S { i32 &mut x; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s, i32& mut x ) @(pollution);
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			loop
+			{
+				if( Cond() )
+				{
+					Link( s, y ); // Ok - outer variable reference pollution in break branch.
+					break;
+				}
+				if( Cond() )
+				{
+					Link( s, y ); // Ok - outer variable reference pollution in return branch.
+					return;
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( UnconditionalLoopMergeTest_PollutionInsideLoop3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Cond() : bool;
+		struct S { i32 &mut x; }
+		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn Link( S &mut s, i32& mut x ) @(pollution);
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			loop
+			{
+				if( Cond() )
+				{
+					Link( s, y ); // Ok - outer variable reference pollution in break branch.
+					break;
+				}
+			}
+			++y; // Error here - can't modify "y", because there is a reference to it inside "s".
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 19u ) );
+}
+
 U_TEST( TupleForMegeTest0 )
 {
 	static const char c_program_text[]=
