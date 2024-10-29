@@ -263,5 +263,30 @@ fn nomangle main() : i32
 			++i;
 		}
 	}
+	{ // scoped_array for a type with references inside.
+		scoped_array ust::string_view8 mut arr[3s];
+
+		arr[0s]= "abc";
+		arr[1s]= "defg";
+		arr[2s]= "hijkl";
+
+		var ust::string8 mut res;
+		foreach( &s : arr )
+		{
+			res+= s;
+		}
+
+		halt if( res != "abcdefghijkl" );
+	}
+	{ // scoped_array for a type with references inside - use filler constructor.
+		scoped_array ust::string_view8 mut arr[4s]( "RtCW" );
+
+		halt if( arr.size() != 4s );
+		halt if( arr[0s] != "RtCW" );
+		halt if( arr[1s] != "RtCW" );
+		halt if( arr[2s] != "RtCW" );
+		halt if( arr[3s] != "RtCW" );
+	}
+
 	return 0;
 }

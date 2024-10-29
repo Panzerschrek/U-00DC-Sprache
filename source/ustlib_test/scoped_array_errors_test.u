@@ -1,5 +1,6 @@
 //##fail_test
 import "../ustlib/scoped_array.u"
+import "../ustlib/string.u"
 
 fn nomangle main() : i32
 {
@@ -42,6 +43,12 @@ fn nomangle main() : i32
 	}
 	{ // "scoped_array" requiers "size_type" for size.
 		scoped_array i32 mem[ 25.0f ]( 1111 ); //##expect_error MacroExpansionContext
+	}
+	{ // "scoped_array" holds references inside.
+		var ust::string8 mut s= "12345";
+		scoped_array ust::string_view8 arr[10s]( s.range() );
+		// Error - "s" has a reference to it inside "arr", can't move it.
+		move(s); //##expect_error MovedVariableHasReferences
 	}
 
 	return 0;
