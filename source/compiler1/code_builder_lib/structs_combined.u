@@ -647,10 +647,81 @@ fn Type::GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().deref().inner_references[index];
+		return class_type.lock_imut().deref().inner_references[index].kind;
 	}
 
 	halt; // Unreachable.
+}
+
+fn Type::GetSecondOrderInnerReferenceKind( this, size_type index ) : SecondOrderInnerReferenceKind
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.GetSecondOrderInnerReferenceKind(index);
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		var size_type mut offset= 0s;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			var size_type count( element_type.ReferenceTagCount() );
+			if( index >= offset && index < offset + count )
+			{
+				return element_type.GetSecondOrderInnerReferenceKind( index - offset );
+			}
+			offset+= count;
+		}
+		halt; // Unreachable.
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().inner_references[index].second_order_kind;
+	}
+
+	halt; // Unreachable.
+}
+
+fn Type::GetReferenceIndirectionDepth( this ) : size_type
+{
+	if( !GetFundamentalType().empty() ||
+		!GetEnumType().empty() ||
+		!GetFunctionPointerType().empty() ||
+		!GetRawPointerType().empty() )
+	{
+		// These types have no references inside.
+		return 0s;
+	}
+
+	if_var( &class_type_ptr : GetClassType() )
+	{
+		with( &class_type : class_type_ptr.lock_imut().deref() )
+		{
+			auto mut depth= 0s;
+			foreach( &inner_reference : class_type.inner_references )
+			{
+				// For now no more than depth 2 is possible.
+				depth= ust::max( depth, 1s + select( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0s : 1s ) );
+			}
+			return depth;
+		}
+	}
+
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.GetReferenceIndirectionDepth();
+	}
+
+	if_var( &tuple_type : GetTupleType() )
+	{
+		auto mut depth= 0s;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			depth= ust::max( depth, element_type.GetReferenceIndirectionDepth() );
+		}
+		return depth;
+	}
+
+	halt; // Unhandled type kind.
 }
 
 fn Type::ContainsMutableReferences( this ) : bool
@@ -665,9 +736,10 @@ fn Type::ContainsMutableReferences( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		foreach( inner_reference_kind : class_type.lock_imut().deref().inner_references )
+		foreach( &inner_reference : class_type.lock_imut().deref().inner_references )
 		{
-			if( inner_reference_kind == InnerReferenceKind::Mut )
+			if( inner_reference.kind == InnerReferenceKind::Mut ||
+				inner_reference.second_order_kind == SecondOrderInnerReferenceKind::Mut )
 			{
 				return true;
 			}
@@ -966,6 +1038,7 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 			.location= Variable::Location::Pointer,
 			.name= move(name),
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
+			.is_inner_reference_node= true,
 		};
 
 		this.inner_reference_nodes.push_back( VariablePtr( move(node_src) ) );

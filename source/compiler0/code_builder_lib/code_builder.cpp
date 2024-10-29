@@ -1547,11 +1547,16 @@ void CodeBuilder::BuildFuncCode(
 		for( const FunctionType::Param& param : function_type.params )
 		{
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's forbidden to create types with references inside to types with other references inside.
-			// So, check if this rule is not violated for coroutines.
-			// Do this now, because it's impossible to check this in coroutine declaration, because this check requires complete types of parameters.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
 			if( param.value_type != ValueType::Value && param.type.ReferenceTagCount() > 0u )
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
+			{
+				std::string field_name= "param ";
+				field_name+= std::to_string( size_t( &param - function_type.params.data() ) );
+				field_name+= " of type ";
+				field_name+= param.type.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, parent_names_scope.GetErrors(), params.front().src_loc, 1, field_name ); // TODO - use separate error code?
+			}
 
 			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
@@ -1663,17 +1668,52 @@ void CodeBuilder::BuildFuncCode(
 		for( size_t i= 0; i < reference_tag_count; ++i )
 		{
 			// Create root variable.
-			const VariablePtr accesible_variable=
+			const VariableMutPtr accesible_variable=
 				Variable::Create(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
 					arg_name + " referenced variable " + std::to_string(i) );
+
+			const SecondOrderInnerReferenceKind second_order_inner_reference_kind= param.type.GetSecondOrderInnerReferenceKind(i);
+			VariableMutPtr accessible_variable_inner_reference;
+			if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+			{
+				accessible_variable_inner_reference=
+					Variable::Create(
+						invalid_type_,
+						second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						arg_name + " referenced variable " + std::to_string(i) + " inner reference" );
+				accessible_variable_inner_reference->is_inner_reference_node= true;
+				accessible_variable_inner_reference->is_variable_inner_reference_node= true;
+
+				U_ASSERT( accesible_variable->inner_reference_nodes.empty() );
+				accesible_variable->inner_reference_nodes.push_back( accessible_variable_inner_reference );
+			}
+
 			function_context.variables_state.AddNode( accesible_variable );
 
 			function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 
 			function_context.args_nodes[ arg_number ].second[i]= accesible_variable;
+
+			if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+			{
+				const VariablePtr second_order_accesible_variable=
+					Variable::Create(
+						invalid_type_,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						arg_name + " second order referenced variable " + std::to_string(i) );
+				function_context.variables_state.AddNode( second_order_accesible_variable );
+
+				function_context.variables_state.AddLink( second_order_accesible_variable, accessible_variable_inner_reference );
+
+				function_context.args_second_order_nodes.resize( function_type.params.size() );
+				function_context.args_second_order_nodes[ arg_number ].resize( reference_tag_count );
+				function_context.args_second_order_nodes[ arg_number ][i]= second_order_accesible_variable;
+			}
 		}
 
 		const VariablePtr variable_reference=
@@ -1765,15 +1805,46 @@ void CodeBuilder::BuildFuncCode(
 						for( size_t i= 0; i < reference_tag_count; ++i )
 						{
 							// Create root variable.
-							const VariablePtr accesible_variable=
+							const VariableMutPtr accesible_variable=
 								Variable::Create(
 									invalid_type_,
 									ValueType::Value,
 									Variable::Location::Pointer,
 									field_name + " referenced variable " + std::to_string(i) );
+
+							const SecondOrderInnerReferenceKind second_order_inner_reference_kind= class_field.type.GetSecondOrderInnerReferenceKind(i);
+							VariableMutPtr accessible_variable_inner_reference;
+							if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+							{
+								accessible_variable_inner_reference=
+									Variable::Create(
+										invalid_type_,
+										second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+										Variable::Location::Pointer,
+										field_name + " referenced variable " + std::to_string(i) + " inner reference" );
+								accessible_variable_inner_reference->is_inner_reference_node= true;
+								accessible_variable_inner_reference->is_variable_inner_reference_node= true;
+
+								U_ASSERT( accesible_variable->inner_reference_nodes.empty() );
+								accesible_variable->inner_reference_nodes.push_back( accessible_variable_inner_reference );
+							}
+
 							function_context.variables_state.AddNode( accesible_variable );
 							function_context.variables_state.AddLink( accesible_variable, variable->inner_reference_nodes[i] );
 							function_context.variables_state.AddLink( variable->inner_reference_nodes[i], variable_reference->inner_reference_nodes[i] );
+
+							if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+							{
+								const VariablePtr second_order_accesible_variable=
+									Variable::Create(
+										invalid_type_,
+										ValueType::Value,
+										Variable::Location::Pointer,
+										field_name + " second order referenced variable " + std::to_string(i) );
+								function_context.variables_state.AddNode( second_order_accesible_variable );
+
+								function_context.variables_state.AddLink( second_order_accesible_variable, accessible_variable_inner_reference );
+							}
 						}
 
 						function_names.AddName( field_name, NamesScopeValue( variable_reference, block.src_loc ) );

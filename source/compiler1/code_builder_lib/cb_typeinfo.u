@@ -278,6 +278,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	}
 
 	ADD_SIZE_FIELD( "reference_tag_count", t.ReferenceTagCount() )
+	ADD_SIZE_FIELD( "reference_indirection_depth", t.GetReferenceIndirectionDepth() )
 
 	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
 	{
@@ -457,7 +458,9 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 			.members_initial= class_members,
 			.generated_class_data( TypeinfoClassDescription{ .source_type = src_type, .is_main_class= is_main_class } ),
 			.can_be_constexpr= true,
-			.inner_references= ust::make_array( InnerReferenceKind::Imut ),
+			// Almost all typeinfo have references to another typeinfo. So, add single inner reference tag.
+			// But do not bother with second order inner reference tags.
+			.inner_references= ust::make_array( InnerReference{ .kind= InnerReferenceKind::Imut } ),
 			.llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, g_null_string ) ),
 		} );
 

@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/optional.u"
+import "../ustlib/string.u"
 
 struct U32Vec16
 {
@@ -209,6 +210,40 @@ fn nomangle main() : i32
 		// null_optional == optional
 		halt if( ust::null_optional != empty_opt );
 		halt if( ust::null_optional == one_opt );
+	}
+	{ // Optional for a struct with references inside.
+
+		var ust::string_view8 s= "Arbeitsgruppe Lobotomie";
+		var ust::optional</ ust::string_view8 /> s_opt= s;
+
+		var ust::optional_ref_imut</ ust::string_view8 /> s_opt_ref= s_opt.as_ref();
+		halt if( s_opt_ref.try_deref() != ust::string_view8( "Arbeitsgruppe Lobotomie" ) );
+	}
+	{ // Optional for a struct with references inside.
+
+		var ust::string_view8 s= "Jesus and the Gurus";
+		var ust::optional</ ust::string_view8 /> mut s_opt= s;
+
+		{
+			var ust::optional_ref_mut</ ust::string_view8 /> s_opt_ref= s_opt.as_ref();
+			s_opt_ref.try_deref().drop_front();
+			s_opt_ref.try_deref().drop_back();
+		}
+		halt if( s_opt != ust::string_view8( "esus and the Guru" ) );
+	}
+	{ // Optional for a type with second order references inside.
+
+		var ust::string_view8 mut s= "Mehrwertsteuer";
+		{
+			var ust::optional</ ust::optional_ref_mut</ ust::string_view8 /> /> mut s_opt_opt;
+			halt if( !s_opt_opt.empty() );
+			s_opt_opt.reset( ust::optional_ref_mut</ ust::string_view8 />(s) );
+			halt if( s_opt_opt.empty() );
+
+			s_opt_opt.try_deref().try_deref().drop_back();
+		}
+
+		halt if( s != "Mehrwertsteue" );
 	}
 
 	return 0;

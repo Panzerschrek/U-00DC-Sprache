@@ -2177,6 +2177,21 @@ Value CodeBuilder::AccessClassField(
 		U_ASSERT( field.reference_tag < variable->inner_reference_nodes.size() );
 		function_context.variables_state.TryAddLink( variable->inner_reference_nodes[ field.reference_tag ], result, names_scope.GetErrors(), src_loc );
 
+		// Setup inner reference node links for reference fields with references inside.
+		// Only reference-fields with single inner reference tag are supported.
+		if( field.type.ReferenceTagCount() == 1 )
+		{
+			for( const VariablePtr& accessible_node :
+				function_context.variables_state.GetAllAccessibleNonInnerNodes( variable->inner_reference_nodes[ field.reference_tag ] ) )
+			{
+				// Usually we should have here only one inner reference node.
+				// But it may be more if a member of a composite value is referenced.
+				// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+				for( const VariablePtr& node : accessible_node->inner_reference_nodes )
+					function_context.variables_state.TryAddLink( node, result->inner_reference_nodes.front(), names_scope.GetErrors(), src_loc );
+			}
+		}
+
 		RegisterTemporaryVariable( function_context, result );
 		return result;
 	}
@@ -3714,6 +3729,8 @@ Value CodeBuilder::DoCallFunction(
 	llvm::SmallVector< VariablePtr, 16 > args_nodes;
 	args_nodes.resize( arg_count, nullptr );
 
+	llvm::SmallVector< std::vector<VariablePtr>, 16 > second_order_reference_nodes;
+
 	llvm::SmallVector<llvm::Value*, 16> value_args_for_lifetime_end_call;
 
 	for( size_t i= 0u; i < arg_count; ++i )
@@ -3954,6 +3971,41 @@ Value CodeBuilder::DoCallFunction(
 			args_nodes[arg_number]= arg_node;
 		}
 
+		// Create second order lock nodes (for both value and reference args).
+		const size_t reference_tag_count= param.type.ReferenceTagCount();
+		for(size_t i= 0; i < reference_tag_count; ++i )
+		{
+			const SecondOrderInnerReferenceKind second_order_inner_reference_kind= param.type.GetSecondOrderInnerReferenceKind(i);
+			if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+			{
+				const VariableMutPtr second_order_reference_node=
+					Variable::Create(
+					void_type_,
+					second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					"second order inner reference " + std::to_string(i) + " of arg " + std::to_string(arg_number) );
+				second_order_reference_node->preserve_temporary= true;
+
+				second_order_reference_nodes.resize( arg_count );
+				second_order_reference_nodes[arg_number].resize( reference_tag_count );
+				second_order_reference_nodes[arg_number][i]= second_order_reference_node;
+
+				function_context.variables_state.AddNode( second_order_reference_node );
+				for( const VariablePtr& accessible_non_inner_node :
+					function_context.variables_state.GetAllAccessibleNonInnerNodes( args_nodes[arg_number]->inner_reference_nodes[i] ) )
+				{
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					for( const VariablePtr& node : accessible_non_inner_node->inner_reference_nodes )
+						function_context.variables_state.TryAddLink(
+							node, second_order_reference_node, names_scope.GetErrors(), src_loc );
+				}
+
+				RegisterTemporaryVariable( function_context, second_order_reference_node );
+			}
+		}
+
 		// Destroy unused temporary variables after each argument evaluation.
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
 	} // for args
@@ -4080,6 +4132,24 @@ Value CodeBuilder::DoCallFunction(
 	{
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
+			// Setup also second order references.
+			// Do this specially since we have for now no special notation to specify returning of second order references.
+			if( arg_reference.second != FunctionType::c_param_reference_number &&
+				arg_reference.first < second_order_reference_nodes.size() )
+			{
+				const auto& arg_second_order_reference_nodes= second_order_reference_nodes[ arg_reference.first ];
+				if( arg_reference.second < arg_second_order_reference_nodes.size() )
+				{
+					const VariablePtr& node= arg_second_order_reference_nodes[ arg_reference.second ];
+					if( node != nullptr )
+					{
+						// Perform linking for all result inner references, we have no way to pick only some of them.
+						for( const VariablePtr& inner_reference_node : result->inner_reference_nodes )
+							function_context.variables_state.TryAddLink( node, inner_reference_node, names_scope.GetErrors(), call_src_loc );
+					}
+				}
+			}
+
 			if( arg_reference.first < args_nodes.size() )
 			{
 				const auto& arg_node= args_nodes[arg_reference.first];
@@ -4151,6 +4221,17 @@ Value CodeBuilder::DoCallFunction(
 			function_context.variables_state.MoveNode( node );
 	}
 	args_nodes.clear();
+
+	for( const auto& nodes : second_order_reference_nodes )
+	{
+		for( const VariablePtr node : nodes )
+		{
+			if( node != nullptr )
+				function_context.variables_state.MoveNode( node );
+		}
+	}
+
+	second_order_reference_nodes.clear();
 
 	DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
 	RegisterTemporaryVariable( function_context, result );

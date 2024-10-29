@@ -544,11 +544,25 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.deref().src_loc, field.t )
 				continue;
 			}
-			if( field.is_reference && field.t.ReferenceTagCount() > 0u )
+			if( field.is_reference )
 			{
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
-				field.t= invalid_type_;
-				continue;
+				auto reference_tag_count= field.t.ReferenceTagCount();
+				if( reference_tag_count > 0u )
+				{
+					if( field.t.GetSecondOrderInnerReferenceKind(0s) != SecondOrderInnerReferenceKind::None )
+					{
+						REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope_ptr, field.syntax_element.deref().src_loc, 2, field.syntax_element.deref().name )
+						field.t= invalid_type_;
+						continue;
+					}
+
+					if( reference_tag_count > 1u )
+					{
+						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
+						field.t= invalid_type_;
+						continue;
+					}
+				}
 			}
 		}
 	}
@@ -717,18 +731,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// Inherit inner references of parents.
 			// Normally any reference may be inhhereted only from base, but not interfaces.
 			class_.inner_references.clear();
-			foreach( &parent : class_.parents )
+			if( !class_.base_class.empty() )
 			{
-				with( &parent_class : parent.class_.lock_imut().deref() )
-				{
-					auto s= ust::max( class_.inner_references.size(), parent_class.inner_references.size() );
-					class_.inner_references.resize( s, InnerReferenceKind::Imut );
-					foreach( pair : class_.inner_references.iter().zip( parent_class.inner_references.iter() ) )
-					{
-						auto& mut t= pair.first;
-						t= ust::max( t, pair.second );
-					}
-				}
+				class_.inner_references= class_.base_class.try_lock_imut().deref().inner_references;
 			}
 			has_parents_with_references_inside= !class_.inner_references.empty();
 
@@ -742,15 +747,25 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				if( field.is_reference )
 				{
 					reference_fields.push_back( field_ptr );
-				}
 
-				if( field.t.ReferenceTagCount() > 0u )
-				{
-					fields_with_references_inside.push_back( field_ptr );
+					if( !field.syntax_element.deref().inner_reference_tags_expression.has</Synt::EmptyVariant/>() )
+					{
+						// Reference tags of a struct are used only for reference fields or value fields with references inside.
+						// They are not used for second order references.
+						// So, they are useless or even confusing.
+						REPORT_ERROR( InnerReferenceTagsForReferenceField, class_members, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
+					}
 				}
 				else
 				{
-					fields_with_no_references_inside_but_inner_references_notation.push_back( field_ptr );
+					if( field.t.ReferenceTagCount() > 0u )
+					{
+						fields_with_references_inside.push_back( field_ptr );
+					}
+					else
+					{
+						fields_with_no_references_inside_but_inner_references_notation.push_back( field_ptr );
+					}
 				}
 
 				has_fields_with_reference_notation |=
@@ -770,7 +785,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				{
 					if( !reference_tags.empty() )
 					{
-						REPORT_ERROR( InnerReferenceTagCountMismatch,class_members, field.syntax_element.deref().src_loc, 0, reference_tags.size() )
+						REPORT_ERROR( InnerReferenceTagCountMismatch, class_members, field.syntax_element.deref().src_loc, 0, reference_tags.size() )
 					}
 				}
 			}
@@ -788,9 +803,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			field.reference_tag= 0u8;
 			if( class_.inner_references.empty() )
 			{
-				class_.inner_references.push_back( InnerReferenceKind::Imut );
+				class_.inner_references.push_back( InnerReference{ .kind= InnerReferenceKind::Imut } );
 			}
-			auto &mut t= class_.inner_references[ size_type(field.reference_tag) ];
+			auto &mut t= class_.inner_references[ size_type(field.reference_tag) ].kind;
 			t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 		}
 		else if( reference_fields.size() == 0s && fields_with_references_inside.size() == 1s && !has_fields_with_reference_notation && !has_parents_with_references_inside )
@@ -804,11 +819,11 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			auto reference_tag_count= field.t.ReferenceTagCount();
 			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
-			class_.inner_references.resize( size_type(reference_tag_count), InnerReferenceKind::Imut );
+			class_.inner_references.resize( size_type(reference_tag_count), InnerReference{ .kind= InnerReferenceKind::Imut } );
 			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
 			{
 				field.inner_reference_tags[i]= u8(i);
-				class_.inner_references[i]= field.t.GetInnerReferenceKind(i);
+				class_.inner_references[i].kind= field.t.GetInnerReferenceKind(i);
 			}
 		}
 		else
@@ -838,9 +853,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					field.reference_tag= tag;
 
 					auto s= ust::max( size_type(tag) + 1s, class_.inner_references.size() );
-					class_.inner_references.resize( s, InnerReferenceKind::Imut );
+					class_.inner_references.resize( s, InnerReference{ .kind= InnerReferenceKind::Imut } );
 
-					auto &mut t= class_.inner_references[ size_type(tag) ];
+					auto &mut t= class_.inner_references[ size_type(tag) ].kind;
 					t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 				}
 				else
@@ -849,9 +864,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					field.reference_tag= 0u8;
 					if( class_.inner_references.empty() )
 					{
-						class_.inner_references.push_back( InnerReferenceKind::Imut );
+						class_.inner_references.push_back( InnerReference{ .kind= InnerReferenceKind::Imut } );
 					}
-					auto &mut t= class_.inner_references[ size_type(field.reference_tag) ];
+					auto &mut t= class_.inner_references[ size_type(field.reference_tag) ].kind;
 					t= ust::max( t, select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 				}
 			}
@@ -889,9 +904,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					{
 						auto tag= field.inner_reference_tags[i];
 						auto s= ust::max( size_type(tag) + 1s, class_.inner_references.size() );
-						class_.inner_references.resize( s, InnerReferenceKind::Imut );
+						class_.inner_references.resize( s, InnerReference{ .kind= InnerReferenceKind::Imut } );
 
-						auto &mut t= class_.inner_references[ size_type(tag) ];
+						auto &mut t= class_.inner_references[ size_type(tag) ].kind;
 						t= ust::max( t, field.t.GetInnerReferenceKind( size_type(i) ) );
 					}
 				}
@@ -901,7 +916,67 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
 					if( class_.inner_references.empty() )
 					{
-						class_.inner_references.push_back( InnerReferenceKind::Imut );
+						class_.inner_references.push_back( InnerReference{ .kind= InnerReferenceKind::Imut } );
+					}
+				}
+			}
+		}
+
+		with( mut class_lock : class_type.lock_mut() )
+		{
+			var ClassType& mut class_= class_lock.deref();
+
+			// Setup second order inner references.
+
+			foreach( &field_ptr : reference_fields )
+			{
+				with( &field : field_ptr.lock_imut().deref() )
+				{
+					if( field.t.ReferenceTagCount() > 0u )
+					{
+						auto i= size_type(field.reference_tag);
+						var InnerReference& mut inner_reference= class_.inner_references[i];
+
+						var SecondOrderInnerReferenceKind second_order_kind=
+							select( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
+								? SecondOrderInnerReferenceKind::Imut
+								: SecondOrderInnerReferenceKind::Mut );
+
+						if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+						{
+							inner_reference.second_order_kind= second_order_kind;
+						}
+						else if( inner_reference.second_order_kind != second_order_kind )
+						{
+							var ust::string8 mut s;
+							s.push_back( char8( size_type("a"c8) + i ) );
+							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
+						}
+					}
+				}
+			}
+
+			foreach( &field_ptr : fields_with_references_inside )
+			{
+				with( &field : field_ptr.lock_imut().deref() )
+				{
+					for( auto mut j= 0s; j < field.inner_reference_tags.size(); ++j )
+					{
+						auto i= size_type(field.inner_reference_tags[j]);
+						var InnerReference& mut inner_reference= class_.inner_references[i];
+
+						var SecondOrderInnerReferenceKind second_order_kind= field.t.GetSecondOrderInnerReferenceKind(j);
+
+						if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+						{
+							inner_reference.second_order_kind= second_order_kind;
+						}
+						else if( inner_reference.second_order_kind != second_order_kind )
+						{
+							var ust::string8 mut s;
+							s.push_back( char8( size_type("a"c8) + i ) );
+							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
+						}
 					}
 				}
 			}
@@ -938,8 +1013,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				{
 					reference_tags_usage_flags[ size_type(field.reference_tag) ]= true;
 					if(
-						(  field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Imut ) ||
-						( !field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ] == InnerReferenceKind::Mut ) )
+						(  field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ].kind == InnerReferenceKind::Imut ) ||
+						( !field.is_mutable && class_.inner_references[ size_type(field.reference_tag) ].kind == InnerReferenceKind::Mut ) )
 					{
 						var ust::string8 s( 1s, char8( size_type( "a"c8 ) + size_type(field.reference_tag) ) );
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
@@ -951,7 +1026,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					auto tag= field.inner_reference_tags[i];
 					reference_tags_usage_flags[ size_type(tag) ]= true;
 
-					if( class_.inner_references[ size_type(tag) ] != field.t.GetInnerReferenceKind(i) )
+					if( class_.inner_references[ size_type(tag) ].kind != field.t.GetInnerReferenceKind(i) )
 					{
 						var ust::string8 s( 1s, char8( size_type( "a"c8 ) + size_type(tag) ) );
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )

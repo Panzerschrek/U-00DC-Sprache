@@ -49,7 +49,8 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
-	typeinfo_class->inner_references.push_back( InnerReferenceKind::Imut ); // Almost all typeinfo have references to another typeinfo.
+	// For now do not bother specifying second order references for typeinfo types.
+	typeinfo_class->inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) ); // Almost all typeinfo have references to another typeinfo.
 
 	return typeinfo_class;
 }
@@ -148,6 +149,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	}
 
 	add_size_field( "reference_tag_count", type.ReferenceTagCount() );
+	add_size_field( "reference_indirection_depth", type.GetReferenceIndirectionDepth() );
 
 	// TODO - rework this - provide array of bools with size equal to number of reference tag count.
 	{

@@ -286,6 +286,31 @@ bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_co
 	U_ASSERT( variable_node != nullptr );
 	U_ASSERT( variable_node->value_type == ValueType::Value );
 
+	if( function_context.function_type.return_value_type != ValueType::Value )
+	{
+		// Process specially inner references of returning reference.
+		// Allow skipping return inner references in case if an arg inner reference is returned.
+		// This is done in order to support returning references to types with references inside (second order references support).
+		for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_references )
+		{
+			if( param_and_tag.second != FunctionType::c_param_reference_number )
+			{
+				// Returning inner arg reference.
+
+				if( param_and_tag.first < function_context.args_second_order_nodes.size() )
+				{
+					const auto& arg_second_order_nodes= function_context.args_second_order_nodes[ param_and_tag.first ];
+					if( param_and_tag.second < arg_second_order_nodes.size() &&
+						arg_second_order_nodes[ param_and_tag.second ] == variable_node )
+					{
+						// Allow returning this node - it's correct second order variable node.
+						return true;
+					}
+				}
+			}
+		}
+	}
+
 	if( index >= function_context.function_type.return_inner_references.size() )
 		return false;
 
@@ -413,6 +438,31 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 						continue;
 				}
 				REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
+			}
+		}
+	}
+
+	// For now disable all pollution for accessible variables inner reference nodes.
+	for( size_t arg_index= 0; arg_index < function_context.args_nodes.size(); ++arg_index )
+	{
+		const auto& nodes_pair= function_context.args_nodes[arg_index];
+		if( arg_index < function_context.args_second_order_nodes.size() )
+		{
+			const auto& arg_second_order_nodes= function_context.args_second_order_nodes[arg_index];
+			for( size_t inner_reference_index= 0; inner_reference_index < nodes_pair.second.size(); ++inner_reference_index )
+			{
+				if( inner_reference_index < arg_second_order_nodes.size() )
+				{
+					const VariablePtr& second_order_variable_node= arg_second_order_nodes[ inner_reference_index ];
+					for( const VariablePtr& inner_node : nodes_pair.second[ inner_reference_index ]->inner_reference_nodes )
+					{
+						for( const VariablePtr& v : function_context.variables_state.GetAllAccessibleVariableNodes( inner_node ) )
+						{
+							if( v != second_order_variable_node )
+								REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
+						}
+					}
+				}
 			}
 		}
 	}

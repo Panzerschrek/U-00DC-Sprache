@@ -176,6 +176,30 @@ fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names
 
 fn CodeBuilder::IsReferenceAllowedForInnerReturn( this, FunctionContext& function_context, VariablePtr& variable_node, size_type index ) : bool
 {
+	if( function_context.function_type.return_value_type != ValueType::Value )
+	{
+		// Process specially inner references of returning reference.
+		// Allow skipping return inner references in case if an arg inner reference is returned.
+		// This is done in order to support returning references to types with references inside (second order references support).
+		foreach( &param_reference : function_context.function_type.return_references )
+		{
+			if( param_reference.reference_index != FunctionType::c_param_reference_number )
+			{
+				// Returning inner arg reference.
+				if( size_type( param_reference.param_index ) < function_context.args_second_order_nodes.size() )
+				{
+					auto& arg_second_order_nodes= function_context.args_second_order_nodes[ size_type( param_reference.param_index ) ];
+					if( size_type(param_reference.reference_index) < arg_second_order_nodes.size() &&
+						arg_second_order_nodes[ size_type(param_reference.reference_index) ] == variable_node )
+					{
+						// Allow returning this node - it's correct second order variable node.
+						return true;
+					}
+				}
+			}
+		}
+	}
+
 	if( index >= function_context.function_type.return_inner_references.size() )
 	{
 		return false;
@@ -328,27 +352,51 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 						}
 					}
 
-					if( param_reference.empty() )
+					if( !param_reference.empty() )
 					{
-						continue;
-					}
-
-					var FunctionType::ReferencePollution actual_reference_pollution
-					{
-						.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
-						.src= param_reference.try_deref(),
-					};
-
-					foreach( &reference_pollution : function_type.references_pollution )
-					{
-						if( actual_reference_pollution == reference_pollution )
+						var FunctionType::ReferencePollution actual_reference_pollution
 						{
-							continue label accessible_nodes_loop;
+							.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
+							.src= param_reference.try_deref(),
+						};
+
+						foreach( &reference_pollution : function_type.references_pollution )
+						{
+							if( actual_reference_pollution == reference_pollution )
+							{
+								continue label accessible_nodes_loop;
+							}
 						}
 					}
 
-
 					REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+				}
+			}
+		}
+	}
+
+	// For now disable all pollution for accessible variables inner reference nodes.
+	for( auto mut arg_index= 0s; arg_index < function_context.args_nodes.size(); ++arg_index )
+	{
+		auto& nodes_pair= function_context.args_nodes[arg_index];
+		if( arg_index < function_context.args_second_order_nodes.size() )
+		{
+			auto& arg_second_order_nodes= function_context.args_second_order_nodes[arg_index];
+			for( auto mut inner_reference_index= 0s; inner_reference_index < nodes_pair[1].size(); ++inner_reference_index )
+			{
+				if( inner_reference_index < arg_second_order_nodes.size() )
+				{
+					var VariableNullablePtr& second_order_variable_node= arg_second_order_nodes[ inner_reference_index ];
+					foreach( & inner_node : nodes_pair[1][ inner_reference_index ].lock_imut().deref().inner_reference_nodes )
+					{
+						foreach( &v : function_context.references_graph.GetAllAccessibleVariableNodes( inner_node ) )
+						{
+							if( v != second_order_variable_node )
+							{
+								REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+							}
+						}
+					}
 				}
 			}
 		}

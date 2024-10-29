@@ -175,7 +175,12 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 			// This class allocates heep memory and because of that can't be constexpr.
 			.can_be_constexpr= false,
 			.parents_list_prepared= true,
-			.inner_references= coroutine_type_description.inner_references,
+			.inner_references=
+				coroutine_type_description
+				.inner_references
+				.iter()
+				.map( lambda( InnerReferenceKind k ) : InnerReference { return InnerReference{ .kind= k }; } )
+				.collect</ ust::vector />(),
 			.generated_class_data( coroutine_type_description ),
 		} );
 

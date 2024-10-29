@@ -36,6 +36,27 @@ enum class InnerReferenceKind : uint8_t
 	Mut, // Type has mutable inner reference
 };
 
+enum class SecondOrderInnerReferenceKind : uint8_t
+{
+	None, // No second order reference.
+	Imut,
+	Mut,
+};
+
+struct InnerReference
+{
+	InnerReferenceKind kind;
+	SecondOrderInnerReferenceKind second_order_kind;
+
+	InnerReference()= delete;
+
+	explicit InnerReference(
+		const InnerReferenceKind in_kind,
+		const SecondOrderInnerReferenceKind in_second_order_kind= SecondOrderInnerReferenceKind::None )
+		: kind(in_kind), second_order_kind(in_second_order_kind)
+	{}
+};
+
 // Observer pointer to class.
 // Class itself stored in class table.
 using ClassPtr= Class*;
@@ -105,6 +126,8 @@ public:
 
 	size_t ReferenceTagCount() const;
 	InnerReferenceKind GetInnerReferenceKind(size_t index) const;
+	SecondOrderInnerReferenceKind GetSecondOrderInnerReferenceKind( size_t index ) const;
+	size_t GetReferenceIndirectionDepth() const;
 	bool ContainsMutableReferences() const;
 
 	llvm::Type* GetLLVMType() const;

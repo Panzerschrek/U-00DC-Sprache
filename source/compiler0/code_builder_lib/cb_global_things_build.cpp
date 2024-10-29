@@ -515,8 +515,16 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
 					return;
 				}
-				if( class_field->type.ReferenceTagCount() > 0u )
-					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
+
+				const size_t reference_tag_count= class_field->type.ReferenceTagCount();
+				if( reference_tag_count > 0 )
+				{
+					if( class_field->type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
+						REPORT_ERROR( ReferenceIndirectionDepthExceeded, class_parent_namespace.GetErrors(), in_field.src_loc, 2, in_field.name );
+
+					if( reference_tag_count > 1 )
+						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
+				}
 			}
 			else if( class_field->type.IsAbstract() )
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
@@ -534,14 +542,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Determine inner references.
 	{
 		// Inherit inner references of parents.
-		// Normally any reference may be inhhereted only from base, but not interfaces.
-		the_class.inner_references.clear();
-		for( const Class::Parent& parent : the_class.parents )
-		{
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), parent.class_->inner_references.size() ) );
-			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
-				the_class.inner_references[i]= std::max( the_class.inner_references[i], parent.class_->inner_references[i] );
-		}
+		// Normally any reference may be inhereted only from base, but not interfaces, since interfaces have no fields.
+		if( the_class.base_class != nullptr )
+			the_class.inner_references= the_class.base_class->inner_references;
+
 		const bool has_parents_with_references_inside= !the_class.inner_references.empty();
 
 		// Collect fields for which reference notation is required.
@@ -558,18 +562,30 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					return;
 
 				if( field->is_reference )
+				{
 					reference_fields.push_back(field);
 
-				if( field->type.ReferenceTagCount() > 0 )
-					fields_with_references_inside.push_back(field);
-				else
-				{
 					if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
 					{
-						if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+						// Reference tags of a struct are used only for reference fields or value fields with references inside.
+						// They are not used for second order references.
+						// So, specifying inner reference tags for a reference field is useless or even confusing.
+						REPORT_ERROR( InnerReferenceTagsForReferenceField, the_class.members->GetErrors(), field->syntax_element->src_loc, field->syntax_element->name );
+					}
+				}
+				else
+				{
+					if( field->type.ReferenceTagCount() > 0 )
+						fields_with_references_inside.push_back(field);
+					else
+					{
+						if( !std::holds_alternative< Synt::EmptyVariant >( field->syntax_element->inner_reference_tags_expression ) )
 						{
-							if( reference_tags->size() != 0 )
-								REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
+							if( const auto reference_tags= EvaluateReferenceFieldInnerTags( *the_class.members, field->syntax_element->inner_reference_tags_expression ) )
+							{
+								if( reference_tags->size() != 0 )
+									REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, size_t(0), reference_tags->size() );
+							}
 						}
 					}
 				}
@@ -588,8 +604,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			field.reference_tag= uint8_t(0u);
 
 			if( the_class.inner_references.empty() )
-				the_class.inner_references.push_back( InnerReferenceKind::Imut );
-			the_class.inner_references.front()= std::max( the_class.inner_references.front(), field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
+			the_class.inner_references.front().kind= std::max( the_class.inner_references.front().kind, field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 		}
 		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
@@ -601,9 +617,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( size_t i= 0; i < reference_tag_count; ++i )
 				field.inner_reference_tags[i]= uint8_t(i);
 
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReferenceKind::Imut );
+			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReference( InnerReferenceKind::Imut ) );
 			for( size_t i= 0; i < reference_tag_count; ++i )
-				the_class.inner_references[i]= std::max( the_class.inner_references[i], field.type.GetInnerReferenceKind(i) );
+				the_class.inner_references[i].kind= std::max( the_class.inner_references[i].kind, field.type.GetInnerReferenceKind(i) );
 		}
 		else
 		{
@@ -621,8 +637,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				{
 					reference_field->reference_tag= *reference_tag;
 
-					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReferenceKind::Imut );
-					InnerReferenceKind& t= the_class.inner_references[ size_t(*reference_tag) ];
+					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReference( InnerReferenceKind::Imut ) );
+					InnerReferenceKind& t= the_class.inner_references[ size_t(*reference_tag) ].kind;
 					t= std::max( t, reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				}
 				else
@@ -631,8 +647,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					reference_field->reference_tag= uint8_t(0u);
 
 					if( the_class.inner_references.empty() )
-						the_class.inner_references.push_back( InnerReferenceKind::Imut );
-					the_class.inner_references.front()= std::max( the_class.inner_references.front(), reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+						the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
+					the_class.inner_references.front().kind= std::max( the_class.inner_references.front().kind, reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				}
 			}
 
@@ -658,8 +674,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
 						const size_t tag= field->inner_reference_tags[i];
-						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReferenceKind::Imut );
-						InnerReferenceKind& t= the_class.inner_references[ tag ];
+						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReference( InnerReferenceKind::Imut ) );
+						InnerReferenceKind& t= the_class.inner_references[ tag ].kind;
 						t= std::max( t, field->type.GetInnerReferenceKind(i) );
 					}
 				}
@@ -670,10 +686,55 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					field->inner_reference_tags.resize( reference_tag_count, uint8_t(0) );
 
 					if( the_class.inner_references.empty() )
-						the_class.inner_references.push_back( InnerReferenceKind::Imut );
-					InnerReferenceKind& t= the_class.inner_references.front();
+						the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
+					InnerReferenceKind& t= the_class.inner_references.front().kind;
 					for( size_t i= 0; i < reference_tag_count; ++i )
 						t= std::max( t, field->type.GetInnerReferenceKind(i) );
+				}
+			}
+		}
+
+		// Setup second order inner references.
+
+		for( const ClassFieldPtr& field : reference_fields )
+		{
+			if( field->type.ReferenceTagCount() > 0 )
+			{
+				const size_t i= field->reference_tag;
+				InnerReference& inner_reference= the_class.inner_references[i];
+
+				const SecondOrderInnerReferenceKind second_order_kind=
+					field->type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
+						? SecondOrderInnerReferenceKind::Imut
+						: SecondOrderInnerReferenceKind::Mut;
+
+				if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+					inner_reference.second_order_kind= second_order_kind;
+				else if( inner_reference.second_order_kind != second_order_kind )
+				{
+					std::string s;
+					s.push_back( char( 'a' + i ) );
+					REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+				}
+			}
+		}
+
+		for( const ClassFieldPtr& field : fields_with_references_inside )
+		{
+			for( size_t j= 0; j < field->inner_reference_tags.size(); ++j )
+			{
+				const size_t i= field->inner_reference_tags[j];
+				InnerReference& inner_reference= the_class.inner_references[i];
+
+				const SecondOrderInnerReferenceKind second_order_kind= field->type.GetSecondOrderInnerReferenceKind(j);
+
+				if( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None )
+					inner_reference.second_order_kind= second_order_kind;
+				else if( inner_reference.second_order_kind != second_order_kind )
+				{
+					std::string s;
+					s.push_back( char( 'a' + i ) );
+					REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 				}
 			}
 		}
@@ -687,7 +748,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
 			{
 				reference_tags_usage_flags[i]= true;
-				if( parent.class_->inner_references[i] != the_class.inner_references[i] )
+				if( parent.class_->inner_references[i].kind != the_class.inner_references[i].kind )
 				{
 					std::string s;
 					s.push_back( char( 'a' + i ) );
@@ -709,27 +770,29 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					reference_tags_usage_flags[ field->reference_tag ]= true;
 
 					if(
-						(  field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceKind::Imut ) ||
-						( !field->is_mutable && the_class.inner_references[ field->reference_tag ] == InnerReferenceKind:: Mut ) )
+						(  field->is_mutable && the_class.inner_references[ field->reference_tag ].kind == InnerReferenceKind::Imut ) ||
+						( !field->is_mutable && the_class.inner_references[ field->reference_tag ].kind == InnerReferenceKind:: Mut ) )
 					{
 						std::string s;
 						s.push_back( char( 'a' + field->reference_tag ) );
 						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 					}
 				}
-
-				U_ASSERT( field->inner_reference_tags.size() == field->type.ReferenceTagCount() );
-				for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
+				else
 				{
-					const size_t tag= field->inner_reference_tags[i];
-					U_ASSERT( tag < the_class.inner_references.size() );
-					reference_tags_usage_flags[ tag ]= true;
-
-					if( field->type.GetInnerReferenceKind(i) != the_class.inner_references[tag] )
+					U_ASSERT( field->inner_reference_tags.size() == field->type.ReferenceTagCount() );
+					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
-						std::string s;
-						s.push_back( char( 'a' + tag ) );
-						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+						const size_t tag= field->inner_reference_tags[i];
+						U_ASSERT( tag < the_class.inner_references.size() );
+						reference_tags_usage_flags[ tag ]= true;
+
+						if( field->type.GetInnerReferenceKind(i) != the_class.inner_references[tag].kind )
+						{
+							std::string s;
+							s.push_back( char( 'a' + tag ) );
+							REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+						}
 					}
 				}
 			} );

@@ -374,7 +374,7 @@ InnerReferenceKind Type::GetInnerReferenceKind( const size_t index ) const
 	if( const auto class_type= GetClassType() )
 	{
 		U_ASSERT( index < class_type->inner_references.size() );
-		return class_type->inner_references[index];
+		return class_type->inner_references[index].kind;
 	}
 	else if( const auto array_type= GetArrayType() )
 		return array_type->element_type.GetInnerReferenceKind(index);
@@ -396,6 +396,71 @@ InnerReferenceKind Type::GetInnerReferenceKind( const size_t index ) const
 	return InnerReferenceKind::Imut;
 }
 
+SecondOrderInnerReferenceKind Type::GetSecondOrderInnerReferenceKind( const size_t index ) const
+{
+	U_ASSERT( index < ReferenceTagCount() );
+
+	if( const auto class_type= GetClassType() )
+	{
+		U_ASSERT( index < class_type->inner_references.size() );
+		return class_type->inner_references[index].second_order_kind;
+	}
+	else if( const auto array_type= GetArrayType() )
+		return array_type->element_type.GetSecondOrderInnerReferenceKind(index);
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		size_t offset= 0;
+		for( const Type& element : tuple_type->element_types )
+		{
+			const size_t count= element.ReferenceTagCount();
+			if( index >= offset && index < offset + count )
+				return element.GetSecondOrderInnerReferenceKind( index - offset );
+			offset+= count;
+		}
+		U_ASSERT(false); // Unreachable.
+		return SecondOrderInnerReferenceKind::None;
+	}
+
+	U_ASSERT(false); // Unreachable - other types have 0 reference tags.
+	return SecondOrderInnerReferenceKind::None;
+}
+
+size_t Type::GetReferenceIndirectionDepth() const
+{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
+		return 0; // These type kinds don't contain references inside.
+
+	if( const auto class_type= GetClassType() )
+	{
+		size_t depth= 0;
+		for( const InnerReference& inner_reference : class_type->inner_references )
+		{
+			// For now no more than depth 2 is possible.
+			depth= std::max( depth, size_t(1) + size_t(inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0 : 1 ) );
+		}
+
+		return depth;
+	}
+
+	if( const auto array_type= GetArrayType() )
+		return array_type->element_type.GetReferenceIndirectionDepth();
+
+	if( const auto tuple_type= GetTupleType() )
+	{
+		size_t depth= 0;
+		for( const Type& element_type : tuple_type->element_types )
+			depth= std::max( depth, element_type.GetReferenceIndirectionDepth() );
+
+		return depth;
+	}
+
+	U_ASSERT(false); // Unreachable type kind.
+	return 0;
+}
+
 bool Type::ContainsMutableReferences() const
 {
 	if( GetFundamentalType() != nullptr ||
@@ -405,8 +470,8 @@ bool Type::ContainsMutableReferences() const
 		return false;
 	else if( const auto class_type= GetClassType() )
 	{
-		for( const InnerReferenceKind kind : class_type->inner_references )
-			if( kind == InnerReferenceKind::Mut )
+		for( const InnerReference& inner_reference : class_type->inner_references )
+			if( inner_reference.kind == InnerReferenceKind::Mut || inner_reference.second_order_kind == SecondOrderInnerReferenceKind::Mut )
 				return true;
 	}
 	else if( const auto array_type= GetArrayType() )

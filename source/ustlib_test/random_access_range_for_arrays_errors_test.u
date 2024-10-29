@@ -33,6 +33,18 @@ fn nomangle main() : i32
 		var [ B, 4 ] b;
 		var ust::random_access_range_imut</A/> range(b); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{
+		var [ i32, 4 ] mut a0= zero_init;
+		var [ i32, 4 ] mut a1= zero_init;
+		var [ i32, 4 ] mut a2= zero_init;
+		var [ ust::array_view_mut</i32/>, 3 ] mut views_array[ a0, a1, a2 ];
+
+		var ust::array_view_imut</ ust::array_view_mut</i32/> /> views_to_views= views_array;
+
+		var i32 &mut a00= views_to_views[0s][0s]; // Create a mutable reference pointing to "a0", "a1", or "a2".
+		// Error - this call creates a temporary lock node for second order reference pointing to "a0", "a1", or "a2".
+		views_to_views.size(); //##expect_error ReferenceProtectionError
+	}
 
 	return 0;
 }

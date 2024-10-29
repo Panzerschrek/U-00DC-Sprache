@@ -223,50 +223,17 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 	return result;
 }
 
+// TODO - maybe use other name for this method?
+ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleNonInnerNodes( const VariablePtr& node ) const
+{
+	NodesSet result;
+	GetAllAccessibleNonInnerNodes_r( node, result );
+	return result;
+}
+
 void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, to, errors_container, src_loc );
-}
-
-void ReferencesGraph::GetAllAccessibleVariableNodes_r(
-	const VariablePtr& node,
-	NodesSet& visited_nodes_set,
-	NodesSet& result_set ) const
-{
-	U_ASSERT( nodes_.find(node) != nodes_.end() );
-
-	if( !visited_nodes_set.insert(node).second )
-		return; // Already visited
-
-	if( node->value_type == ValueType::Value )
-		result_set.emplace( node );
-
-	for( const auto& link : links_ )
-		if( link.dst == node )
-			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
-
-	if( const VariablePtr parent= node->parent.lock() )
-		GetAllAccessibleVariableNodes_r( parent, visited_nodes_set, result_set );
-
-	// Children nodes can't have input links. So, ignore them.
-}
-
-void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
-{
-	if( to->is_variable_inner_reference_node )
-		TryAddLink( from, to, errors_container, src_loc );
-	else
-	{
-		// Fill container with reachable nodes and only that perform recursive calls.
-		// Do this in order to avoid iteration over container of links, which may be modified in recursive call.
-		llvm::SmallVector< VariablePtr, 12 > src_nodes;
-		for( const Link& link : links_ )
-			if( link.dst == to )
-				src_nodes.push_back( link.src );
-
-		for( const VariablePtr& src_node : src_nodes )
-			TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src_node, errors_container, src_loc );
-	}
 }
 
 ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const llvm::ArrayRef<ReferencesGraph> branches_variables_state, const SrcLoc& src_loc )
@@ -426,6 +393,64 @@ void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 
 		for( const VariablePtr& to : out_nodes )
 			AddLink( parent, to );
+	}
+}
+
+void ReferencesGraph::GetAllAccessibleVariableNodes_r(
+	const VariablePtr& node,
+	NodesSet& visited_nodes_set,
+	NodesSet& result_set ) const
+{
+	U_ASSERT( nodes_.find(node) != nodes_.end() );
+
+	if( !visited_nodes_set.insert(node).second )
+		return; // Already visited
+
+	if( node->value_type == ValueType::Value )
+		result_set.emplace( node );
+
+	for( const auto& link : links_ )
+		if( link.dst == node )
+			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
+
+	if( const VariablePtr parent= node->parent.lock() )
+		GetAllAccessibleVariableNodes_r( parent, visited_nodes_set, result_set );
+
+	// Children nodes can't have input links. So, ignore them.
+}
+
+void ReferencesGraph::GetAllAccessibleNonInnerNodes_r( const VariablePtr& node, NodesSet& result_set ) const
+{
+	for( const auto& link : links_ )
+	{
+		if( link.dst == node )
+		{
+			if( link.src->is_inner_reference_node )
+				GetAllAccessibleNonInnerNodes_r( link.src, result_set );
+			else
+			{
+				// Do not go further if a variable/reference or child node is reached.
+				result_set.insert( link.src );
+			}
+		}
+	}
+}
+
+void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	if( to->is_variable_inner_reference_node )
+		TryAddLink( from, to, errors_container, src_loc );
+	else
+	{
+		// Fill container with reachable nodes and only that perform recursive calls.
+		// Do this in order to avoid iteration over container of links, which may be modified in recursive call.
+		llvm::SmallVector< VariablePtr, 12 > src_nodes;
+		for( const Link& link : links_ )
+			if( link.dst == to )
+				src_nodes.push_back( link.src );
+
+		for( const VariablePtr& src_node : src_nodes )
+			TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src_node, errors_container, src_loc );
 	}
 }
 

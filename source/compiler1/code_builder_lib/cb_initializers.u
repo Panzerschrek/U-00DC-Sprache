@@ -1099,7 +1099,7 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 		{
 			WithVariablesFrame(
 				function_context,
-				lambda[args, &needs_move_construct, &variable, &names_scope]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 				{
 					var bool prev_is_functionless_context= function_context.is_functionless_context;
 					function_context.is_functionless_context= true;

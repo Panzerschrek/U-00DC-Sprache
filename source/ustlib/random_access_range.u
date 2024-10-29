@@ -15,6 +15,8 @@ var empty_range_type constexpr empty_range{};
 template</ type T, bool is_mutable />
 class random_access_range
 {
+	static_assert( typeinfo</T/>.reference_indirection_depth <= 1s, "This container doesn't support types with second order references inside" );
+
 public:
 	fn constructor()= default;
 

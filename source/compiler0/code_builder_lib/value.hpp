@@ -140,6 +140,9 @@ public:
 	// Null values are not possible.
 	llvm::SmallVector<VariablePtr, 1> inner_reference_nodes;
 
+	// Mark all inner reference nodes with this flag.
+	bool is_inner_reference_node= false;
+
 	// Mark inner reference nodes of variables using this flag.
 	// Do this in order to stop references graph search on these nodes while performing reference pollution.
 	bool is_variable_inner_reference_node= false;

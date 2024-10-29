@@ -574,5 +574,54 @@ fn nomangle main() : i32
 		halt if( v.size() != 1s );
 		halt if( v[0s] != "77" );
 	}
+	{ // vector for type with references inside
+
+		var ust::vector</ust::string_view8/> mut v;
+		v.push_back( "Matt" );
+		v.push_back( "Parker" );
+		v.push_back( "314159" );
+
+		foreach( &mut s : v ) // Create iterator here, which contains second order reference inside.
+		{
+			s.drop_back();
+		}
+
+		halt if( v[0s] != "Mat" );
+		halt if( v[1s] != "Parke" );
+		halt if( v[2s] != "31415" );
+	}
+	{ // Second order references inside vector.
+		var [ i32, 3 ] mut arr0[ 1, 2, 3 ];
+		var [ i32, 4 ] mut arr1[ 4, 5, 6, 7 ];
+
+		{
+			var [ ust::array_view_mut</ i32 />, 2 ] view_arr[ arr0, arr1 ];
+
+			var ust::array_view_imut</ ust::array_view_mut</ i32 /> /> view_for_view_arr= view_arr;
+			halt if( view_for_view_arr.size() != 2s );
+
+			var ust::vector</ ust::array_view_imut</ ust::array_view_mut</ i32 /> /> /> mut v;
+			v.push_back( view_for_view_arr );
+
+			for( auto mut i= 0s; i < v.size(); ++i )
+			{
+				foreach( &range : v[i] )
+				{
+					foreach( &mut el : range )
+					{
+						el *= -2;
+					}
+				}
+			}
+		}
+
+		halt if( arr0[0] != -2 );
+		halt if( arr0[1] != -4 );
+		halt if( arr0[2] != -6 );
+		halt if( arr1[0] != -8 );
+		halt if( arr1[1] != -10 );
+		halt if( arr1[2] != -12 );
+		halt if( arr1[3] != -14 );
+	}
 	return 0;
 }

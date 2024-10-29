@@ -1173,12 +1173,13 @@ fn CodeBuilder::BuildFuncCode(
 		foreach( &param : func_variable.t.params )
 		{
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's forbidden to create types with references inside to types with other references inside.
-			// So, check if this rule is not violated for coroutines.
-			// Do this now, because it's impossible to check this in coroutines declaration, because this check requires complete types of parameters.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
 			if( param.value_type != ValueType::Value && param.t.ReferenceTagCount() > 0u )
 			{
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, body_syntax_element.src_loc, "some arg" ) // TODO - use separate error code.
+				var ust::string8 mut field_name= "param of type ";
+				field_name+= param.t.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, body_syntax_element.src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 
 			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
@@ -1302,15 +1303,15 @@ fn CodeBuilder::BuildFuncCode(
 
 			var tup[ VariablePtr, ust::vector</VariablePtr /> ] mut arg_nodes[ variable_ptr, () ];
 
-			auto reference_tag_count= type_param.t.ReferenceTagCount();
-			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
+			auto reference_tag_count= size_type( type_param.t.ReferenceTagCount() );
+			for( auto mut i= 0s; i < reference_tag_count; ++i )
 			{
 				var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
 				function_context.references_graph.AddLink(
 					variable_inner_reference_node,
 					variable_reference_ptr.lock_imut().deref().inner_reference_nodes[i] );
 
-				var VariablePtr accesible_variable_ptr=
+				var VariablePtr accessible_variable_ptr=
 					Variable
 					{
 						.t= invalid_type_,
@@ -1318,11 +1319,56 @@ fn CodeBuilder::BuildFuncCode(
 						.location= Variable::Location::Pointer,
 						.name= in_param.name + " referenced variable"
 					}.CreatePtr();
-				function_context.references_graph.AddNode( accesible_variable_ptr );
 
-				function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
+				var SecondOrderInnerReferenceKind second_order_inner_reference_kind= type_param.t.GetSecondOrderInnerReferenceKind(i);
+				var VariableNullablePtr mut accessible_variable_inner_reference_opt;
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					var VariablePtr mut accessible_variable_inner_reference=
+						Variable
+						{
+							.t= invalid_type_,
+							.value_type=
+								select( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+									? ValueType::ReferenceImut
+									: ValueType::ReferenceMut ),
+							.location= Variable::Location::Pointer,
+							.name= in_param.name + " referenced variable " + ust::to_string8(i) + " inner reference",
+							.is_inner_reference_node= true,
+							.is_variable_inner_reference_node= true,
+						}.CreatePtr();
 
-				arg_nodes[1].push_back( accesible_variable_ptr );
+					accessible_variable_inner_reference_opt= accessible_variable_inner_reference;
+
+					auto mut accessible_variable_lock= accessible_variable_ptr.lock_mut();
+					accessible_variable_lock.deref().inner_reference_nodes.push_back( move( accessible_variable_inner_reference ) );
+				}
+
+				function_context.references_graph.AddNode( accessible_variable_ptr );
+
+				function_context.references_graph.AddLink( accessible_variable_ptr, variable_inner_reference_node );
+
+				arg_nodes[1].push_back( accessible_variable_ptr );
+
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					var VariablePtr second_order_accesible_variable=
+						Variable
+						{
+							.t= invalid_type_,
+							.value_type= ValueType::Value,
+							.location= Variable::Location::Pointer,
+							.name= in_param.name + " second order referenced variable " + ust::to_string8(i),
+						}.CreatePtr();
+
+					function_context.references_graph.AddNode( second_order_accesible_variable );
+
+					function_context.references_graph.AddLink( second_order_accesible_variable, accessible_variable_inner_reference_opt.try_to_non_nullable() );
+
+					function_context.args_second_order_nodes.resize( func_variable.t.params.size() );
+					function_context.args_second_order_nodes[ arg_n ].resize( reference_tag_count );
+					function_context.args_second_order_nodes[ arg_n ][i]= second_order_accesible_variable;
+				}
 			}
 
 			function_context.args_nodes.push_back( move(arg_nodes) );
@@ -1411,7 +1457,7 @@ fn CodeBuilder::BuildFuncCode(
 							{
 								var VariablePtr variable_inner_reference_node= variable_ptr.lock_imut().deref().inner_reference_nodes[i];
 
-								var VariablePtr accesible_variable_ptr=
+								var VariablePtr accessible_variable_ptr=
 									Variable
 									{
 										.t= invalid_type_,
@@ -1420,11 +1466,50 @@ fn CodeBuilder::BuildFuncCode(
 										.name= field_name + " referenced variable"
 									}.CreatePtr();
 
-								function_context.references_graph.AddNode( accesible_variable_ptr );
-								function_context.references_graph.AddLink( accesible_variable_ptr, variable_inner_reference_node );
+								var SecondOrderInnerReferenceKind second_order_inner_reference_kind= field.t.GetSecondOrderInnerReferenceKind(i);
+								var VariableNullablePtr mut accessible_variable_inner_reference_opt;
+								if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+								{
+									var VariablePtr mut accessible_variable_inner_reference=
+										Variable
+										{
+											.t= invalid_type_,
+											.value_type=
+												select( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+													? ValueType::ReferenceImut
+													: ValueType::ReferenceMut ),
+											.location= Variable::Location::Pointer,
+											.name= field_name + " referenced variable " + ust::to_string8(i) + " inner reference",
+											.is_inner_reference_node= true,
+											.is_variable_inner_reference_node= true,
+										}.CreatePtr();
+
+									accessible_variable_inner_reference_opt= accessible_variable_inner_reference;
+
+									auto mut accessible_variable_lock= accessible_variable_ptr.lock_mut();
+									accessible_variable_lock.deref().inner_reference_nodes.push_back( move( accessible_variable_inner_reference ) );
+								}
+
+								function_context.references_graph.AddNode( accessible_variable_ptr );
+								function_context.references_graph.AddLink( accessible_variable_ptr, variable_inner_reference_node );
 								function_context.references_graph.AddLink(
 									variable_inner_reference_node,
 									variable_reference_ptr.lock_imut().deref().inner_reference_nodes[i] );
+
+								if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+								{
+									var VariablePtr second_order_accesible_variable=
+										Variable
+										{
+											.t= invalid_type_,
+											.value_type= ValueType::Value,
+											.location= Variable::Location::Pointer,
+											.name= field_name + " second order referenced variable " + ust::to_string8(i),
+										}.CreatePtr();
+
+									function_context.references_graph.AddNode( second_order_accesible_variable );
+									function_context.references_graph.AddLink( second_order_accesible_variable, accessible_variable_inner_reference_opt.try_to_non_nullable() );
+								}
 							}
 
 							with( mut lock : args_names_scope_ptr.lock_mut() )

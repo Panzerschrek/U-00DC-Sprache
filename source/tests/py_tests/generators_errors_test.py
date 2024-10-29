@@ -596,27 +596,28 @@ def ReferencesPollution_ForGenerator_Test0():
 	assert( HasError( errors_list, "NotImplemented", 4 ) )
 
 
-def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():
+def ReferenceIndirectionDepthExceeded_ForGenerators_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
 		fn generator Foo( S & s ) : i32 {} // Can't pass structs with references inside by a reference into a generator.
 	"""
+	tests_lib.build_program_with_errors( c_program_text )
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
 
 
-def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test1():
+def ReferenceIndirectionDepthExceeded_ForGenerators_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn generator Foo( S & s ) : i32 {} // Can't pass structs with references inside by a reference into a generator.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
 
 
-def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test2():
+def ReferenceIndirectionDepthExceeded_ForGenerators_Test2():
 	c_program_text= """
 		struct S{ i32 & x; }
 		fn generator Foo( S s ) : i32 {} // Ok - pass struct with reference inside by value.
