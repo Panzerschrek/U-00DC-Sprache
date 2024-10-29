@@ -603,9 +603,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			ClassField& field= *reference_fields.front();
 			field.reference_tag= uint8_t(0u);
 
-			if( the_class.inner_references.empty() )
-				the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
-			the_class.inner_references.front().kind= std::max( the_class.inner_references.front().kind, field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+			the_class.inner_references.push_back( InnerReference( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 		}
 		else if( reference_fields.size() == 0 && fields_with_references_inside.size() == 1 && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
@@ -614,12 +612,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			const auto reference_tag_count= field.type.ReferenceTagCount();
 
 			field.inner_reference_tags.resize( reference_tag_count );
+			the_class.inner_references.reserve( reference_tag_count );
 			for( size_t i= 0; i < reference_tag_count; ++i )
+			{
 				field.inner_reference_tags[i]= uint8_t(i);
-
-			the_class.inner_references.resize( std::max( the_class.inner_references.size(), reference_tag_count ), InnerReference( InnerReferenceKind::Imut ) );
-			for( size_t i= 0; i < reference_tag_count; ++i )
-				the_class.inner_references[i].kind= std::max( the_class.inner_references[i].kind, field.type.GetInnerReferenceKind(i) );
+				the_class.inner_references.push_back( InnerReference( field.type.GetInnerReferenceKind(i) ) );
+			}
 		}
 		else
 		{
@@ -627,28 +625,33 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			for( const ClassFieldPtr& reference_field : reference_fields )
 			{
-				std::optional<uint8_t> reference_tag;
+				std::optional<uint8_t> reference_tag_opt;
 				if( !std::holds_alternative< Synt::EmptyVariant >( reference_field->syntax_element->reference_tag_expression ) )
-					reference_tag= EvaluateReferenceFieldTag( *the_class.members, reference_field->syntax_element->reference_tag_expression );
+					reference_tag_opt= EvaluateReferenceFieldTag( *the_class.members, reference_field->syntax_element->reference_tag_expression );
 				else
 					REPORT_ERROR( ExpectedReferenceNotation, the_class.members->GetErrors(), reference_field->syntax_element->src_loc, reference_field->syntax_element->name );
 
-				if( reference_tag != std::nullopt )
-				{
-					reference_field->reference_tag= *reference_tag;
+				const InnerReferenceKind inner_reference_kind= reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut;
 
-					the_class.inner_references.resize( std::max( the_class.inner_references.size(), size_t(*reference_tag + 1) ), InnerReference( InnerReferenceKind::Imut ) );
-					InnerReferenceKind& t= the_class.inner_references[ size_t(*reference_tag) ].kind;
-					t= std::max( t, reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				if( reference_tag_opt != std::nullopt )
+				{
+					const auto reference_tag= *reference_tag_opt;
+					reference_field->reference_tag= reference_tag;
+
+					if( reference_tag >= the_class.inner_references.size() )
+						the_class.inner_references.resize( size_t(reference_tag + 1), InnerReference( InnerReferenceKind::Imut ) );
+
+					the_class.inner_references[ size_t(reference_tag) ].kind= inner_reference_kind;
 				}
 				else
 				{
-					// Fallback for cases with no notation - link reference field with tag 0.
+					// Fallback for error cases with no notation - link reference field with tag 0.
 					reference_field->reference_tag= uint8_t(0u);
 
 					if( the_class.inner_references.empty() )
-						the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
-					the_class.inner_references.front().kind= std::max( the_class.inner_references.front().kind, reference_field->is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+						the_class.inner_references.push_back( InnerReference( inner_reference_kind ) );
+					else
+						the_class.inner_references.front().kind= inner_reference_kind;
 				}
 			}
 
@@ -667,29 +670,28 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					if( reference_tags->size() != reference_tag_count )
 					{
 						REPORT_ERROR( InnerReferenceTagCountMismatch, the_class.members->GetErrors(), field->syntax_element->src_loc, reference_tag_count, reference_tags->size() );
-						reference_tags->resize(reference_tag_count);
+						reference_tags->resize( reference_tag_count, uint8_t(0) );
 					}
 					field->inner_reference_tags= std::move(*reference_tags);
 
 					for( size_t i= 0; i < field->inner_reference_tags.size(); ++i )
 					{
 						const size_t tag= field->inner_reference_tags[i];
-						the_class.inner_references.resize( std::max( the_class.inner_references.size(), tag + 1 ), InnerReference( InnerReferenceKind::Imut ) );
-						InnerReferenceKind& t= the_class.inner_references[ tag ].kind;
-						t= std::max( t, field->type.GetInnerReferenceKind(i) );
+						if( tag >= the_class.inner_references.size() )
+							the_class.inner_references.resize( tag + 1, InnerReference( InnerReferenceKind::Imut ) );
+						the_class.inner_references[ tag ].kind= field->type.GetInnerReferenceKind(i);
 					}
 				}
 				else
 				{
-					// Fallback for cases with no notation - link all field tags with tag 0.
+					// Fallback for error cases with no notation - link all field tags with tag 0.
 
 					field->inner_reference_tags.resize( reference_tag_count, uint8_t(0) );
 
 					if( the_class.inner_references.empty() )
 						the_class.inner_references.push_back( InnerReference( InnerReferenceKind::Imut ) );
-					InnerReferenceKind& t= the_class.inner_references.front().kind;
 					for( size_t i= 0; i < reference_tag_count; ++i )
-						t= std::max( t, field->type.GetInnerReferenceKind(i) );
+						the_class.inner_references.front().kind= field->type.GetInnerReferenceKind(i);
 				}
 			}
 		}
