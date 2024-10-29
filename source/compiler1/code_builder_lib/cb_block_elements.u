@@ -1949,19 +1949,15 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		return BlockElementBuildInfo(); // Some error generated before.
 	}
 
-	auto default_branch_synt_block=
-		lambda[&]() : ust::optional_ref_imut</Synt::Block/>
+	var ust::optional_ref_imut</Synt::Block/> mut default_branch_synt_block;
+	foreach( &case_ : switch_operator.cases )
+	{
+		if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
 		{
-			foreach( &case_ : switch_operator.cases )
-			{
-				if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
-				{
-					return case_.block;
-				}
-			}
-
-			return ust::null_optional_ref;
-		} ();
+			default_branch_synt_block.reset( case_.block );
+			break;
+		}
+	}
 
 	// Perform checks of ranges.
 	{
