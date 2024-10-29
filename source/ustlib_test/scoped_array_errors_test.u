@@ -2,6 +2,11 @@
 import "../ustlib/scoped_array.u"
 import "../ustlib/string.u"
 
+struct RM
+{
+	i32& mut x;
+}
+
 fn nomangle main() : i32
 {
 	{ // "array_over_external_memory" constructor is unsafe.
@@ -49,6 +54,12 @@ fn nomangle main() : i32
 		scoped_array ust::string_view8 arr[10s]( s.range() );
 		// Error - "s" has a reference to it inside "arr", can't move it.
 		move(s); //##expect_error MovedVariableHasReferences
+	}
+	{ // Can't use fill constructor for types with mutable references inside.
+		var i32 mut x= 0;
+		var RM rm{ .x= x };
+
+		scoped_array RM arr[10s]( rm ); //##expect_error MacroExpansionContext
 	}
 
 	return 0;

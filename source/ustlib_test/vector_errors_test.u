@@ -91,5 +91,24 @@ fn nomangle main() : i32
 		// Error - this call creates a temporary lock node for second order reference pointing to "arr0" and "arr1".
 		v.size(); //expect_error ReferenceProtectionError
 	}
+	{ // Constructor with multiple elements is disabled for types with mutable references inside.
+		var i32 mut x= 0;
+		var RM r(x);
+		var ust::vector</RM/> v( 3s, r ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "push_back" with multiple elements is disabled for types with mutable references inside.
+		var i32 mut x= 0;
+		var RM r(x);
+
+		var ust::vector</RM/> mut v;
+		v.push_back( 1s, r ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "resize" with multiple elements is disabled for types with mutable references inside.
+		var i32 mut x= 0;
+		var RM r(x);
+
+		var ust::vector</RM/> mut v;
+		v.resize( 10s, r ); //##expect_error CouldNotSelectOverloadedFunction
+	}
 	return 0;
 }

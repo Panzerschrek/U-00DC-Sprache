@@ -61,7 +61,10 @@ public:
 	}
 
 	// Fill constructor.
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( size_type count, T& value ) @( c_param2_pollution )
+	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
+	fn
+	enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
+	constructor( size_type count, T& value ) @( c_param2_pollution )
 		( size_(count) )
 	{
 		if( size_ == 0s ) { return; }
@@ -343,7 +346,11 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this, size_type count, T& val ) @( c_param2_pollution )
+	// Push multiple copies of the same element.
+	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
+	fn
+	enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
+	push_back( mut this, size_type count, T& val ) @( c_param2_pollution )
 	{
 		unsafe
 		{
@@ -402,7 +409,10 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this, size_type new_size, T& val ) @( c_param2_pollution )
+	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
+	fn
+	enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
+	resize( mut this, size_type new_size, T& val ) @( c_param2_pollution )
 	{
 		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )

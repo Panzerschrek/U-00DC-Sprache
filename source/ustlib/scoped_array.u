@@ -39,7 +39,8 @@ class array_over_external_memory
 public:
 
 	// Construct with given filler (for copy-constructible elements).
-	fn enable_if( typeinfo</T/>.is_copy_constructible )
+	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
+	fn enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
 	constructor( mut this, $(T) ptr, size_type size, T& value ) @( c_param3_pollution ) unsafe
 		( ptr_= ptr, size_= size )
 	{
