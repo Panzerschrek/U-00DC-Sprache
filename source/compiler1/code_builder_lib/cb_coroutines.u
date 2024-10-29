@@ -10,25 +10,19 @@ namespace U1
 
 fn CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	// Require completeness of value params and return values before performing checks.
+	// Require completeness of all param types and return type.
 
 	foreach( &param : function_type.params )
 	{
-		if( param.value_type == ValueType::Value )
-		{
-			EnsureTypeComplete( param.t );
-		}
+		EnsureTypeComplete( param.t );
 	}
 
-	if( function_type.return_value_type == ValueType::Value )
+	EnsureTypeComplete( function_type.return_type );
+	auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
+	// For coroutines use strict criteria - require setting reference notation with exact size.
+	if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
 	{
-		EnsureTypeComplete( function_type.return_type );
-		auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
-		// For coroutines use strict criteria - require setting reference notation with exact size.
-		if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
-		{
-			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
-		}
+		REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
 	}
 
 	CheckFunctionReferencesNotationInnerReferences( function_type, names_scope, src_loc );
@@ -55,6 +49,16 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		FunctionVariable::Kind::Generator -> { coroutine_type_description.kind= CoroutineKind::Generator; },
 		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
 	}
+
+	// Require complete types for all params and return value.
+	// It's necessary to determine coroutine type properly - including reference notation and non_sync tag.
+
+	foreach( &param : coroutine_function_type.params )
+	{
+		EnsureTypeComplete( param.t );
+	}
+
+	EnsureTypeComplete( coroutine_function_type.return_type );
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
