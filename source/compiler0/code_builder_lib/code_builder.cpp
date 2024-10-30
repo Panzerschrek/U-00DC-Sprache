@@ -1533,30 +1533,6 @@ void CodeBuilder::BuildFuncCode(
 		CheckCompleteFunctionReferenceNotation( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
 	}
 
-	if( func_variable.IsCoroutine() )
-	{
-		const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &function_type.return_type.GetClassType()->generated_class_data );
-		U_ASSERT( coroutine_type_description != nullptr );
-
-		if( !EnsureTypeComplete( coroutine_type_description->return_type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc,  coroutine_type_description->return_type  );
-
-		for( const FunctionType::Param& param : function_type.params )
-		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's generally not allowed to create types with references to other types with references inside.
-			// Second order references are possible in some cases, but for now not for coroutines.
-			if( param.value_type != ValueType::Value && param.type.ReferenceTagCount() > 0u )
-			{
-				std::string field_name= "param ";
-				field_name+= std::to_string( size_t( &param - function_type.params.data() ) );
-				field_name+= " of type ";
-				field_name+= param.type.ToString();
-				REPORT_ERROR( ReferenceIndirectionDepthExceeded, parent_names_scope.GetErrors(), params.front().src_loc, 1, field_name ); // TODO - use separate error code?
-			}
-		}
-	}
-
 	NamesScope function_names( "", &parent_names_scope );
 
 	FunctionContext function_context( function_type, llvm_context_, llvm_function );

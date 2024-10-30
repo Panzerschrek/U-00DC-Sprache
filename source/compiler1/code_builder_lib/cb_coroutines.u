@@ -98,6 +98,16 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
+			if( EnsureTypeComplete( param.t ) && param.t.ReferenceTagCount() > 0u )
+			{
+				var ust::string8 mut field_name= "param of type ";
+				field_name+= param.t.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
+			}
+
 			// Assume this is a reference to type with no references inside.
 			// This is checked later - when building function code.
 			// Do this later in order to avoid full type building for reference params.

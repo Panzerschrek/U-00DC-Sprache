@@ -87,6 +87,18 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
+			if( EnsureTypeComplete( param.type ) && param.type.ReferenceTagCount() > 0u )
+			{
+				std::string field_name= "param ";
+				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+				field_name+= " of type ";
+				field_name+= param.type.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
+			}
+
 			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 			coroutine_return_inner_ferences.push_back(
 				FunctionType::ReturnReferences{

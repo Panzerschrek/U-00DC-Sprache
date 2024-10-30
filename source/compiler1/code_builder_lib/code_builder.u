@@ -1159,31 +1159,6 @@ fn CodeBuilder::BuildFuncCode(
 		CheckCompleteFunctionReferenceNotation( func_variable.t, names_scope, body_syntax_element.src_loc );
 	}
 
-	if( func_variable.IsCoroutine() )
-	{
-		// TODO - avoid taking copy
-		var CoroutineTypeDescription coroutine_type_description=
-			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
-
-		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, coroutine_type_description.return_type )
-		}
-
-		foreach( &param : func_variable.t.params )
-		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's generally not allowed to create types with references to other types with references inside.
-			// Second order references are possible in some cases, but for now not for coroutines.
-			if( param.value_type != ValueType::Value && param.t.ReferenceTagCount() > 0u )
-			{
-				var ust::string8 mut field_name= "param of type ";
-				field_name+= param.t.ToString();
-				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, body_syntax_element.src_loc, 1, field_name ) // TODO - use separate error code.
-			}
-		}
-	}
-
 	debug_info_builder_.try_deref().SetCurrentLocation( function_context, body_syntax_element.src_loc );
 
 	with( mut args_names_scope_lock : args_names_scope_ptr.lock_mut() )
