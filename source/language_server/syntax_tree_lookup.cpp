@@ -494,7 +494,6 @@ void FindImpl( const Synt::Function& function )
 	FindImpl( function.condition );
 	FindImpl( function.type );
 	FindImpl( function.constructor_initialization_list );
-	FindImpl( function.coroutine_non_sync_tag );
 	FindImpl( function.block );
 }
 

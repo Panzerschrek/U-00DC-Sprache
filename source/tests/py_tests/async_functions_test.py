@@ -593,3 +593,68 @@ def Typeinfo_ForAsyncFunctions_Test2():
 		static_assert( mut_ref_char_async_func_typeinfo.reference_tag_count == 1s ); // This coroutine type has references inside.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionNonSync_Test0():
+	c_program_text= """
+		fn async AsyncFunc( i32 x, f32 y, [ bool, 2 ] z );
+		static_assert( !non_sync</ typeof( typeinfo</ typeof(AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionNonSync_Test1():
+	c_program_text= """
+		struct S{}
+		struct T{}
+		fn async AsyncFunc( S& a, S b ) : T;
+		static_assert( !non_sync</ typeof( typeinfo</ typeof(AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionNonSync_Test2():
+	c_program_text= """
+		struct S non_sync {}
+		fn async AsyncFunc( S& s );
+		static_assert( non_sync</ typeof( typeinfo</ typeof(AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionNonSync_Test3():
+	c_program_text= """
+		struct S non_sync {}
+		fn async AsyncFunc( i32 x, S s, f32 y );
+		static_assert( non_sync</ typeof( typeinfo</ typeof(AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionNonSync_Test4():
+	c_program_text= """
+		struct S non_sync {}
+		fn async AsyncFunc() : S;
+		static_assert( non_sync</ typeof( typeinfo</ typeof(AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionSync_Test5():
+	c_program_text= """
+		struct S non_sync {}
+		fn async AsyncFunc() : S&;
+		static_assert( non_sync</ typeof( typeinfo</ typeof(AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AsyncFunctionSync_Test6():
+	c_program_text= """
+		struct S non_sync
+		{
+			fn async AsyncFunc(this);
+		}
+		static_assert( non_sync</ typeof( typeinfo</ typeof(S::AsyncFunc) />.return_type )::src_type /> );
+	"""
+	tests_lib.build_program( c_program_text )

@@ -940,8 +940,8 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 
 	if( function.kind == Function::Kind::Generator )
 		stream << Keyword( Keywords::generator_ ) << " ";
-
-	ElementWrite( function.coroutine_non_sync_tag, stream );
+	else if( function.kind == Function::Kind::Async )
+		stream << Keyword( Keywords::async_ ) << " ";
 
 	if( function.constexpr_ )
 		stream << Keyword( Keywords::constexpr_ ) << " ";

@@ -1222,7 +1222,6 @@ public:
 	FunctionType type;
 	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list;
 	std::unique_ptr<const Block> block;
-	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 	OverloadedOperator overloaded_operator= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;

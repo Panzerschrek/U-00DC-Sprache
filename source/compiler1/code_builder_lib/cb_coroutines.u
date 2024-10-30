@@ -10,25 +10,20 @@ namespace U1
 
 fn CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
-	// Require completeness of value params and return values before performing checks.
+	// Require completeness of all param types and return type in order to perform reference notation checks.
 
 	foreach( &param : function_type.params )
 	{
-		if( param.value_type == ValueType::Value )
-		{
-			EnsureTypeComplete( param.t );
-		}
+		EnsureTypeComplete( param.t );
 	}
 
-	if( function_type.return_value_type == ValueType::Value )
+	EnsureTypeComplete( function_type.return_type );
+
+	auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
+	// For coroutines use strict criteria - require setting reference notation with exact size.
+	if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
 	{
-		EnsureTypeComplete( function_type.return_type );
-		auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
-		// For coroutines use strict criteria - require setting reference notation with exact size.
-		if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
-		{
-			REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
-		}
+		REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
 	}
 
 	CheckFunctionReferencesNotationInnerReferences( function_type, names_scope, src_loc );
@@ -36,17 +31,17 @@ fn CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( mut this, Funct
 
 fn CodeBuilder::TransformCoroutineFunctionType(
 	mut this,
-	NamesScopePtr& root_namespace,
 	FunctionType &mut coroutine_function_type,
 	FunctionVariable::Kind kind,
-	bool non_sync_ )
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc )
 {
 	var CoroutineTypeDescription mut coroutine_type_description
 	{
 		.kind= CoroutineKind::Generator, // Set later.
 		.return_type= coroutine_function_type.return_type,
 		.return_value_type= coroutine_function_type.return_value_type,
-		.non_sync_= non_sync_,
+		.non_sync_= false, // Set later
 	};
 
 	switch( kind )
@@ -54,6 +49,23 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		FunctionVariable::Kind::Regular -> { halt; },
 		FunctionVariable::Kind::Generator -> { coroutine_type_description.kind= CoroutineKind::Generator; },
 		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
+	}
+
+	// Non-sync property is based on non-sync property of args and return values.
+	// Evaluate it immediately.
+	coroutine_type_description.non_sync_= false;
+	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+	{
+		coroutine_type_description.non_sync_= true;
+	}
+
+	foreach( &param : coroutine_function_type.params )
+	{
+		if( EnsureTypeComplete( param.t ) && GetTypeNonSync( param.t, names_scope, src_loc ) )
+		{
+			coroutine_type_description.non_sync_= true;
+		}
 	}
 
 	// Calculate inner references.
@@ -86,6 +98,16 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
+			if( EnsureTypeComplete( param.t ) && param.t.ReferenceTagCount() > 0u )
+			{
+				var ust::string8 mut field_name= "param of type ";
+				field_name+= param.t.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
+			}
+
 			// Assume this is a reference to type with no references inside.
 			// This is checked later - when building function code.
 			// Do this later in order to avoid full type building for reference params.
@@ -137,7 +159,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	}
 
 	// Coroutine function returns value of coroutine type.
-	coroutine_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	coroutine_function_type.return_type= GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 	coroutine_function_type.return_value_type= ValueType::Value;
 
 	// Params references and references inside param types are mapped to coroutine type inner references.

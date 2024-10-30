@@ -1039,7 +1039,7 @@ private:
 	fn PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	// Make return type - coroutine type and prepare it properly. Modifies given function type.
-	fn TransformCoroutineFunctionType( mut this, NamesScopePtr& root_namespace, FunctionType &mut coroutine_function_type, FunctionVariable::Kind kind, bool non_sync_ );
+	fn TransformCoroutineFunctionType( mut this, FunctionType &mut coroutine_function_type, FunctionVariable::Kind kind, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 

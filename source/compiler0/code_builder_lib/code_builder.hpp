@@ -1275,7 +1275,7 @@ private:
 	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	// Make return type - coroutine type and prepare it properly. Modifies given function type.
-	void TransformCoroutineFunctionType( NamesScope& root_namespace, FunctionType& coroutine_function_type, FunctionVariable::Kind kind, bool non_sync );
+	void TransformCoroutineFunctionType( FunctionType& coroutine_function_type, FunctionVariable::Kind kind, NamesScope& names_scope, const SrcLoc& src_loc );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
