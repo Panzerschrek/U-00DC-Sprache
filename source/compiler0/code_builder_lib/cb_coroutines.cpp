@@ -8,12 +8,13 @@ namespace U
 
 void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	// Require completeness of all param types and return type.
+	// Require completeness of all param types and return type in order to perform reference notation checks.
 
 	for( const FunctionType::Param& param : function_type.params )
 		EnsureTypeComplete( param.type );
 
 	EnsureTypeComplete( function_type.return_type );
+
 	const size_t return_type_tag_count= function_type.return_type.ReferenceTagCount();
 	// For coroutines use strict criteria - require setting reference notation with exact size.
 	if( function_type.return_inner_references.size() != return_type_tag_count )

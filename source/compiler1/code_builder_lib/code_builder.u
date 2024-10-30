@@ -538,6 +538,7 @@ fn CodeBuilder::PrepareFunction(
 
 	if( function_kind != FunctionVariable::Kind::Regular )
 	{
+		// Perform checks before transforming coroutine function type.
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
 
 		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );

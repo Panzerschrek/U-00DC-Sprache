@@ -1134,6 +1134,7 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( func_variable.IsCoroutine() )
 		{
+			// Perform checks before transforming coroutine function type.
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
 			TransformCoroutineFunctionType(
