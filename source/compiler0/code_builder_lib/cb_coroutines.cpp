@@ -43,7 +43,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		break;
 	}
 
-	// Non-sync propery is based on non-sync property of args and return values.
+	// Non-sync property is based on non-sync property of args and return values.
 	// Evaluate it immediately.
 
 	coroutine_type_description.non_sync= false;

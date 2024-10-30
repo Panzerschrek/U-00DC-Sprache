@@ -51,7 +51,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
 	}
 
-	// Non-sync propery is based on non-sync property of args and return values.
+	// Non-sync property is based on non-sync property of args and return values.
 	// Evaluate it immediately.
 	coroutine_type_description.non_sync_= false;
 	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
