@@ -541,8 +541,7 @@ fn CodeBuilder::PrepareFunction(
 		// Perform checks before transforming coroutine function type.
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
 
-		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
-		TransformCoroutineFunctionType( GetRootNamespace( names_scope_ptr ), function_type, function_kind, non_sync_ );
+		TransformCoroutineFunctionType( function_type, function_kind, names_scope_ptr, function_declaration.src_loc );
 
 		if_var( &type_name : function_declaration.function_type.return_type )
 		{
@@ -1182,18 +1181,6 @@ fn CodeBuilder::BuildFuncCode(
 				field_name+= param.t.ToString();
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, body_syntax_element.src_loc, 1, field_name ) // TODO - use separate error code.
 			}
-
-			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
-			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
-			if( !coroutine_type_description.non_sync_ && GetTypeNonSync( param.t, names_scope, body_syntax_element.src_loc ) )
-			{
-				REPORT_ERROR( CoroutineNonSyncRequired, names_scope, body_syntax_element.src_loc )
-			}
-		}
-
-		if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, body_syntax_element.src_loc  ) )
-		{
-			REPORT_ERROR( CoroutineNonSyncRequired, names_scope, body_syntax_element.src_loc )
 		}
 	}
 

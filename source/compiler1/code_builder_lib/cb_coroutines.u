@@ -31,17 +31,17 @@ fn CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( mut this, Funct
 
 fn CodeBuilder::TransformCoroutineFunctionType(
 	mut this,
-	NamesScopePtr& root_namespace,
 	FunctionType &mut coroutine_function_type,
 	FunctionVariable::Kind kind,
-	bool non_sync_ )
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc )
 {
 	var CoroutineTypeDescription mut coroutine_type_description
 	{
 		.kind= CoroutineKind::Generator, // Set later.
 		.return_type= coroutine_function_type.return_type,
 		.return_value_type= coroutine_function_type.return_value_type,
-		.non_sync_= non_sync_,
+		.non_sync_= false, // Set later
 	};
 
 	switch( kind )
@@ -51,15 +51,22 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
 	}
 
-	// Require complete types for all params and return value.
-	// It's necessary to determine coroutine type properly - including reference notation and non_sync tag.
+	// Non-sync propery is based on non-sync property of args and return values.
+	// Evaluate it immediately.
+	coroutine_type_description.non_sync_= false;
+	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+	{
+		coroutine_type_description.non_sync_= true;
+	}
 
 	foreach( &param : coroutine_function_type.params )
 	{
-		EnsureTypeComplete( param.t );
+		if( EnsureTypeComplete( param.t ) && GetTypeNonSync( param.t, names_scope, src_loc ) )
+		{
+			coroutine_type_description.non_sync_= true;
+		}
 	}
-
-	EnsureTypeComplete( coroutine_function_type.return_type );
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
@@ -142,7 +149,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	}
 
 	// Coroutine function returns value of coroutine type.
-	coroutine_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	coroutine_function_type.return_type= GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 	coroutine_function_type.return_value_type= ValueType::Value;
 
 	// Params references and references inside param types are mapped to coroutine type inner references.

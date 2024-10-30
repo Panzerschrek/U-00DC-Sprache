@@ -767,7 +767,6 @@ struct Function
 	Kind kind= Kind::Regular;
 	VirtualKind virtual_kind= VirtualKind::None;
 	BodyKind body_kind= BodyKind::Regular;
-	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 
 	bool no_mangle= false;
 	bool constexpr_= false;
