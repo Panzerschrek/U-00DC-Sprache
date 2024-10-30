@@ -273,6 +273,28 @@ def ReferenceTagOutOfRange_Test2():
 	assert( HasError( errors_list, "ReferenceTagOutOfRange", 5 ) )
 
 
+def ReferenceTagOutOfRange_Test3():
+	c_program_text= """
+		struct R{ i32 &imut @("a"c8) r0; i32 &mut @("b"c8) r1; }
+		struct T{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0z" ] ];
+		fn async Foo( R r ) : R @( return_inner_references ) { halt; } // Tag number is 25, but type contains only 2 inner reference tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ReferenceTagOutOfRange", 5 ) )
+
+
+def ReferenceTagOutOfRange_Test4():
+	c_program_text= """
+		struct R{ i32 &imut @("a"c8) r0; i32 &mut @("b"c8) r1; }
+		struct T{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0z" ] ];
+		fn generator Foo( R r ) : R @( return_inner_references ) { } // Tag number is 25, but type contains only 2 inner reference tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ReferenceTagOutOfRange", 5 ) )
+
+
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
@@ -303,6 +325,16 @@ def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test2():
 
 
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test3():
+	c_program_text= """
+		struct R{ i32 & @("a"c8) x; i32 & @("b"c8) y; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn async Foo( i32& x ) : R @(return_inner_references) { halt; } // Expected 2 tags, got 1 tags.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InnerReferenceTagCountMismatch", 4 ) )
+
+
+def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test4():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
