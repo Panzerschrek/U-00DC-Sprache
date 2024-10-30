@@ -10,6 +10,7 @@ General:
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, string manipulations
+*) Simpler syntax for char-types literals (like 'q' in C++)
 *) switch-style operator for expression context
 *) thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
@@ -25,8 +26,8 @@ General:
 *) Allow "auto-constexpr" for any function/method with body known
 
 References:
+*) Support second order inner references for coroutine types
 *) Separate reference checking for array elements while accessing via constexpr index
-*) Support reference fields of types with references inside
 
 Templates:
 *) Default template arguments for short type template form
