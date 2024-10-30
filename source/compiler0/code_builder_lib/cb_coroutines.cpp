@@ -24,15 +24,11 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 }
 
 void CodeBuilder::TransformCoroutineFunctionType(
-	NamesScope& root_namespace,
-	FunctionType& coroutine_function_type,
-	const FunctionVariable::Kind kind,
-	const bool non_sync )
+	FunctionType& coroutine_function_type, FunctionVariable::Kind kind, NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.return_type= coroutine_function_type.return_type;
 	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;
-	coroutine_type_description.non_sync= non_sync;
 
 	switch( kind )
 	{
@@ -47,13 +43,18 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		break;
 	}
 
-	// Require complete types for all params and return value.
-	// It's necessary to determine coroutine type properly - including reference notation and non_sync tag.
+	// Non-sync propery is based on non-sync property of args and return values.
+	// Evaluate it immediately.
+
+	coroutine_type_description.non_sync= false;
+	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+		coroutine_type_description.non_sync= true;
 
 	for( const FunctionType::Param& param : coroutine_function_type.params )
-		EnsureTypeComplete( param.type );
-
-	EnsureTypeComplete( coroutine_function_type.return_type );
+		if( EnsureTypeComplete( param.type ) &&
+			GetTypeNonSync( param.type, names_scope, src_loc ) )
+			coroutine_type_description.non_sync= true;
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
@@ -129,7 +130,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	}
 
 	// Coroutine function returns value of coroutine type.
-	coroutine_function_type.return_type= GetCoroutineType( root_namespace, coroutine_type_description );
+	coroutine_function_type.return_type= GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 	coroutine_function_type.return_value_type= ValueType::Value;
 
 	// Params references and references inside param types are mapped to coroutine type inner references.

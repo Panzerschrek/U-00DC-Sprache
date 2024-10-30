@@ -1137,11 +1137,7 @@ size_t CodeBuilder::PrepareFunction(
 			// Perform checks before transforming coroutine function type.
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			TransformCoroutineFunctionType(
-				names_scope,
-				function_type,
-				func_variable.kind,
-				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
+			TransformCoroutineFunctionType( function_type, func_variable.kind, names_scope, func.src_loc );
 			global_function_context_->args_preevaluation_cache.clear();
 
 			// Disable auto-coroutines.
@@ -1558,15 +1554,7 @@ void CodeBuilder::BuildFuncCode(
 				field_name+= param.type.ToString();
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, parent_names_scope.GetErrors(), params.front().src_loc, 1, field_name ); // TODO - use separate error code?
 			}
-
-			// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
-			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
-			if( !coroutine_type_description->non_sync && GetTypeNonSync( param.type, parent_names_scope, params.front().src_loc ) )
-				REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
 		}
-
-		if( !coroutine_type_description->non_sync && GetTypeNonSync( coroutine_type_description->return_type, parent_names_scope, block.src_loc ) )
-			REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc );
 	}
 
 	NamesScope function_names( "", &parent_names_scope );

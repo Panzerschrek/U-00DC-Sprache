@@ -943,8 +943,6 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 	else if( function.kind == Function::Kind::Async )
 		stream << Keyword( Keywords::async_ ) << " ";
 
-	ElementWrite( function.coroutine_non_sync_tag, stream );
-
 	if( function.constexpr_ )
 		stream << Keyword( Keywords::constexpr_ ) << " ";
 	if( function.no_mangle )

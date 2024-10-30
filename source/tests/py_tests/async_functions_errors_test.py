@@ -334,56 +334,14 @@ def VirtualAsyncFunction_Test0():
 	assert( HasError( errors_list, "VirtualCoroutine", 4 ) )
 
 
-def CoroutineNonSyncRequired_ForAsyncFunction_Test0():
+def CoroutineNonSyncRequired_Test0():
 	c_program_text= """
 		struct S non_sync {}
-		fn async Foo(S s) {} // Async function value parameter is non-sync.
+		type AsyncFunc= async : S; // "S" is "non_sync", so, "non_sync" is required for generator type.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
-
-
-def CoroutineNonSyncRequired_ForAsyncFunction_Test1():
-	c_program_text= """
-		struct S non_sync {}
-		fn async non_sync(false) Foo(S& s){} // Async function value parameter is non-sync.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
-
-
-def CoroutineNonSyncRequired_ForAsyncFunction_Test2():
-	c_program_text= """
-		struct S non_sync {}
-		fn async Foo() : S {} // Async function return value is non-sync.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
-
-
-def CoroutineNonSyncRequired_ForAsyncFunction_Test3():
-	c_program_text= """
-		struct S non_sync {}
-		fn async Foo() : S& {} // Async function return reference is non-sync.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
-
-
-def CoroutineNonSyncRequired_ForAsyncFunction_Test4():
-	c_program_text= """
-		struct S non_sync {}
-		// Ok - non_sync tag exists and args/return value are non-sync.
-		fn async non_sync(true) Foo(S& s){}
-		fn async non_sync Bar(S s){}
-		fn async non_sync Baz() : S { halt; }
-		fn async non_sync Lol() : S& { halt; }
-	"""
-	tests_lib.build_program( c_program_text )
 
 
 def CoroutineMismatch_ForAsyncFunction_Test0():
