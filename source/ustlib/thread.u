@@ -18,6 +18,13 @@ class thread
 {
 	static_assert( !non_sync</Func/>, "passing non_sync functor into another thread" );
 
+	// Normally it's fine to create a variable holding second order references inside.
+	// But it's not fine for the thread class, since second order references may be accessed in another thread created by this class.
+	// This may cause race conditions in case if a thread class instance owner tries to access the same variable,
+	// which is referenced via second order reference passed to this thread class instance.
+	// So, for now just forbid second order references in thread function types, in order to avoid this.
+	static_assert( typeinfo</Func/>.reference_indirection_depth <= 1s, "Reference indirection depth greater than 1 isn't supported for the thread class" );
+
 public:
 	fn constructor( mut this, Func mut func ) @(c_constructor_pollution)
 	( impl_= nullptr</Impl/>() )

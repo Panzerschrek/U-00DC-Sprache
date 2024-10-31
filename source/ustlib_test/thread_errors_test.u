@@ -55,6 +55,14 @@ fn nomangle main() : i32
 		// Can't create thread for function with "mut this" op().
 		ust::make_thread( CallableObjectMutThis() ); //##expect_error TemplateContext
 	}
+	{
+		var i32 mut x= 0;
+
+		auto f0= lambda[&]() : i32 { return x; };
+
+		// Can't create thread for function type with second order references inside.
+		auto thread= ust::make_thread( lambda[&]() : i32 { return f0(); } );  //##expect_error TemplateContext
+	}
 
 	return 0;
 }
