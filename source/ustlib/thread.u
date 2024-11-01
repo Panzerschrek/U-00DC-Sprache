@@ -25,6 +25,9 @@ class thread
 	// So, for now just forbid second order references in thread function types, in order to avoid this.
 	static_assert( typeinfo</Func/>.reference_indirection_depth <= 1s, "Reference indirection depth greater than 1 isn't supported for the thread class" );
 
+	// For now it's too complex to deal with reference notation, just forbid returning references inside return value.
+	static_assert( typeinfo</ResultType/>.reference_tag_count == 0s, "Returning types with references inside isn't supported for the thread class" );
+
 public:
 	fn constructor( mut this, Func mut func ) @(c_constructor_pollution)
 	( impl_= nullptr</Impl/>() )
@@ -89,6 +92,15 @@ private:
 		fn constructor( Func mut in_func ) @(c_constructor_pollution)
 			( func(move(in_func)) )
 		{}
+
+		// Run and destroy function, initialize result.
+		// This function may be called only once.
+		fn run( mut this )
+		{
+			// Move function in call to support non-copyable byval functors.
+			// Function is destroyed just after call.
+			result.reset( func.try_take()() );
+		}
 	}
 
 	auto constexpr c_reference_tag_count= typeinfo</Func/>.reference_tag_count;
@@ -99,11 +111,7 @@ private:
 private:
 	fn thread_function( $(byte8) impl_ptr ) unsafe : $(byte8)
 	{
-		var Impl &mut impl= unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) );
-
-		// Move function in call to support non-copyable byval functors.
-		// Function is destroyed just after call.
-		impl.result.reset( impl.func.try_take()() );
+		unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) ).run();
 
 		return nullptr</byte8/>();
 	}

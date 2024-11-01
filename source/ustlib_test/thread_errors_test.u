@@ -1,5 +1,6 @@
 //##fail_test
 import "../ustlib/thread.u"
+import "../ustlib/optional_ref.u"
 import "../ustlib/shared_ptr.u"
 
 struct CallableObject non_sync
@@ -62,6 +63,11 @@ fn nomangle main() : i32
 
 		// Can't create thread for function type with second order references inside.
 		auto thread= ust::make_thread( lambda[&]() : i32 { return f0(); } );  //##expect_error TemplateContext
+	}
+	{
+		var i32 x= 0;
+		// Can't create thread for function returning references inside return value.
+		auto thread= ust::make_thread( lambda[&]() : ust::optional_ref_imut</i32/> { return x; } ); //##expect_error TemplateContext
 	}
 
 	return 0;
