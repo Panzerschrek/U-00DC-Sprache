@@ -379,6 +379,11 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	ProcessMixins( *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
+	// In case of language server (with generated functions building skipping) do not build internals of templates,
+	// if it's not necessary.
+	// Doing so we speed-up language server code processing, sometimes significantly.
+	// The only downside of this approach is that some errors in templates are not checked,
+	// like errors in non-called functions or errors in static asserts.
 	if( !skip_building_generated_functions_ )
 	{
 		// Finalize building template things.
