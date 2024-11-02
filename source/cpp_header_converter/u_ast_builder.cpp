@@ -520,10 +520,13 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type_desugared) )
 	{
-		// Process specially functions returning "void".
-		// Use "void" from Ü only for them.
 		if( built_in_type->getKind() == clang::BuiltinType::Void )
-			function_type.return_type= std::make_unique<Synt::TypeName>( StringToTypeName( Keyword( Keywords::void_ ) ) );
+		{
+			// Process specially functions returning "void".
+			// Use "void" from Ü only for them.
+			// Remove return type sepcifying, since in Ü this means default-void.
+			function_type.return_type= nullptr;
+		}
 	}
 
 	function_type.calling_convention= TranslateCallingConvention( in_type );
