@@ -80,6 +80,7 @@ fn nomangle main() : i32
 	{
 		var i32 mut a= 0, mut b= 0;
 		var $(i32) mut a_ptr= $<(a);
+		var $(byte8) mut a_ptr_as_byte8= unsafe( $<(cast_ref_unsafe</byte8/>(a)) );
 		var RegularStruct s
 		{
 			.x= 0,
@@ -88,6 +89,8 @@ fn nomangle main() : i32
 			.const_ptr_field= $<(b),
 			.ptr_to_ptr_field= $<(a_ptr),
 			.function_ptr_field= SomeLocalFunc,
+			.void_ptr_field= a_ptr_as_byte8,
+			.void_ptr_ptr_field= $<(a_ptr_as_byte8),
 		};
 		unsafe{ s.function_ptr_field( 3.14f ); }
 	}

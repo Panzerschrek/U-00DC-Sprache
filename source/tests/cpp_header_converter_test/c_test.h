@@ -59,6 +59,8 @@ struct RegularStruct
 	const int* const_ptr_field;
 	int** ptr_to_ptr_field;
 	void (*function_ptr_field)(float);
+	void* void_ptr_field; // Should be translated as "$(byte8)".
+	void** void_ptr_ptr_field; // Should be translated as "$($(byte8))".
 };
 
 typedef struct
