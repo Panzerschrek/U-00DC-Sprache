@@ -52,7 +52,7 @@ private:
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
-	Synt::FunctionType TranslateFunctionType( const clang::FunctionNoProtoType& in_type, const TypeNamesMap& type_names_map );
+	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
 	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
@@ -458,9 +458,10 @@ Synt::TypeName CppAstConsumer::StringToTypeName( const std::string_view s )
 
 Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map )
 {
-	Synt::FunctionType function_type( g_dummy_src_loc );
+	// Translate info other than params.
+	Synt::FunctionType function_type= TranslateFunctionType( static_cast<const clang::FunctionType&>(in_type), type_names_map );
 
-	function_type.unsafe= true; // All C/C++ functions are unsafe.
+	// Translate params.
 
 	function_type.params.reserve( in_type.getNumParams() );
 	size_t i= 0u;
@@ -487,34 +488,10 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 		++i;
 	}
 
-	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
-	if( return_type->isReferenceType() )
-	{
-		function_type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
-		const clang::QualType type_qual= return_type->getPointeeType();
-		return_type= type_qual.getTypePtr();
-
-		if( type_qual.isConstQualified() )
-			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
-		else
-			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
-	}
-	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
-
-	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type) )
-	{
-		// Process specially functions returning "void".
-		// Use "void" from Ü only for them.
-		if( built_in_type->getKind() == clang::BuiltinType::Void )
-			function_type.return_type= std::make_unique<Synt::TypeName>( StringToTypeName( Keyword( Keywords::void_ ) ) );
-	}
-
-	function_type.calling_convention= TranslateCallingConvention( in_type );
-
 	return function_type;
 }
 
-Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionNoProtoType& in_type, const TypeNamesMap& type_names_map )
+Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map )
 {
 	// Translate function without information about params.
 	// This is somewhat limited.
