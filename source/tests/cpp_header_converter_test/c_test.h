@@ -8,7 +8,9 @@
 #define TWO_CONSTANT_DOUBLE 2.0
 #define SMALL_CONSTANT 0.00000000056
 #define LARGE_CONSTANT 560000000000.0
-#define LARGE_INTEGER_CONSTANT 153124586353854499L
+#define LARGE_INTEGER_CONSTANT 153124586353854499LL
+#define LARGE_INTEGER_UNSIGNED_CONSTANT 7655554499878564uLL
+#define LARGE_INTEGER_CONSTANT_TRUNCATED 9876543210
 #define STRING_CONSTANT_ASCII "WTF?009a"
 #define STRING_CONSTANT_UTF8_IMPLICIT "Чё?"
 #define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "\u00DC \x13 one \t two \n quote \' double \" slash \\ "
@@ -171,6 +173,18 @@ enum // Anonymous and without typedef
 };
 
 void XYZFunc( TypedefForEnumXYZ arg );
+
+enum LargeValuesEnum
+{
+	LV_Large= 987654321uLL,
+	LV_EvenLarger= 123456789101112uLL,
+};
+
+enum
+{
+	Anon_Large= 88888888888uLL,
+	Anon_EvenLarger= 7654321098765uLL,
+};
 
 typedef struct SameNameForStructAndTypedef
 {

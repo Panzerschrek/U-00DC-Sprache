@@ -309,6 +309,11 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		numeric_constant.num.value_int= constant_array_type->getSize().getLimitedValue();
 		numeric_constant.num.value_double= static_cast<double>(numeric_constant.num.value_int);
 		numeric_constant.num.type_suffix[0]= 'u';
+		if( numeric_constant.num.value_int >= 0x7FFFFFFFFu )
+		{
+			numeric_constant.num.type_suffix[1]= '6';
+			numeric_constant.num.type_suffix[2]= '4';
+		}
 		array_type->size= std::move(numeric_constant);
 
 		return std::move(array_type);
@@ -1028,6 +1033,12 @@ void CppAstConsumer::EmitEnum(
 			const llvm::APSInt val= enumerator->getInitVal();
 			initializer_number.num.value_int= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
 			initializer_number.num.value_double= static_cast<double>(initializer_number.num.value_int);
+			initializer_number.num.type_suffix[0]= 'u';
+			if( initializer_number.num.value_int >= 0x7FFFFFFFFu )
+			{
+				initializer_number.num.type_suffix[1]= '6';
+				initializer_number.num.type_suffix[2]= '4';
+			}
 
 			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
 			constructor_initializer.arguments.push_back( std::move(initializer_number) );
@@ -1131,6 +1142,12 @@ void CppAstConsumer::EmitEnum(
 			const llvm::APSInt val= enumerator->getInitVal();
 			initializer_number.num.value_int= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
 			initializer_number.num.value_double= static_cast<double>(initializer_number.num.value_int);
+			initializer_number.num.type_suffix[0]= 'u';
+			if( initializer_number.num.value_int >= 0x7FFFFFFFFu )
+			{
+				initializer_number.num.type_suffix[1]= '6';
+				initializer_number.num.type_suffix[2]= '4';
+			}
 
 			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
 			constructor_initializer.arguments.push_back( std::move(initializer_number) );
@@ -1246,20 +1263,18 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				numeric_constant.num.type_suffix[0]= 'f';
 			else if( numeric_literal_parser.isUnsigned )
 			{
+				numeric_constant.num.type_suffix[0]= 'u';
 				if( numeric_literal_parser.isLongLong )
 				{
-					numeric_constant.num.type_suffix[0]= 'i';
 					numeric_constant.num.type_suffix[1]= '6';
 					numeric_constant.num.type_suffix[2]= '4';
 				}
-				else
-					numeric_constant.num.type_suffix[0]= 'u';
 			}
 			else
 			{
 				if( numeric_literal_parser.isLongLong )
 				{
-					numeric_constant.num.type_suffix[0]= 'u';
+					numeric_constant.num.type_suffix[0]= 'i';
 					numeric_constant.num.type_suffix[1]= '6';
 					numeric_constant.num.type_suffix[2]= '4';
 				}

@@ -35,7 +35,9 @@ fn nomangle main() : i32
 
 	var f64 small_f64= SMALL_CONSTANT, large_f64= LARGE_CONSTANT;
 
-	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499 );
+	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499i64 );
+	static_assert( LARGE_INTEGER_UNSIGNED_CONSTANT == 7655554499878564u64 );
+	static_assert( LARGE_INTEGER_CONSTANT_TRUNCATED == 9876543210 );
 	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "Ü \u0013 one \t two \n quote ' double \" slash \\ \u0000" ) );
@@ -171,6 +173,12 @@ fn nomangle main() : i32
 	unsafe( XYZFunc( typedefed_non_sequential_enum_value ) );
 
 	auto totally_anonym_enum_value= TotallyAnonym0;
+
+	static_assert( LargeValuesEnum::LV_Large.ü_underlying_value == 987654321u64 );
+	static_assert( LargeValuesEnum::LV_EvenLarger.ü_underlying_value == 123456789101112u64 );
+
+	static_assert( Anon_Large == 88888888888u64 );
+	static_assert( Anon_EvenLarger == 7654321098765u64 );
 
 	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
 
