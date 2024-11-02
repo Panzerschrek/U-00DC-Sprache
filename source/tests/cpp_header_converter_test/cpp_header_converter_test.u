@@ -227,5 +227,20 @@ fn nomangle main() : i32
 	// Should translate type alias for function pointer with no information about params.
 	static_assert( typeinfo</FunctionTypedefNoProto/>.is_function_pointer );
 
+	// void* should be translated as $(byte8)
+	unsafe
+	{
+		var $(byte8) res0= VoidPtrRetFunc();
+		var $(byte8) res1= ConstVoidPtrRetFunc();
+
+		VoidPtrParamFunc(res0);
+		ConstVoidPtrParamFunc(res1);
+
+		var MyVoidPtr p2= res0;
+		var void true_void_res= VoidPtrTypedefParamFunc(p2);
+
+		var MyVoid val2= $>(p2);
+	}
+
 	return 0;
 }

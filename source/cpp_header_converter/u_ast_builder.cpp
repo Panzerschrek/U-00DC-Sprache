@@ -514,7 +514,11 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	}
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
 
-	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type) )
+	const clang::Type* return_type_desugared= return_type;
+	while( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(return_type_desugared) )
+		return_type_desugared= typedef_type->desugar().getTypePtr();
+
+	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type_desugared) )
 	{
 		// Process specially functions returning "void".
 		// Use "void" from Ü only for them.
@@ -800,7 +804,8 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 	func.name.push_back( Synt::Function::NameComponent{ name, g_dummy_src_loc } );
 
 	func.no_mangle= true; // For now import only C functions witohut mangling.
-	func.type.unsafe= true; // All C/C++ functions are unsafe.
+
+	func.type= TranslateFunctionType( *function_decl.getFunctionType(), type_names_map );
 
 	func.type.params.reserve( function_decl.param_size() );
 	size_t i= 0u;
@@ -831,37 +836,6 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 		func.type.params.push_back(std::move(out_param));
 		++i;
 	}
-
-	const clang::Type* return_type= function_decl.getReturnType().getTypePtr();
-	if( return_type->isReferenceType() )
-	{
-		func.type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
-		const clang::QualType type_qual= return_type->getPointeeType();
-		return_type= type_qual.getTypePtr();
-
-		if( type_qual.isConstQualified() )
-			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
-		else
-			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
-	}
-	func.type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
-
-	const clang::Type* function_type= function_decl.getType().getTypePtr();
-
-	while(true)
-	{
-		if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
-			function_type= paren_type->getInnerType().getTypePtr();
-		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( function_type ) )
-			function_type= elaborated_type->desugar().getTypePtr();
-		else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( function_type ) )
-			function_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
-		else
-			break;
-	}
-
-	if( const auto ft= llvm::dyn_cast<clang::FunctionType>( function_type ) )
-		func.type.calling_convention= TranslateCallingConvention( *ft );
 
 	root_program_elements_.Append( std::move(func) );
 }

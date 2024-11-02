@@ -270,3 +270,15 @@ struct StructWithFunctionTypePtrField
 
 // Should translate this into type alias for function pointer with no params.
 typedef int (*FunctionTypedefNoProto)();
+
+void* VoidPtrRetFunc();
+const void* ConstVoidPtrRetFunc();
+
+void VoidPtrParamFunc(void* p);
+void ConstVoidPtrParamFunc(const void* p);
+
+typedef void MyVoid; // Should translate it as byte8
+typedef MyVoid *MyVoidPtr; // Should translate it as $(byte8)
+
+// Should translate "MyVoid" for return value as proper "Ü void".
+MyVoid VoidPtrTypedefParamFunc(MyVoidPtr p);
