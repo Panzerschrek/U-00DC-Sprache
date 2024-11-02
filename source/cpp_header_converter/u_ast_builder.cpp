@@ -49,7 +49,6 @@ private:
 	void ProcessDecl( const clang::Decl& decl );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
-	Synt::TypeName MakeRawPointerType( const clang::Type& element_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
@@ -331,12 +330,18 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
 	{
 		// Translate incomplete array types as raw pointers.
-		return MakeRawPointerType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
 	}
 	else if( const auto decayed_type= llvm::dyn_cast<clang::DecayedType>(&in_type) )
 	{
 		// Decayed type - implicit array to pointer conversion.
-		return MakeRawPointerType( *decayed_type->getPointeeType().getTypePtr(), type_names_map );
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *decayed_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
 	}
 	else if( in_type.isFunctionPointerType() )
 	{
@@ -376,7 +381,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		return StringToTypeName( Keyword( Keywords::void_ ) );
 	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
-		return MakeRawPointerType( *pointer_type->getPointeeType().getTypePtr(), type_names_map );
+	{
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *pointer_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
+	}
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr(), type_names_map );
 	else if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( &in_type ) )
@@ -390,27 +400,15 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	return StringToTypeName( Keyword( Keywords::void_ ) );
 }
 
-Synt::TypeName CppAstConsumer::MakeRawPointerType( const clang::Type& element_type, const TypeNamesMap& type_names_map )
-{
-	auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-	raw_pointer_type->element_type= TranslateType( element_type, type_names_map );
-
-	// Replace C "void*" pointers with Ü "$(byte8)" pointers.
-	// It's needed, since $(void) isn't a universal pointer as "void*" in C.
-	if(const auto named_type_name= std::get_if<Synt::NameLookup>( &raw_pointer_type->element_type ) )
-	{
-		if( named_type_name->name == Keyword( Keywords::void_ ) )
-			named_type_name->name= Keyword( Keywords::byte8_ );
-	}
-
-	return std::move(raw_pointer_type);
-}
-
 std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
 {
 	switch( in_type.getKind() )
 	{
-	case clang::BuiltinType::Void: return Keyword( Keywords::void_ );
+	case clang::BuiltinType::Void:
+		// "void" in C used in two roles - as pointer to untyped bytes and as return value for functions returning nothing.
+		// Handle the first case here and process functions return-void specially later.
+		return Keyword( Keywords::byte8_ );
+
 	case clang::BuiltinType::Bool: return Keyword( Keywords::bool_ );
 
 	case clang::BuiltinType::Char_S: return Keyword( Keywords::char8_ );
@@ -503,6 +501,14 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 	}
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
 
+	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type) )
+	{
+		// Process specially functions returning "void".
+		// Use "void" from Ü only for them.
+		if( built_in_type->getKind() == clang::BuiltinType::Void )
+			function_type.return_type= std::make_unique<Synt::TypeName>( StringToTypeName( Keyword( Keywords::void_ ) ) );
+	}
+
 	function_type.calling_convention= TranslateCallingConvention( in_type );
 
 	return function_type;
@@ -530,6 +536,14 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionN
 			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
 	}
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
+
+	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type) )
+	{
+		// Process specially functions returning "void".
+		// Use "void" from Ü only for them.
+		if( built_in_type->getKind() == clang::BuiltinType::Void )
+			function_type.return_type= std::make_unique<Synt::TypeName>( StringToTypeName( Keyword( Keywords::void_ ) ) );
+	}
 
 	function_type.calling_convention= TranslateCallingConvention( in_type );
 
