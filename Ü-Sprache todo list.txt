@@ -24,6 +24,9 @@ General:
 	execution in order to check no UB or non-determinism is possible, like uninitialized memory usage, pointer
 	comparison across allocation boundaries, etc.
 *) Allow "auto-constexpr" for any function/method with body known
+*) A way to hide some names in common (imported) files - for implementation details
+*) A way to disable structs, type aliases, static asserts, other stuff in namespaces
+*) Investigate possibility of conditional imports
 
 References:
 *) Support second order inner references for coroutine types
@@ -133,9 +136,18 @@ CPP Header converter:
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
 *) Avoid creating too large files (more than 65535 lines)
+*) Handle structs with empty contents (they should have size 1 according to C rules)
+*) Handle somehow bitfields
 *) Support negative constants in defines
 *) Add more satisfying defines conversion - where defined value is a constant expression
 *) Handle some subset of C++ headers
+
+Ü Build system/package manager
+*) Collect requirements for build system
+*) Investigate approaches to implement a build system
+*) Choose a catchy name
+*) Investigate approaches for dependency resultion
+*) Investigate necessity/possibility of a centralized packages repository
 
 Documentation:
 *) Other languages (not only russian and english)
