@@ -138,4 +138,29 @@ void IncompleteArrayArg( int arg[] )
 	(void)arg;
 }
 
+void* VoidPtrRetFunc()
+{
+	return nullptr;
+}
+
+const void* ConstVoidPtrRetFunc()
+{
+	return nullptr;
+}
+
+void VoidPtrParamFunc(void* p)
+{
+	(void)p;
+}
+
+void ConstVoidPtrParamFunc(const void* p)
+{
+	(void)p;
+}
+
+MyVoid VoidPtrTypedefParamFunc(MyVoidPtr p)
+{
+	(void)p;
+}
+
 } // extern "C"

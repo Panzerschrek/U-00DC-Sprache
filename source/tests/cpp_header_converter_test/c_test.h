@@ -59,6 +59,8 @@ struct RegularStruct
 	const int* const_ptr_field;
 	int** ptr_to_ptr_field;
 	void (*function_ptr_field)(float);
+	void* void_ptr_field; // Should be translated as "$(byte8)".
+	void** void_ptr_ptr_field; // Should be translated as "$($(byte8))".
 };
 
 typedef struct
@@ -270,3 +272,15 @@ struct StructWithFunctionTypePtrField
 
 // Should translate this into type alias for function pointer with no params.
 typedef int (*FunctionTypedefNoProto)();
+
+void* VoidPtrRetFunc();
+const void* ConstVoidPtrRetFunc();
+
+void VoidPtrParamFunc(void* p);
+void ConstVoidPtrParamFunc(const void* p);
+
+typedef void MyVoid; // Should translate it as byte8
+typedef MyVoid *MyVoidPtr; // Should translate it as $(byte8)
+
+// Should translate "MyVoid" for return value as proper "Ü void".
+MyVoid VoidPtrTypedefParamFunc(MyVoidPtr p);
