@@ -470,20 +470,7 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 		Synt::FunctionParam param( g_dummy_src_loc );
 		param.name= "arg" + std::to_string(i);
 
-		const clang::Type* param_type= param_qual.getTypePtr();
-		if( param_type->isReferenceType() )
-		{
-			param.reference_modifier= Synt::ReferenceModifier::Reference;
-			const clang::QualType type_qual= param_type->getPointeeType();
-			param_type= type_qual.getTypePtr();
-
-			if( type_qual.isConstQualified() )
-				param.mutability_modifier= Synt::MutabilityModifier::Immutable;
-			else
-				param.mutability_modifier= Synt::MutabilityModifier::Mutable;
-		}
-
-		param.type= TranslateType( *param_type, type_names_map );
+		param.type= TranslateType( *param_qual.getTypePtr(), type_names_map );
 		function_type.params.push_back(std::move(param));
 		++i;
 	}
@@ -500,18 +487,7 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 
 	function_type.unsafe= true; // All C/C++ functions are unsafe.
 
-	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
-	if( return_type->isReferenceType() )
-	{
-		function_type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
-		const clang::QualType type_qual= return_type->getPointeeType();
-		return_type= type_qual.getTypePtr();
-
-		if( type_qual.isConstQualified() )
-			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
-		else
-			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
-	}
+	const clang::Type* const return_type= in_type.getReturnType().getTypePtr();
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
 
 	const clang::Type* return_type_desugared= return_type;
@@ -822,20 +798,7 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 		else
 			out_param.name= TranslateIdentifier( src_name );
 
-		const clang::Type* param_type= in_param->getType().getTypePtr();
-		if( param_type->isReferenceType() )
-		{
-			out_param.reference_modifier= Synt::ReferenceModifier::Reference;
-			const clang::QualType type_qual= param_type->getPointeeType();
-			param_type= type_qual.getTypePtr();
-
-			if( type_qual.isConstQualified() )
-				out_param.mutability_modifier= Synt::MutabilityModifier::Immutable;
-			else
-				out_param.mutability_modifier= Synt::MutabilityModifier::Mutable;
-		}
-
-		out_param.type= TranslateType( *param_type, type_names_map );
+		out_param.type= TranslateType( *in_param->getType().getTypePtr(), type_names_map );
 		func.type.params.push_back(std::move(out_param));
 		++i;
 	}
@@ -878,21 +841,7 @@ void CppAstConsumer::EmitRecord(
 				{
 					Synt::ClassField field( g_dummy_src_loc );
 
-					const clang::Type* field_type= field_declaration->getType().getTypePtr();
-
-					if( field_type->isReferenceType() )
-					{
-						// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
-						const clang::QualType type_qual= field_type->getPointeeType();
-						field_type= type_qual.getTypePtr();
-
-						auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-						raw_pointer_type->element_type= TranslateType( *field_type, type_names_map );
-
-						field.type= std::move(raw_pointer_type);
-					}
-					else
-						field.type= TranslateType( *field_type, type_names_map );
+					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
 
 					const auto src_name= field_declaration->getName();
 					if( src_name.empty() )
