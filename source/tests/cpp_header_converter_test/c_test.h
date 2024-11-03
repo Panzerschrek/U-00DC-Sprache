@@ -174,13 +174,13 @@ enum // Anonymous and without typedef
 
 void XYZFunc( TypedefForEnumXYZ arg );
 
-enum LargeValuesEnum
+enum LargeValuesEnum : unsigned long long int
 {
 	LV_Large= 987654321uLL,
 	LV_EvenLarger= 123456789101112uLL,
 };
 
-enum
+enum : unsigned long long int
 {
 	Anon_Large= 88888888888uLL,
 	Anon_EvenLarger= 7654321098765uLL,

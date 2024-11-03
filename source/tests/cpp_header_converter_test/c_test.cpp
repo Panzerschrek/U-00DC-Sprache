@@ -95,6 +95,12 @@ void XYZFunc( TypedefForEnumXYZ arg )
 	(void)arg;
 }
 
+static_assert( LV_Large == 987654321uLL );
+static_assert( LV_EvenLarger == 123456789101112uLL );
+
+static_assert( Anon_Large == 88888888888uLL );
+static_assert( Anon_EvenLarger == 7654321098765uLL );
+
 void SillyFunction( SillyName SillyName )
 {
 	(void) SillyName;
