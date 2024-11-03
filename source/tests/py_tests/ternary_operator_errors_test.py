@@ -6,7 +6,7 @@ def CommonValueType_Test0():
 		fn Foo( bool b )
 		{
 			auto mut x= 0;
-			++ select( b ? x : 10 ); // first argument - "Reference", second - "Value". Common value type will be "Value".
+			++ ( b ? x : 10 ); // first argument - "Reference", second - "Value". Common value type will be "Value".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -20,7 +20,7 @@ def CommonValueType_Test1():
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0, imut y= 0;
-			++ select( b ? x : y ); // first argument - "Reference", second - "ConstReference". Common value type will be "ConstReference".
+			++ ( b ? x : y ); // first argument - "Reference", second - "ConstReference". Common value type will be "ConstReference".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -33,7 +33,7 @@ def CommonValueType_Test2():
 	c_program_text= """
 		fn Foo( bool b )
 		{
-			++ select( b ? 5 : 7 ); // value type of both branches is "Value", result value type will be "Value".
+			++ ( b ? 5 : 7 ); // value type of both branches is "Value", result value type will be "Value".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -46,7 +46,7 @@ def TernaryOperator_TypesMismatch_Test0():
 	c_program_text= """
 		fn Foo( i32 b )
 		{
-			select( b ? 1 : 2 ); // "Expected bool, got i32"
+			( b ? 1 : 2 ); // "Expected bool, got i32"
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -60,7 +60,7 @@ def TernaryOperator_TypesMismatch_Test1():
 	c_program_text= """
 		fn Foo( bool b )
 		{
-			select( b ? 1.0f : 2u );
+			( b ? 1.0f : 2u );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -76,7 +76,7 @@ def TernaryOperator_ReferenceProtectionError_Test0():
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0, mut y= 0;
-			auto &mut r= select( b ? x : y );
+			auto &mut r= ( b ? x : y );
 			auto& r2= x; // error, reference to 'x' already exists in 'r'
 		}
 	"""
@@ -92,7 +92,7 @@ def TernaryOperator_ReferenceProtectionError_Test1():
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0, mut y= 0;
-			auto &mut r= select( b ? x : y );
+			auto &mut r= ( b ? x : y );
 			auto& r2= y; // error, reference to 'y' already exists in 'r'
 		}
 	"""
@@ -107,13 +107,13 @@ def TernaryOperator_TemporariesAreDestroyed_Test0():
 	c_program_text= """
 		fn Foo( bool b ) : i32
 		{
-			// Temporary values are produced in each branch of "select" expression.
-			// All temporaries, produced in each branch of "select" operator are destroyed,
+			// Temporary values are produced in each branch of "ternary" expression.
+			// All temporaries, produced in each branch of "ternary" operator are destroyed,
 			// because there is no proper way to destroy them after branching - it is not clear what was actually created because of brancing.
-			// Because of that  it is not possible to take a reference to temporary value, using "select" branch.
+			// Because of that  it is not possible to take a reference to temporary value, using "ternary" branch.
 			// Alternatives are using values instead of references or using variables with longer lifetimes (stack variables, function params, global variables).
-			return select( b
-				? cast_imut(123) // Cast value to reference in order to "select" result have kind "ReferenceImut".
+			return ( b
+				? cast_imut(123) // Cast value to reference in order to "ternary" result have kind "ReferenceImut".
 				: cast_imut(456) );
 		}
 	"""
@@ -128,8 +128,8 @@ def TernaryOperator_TemporariesAreDestroyed_Test1():
 		fn Foo( bool b ) : i32
 		{
 			var i32 x= 456;
-			return select( b
-				? cast_imut(123) // Cast value to reference in order to "select" result have kind "ReferenceImut".
+			return ( b
+				? cast_imut(123) // Cast value to reference in order to ternary operator result have kind "ReferenceImut".
 				: x );
 		}
 	"""
@@ -143,9 +143,9 @@ def TernaryOperator_TemporariesAreDestroyed_Test2():
 		fn Foo( bool b ) : i32
 		{
 			var i32 x= 123;
-			return select( b
+			return ( b
 				? x
-				: cast_imut(456) ); // Cast value to reference in order to "select" result have kind "ReferenceImut".
+				: cast_imut(456) ); // Cast value to reference in order to ternary operator result have kind "ReferenceImut".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -158,7 +158,7 @@ def TernaryOperator_TemporariesAreDestroyed_Test3():
 		fn Pass( i32& x ) : i32& { return x; }
 		fn Foo( bool b )
 		{
-			auto& r= select(
+			auto& r= (
 				b
 				? Pass(5)
 				: Pass(7) ); // Both branches have value_type= ValueType::ConstReference, so, result will be const reference. But, referenced variables will be destroyed after branches evaluation.
@@ -175,7 +175,7 @@ def VariablesStateMerge_ForTernaryOperator_Test0():
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0;
-			auto moved= select( b ? x : move(x) );
+			auto moved= ( b ? x : move(x) );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -189,7 +189,7 @@ def VariablesStateMerge_ForTernaryOperator_Test1():
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0;
-			auto moved= select( b ? move(x) : x );
+			auto moved= ( b ? move(x) : x );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -207,7 +207,7 @@ def VariablesStateMerge_ForTernaryOperator_Test2():
 		{
 			var i32 mut x= 7, mut y= 5, t= 0;
 			var S mut s{ .x= t };
-			auto z= select( b ? FakePollution( s, x ) : y );
+			auto z= ( b ? FakePollution( s, x ) : y );
 			++x; // Error, 'x' already have reference
 		}
 	"""
@@ -226,7 +226,7 @@ def VariablesStateMerge_ForTernaryOperator_Test3():
 		{
 			var i32 mut x= 7, mut y= 5, t= 0;
 			var S mut s{ .x= t };
-			auto z= select( b ? x : FakePollution( s, y ) );
+			auto z= ( b ? x : FakePollution( s, y ) );
 			++y; // Error, 'y' already have reference
 		}
 	"""
@@ -245,7 +245,7 @@ def VariablesStateMerge_ForTernaryOperator_Test4():
 		{
 			var i32 mut x= 0, mut t= 0, mut u= 0;
 			var S mut s0{ .x= t }, mut s1{ .x= u };
-			auto z= select( b ? FakePollution( s0, x ) : FakePollution( s1, x ) ); // Create mutable references to "x" in different variables. It is not actually error now.
+			auto z= ( b ? FakePollution( s0, x ) : FakePollution( s1, x ) ); // Create mutable references to "x" in different variables. It is not actually error now.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -266,7 +266,7 @@ def TernaryOperator_SavesInnerReferences_Test0():
 		fn Foo( bool b )
 		{
 			var i32 mut x= 0, mut y= 0;
-			auto res= select( b ? GetS(x) : GetS(y) );
+			auto res= ( b ? GetS(x) : GetS(y) );
 			++x; // Error, "x" have reference inside "res"
 			++y; // Error, "y" have reference inside "res"
 		}
