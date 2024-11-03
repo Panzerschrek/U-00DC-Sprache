@@ -17,7 +17,6 @@ else
 move
 take
 byval
-select
 tup
 struct
 class
