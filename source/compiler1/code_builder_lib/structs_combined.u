@@ -700,7 +700,7 @@ fn Type::GetReferenceIndirectionDepth( this ) : size_type
 			foreach( &inner_reference : class_type.inner_references )
 			{
 				// For now no more than depth 2 is possible.
-				depth= ust::max( depth, 1s + select( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0s : 1s ) );
+				depth= ust::max( depth, 1s + ( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0s : 1s ) );
 			}
 			return depth;
 		}
@@ -881,7 +881,7 @@ fn TypeHasher::hash( FunctionType& t ) : size_type
 	res= hash_combine( res, size_type(t.return_value_type) );
 
 	res= hash_combine( res, size_type(t.calling_convention) );
-	res= hash_combine( res, select( t.is_unsafe ? 1s : 0s ) );
+	res= hash_combine( res, ( t.is_unsafe ? 1s : 0s ) );
 
 	foreach( &return_reference : t.return_references )
 	{
@@ -959,7 +959,7 @@ fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
 			hash= TypeHasher::hash_combine( hash, size_type(param_reference.reference_index) );
 		}
 	}
-	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
+	hash= TypeHasher::hash_combine( hash, (d.non_sync_ ? 1s : 0s) );
 	return hash;
 }
 
@@ -1034,7 +1034,7 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 
 		var Variable mut node_src
 		{
-			.value_type= select( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.value_type= ( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= move(name),
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
@@ -1064,7 +1064,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 	{
 		if( fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		{
-			return select( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) == 0u64 ? ust::string8("false") : ust::string8("true") );
+			return ( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) == 0u64 ? ust::string8("false") : ust::string8("true") );
 		}
 		else if( IsSignedInteger( fundamental_type.fundamental_type ) )
 		{
@@ -1933,7 +1933,7 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 	}
 
 	// TODO - maybe add to language possibility to order compare enum values?
-	return select( u32(this_namespace_visibility) > u32(parent_namespace_visibility) ? this_namespace_visibility : parent_namespace_visibility );
+	return ( u32(this_namespace_visibility) > u32(parent_namespace_visibility) ? this_namespace_visibility : parent_namespace_visibility );
 }
 
 fn NamesScope::CopyAccessRightsFrom( mut this, NamesScope& src )

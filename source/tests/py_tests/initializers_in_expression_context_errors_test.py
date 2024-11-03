@@ -231,7 +231,7 @@ def DestroyedVariableStillHasReferences_ForStructInitializationExpression_Test1(
 		fn Foo()
 		{
 			var S stack_s= zero_init;
-			select( true ? stack_s : PassS( S{ .x= 0 } ) ); // Passing a reference to a temporary variable with {} initializer through a function and try to save a reference to this temporary.
+			( true ? stack_s : PassS( S{ .x= 0 } ) ); // Passing a reference to a temporary variable with {} initializer through a function and try to save a reference to this temporary.
 		}
 		fn PassS(S& s) : S& { return s; }
 	"""

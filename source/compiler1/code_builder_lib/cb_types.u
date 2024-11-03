@@ -137,9 +137,9 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 	{
 		.kind= coroutine_type.kind,
 		.return_type= PrepareType( names_scope, function_context, coroutine_type.return_type ),
-		.return_value_type= select(
+		.return_value_type= (
 			coroutine_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
-				? select(
+				? (
 					coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
 						? ValueType::ReferenceMut
 						: ValueType::ReferenceImut )
@@ -150,7 +150,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 			.map(
 				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
 				{
-					return select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} )
 			.collect</ ust::vector/>()
 	};
@@ -190,7 +190,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	var FunctionType mut res
 	{
 		.return_type(
-			select(
+			(
 				function_type.return_type.empty() || function_type.IsAutoReturn()
 					? Type( void_type_ )
 					: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
@@ -201,7 +201,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 	if( function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
 	{
-		res.return_value_type= select( function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		res.return_value_type= ( function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 	}
 
 	foreach( &param : function_type.params )
@@ -214,7 +214,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
-			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			out_param.value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		}
 
 		if( param.name == KeywordToString( Keyword::this_ ) )

@@ -18,7 +18,7 @@ enum ArgOverloadingClass
 
 fn GetArgOverloadingClass( VariableTypeExtended& arg ) : ArgOverloadingClass
 {
-	return select( arg.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference );
+	return ( arg.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference );
 }
 
 enum ConversionsCompareResult
@@ -558,7 +558,7 @@ fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, Overloa
 		var ValueType mut value_type= ValueType::Value;
 		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
-			value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		}
 
 		var Type mut t;

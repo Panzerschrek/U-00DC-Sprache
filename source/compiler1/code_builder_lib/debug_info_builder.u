@@ -480,8 +480,8 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 			unsafe( LLVMDIBuilderCreateEnumerator(
 				builder_,
 				cast_mut(name).data(), name.size(),
-				select( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
-				select( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) ) );
+				( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
+				( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) ) );
 	}
 
 	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;

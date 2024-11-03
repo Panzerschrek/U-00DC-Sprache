@@ -359,7 +359,7 @@ def AwaitOperator_Test11():
 		{
 			yield;
 			// Use "await" in both parts of select operator.
-			return select( cond ? Mul5( 67 ).await : Mul5( -14 ).await );
+			return ( cond ? Mul5( 67 ).await : Mul5( -14 ).await );
 		}
 		fn Foo()
 		{

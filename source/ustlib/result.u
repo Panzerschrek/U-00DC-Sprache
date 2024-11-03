@@ -316,8 +316,8 @@ private:
 	type this_type= result</OkT, ErrorT/>;
 	type storage_type= aligned_storage</ c_storage_size, c_storage_align />;
 
-	var size_type constexpr c_storage_size = select( typeinfo</OkT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</OkT/>.size_of  : typeinfo</ErrorT/>.size_of  );
-	var size_type constexpr c_storage_align= select( typeinfo</OkT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</OkT/>.align_of : typeinfo</ErrorT/>.align_of );
+	var size_type constexpr c_storage_size = ( typeinfo</OkT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</OkT/>.size_of  : typeinfo</ErrorT/>.size_of  );
+	var size_type constexpr c_storage_align= ( typeinfo</OkT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</OkT/>.align_of : typeinfo</ErrorT/>.align_of );
 
 	var bool constexpr c_is_equality_comparable= typeinfo</OkT/>.is_equality_comparable && typeinfo</ErrorT/>.is_equality_comparable;
 

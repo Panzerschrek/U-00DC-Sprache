@@ -667,7 +667,7 @@ def TemporaryReferenceRemoving_Test1():
 		{
 			var i32 mut x= 0, mut y= 0;
 			// Temporary mutable reference produced here as result of "select" operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
-			Bar( select(c ? x : y), select(c ? cast_imut(y) : cast_imut(x)) );
+			Bar( (c ? x : y), (c ? cast_imut(y) : cast_imut(x)) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -694,7 +694,7 @@ def ReferenceFieldNode_Test2():
 		{
 			var i32 mut x= 0, mut y= 0;
 			var S s0{ .r= x }, s1 { .r= y };
-			auto& s_ref= select( cond ? s0 : s1 );
+			auto& s_ref= ( cond ? s0 : s1 );
 			// Temporary mutable reference is produced here for member access operator for reference. Because of that we get error when creating reference node while accessing ".r" second time.
 			Bar( s_ref.r, s_ref.r );
 		}
@@ -795,7 +795,7 @@ def ReferenceInnerReferenceNode_Test5():
 			var i32 mut y= 0;
 			var S other_s{ .r= y };
 			auto& s_ref= s;
-			select( cond ? s : other_s ); // Create inner reference node for result of "select" and make to it link from "s". This is a second mutable link, which causes reference protection error.
+			( cond ? s : other_s ); // Create inner reference node for result of "select" and make to it link from "s". This is a second mutable link, which causes reference protection error.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

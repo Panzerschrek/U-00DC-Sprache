@@ -447,7 +447,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 				TemplateInstantiationRequired,
 				names_scope,
 				names_scope_fetch.src_loc,
-				select( type_templates.empty() ? ust::string8() : type_templates.front().lock_imut().deref().ToString() ) )
+				( type_templates.empty() ? ust::string8() : type_templates.front().lock_imut().deref().ToString() ) )
 		}
 		return ust::null_optional;
 	}

@@ -69,7 +69,7 @@ fn nomangle main() : i32
 		auto f=
 			lambda[&]( bool cond ) : i32 &mut
 			{
-				return select( cond ? x : y );
+				return ( cond ? x : y );
 			};
 
 		f( true )= 16;

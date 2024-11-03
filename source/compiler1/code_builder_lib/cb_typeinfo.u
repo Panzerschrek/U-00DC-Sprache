@@ -20,7 +20,7 @@ import "code_builder.uh"
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-		fields_initializers.push_back( unsafe( LLVMConstInt( class_field.t.GetLLVMType(), select( ?value ? 1u64 : 0u64 ), LLVMBool::False ) ) );
+		fields_initializers.push_back( unsafe( LLVMConstInt( class_field.t.GetLLVMType(), ( ?value ? 1u64 : 0u64 ), LLVMBool::False ) ) );
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.deref().AddName( ?name, move(class_field) );
@@ -355,7 +355,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		var size_type mut field_count= 0s;
 		foreach( &member : class_.members.lock_imut().deref() )
 		{
-			field_count+= select( member.value().Get</ClassField/>().empty() ? 0s : 1s );
+			field_count+= ( member.value().Get</ClassField/>().empty() ? 0s : 1s );
 		}
 		ADD_SIZE_FIELD( "field_count", field_count )
 

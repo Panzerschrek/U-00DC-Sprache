@@ -343,8 +343,7 @@ fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& p
 	var [ char8, 2 ] mut initializer
 	[
 		char8( u32( "0"c8 ) + u32( param_reference.param_index ) ),
-		select(
-			param_reference.reference_index == FunctionType::c_param_reference_number
+		select( param_reference.reference_index == FunctionType::c_param_reference_number
 				? "_"c8
 				: char8( u32( "a"c8 ) + u32( param_reference.reference_index ) ) ),
 	];
@@ -371,7 +370,7 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, Na
 	var FunctionType::ParamReference result
 	{
 		.param_index= u8( param - u64( "0"c8 ) ),
-		.reference_index= select( ref == u64( "_"c8 ) ? FunctionType::c_param_reference_number : u8( ref - u64( "a"c8 ) ) )
+		.reference_index= ( ref == u64( "_"c8 ) ? FunctionType::c_param_reference_number : u8( ref - u64( "a"c8 ) ) )
 	};
 
 	if( size_type(result.param_index) >= num_params )

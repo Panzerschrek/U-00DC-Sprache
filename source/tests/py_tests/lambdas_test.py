@@ -900,7 +900,7 @@ def LambdaTypeinfo_Test3():
 			var f32 y= 3.5f;
 			var bool b= false;
 			// Capture 3 variables by value.
-			auto f= lambda[=]() : f32 { return select( b ? y : f32(x) ); };
+			auto f= lambda[=]() : f32 { return ( b ? y : f32(x) ); };
 			auto& ti= typeinfo</ typeof(f) />;
 			static_assert( ti.is_class );
 			static_assert( !ti.is_struct );
@@ -922,7 +922,7 @@ def LambdaTypeinfo_Test4():
 			var f32 y= 3.5f;
 			var bool b= false;
 			// Capture 3 variables by reference.
-			auto f= lambda[&]() : f32 { return select( b ? y : f32(x) ); };
+			auto f= lambda[&]() : f32 { return ( b ? y : f32(x) ); };
 			auto& ti= typeinfo</ typeof(f) />;
 			static_assert( ti.is_class );
 			static_assert( !ti.is_struct );
@@ -2594,7 +2594,7 @@ def AutoReturnTypeLambda_Test4():
 			auto f=
 				lambda[&]( i32& arg ) : auto // Deduced to "R"
 				{
-					var R mut r { .r= select( arg >= 0 ? arg : x ) };
+					var R mut r { .r= ( arg >= 0 ? arg : x ) };
 					return move(r);
 				};
 			halt if( f( 77 ).r != 77 );
