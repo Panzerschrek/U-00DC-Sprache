@@ -268,7 +268,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const TernaryOperator>& ternary_operator ) const
 		{
-			stream << Keyword( Keywords::select_ ) << "( ";
+			stream << "( ";
 			ElementWrite( ternary_operator->condition, stream );
 			stream << " ? ";
 			ElementWrite( ternary_operator->branches[0], stream );
