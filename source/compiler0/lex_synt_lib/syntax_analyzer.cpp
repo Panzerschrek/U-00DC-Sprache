@@ -1085,7 +1085,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			if( it_->type == Lexem::Type::Question )
 			{
-				// Short form of a ternary operator.
+				// Ternary operator.
 				auto ternary_operator= std::make_unique<TernaryOperator>( it_->src_loc );
 				ternary_operator->condition= std::move(expr);
 				NextLexem();

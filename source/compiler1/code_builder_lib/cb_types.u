@@ -139,10 +139,9 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		.return_type= PrepareType( names_scope, function_context, coroutine_type.return_type ),
 		.return_value_type= (
 			coroutine_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
-				? (
-					coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
-						? ValueType::ReferenceMut
-						: ValueType::ReferenceImut )
+				? ( coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+					? ValueType::ReferenceMut
+					: ValueType::ReferenceImut )
 				: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
 		.inner_references=
@@ -190,10 +189,9 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	var FunctionType mut res
 	{
 		.return_type(
-			(
-				function_type.return_type.empty() || function_type.IsAutoReturn()
-					? Type( void_type_ )
-					: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
+			( function_type.return_type.empty() || function_type.IsAutoReturn()
+				? Type( void_type_ )
+				: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
 		.return_value_type= ValueType::Value,
 		.is_unsafe= function_type.is_unsafe,
 		.calling_convention= GetLLVMCallingConvention( function_type.calling_convention, names_scope, function_type.src_loc ),

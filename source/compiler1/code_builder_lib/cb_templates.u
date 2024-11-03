@@ -752,10 +752,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		.return_type= move(return_type),
 		.return_value_type= (
 			signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference
-				? (
-					signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
-						? ValueType::ReferenceMut
-						: ValueType::ReferenceImut )
+				? ( signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+					? ValueType::ReferenceMut
+					: ValueType::ReferenceImut )
 				: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 		.inner_references=

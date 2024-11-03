@@ -1357,7 +1357,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		with( mut lock : result_ptr.lock_mut() )
 		{
 			lock.deref().constexpr_value=
-				( unsafe( LLVMConstIntGetZExtValue( condition_constexpr_value ) ) != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
+				branches_constexpr_values[ ( unsafe( LLVMConstIntGetZExtValue( condition_constexpr_value ) ) != 0u64 ? 0u : 1u ) ];
 		}
 	}
 
