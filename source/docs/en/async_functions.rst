@@ -133,5 +133,5 @@ This allows to use the same variable for storing of async function object produc
     // A function which returns async function object but which is not async.
    fn CreateFunc(bool cond) : (async : i32)
    {
-       return select(cond ? Foo( 14, 56 ) : Bar() );
+       return ( cond ? Foo( 14, 56 ) : Bar() );
    }

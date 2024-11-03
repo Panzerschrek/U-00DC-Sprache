@@ -79,5 +79,5 @@ This allows to use the same variable for storing of generators produced by calls
    // A function which returns generator-object but which is not a generator-function.
    fn CreateGen(bool cond) : (generator : i32)
    {
-       return select(cond ? Foo( 14, 56 ) : Bar() );
+       return ( cond ? Foo( 14, 56 ) : Bar() );
    }
