@@ -343,9 +343,9 @@ fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& p
 	var [ char8, 2 ] mut initializer
 	[
 		char8( u32( "0"c8 ) + u32( param_reference.param_index ) ),
-		select( param_reference.reference_index == FunctionType::c_param_reference_number
+		( ( param_reference.reference_index == FunctionType::c_param_reference_number
 				? "_"c8
-				: char8( u32( "a"c8 ) + u32( param_reference.reference_index ) ) ),
+				: char8( u32( "a"c8 ) + u32( param_reference.reference_index ) ) ) ),
 	];
 	return unsafe( U1_ConstDataArray( fundamental_llvm_types_.char8_, ust::ptr_cast_to_byte8( $<(initializer) ), 2s, 2s ) );
 }
