@@ -951,7 +951,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		branches_types[0],
 		ValueType::Value, // Set later
 		Variable::Location::Pointer,
-		std::string( Keyword( Keywords::select_ ) ) );
+		"ternary_operator_result" );
 	if( branches_value_types[0] == ValueType::Value || branches_value_types[1] == ValueType::Value )
 	{
 		result->value_type= ValueType::Value;
@@ -964,7 +964,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( !function_context.is_functionless_context )
 		{
 			result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( result->type.GetLLVMType() );
-			result->llvm_value->setName( "select_result" );
+			result->llvm_value->setName( "ternary_operator_result" );
 
 			CreateLifetimeStart( function_context, result->llvm_value );
 		}

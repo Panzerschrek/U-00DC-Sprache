@@ -1225,7 +1225,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			.value_type= value_type,
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
-			.name= KeywordToString( Keyword::select_ ),
+			.name= "ternary_operator_result",
 		}.CreatePtr();
 
 	// Do not forget to remove this node in case of error-return!!!
@@ -1342,7 +1342,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 			if( value_type != ValueType::Value )
 			{
-				auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), "select_result\0"[0] );
+				auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), "ternary_operator_result\0"[0] );
 				LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
 				with( mut lock : result_ptr.lock_mut() )
 				{

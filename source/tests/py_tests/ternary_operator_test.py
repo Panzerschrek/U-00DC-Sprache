@@ -51,7 +51,7 @@ def TernaryOperator_Test2():
 		fn GetS( i32 x ) : S { var S s{ .x= x }; return s; }
 		fn Foo( bool b ) : i32
 		{
-			return ( b ? GetS(412) : GetS(632) ).x; // "select" for value-structs.
+			return ( b ? GetS(412) : GetS(632) ).x; // Ternary operator for value-structs.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -279,7 +279,7 @@ def TernaryOperator_Constexpr_Test5():
 		fn Foo()
 		{
 			var i32 constexpr x= 0, mut y= 0;
-			auto &constexpr ref= ( false ? x : y );  // Selected non-constexpr branch.
+			auto &constexpr ref= ( false ? x : y ); // Selected non-constexpr branch.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -306,6 +306,6 @@ def TernaryOperator_Constexpr_Test7():
 	c_program_text= """
 		struct S{ i32 x; }
 		var S constexpr s0{ .x= 42 }, s1{ .x= 24 };
-		static_assert( ( true ? s0 : s1 ).x == 42 ); // Constexpr select for reference structs.
+		static_assert( ( true ? s0 : s1 ).x == 42 ); // Constexpr ternary operator for reference structs.
 	"""
 	tests_lib.build_program( c_program_text )

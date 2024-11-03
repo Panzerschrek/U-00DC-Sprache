@@ -666,7 +666,7 @@ def TemporaryReferenceRemoving_Test1():
 		fn Foo(bool c)
 		{
 			var i32 mut x= 0, mut y= 0;
-			// Temporary mutable reference produced here as result of "select" operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
+			// Temporary mutable reference produced here as result of ternary operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
 			Bar( (c ? x : y), (c ? cast_imut(y) : cast_imut(x)) );
 		}
 	"""
@@ -795,7 +795,7 @@ def ReferenceInnerReferenceNode_Test5():
 			var i32 mut y= 0;
 			var S other_s{ .r= y };
 			auto& s_ref= s;
-			( cond ? s : other_s ); // Create inner reference node for result of "select" and make to it link from "s". This is a second mutable link, which causes reference protection error.
+			( cond ? s : other_s ); // Create inner reference node for result of ternary operator and make to it link from "s". This is a second mutable link, which causes reference protection error.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

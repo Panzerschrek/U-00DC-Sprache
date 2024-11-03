@@ -535,7 +535,7 @@ def UselessExpressionRoot_Test43():
 	c_program_text= """
 		fn Foo(bool cond)
 		{
-			( cond ? Bar() : Baz() ); // Select for "void" type is ok.
+			( cond ? Bar() : Baz() ); // Ternary operator for "void" type is ok.
 		}
 		fn Bar();
 		fn Baz();
@@ -547,7 +547,7 @@ def UselessExpressionRoot_Test44():
 	c_program_text= """
 		fn Foo(bool cond)
 		{
-			( cond ? Bar() : Baz() ); // Select for non-"void" type is useless.
+			( cond ? Bar() : Baz() ); // Ternary operator for non-"void" type is useless.
 		}
 		fn Bar() : i32;
 		fn Baz() : i32;
@@ -561,7 +561,7 @@ def UselessExpressionRoot_Test45():
 	c_program_text= """
 		fn Foo(bool cond)
 		{
-			( cond ? Bar() : Baz() ); // Select for non-"void" type is useless.
+			( cond ? Bar() : Baz() ); // Ternary operator for non-"void" type is useless.
 		}
 		fn Bar() : void &;
 		fn Baz() : void &;
