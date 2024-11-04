@@ -649,9 +649,9 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				}
 			}
 
-			if( !current_value.empty() )
+			if_var( &current_value_unwrapped : current_value )
 			{
-				auto functions_set= current_value.try_deref().Get</FunctionsSet/>();
+				auto functions_set= current_value_unwrapped.Get</FunctionsSet/>();
 				if( !functions_set.empty() )
 				{
 					auto mut lock= functions_set.try_lock_mut();

@@ -981,12 +981,7 @@ fn LambdaKeyHasher::hash( LambdaKey& k ) : size_type
 
 fn ClassType::GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility
 {
-	if_var( v : members_visibility.find(member_name) )
-	{
-		return v;
-	}
-
-	return Synt::ClassVisibility::Public;
+	return members_visibility.find(member_name).deref_or( Synt::ClassVisibility::Public );
 }
 
 fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility )
@@ -1919,11 +1914,7 @@ fn NamesScope::AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::Cla
 
 fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility
 {
-	auto mut this_namespace_visibility= Synt::ClassVisibility::Public;
-	if_var( visibility : access_rights_.find( class_type ) )
-	{
-		this_namespace_visibility= visibility;
-	}
+	auto this_namespace_visibility= access_rights_.find( class_type ).deref_or( Synt::ClassVisibility::Public );
 
 	auto mut parent_namespace_visibility= Synt::ClassVisibility::Public;
 	auto parent= GetParent();

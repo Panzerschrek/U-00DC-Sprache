@@ -35,6 +35,21 @@ fn nomangle main() : i32
 		// Call to a second order "optional_ref" creates a mutable lock node for "x", which creates an error. Even in this particular case nothing bad can happen.
 		x_ref_ref.empty(); //##expect_error ReferenceProtectionError
 	}
+	{
+		var i32 mut x= 0, mut y= 0;
+
+		auto& ref= IntRefMut(x).deref_or(y); // Reference both to "x" and "y".
+
+		// Can't modify these variables, since a reference to them exist.
+		++y; //##expect_error ReferenceProtectionError
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{
+		var IntRefImut r;
+		// "deref_or" may return a reference to its alternative.
+		// In this case we create a local reference to a temporary variable passed as alternative.
+		auto& ref= r.deref_or( 55 ); //##expect_error DestroyedVariableStillHasReferences
+	}
 
 	return 0;
 }

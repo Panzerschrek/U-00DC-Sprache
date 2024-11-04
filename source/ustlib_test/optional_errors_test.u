@@ -79,6 +79,22 @@ fn nomangle main() : i32
 		// Error here - create second order reference node in call for "chars".
 		opt.empty(); //##expect_error ReferenceProtectionError
 	}
+	{
+		var i32 mut y= 0;
+
+		var ust::optional</i32/> mut o;
+		auto &mut ref= o.deref_or(y); // Reference both to "0" and "y".
+
+		// Can't modify or access these variables, since a reference to them exist.
+		o.empty(); //##expect_error ReferenceProtectionError
+		++y; //##expect_error ReferenceProtectionError
+	}
+	{
+		var ust::optional</i32/> o;
+		// "deref_or" may return a reference to its alternative.
+		// In this case we create a local reference to a temporary variable passed as alternative.
+		auto& ref= o.deref_or( 65 ); //##expect_error DestroyedVariableStillHasReferences
+	}
 
 	return 0;
 }

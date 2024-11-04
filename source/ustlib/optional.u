@@ -158,6 +158,18 @@ public:
 		return unsafe( cast_ref_unsafe</T/>(storage_) );
 	}
 
+	// "deref_or" methods - to get contained reference or alternative value if "optional" is empty.
+
+	fn deref_or(  mut this, T & mut alternative ) : auto & mut
+	{
+		return ( empty() ? alternative : try_deref() );
+	}
+
+	fn deref_or( imut this, T &imut alternative ) : auto &imut
+	{
+		return ( empty() ? alternative : try_deref() );
+	}
+
 	fn reset(mut this)
 	{
 		if( !empty() )

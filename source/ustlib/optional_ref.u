@@ -117,6 +117,20 @@ public:
 		return try_deref();
 	}
 
+	// "deref_or" methods - to get contained reference or alternative value if "optional_ref" is empty.
+
+	fn enable_if( is_mutable )
+	deref_or( this, T & mut alternative ) : auto & mut
+	{
+		return ( empty() ? alternative : try_deref() );
+	}
+
+	fn enable_if( !is_mutable )
+	deref_or( this, T &imut alternative ) : auto &imut
+	{
+		return ( empty() ? alternative : try_deref() );
+	}
+
 	// Get raw pointer. Returns null if empty.
 	fn get_ptr( this ) unsafe : $(T)
 	{

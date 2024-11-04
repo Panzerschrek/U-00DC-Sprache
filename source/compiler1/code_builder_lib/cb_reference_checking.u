@@ -352,12 +352,12 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 						}
 					}
 
-					if( !param_reference.empty() )
+					if_var( &src : param_reference )
 					{
 						var FunctionType::ReferencePollution actual_reference_pollution
 						{
 							.dst{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
-							.src= param_reference.try_deref(),
+							.src= src,
 						};
 
 						foreach( &reference_pollution : function_type.references_pollution )
