@@ -89,6 +89,12 @@ fn nomangle main() : i32
 		o.empty(); //##expect_error ReferenceProtectionError
 		++y; //##expect_error ReferenceProtectionError
 	}
+	{
+		var ust::optional</i32/> o;
+		// "deref_or" may return a reference to its alternative.
+		// In this case we create a local reference to a temporary variable passed as alternative.
+		auto& ref= o.deref_or( 65 ); //##expect_error DestroyedVariableStillHasReferences
+	}
 
 	return 0;
 }

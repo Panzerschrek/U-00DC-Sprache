@@ -44,6 +44,12 @@ fn nomangle main() : i32
 		++y; //##expect_error ReferenceProtectionError
 		++x; //##expect_error ReferenceProtectionError
 	}
+	{
+		var IntRefImut r;
+		// "deref_or" may return a reference to its alternative.
+		// In this case we create a local reference to a temporary variable passed as alternative.
+		auto& ref= r.deref_or( 55 ); //##expect_error DestroyedVariableStillHasReferences
+	}
 
 	return 0;
 }
