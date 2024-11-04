@@ -1073,7 +1073,35 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return std::move(string_literal);
 		}
 	case Lexem::Type::BracketLeft:
-		return ParseExpressionInBrackets();
+		{
+			ExpectLexem( Lexem::Type::BracketLeft );
+			Expression expr= ParseExpression();
+			if( it_->type == Lexem::Type::BracketRight )
+			{
+				// It's just an expression within ().
+				NextLexem();
+				return expr;
+			}
+
+			if( it_->type == Lexem::Type::Question )
+			{
+				// Ternary operator.
+				auto ternary_operator= std::make_unique<TernaryOperator>( it_->src_loc );
+				ternary_operator->condition= std::move(expr);
+				NextLexem();
+
+				ternary_operator->branches[0]= ParseExpression();
+				ExpectLexem( Lexem::Type::Colon );
+
+				ternary_operator->branches[1]= ParseExpression();
+				ExpectLexem( Lexem::Type::BracketRight );
+
+				return ternary_operator;
+			}
+
+			PushErrorMessage(); // Something unexpected.
+			return expr;
+		}
 	case Lexem::Type::SquareBracketLeft:
 	case Lexem::Type::PointerTypeMark:
 			return TypeNameToExpression( ParseTypeName() );
@@ -1149,21 +1177,6 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::lambda_ )
 			return std::make_unique<Lambda>( ParseLambda() );
-		if( it_->text == Keywords::select_ )
-		{
-			auto ternary_operator= std::make_unique<TernaryOperator>( it_->src_loc );
-			NextLexem();
-
-			ExpectLexem( Lexem::Type::BracketLeft );
-			ternary_operator->condition= ParseExpression();
-			ExpectLexem( Lexem::Type::Question );
-			ternary_operator->branches[0]= ParseExpression();
-			ExpectLexem( Lexem::Type::Colon );
-			ternary_operator->branches[1]= ParseExpression();
-			ExpectLexem( Lexem::Type::BracketRight );
-
-			return std::move(ternary_operator);
-		}
 		if( it_->text == Keywords::cast_ref_ )
 		{
 			auto cast= std::make_unique<CastRef>( it_->src_loc );

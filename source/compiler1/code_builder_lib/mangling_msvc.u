@@ -65,7 +65,7 @@ private:
 }
 
 fn ManglerMSVC::constructor(bool is_32_bit)
-	( pointer_types_modifier_( select( is_32_bit ? ust::string8("") : ust::string8("E") ) ) )
+	( pointer_types_modifier_( ( is_32_bit ? ust::string8("") : ust::string8("E") ) ) )
 {
 }
 
@@ -97,7 +97,7 @@ fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::s
 
 	mangler_state.PushElement( "3"c8 ); // Special name for global variables.
 	EncodeType( mangler_state, t );
-	mangler_state.PushElement( select( is_constant ? g_imut_prefix : g_mut_prefix ) );
+	mangler_state.PushElement( ( is_constant ? g_imut_prefix : g_mut_prefix ) );
 
 	return MakeNullTerminatedString( move(mangler_state).TakeResult() );
 }
@@ -333,7 +333,7 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerState &mut mangler_state, Funct
 	{
 		mangler_state.PushElement( g_reference_prefix );
 		mangler_state.PushElement( pointer_types_modifier_ );
-		mangler_state.PushElement( select( function_type.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
+		mangler_state.PushElement( ( function_type.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 	}
 	else if(
 		!function_type.return_type.GetClassType().empty()||
@@ -423,7 +423,7 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust
 			{
 				mangler_state.PushElement( g_reference_prefix );
 				mangler_state.PushElement( pointer_types_modifier_ );
-				mangler_state.PushElement( select( param.value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
+				mangler_state.PushElement( ( param.value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 			}
 
 			EncodeType( mangler_state, param.t );
@@ -680,7 +680,7 @@ fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state,
 	{
 		template_mangler_state.PushElement( g_reference_prefix );
 		template_mangler_state.PushElement( pointer_types_modifier_ );
-		template_mangler_state.PushElement( select( coroutine_type_description.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
+		template_mangler_state.PushElement( ( coroutine_type_description.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 	}
 	EncodeType( template_mangler_state, coroutine_type_description.return_type );
 
@@ -907,7 +907,7 @@ fn ManglerMSVC::EncodeParamReference( this, ManglerState &mut mangler_state, Fun
 
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 	mangler_state.PushElement( "0" );
-	var u64 param_reference_char= select( param_reference.reference_index == FunctionType::c_param_reference_number ? u64("_"c8) : ( u64("a"c8) + u64(param_reference.reference_index)) );
+	var u64 param_reference_char= ( param_reference.reference_index == FunctionType::c_param_reference_number ? u64("_"c8) : ( u64("a"c8) + u64(param_reference.reference_index)) );
 	EncodeNumber( mangler_state, param_reference_char );
 
 	mangler_state.PushElement( g_terminator );

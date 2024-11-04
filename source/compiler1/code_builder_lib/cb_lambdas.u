@@ -479,7 +479,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							{
 								.t= expr_result.t,
 								// Make immediate values in preprocessing constant.
-								.value_type = select( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+								.value_type = ( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 								.location= Variable::Location::Pointer,
 								.llvm_value= llvm_value,
 								.constexpr_value= LLVMValueRef::Null, // no need to use constexpr in preprocessing.
@@ -626,7 +626,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					.name= captured_variable_pair.key(),
 					.data= captured_variable_pair.value(),
 					.capture_by_reference= capture_by_reference,
-					.alignment( unsafe( LLVMABIAlignmentOfType( data_layout_, select( capture_by_reference ? LLVMPointerType( llvm_type, 0u ) : llvm_type ) ) ) )
+					.alignment( unsafe( LLVMABIAlignmentOfType( data_layout_, ( capture_by_reference ? LLVMPointerType( llvm_type, 0u ) : llvm_type ) ) ) )
 				} );
 		}
 
@@ -668,12 +668,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					// Create a reference tag for captured reference.
 					field.reference_tag= u8( class_type.inner_references.size() );
 
-					var InnerReference mut inner_reference{ .kind= select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) };
+					var InnerReference mut inner_reference{ .kind= ( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) };
 
 					if( reference_tag_count > 0s )
 					{
 						inner_reference.second_order_kind=
-							select( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
+							( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
 								? SecondOrderInnerReferenceKind::Imut
 								: SecondOrderInnerReferenceKind::Mut );
 
@@ -817,7 +817,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					with( &field : field_pair[1].lock_imut().deref() )
 					{
 						var LLVMTypeRef llvm_type= field.t.GetLLVMType();
-						return select( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type );
+						return ( field.is_reference ? unsafe( LLVMPointerType( llvm_type, 0u ) ) : llvm_type );
 					}
 				} ) );
 
@@ -1105,7 +1105,7 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 		else
 		{
 			// If a variable is captured by value and lambda "this" is immutable captured variable can't be modified.
-			value_type= select( lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			value_type= ( lambda_preprocessing_context.lambda_this_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		}
 
 		var Variable mut reference_node_value

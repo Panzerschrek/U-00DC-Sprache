@@ -358,8 +358,8 @@ def AwaitOperator_Test11():
 		fn async Bar( bool cond ) : i32
 		{
 			yield;
-			// Use "await" in both parts of select operator.
-			return select( cond ? Mul5( 67 ).await : Mul5( -14 ).await );
+			// Use "await" in both parts of ternary operator.
+			return ( cond ? Mul5( 67 ).await : Mul5( -14 ).await );
 		}
 		fn Foo()
 		{

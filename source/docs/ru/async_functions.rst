@@ -133,5 +133,5 @@
    // Функция, возвращающая значения типа асинхронной функции, но сама не являющаяся асинхронной.
    fn CreateFunc(bool cond) : (async : i32)
    {
-       return select(cond ? Foo( 14, 56 ) : Bar() );
+       return ( cond ? Foo( 14, 56 ) : Bar() );
    }

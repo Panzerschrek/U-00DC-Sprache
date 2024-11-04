@@ -111,7 +111,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Assume this is a reference to type with no references inside.
 			// This is checked later - when building function code.
 			// Do this later in order to avoid full type building for reference params.
-			coroutine_type_description.inner_references.push_back( select( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+			coroutine_type_description.inner_references.push_back( ( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
 			coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
@@ -129,7 +129,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			FunctionType::ParamReference
 			{
 				.param_index(0),
-				.reference_index= select(
+				.reference_index= (
 					param_reference.reference_index == FunctionType::c_param_reference_number
 						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
 						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
@@ -150,7 +150,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				FunctionType::ParamReference
 				{
 					.param_index(0),
-					.reference_index= select(
+					.reference_index= (
 						param_reference.reference_index == FunctionType::c_param_reference_number
 							? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
 							: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
@@ -312,7 +312,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 		var ClassTypePtr coroutine_class= function_context.function_type.return_type.GetClassType().try_deref();
 		var CoroutineTypeDescription coroutine_type_description= coroutine_class.lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
-		var LLVMTypeRef promise_type= select(
+		var LLVMTypeRef promise_type= (
 			coroutine_type_description.return_value_type == ValueType::Value
 				? coroutine_type_description.return_type.GetLLVMType()
 				: pointer_type );
@@ -606,7 +606,7 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 	// Fill promise.
 
 	var VariablePtr mut expr_ptr=
-		select( return_value_type == ValueType::Value
+		( return_value_type == ValueType::Value
 			? BuildExpressionCodeForValueReturn( names_scope, function_context, expression )
 			: BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ) );
 	if( return_value_type == ValueType::Value )
@@ -823,7 +823,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, done_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, done_block ) );
 
-		var LLVMTypeRef promise_llvm_type= select( return_value_type == ValueType::Value ? return_type.GetLLVMType() : pointer_type );
+		var LLVMTypeRef promise_llvm_type= ( return_value_type == ValueType::Value ? return_type.GetLLVMType() : pointer_type );
 
 		var [ LLVMValueRef, 3 ] mut promise_args
 		[

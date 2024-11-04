@@ -31,7 +31,6 @@
 			<item>move</item>
 			<item>take</item>
 			<item>byval</item>
-			<item>select</item>
 			<item>tup</item>
 			<item>struct</item>
 			<item>class</item>

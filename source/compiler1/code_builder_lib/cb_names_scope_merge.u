@@ -186,7 +186,7 @@ fn CodeBuilder::NamesScopeMergeValues(
 	{
 		auto src_src_loc= GetValueSrcLoc( src );
 		auto dst_src_loc= GetValueSrcLoc( dst );
-		auto src_loc= select( src_src_loc.GetLine() == 0u32 ? dst_src_loc : src_src_loc );
+		auto src_loc= ( src_src_loc.GetLine() == 0u32 ? dst_src_loc : src_src_loc );
 
 		REPORT_ERROR( Redefinition, target_names_scope, src_loc, name )
 		return;

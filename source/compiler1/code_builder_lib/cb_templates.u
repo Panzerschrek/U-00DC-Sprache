@@ -690,7 +690,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	if( signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
 	{
-		function_type_param.return_value_type= select( signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		function_type_param.return_value_type= ( signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 	}
 
 	auto mut all_types_are_known= true;
@@ -715,7 +715,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
-			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			out_param.value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		}
 
 		all_types_are_known &= !out_param.t.GetType().empty();
@@ -750,20 +750,18 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		.kind= signature_param.kind,
 		.return_type= move(return_type),
-		.return_value_type= select(
-			signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference
-				? select(
-					signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
-						? ValueType::ReferenceMut
-						: ValueType::ReferenceImut )
-				: ValueType::Value ),
+		.return_value_type= ( signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference
+			? ( signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+				? ValueType::ReferenceMut
+				: ValueType::ReferenceImut )
+			: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 		.inner_references=
 			signature_param.inner_reference_tags.iter()
 			.map(
 				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
 				{
-					return select( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} )
 			.collect</ ust::vector />()
 	};

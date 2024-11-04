@@ -195,7 +195,7 @@ def ReturnForAsyncFunction_Test4():
 				auto mut f= AsyncMax( pair[0], pair[1] );
 				if_coro_advance( &x : f )
 				{
-					auto own_max= select( pair[0] > pair[1] ? pair[0] : pair[1] );
+					auto own_max= ( pair[0] > pair[1] ? pair[0] : pair[1] );
 					halt if( x != own_max );
 				}
 				else { halt; }
@@ -230,7 +230,7 @@ def ReturnForAsyncFunction_Test5():
 			for( auto mut i= 0s; i < 3s; ++i )
 			{
 				var i32 mut first= pairs[i][0], mut second= pairs[i][1];
-				var i32 own_max= select( first > second ? first : second );
+				var i32 own_max= ( first > second ? first : second );
 				auto mut f= AsyncMax( first, second );
 				if_coro_advance( &mut x : f )
 				{

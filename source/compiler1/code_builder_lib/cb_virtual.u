@@ -549,7 +549,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 			var [ LLVMValueRef, 2 ] mut vtable_indexes
 			[
 				GetZeroGEPIndex(),
-				CreateIndexValue( select( parent.field_number == 0u ? 0u : vtable_field_number ) ),
+				CreateIndexValue( ( parent.field_number == 0u ? 0u : vtable_field_number ) ),
 			];
 			auto vtable_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.virtual_table_llvm_type, ptr_to_vtable_ptr, $<(vtable_indexes[0]), 2u, g_null_string );
 
@@ -634,7 +634,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	var Variable mut this_casted
 	{
 		.t= function_this_type,
-		.value_type= select( this_.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.value_type= ( this_.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
 		.name= this_ptr.lock_imut().deref().name + " virtual call casted",
 		.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, function_this_type, function_context ),
@@ -712,7 +712,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	{
 		auto current_class_lock= current_class_ptr.lock_imut();
 		auto& current_class= current_class_lock.deref();
-		functions_table_field_number= select( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
+		functions_table_field_number= ( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
 		function_class_virtual_table_type= current_class.virtual_table_llvm_type;
 	}
 

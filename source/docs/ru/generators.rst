@@ -80,5 +80,5 @@
    // Функция, возвращающая значения типа генератора, но не являющаяся генератором.
    fn CreateGen(bool cond) : (generator : i32)
    {
-       return select(cond ? Foo( 14, 56 ) : Bar() );
+       return ( cond ? Foo( 14, 56 ) : Bar() );
    }

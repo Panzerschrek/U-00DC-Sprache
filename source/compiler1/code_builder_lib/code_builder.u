@@ -802,7 +802,7 @@ fn CodeBuilder::PrepareFunction(
 		}
 		else
 		{
-			select( function_declaration.body_kind == Synt::Function::BodyKind::BodyGenerationRequired ? function_variable.is_generated : function_variable.is_deleted )= true;
+			( function_declaration.body_kind == Synt::Function::BodyKind::BodyGenerationRequired ? function_variable.is_generated : function_variable.is_deleted )= true;
 		}
 	}
 
@@ -1176,7 +1176,7 @@ fn CodeBuilder::BuildFuncCode(
 			}
 		}
 
-		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
+		auto first_llvm_arg= ( is_s_ret ? 1u : 0u );
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
 			auto& in_param= body_syntax_element.function_type.params[arg_n];
@@ -1249,7 +1249,7 @@ fn CodeBuilder::BuildFuncCode(
 			var Variable mut variable_reference
 			{
 				.t= type_param.t,
-				.value_type= select( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.value_type= ( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.location= Variable::Location::Pointer,
 				.llvm_value= variable.llvm_value,
 				.name= in_param.name,
@@ -1292,7 +1292,7 @@ fn CodeBuilder::BuildFuncCode(
 						{
 							.t= invalid_type_,
 							.value_type=
-								select( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+								( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
 									? ValueType::ReferenceImut
 									: ValueType::ReferenceMut ),
 							.location= Variable::Location::Pointer,
@@ -1381,7 +1381,7 @@ fn CodeBuilder::BuildFuncCode(
 
 							var LLVMValueRef field_address= CreateClassFieldGEP( function_context, this_class_type_ptr, this_.lock_imut().deref().llvm_value, field );
 							var LLVMValueRef llvm_value=
-								select( field.is_reference
+								( field.is_reference
 									? CreateTypedReferenceLoad( function_context, field.t, field_address )
 									: field_address );
 
@@ -1399,7 +1399,7 @@ fn CodeBuilder::BuildFuncCode(
 								Variable
 								{
 									.t= field.t,
-									.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+									.value_type= ( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 									.location= Variable::Location::Pointer,
 									.name= field_name,
 									.llvm_value= llvm_value,
@@ -1438,7 +1438,7 @@ fn CodeBuilder::BuildFuncCode(
 										{
 											.t= invalid_type_,
 											.value_type=
-												select( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+												( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
 													? ValueType::ReferenceImut
 													: ValueType::ReferenceMut ),
 											.location= Variable::Location::Pointer,
@@ -2404,7 +2404,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
 	{
 		var FunctionType::Param& param= function_variable.t.params[i];
-		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( is_s_ret ? 1u : 0u ) + u32(i);
 
 		var bool pass_value_param_by_hidden_ref=
 			param.value_type == ValueType::Value &&
@@ -2453,7 +2453,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
 	{
 		var FunctionType::Param& param= function_variable.t.params[i];
-		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( is_s_ret ? 1u : 0u ) + u32(i);
 
 		var bool pass_value_param_by_hidden_ref=
 			param.value_type == ValueType::Value &&
@@ -3082,7 +3082,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 				type_kind == LLVMTypeKind::PPC_FP128;
 
 			return
-				select( is_float
+				( is_float
 					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, g_null_string )
 					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
 		}

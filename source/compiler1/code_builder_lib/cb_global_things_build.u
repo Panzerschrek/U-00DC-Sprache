@@ -242,7 +242,7 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 
 				// Update function type.
 				auto return_type= return_type_deduction_context_ptr.lock_imut().deref().return_type;
-				func_variable.t.return_type= select( return_type.empty() ? void_type_ : return_type.try_deref() );
+				func_variable.t.return_type= ( return_type.empty() ? void_type_ : return_type.try_deref() );
 
 				with( mut lock : reference_notation_deduction_context_ptr.lock_mut() )
 				{
@@ -270,7 +270,7 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 				{
 					func_variable.llvm_function.reset(
 						LazyLLVMFunction(
-							select( func_variable.no_mangle
+							( func_variable.no_mangle
 								? name + "\0"
 								: mangler_.deref().MangleFunction( names_scope_ptr.lock_imut().deref(), name, func_variable.t ) ) ) );
 				}
@@ -801,7 +801,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			var ClassType& mut class_= class_lock.deref();
 
 			field.reference_tag= 0u8;
-			class_.inner_references.push_back( InnerReference{ .kind= select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) } );
+			class_.inner_references.push_back( InnerReference{ .kind= ( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) } );
 		}
 		else if( reference_fields.size() == 0s && fields_with_references_inside.size() == 1s && !has_fields_with_reference_notation && !has_parents_with_references_inside )
 		{
@@ -842,7 +842,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto mut class_lock= class_type.lock_mut();
 				var ClassType& mut class_= class_lock.deref();
 
-				var InnerReferenceKind inner_reference_kind= select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				var InnerReferenceKind inner_reference_kind= ( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 
 				if_var( tag : reference_tag )
 				{
@@ -935,7 +935,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						var InnerReference& mut inner_reference= class_.inner_references[i];
 
 						var SecondOrderInnerReferenceKind second_order_kind=
-							select( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
+							( field.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
 								? SecondOrderInnerReferenceKind::Imut
 								: SecondOrderInnerReferenceKind::Mut );
 
@@ -1150,7 +1150,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Class )
 		{
-			class_.kind= select( has_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
+			class_.kind= ( has_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
 			if( class_contains_pure_virtual_functions )
 			{
 				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
@@ -1159,7 +1159,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Final )
 		{
-			class_.kind= select( has_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
+			class_.kind= ( has_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
 			if( class_contains_pure_virtual_functions )
 			{
 				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
@@ -1528,7 +1528,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
 		{
 			auto max_value_plus_one=
-				1u64 << ( bit_width - select( IsSignedInteger( underlying_type.fundamental_type ) ? 1u64 : 0u64 ) );
+				1u64 << ( bit_width - ( IsSignedInteger( underlying_type.fundamental_type ) ? 1u64 : 0u64 ) );
 			auto max_value= max_value_plus_one - 1u64;
 
 			if( u64(enum_declaration.elements.size()) > max_value )
@@ -1664,7 +1664,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		Variable
 		{
 			.t= t,
-			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= variable_declaration.name,
 		}.CreatePtr();
@@ -1673,7 +1673,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, t, !is_mutable );
-		auto llvm_value= select( is_mutable
+		auto llvm_value= ( is_mutable
 			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType(), externally_available )
 			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), LLVMValueRef::Null ) );
 
@@ -1816,7 +1816,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	var Variable mut variable
 	{
 		.location= Variable::Location::Pointer,
-		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.name= auto_variable_declaration.name,
 	};
 
@@ -1862,7 +1862,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
-		variable.llvm_value= select( is_mutable
+		variable.llvm_value= ( is_mutable
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType(), externally_available )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
 

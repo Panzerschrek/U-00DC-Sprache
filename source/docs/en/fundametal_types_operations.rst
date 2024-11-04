@@ -173,12 +173,12 @@ There are some caveats for floating point comparisons:
 For all types, for which order compare operators are supported, special operator ``<=>`` exists.
 It returns result of ``i32`` type, -1 if left operand is less than right operand, +1 if left operand is greater that right operand, 0 if operands are equal.
 
-********
-*select*
-********
+******************
+*Ternary operator*
+******************
 
-Ü has operator for selection of one of two variants - ``select``.
-It consists of ``select`` keyword and a body inside ``()``.
+Ü has operator for selection of one of two variants - ternary operator.
+It consists of three expressions separated by ``?`` and ``:`` inside ``()``.
 The body consists of a logical expression, of an expression for true value after ``?`` and of an expression after ``:`` for false value.
 It works like this: evaluates first expression (that should be of ``bool`` type, then if its result is true - evaluate the second expression - else - the third.
 
@@ -186,10 +186,10 @@ It works like this: evaluates first expression (that should be of ``bool`` type,
 
    fn Foo()
    {
-       auto x= select( true ? 1 : 2 ); // ``x`` will be equal 1
-       auto y= select( false ? 0.5f : 3.5f ); // ``y`` will be equal 3.5
+       auto x= ( true ? 1 : 2 ); // "x" will be equal 1
+       auto y= ( false ? 0.5f : 3.5f ); // "y" will be equal 3.5
        var i32 mut z= 0, mut w= 0;
-       select( x == 1 ? z : w )= 666; // ``select`` operator may be applied even for mutable references
+       ( x == 1 ? z : w )= 666; // ternary operator may be applied even for mutable references
    }
 
 ********************

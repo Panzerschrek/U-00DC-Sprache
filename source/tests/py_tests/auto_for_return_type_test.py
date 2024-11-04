@@ -324,7 +324,7 @@ def AutoReferenceNotation_Test2():
 	c_program_text= """
 		fn Bar( i32& x, i32& y ) : auto&
 		{
-			return select( x > y ? y : x ); // return both args
+			return ( x > y ? y : x ); // return both args
 		}
 		var [ [ char8, 2 ], 2 ] expected_return_references[ "0_", "1_" ];
 		static_assert( typeinfo</ typeof(Bar) />.return_references == expected_return_references );
@@ -403,7 +403,7 @@ def AutoReferenceNotation_Test6():
 		struct S{ i32& r; }
 		fn Bar( i32& x, i32& y ) : auto
 		{
-			var S s{ .r= select( x > y ? x : y ) };
+			var S s{ .r= ( x > y ? x : y ) };
 			return s; // return inside "s" references to first args
 		}
 		var tup[ [ [ char8, 2 ], 2 ] ] expected_return_inner_references[ [ "0_", "1_" ] ];

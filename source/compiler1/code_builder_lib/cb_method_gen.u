@@ -832,7 +832,7 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 fn CodeBuilder::ProcessGeneratedMethodConstexprFlag( ClassTypePtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable &mut method )
 {
 	var bool is_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context_after_body_generation.has_non_constexpr_operations_inside;
-	method.constexpr_kind= select( is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
+	method.constexpr_kind= ( is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	if( !is_constexpr )
 	{
@@ -1022,7 +1022,7 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 				type_kind == LLVMTypeKind::PPC_FP128;
 
 			var LLVMValueRef eq=
-				select( is_float
+				( is_float
 					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, g_null_string )
 					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
 

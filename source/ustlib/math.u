@@ -33,7 +33,7 @@ template</type T/>
 fn constexpr enable_if( math_impl::is_numeric</T/>() )
 abs( T x ) : T
 {
-	return select( x >= T(0) ? x : -x );
+	return ( x >= T(0) ? x : -x );
 }
 
 fn sqrt( f32 x ) : f32 { return ust_sqrt_f32_impl( x ); }

@@ -716,7 +716,7 @@ def StructFieldChildNodes_Test39():
 	struct S { i32 x; i32 y; i32 z; }
 	fn Foo( S& mut s, bool condition )
 	{
-		var i32 &mut ref= select( condition ? s.x : s.y ); // Create reference to boths fields "s.x" and "s.y" (acutally not, but logically create.
+		var i32 &mut ref= ( condition ? s.x : s.y ); // Create reference to boths fields "s.x" and "s.y" (acutally not, but logically create.
 		var i32& mut z_ref= s.z; // Ok, create reference to third field.
 	}
 	"""
@@ -728,7 +728,7 @@ def StructFieldChildNodes_Test40():
 	struct S { i32 x; i32 y; }
 	fn Foo( S& mut s, bool condition )
 	{
-		var i32 &mut ref= select( condition ? s.x : s.y ); // Create reference to boths fields "s.x" and "s.y" (acutally not, but logically create.
+		var i32 &mut ref= ( condition ? s.x : s.y ); // Create reference to boths fields "s.x" and "s.y" (acutally not, but logically create.
 		var i32& mut x_ref= s.x; // Error, create reference to "s.x" again.
 		var i32& mut y_ref= s.y; // Error, create reference to "s.y" again.
 	}
@@ -744,7 +744,7 @@ def StructFieldChildNodes_Test41():
 	struct S { i32 x; i32 y; }
 	fn Foo( S& mut s, bool condition )
 	{
-		var i32 &mut ref= select( condition ? s.x : s.y ); // Create reference to boths fields "s.x" and "s.y" (acutally not, but logically create.
+		var i32 &mut ref= ( condition ? s.x : s.y ); // Create reference to boths fields "s.x" and "s.y" (acutally not, but logically create.
 		var S& s_ref= s; // Error, create reference to whole "s".
 	}
 	"""
@@ -1378,7 +1378,7 @@ def TupleElementNodes_Test28():
 	c_program_text= """
 	fn Foo( tup[ i32, i32, i32 ]& mut s, bool condition )
 	{
-		var i32 &mut ref= select( condition ? s[0] : s[1] ); // Create reference to both elements 0 and 1 (acutally not, but logically create.
+		var i32 &mut ref= ( condition ? s[0] : s[1] ); // Create reference to both elements 0 and 1 (acutally not, but logically create.
 		var i32& mut z_ref= s[2]; // Ok, create reference to element 2.
 	}
 	"""
@@ -1389,7 +1389,7 @@ def TupleElementNodes_Test29():
 	c_program_text= """
 	fn Foo( tup[ i32, i32, i32 ]& mut s, bool condition )
 	{
-		var i32 &mut ref= select( condition ? s[0] : s[1] ); // Create reference to both elements 0 and 1 (acutally not, but logically create.
+		var i32 &mut ref= ( condition ? s[0] : s[1] ); // Create reference to both elements 0 and 1 (acutally not, but logically create.
 		var i32& mut x_ref= s[0]; // Error, create reference to element 0 again.
 		var i32& mut y_ref= s[1]; // Error, create reference to element 1 again.
 	}
@@ -1404,7 +1404,7 @@ def TupleElementNodes_Test30():
 	c_program_text= """
 	fn Foo( tup[ i32, i32, i32 ]& mut s, bool condition )
 	{
-		var i32 &mut ref= select( condition ? s[0] : s[1] ); // Create reference to boths elements 0 and 1 (acutally not, but logically create.
+		var i32 &mut ref= ( condition ? s[0] : s[1] ); // Create reference to boths elements 0 and 1 (acutally not, but logically create.
 		var tup[ i32, i32, i32 ]& s_ref= s; // Error, create reference to whole "s".
 	}
 	"""

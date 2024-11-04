@@ -836,7 +836,40 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::BracketLeft ->
 		{
-			return ParseExpressionInBrackets();
+			NextLexem();
+
+			var Expression mut e= ParseExpression();
+
+			if( it_.front().lexem_type == Lexem::Type::BracketRight )
+			{
+				// It's just an expression within ().
+				NextLexem();
+				return e;
+			}
+
+			if( it_.front().lexem_type == Lexem::Type::Question )
+			{
+				// Ternary operator.
+				auto src_loc= it_.front().src_loc;
+				NextLexem();
+
+				var Expression mut true_branch= ParseExpression();
+				ExpectLexem( Lexem::Type::Colon );
+
+				var Expression mut false_branch= ParseExpression();
+				ExpectLexem( Lexem::Type::BracketRight );
+
+				return ust::make_box(
+					TernaryOperator
+					{
+						.src_loc= src_loc,
+						.condition= move(e),
+						.branches[ move(true_branch), move(false_branch) ]
+					} );
+			}
+
+			PushErrorMessage(); // Something unexpected.
+			return e;
 		},
 		default -> {},
 	}
@@ -970,30 +1003,6 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	if( IsKeyword( it_.front(), Keyword::lambda_ ) )
 	{
 		return ust::make_box( ParseLambda() );
-	}
-	if( IsKeyword( it_.front(), Keyword::select_ ) )
-	{
-		auto src_loc= it_.front().src_loc;
-		NextLexem();
-
-		ExpectLexem( Lexem::Type::BracketLeft );
-		var Expression mut condition= ParseExpression();
-
-		ExpectLexem( Lexem::Type::Question );
-		var Expression mut true_branch= ParseExpression();
-
-		ExpectLexem( Lexem::Type::Colon );
-		var Expression mut false_branch= ParseExpression();
-
-		ExpectLexem( Lexem::Type::BracketRight );
-
-		return ust::make_box(
-			TernaryOperator
-			{
-				.src_loc= src_loc,
-				.condition( move(condition) ),
-				.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
-			} );
 	}
 	if( IsKeyword( it_.front(), Keyword::mixin_ ) )
 	{

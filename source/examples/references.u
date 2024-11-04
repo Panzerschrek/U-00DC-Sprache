@@ -50,9 +50,9 @@ fn nomangle main() : i32
 // Function with reference params and reference return result.
 fn AbsMax( i64& x, i64& y ) : i64 &
 {
-	auto abs_x= select( x > 0i64 ? x : -x );
-	auto abs_y= select( y > 0i64 ? y : -y );
-	return select( abs_x > abs_y ? x : y );
+	auto abs_x= ( x > 0i64 ? x : -x );
+	auto abs_y= ( y > 0i64 ? y : -y );
+	return ( abs_x > abs_y ? x : y );
 }
 
 struct Vec2
