@@ -11,8 +11,6 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetData
 {
 	unsafe // Because of a lot of C functions calls.
 	{
-		var bool is_32_bit= LLVMGetIntTypeWidth( LLVMIntPtrTypeInContext( llvm_context, data_layout ) ) == 32u;
-
 		auto tbaa_root= CreateMetadataNode( llvm_context_, ust::make_array( CreateMetadataString(llvm_context_, "__U_tbaa_root" ) ) );
 
 		type_descriptors_.byte8_  = MakeTBAATypeDescriptor( llvm_context_, tbaa_root, KeywordToString( Keyword::byte8_ ) );
@@ -35,16 +33,21 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetData
 		type_descriptors_.i128_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte128_, KeywordToString( Keyword::i128_ ) );
 		type_descriptors_.u128_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte128_, KeywordToString( Keyword::u128_ ) );
 
+		auto pointer_size_byte_type_descriptor=
+			( LLVMGetIntTypeWidth( LLVMIntPtrTypeInContext( llvm_context, data_layout ) ) == 32u
+				? type_descriptors_.byte32_
+				: type_descriptors_.byte64_ );
+
 		type_descriptors_.ssize_type_=
 			MakeTBAATypeDescriptor(
 				llvm_context_,
-				( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ ),
+				pointer_size_byte_type_descriptor,
 				KeywordToString( Keyword::ssize_type_ ) );
 
 		type_descriptors_.size_type_ =
 			MakeTBAATypeDescriptor(
 				llvm_context_,
-				( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ ),
+				pointer_size_byte_type_descriptor,
 				KeywordToString( Keyword::size_type_  ) );
 
 		type_descriptors_.f32_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte32_, KeywordToString( Keyword::f32_ ) );
@@ -54,11 +57,9 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetData
 		type_descriptors_.char16_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte16_, KeywordToString( Keyword::char16_ ) );
 		type_descriptors_.char32_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte32_, KeywordToString( Keyword::char32_ ) );
 
-		auto ptr_base= ( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
+		type_descriptors_.ptr= MakeTBAATypeDescriptor( llvm_context_, pointer_size_byte_type_descriptor, "__U_any_pointer" );
 
-		type_descriptors_.ptr= MakeTBAATypeDescriptor( llvm_context_, ptr_base, "__U_any_pointer" );
-
-		type_descriptors_.size_type_enum_base= ( is_32_bit ? type_descriptors_.byte32_ : type_descriptors_.byte64_ );
+		type_descriptors_.size_type_enum_base= pointer_size_byte_type_descriptor;
 	}
 }
 

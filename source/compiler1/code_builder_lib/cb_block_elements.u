@@ -2478,11 +2478,9 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 							.t= variable_type,
 							.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 							.location= Variable::Location::Pointer,
-							.constexpr_value=
-								(
-									is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
-										? LLVMValueRef::Null
-										: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
+							.constexpr_value= ( is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
+								? LLVMValueRef::Null
+								: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 							.name= range_for_operator.loop_variable_name,
 							.src_loc= range_for_operator.src_loc,
 							.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)

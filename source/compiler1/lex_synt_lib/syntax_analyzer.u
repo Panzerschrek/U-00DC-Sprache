@@ -836,7 +836,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::BracketLeft ->
 		{
-			ExpectLexem( Lexem::Type::BracketLeft );
+			NextLexem();
 
 			var Expression mut e= ParseExpression();
 

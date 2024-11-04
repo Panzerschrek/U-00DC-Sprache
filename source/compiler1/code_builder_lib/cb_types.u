@@ -137,12 +137,11 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 	{
 		.kind= coroutine_type.kind,
 		.return_type= PrepareType( names_scope, function_context, coroutine_type.return_type ),
-		.return_value_type= (
-			coroutine_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
-				? ( coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
-					? ValueType::ReferenceMut
-					: ValueType::ReferenceImut )
-				: ValueType::Value ),
+		.return_value_type= ( coroutine_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
+			? ( coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+				? ValueType::ReferenceMut
+				: ValueType::ReferenceImut )
+			: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
 		.inner_references=
 			coroutine_type.inner_reference_tags.iter()

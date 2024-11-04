@@ -113,7 +113,7 @@ def TernaryOperator_TemporariesAreDestroyed_Test0():
 			// Because of that  it is not possible to take a reference to temporary value, using "ternary" branch.
 			// Alternatives are using values instead of references or using variables with longer lifetimes (stack variables, function params, global variables).
 			return ( b
-				? cast_imut(123) // Cast value to reference in order to "ternary" result have kind "ReferenceImut".
+				? cast_imut(123) // Cast value to reference so that ternary operator result have kind "ReferenceImut".
 				: cast_imut(456) );
 		}
 	"""
@@ -129,7 +129,7 @@ def TernaryOperator_TemporariesAreDestroyed_Test1():
 		{
 			var i32 x= 456;
 			return ( b
-				? cast_imut(123) // Cast value to reference in order to ternary operator result have kind "ReferenceImut".
+				? cast_imut(123) // Cast value to reference so that ternary operator result have kind "ReferenceImut".
 				: x );
 		}
 	"""
@@ -145,7 +145,7 @@ def TernaryOperator_TemporariesAreDestroyed_Test2():
 			var i32 x= 123;
 			return ( b
 				? x
-				: cast_imut(456) ); // Cast value to reference in order to ternary operator result have kind "ReferenceImut".
+				: cast_imut(456) ); // Cast value to reference so that ternary operator result have kind "ReferenceImut".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
