@@ -242,7 +242,7 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 
 				// Update function type.
 				auto return_type= return_type_deduction_context_ptr.lock_imut().deref().return_type;
-				func_variable.t.return_type= ( return_type.empty() ? void_type_ : return_type.try_deref() );
+				func_variable.t.return_type= return_type.deref_or( void_type_ );
 
 				with( mut lock : reference_notation_deduction_context_ptr.lock_mut() )
 				{
