@@ -1330,7 +1330,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto src_functions_set_nullable_ptr= member_value.value().Get</FunctionsSet/>();
 				if( !src_functions_set_nullable_ptr.empty() )
 				{
-					// SPARCHE_TODO - maybe also skip additive-assignment operators?
+					// SPARCHE_TODO - maybe also skip compound-assignment operators?
 					if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
 						member_value.key() == KeywordToString( Keyword::destructor_ ) ||
 						member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) ||

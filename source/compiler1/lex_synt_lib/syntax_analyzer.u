@@ -78,7 +78,7 @@ var tup[
 	],
 ];
 
-fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
+fn GetCompoundAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
 {
 	switch(lexem.lexem_type)
 	{
@@ -2239,15 +2239,15 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 
 			auto mut expr= ParseExpression();
 
-			if_var( additive_assignment_operator_type : GetAdditiveAssignmentOperator( it_.front() ) )
+			if_var( compound_assignment_operator_type : GetCompoundAssignmentOperator( it_.front() ) )
 			{
 				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				block_elements.push_back(
-					AdditiveAssignmentOperator
+					CompoundAssignmentOperator
 					{
 						.src_loc= src_loc,
-						.operator= additive_assignment_operator_type,
+						.operator= compound_assignment_operator_type,
 						.l(move(expr)),
 						.r(ParseExpression()),
 					} );
@@ -2853,15 +2853,15 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 		{
 			var Expression mut expression_l= ParseExpression();
 
-			if_var( additive_assignment_operator_type : GetAdditiveAssignmentOperator( it_.front() ) )
+			if_var( compound_assignment_operator_type : GetCompoundAssignmentOperator( it_.front() ) )
 			{
 				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				for_operator.iteration_part_elements.push_back(
-					AdditiveAssignmentOperator
+					CompoundAssignmentOperator
 					{
 						.src_loc= src_loc,
-						.operator= additive_assignment_operator_type,
+						.operator= compound_assignment_operator_type,
 						.l(move(expression_l)),
 						.r(ParseExpression()),
 					} );

@@ -847,7 +847,7 @@ U_TEST( ClassPrepass_Test0 )
 				++loc0;
 				--loc1;
 
-				// dependent on T additive assignment operators
+				// dependent on T compound assignment operators
 				loc0+= loc1;
 				arr[0u]*= loc0;
 				loc1+= arr[0u];

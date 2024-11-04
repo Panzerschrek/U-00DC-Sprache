@@ -714,7 +714,7 @@ def RawPointersDifference_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def AdditiveAssignmentForRawPointers_Test0():
+def CompoundAssignmentForRawPointers_Test0():
 	c_program_text= """
 		fn Foo() : i32
 		{
@@ -734,7 +734,7 @@ def AdditiveAssignmentForRawPointers_Test0():
 	assert( call_result == 55 )
 
 
-def AdditiveAssignmentForRawPointers_Test1():
+def CompoundAssignmentForRawPointers_Test1():
 	c_program_text= """
 		fn Foo() : f64
 		{

@@ -175,7 +175,7 @@ OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorT
 	};
 }
 
-OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const BinaryOperatorType operator_type )
+OverloadedOperator GetOverloadedOperatorForCompoundAssignmentOperator( const BinaryOperatorType operator_type )
 {
 	switch( operator_type )
 	{

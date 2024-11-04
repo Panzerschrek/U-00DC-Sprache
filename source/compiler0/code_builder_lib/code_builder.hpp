@@ -975,7 +975,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SwitchOperator& switch_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::SingleExpressionOperator& single_expression_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AssignmentOperator& assignment_operator );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AdditiveAssignmentOperator& additive_assignment_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CompoundAssignmentOperator& compound_assignment_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::IncrementOperator& increment_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::DecrementOperator& decrement_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::StaticAssert& static_assert_ );

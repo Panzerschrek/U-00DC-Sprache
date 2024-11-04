@@ -111,7 +111,7 @@ struct IfCoroAdvanceOperator;
 struct SwitchOperator;
 struct SingleExpressionOperator;
 struct AssignmentOperator;
-struct AdditiveAssignmentOperator;
+struct CompoundAssignmentOperator;
 struct IncrementOperator;
 struct DecrementOperator;
 struct StaticAssert;
@@ -261,7 +261,7 @@ using BlockElementsList= VariantLinkedList<
 	SwitchOperator,
 	SingleExpressionOperator,
 	AssignmentOperator,
-	AdditiveAssignmentOperator,
+	CompoundAssignmentOperator,
 	IncrementOperator,
 	DecrementOperator,
 	StaticAssert,
@@ -997,7 +997,7 @@ struct CStyleForOperator
 	using IterationPartElementsList= VariantLinkedList<
 		SingleExpressionOperator,
 		AssignmentOperator,
-		AdditiveAssignmentOperator,
+		CompoundAssignmentOperator,
 		IncrementOperator,
 		DecrementOperator>;
 
@@ -1132,13 +1132,13 @@ struct AssignmentOperator
 	Expression r_value;
 };
 
-struct AdditiveAssignmentOperator
+struct CompoundAssignmentOperator
 {
-	explicit AdditiveAssignmentOperator( const SrcLoc& src_loc )
+	explicit CompoundAssignmentOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	BinaryOperatorType additive_operation;
+	BinaryOperatorType compound_operation;
 	Expression l_value;
 	Expression r_value;
 };

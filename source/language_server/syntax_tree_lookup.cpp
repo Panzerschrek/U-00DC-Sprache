@@ -710,10 +710,10 @@ void FindImpl( const Synt::AssignmentOperator& assignment_operator )
 	FindImpl( assignment_operator.r_value );
 }
 
-void FindImpl( const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
+void FindImpl( const Synt::CompoundAssignmentOperator& compound_assignment_operator )
 {
-	FindImpl( additive_assignment_operator.l_value );
-	FindImpl( additive_assignment_operator.r_value );
+	FindImpl( compound_assignment_operator.l_value );
+	FindImpl( compound_assignment_operator.r_value );
 }
 
 void FindImpl( const Synt::IncrementOperator& increment_operator )

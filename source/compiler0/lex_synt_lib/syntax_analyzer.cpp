@@ -108,7 +108,7 @@ const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_
 	},
 };
 
-std::optional<BinaryOperatorType> GetAdditiveAssignmentOperator( const Lexem& lexem )
+std::optional<BinaryOperatorType> GetCompoundAssignmentOperator( const Lexem& lexem )
 {
 	switch(lexem.type)
 	{
@@ -2502,15 +2502,15 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 				iteration_part_elements_list_builder.Append( std::move(assignment_operator) );
 			}
-			else if( const auto additive_operation= GetAdditiveAssignmentOperator( *it_ ) )
+			else if( const auto compound_operation= GetCompoundAssignmentOperator( *it_ ) )
 			{
-				AdditiveAssignmentOperator additive_assignment_operator( it_->src_loc );
-				additive_assignment_operator.additive_operation= *additive_operation;
+				CompoundAssignmentOperator compound_assignment_operator( it_->src_loc );
+				compound_assignment_operator.compound_operation= *compound_operation;
 				NextLexem();
-				additive_assignment_operator.l_value= std::move(expression_l);
-				additive_assignment_operator.r_value= ParseExpression();
+				compound_assignment_operator.l_value= std::move(expression_l);
+				compound_assignment_operator.r_value= ParseExpression();
 
-				iteration_part_elements_list_builder.Append( std::move(additive_assignment_operator) );
+				iteration_part_elements_list_builder.Append( std::move(compound_assignment_operator) );
 			}
 			else
 			{
@@ -3023,11 +3023,11 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				}
 				NextLexem();
 			}
-			else if( const auto additive_operation= GetAdditiveAssignmentOperator( *it_ ) )
+			else if( const auto compound_operation= GetCompoundAssignmentOperator( *it_ ) )
 			{
-				AdditiveAssignmentOperator op( it_->src_loc );
+				CompoundAssignmentOperator op( it_->src_loc );
 
-				op.additive_operation= *additive_operation;
+				op.compound_operation= *compound_operation;
 				NextLexem();
 
 				op.l_value= std::move(l_expression);

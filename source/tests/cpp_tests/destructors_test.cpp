@@ -1789,7 +1789,7 @@ U_TEST(EarlyTempVariablesDestruction_Test10)
 		fn Foo()
 		{
 			var [ i32, 2 ] mut arr[ 0, 33 ];
-			arr[ GetOne() ]+= S(66).x; // Must destroy S(66) before evaluation of left part of additive assignment.
+			arr[ GetOne() ]+= S(66).x; // Must destroy S(66) before evaluation of left part of compound assignment.
 
 			halt if( arr[1u] != 66 + 33 );
 			var S s(666);

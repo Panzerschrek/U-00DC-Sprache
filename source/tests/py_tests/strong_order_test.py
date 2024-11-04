@@ -511,7 +511,7 @@ def ArgumenstEvaluationOrder_Test3():
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 66, mut z= 5;
-			// Additive assignment operator argumenst should be evaluated in reverse order.
+			// Compound assignment operator argumenst should be evaluated in reverse order.
 			AddMul10Pass( x, 3, y ) /= AddMul10Pass( x, 8, z );
 
 			halt if( x != 83 );
@@ -543,7 +543,7 @@ def ArgumenstEvaluationOrder_Test4():
 		{
 			var i32 mut x= 0;
 			var S mut a(675), mut b(12);
-			// Overloaded additive assignment operator argumenst should be evaluated in reverse order.
+			// Overloaded compound assignment operator argumenst should be evaluated in reverse order.
 			AddMul10Pass( x, 4, a ) /= AddMul10Pass( x, 9, b );
 
 			halt if( x != 94 );

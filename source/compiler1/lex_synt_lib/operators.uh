@@ -75,7 +75,7 @@ enum OverloadedOperator
 }
 
 fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType binary_operator_type ) : OverloadedOperator;
-fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType operator_type ) : OverloadedOperator;
+fn GetOverloadedOperatorForCompoundAssignmentOperator( BinaryOperatorType operator_type ) : OverloadedOperator;
 
 fn BinaryOperatorToString( BinaryOperatorType o ) : ust::string_view8;
 fn OverloadedOperatorToString( OverloadedOperator o ) : ust::string_view8;

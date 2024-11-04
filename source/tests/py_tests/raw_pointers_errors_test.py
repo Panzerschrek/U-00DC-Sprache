@@ -413,7 +413,7 @@ def DifferenceBetweenRawPointersWithZeroElementSize_Test3():
 	assert( HasError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
 
 
-def AdditiveAssignmentErrors_ForRawPointers_Test0():
+def CompoundAssignmentErrors_ForRawPointers_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -425,7 +425,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test0():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
 
 
-def AdditiveAssignmentErrors_ForRawPointers_Test1():
+def CompoundAssignmentErrors_ForRawPointers_Test1():
 	c_program_text= """
 		fn Foo()
 		{
@@ -437,7 +437,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test1():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 5 ) )
 
 
-def AdditiveAssignmentErrors_ForRawPointers_Test2():
+def CompoundAssignmentErrors_ForRawPointers_Test2():
 	c_program_text= """
 		fn Foo()
 		{
@@ -449,7 +449,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test2():
 	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
 
 
-def AdditiveAssignmentErrors_ForRawPointers_Test3():
+def CompoundAssignmentErrors_ForRawPointers_Test3():
 	c_program_text= """
 		fn Foo()
 		{
@@ -462,7 +462,7 @@ def AdditiveAssignmentErrors_ForRawPointers_Test3():
 	assert( HasError( errors_list, "TypesMismatch", 6 ) )
 
 
-def AdditiveAssignmentErrors_ForRawPointers_Test4():
+def CompoundAssignmentErrors_ForRawPointers_Test4():
 	c_program_text= """
 		fn Foo()
 		{

@@ -787,7 +787,7 @@ U_TEST( ReferenceCheckTest_Increment_1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
-U_TEST( ReferenceCheckTest_AdditiveAssignment_0 )
+U_TEST( ReferenceCheckTest_CompoundAssignment_0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -808,7 +808,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_0 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
-U_TEST( ReferenceCheckTest_AdditiveAssignment_1 )
+U_TEST( ReferenceCheckTest_CompoundAssignment_1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -824,7 +824,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_1 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
 }
 
-U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
+U_TEST( ReferenceCheckTest_CompoundAssignment_2 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -1166,7 +1166,7 @@ U_TEST( ReferenceCheckTest_AssignmentOperatorsModifyValue )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 13u );
 }
 
-U_TEST( ReferenceCheckTest_AdditiveAssignmentOperatorsModifyValue )
+U_TEST( ReferenceCheckTest_CompoundAssignmentOperatorsModifyValue )
 {
 	static const char c_program_text[]=
 	R"(

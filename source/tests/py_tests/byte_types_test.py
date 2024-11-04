@@ -188,7 +188,7 @@ def ByteTypesNonexistentOperations_Test2():
 		{
 			var byte32 mut a= zero_init, mut b= zero_init;
 			var byte64 mut c= zero_init, mut d= zero_init;
-			// There are no additive assgnment operations for byte types.
+			// There are no compound assgnment operations for byte types.
 			a += b;
 			b *= a;
 			a %= b;

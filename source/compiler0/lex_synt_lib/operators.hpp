@@ -83,6 +83,6 @@ std::string_view OverloadedOperatorToString( OverloadedOperator op );
 std::optional<OverloadedOperator> StringToOverloadedOperator( std::string_view s );
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type );
-OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const BinaryOperatorType operator_type );
+OverloadedOperator GetOverloadedOperatorForCompoundAssignmentOperator( const BinaryOperatorType operator_type );
 
 } // namespace U

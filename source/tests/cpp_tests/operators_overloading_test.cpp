@@ -72,7 +72,7 @@ U_TEST( OperatorsOverloadingTest0_NonThisCallOperators )
 				return r;
 			}
 
-			// TODO - is this legal to declare non-this-call additive-assignment operators?
+			// TODO - is this legal to declare non-this-call compound-assignment operators?
 
 			op+=( Box &mut a, Box &imut b )
 			{
@@ -480,7 +480,7 @@ U_TEST( OperatorsOverloadingTest4 )
 
 U_TEST( OperatorsOverloadingTest5 )
 {
-	// Basic overloaded additive assignment operator.
+	// Basic overloaded compound assignment operator.
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -588,7 +588,7 @@ U_TEST( AssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
 	U_TEST_ASSERT( static_cast<uint64_t>( 4 * 5 / 7 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( AdditiveAssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
+U_TEST( CompoundAssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
 {
 	static const char c_program_text[]=
 	R"(

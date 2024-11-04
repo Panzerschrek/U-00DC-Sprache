@@ -2680,24 +2680,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
+	const Synt::CompoundAssignmentOperator& compound_assignment_operator )
 {
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	if( // TODO - create temp variables frame here.
 		TryCallOverloadedBinaryOperator(
-			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation ),
-			additive_assignment_operator.l_value,
-			additive_assignment_operator.r_value,
+			GetOverloadedOperatorForCompoundAssignmentOperator( compound_assignment_operator.compound_operation ),
+			compound_assignment_operator.l_value,
+			compound_assignment_operator.r_value,
 			true, // evaluate args in reverse order
-			additive_assignment_operator.src_loc,
+			compound_assignment_operator.src_loc,
 			names_scope,
 			function_context ) == std::nullopt )
-	{ // Here process default additive assignment operators for fundamental types or raw pointers.
+	{ // Here process default compound assignment operators for fundamental types or raw pointers.
 		VariablePtr r_var=
 			BuildExpressionCodeEnsureVariable(
-				additive_assignment_operator.r_value,
+				compound_assignment_operator.r_value,
 				names_scope,
 				function_context );
 
@@ -2715,11 +2715,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						: CreateMoveToLLVMRegisterInstruction( *r_var, function_context ),
 					r_var->constexpr_value );
 		}
-		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), additive_assignment_operator.src_loc ); // Destroy temporaries of right expression.
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), compound_assignment_operator.src_loc ); // Destroy temporaries of right expression.
 
 		const VariablePtr l_var=
 			BuildExpressionCodeEnsureVariable(
-				additive_assignment_operator.l_value,
+				compound_assignment_operator.l_value,
 				names_scope,
 				function_context );
 
@@ -2728,18 +2728,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), additive_assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), compound_assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 
 		// Check references of destination.
 		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->name );
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), compound_assignment_operator.src_loc, l_var->name );
 
-		// Allow additive assignment operators only for fundamentals and raw pointers.
+		// Allow compound assignment operators only for fundamentals and raw pointers.
 		if( !( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetRawPointerType() != nullptr ) )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->type );
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), compound_assignment_operator.src_loc, l_var->type );
 			return BlockBuildInfo();
 		}
 
@@ -2747,8 +2747,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const Value operation_result_value=
 			BuildBinaryOperator(
 				*l_var, *r_var,
-				additive_assignment_operator.additive_operation,
-				additive_assignment_operator.src_loc,
+				compound_assignment_operator.compound_operation,
+				compound_assignment_operator.src_loc,
 				names_scope,
 				function_context );
 		if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error.
@@ -2758,7 +2758,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( operation_result.type != l_var->type )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), additive_assignment_operator.src_loc, l_var->type, operation_result.type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), compound_assignment_operator.src_loc, l_var->type, operation_result.type );
 			return BlockBuildInfo();
 		}
 
@@ -2767,7 +2767,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		CreateTypedStore( function_context, r_var->type, value_in_register, l_var->llvm_value );
 	}
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( temp_variables_storage, names_scope, function_context, additive_assignment_operator.src_loc );
+	CallDestructors( temp_variables_storage, names_scope, function_context, compound_assignment_operator.src_loc );
 
 	return  BlockBuildInfo();
 }

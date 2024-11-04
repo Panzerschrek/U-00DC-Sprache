@@ -1822,7 +1822,7 @@ U_TEST(ExpectedReferenceValueTest7)
 
 U_TEST(ExpectedReferenceValueTest8)
 {
-	// Non "const reference" value used in additive assignment.
+	// Non "const reference" value used in compound assignment.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -1843,7 +1843,7 @@ U_TEST(ExpectedReferenceValueTest8)
 
 U_TEST(ExpectedReferenceValueTest9)
 {
-	// Non "const reference" value used in additive assignment.
+	// Non "const reference" value used in compound assignment.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -1934,7 +1934,7 @@ U_TEST(ExpectedVariableAsArgumentTest0)
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
 }
 
-U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
+U_TEST(ExpectedVariableInCompoundAssignmentTest0)
 {
 	static const char c_program_text[]=
 	R"(

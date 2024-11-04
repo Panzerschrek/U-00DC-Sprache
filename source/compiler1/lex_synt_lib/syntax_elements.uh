@@ -511,7 +511,7 @@ struct AssignmentOperator
 	ust::shared_ptr_final</Expression/> r;
 }
 
-struct AdditiveAssignmentOperator
+struct CompoundAssignmentOperator
 {
 	SrcLoc src_loc;
 	BinaryOperatorType operator;
@@ -638,7 +638,7 @@ struct CStyleForOperator
 		ust::variant</ tup[
 			Expression,
 			AssignmentOperator,
-			AdditiveAssignmentOperator,
+			CompoundAssignmentOperator,
 			IncrementOperator,
 			DecrementOperator
 		] /> />
@@ -702,7 +702,7 @@ type BlockElement = ust::variant</ tup[
 	ReturnOperator,
 	YieldOperator,
 	AssignmentOperator,
-	AdditiveAssignmentOperator,
+	CompoundAssignmentOperator,
 	IncrementOperator,
 	DecrementOperator,
 	Expression,

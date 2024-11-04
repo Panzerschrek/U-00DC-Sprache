@@ -100,7 +100,7 @@ U_TEST(LogicalBinaryOperationsTest)
 		result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST(AdditiveOperationsTest0)
+U_TEST(CompoundOperationsTest0)
 {
 	// += test
 	static const char c_program_text[]=
@@ -132,7 +132,7 @@ U_TEST(AdditiveOperationsTest0)
 	U_TEST_ASSERT( static_cast<uint64_t>( arg0 + arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST(AdditiveOperationsTest1)
+U_TEST(CompoundOperationsTest1)
 {
 	// -= test
 	static const char c_program_text[]=
@@ -164,7 +164,7 @@ U_TEST(AdditiveOperationsTest1)
 	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST(AdditiveOperationsTest2)
+U_TEST(CompoundOperationsTest2)
 {
 	// /= for array member
 	static const char c_program_text[]=

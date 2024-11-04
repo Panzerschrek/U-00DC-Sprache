@@ -405,8 +405,8 @@ private:
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
 	fn BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator );
-	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo;
-	fn BuildAdditiveAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator );
+	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CompoundAssignmentOperator& compound_assignment_operator ) : BlockElementBuildInfo;
+	fn BuildCompoundAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CompoundAssignmentOperator& compound_assignment_operator );
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;

@@ -3,7 +3,7 @@ import "operators.uh"
 namespace U1
 {
 
-fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType o ) : OverloadedOperator
+fn GetOverloadedOperatorForCompoundAssignmentOperator( BinaryOperatorType o ) : OverloadedOperator
 {
 	switch(o)
 	{
