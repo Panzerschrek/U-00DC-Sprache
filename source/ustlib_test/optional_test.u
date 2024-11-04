@@ -245,6 +245,37 @@ fn nomangle main() : i32
 
 		halt if( s != "Mehrwertsteue" );
 	}
+	{ // "try_deref" for an immutable optional.
+
+		var i32 y= 55543;
+
+		var ust::optional</i32/> o0;
+		var i32& o0_ref= o0.deref_or(y);
+		halt if( o0_ref != 55543 );
+
+		var ust::optional</i32/> o1( 76881 );
+		var i32& o1_ref= o1.deref_or(y);
+		halt if( o1_ref != 76881 );
+	}
+	{ // "try_deref" for an mutable optional.
+
+		var i32 mut y= 143;
+
+		{
+			var ust::optional</i32/> mut o0;
+			o0.deref_or(y) *= 7; // Should modify "y" here.
+			halt if( !o0.empty() );
+		}
+		halt if( y != 143 * 7 );
+
+		{
+			var ust::optional</i32/> mut o1( 9642 );
+			o1.deref_or(y) *= 17; // Should modify value inside "optional" here.
+			halt if( o1.empty() );
+			halt if( o1.try_deref() != 9642 * 17 );
+		}
+		halt if( y != 143 * 7 );
+	}
 
 	return 0;
 }
