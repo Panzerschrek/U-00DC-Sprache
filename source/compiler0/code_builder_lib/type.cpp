@@ -738,33 +738,15 @@ bool operator==( const Type& l, const Type& r )
 	if( l.something_.index() != r.something_.index() )
 		return false;
 
-	if( l.something_.index() == 0 )
+	switch( l.something_.index() )
 	{
-		return *l.GetFundamentalType() == *r.GetFundamentalType();
-	}
-	else if( l.something_.index() == 1 )
-	{
-		return *l.GetArrayType() == *r.GetArrayType();
-	}
-	else if( l.something_.index() == 2 )
-	{
-		return *l.GetRawPointerType() == *r.GetRawPointerType();
-	}
-	else if( l.something_.index() == 3 )
-	{
-		return l.GetClassType() == r.GetClassType();
-	}
-	else if( l.something_.index() == 4 )
-	{
-		return l.GetEnumType() == r.GetEnumType();
-	}
-	else if( l.something_.index() == 5 )
-	{
-		return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
-	}
-	else if( l.something_.index() == 6 )
-	{
-		return *l.GetTupleType() == *r.GetTupleType();
+	case 0: return *l.GetFundamentalType() == *r.GetFundamentalType();
+	case 1: return *l.GetArrayType() == *r.GetArrayType();
+	case 2: return *l.GetRawPointerType() == *r.GetRawPointerType();
+	case 3: return l.GetClassType() == r.GetClassType();
+	case 4: return l.GetEnumType() == r.GetEnumType();
+	case 5: return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
+	case 6: return *l.GetTupleType() == *r.GetTupleType();
 	}
 
 	U_ASSERT(false);
