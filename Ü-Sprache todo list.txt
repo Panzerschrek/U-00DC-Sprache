@@ -9,7 +9,7 @@ General:
 *) More integer types ( 256 bit, 512 bit )
 *) Constructor initializer for constexpr structs
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
-*) More advanced macros - more context, elements, string manipulations
+*) More advanced macros - more context, elements, stringification, string manipulations
 *) Simpler syntax for char-types literals (like 'q' in C++)
 *) switch-style operator for expression context
 *) thread-local variables
@@ -27,6 +27,9 @@ General:
 *) A way to hide some names in common (imported) files - for implementation details
 *) A way to disable structs, type aliases, static asserts, other stuff in namespaces
 *) Investigate possibility of conditional imports
+*) Functions with named parameters and ability to specify arguments in any order at call side usinig such names
+*) Create for each function a string variable constant like "__PRETTY_FUNCTION__" in order to fetch function
+	name inside it
 
 References:
 *) Support second order inner references for coroutine types
@@ -42,6 +45,8 @@ Lambdas:
 *) Coroutine lambdas (async, generators)
 *) Lambas (or something similar) which create a coroutine object (async function, generator) directly
 *) Conversion of lambdas with zero captures into function pointers
+*) Simplified lambdas syntax for lambdas consisting of single return statement
+*) Template lambdas
 
 Standart library:
 *) Improve/fix unordered_map
@@ -71,11 +76,13 @@ Standart library:
 *) Compact vector-like container - with size/capacity stored in allocated memory block
 *) Priority heap support
 *) Binary search routines
+*) Detachable thread
 
 Compiler:
 *) Fix possible overflows in numeric literals
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
+*) Fix possible overflows in SrcLoc and/or try to optimize its size (use only 4 bytes)
 *) Speed-up references graph code
 *) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
@@ -121,7 +128,7 @@ Language server:
 *) SignatureHelp - filter suggested functions based on already provided arguments
 *) SignatureHelp - return ranges of arguments and active range
 *) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
-*) Go to definition for non-value names - loop labels, reference tags, etc.
+*) Go to definition for non-value names - loop labels, etc.
 *) Go to definition for macros
 *) Complete file names in "import"
 *) Backup completion for non-compiled documents
