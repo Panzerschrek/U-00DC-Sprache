@@ -98,7 +98,9 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map );
 
-	Synt::ClassElementsList MakeOpaqueRecordElements( const clang::RecordDecl& record_declaration );
+	Synt::ClassElementsList MakeOpaqueRecordElements(
+		const clang::RecordDecl& record_declaration,
+		std::string_view kind_name );
 
 	void EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
 	void EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
@@ -855,9 +857,7 @@ void CppAstConsumer::EmitRecord(
 			}
 
 			if( has_bitfields )
-			{
-				class_.elements= MakeOpaqueRecordElements( record_declaration );
-			}
+				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
 			else
 			{
 				Synt::ClassElementsList::Builder class_elements;
@@ -914,13 +914,15 @@ void CppAstConsumer::EmitRecord(
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 		if( record_declaration.isCompleteDefinition() )
-			class_.elements= MakeOpaqueRecordElements( record_declaration );
+			class_.elements= MakeOpaqueRecordElements( record_declaration, "union" );
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
 }
 
-Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements( const clang::RecordDecl& record_declaration )
+Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
+	const clang::RecordDecl& record_declaration,
+	const std::string_view kind_name )
 {
 	const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
 	const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
@@ -946,7 +948,8 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements( const clang::R
 	array_type->size= std::move(numeric_constant);
 
 	Synt::ClassField field( g_dummy_src_loc );
-	field.name= "contents";
+	field.name+= kind_name;
+	field.name+= "_contents";
 	field.type= std::move(array_type);
 
 	Synt::ClassElementsList::Builder class_elements;
