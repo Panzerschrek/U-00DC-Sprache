@@ -853,15 +853,12 @@ void CppAstConsumer::EmitRecord(
 		if( record_declaration.isCompleteDefinition() )
 		{
 			bool has_bitfields= false;
-			for( const clang::Decl* const sub_decl : record_declaration.decls() )
+			for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 			{
-				if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
+				if( field_declaration->isBitField() )
 				{
-					if( field_declaration->isBitField() )
-					{
-						has_bitfields= true;
-						break;
-					}
+					has_bitfields= true;
+					break;
 				}
 			}
 
@@ -875,32 +872,31 @@ void CppAstConsumer::EmitRecord(
 			{
 				Synt::ClassElementsList::Builder class_elements;
 
-				for( const clang::Decl* const sub_decl : record_declaration.decls() )
+				for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 				{
-					if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
-					{
-						Synt::ClassField field( g_dummy_src_loc );
+					Synt::ClassField field( g_dummy_src_loc );
 
-						field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
+					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
 
-						const auto src_name= field_declaration->getName();
-						if( src_name.empty() )
-							field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
-						else
-							field.name= TranslateIdentifier( src_name );
+					const auto src_name= field_declaration->getName();
+					if( src_name.empty() )
+						field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
+					else
+						field.name= TranslateIdentifier( src_name );
 
-						// HACK!
-						// For cases where field name is the same as some global name, add name suffix to avoid collisions.
-						// C allows such collisions, but Ü doesn't.
-						while(
-							named_record_declarations.count( field.name ) != 0 ||
-							named_typedef_declarations.count( field.name ) != 0 ||
-							named_enum_declarations.count( field.name ) != 0 )
-							field.name+= "_";
+					// HACK!
+					// For cases where field name is the same as some global name, add name suffix to avoid collisions.
+					// C allows such collisions, but Ü doesn't.
+					while(
+						named_record_declarations.count( field.name ) != 0 ||
+						named_typedef_declarations.count( field.name ) != 0 ||
+						named_enum_declarations.count( field.name ) != 0 )
+						field.name+= "_";
 
-						class_elements.Append( std::move(field) );
-					}
+					class_elements.Append( std::move(field) );
 				}
+
+				// Assume we have at least one field (which is necessary for all structs in C).
 
 				class_.elements= class_elements.Build();
 			}
@@ -942,9 +938,9 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 {
 	const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
 	const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
-	const auto num= ( size + byte_size - 1u ) / byte_size;
+	const auto num_elements= ( size + byte_size - 1u ) / byte_size;
 
-	std::string byte_name;
+	std::string_view byte_name;
 	switch(byte_size)
 	{
 	case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
@@ -959,7 +955,7 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	array_type->element_type= StringToTypeName( byte_name );
 
 	Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-	numeric_constant.num.value_int= num;
+	numeric_constant.num.value_int= num_elements;
 	numeric_constant.num.value_double= double(numeric_constant.num.value_int);
 	array_type->size= std::move(numeric_constant);
 
