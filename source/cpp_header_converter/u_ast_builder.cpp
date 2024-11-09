@@ -21,6 +21,18 @@ namespace U
 namespace
 {
 
+const SrcLoc g_dummy_src_loc;
+
+static Synt::Function GetDeletedDefaultConstructor()
+{
+	// Add deleted default constructor.
+	Synt::Function func(g_dummy_src_loc);
+	func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
+	func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
+
+	return func;
+}
+
 class CppAstConsumer : public clang::ASTConsumer
 {
 public:
@@ -98,6 +110,10 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map );
 
+	Synt::ClassElementsList MakeOpaqueRecordElements(
+		const clang::RecordDecl& record_declaration,
+		std::string_view kind_name );
+
 	void EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
 	void EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
 
@@ -163,8 +179,6 @@ private:
 	const ParsedUnitsPtr out_result_;
 	const bool skip_declarations_from_includes_;
 };
-
-const SrcLoc g_dummy_src_loc;
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElementsList::Builder& out_elements,
@@ -836,13 +850,29 @@ void CppAstConsumer::EmitRecord(
 
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		Synt::ClassElementsList::Builder class_elements;
-
 		if( record_declaration.isCompleteDefinition() )
 		{
-			for( const clang::Decl* const sub_decl : record_declaration.decls() )
+			bool has_bitfields= false;
+			for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 			{
-				if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
+				if( field_declaration->isBitField() )
+				{
+					has_bitfields= true;
+					break;
+				}
+			}
+
+			if( has_bitfields )
+			{
+				// Ü has no bitfields support. And generally we can't replace C bitfields with something else.
+				// So, for now just create stub struct.
+				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
+			}
+			else
+			{
+				Synt::ClassElementsList::Builder class_elements;
+
+				for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 				{
 					Synt::ClassField field( g_dummy_src_loc );
 
@@ -865,19 +895,19 @@ void CppAstConsumer::EmitRecord(
 
 					class_elements.Append( std::move(field) );
 				}
+
+				// Assume we have at least one field (which is necessary for all structs in C).
+
+				class_.elements= class_elements.Build();
 			}
 		}
 		else
 		{
 			// Add deleted default constructor.
-			Synt::Function func(g_dummy_src_loc);
-			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
-			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
-
-			class_elements.Append( std::move(func) );
+			Synt::ClassElementsList::Builder class_elements;
+			class_elements.Append( GetDeletedDefaultConstructor() );
+			class_.elements= class_elements.Build();
 		}
-
-		class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
@@ -888,53 +918,55 @@ void CppAstConsumer::EmitRecord(
 		class_.name= name;
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		Synt::ClassElementsList::Builder class_elements;
-
 		if( record_declaration.isCompleteDefinition() )
-		{
-			const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
-			const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
-			const auto num= ( size + byte_size - 1u ) / byte_size;
-
-			std::string byte_name;
-			switch(byte_size)
-			{
-			case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
-			case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
-			case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
-			case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
-			case 16: byte_name= Keyword( Keywords::byte128_ ); break;
-			default: U_ASSERT(false); break;
-			};
-
-			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-			array_type->element_type= StringToTypeName( byte_name );
-
-			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-			numeric_constant.num.value_int= num;
-			numeric_constant.num.value_double= double(numeric_constant.num.value_int);
-			array_type->size= std::move(numeric_constant);
-
-			Synt::ClassField field( g_dummy_src_loc );
-			field.name= "union_content";
-			field.type= std::move(array_type);
-
-			class_elements.Append( std::move(field) );
-		}
+			class_.elements= MakeOpaqueRecordElements( record_declaration, "union" );
 		else
 		{
 			// Add deleted default constructor.
-			Synt::Function func(g_dummy_src_loc);
-			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
-			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
-
-			class_elements.Append( std::move(func) );
+			Synt::ClassElementsList::Builder class_elements;
+			class_elements.Append( GetDeletedDefaultConstructor() );
+			class_.elements= class_elements.Build();
 		}
-
-		class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
+}
+
+Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
+	const clang::RecordDecl& record_declaration,
+	const std::string_view kind_name )
+{
+	const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
+	const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
+	const auto num_elements= ( size + byte_size - 1u ) / byte_size;
+
+	std::string_view byte_name;
+	switch(byte_size)
+	{
+	case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
+	case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
+	case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
+	case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
+	case 16: byte_name= Keyword( Keywords::byte128_ ); break;
+	default: U_ASSERT(false); break;
+	};
+
+	auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+	array_type->element_type= StringToTypeName( byte_name );
+
+	Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+	numeric_constant.num.value_int= num_elements;
+	numeric_constant.num.value_double= double(numeric_constant.num.value_int);
+	array_type->size= std::move(numeric_constant);
+
+	Synt::ClassField field( g_dummy_src_loc );
+	field.name+= kind_name;
+	field.name+= "_contents";
+	field.type= std::move(array_type);
+
+	Synt::ClassElementsList::Builder class_elements;
+	class_elements.Append( std::move(field) );
+	return class_elements.Build();
 }
 
 void CppAstConsumer::EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map )
@@ -990,13 +1022,7 @@ void CppAstConsumer::EmitEnum(
 		enum_class_.name= name;
 
 		Synt::ClassElementsList::Builder class_elements;
-
-		Synt::Function func(g_dummy_src_loc);
-		func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
-		func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
-
-		class_elements.Append( std::move(func) );
-
+		class_elements.Append( GetDeletedDefaultConstructor() );
 		enum_class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(enum_class_ ) );
