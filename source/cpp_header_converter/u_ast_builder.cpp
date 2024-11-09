@@ -98,6 +98,8 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map );
 
+	Synt::ClassElementsList MakeOpaqueRecordElements( const clang::RecordDecl& record_declaration );
+
 	void EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
 	void EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
 
@@ -836,35 +838,58 @@ void CppAstConsumer::EmitRecord(
 
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		Synt::ClassElementsList::Builder class_elements;
 
 		if( record_declaration.isCompleteDefinition() )
 		{
+			bool has_bitfields= false;
 			for( const clang::Decl* const sub_decl : record_declaration.decls() )
 			{
 				if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
 				{
-					Synt::ClassField field( g_dummy_src_loc );
-
-					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
-
-					const auto src_name= field_declaration->getName();
-					if( src_name.empty() )
-						field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
-					else
-						field.name= TranslateIdentifier( src_name );
-
-					// HACK!
-					// For cases where field name is the same as some global name, add name suffix to avoid collisions.
-					// C allows such collisions, but Ü doesn't.
-					while(
-						named_record_declarations.count( field.name ) != 0 ||
-						named_typedef_declarations.count( field.name ) != 0 ||
-						named_enum_declarations.count( field.name ) != 0 )
-						field.name+= "_";
-
-					class_elements.Append( std::move(field) );
+					if( field_declaration->isBitField() )
+					{
+						has_bitfields= true;
+						break;
+					}
 				}
+			}
+
+			if( has_bitfields )
+			{
+				class_.elements= MakeOpaqueRecordElements( record_declaration );
+			}
+			else
+			{
+				Synt::ClassElementsList::Builder class_elements;
+
+				for( const clang::Decl* const sub_decl : record_declaration.decls() )
+				{
+					if( const auto field_declaration= llvm::dyn_cast<clang::FieldDecl>(sub_decl) )
+					{
+						Synt::ClassField field( g_dummy_src_loc );
+
+						field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
+
+						const auto src_name= field_declaration->getName();
+						if( src_name.empty() )
+							field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
+						else
+							field.name= TranslateIdentifier( src_name );
+
+						// HACK!
+						// For cases where field name is the same as some global name, add name suffix to avoid collisions.
+						// C allows such collisions, but Ü doesn't.
+						while(
+							named_record_declarations.count( field.name ) != 0 ||
+							named_typedef_declarations.count( field.name ) != 0 ||
+							named_enum_declarations.count( field.name ) != 0 )
+							field.name+= "_";
+
+						class_elements.Append( std::move(field) );
+					}
+				}
+
+				class_.elements= class_elements.Build();
 			}
 		}
 		else
@@ -874,10 +899,10 @@ void CppAstConsumer::EmitRecord(
 			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
 			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
 
+			Synt::ClassElementsList::Builder class_elements;
 			class_elements.Append( std::move(func) );
+			class_.elements= class_elements.Build();
 		}
-
-		class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
@@ -888,53 +913,45 @@ void CppAstConsumer::EmitRecord(
 		class_.name= name;
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-		Synt::ClassElementsList::Builder class_elements;
-
 		if( record_declaration.isCompleteDefinition() )
-		{
-			const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
-			const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
-			const auto num= ( size + byte_size - 1u ) / byte_size;
-
-			std::string byte_name;
-			switch(byte_size)
-			{
-			case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
-			case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
-			case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
-			case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
-			case 16: byte_name= Keyword( Keywords::byte128_ ); break;
-			default: U_ASSERT(false); break;
-			};
-
-			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-			array_type->element_type= StringToTypeName( byte_name );
-
-			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-			numeric_constant.num.value_int= num;
-			numeric_constant.num.value_double= double(numeric_constant.num.value_int);
-			array_type->size= std::move(numeric_constant);
-
-			Synt::ClassField field( g_dummy_src_loc );
-			field.name= "union_content";
-			field.type= std::move(array_type);
-
-			class_elements.Append( std::move(field) );
-		}
-		else
-		{
-			// Add deleted default constructor.
-			Synt::Function func(g_dummy_src_loc);
-			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
-			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
-
-			class_elements.Append( std::move(func) );
-		}
-
-		class_.elements= class_elements.Build();
+			class_.elements= MakeOpaqueRecordElements( record_declaration );
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
+}
+
+Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements( const clang::RecordDecl& record_declaration )
+{
+	const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
+	const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
+	const auto num= ( size + byte_size - 1u ) / byte_size;
+
+	std::string byte_name;
+	switch(byte_size)
+	{
+	case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
+	case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
+	case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
+	case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
+	case 16: byte_name= Keyword( Keywords::byte128_ ); break;
+	default: U_ASSERT(false); break;
+	};
+
+	auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+	array_type->element_type= StringToTypeName( byte_name );
+
+	Synt::NumericConstant numeric_constant( g_dummy_src_loc );
+	numeric_constant.num.value_int= num;
+	numeric_constant.num.value_double= double(numeric_constant.num.value_int);
+	array_type->size= std::move(numeric_constant);
+
+	Synt::ClassField field( g_dummy_src_loc );
+	field.name= "contents";
+	field.type= std::move(array_type);
+
+	Synt::ClassElementsList::Builder class_elements;
+	class_elements.Append( std::move(field) );
+	return class_elements.Build();
 }
 
 void CppAstConsumer::EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map )
