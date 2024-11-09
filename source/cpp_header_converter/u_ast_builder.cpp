@@ -21,6 +21,18 @@ namespace U
 namespace
 {
 
+const SrcLoc g_dummy_src_loc;
+
+static Synt::Function GetDeletedDefaultConstructor()
+{
+	// Add deleted default constructor.
+	Synt::Function func(g_dummy_src_loc);
+	func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
+	func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
+
+	return func;
+}
+
 class CppAstConsumer : public clang::ASTConsumer
 {
 public:
@@ -167,8 +179,6 @@ private:
 	const ParsedUnitsPtr out_result_;
 	const bool skip_declarations_from_includes_;
 };
-
-const SrcLoc g_dummy_src_loc;
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElementsList::Builder& out_elements,
@@ -840,7 +850,6 @@ void CppAstConsumer::EmitRecord(
 
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
-
 		if( record_declaration.isCompleteDefinition() )
 		{
 			bool has_bitfields= false;
@@ -899,12 +908,8 @@ void CppAstConsumer::EmitRecord(
 		else
 		{
 			// Add deleted default constructor.
-			Synt::Function func(g_dummy_src_loc);
-			func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
-			func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
-
 			Synt::ClassElementsList::Builder class_elements;
-			class_elements.Append( std::move(func) );
+			class_elements.Append( GetDeletedDefaultConstructor() );
 			class_.elements= class_elements.Build();
 		}
 
@@ -919,6 +924,13 @@ void CppAstConsumer::EmitRecord(
 
 		if( record_declaration.isCompleteDefinition() )
 			class_.elements= MakeOpaqueRecordElements( record_declaration, "union" );
+		else
+		{
+			// Add deleted default constructor.
+			Synt::ClassElementsList::Builder class_elements;
+			class_elements.Append( GetDeletedDefaultConstructor() );
+			class_.elements= class_elements.Build();
+		}
 
 		root_program_elements_.Append( std::move(class_ ) );
 	}
@@ -1014,13 +1026,7 @@ void CppAstConsumer::EmitEnum(
 		enum_class_.name= name;
 
 		Synt::ClassElementsList::Builder class_elements;
-
-		Synt::Function func(g_dummy_src_loc);
-		func.name.push_back( Synt::Function::NameComponent{ std::string( Keyword( Keywords::constructor_ ) ), g_dummy_src_loc, false } );
-		func.body_kind= Synt::Function::BodyKind::BodyGenerationDisabled;
-
-		class_elements.Append( std::move(func) );
-
+		class_elements.Append( GetDeletedDefaultConstructor() );
 		enum_class_.elements= class_elements.Build();
 
 		root_program_elements_.Append( std::move(enum_class_ ) );
