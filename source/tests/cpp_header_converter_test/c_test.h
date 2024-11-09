@@ -140,6 +140,29 @@ union UnionAlign4 { int i; };
 
 union UnionForwardDeclaration;
 
+struct StructWithBitFields
+{
+	float x;
+	int y : 13;
+	int z : 3;
+};
+
+struct StructWithOnlyBitFields
+{
+	short a : 3;
+	short b : 5;
+	short c : 2;
+};
+
+struct LargeStructWithSingleBitField
+{
+	char arr[10];
+	int val;
+	int f: 2;
+	double x;
+	int arr2[5];
+};
+
 enum SequentialEnum
 {
 	Red, Green, Blue,

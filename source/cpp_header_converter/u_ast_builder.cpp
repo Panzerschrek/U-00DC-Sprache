@@ -857,7 +857,11 @@ void CppAstConsumer::EmitRecord(
 			}
 
 			if( has_bitfields )
+			{
+				// Ü has no bitfields support. And generally we can't replace C bitfields with something else.
+				// So, for now just create stub struct.
 				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
+			}
 			else
 			{
 				Synt::ClassElementsList::Builder class_elements;
