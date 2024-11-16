@@ -4,7 +4,7 @@ For now the only way to build an Ü program is to execute the Ü compiler direct
 Using such tools isn't easy and they are not designed to be used with Ü.
 So, it would be better to have a special tool for building Ü projects.
 
-This document describes this tool - what should it do and how.
+This document roughly describes this tool - what should it do and how.
 
 
 ### Approach
@@ -12,13 +12,13 @@ This document describes this tool - what should it do and how.
 An Ü project should be defined via a root build file.
 This file describes what and how should be built.
 
-One of the possible ways is to use some declarative description - describe files to build, targets (executables, libraries), dependencies.
+One of the possible ways of doing this is to use some declarative description - describe files to build, targets (executables, libraries), dependencies.
 But such declarative way isn't flexible enough - it doesn't allow to vary declarations based on some conditions.
 So, a more powerful approach is required - with Turing-completeness.
 
 The most natural way to achieve Turing-completeness is to use a proper programming language for build system files.
 Using Ü itself as such language is the obvious solution.
-A programmer doesn't need to learn a separate language just to create build files, it can use Ü language itself.
+A programmer doesn't need to learn a separate language just to create build files, it can use the Ü language itself.
 
 Ü language usage means no practical isolation.
 This means that build code may basically do whatever it wants - read/write files, access network, etc.
@@ -29,6 +29,7 @@ Maybe some OS-level isolation mechanisms may be used in future to limit network 
 ### Build system interface
 
 The build tool should be an executable file with support of different commands:
+
 * build project - all or only selected targets
 * run tests
 * (maybe) prepare installation package
@@ -49,7 +50,7 @@ Of course there should be an option to specify number of threads to build, defau
 
 ### Build process
 
-At start of a build process the root build file (a Ü source) is compiled for host system into a shared library.
+At start of a build process (at the build system executable invocation) the root build file (an Ü source) is compiled for host system into a shared library.
 Such compilation is very limited - only one file can be used (but other files may be imported), no dependencies are allowed except Ü standard library, build system-specific headers and dependencies which may be directly imported.
 This build root file should provide a specific function, which returns a declarative list of build targets, dependencies, maybe other information.
 Then the shared library created on previous step is dynamically loaded by the build system executable and this specific function is called in order to obtain all information necessary.
@@ -66,6 +67,7 @@ If a source file or an entire target isn't changed - there is a corresponding ar
 
 An Ü project consists of many build targets.
 Following build targets are supported:
+
 * Executable file
 * Ü library (internally just a LLVM bitcode file)
 * C static library (with platform-dependent format)
@@ -77,7 +79,6 @@ Each build target has set of source files, also it has list of directories with 
 A build target may have dependencies on other targets - public or private.
 
 There should be a mechanism to detect and report errors when public headers of a target include headers of its private dependencies.
-
 
 
 ### Build script stage file generation
@@ -100,7 +101,7 @@ A custom target is just a target with a custom build rule, specified inside the 
 This feature is needed for running code for non-Ü dependencies building and Ü code generation.
 
 Each custom target has output file(s) which it produces.
-Also it may have input dependencies on files and/or build targets.
+Also it may have input dependencies on files and/or other build targets.
 
 Other targets may depend on custom targets, like an Ü library which requires generation of some headers prior to building it.
 
@@ -125,6 +126,7 @@ For example, it should be possible to build a shared library for Android with 64
 Target system (precisely target triple in LLVM terms) is specified as an option for the build system executable execution.
 
 In single build each target may be built for:
+
 * target system
 * host system (in order to use it in build process)
 * (maybe) both target and host systems
@@ -145,15 +147,16 @@ For example if a library A has dependent libraries B and C and B depends on pack
 But is for example B, C, or both has D as their private dependency, both versions 3 and 5 should be used and properly isolated.
 Such approach allows for software to be stable - ensures a library is built with dependencies of preferable versions.
 
-Rust build system uses another approach - it tries to find a newest possible version with backward compatibility still present.
+Rust build system (for example) uses another approach - it tries to find he newest possible version with backward compatibility still present.
 But such approach seems to be problematic.
 It's generally impossible to guarantee backward compatibility, it's just assumed that backward compatibility is present if major version number isn't changed.
+Such assumption may be easily broken due to oversight.
 
-Unifying versions of dependencies isn't necessary, if two versions of the same library have no chance to cause a conflict - are used in separate places of the whole program.
+Unifying versions of dependencies isn't necessary, if two versions of the same library have no chance to cause a conflict - are used in separate places of the whole project, even in different part of the same executable.
 Unification may just save a little bit of built time, in cost of decreasing stability due to dependency hell.
 
 
-### Linking process
+### Linking
 
 Ü libraries are not linked.
 They are just combined from different bitcode files (generated from their source files).
@@ -166,6 +169,36 @@ After that native code is generated.
 In case of executables and shared libraries dependent static libraries (including externally-built C libraries) are linked in order to produce the result file.
 
 The symbols internalization step is necessary in order to avoid collisions of symbols from different versions of the same library or just names from different libraries which just happen to be the same.
+
+Generating result native code on per-target rather than on per-soure-file basis allows link-time optimizations, like inlining or duplicated code elimination.
+The second is important, since it's allowed to link together different version of the same dependency.
+In such case it allows to reduce result executable size overhead by deduplicating identical for two or more versions of a library code.
+
+
+### Compiler options
+
+Generally the build system itself sets all compiler options - depending on target triple and configuration.
+But there should be a possibility to override at least some of compiler options.
+Such override should be global - be applied for all code within a project, in order to prevent possible inconsistency due to different options.
+In rare cases where custom compiler options for only specific code parts are needed, a custom target with manual compiler invocation can be used.
+
+
+### Imports managing
+
+The Ü build system should create some sort of a virtual file system for importing in Ü source files of each build target.
+Via such virtual filesystem dependencies of a build target should be accessed via import directive with name starting with dependency name, like
+```
+import "/some_library_name/some_header.uh"
+import "/some_other_library/another_header.uh"
+import "some_own_header.uh"
+```
+
+It shoudln't be allowed to import files outside allowed imported directories by misusing ".." in import paths.
+Preventing this should allow catching nasty errors with dependencies managing.
+Using global paths for imports (like "D:/files/some_header.uh" or "/home/panzerschrek/Projects/some_project/some_header.uh") should be disallowed to.
+
+There also should be a way to import generated files.
+One possible approach to do this is to declare a directory with generated files as public headers directory for a target.
 
 
 ### Out of scope features
