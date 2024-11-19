@@ -27,7 +27,35 @@ fn EnsureDirectoryExists( ust::string_view8 path ) : bool
 	return false;
 }
 
+fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated+= "\0";
+
+	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT, 0o755u ) );
+	if( fd == -1 )
+	{
+		return false;
+	}
+
+	// TODO - check for errors.
+	// TODO - write in loop.
+	unsafe( ::write( fd, ust::ptr_cast_to_byte8( contents.data() ), contents.size() ) );
+
+	unsafe( ::close(fd) );
+
+	return true;
+}
+
 } // namespace BK
 
 // Unix function for directory creation.
 fn nomangle mkdir( $(char8) path_null_terminated, u32 mode ) unsafe : i32;
+
+fn nomangle open( $(char8) path_null_terminated, i32 flags, u32 mode ) unsafe : i32;
+fn nomangle close( i32 fd ) : i32;
+
+fn nomangle write( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
+
+auto constexpr O_WRONLY = 0o1;
+auto constexpr O_CREAT = 0o100;

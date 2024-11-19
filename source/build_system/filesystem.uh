@@ -7,4 +7,7 @@ namespace BK
 // Returns false on fail
 fn EnsureDirectoryExists( ust::string_view8 path ) : bool;
 
+// Create/overwrite a file with specific contents.
+fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool;
+
 } // namespace BK

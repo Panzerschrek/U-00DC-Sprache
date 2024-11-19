@@ -1,1 +1,9 @@
 import "/build_system.uh"
+
+fn GetProjectInfo() : BK::ProjectInfo
+{
+	var BK::BuildTarget mut target;
+	target.source_files.push_back( "main.u" );
+
+	return BK::ProjectInfo{ .build_targets= ust::make_array( move(target) ) };
+}

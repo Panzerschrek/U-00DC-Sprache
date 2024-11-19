@@ -58,19 +58,34 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	// TODO - select more catchy name for root build script file.
+	auto constexpr build_script_file= "build.u";
+
+	var ust::string8 build_script_wrapper_path= options.build_directory + "/" + "build_script_wrapper.u";
+
+	{
+		var ust::string8 mut build_script_wrapper_contents = "import \"/" + build_script_file + "\"\n\n";
+		build_script_wrapper_contents+= "fn nomangle GetProjectInfoImpl() : BK::ProjectInfo { return GetProjectInfo(); }";
+
+		if( !WriteFile( build_script_wrapper_path, build_script_wrapper_contents ) )
+		{
+			ust::stderr_print( "Can't write build script wrapper file.\n" );
+			return -1;
+		}
+	}
+
 	// TODO - use platform-dependent file extension.
 	var ust::string8 result_shared_library_path= options.build_directory + "/" + "build.so";
 
-	// TODO - select more catchy name for root build script file.
-	var ust::string8 root_build_file= options.root_project_directory + "/" + "build.u";
-
-	var [ ust::string_view8, 10 ] compiler_args
+	var [ ust::string_view8, 12 ] compiler_args
 	[
+		"--include-dir",
+		options.root_project_directory,
 		"--include-dir",
 		options.ustlib_path,
 		"--include-dir",
 		options.build_system_imports_path,
-		root_build_file,
+		build_script_wrapper_path,
 		"-o",
 		result_shared_library_path,
 		"-filetype=dll",
