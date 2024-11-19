@@ -58,7 +58,22 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	if( !RunExecutable( options.compiler_executable_path, ust::array_view_imut</ust::string_view8/>() ) )
+	// TODO - use platform-dependent file extension.
+	var ust::string8 result_shared_library_path= options.build_directory + "/" + "build.so";
+
+	// TODO - select more catchy name for root build script file.
+	var ust::string8 root_build_file= options.root_project_directory + "/" + "build.u";
+
+	var [ ust::string_view8, 4 ] compiler_args
+	[
+		root_build_file,
+		"-o",
+		result_shared_library_path,
+		"-filetype=dll",
+		// TODO - enable optimizations.
+	];
+
+	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
 	{
 		ust::stderr_print( "Compiler execution failed.\n" );
 		return -1;
@@ -71,6 +86,7 @@ struct Options
 {
 	ust::string8 compiler_executable_path;
 	ust::string8 build_directory;
+	ust::string8 root_project_directory;
 }
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
@@ -99,6 +115,16 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 			res.build_directory= args[i + 1s];
 			i+= 2s;
 		}
+		else if( args[i] == "--project-directory" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--project-directory\".\n" );
+				return ust::null_optional;
+			}
+			res.root_project_directory= args[i + 1s];
+			i+= 2s;
+		}
 		else
 		{
 			ust::stderr_print( "Error, unrecognized option \"" + ust::string8(args[i]) + "\".\n" );
@@ -118,6 +144,9 @@ fn MakeDefaultOptions() : Options
 
 	// TODO - find a proper compiler executable in current executable directory.
 	res.compiler_executable_path= "Compiler1";
+
+	// Default option is to use current directory.
+	res.root_project_directory= ".";
 
 	return res;
 }
