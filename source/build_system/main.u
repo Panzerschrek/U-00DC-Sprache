@@ -64,12 +64,18 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// TODO - select more catchy name for root build script file.
 	var ust::string8 root_build_file= options.root_project_directory + "/" + "build.u";
 
-	var [ ust::string_view8, 4 ] compiler_args
+	var [ ust::string_view8, 10 ] compiler_args
 	[
+		"--include-dir",
+		options.ustlib_path,
+		"--include-dir",
+		options.build_system_imports_path,
 		root_build_file,
 		"-o",
 		result_shared_library_path,
 		"-filetype=dll",
+		"--relocation-model",
+		"pic",
 		// TODO - enable optimizations.
 	];
 
@@ -87,6 +93,8 @@ struct Options
 	ust::string8 compiler_executable_path;
 	ust::string8 build_directory;
 	ust::string8 root_project_directory;
+	ust::string8 ustlib_path;
+	ust::string8 build_system_imports_path;
 }
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
@@ -125,6 +133,26 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 			res.root_project_directory= args[i + 1s];
 			i+= 2s;
 		}
+		else if( args[i] == "--ustlib-path" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--ustlib-path\".\n" );
+				return ust::null_optional;
+			}
+			res.ustlib_path= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--build-system-imports-path" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--build-system-imports-path\".\n" );
+				return ust::null_optional;
+			}
+			res.build_system_imports_path= args[i + 1s];
+			i+= 2s;
+		}
 		else
 		{
 			ust::stderr_print( "Error, unrecognized option \"" + ust::string8(args[i]) + "\".\n" );
@@ -147,6 +175,12 @@ fn MakeDefaultOptions() : Options
 
 	// Default option is to use current directory.
 	res.root_project_directory= ".";
+
+	// TODO - set some default.
+	res.ustlib_path= "";
+
+	// TODO - set some default.
+	res.build_system_imports_path= "";
 
 	return res;
 }
