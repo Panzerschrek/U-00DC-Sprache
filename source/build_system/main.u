@@ -5,24 +5,14 @@ import "/string_conversions.u"
 
 fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 {
-	var ust::vector</ust::string_view8/> args= unsafe( BK::ArgsToStringView( argc, argv ) );
-
-	ust::stdout_print( "Bürokratie - the Ü build system!\n" );
-
-	ust::stdout_print( "Num args: " + ust::to_string8( args.size() ) + "\n" );
-	foreach( &arg : args )
-	{
-		ust::stdout_print(arg);
-		ust::stdout_print("\n");
-	}
-
-	return 0;
+	auto args= unsafe( BK::ArgsToStringView( argc, argv ) );
+	return BK::Main( args.front(), args.range().subrange_start(1s) );
 }
 
 namespace BK
 {
 
-fn ArgsToStringView( i32 argc, $($(char8)) argv  ) unsafe : ust::vector</ust::string_view8/>
+fn ArgsToStringView( i32 argc, $($(char8)) argv ) unsafe : ust::vector</ust::string_view8/>
 {
 	var ust::vector</ust::string_view8/> mut res;
 	for( auto mut i= 0; i < argc; ++i )
@@ -45,6 +35,80 @@ fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
 
 		return ust::string_view8( ptr, size_type( p - ptr ) );
 	}
+}
+
+// Place actual "main" code inside a "BK" namespace.
+fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32
+{
+	ust::stdout_print( "Bürokratie - the Ü build system!\n" );
+
+	var ust::optional</Options/> options_opt= ParseOptions( args );
+	if( options_opt.empty() )
+	{
+		ust::stderr_print( "Failed to parse options.\n" );
+		return -1;
+	}
+
+	var Options& options= options_opt.try_deref();
+
+	ust::stdout_print( options.build_directory );
+
+	return 0;
+}
+
+struct Options
+{
+	ust::string8 compiler_executable_path;
+	ust::string8 build_directory;
+}
+
+fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
+{
+	var Options mut res = MakeDefaultOptions();
+
+	for( auto mut i= 0s; i < args.size(); )
+	{
+		if( args[i] == "--compiler-executable" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--compiler-executable\".\n" );
+				return ust::null_optional;
+			}
+			res.compiler_executable_path= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--build-directory" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--build-directory\".\n" );
+				return ust::null_optional;
+			}
+			res.build_directory= args[i + 1s];
+			i+= 2s;
+		}
+		else
+		{
+			ust::stderr_print( "Error, unrecognized option \"" + ust::string8(args[i]) + "\".\n" );
+			return ust::null_optional;
+		}
+	}
+
+	return move(res);
+}
+
+fn MakeDefaultOptions() : Options
+{
+	var Options mut res;
+
+	// TODO - select more catchy name for a build directory.
+	res.build_directory= "build";
+
+	// TODO - find a proper compiler executable in current executable directory.
+	res.compiler_executable_path= "Compiler1";
+
+	return res;
 }
 
 } // namespace BK
