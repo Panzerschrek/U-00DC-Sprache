@@ -6,7 +6,6 @@ else()
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 endif()
 
-
 # Build rule for "Ü" files.
 function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
@@ -32,7 +31,6 @@ function( CompileUSource u_source_file out_object )
 	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
 
 endfunction()
-
 
 file( GLOB BUILD_SYSTEM_HEADERS "*.uh" )
 file( GLOB BUILD_SYSTEM_SOURCES "*.u" )

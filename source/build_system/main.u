@@ -1,8 +1,50 @@
 import "/stdout.u"
+import "/string.u"
+import "/vector.u"
+import "/string_conversions.u"
 
-fn nomangle main() : i32
+fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 {
+	var ust::vector</ust::string_view8/> args= unsafe( BK::ArgsToStringView( argc, argv ) );
+
 	ust::stdout_print( "Bürokratie - the Ü build system!\n" );
+
+	ust::stdout_print( "Num args: " + ust::to_string8( args.size() ) + "\n" );
+	foreach( &arg : args )
+	{
+		ust::stdout_print(arg);
+		ust::stdout_print("\n");
+	}
 
 	return 0;
 }
+
+namespace BK
+{
+
+fn ArgsToStringView( i32 argc, $($(char8)) argv  ) unsafe : ust::vector</ust::string_view8/>
+{
+	var ust::vector</ust::string_view8/> mut res;
+	for( auto mut i= 0; i < argc; ++i )
+	{
+		res.push_back( unsafe( NullTerminatedStringToStringView( $>( argv + i ) ) ) );
+	}
+
+	return res;
+}
+
+fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
+{
+	unsafe
+	{
+		auto mut p= ptr;
+		while( $>(p) != "\0"c8 )
+		{
+			++p;
+		}
+
+		return ust::string_view8( ptr, size_type( p - ptr ) );
+	}
+}
+
+} // namespace BK
