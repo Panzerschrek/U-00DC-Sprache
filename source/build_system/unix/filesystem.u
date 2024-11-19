@@ -11,7 +11,7 @@ fn EnsureDirectoryExists( ust::string_view8 path ) : bool
 	var ust::string8 mut path_null_terminated= path;
 	path_null_terminated+= "\0";
 
-	var i32 res= unsafe( ::mkdir( path_null_terminated.data(), 0776u ) );
+	var i32 res= unsafe( ::mkdir( path_null_terminated.data(), 0o755u ) );
 	if( res == 0 )
 	{
 		return true;
