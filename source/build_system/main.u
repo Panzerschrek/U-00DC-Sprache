@@ -86,7 +86,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// TODO - use platform-dependent file extension.
 	var ust::string8 result_shared_library_path= options.build_directory + "/" + "build.so";
 
-	var [ ust::string_view8, 13 ] compiler_args
+	var ust::string8 internalize_preserve_option = "--internalize-preserve=" + entry_func_name;
+
+	var [ ust::string_view8, 15 ] compiler_args
 	[
 		"--include-dir", options.root_project_directory,
 		"--include-dir", options.ustlib_path,
@@ -94,6 +96,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		build_script_wrapper_path,
 		"-o", result_shared_library_path,
 		"-filetype=dll",
+		// Run internalization in order to export only entry function.
+		"--internalize",
+		internalize_preserve_option,
 		"--relocation-model", "pic",
 		// Run optimizations in order to make result shared library smaller.
 		"-O2",
