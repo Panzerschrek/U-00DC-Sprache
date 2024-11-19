@@ -88,6 +88,14 @@ A build target may have dependencies on other targets - public or private.
 
 There should be a mechanism to detect and report errors when public headers of a target include headers of its private dependencies.
 
+Source files are generally specified using paths relative to the root build script file.
+Specifying files outside the directory of the root build script file shouldn't't be allowed.
+But there should be an exception for generated files.
+
+Besides Ü files it should be possible to compile LLVM source code files (also known as IR code).
+It may be useful for implementing functionality impossible in Ü, like for foreign code interaction.
+This should work, since Ü compiler can also compile LLVM source files.
+
 
 ### Build script stage file generation
 
@@ -228,6 +236,9 @@ It shouldn't be allowed to import files outside allowed imported directories by 
 Preventing this should allow catching nasty errors with dependencies managing.
 Using global paths for imports (like "D:/files/some_header.uh" or "/home/panzerschrek/Projects/some_project/some_header.uh") should be disallowed to.
 
+Importing files using relative paths should be limited for directory where the root source file (for which the compiler is invoked) is located, including children directories.
+It shouldn't be possible to import a file from a directory above the root source file.
+
 There also should be a way to import generated files.
 One possible approach to do this is to declare a directory with generated files as public headers directory for a target.
 
@@ -240,6 +251,7 @@ This includes:
 * PGO builds
 * Other than Ü languages support. If necessary, custom build targets may be used to build code written in other languages.
 * Linking with C or C++ code via integrated build system functionality. But custom targets may be used to achieve this.
+* Supporing different versions of Ü
 
 
 ### Language server integration
