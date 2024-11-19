@@ -1,10 +1,10 @@
 import "/build_system.uh"
 
-fn GetProjectInfo() : BK::ProjectInfo
+fn GetPackageInfo() : BK::PackageInfo
 {
 	var BK::BuildTarget mut target;
 	target.source_files.push_back( "main.u" );
 	target.name= "hello_world";
 
-	return BK::ProjectInfo{ .build_targets= ust::make_array( move(target) ) };
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
 }

@@ -10,11 +10,11 @@ struct BuildTarget
 	ust::string8 name;
 }
 
-struct ProjectInfo
+struct PackageInfo
 {
 	ust::vector</BuildTarget/> build_targets;
 }
 
-type GetProjectInfoFunctionType = fn() : ProjectInfo;
+type GetPackageInfoFunctionType = fn() : PackageInfo;
 
 } // namespace BK
