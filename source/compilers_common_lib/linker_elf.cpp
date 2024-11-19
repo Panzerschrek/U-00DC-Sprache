@@ -197,7 +197,8 @@ bool RunLinkerELF(
 	const std::string crti= toolchain_file_path + "crti.o";
 	const std::string crtn= toolchain_file_path + "crtn.o";
 
-	args.push_back( crt1.data() );
+	if( !produce_shared_library )
+		args.push_back( crt1.data() );
 	args.push_back( crti.data() );
 	args.push_back( crtn.data() );
 
