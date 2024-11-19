@@ -9,7 +9,9 @@ fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated += "\0";
 
-	auto handle = unsafe( ::dlopen( path_null_terminated.data(), RTLD_NOW | RTLD_GLOBAL ) );
+	// Use RTLD_NODELETE in order to prevent possible later unloading.
+	// For now we do not support unloading, it can break the code.
+	auto handle = unsafe( ::dlopen( path_null_terminated.data(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE ) );
 	if( ust::is_nullptr(handle) )
 	{
 		ust::stderr_print( unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
@@ -62,3 +64,4 @@ fn nomangle dlsym( $(byte8) handle, $(char8) symbol_null_terminated ) unsafe : $
 // auto constexpr RTLD_LAZY = 0x00001;
 auto constexpr RTLD_NOW	= 0x00002;
 auto constexpr RTLD_GLOBAL = 0x00100;
+auto constexpr RTLD_NODELETE = 0x01000;

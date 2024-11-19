@@ -4,6 +4,8 @@ import "/string.u"
 namespace BK
 {
 
+// Load shared library without later possibility to unload it.
+// This means any symbols after a particular library loading are available until the process ends.
 fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>;
 
 // A wrapper class for loading shared library symbols.
