@@ -20,12 +20,12 @@ fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
 	return unsafe( SharedLibrary(handle) );
 }
 
-fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) unsafe : $(byte8)
+fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byte8)
 {
 	var ust::string8 mut symbol_null_terminated = symbol_name;
 	symbol_null_terminated+= "\0";
 
-	auto res = unsafe( dlsym( system_handle_, symbol_null_terminated.data() ) );
+	auto res = unsafe( ::dlsym( system_handle_, symbol_null_terminated.data() ) );
 
 	if( ust::is_nullptr( res ) )
 	{

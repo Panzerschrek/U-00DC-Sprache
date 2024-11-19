@@ -6,6 +6,8 @@ namespace BK
 
 fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>;
 
+// A wrapper class for loading shared library symbols.
+// Library loaded is not unloaded even if this instance is destroyed.
 class SharedLibrary
 {
 public:
@@ -13,9 +15,7 @@ public:
 		( system_handle_= system_handle )
 	{}
 
-	// TODO - maybe create destructor?
-
-	fn LoadSymbol( imut this, ust::string_view8 symbol_name ) unsafe : $(byte8);
+	fn LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byte8);
 
 private:
 	$(byte8) system_handle_;

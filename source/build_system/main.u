@@ -42,7 +42,7 @@ fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
 	}
 }
 
-// Place actual "main" code inside a "BK" namespace.
+// Place actual "main" code inside the "BK" namespace.
 fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32
 {
 	ust::stdout_print( "Bürokratie - the Ü build system!\n" );
@@ -62,67 +62,20 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	// TODO - select more catchy name for root build script file.
-	auto constexpr build_script_file= "build.u";
-
+	// TODO - customize it based on package name?
 	auto constexpr entry_func_name = "GetPackageInfoImpl";
 
-	var ust::string8 build_script_wrapper_path= options.build_directory + "/" + "build_script_wrapper.u";
-
-	// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
-	{
-		var ust::string8 mut build_script_wrapper_contents = "import \"/" + build_script_file + "\"\n\n";
-		build_script_wrapper_contents+= "fn nomangle ";
-		build_script_wrapper_contents+= entry_func_name;
-		build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
-		build_script_wrapper_contents+= "\n";
-
-		if( !WriteFile( build_script_wrapper_path, build_script_wrapper_contents ) )
-		{
-			ust::stderr_print( "Can't write build script wrapper file.\n" );
-			return -1;
-		}
-	}
-
-	// TODO - use platform-dependent file extension.
-	var ust::string8 result_shared_library_path= options.build_directory + "/" + "build.so";
-
-	var ust::string8 internalize_preserve_option = "--internalize-preserve=" + entry_func_name;
-
-	var [ ust::string_view8, 15 ] compiler_args
-	[
-		"--include-dir", options.root_package_directory, // in order to import "build.u"
-		"--include-dir", options.ustlib_path,
-		"--include-dir", options.build_system_imports_path,
-		build_script_wrapper_path,
-		"-o", result_shared_library_path,
-		"-filetype=dll",
-		// Run internalization in order to export only entry function.
-		"--internalize",
-		internalize_preserve_option,
-		"--relocation-model", "pic",
-		// Run optimizations in order to make result shared library smaller.
-		"-O2",
-	];
-
-	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
-	{
-		ust::stderr_print( "Compiler execution failed.\n" );
-		return -1;
-	}
-
-	ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
-	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
+	auto shared_library_opt = BuildAndLoadBuildScript( options, entry_func_name );
 	if( shared_library_opt.empty() )
 	{
-		ust::stderr_print( "Faild to load build script shared library\n" );
+		ust::stderr_print( "Faild to load/build the build script shared library.\n" );
 		return -1;
 	}
 
-	auto mut func_raw_ptr= unsafe( shared_library_opt.try_deref().LoadSymbol( entry_func_name ) );
+	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( entry_func_name );
 	if( ust::is_nullptr(func_raw_ptr) )
 	{
-		ust::stderr_print( "Faild to load function " + entry_func_name +  "\n" );
+		ust::stderr_print( "Faild to load function " + entry_func_name + "\n" );
 		return -1;
 	}
 
@@ -243,6 +196,77 @@ fn MakeDefaultOptions() : Options
 	res.build_system_imports_path= "";
 
 	return res;
+}
+
+fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name ) : ust::optional</SharedLibrary/>
+{
+	// TODO - select more catchy name for root build script file.
+	auto constexpr build_script_file= "build.u";
+
+	var ust::string8 build_script_wrapper_file_path= options.build_directory + "/" + "build_script_wrapper.u";
+
+	// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
+	{
+		var ust::string8 mut build_script_wrapper_contents = "import \"/";
+		build_script_wrapper_contents+= build_script_file;
+		build_script_wrapper_contents+= "\"\n\n";
+		build_script_wrapper_contents+= "fn nomangle ";
+		build_script_wrapper_contents+= entry_func_name;
+		build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
+		build_script_wrapper_contents+= "\n";
+
+		if( !WriteFile( build_script_wrapper_file_path, build_script_wrapper_contents ) )
+		{
+			ust::stderr_print( "Can't write build script wrapper file.\n" );
+			return ust::null_optional;
+		}
+	}
+
+	var ust::string8 mut result_shared_library_path= options.build_directory;
+	result_shared_library_path+= "/build.";
+	result_shared_library_path+= GetNativeSharedLibraryExtension();
+
+	var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
+
+	var [ ust::string_view8, 15 ] compiler_args
+	[
+		// Add path to the package directory in order to import "build.u" inside the wrapper.
+		"--include-dir", options.root_package_directory,
+		// Provide standard library imports.
+		"--include-dir", options.ustlib_path,
+		// Provide path to declarations of the build system interface.
+		"--include-dir", options.build_system_imports_path,
+		build_script_wrapper_file_path, // The file to buld.
+		"-o", result_shared_library_path,
+		"-filetype=dll",
+		// Run internalization in order to export only entry function.
+		"--internalize",
+		// TODO - use optimization, codegen and options which were used to build this executable.
+		internalize_preserve_option,
+		"--relocation-model", "pic",
+		"-O2",
+	];
+
+	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
+	{
+		ust::stderr_print( "Compiler execution failed.\n" );
+		return ust::null_optional;
+	}
+
+	ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
+	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
+	if( shared_library_opt.empty() )
+	{
+		ust::stderr_print( "Faild to load build script shared library\n" );
+		return ust::null_optional;
+	}
+
+	return shared_library_opt;
+}
+
+fn GetNativeSharedLibraryExtension() : ust::string_view8
+{
+	return( ust::string_view8( compiler::target::os ) == "windows" ? ust::string_view8("dll") : ust::string_view8("so") );
 }
 
 } // namespace BK
