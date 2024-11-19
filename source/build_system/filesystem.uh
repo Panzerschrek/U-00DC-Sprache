@@ -1,0 +1,10 @@
+import "/string.u"
+
+namespace BK
+{
+
+// Creates a directory, if it doesn't exist.
+// Returns false on fail
+fn EnsureDirectoryExists( ust::string_view8 path ) : bool;
+
+} // namespace BK

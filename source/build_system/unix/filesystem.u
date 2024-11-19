@@ -1,0 +1,33 @@
+import "../filesystem.uh"
+import "errno.uh"
+
+namespace BK
+{
+
+fn EnsureDirectoryExists( ust::string_view8 path ) : bool
+{
+	// TODO - handle case with composed path name, like some/long/path
+
+	var ust::string8 mut path_null_terminated= path;
+	path_null_terminated+= "\0";
+
+	var i32 res= unsafe( ::mkdir( path_null_terminated.data(), 0776u ) );
+	if( res == 0 )
+	{
+		return true;
+	}
+
+	var i32 errno = BKGetErrno();
+	if( errno == EEXIST )
+	{
+		// TODO - handle case where the path specified already exists but isn't a directory.
+		return true;
+	}
+
+	return false;
+}
+
+} // namespace BK
+
+// Unix function for directory creation.
+fn nomangle mkdir( $(char8) path_null_terminated, u32 mode ) unsafe : i32;

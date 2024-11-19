@@ -1,6 +1,7 @@
 import "/stdout.u"
 import "/string.u"
 import "/vector.u"
+import "filesystem.uh"
 import "process.uh"
 
 fn nomangle main( i32 argc, $($(char8)) argv ) : i32
@@ -50,6 +51,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	var Options& options= options_opt.try_deref();
+
+	if( !EnsureDirectoryExists( options.build_directory ) )
+	{
+		ust::stderr_print( "Can't create build directory.\n" );
+		return -1;
+	}
 
 	if( !RunExecutable( options.compiler_executable_path, ust::array_view_imut</ust::string_view8/>() ) )
 	{
