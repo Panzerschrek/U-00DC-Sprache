@@ -1,7 +1,7 @@
 import "/stdout.u"
 import "/string.u"
 import "/vector.u"
-import "/string_conversions.u"
+import "process.uh"
 
 fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 {
@@ -51,7 +51,11 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var Options& options= options_opt.try_deref();
 
-	ust::stdout_print( options.build_directory );
+	if( !RunExecutable( options.compiler_executable_path, ust::array_view_imut</ust::string_view8/>() ) )
+	{
+		ust::stderr_print( "Compiler execution failed.\n" );
+		return -1;
+	}
 
 	return 0;
 }

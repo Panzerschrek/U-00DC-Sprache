@@ -1,0 +1,10 @@
+import "/string.u"
+
+namespace BK
+{
+
+// Synchronously execute a process.
+// Returns true on ok.
+fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool;
+
+} // namespace BK
