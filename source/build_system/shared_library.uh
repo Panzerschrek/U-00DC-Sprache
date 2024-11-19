@@ -13,6 +13,10 @@ public:
 		( system_handle_= system_handle )
 	{}
 
+	// TODO - maybe create destructor?
+
+	fn LoadSymbol( imut this, ust::string_view8 symbol_name ) unsafe : $(byte8);
+
 private:
 	$(byte8) system_handle_;
 }

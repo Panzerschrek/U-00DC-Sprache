@@ -7,11 +7,14 @@ namespace BK
 struct BuildTarget
 {
 	ust::vector</ust::string8/> source_files;
+	ust::string8 name;
 }
 
 struct ProjectInfo
 {
 	ust::vector</BuildTarget/> build_targets;
 }
+
+type GetProjectInfoFunctionType = fn() : ProjectInfo;
 
 } // namespace BK

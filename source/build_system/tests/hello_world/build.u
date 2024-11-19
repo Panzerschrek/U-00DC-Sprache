@@ -4,6 +4,7 @@ fn GetProjectInfo() : BK::ProjectInfo
 {
 	var BK::BuildTarget mut target;
 	target.source_files.push_back( "main.u" );
+	target.name= "hello_world";
 
 	return BK::ProjectInfo{ .build_targets= ust::make_array( move(target) ) };
 }

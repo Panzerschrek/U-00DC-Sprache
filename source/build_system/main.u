@@ -1,9 +1,12 @@
 import "/stdout.u"
 import "/string.u"
+import "/string_conversions.u"
 import "/vector.u"
 import "filesystem.uh"
 import "shared_library.uh"
 import "process.uh"
+import "imports/build_system.uh"
+
 
 fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 {
@@ -62,11 +65,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// TODO - select more catchy name for root build script file.
 	auto constexpr build_script_file= "build.u";
 
+	auto constexpr entry_func_name = "GetProjectInfoImpl";
+
 	var ust::string8 build_script_wrapper_path= options.build_directory + "/" + "build_script_wrapper.u";
 
+	// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
 	{
 		var ust::string8 mut build_script_wrapper_contents = "import \"/" + build_script_file + "\"\n\n";
-		build_script_wrapper_contents+= "fn nomangle GetProjectInfoImpl() : BK::ProjectInfo { return GetProjectInfo(); }";
+		build_script_wrapper_contents+= "fn nomangle ";
+		build_script_wrapper_contents+= entry_func_name;
+		build_script_wrapper_contents+= "() : BK::ProjectInfo { return GetProjectInfo(); }";
 
 		if( !WriteFile( build_script_wrapper_path, build_script_wrapper_contents ) )
 		{
@@ -107,6 +115,32 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		ust::stderr_print( "Faild to load build script shared library\n" );
 		return -1;
+	}
+
+	auto mut func_raw_ptr= unsafe( shared_library_opt.try_deref().LoadSymbol( entry_func_name ) );
+	if( ust::is_nullptr(func_raw_ptr) )
+	{
+		ust::stderr_print( "Faild to load function " + entry_func_name +  "\n" );
+		return -1;
+	}
+
+	var GetProjectInfoFunctionType mut func_ptr= zero_init;
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(func_ptr) ),
+		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
+		typeinfo</ typeof(func_ptr) />.size_of ) );
+
+	var ProjectInfo project_info= func_ptr();
+
+	ust::stdout_print( "Num build targets: " + ust::to_string8( project_info.build_targets.size() ) + "\n" );
+	foreach( &build_target : project_info.build_targets )
+	{
+		ust::stdout_print( "Target " + build_target.name + ": " );
+		foreach( &source_file : build_target.source_files )
+		{
+			ust::stdout_print( source_file + " " );
+		}
+		ust::stdout_print( "\n" );
 	}
 
 	return 0;
