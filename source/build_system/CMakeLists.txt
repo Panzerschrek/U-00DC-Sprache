@@ -53,4 +53,10 @@ foreach( source ${BUILD_SYSTEM_SOURCES} )
 endforeach()
 
 add_executable( BuildSystem ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
+
+if( WIN32 )
+else()
+	target_link_libraries( BuildSystem PRIVATE dl )
+endif()
+
 install( TARGETS BuildSystem )

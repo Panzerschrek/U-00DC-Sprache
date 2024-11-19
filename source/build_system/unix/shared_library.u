@@ -1,0 +1,45 @@
+import "/stdout.u"
+import "../shared_library.uh"
+
+namespace BK
+{
+
+fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated += "\0";
+
+	auto handle = unsafe( ::dlopen( path_null_terminated.data(), RTLD_NOW ) );
+	if( ust::is_nullptr(handle) )
+	{
+		ust::stderr_print( unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
+		ust::stderr_print( "\n" );
+		return ust::null_optional;
+	}
+
+	return unsafe( SharedLibrary(handle) );
+}
+
+// TODO - remove copypaste
+fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
+{
+	unsafe
+	{
+		auto mut p= ptr;
+		while( $>(p) != "\0"c8 )
+		{
+			++p;
+		}
+
+		return ust::string_view8( ptr, size_type( p - ptr ) );
+	}
+}
+
+} // namespace BK
+
+fn nomangle dlopen( $(char8) path_null_terminated, i32 flags ) unsafe : $(byte8);
+
+fn nomangle dlerror() unsafe : $(char8);
+
+// auto constexpr RTLD_LAZY = 0x00001;
+auto constexpr RTLD_NOW	= 0x00002;

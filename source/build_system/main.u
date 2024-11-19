@@ -2,6 +2,7 @@ import "/stdout.u"
 import "/string.u"
 import "/vector.u"
 import "filesystem.uh"
+import "shared_library.uh"
 import "process.uh"
 
 fn nomangle main( i32 argc, $($(char8)) argv ) : i32
@@ -97,6 +98,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
 	{
 		ust::stderr_print( "Compiler execution failed.\n" );
+		return -1;
+	}
+
+	ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
+	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
+	if( shared_library_opt.empty() )
+	{
+		ust::stderr_print( "Faild to load build script shared library\n" );
 		return -1;
 	}
 

@@ -1,0 +1,20 @@
+import "/optional.u"
+import "/string.u"
+
+namespace BK
+{
+
+fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>;
+
+class SharedLibrary
+{
+public:
+	fn constructor( $(byte8) system_handle ) unsafe
+		( system_handle_= system_handle )
+	{}
+
+private:
+	$(byte8) system_handle_;
+}
+
+} // namespace BK
