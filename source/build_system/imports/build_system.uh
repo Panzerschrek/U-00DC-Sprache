@@ -1,0 +1,17 @@
+import "/string.u"
+import "/vector.u"
+
+namespace BK
+{
+
+struct BuildTarget
+{
+	ust::vector</ust::string8/> source_files;
+}
+
+struct ProjectInfo
+{
+	ust::vector</BuildTarget/> build_targets;
+}
+
+} // namespace BK
