@@ -240,6 +240,10 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 
 	var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
 
+	// Use optimization level which was used to compile the build system executable.
+	var ust::string8 mut optimization_level= "-O";
+	optimization_level.push_back( compiler::options::optimization_level );
+
 	var ust::vector</ust::string_view8/> mut compiler_args;
 	// Add path to the package directory in order to import "build.u" inside the wrapper.
 	compiler_args.push_back( "--include-dir" );
@@ -257,10 +261,29 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 	// Run internalization in order to export only entry function.
 	compiler_args.push_back( "--internalize" );
 	compiler_args.push_back( internalize_preserve_option );
-	// TODO - use optimization, codegen and options which were used to build this executable.
+	compiler_args.push_back( optimization_level );
+
+	// If the build system executable was compiled with debug information - generate it for the shared library too.
+	if( compiler::options::generate_debug_info )
+	{
+		compiler_args.push_back( "-g" );
+	}
+
+	// Use the same target parameters for the shared library as for the build system executable.
+	// TODO - set also architecture.
+
+	compiler_args.push_back( "--target-vendor" );
+	compiler_args.push_back( compiler::target::vendor );
+
+	compiler_args.push_back( "--target-os" );
+	compiler_args.push_back( compiler::target::os );
+
+	compiler_args.push_back( "--target-environment" );
+	compiler_args.push_back( compiler::target::environment );
+
+	// TODO - use codegen options which were used to build this executable.
 	compiler_args.push_back( "--relocation-model" );
 	compiler_args.push_back( "pic" );
-	compiler_args.push_back( "-O2" );
 
 	if( ust::string_view8( compiler::target::environment ) == "msvc" )
 	{
