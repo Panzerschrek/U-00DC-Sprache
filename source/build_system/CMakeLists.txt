@@ -60,3 +60,26 @@ else()
 endif()
 
 install( TARGETS BuildSystem )
+
+
+if( U_BUILD_PY_TESTS )
+
+	make_directory( ${CMAKE_CURRENT_BINARY_DIR}/tests )
+
+	# TODO - run tests each time one of the sources is changed.
+	add_custom_target(
+		BuildSystemTestsRun # Do not include into "ALL", since it's relatively heavyweight.
+		COMMAND
+			${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
+			--tests-path ${CMAKE_CURRENT_SOURCE_DIR}/tests/
+			--tests-build-root-path ${CMAKE_CURRENT_BINARY_DIR}/tests
+			--build-system-executable ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem
+			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler0/Compiler # For now hardcode here path to the compiler executable build
+			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
+			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
+		DEPENDS BuildSystem
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
+		)
+
+endif()

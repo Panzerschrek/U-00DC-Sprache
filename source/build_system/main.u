@@ -89,7 +89,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	foreach( &build_target : package_info.build_targets )
 	{
-		if( ! PerformTargetBuild( build_target, options ) )
+		if( !PerformTargetBuild( build_target, options ) )
 		{
 			ust::stderr_print( "Failed to build target " + build_target.name + "!\n" );
 			return -1;
