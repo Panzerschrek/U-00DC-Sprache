@@ -87,17 +87,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var PackageInfo package_info= func_ptr();
 
-	ust::stdout_print( "Num build targets: " + ust::to_string8( package_info.build_targets.size() ) + "\n" );
 	foreach( &build_target : package_info.build_targets )
 	{
-		ust::stdout_print( "Target " + build_target.name + ": " );
-		foreach( &source_file : build_target.source_files )
+		if( ! PerformTargetBuild( build_target, options ) )
 		{
-			ust::stdout_print( source_file + " " );
+			ust::stderr_print( "Failed to build target " + build_target.name + "!\n" );
+			return -1;
 		}
-		ust::stdout_print( "\n" );
 	}
 
+	ust::stdout_print( "Successfully finished the build!\n" );
 	return 0;
 }
 
@@ -276,6 +275,65 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 fn GetNativeSharedLibraryExtension() : ust::string_view8
 {
 	return( ust::string_view8( compiler::target::os ) == "windows" ? ust::string_view8("dll") : ust::string_view8("so") );
+}
+
+// Returns true on success.
+fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
+{
+	// TODO - add target platform-specific extension.
+	var ust::string8 result_target_file_path = options.build_directory + "/" + target.name;
+
+	// For now just build all files together into result executable.
+	// TODO - compile each source file individually and support incremental building.
+
+	var ust::vector</ust::string8/> mut source_files_absolute;
+	foreach( &source_file : target.source_files )
+	{
+		// TODO - perform actual file path canonisation.
+		source_files_absolute.push_back( options.root_package_directory + "/" + source_file );
+	}
+
+	var ust::vector</ust::string_view8/> mut compiler_args;
+	// Provide standard library imports.
+	compiler_args.push_back( "--include-dir" );
+	compiler_args.push_back( options.ustlib_path );
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if(false)
+	{
+		compiler_args.push_back( cast_imut(source_files_absolute).front() );
+	}
+
+	for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
+	{
+		compiler_args.push_back( cast_imut(source_files_absolute)[i] );
+	}
+
+	compiler_args.push_back( "-o" );
+	compiler_args.push_back( result_target_file_path );
+
+	// TODO - support other target types.
+	compiler_args.push_back( "-filetype=exe" );
+
+	// Run internalization in order to export only "main".
+	compiler_args.push_back( "--internalize" );
+
+	// TODO - select position independent code only where necessary.
+	compiler_args.push_back( "--relocation-model" );
+	compiler_args.push_back( "pic" );
+
+	// TODO - select optimization level based on configuration.
+	compiler_args.push_back( "-O2" );
+
+	ust::stdout_print( "Building \"" + result_target_file_path + "\"\n" );
+
+	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
+	{
+		ust::stderr_print( "Compiler execution failed.\n" );
+		return false;
+	}
+
+	return true;
 }
 
 } // namespace BK
