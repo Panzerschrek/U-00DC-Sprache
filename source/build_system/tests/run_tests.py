@@ -16,7 +16,7 @@ def HelloWorldTest():
 	test_name = "hello_world"
 	project_root = os.path.join( g_tests_path, test_name )
 	build_root = os.path.join( g_tests_build_root_path, test_name );
-	build_system_args= [ g_build_system_executable, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	# Run the build.
 	subprocess.check_call( build_system_args )

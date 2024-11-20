@@ -45,8 +45,6 @@ fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
 // Place actual "main" code inside the "BK" namespace.
 fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32
 {
-	ust::stdout_print( "Bürokratie - the Ü build system!\n" );
-
 	var ust::optional</Options/> options_opt= ParseOptions( args );
 	if( options_opt.empty() )
 	{
@@ -55,6 +53,11 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	var Options& options= options_opt.try_deref();
+
+	if( !options.quiet )
+	{
+		ust::stdout_print( "Bürokratie - the Ü build system!\n" );
+	}
 
 	if( !EnsureDirectoryExists( options.build_directory ) )
 	{
@@ -96,12 +99,17 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
-	ust::stdout_print( "Successfully finished the build!\n" );
+	if( !options.quiet )
+	{
+		ust::stdout_print( "Successfully finished the build!\n" );
+	}
+
 	return 0;
 }
 
 struct Options
 {
+	bool quiet = false;
 	ust::string8 compiler_executable_path;
 	ust::string8 build_directory;
 	ust::string8 root_package_directory;
@@ -115,7 +123,12 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 
 	for( auto mut i= 0s; i < args.size(); )
 	{
-		if( args[i] == "--compiler-executable" )
+		if( args[i] == "-q" )
+		{
+			res.quiet= true;
+			++i;
+		}
+		else if( args[i] == "--compiler-executable" )
 		{
 			if( i + 1s >= args.size() )
 			{
@@ -261,7 +274,11 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 		return ust::null_optional;
 	}
 
-	ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
+	if( !options.quiet )
+	{
+		ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
+	}
+
 	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
 	if( shared_library_opt.empty() )
 	{
@@ -325,7 +342,10 @@ fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
 	// TODO - select optimization level based on configuration.
 	compiler_args.push_back( "-O2" );
 
-	ust::stdout_print( "Building \"" + result_target_file_path + "\"\n" );
+	if( !options.quiet )
+	{
+		ust::stdout_print( "Building \"" + result_target_file_path + "\"\n" );
+	}
 
 	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
 	{
