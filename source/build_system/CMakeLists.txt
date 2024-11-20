@@ -64,11 +64,19 @@ install( TARGETS BuildSystem )
 
 if( U_BUILD_PY_TESTS )
 
+	# Run tests for build system.
+	# Do this if the build system executable or some of tests are changed.
+	# Use combination of a custom command and custom target in order to achieve this,.
+
 	make_directory( ${CMAKE_CURRENT_BINARY_DIR}/tests )
 
-	# TODO - run tests each time one of the sources is changed.
-	add_custom_target(
-		BuildSystemTestsRun # Do not include into "ALL", since it's relatively heavyweight.
+	file( GLOB_RECURSE TESTS_FILES "tests/*" )
+
+	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
+
+	# Actual command which runs tests.
+	add_custom_command(
+		OUTPUT ${TIMESTAMP_FILE}
 		COMMAND
 			${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
 			--tests-path ${CMAKE_CURRENT_SOURCE_DIR}/tests/
@@ -77,9 +85,16 @@ if( U_BUILD_PY_TESTS )
 			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler0/Compiler # For now hardcode here path to the compiler executable build
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
+		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
 		DEPENDS BuildSystem
+		DEPENDS ${TESTS_FILES}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
+		)
+
+	add_custom_target(
+		BuildSystemTestsRun ALL
+		DEPENDS ${TIMESTAMP_FILE} # Depend on the previous custom commadntimestamp file.
+		SOURCES ${TESTS_FILES}
 		)
 
 endif()
