@@ -281,9 +281,13 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 	compiler_args.push_back( "--target-environment" );
 	compiler_args.push_back( compiler::target::environment );
 
-	// TODO - use codegen options which were used to build this executable.
-	compiler_args.push_back( "--relocation-model" );
-	compiler_args.push_back( "pic" );
+	if( ust::string_view8( compiler::target::os ) != "windows" )
+	{
+		// It seems that position-independent code is always enabled on systems except Windows.
+		// So, use this option for building the shared library.
+		compiler_args.push_back( "--relocation-model" );
+		compiler_args.push_back( "pic" );
+	}
 
 	if( ust::string_view8( compiler::target::environment ) == "msvc" )
 	{
@@ -358,7 +362,7 @@ fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
 	// Run internalization in order to export only "main".
 	compiler_args.push_back( "--internalize" );
 
-	// TODO - select position independent code only where necessary.
+	// TODO - disable "pic" by default for windows target.
 	compiler_args.push_back( "--relocation-model" );
 	compiler_args.push_back( "pic" );
 
