@@ -228,24 +228,33 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 
 	var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
 
-	var [ ust::string_view8, 15 ] compiler_args
-	[
-		// Add path to the package directory in order to import "build.u" inside the wrapper.
-		"--include-dir", options.root_package_directory,
-		// Provide standard library imports.
-		"--include-dir", options.ustlib_path,
-		// Provide path to declarations of the build system interface.
-		"--include-dir", options.build_system_imports_path,
-		build_script_wrapper_file_path, // The file to buld.
-		"-o", result_shared_library_path,
-		"-filetype=dll",
-		// Run internalization in order to export only entry function.
-		"--internalize",
-		// TODO - use optimization, codegen and options which were used to build this executable.
-		internalize_preserve_option,
-		"--relocation-model", "pic",
-		"-O2",
-	];
+	var ust::vector</ust::string_view8/> mut compiler_args;
+	// Add path to the package directory in order to import "build.u" inside the wrapper.
+	compiler_args.push_back( "--include-dir" );
+	compiler_args.push_back( options.root_package_directory );
+	// Provide standard library imports.
+	compiler_args.push_back( "--include-dir" );
+	compiler_args.push_back( options.ustlib_path );
+	// Provide path to declarations of the build system interface.
+	compiler_args.push_back( "--include-dir" );
+	compiler_args.push_back( options.build_system_imports_path );
+	compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
+	compiler_args.push_back( "-o" );
+	compiler_args.push_back( result_shared_library_path );
+	compiler_args.push_back( "-filetype=dll" );
+	// Run internalization in order to export only entry function.
+	compiler_args.push_back( "--internalize" );
+	compiler_args.push_back( internalize_preserve_option );
+	// TODO - use optimization, codegen and options which were used to build this executable.
+	compiler_args.push_back( "--relocation-model" );
+	compiler_args.push_back( "pic" );
+	compiler_args.push_back( "-O2" );
+
+	if( ust::string_view8( compiler::target::environment ) == "msvc" )
+	{
+		// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
+		compiler_args.push_back( "-Wl,/NOIMPLIB" );
+	}
 
 	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
 	{
