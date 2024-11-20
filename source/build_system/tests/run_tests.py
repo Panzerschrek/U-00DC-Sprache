@@ -23,7 +23,7 @@ def RunBuildSystem( project_subdirectory ):
 
 
 def RunExecutable( project_subdirectory, executable_name ):
-	subprocess.check_call( [ os.path.join( os.path.join( g_tests_build_root_path, project_subdirectory ), executable_name ) ] )
+	subprocess.check_call( [ os.path.join( os.path.join( g_tests_build_root_path, project_subdirectory ), executable_name ) ], stdout= subprocess.DEVNULL )
 
 #
 # Tests itself
