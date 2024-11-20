@@ -91,6 +91,7 @@ Compiler:
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
 	or it would be better to pass it in memory.
 *) Add possibility to execute internal LLD directly, bypassing compiler logic itself
+*) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker
 *) More internal linkers spupport - MinGW, MachO, wasm
 *) Faster calling convention for non-cross-language functions.
@@ -148,11 +149,37 @@ CPP Header converter:
 *) Add more satisfying defines conversion - where defined value is a constant expression
 *) Handle some subset of C++ headers
 
-Ü Build system/package manager
-*) Collect requirements for build system
-*) Investigate approaches to implement a build system
-*) Choose a catchy name
-*) Investigate approaches for dependency resultion
+Ü Build system:
+*) Calculate default paths to components (compiler, ustlib, build system imports) relative to the build system
+	executable
+*) Improve build directories creation code - create all directories within given path, handle cases when a directory
+	already exists, handle case where a non-directory object (like a file) with given name exists
+*) Execute external commands by providing normalized paths
+*) Check build script existence before running compiler for building it
+*) Normalize imports paths
+*) Check for more errors - in files writing, commands execution, etc.
+*) Use native system APIs to execute external processes
+*) Manually extract some contents of converted Windows headers (with needed functions and types) to be used in Windows
+	implementation functions of the build system
+*) Avoid rebuilding build script if it wasn't changed
+*) Incremental builds - rebuild only necessary targets and source files within targets (only changed)
+*) Build configurations (debug, release, etc.)
+*) Ü library target type (bitcode library)
+*) Dependencies between targets
+*) Shared library target type
+*) C static library target type
+*) Custom target type
+*) Run link-time optimization for native targets (executables, shared libraries, C static libraries)
+*) Support generated sources
+*) Support generated headers
+*) Cross-compilation support
+*) Multiple packages support
+*) Validation of source files location
+*) Prevent imports ouside allowed import directories
+*) Clean command - to delete build files
+*) Multithreaded targets building - to utilize all CPU cores and thus speed-up the build
+*) Build the build system itself using the build system (create second build copy)
+*) Build Compiler2 and (possible) Compiler1 using the build system
 *) Investigate necessity/possibility of a centralized packages repository
 
 Documentation:
