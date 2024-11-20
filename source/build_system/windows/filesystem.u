@@ -1,0 +1,101 @@
+import "../filesystem.uh"
+
+namespace BK
+{
+
+fn EnsureDirectoryExists( ust::string_view8 path ) : bool
+{
+	// TODO - handle case with composed path name, like some/long/path
+
+	var ust::string8 mut path_null_terminated= path;
+	path_null_terminated+= "\0";
+
+	var i32 res= unsafe( ::CreateDirectoryA( path_null_terminated.data(), ust::nullptr</byte8/>() ) );
+	if( res == 1 )
+	{
+		return true;
+	}
+
+	var DWORD err = unsafe( GetLastError() );
+	if( err == ERROR_ALREADY_EXISTS )
+	{
+		return true;
+	}
+
+	return false;
+}
+
+fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated+= "\0";
+
+	var HANDLE handle = unsafe( ::CreateFileA(
+		path_null_terminated.data(),
+		GENERIC_WRITE,
+		FILE_SHARE_READ,
+		ust::nullptr</byte8/>(),
+		CREATE_ALWAYS,
+		0u,
+		ust::nullptr</byte8/>() ) );
+	if( ust::is_nullptr(handle) )
+	{
+		return false;
+	}
+
+	// TODO - check for errors.
+	// TODO - write in loop.
+	var DWORD mut bytes_written = 0u;
+	unsafe( ::WriteFile(
+		handle,
+		ust::ptr_cast_to_byte8( contents.data() ),
+		DWORD(contents.size()),
+		$<(bytes_written),
+		ust::nullptr</byte8/>() ) );
+
+	unsafe( ::CloseHandle(handle) );
+
+	return true;
+}
+
+} // namespace BK
+
+type BOOL = i32;
+type HANDLE = $(byte8);
+type DWORD = u32;
+
+// TODO - use wide version.
+fn nomangle CreateDirectoryA( $(char8) path_null_terminated, $(byte8) security_attributes ) unsafe : BOOL;
+
+// TODO - use wide version.
+fn nomangle CreateFileA(
+	$(char8) path_null_terminated,
+	DWORD desired_access,
+	DWORD shared_mode,
+	$(byte8) security_attributes,
+	DWORD creation_disposition,
+	DWORD flags_and_attributes,
+	HANDLE template_file ) unsafe : HANDLE;
+
+fn nomangle WriteFile(
+	HANDLE handle,
+	$(byte8) buffer,
+	DWORD number_of_bytes_to_write,
+	$(DWORD) number_of_bytes_written,
+	$(byte8) overlapped ) unsafe : BOOL;
+
+fn nomangle CloseHandle( HANDLE handle ) unsafe : BOOL;
+
+fn nomangle GetLastError() unsafe : DWORD;
+
+
+auto constexpr ERROR_ALREADY_EXISTS = 183u;
+
+auto constexpr FILE_SHARE_READ =  0x00000001u;
+
+// auto constexpr GENERIC_READ = 0x80000000u;
+auto constexpr GENERIC_WRITE = 0x40000000u;
+// auto constexpr GENERIC_EXECUTE = 0x20000000u;
+// auto constexpr GENERIC_ALL = 0x10000000u;
+
+auto constexpr CREATE_ALWAYS = 2u;
