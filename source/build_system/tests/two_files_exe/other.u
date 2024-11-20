@@ -1,0 +1,7 @@
+import "/stdout.u"
+import "other.uh"
+
+fn SayHello()
+{
+	ust::stdout_print( "Two files exe hello!\n" );
+}
