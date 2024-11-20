@@ -4,6 +4,7 @@ import subprocess
 import sys
 import traceback
 
+
 g_tests_path = ""
 g_tests_build_root_path = ""
 g_build_system_executable = ""
@@ -12,41 +13,41 @@ g_build_system_imports_path = ""
 g_ustlib_path = ""
 
 
-def HelloWorldTest():
-	test_name = "hello_world"
-	project_root = os.path.join( g_tests_path, test_name )
-	build_root = os.path.join( g_tests_build_root_path, test_name );
+def RunBuildSystem( project_subdirectory ):
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
 	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
-	# Run result executable.
-	subprocess.check_call( [ os.path.join( build_root, "hello_world" ) ] )
+
+
+def RunExecutable( project_subdirectory, executable_name ):
+	subprocess.check_call( [ os.path.join( os.path.join( g_tests_build_root_path, project_subdirectory ), executable_name ) ] )
+
+#
+# Tests itself
+#
+
+def HelloWorldTest():
+	RunBuildSystem( "hello_world" )
+	RunExecutable( "hello_world", "hello_world" )
 
 
 def TwoFilesExeTest():
-	test_name = "two_files_exe"
-	project_root = os.path.join( g_tests_path, test_name )
-	build_root = os.path.join( g_tests_build_root_path, test_name );
-	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
-
-	# Run the build.
-	subprocess.check_call( build_system_args )
-	# Run result executable.
-	subprocess.check_call( [ os.path.join( build_root, "two_files_exe" ) ] )
+	RunBuildSystem( "two_files_exe" )
+	RunExecutable( "two_files_exe", "two_files_exe" )
 
 
 def TwoTargetsTest():
-	test_name = "two_targets"
-	project_root = os.path.join( g_tests_path, test_name )
-	build_root = os.path.join( g_tests_build_root_path, test_name );
-	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	RunBuildSystem( "two_targets" )
+	RunExecutable( "two_targets", "target_a" )
+	RunExecutable( "two_targets", "target_b" )
 
-	# Run the build.
-	subprocess.check_call( build_system_args )
-	# Run Both executables.
-	subprocess.check_call( [ os.path.join( build_root, "target_a" ) ] )
-	subprocess.check_call( [ os.path.join( build_root, "target_b" ) ] )
+
+#
+# End tests list
+#
 
 
 def main():
