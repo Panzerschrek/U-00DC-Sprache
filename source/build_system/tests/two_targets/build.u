@@ -1,0 +1,14 @@
+import "/build_system.uh"
+
+fn GetPackageInfo() : BK::PackageInfo
+{
+	var BK::BuildTarget mut target_a;
+	target_a.source_files.push_back( "target_a.u" );
+	target_a.name= "target_a";
+
+	var BK::BuildTarget mut target_b;
+	target_b.source_files.push_back( "target_b.u" );
+	target_b.name= "target_b";
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target_a), move(target_b) ) };
+}

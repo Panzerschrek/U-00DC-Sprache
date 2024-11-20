@@ -36,6 +36,19 @@ def TwoFilesExeTest():
 	subprocess.check_call( [ os.path.join( build_root, "two_files_exe" ) ] )
 
 
+def TwoTargetsTest():
+	test_name = "two_targets"
+	project_root = os.path.join( g_tests_path, test_name )
+	build_root = os.path.join( g_tests_build_root_path, test_name );
+	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+
+	# Run the build.
+	subprocess.check_call( build_system_args )
+	# Run Both executables.
+	subprocess.check_call( [ os.path.join( build_root, "target_a" ) ] )
+	subprocess.check_call( [ os.path.join( build_root, "target_b" ) ] )
+
+
 def main():
 	parser= argparse.ArgumentParser( description= "Run Bürokratie tests." )
 	parser.add_argument( "--tests-path", help= "path to tests", type=str, required= True )
@@ -66,7 +79,7 @@ def main():
 	g_ustlib_path= args.ustlib_path
 
 
-	test_funcs = [ HelloWorldTest, TwoFilesExeTest ]
+	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest ]
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
 	tests_passed= 0
