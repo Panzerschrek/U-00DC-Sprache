@@ -1,3 +1,5 @@
+import "/stdout.u"
+import "/string_conversions.u"
 import "../process.uh"
 import "windows.uh"
 
@@ -7,6 +9,14 @@ namespace BK
 fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
 	var ust::string8 mut exe_path_null_terminated = exe_path;
+
+	// Append exe if necessary.
+	// TODO - do we really need to do this here?
+	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
+	{
+		exe_path_null_terminated+= ".exe";
+	}
+
 	exe_path_null_terminated+= "\0";
 
 	var ust::string8 mut command_line_combined;
@@ -39,6 +49,7 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	if( creation_result == 0 )
 	{
+		ust::stderr_print( "CreateProcessA error: " + ust::to_string8( unsafe( GetLastError() ) ) + "\n" );
 		return false;
 	}
 
