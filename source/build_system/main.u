@@ -59,7 +59,17 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		ust::stdout_print( "Bürokratie - the Ü build system!\n" );
 	}
 
-	if( !EnsureDirectoryExists( options.build_directory ) )
+	var BuildSystemPaths build_system_paths
+	{
+		.compiler_executable_path= options.compiler_executable_path,
+		.ustlib_path= options.ustlib_path,
+		.build_system_imports_path= options.build_system_imports_path,
+	};
+
+	var ust::string_view8 package_source_directory = options.root_package_directory;
+	var ust::string_view8 package_build_directory = options.build_directory;
+
+	if( !EnsureDirectoryExists( package_build_directory ) )
 	{
 		ust::stderr_print( "Can't create build directory.\n" );
 		return -1;
@@ -68,7 +78,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// TODO - customize it based on package name?
 	auto constexpr entry_func_name = "GetPackageInfoImpl";
 
-	auto shared_library_opt = BuildAndLoadBuildScript( options, entry_func_name );
+	auto shared_library_opt = BuildAndLoadPackageBuildScript(
+		options.quiet,
+		build_system_paths,
+		package_source_directory,
+		package_build_directory,
+		entry_func_name );
 	if( shared_library_opt.empty() )
 	{
 		ust::stderr_print( "Faild to load/build the build script shared library.\n" );
@@ -92,7 +107,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	foreach( &build_target : package_info.build_targets )
 	{
-		if( !PerformTargetBuild( build_target, options ) )
+		if( !PerformPackageTargetBuild(
+			options.quiet,
+			build_system_paths,
+			package_source_directory,
+			package_build_directory,
+			build_target ) )
 		{
 			ust::stderr_print( "Failed to build target " + build_target.name + "!\n" );
 			return -1;
@@ -210,12 +230,24 @@ fn MakeDefaultOptions() : Options
 	return res;
 }
 
-fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name ) : ust::optional</SharedLibrary/>
+struct BuildSystemPaths
+{
+	ust::string8 compiler_executable_path;
+	ust::string8 ustlib_path;
+	ust::string8 build_system_imports_path;
+}
+
+fn BuildAndLoadPackageBuildScript(
+	bool quiet,
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 package_source_directory,
+	ust::string_view8 package_build_directory,
+	ust::string_view8 entry_func_name ) : ust::optional</SharedLibrary/>
 {
 	// TODO - select more catchy name for root build script file.
 	auto constexpr build_script_file= "build.u";
 
-	var ust::string8 build_script_wrapper_file_path= options.build_directory + "/" + "build_script_wrapper.u";
+	var ust::string8 build_script_wrapper_file_path= ust::string8(package_build_directory) + "/" + "build_script_wrapper.u";
 
 	// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
 	{
@@ -234,7 +266,7 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 		}
 	}
 
-	var ust::string8 mut result_shared_library_path= options.build_directory;
+	var ust::string8 mut result_shared_library_path= package_build_directory;
 	result_shared_library_path+= "/build.";
 	result_shared_library_path+= GetNativeSharedLibraryExtension();
 
@@ -247,13 +279,13 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 	var ust::vector</ust::string_view8/> mut compiler_args;
 	// Add path to the package directory in order to import "build.u" inside the wrapper.
 	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( options.root_package_directory );
+	compiler_args.push_back( package_source_directory );
 	// Provide standard library imports.
 	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( options.ustlib_path );
+	compiler_args.push_back( build_system_paths.ustlib_path );
 	// Provide path to declarations of the build system interface.
 	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( options.build_system_imports_path );
+	compiler_args.push_back( build_system_paths.build_system_imports_path );
 	compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
 	compiler_args.push_back( "-o" );
 	compiler_args.push_back( result_shared_library_path );
@@ -295,13 +327,13 @@ fn BuildAndLoadBuildScript( Options& options, ust::string_view8 entry_func_name 
 		compiler_args.push_back( "-Wl,/NOIMPLIB" );
 	}
 
-	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
+	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
 	{
 		ust::stderr_print( "Compiler execution failed.\n" );
 		return ust::null_optional;
 	}
 
-	if( !options.quiet )
+	if( !quiet )
 	{
 		ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
 	}
@@ -322,12 +354,17 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 }
 
 // Returns true on success.
-fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
+fn PerformPackageTargetBuild(
+	bool quiet,
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 package_source_directory,
+	ust::string_view8 package_build_directory,
+	BuildTarget& target) : bool
 {
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
 
-	var ust::string8 mut result_target_file_path = options.build_directory + "/" + target.name;
+	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
 
 	if( target_is_windows )
 	{
@@ -341,13 +378,13 @@ fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
 	foreach( &source_file : target.source_files )
 	{
 		// TODO - perform actual file path canonisation.
-		source_files_absolute.push_back( options.root_package_directory + "/" + source_file );
+		source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
 	}
 
 	var ust::vector</ust::string_view8/> mut compiler_args;
 	// Provide standard library imports.
 	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( options.ustlib_path );
+	compiler_args.push_back( build_system_paths.ustlib_path );
 
 	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
 	if(false)
@@ -376,12 +413,12 @@ fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
 	// TODO - select optimization level based on configuration.
 	compiler_args.push_back( "-O2" );
 
-	if( !options.quiet )
+	if( !quiet )
 	{
 		ust::stdout_print( "Building \"" + result_target_file_path + "\"\n" );
 	}
 
-	if( !RunExecutable( options.compiler_executable_path, compiler_args ) )
+	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
 	{
 		ust::stderr_print( "Compiler execution failed.\n" );
 		return false;
