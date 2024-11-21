@@ -1,4 +1,5 @@
 import "../shared_library.uh"
+import "windows.uh"
 
 namespace BK
 {
@@ -8,15 +9,13 @@ fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated += "\0";
 
-	// Use RTLD_NODELETE in order to prevent possible later unloading.
-	// For now we do not support unloading, it can break the code.
-	auto handle = unsafe( ::LoadLibraryA( path_null_terminated.data() ) );
+	var HMODULE mut handle = unsafe( ::LoadLibraryA( path_null_terminated.data() ) );
 	if( ust::is_nullptr(handle) )
 	{
 		return ust::null_optional;
 	}
 
-	return unsafe( SharedLibrary( handle ) );
+	return unsafe( SharedLibrary(  ust::ptr_cast_to_byte8( handle ) ) );
 }
 
 fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byte8)
@@ -24,17 +23,9 @@ fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byt
 	var ust::string8 mut symbol_null_terminated = symbol_name;
 	symbol_null_terminated+= "\0";
 
-	auto res = unsafe( ::GetProcAddress( system_handle_, symbol_null_terminated.data() ) );
+	auto res = unsafe( ::GetProcAddress( ust::byte_ptr_cast</HINSTANCE__/>( system_handle_ ), symbol_null_terminated.data() ) );
 
 	return res;
 }
 
 } // namespace BK
-
-
-type HMODULE = $(byte8);
-
-// TODO - use wide-string version.
-fn nomangle LoadLibraryA( $(char8) name_null_terminated ) unsafe : HMODULE;
-
-fn nomangle GetProcAddress( HMODULE module_handle, $(char8) name_null_terminated ) unsafe : $(byte8);

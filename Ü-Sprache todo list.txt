@@ -159,8 +159,6 @@ CPP Header converter:
 *) Normalize imports paths
 *) Check for more errors - in files writing, commands execution, etc.
 *) Use native system APIs to execute external processes
-*) Manually extract some contents of converted Windows headers (with needed functions and types) to be used in Windows
-	implementation functions of the build system
 *) Avoid rebuilding build script if it wasn't changed
 *) Incremental builds - rebuild only necessary targets and source files within targets (only changed)
 *) Build configurations (debug, release, etc.)
