@@ -1,30 +1,58 @@
 import "../process.uh"
+import "windows.uh"
 
 namespace BK
 {
 
 fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
-	var ust::string8 mut full_command;
-	full_command+= "\"";
-	full_command+= exe_path;
-	full_command+= "\"";
+	var ust::string8 mut exe_path_null_terminated = exe_path;
+	exe_path_null_terminated+= "\0";
+
+	var ust::string8 mut command_line_combined;
+	command_line_combined+= exe_path; // Repeat exe path in command line - it's necessary to fill argv[0]
 
 	foreach( &arg : command_line )
 	{
-		full_command+= " ";
-		full_command+= arg;
+		command_line_combined+= " ";
+		command_line_combined+= arg;
 	}
 
-	full_command+= "\0";
+	command_line_combined+= "\0";
 
-	var i32 exe_res= unsafe( ::system( full_command.data() ) );
+	var ü_STARTUPINFOA mut startup_info = zero_init;
+	startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
 
-	return exe_res == 0;
+	var ü_PROCESS_INFORMATION mut process_information = zero_init;
+
+	var BOOL creation_result = unsafe( CreateProcessA(
+		exe_path_null_terminated.data(),
+		command_line_combined.data(),
+		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		0, // Inherit handles.
+		0u, // Flags
+		ust::nullptr</byte8/>(), // Environment
+		ust::nullptr</CHAR/>(), // Current directory
+		$<(startup_info),
+		$<(process_information) ) );
+
+	if( creation_result == 0 )
+	{
+		return false;
+	}
+
+	// TODO - check if waiting fails.
+	unsafe( WaitForSingleObject( process_information.hProcess, 0xFFFFFFFFu ) );
+
+	var DWORD mut exit_code = 100u;
+	// TODO - check if retrieving exit code fails.
+	unsafe( GetExitCodeProcess( process_information.hProcess, $<(exit_code) ) );
+
+	unsafe( CloseHandle( process_information.hProcess ) );
+	unsafe( CloseHandle( process_information.hThread ) );
+
+	return exit_code == 0u;
 }
 
 } // namespace BK
-
-// C standard library function
-// TODO - use Windows native API instead.
-fn nomangle system( $(char8) command_null_terminated ) unsafe : i32;
