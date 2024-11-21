@@ -150,8 +150,6 @@ CPP Header converter:
 *) Handle some subset of C++ headers
 
 Ü Build system:
-*) Calculate default paths to components (compiler, ustlib, build system imports) relative to the build system
-	executable
 *) Improve build directories creation code - create all directories within given path, handle cases when a directory
 	already exists, handle case where a non-directory object (like a file) with given name exists
 *) Check build script existence before running compiler for building it

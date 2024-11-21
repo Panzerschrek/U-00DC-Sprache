@@ -59,13 +59,36 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		ust::stdout_print( "Bürokratie - the Ü build system!\n" );
 	}
 
+	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
+	if( !options.quiet )
+	{
+		ust::stdout_print( "Build system executable directory path: \"" + exe_directory_path + "\"\n" );
+	}
+
+	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
+	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
+	// "ustlib" is located in the root of the Üpackage.
+	var ust::string8 default_ustlib_path = exe_directory_path + "../ustlib";
+	// Build system imports are located in "/build_system/imports"
+	var ust::string8 default_build_system_imports_path = exe_directory_path + "../build_system/imports";
+
 	var BuildSystemPaths build_system_paths
 	{
-		.compiler_executable_path= MakePathAbsolute(options.compiler_executable_path),
-		.ustlib_path= MakePathAbsolute(options.ustlib_path),
-		.build_system_imports_path= MakePathAbsolute(options.build_system_imports_path),
+		.compiler_executable_path=
+			( options.compiler_executable_path.empty()
+				? default_compiler_executable_path
+				: MakePathAbsolute(options.compiler_executable_path) ),
+		.ustlib_path=
+			( options.ustlib_path.empty()
+				? default_ustlib_path
+				: MakePathAbsolute(options.ustlib_path) ),
+		.build_system_imports_path=
+			( options.build_system_imports_path.empty()
+				? default_build_system_imports_path
+				: MakePathAbsolute(options.build_system_imports_path) ),
 	};
 
+	// If "options.root_package_directory" is empty this will become current directory.
 	var ust::string8 package_source_directory = MakePathAbsolute( options.root_package_directory );
 
 	// By default use "build" directory within root package directory.
@@ -216,6 +239,17 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	}
 
 	return move(res);
+}
+
+fn ExtractExeDirectoryPath( ust::string_view8 exe_path ) : ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var ust::string_view8 mut p = exe_path;
+	while( !p.empty() && !( p.back() == "/"c8 || p.back() == "\\"c8 ) )
+	{
+		p.drop_back();
+	}
+
+	return p;
 }
 
 struct BuildSystemPaths

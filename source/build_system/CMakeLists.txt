@@ -61,6 +61,8 @@ endif()
 
 install( TARGETS BuildSystem )
 
+file( GLOB BUILD_SYSTEM_IMPORTS_SOURCES "imports/*" )
+install( FILES ${BUILD_SYSTEM_IMPORTS_SOURCES} DESTINATION "build_system/imports" )
 
 if( U_BUILD_PY_TESTS )
 
