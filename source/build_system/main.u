@@ -324,8 +324,15 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 // Returns true on success.
 fn PerformTargetBuild( BuildTarget& target, Options& options ) : bool
 {
-	// TODO - add target platform-specific extension.
-	var ust::string8 result_target_file_path = options.build_directory + "/" + target.name;
+	// TODO - fix this check, do not use host OS.
+	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+
+	var ust::string8 mut result_target_file_path = options.build_directory + "/" + target.name;
+
+	if( target_is_windows )
+	{
+		result_target_file_path+= ".exe";
+	}
 
 	// For now just build all files together into result executable.
 	// TODO - compile each source file individually and support incremental building.
