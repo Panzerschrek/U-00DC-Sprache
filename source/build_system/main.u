@@ -3,6 +3,7 @@ import "/string.u"
 import "/string_conversions.u"
 import "/vector.u"
 import "filesystem.uh"
+import "logger.uh"
 import "shared_library.uh"
 import "process.uh"
 import "imports/build_system.uh"
@@ -54,16 +55,13 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var Options& options= options_opt.try_deref();
 
-	if( !options.quiet )
-	{
-		ust::stdout_print( "Bürokratie - the Ü build system!\n" );
-	}
+	var Logger mut logger( ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) );
+
+	logger.LogInfo( "Bürokratie - the Ü build system!" );
 
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
-	if( !options.quiet )
-	{
-		ust::stdout_print( "Build system executable directory path: \"" + exe_directory_path + "\"\n" );
-	}
+
+	logger.LogInfo( "Build system executable directory path: \"" + exe_directory_path + "\"" );
 
 	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
 	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
@@ -97,14 +95,11 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			? ( package_source_directory + "/build" )
 			: MakePathAbsolute( options.build_directory ) );
 
-	if( !options.quiet )
-	{
-		ust::stdout_print( "Build project in \""  + package_source_directory + "\" using build directory \"" + package_build_directory + "\"\n" );
-	}
+	logger.LogInfo( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
 
 	if( !EnsureDirectoryExists( package_build_directory ) )
 	{
-		ust::stderr_print( "Can't create build directory.\n" );
+		logger.LogError( "Can't create build directory." );
 		return -1;
 	}
 
@@ -112,21 +107,21 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	auto constexpr entry_func_name = "GetPackageInfoImpl";
 
 	auto shared_library_opt = BuildAndLoadPackageBuildScript(
-		options.quiet,
+		logger,
 		build_system_paths,
 		package_source_directory,
 		package_build_directory,
 		entry_func_name );
 	if( shared_library_opt.empty() )
 	{
-		ust::stderr_print( "Faild to load/build the build script shared library.\n" );
+		logger.LogError( "Faild to load/build the build script shared library." );
 		return -1;
 	}
 
 	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( entry_func_name );
 	if( ust::is_nullptr(func_raw_ptr) )
 	{
-		ust::stderr_print( "Faild to load function " + entry_func_name + "\n" );
+		logger.LogError( "Faild to load function " + entry_func_name );
 		return -1;
 	}
 
@@ -141,21 +136,18 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	foreach( &build_target : package_info.build_targets )
 	{
 		if( !PerformPackageTargetBuild(
-			options.quiet,
+			logger,
 			build_system_paths,
 			package_source_directory,
 			package_build_directory,
 			build_target ) )
 		{
-			ust::stderr_print( "Failed to build target " + build_target.name + "!\n" );
+			logger.LogError( "Failed to build target " + build_target.name + "!" );
 			return -1;
 		}
 	}
 
-	if( !options.quiet )
-	{
-		ust::stdout_print( "Successfully finished the build!\n" );
-	}
+	logger.LogInfo( "Successfully finished the build!" );
 
 	return 0;
 }
@@ -260,7 +252,7 @@ struct BuildSystemPaths
 }
 
 fn BuildAndLoadPackageBuildScript(
-	bool quiet,
+	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
@@ -283,7 +275,7 @@ fn BuildAndLoadPackageBuildScript(
 
 		if( !WriteFile( build_script_wrapper_file_path, build_script_wrapper_contents ) )
 		{
-			ust::stderr_print( "Can't write build script wrapper file.\n" );
+			logger.LogError( "Can't write build script wrapper file." );
 			return ust::null_optional;
 		}
 	}
@@ -351,19 +343,16 @@ fn BuildAndLoadPackageBuildScript(
 
 	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
 	{
-		ust::stderr_print( "Compiler execution failed.\n" );
+		logger.LogError( "Compiler execution failed." );
 		return ust::null_optional;
 	}
 
-	if( !quiet )
-	{
-		ust::stdout_print( "Loading " + result_shared_library_path + "\n" );
-	}
+	logger.LogInfo( "Loading " + result_shared_library_path );
 
 	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
 	if( shared_library_opt.empty() )
 	{
-		ust::stderr_print( "Faild to load build script shared library\n" );
+		logger.LogError( "Faild to load build script shared library." );
 		return ust::null_optional;
 	}
 
@@ -377,7 +366,7 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 
 // Returns true on success.
 fn PerformPackageTargetBuild(
-	bool quiet,
+	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
@@ -434,14 +423,12 @@ fn PerformPackageTargetBuild(
 	// TODO - select optimization level based on configuration.
 	compiler_args.push_back( "-O2" );
 
-	if( !quiet )
-	{
-		ust::stdout_print( "Building \"" + result_target_file_path + "\"\n" );
-	}
+
+	logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
 
 	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
 	{
-		ust::stderr_print( "Compiler execution failed.\n" );
+		logger.LogError( "Compiler execution failed." );
 		return false;
 	}
 

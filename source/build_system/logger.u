@@ -1,0 +1,30 @@
+import "/stdout.u"
+import "logger.uh"
+
+
+namespace BK
+{
+
+fn Logger::constructor( Level level )
+	( level_= level )
+{
+}
+
+fn Logger::LogInfo( mut this, ust::string_view8 message )
+{
+	if( level_ <= Level::Quiet )
+	{
+		return;
+	}
+
+	ust::stdout_print( message );
+	ust::stdout_print( "\n" );
+}
+
+fn Logger::LogError( mut this, ust::string_view8 message )
+{
+	ust::stderr_print( message );
+	ust::stderr_print( "\n" );
+}
+
+} // namespace BK

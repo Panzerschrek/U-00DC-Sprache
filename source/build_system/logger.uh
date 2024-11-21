@@ -1,0 +1,25 @@
+import "/string.u"
+
+namespace BK
+{
+
+class Logger
+{
+public:
+	enum Level
+	{
+		Quiet,
+		Normal,
+	}
+
+public:
+	fn constructor( Level level );
+
+	fn LogInfo( mut this, ust::string_view8 message );
+	fn LogError( mut this, ust::string_view8 message );
+
+private:
+	Level imut level_;
+}
+
+} // namespace BK
