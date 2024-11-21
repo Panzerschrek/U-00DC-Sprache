@@ -3,6 +3,9 @@ import "/string.u"
 namespace BK
 {
 
+// Make path absolute, if it is already absolute - just return it.
+fn MakePathAbsolute( ust::string_view8 path ) : ust::string8;
+
 // Creates a directory, if it doesn't exist.
 // Returns false on fail
 fn EnsureDirectoryExists( ust::string_view8 path ) : bool;

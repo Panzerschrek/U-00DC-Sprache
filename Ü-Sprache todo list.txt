@@ -154,9 +154,7 @@ CPP Header converter:
 	executable
 *) Improve build directories creation code - create all directories within given path, handle cases when a directory
 	already exists, handle case where a non-directory object (like a file) with given name exists
-*) Execute external commands by providing normalized paths
 *) Check build script existence before running compiler for building it
-*) Normalize imports paths
 *) Check for more errors - in files writing, commands execution, etc.
 *) Use native system APIs to execute external processes
 *) Avoid rebuilding build script if it wasn't changed

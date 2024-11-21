@@ -61,13 +61,23 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var BuildSystemPaths build_system_paths
 	{
-		.compiler_executable_path= options.compiler_executable_path,
-		.ustlib_path= options.ustlib_path,
-		.build_system_imports_path= options.build_system_imports_path,
+		.compiler_executable_path= MakePathAbsolute(options.compiler_executable_path),
+		.ustlib_path= MakePathAbsolute(options.ustlib_path),
+		.build_system_imports_path= MakePathAbsolute(options.build_system_imports_path),
 	};
 
-	var ust::string_view8 package_source_directory = options.root_package_directory;
-	var ust::string_view8 package_build_directory = options.build_directory;
+	var ust::string8 package_source_directory = MakePathAbsolute( options.root_package_directory );
+
+	// By default use "build" directory within root package directory.
+	var ust::string8 package_build_directory =
+		( options.build_directory.empty()
+			? ( package_source_directory + "/build" )
+			: MakePathAbsolute( options.build_directory ) );
+
+	if( !options.quiet )
+	{
+		ust::stdout_print( "Build project in \""  + package_source_directory + "\" using build directory \"" + package_build_directory + "\"\n" );
+	}
 
 	if( !EnsureDirectoryExists( package_build_directory ) )
 	{
@@ -139,7 +149,7 @@ struct Options
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
 {
-	var Options mut res = MakeDefaultOptions();
+	var Options mut res;
 
 	for( auto mut i= 0s; i < args.size(); )
 	{
@@ -206,28 +216,6 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	}
 
 	return move(res);
-}
-
-fn MakeDefaultOptions() : Options
-{
-	var Options mut res;
-
-	// TODO - select more catchy name for a build directory.
-	res.build_directory= "build";
-
-	// TODO - find a proper compiler executable in current executable directory.
-	res.compiler_executable_path= "Compiler1";
-
-	// Default option is to use current directory.
-	res.root_package_directory= ".";
-
-	// TODO - set some default.
-	res.ustlib_path= "";
-
-	// TODO - set some default.
-	res.build_system_imports_path= "";
-
-	return res;
 }
 
 struct BuildSystemPaths
@@ -377,7 +365,6 @@ fn PerformPackageTargetBuild(
 	var ust::vector</ust::string8/> mut source_files_absolute;
 	foreach( &source_file : target.source_files )
 	{
-		// TODO - perform actual file path canonisation.
 		source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
 	}
 

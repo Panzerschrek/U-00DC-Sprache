@@ -1,8 +1,19 @@
+import "/vector.u"
 import "../filesystem.uh"
 import "errno.uh"
 
 namespace BK
 {
+
+fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
+{
+	if( !path.empty() && path.front() == "/"c8 )
+	{
+		return path;
+	}
+
+	return GetCurrentDirectory() + "/" + path;
+}
 
 fn EnsureDirectoryExists( ust::string_view8 path ) : bool
 {
@@ -47,6 +58,34 @@ fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
 	return true;
 }
 
+fn GetCurrentDirectory() : ust::string8
+{
+	var ust::vector</char8/> mut buff;
+	buff.resize( 256s, "\0"c8 );
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		auto res = unsafe( ::getcwd( buff.data(), buff.size() ) );
+		if( ust::is_nullptr(res) )
+		{
+			// Not enough space - double it and call the function again.
+			auto new_size= buff.size() * 2s;
+			buff.resize( new_size, "\0"c8 );
+			continue;
+		}
+
+		var size_type mut len= 0s;
+		while( len < buff.size() && buff[len] != "\0"c8 )
+		{
+			++len;
+		}
+
+		return ust::string_view8( buff.range().subrange_end( len ) );
+	}
+
+	// Failed to retrieve current directory.
+	halt;
+}
+
 } // namespace BK
 
 // Unix function for directory creation.
@@ -56,6 +95,8 @@ fn nomangle open( $(char8) path_null_terminated, i32 flags, u32 mode ) unsafe : 
 fn nomangle close( i32 fd ) : i32;
 
 fn nomangle write( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
+
+fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
 
 auto constexpr O_WRONLY = 0o1;
 auto constexpr O_CREAT = 0o100;
