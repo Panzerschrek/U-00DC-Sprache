@@ -78,7 +78,7 @@ if( U_BUILD_PY_TESTS )
 	add_custom_command(
 		OUTPUT ${TIMESTAMP_FILE}
 		COMMAND
-			${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
+			COMMAND ${CMAKE_COMMAND} -E env PYTHONIOENCODING=utf-8 ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
 			--tests-path ${CMAKE_CURRENT_SOURCE_DIR}/tests/
 			--tests-build-root-path ${CMAKE_CURRENT_BINARY_DIR}/tests
 			--build-system-executable ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem
