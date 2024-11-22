@@ -6,7 +6,9 @@ namespace BK
 fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
 	var ust::string8 mut full_command;
+	full_command+= "\"";
 	full_command+= exe_path;
+	full_command+= "\"";
 
 	foreach( &arg : command_line )
 	{
@@ -17,6 +19,7 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	full_command+= "\0";
 
+	// TODO - try find a better way to execute a process - without shell execution and combining/parsing command line arguments.
 	var i32 exe_res= unsafe( ::system( full_command.data() ) );
 
 	return exe_res == 0;
