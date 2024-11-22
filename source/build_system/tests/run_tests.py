@@ -64,7 +64,35 @@ def ТестЮникода():
 def MissingBuildFile():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
+	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def BrokenBuildFile0():
+	res = RunBuildSystemWithErrors( "broken_build_file0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "build.u:1:0: error: Syntax error - unexpected lexem" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def BrokenBuildFile1():
+	res = RunBuildSystemWithErrors( "broken_build_file1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "build.u:9:63: error: Name \"wtarget\" not found" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def BrokenBuildFile2():
+	res = RunBuildSystemWithErrors( "broken_build_file2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "build_script_wrapper.u:3:60: error: Name \"GetPackageInfo\" not found" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -104,7 +132,7 @@ def main():
 	g_ustlib_path= args.ustlib_path
 
 
-	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest, ТестЮникода, MissingBuildFile ]
+	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest, ТестЮникода, MissingBuildFile, BrokenBuildFile0, BrokenBuildFile1, BrokenBuildFile2 ]
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
 	tests_passed= 0
