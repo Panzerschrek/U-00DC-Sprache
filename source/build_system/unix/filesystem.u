@@ -48,9 +48,23 @@ fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
 		return false;
 	}
 
-	// TODO - check for errors.
-	// TODO - write in loop.
-	unsafe( ::write( fd, ust::ptr_cast_to_byte8( contents.data() ), contents.size() ) );
+	// Perform writing in loop in order to handle cases where less than needed bytes were written.
+	for( auto mut offset = 0s; offset < contents.size(); )
+	{
+		var ssize_type write_res = unsafe( ::write(
+			fd,
+			ust::ptr_cast_to_byte8( contents.data() ) + offset,
+			contents.size() - offset ) );
+
+		if( write_res < ssize_type(0) )
+		{
+			// Write failed.
+			unsafe( ::close(fd) );
+			return false;
+		}
+
+		offset+= size_type(write_res);
+	}
 
 	unsafe( ::close(fd) );
 
@@ -66,10 +80,18 @@ fn GetCurrentDirectory() : ust::string8
 		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
 		if( ust::is_nullptr(call_res) )
 		{
-			// Not enough space - double it and call the function again.
-			auto new_size= res.size() * 2s;
-			res.resize( new_size, "\0"c8 );
-			continue;
+			if( BKGetErrno() == ERANGE )
+			{
+				// Not enough space - double it and call the function again.
+				auto new_size= res.size() * 2s;
+				res.resize( new_size, "\0"c8 );
+				continue;
+			}
+			else
+			{
+				// "getcwd" failed for some other reason.
+				halt;
+			}
 		}
 
 		var size_type mut len= 0s;
@@ -100,3 +122,5 @@ fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
 
 auto constexpr O_WRONLY = 0o1;
 auto constexpr O_CREAT = 0o100;
+
+auto constexpr ERANGE = 34;
