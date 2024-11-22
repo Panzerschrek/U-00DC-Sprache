@@ -106,6 +106,22 @@ def MissingSourceFileTest():
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
 
+def SourceFileCompilationError0Test():
+	res = RunBuildSystemWithErrors( "source_file_compilation_error0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Syntax error" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+
+
+def SourceFileCompilationError1Test():
+	res = RunBuildSystemWithErrors( "source_file_compilation_error1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Name \"Foo\" not found" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -140,8 +156,19 @@ def main():
 	global g_ustlib_path
 	g_ustlib_path= args.ustlib_path
 
+	test_funcs = [
+		HelloWorldTest,
+		TwoFilesExeTest,
+		TwoTargetsTest,
+		ТестЮникода,
+		MissingBuildFile,
+		BrokenBuildFile0Test,
+		BrokenBuildFile1Test,
+		BrokenBuildFile2Test,
+		MissingSourceFileTest,
+		SourceFileCompilationError0Test,
+		SourceFileCompilationError1Test ]
 
-	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest, ТестЮникода, MissingBuildFile, BrokenBuildFile0Test, BrokenBuildFile1Test, BrokenBuildFile2Test, MissingSourceFileTest ]
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
 	tests_passed= 0
