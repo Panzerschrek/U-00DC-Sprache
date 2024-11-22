@@ -97,6 +97,15 @@ def BrokenBuildFile2Test():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
+def BrokenBuildFile3Test():
+	res = RunBuildSystemWithErrors( "broken_build_file3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not read file" ) != -1 )
+	assert( stderr.find( "non_existing_file_imported_in_build_file.uh" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+
+
 def MissingSourceFileTest():
 	res = RunBuildSystemWithErrors( "missing_source_file" )
 	assert( res.returncode != 0 )
@@ -119,6 +128,15 @@ def SourceFileCompilationError1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Name \"Foo\" not found" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
+
+
+def SourceFileCompilationError2Test():
+	res = RunBuildSystemWithErrors( "source_file_compilation_error2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not read file" ) != -1 )
+	assert( stderr.find( "non_existing_imported_file.uh" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
 
@@ -197,9 +215,11 @@ def main():
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
 		BrokenBuildFile2Test,
+		BrokenBuildFile3Test,
 		MissingSourceFileTest,
 		SourceFileCompilationError0Test,
 		SourceFileCompilationError1Test,
+		SourceFileCompilationError2Test,
 		LinkingError0Test,
 		LinkingError1Test,
 		DuplicatedBuildTargetTest,
