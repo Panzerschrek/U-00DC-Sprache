@@ -1,47 +1,22 @@
 import "/stdout.u"
-import "/string.u"
 import "/string_conversions.u"
 import "/vector.u"
 import "filesystem.uh"
 import "logger.uh"
 import "shared_library.uh"
+import "string_utils.uh"
 import "process.uh"
 import "imports/build_system.uh"
 
 
 fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 {
-	auto args= unsafe( BK::ArgsToStringView( argc, argv ) );
+	auto args= unsafe( BK::MainArgsToStringView( argc, argv ) );
 	return BK::Main( args.front(), args.range().subrange_start(1s) );
 }
 
 namespace BK
 {
-
-fn ArgsToStringView( i32 argc, $($(char8)) argv ) unsafe : ust::vector</ust::string_view8/>
-{
-	var ust::vector</ust::string_view8/> mut res;
-	for( auto mut i= 0; i < argc; ++i )
-	{
-		res.push_back( unsafe( NullTerminatedStringToStringView( $>( argv + i ) ) ) );
-	}
-
-	return res;
-}
-
-fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
-{
-	unsafe
-	{
-		auto mut p= ptr;
-		while( $>(p) != "\0"c8 )
-		{
-			++p;
-		}
-
-		return ust::string_view8( ptr, size_type( p - ptr ) );
-	}
-}
 
 // Place actual "main" code inside the "BK" namespace.
 fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32

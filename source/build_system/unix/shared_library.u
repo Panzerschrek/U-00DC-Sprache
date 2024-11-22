@@ -1,5 +1,6 @@
 import "/stdout.u"
 import "../shared_library.uh"
+import "../string_utils.uh"
 
 namespace BK
 {
@@ -36,21 +37,6 @@ fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byt
 	}
 
 	return res;
-}
-
-// TODO - remove copypaste
-fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
-{
-	unsafe
-	{
-		auto mut p= ptr;
-		while( $>(p) != "\0"c8 )
-		{
-			++p;
-		}
-
-		return ust::string_view8( ptr, size_type( p - ptr ) );
-	}
 }
 
 } // namespace BK
