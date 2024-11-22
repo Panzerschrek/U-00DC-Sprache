@@ -130,6 +130,14 @@ def DuplicatedBuildTargetTest():
 	assert( stderr.find( "Package is invald" ) != -1 )
 
 
+def DuplicatedSourceFileTest():
+	res = RunBuildSystemWithErrors( "duplicated_source_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
+	assert( stderr.find( "Package is invald" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -176,7 +184,8 @@ def main():
 		MissingSourceFileTest,
 		SourceFileCompilationError0Test,
 		SourceFileCompilationError1Test,
-		DuplicatedBuildTargetTest ]
+		DuplicatedBuildTargetTest,
+		DuplicatedSourceFileTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

@@ -375,13 +375,26 @@ fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
 	var bool mut ok= true;
 	for( auto mut i= 0s; i < package_info.build_targets.size(); ++i )
 	{
-		auto& current_name= package_info.build_targets[i].name;
+		var BuildTarget& build_target= package_info.build_targets[i];
+		auto& current_name= build_target.name;
 		for( auto mut j= 0s; j < i; ++j )
 		{
 			if( current_name == package_info.build_targets[j].name )
 			{
 				logger.LogError( "Error, duplicated build target \"" + current_name + "\"!" );
 				ok= false;
+			}
+		}
+
+		for( auto mut m= 0s; m < build_target.source_files.size(); ++m )
+		{
+			for( auto mut n= 0s; n < m; ++n )
+			{
+				if( build_target.source_files[m] == build_target.source_files[n] )
+				{
+					logger.LogError( "Error, duplicated source file \"" + build_target.source_files[m] + "\" of the build target \"" + current_name + "\"!" );
+					ok= false;
+				}
 			}
 		}
 	}
