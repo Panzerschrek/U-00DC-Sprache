@@ -1,10 +1,11 @@
+import "/string_conversions.u"
 import "../filesystem.uh"
 import "windows.uh"
 
 namespace BK
 {
 
-fn EnsureDirectoryExists( ust::string_view8 path ) : bool
+fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 {
 	// TODO - handle case with composed path name, like some/long/path
 
@@ -23,10 +24,12 @@ fn EnsureDirectoryExists( ust::string_view8 path ) : bool
 		return true;
 	}
 
+	logger.LogError( "Failed to create directory \"" + ( path + ( "\": " + ust::to_string8(err) ) ) );
+
 	return false;
 }
 
-fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
+fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
 {
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated+= "\0";
@@ -41,6 +44,7 @@ fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
 		ust::nullptr</byte8/>() ) );
 	if( ust::is_nullptr(handle) )
 	{
+		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( unsafe( GetLastError() ) ) ) ) );
 		return false;
 	}
 

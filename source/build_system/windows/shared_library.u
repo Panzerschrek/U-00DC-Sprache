@@ -1,10 +1,11 @@
+import "/string_conversions.u"
 import "../shared_library.uh"
 import "windows.uh"
 
 namespace BK
 {
 
-fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
+fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>
 {
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated += "\0";
@@ -12,18 +13,23 @@ fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
 	var HMODULE mut handle = unsafe( ::LoadLibraryA( path_null_terminated.data() ) );
 	if( ust::is_nullptr(handle) )
 	{
+		logger.LogError( "LoadLibraryA error: " + ust::to_string8( unsafe( GetLastError() ) ) );
 		return ust::null_optional;
 	}
 
-	return unsafe( SharedLibrary(  ust::ptr_cast_to_byte8( handle ) ) );
+	return unsafe( SharedLibrary( ust::ptr_cast_to_byte8( handle ) ) );
 }
 
-fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byte8)
+fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 symbol_name ) : $(byte8)
 {
 	var ust::string8 mut symbol_null_terminated = symbol_name;
 	symbol_null_terminated+= "\0";
 
 	auto res = unsafe( ::GetProcAddress( ust::byte_ptr_cast</HINSTANCE__/>( system_handle_ ), symbol_null_terminated.data() ) );
+	if( ust::is_nullptr(res) )
+	{
+		logger.LogError( "GetProcAddress error: " + ust::to_string8( unsafe( GetLastError() ) ) );
+	}
 
 	return res;
 }
