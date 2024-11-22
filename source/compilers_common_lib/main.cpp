@@ -160,6 +160,11 @@ cl::opt<bool> allow_unused_names(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<std::string> target_arch(
+	"target-arch",
+	cl::desc("Target architecture"),
+	cl::cat(options_category) );
+
 cl::opt<std::string> target_vendor(
 	"target-vendor",
 	cl::desc("Target vendor"),
@@ -410,6 +415,7 @@ int Main( int argc, const char* argv[] )
 	Options::optimization_level.removeArgument();
 	Options::generate_debug_info.removeArgument();
 	Options::allow_unused_names.removeArgument();
+	Options::target_arch.removeArgument();
 	Options::target_vendor.removeArgument();
 	Options::target_os.removeArgument();
 	Options::target_environment.removeArgument();
@@ -487,6 +493,8 @@ int Main( int argc, const char* argv[] )
 	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
+		if( !Options::target_arch.empty() )
+			target_triple.setArchName( Options::target_arch );
 		if( !Options::target_vendor.empty() )
 			target_triple.setVendorName( Options::target_vendor );
 		if( !Options::target_os.empty() )

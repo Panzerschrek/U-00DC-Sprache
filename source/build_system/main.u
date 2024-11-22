@@ -297,7 +297,9 @@ fn BuildAndLoadPackageBuildScript(
 	}
 
 	// Use the same target parameters for the shared library as for the build system executable.
-	// TODO - set also architecture.
+
+	compiler_args.push_back( "--target-arch" );
+	compiler_args.push_back( compiler::target::arch );
 
 	compiler_args.push_back( "--target-vendor" );
 	compiler_args.push_back( compiler::target::vendor );
