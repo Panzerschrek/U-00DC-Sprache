@@ -1,0 +1,3 @@
+import "/build.u"
+
+fn nomangle GetPackageInfoImpl() : BK::PackageInfo { return GetPackageInfo(); }

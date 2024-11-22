@@ -114,14 +114,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		entry_func_name );
 	if( shared_library_opt.empty() )
 	{
-		logger.LogError( "Faild to load/build the build script shared library." );
+		logger.LogError( "Failed to load/build the build script shared library." );
 		return -1;
 	}
 
 	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( entry_func_name );
 	if( ust::is_nullptr(func_raw_ptr) )
 	{
-		logger.LogError( "Faild to load function " + entry_func_name );
+		logger.LogError( "Failed to load function " + entry_func_name );
 		return -1;
 	}
 
@@ -352,7 +352,7 @@ fn BuildAndLoadPackageBuildScript(
 	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
 	if( shared_library_opt.empty() )
 	{
-		logger.LogError( "Faild to load build script shared library." );
+		logger.LogError( "Failed to load build script shared library." );
 		return ust::null_optional;
 	}
 
