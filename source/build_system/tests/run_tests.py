@@ -70,7 +70,7 @@ def MissingBuildFile():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
-def BrokenBuildFile0():
+def BrokenBuildFile0Test():
 	res = RunBuildSystemWithErrors( "broken_build_file0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
@@ -79,7 +79,7 @@ def BrokenBuildFile0():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
-def BrokenBuildFile1():
+def BrokenBuildFile1Test():
 	res = RunBuildSystemWithErrors( "broken_build_file1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
@@ -88,13 +88,22 @@ def BrokenBuildFile1():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
-def BrokenBuildFile2():
+def BrokenBuildFile2Test():
 	res = RunBuildSystemWithErrors( "broken_build_file2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "build_script_wrapper.u:3:60: error: Name \"GetPackageInfo\" not found" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def MissingSourceFileTest():
+	res = RunBuildSystemWithErrors( "missing_source_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not read file" ) != -1 )
+	assert( stderr.find( "this_file_does_not_exist.u" ) != -1 )
+	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
 
 #
@@ -132,7 +141,7 @@ def main():
 	g_ustlib_path= args.ustlib_path
 
 
-	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest, ТестЮникода, MissingBuildFile, BrokenBuildFile0, BrokenBuildFile1, BrokenBuildFile2 ]
+	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest, ТестЮникода, MissingBuildFile, BrokenBuildFile0Test, BrokenBuildFile1Test, BrokenBuildFile2Test, MissingSourceFileTest ]
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
 	tests_passed= 0
