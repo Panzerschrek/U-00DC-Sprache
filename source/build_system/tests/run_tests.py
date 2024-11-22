@@ -122,6 +122,22 @@ def SourceFileCompilationError1Test():
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
 
+def LinkingError0Test():
+	res = RunBuildSystemWithErrors( "linking_error0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "undefined symbol" ) != -1 )
+	assert( stderr.find( "main" ) != -1 )
+
+
+def LinkingError1Test():
+	res = RunBuildSystemWithErrors( "linking_error1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "undefined symbol" ) != -1 )
+	assert( stderr.find( "Foo()" ) != -1 )
+
+
 def DuplicatedBuildTargetTest():
 	res = RunBuildSystemWithErrors( "duplicated_build_target" )
 	assert( res.returncode != 0 )
@@ -184,6 +200,8 @@ def main():
 		MissingSourceFileTest,
 		SourceFileCompilationError0Test,
 		SourceFileCompilationError1Test,
+		LinkingError0Test,
+		LinkingError1Test,
 		DuplicatedBuildTargetTest,
 		DuplicatedSourceFileTest ]
 
