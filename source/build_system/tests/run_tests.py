@@ -45,6 +45,12 @@ def TwoTargetsTest():
 	RunExecutable( "two_targets", "target_b" )
 
 
+def ТестЮникода():
+	# Non-ASCII project directory name, non-ASCII target name with spaces.
+	RunBuildSystem( "Тест Юникода" )
+	RunExecutable( "Тест Юникода", "Юникодный исполняемый файл - ☦ (православный)" )
+
+
 #
 # End tests list
 #
@@ -80,7 +86,7 @@ def main():
 	g_ustlib_path= args.ustlib_path
 
 
-	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest ]
+	test_funcs = [ HelloWorldTest, TwoFilesExeTest, TwoTargetsTest, ТестЮникода ]
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
 	tests_passed= 0
@@ -92,7 +98,7 @@ def main():
 			tests_passed+= 1
 		except Exception as ex:
 			print( "test " + str(test_func) + " failed" )
-			# traceback.print_exc( file= sys.stdout )
+			traceback.print_exc( file= sys.stdout )
 			print()
 			tests_failed+= 1
 

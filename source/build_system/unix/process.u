@@ -10,8 +10,9 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	foreach( &arg : command_line )
 	{
-		full_command+= " ";
+		full_command+= " \"";
 		full_command+= arg;
+		full_command+= "\"";
 	}
 
 	full_command+= "\0";
