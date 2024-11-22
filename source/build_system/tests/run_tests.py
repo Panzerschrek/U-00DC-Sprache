@@ -122,6 +122,14 @@ def SourceFileCompilationError1Test():
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
 
+def DuplicatedBuildTargetTest():
+	res = RunBuildSystemWithErrors( "duplicated_build_target" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, duplicated build target \"target_c\"" ) != -1 )
+	assert( stderr.find( "Package is invald" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -167,7 +175,8 @@ def main():
 		BrokenBuildFile2Test,
 		MissingSourceFileTest,
 		SourceFileCompilationError0Test,
-		SourceFileCompilationError1Test ]
+		SourceFileCompilationError1Test,
+		DuplicatedBuildTargetTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

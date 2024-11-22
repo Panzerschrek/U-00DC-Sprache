@@ -133,6 +133,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var PackageInfo package_info= func_ptr();
 
+	if( !CheckPackageIsOk( logger, package_info ) )
+	{
+		logger.LogError( "Package is invald." );
+		return -1;
+	}
+
 	foreach( &build_target : package_info.build_targets )
 	{
 		if( !PerformPackageTargetBuild(
@@ -362,6 +368,25 @@ fn BuildAndLoadPackageBuildScript(
 fn GetNativeSharedLibraryExtension() : ust::string_view8
 {
 	return( ust::string_view8( compiler::target::os ) == "windows" ? ust::string_view8("dll") : ust::string_view8("so") );
+}
+
+fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
+{
+	var bool mut ok= true;
+	for( auto mut i= 0s; i < package_info.build_targets.size(); ++i )
+	{
+		auto& current_name= package_info.build_targets[i].name;
+		for( auto mut j= 0s; j < i; ++j )
+		{
+			if( current_name == package_info.build_targets[j].name )
+			{
+				logger.LogError( "Error, duplicated build target \"" + current_name + "\"!" );
+				ok= false;
+			}
+		}
+	}
+
+	return ok;
 }
 
 // Returns true on success.
