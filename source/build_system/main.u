@@ -72,7 +72,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	logger.LogInfo( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
 
-	if( !EnsureDirectoryExists( package_build_directory ) )
+	if( !EnsureDirectoryExists( logger, package_build_directory ) )
 	{
 		logger.LogError( "Can't create build directory." );
 		return -1;
@@ -93,7 +93,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( entry_func_name );
+	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( logger, entry_func_name );
 	if( ust::is_nullptr(func_raw_ptr) )
 	{
 		logger.LogError( "Failed to load function " + entry_func_name );
@@ -254,7 +254,7 @@ fn BuildAndLoadPackageBuildScript(
 		build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
 		build_script_wrapper_contents+= "\n";
 
-		if( !WriteFile( build_script_wrapper_file_path, build_script_wrapper_contents ) )
+		if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
 		{
 			logger.LogError( "Can't write build script wrapper file." );
 			return ust::null_optional;
@@ -330,7 +330,7 @@ fn BuildAndLoadPackageBuildScript(
 
 	logger.LogInfo( "Loading " + result_shared_library_path );
 
-	auto shared_library_opt = LoadSharedLibrary( result_shared_library_path );
+	auto shared_library_opt = LoadSharedLibrary( logger, result_shared_library_path );
 	if( shared_library_opt.empty() )
 	{
 		logger.LogError( "Failed to load build script shared library." );

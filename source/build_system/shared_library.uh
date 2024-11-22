@@ -1,12 +1,12 @@
 import "/optional.u"
-import "/string.u"
+import "logger.uh"
 
 namespace BK
 {
 
 // Load shared library without later possibility to unload it.
 // This means any symbols after a particular library loading are available until the process ends.
-fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>;
+fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>;
 
 // A wrapper class for loading shared library symbols.
 // Library loaded is not unloaded even if this instance is destroyed.
@@ -17,7 +17,7 @@ public:
 		( system_handle_= system_handle )
 	{}
 
-	fn LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byte8);
+	fn LoadSymbol( imut this, Logger &mut logger, ust::string_view8 symbol_name ) : $(byte8);
 
 private:
 	$(byte8) system_handle_;

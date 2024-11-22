@@ -1,4 +1,4 @@
-import "/string.u"
+import "logger.uh"
 
 namespace BK
 {
@@ -8,9 +8,9 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8;
 
 // Creates a directory, if it doesn't exist.
 // Returns false on fail
-fn EnsureDirectoryExists( ust::string_view8 path ) : bool;
+fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool;
 
 // Create/overwrite a file with specific contents.
-fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool;
+fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool;
 
 } // namespace BK

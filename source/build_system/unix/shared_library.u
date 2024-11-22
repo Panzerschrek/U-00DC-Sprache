@@ -1,11 +1,10 @@
-import "/stdout.u"
 import "../shared_library.uh"
 import "../string_utils.uh"
 
 namespace BK
 {
 
-fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
+fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>
 {
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated += "\0";
@@ -15,15 +14,14 @@ fn LoadSharedLibrary( ust::string_view8 path ) : ust::optional</SharedLibrary/>
 	auto handle = unsafe( ::dlopen( path_null_terminated.data(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE ) );
 	if( ust::is_nullptr(handle) )
 	{
-		ust::stderr_print( unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
-		ust::stderr_print( "\n" );
+		logger.LogError( ust::string8("dlopen error: ") + unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
 		return ust::null_optional;
 	}
 
 	return unsafe( SharedLibrary(handle) );
 }
 
-fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byte8)
+fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 symbol_name ) : $(byte8)
 {
 	var ust::string8 mut symbol_null_terminated = symbol_name;
 	symbol_null_terminated+= "\0";
@@ -32,8 +30,7 @@ fn SharedLibrary::LoadSymbol( imut this, ust::string_view8 symbol_name ) : $(byt
 
 	if( ust::is_nullptr( res ) )
 	{
-		ust::stderr_print( unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
-		ust::stderr_print( "\n" );
+		logger.LogError( ust::string8("dlsym error: ") + unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
 	}
 
 	return res;

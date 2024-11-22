@@ -1,3 +1,4 @@
+import "/string_conversions.u"
 import "../filesystem.uh"
 import "errno.uh"
 
@@ -14,7 +15,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 	return GetCurrentDirectory() + "/" + path;
 }
 
-fn EnsureDirectoryExists( ust::string_view8 path ) : bool
+fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 {
 	// TODO - handle case with composed path name, like some/long/path
 
@@ -34,10 +35,11 @@ fn EnsureDirectoryExists( ust::string_view8 path ) : bool
 		return true;
 	}
 
+	logger.LogError( "Failed to create directory \"" + ( path + ( "\": " + ust::to_string8(errno) ) ) );
 	return false;
 }
 
-fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
+fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
 {
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated+= "\0";
@@ -45,6 +47,7 @@ fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
 	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT, 0o755u ) );
 	if( fd == -1 )
 	{
+		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( BKGetErrno() ) ) ) );
 		return false;
 	}
 
@@ -59,6 +62,7 @@ fn WriteFile( ust::string_view8 path, ust::string_view8 contents ) : bool
 		if( write_res < ssize_type(0) )
 		{
 			// Write failed.
+			logger.LogError( "Failed to write to file \"" + (path + ( "\", error: " + ust::to_string8( BKGetErrno() ) ) ) );
 			unsafe( ::close(fd) );
 			return false;
 		}
