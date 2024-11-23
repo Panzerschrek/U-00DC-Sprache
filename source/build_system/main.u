@@ -1,19 +1,13 @@
 import "/stdout.u"
 import "/string_conversions.u"
 import "/vector.u"
+import "entry.uh"
 import "filesystem.uh"
 import "logger.uh"
 import "shared_library.uh"
 import "string_utils.uh"
 import "process.uh"
 import "imports/build_system.uh"
-
-
-fn nomangle main( i32 argc, $($(char8)) argv ) : i32
-{
-	auto args= unsafe( BK::MainArgsToStringView( argc, argv ) );
-	return BK::Main( args.front(), args.range().subrange_start(1s) );
-}
 
 namespace BK
 {
