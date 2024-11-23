@@ -281,93 +281,102 @@ fn BuildAndLoadPackageBuildScript(
 		return ust::null_optional;
 	}
 
-	var ust::string8 build_script_wrapper_file_path= ust::string8(package_build_directory) + "/" + "build_script_wrapper.u";
-
-	// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
-	{
-		var ust::string8 mut build_script_wrapper_contents = "import \"/";
-		build_script_wrapper_contents+= build_script_file;
-		build_script_wrapper_contents+= "\"\n\n";
-		build_script_wrapper_contents+= "fn nomangle ";
-		build_script_wrapper_contents+= entry_func_name;
-		build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
-		build_script_wrapper_contents+= "\n";
-
-		if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
-		{
-			logger.LogError( "Can't write build script wrapper file." );
-			return ust::null_optional;
-		}
-	}
-
 	var ust::string8 mut result_shared_library_path= package_build_directory;
 	result_shared_library_path+= "/build.";
 	result_shared_library_path+= GetNativeSharedLibraryExtension();
 
-	var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
+	auto shared_library_modification_time = GetFileModificationTime( result_shared_library_path );
 
-	// Use optimization level which was used to compile the build system executable.
-	var ust::string8 mut optimization_level= "-O";
-	optimization_level.push_back( compiler::options::optimization_level );
-
-	var ust::vector</ust::string_view8/> mut compiler_args;
-	// Add path to the package directory in order to import "build.u" inside the wrapper.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( package_source_directory );
-	// Provide standard library imports.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.ustlib_path );
-	// Provide path to declarations of the build system interface.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.build_system_imports_path );
-	compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
-	compiler_args.push_back( "-o" );
-	compiler_args.push_back( result_shared_library_path );
-	// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-	compiler_args.push_back( "-filetype=dll" );
-	// Run internalization in order to export only entry function.
-	compiler_args.push_back( "--internalize" );
-	compiler_args.push_back( internalize_preserve_option );
-	compiler_args.push_back( optimization_level );
-
-	// If the build system executable was compiled with debug information - generate it for the shared library too.
-	if( compiler::options::generate_debug_info )
+	if( shared_library_modification_time.empty() || // Result doesn't exists.
+		shared_library_modification_time.try_deref() <= build_script_modification_time.try_deref() /* result is older than its corresponding source */ )
 	{
-		compiler_args.push_back( "-g" );
-	}
+		// Rebuild is needed.
+		// TODO - check other dependencies, like imports of the build script. Maybe generate and read dependencies file, produces by the compiler.
 
-	// Use the same target parameters for the shared library as for the build system executable.
+		var ust::string8 build_script_wrapper_file_path= ust::string8(package_build_directory) + "/" + "build_script_wrapper.u";
 
-	compiler_args.push_back( "--target-arch" );
-	compiler_args.push_back( compiler::target::arch );
+		// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
+		{
+			var ust::string8 mut build_script_wrapper_contents = "import \"/";
+			build_script_wrapper_contents+= build_script_file;
+			build_script_wrapper_contents+= "\"\n\n";
+			build_script_wrapper_contents+= "fn nomangle ";
+			build_script_wrapper_contents+= entry_func_name;
+			build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
+			build_script_wrapper_contents+= "\n";
 
-	compiler_args.push_back( "--target-vendor" );
-	compiler_args.push_back( compiler::target::vendor );
+			if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
+			{
+				logger.LogError( "Can't write build script wrapper file." );
+				return ust::null_optional;
+			}
+		}
 
-	compiler_args.push_back( "--target-os" );
-	compiler_args.push_back( compiler::target::os );
+		var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
 
-	compiler_args.push_back( "--target-environment" );
-	compiler_args.push_back( compiler::target::environment );
+		// Use optimization level which was used to compile the build system executable.
+		var ust::string8 mut optimization_level= "-O";
+		optimization_level.push_back( compiler::options::optimization_level );
 
-	if( ust::string_view8( compiler::target::os ) != "windows" )
-	{
-		// It seems that position-independent code is always enabled on systems except Windows.
-		// So, use this option for building the shared library.
-		compiler_args.push_back( "--relocation-model" );
-		compiler_args.push_back( "pic" );
-	}
+		var ust::vector</ust::string_view8/> mut compiler_args;
+		// Add path to the package directory in order to import "build.u" inside the wrapper.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( package_source_directory );
+		// Provide standard library imports.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_system_paths.ustlib_path );
+		// Provide path to declarations of the build system interface.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_system_paths.build_system_imports_path );
+		compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
+		compiler_args.push_back( "-o" );
+		compiler_args.push_back( result_shared_library_path );
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		compiler_args.push_back( "-filetype=dll" );
+		// Run internalization in order to export only entry function.
+		compiler_args.push_back( "--internalize" );
+		compiler_args.push_back( internalize_preserve_option );
+		compiler_args.push_back( optimization_level );
 
-	if( ust::string_view8( compiler::target::environment ) == "msvc" )
-	{
-		// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
-		compiler_args.push_back( "-Wl,/NOIMPLIB" );
-	}
+		// If the build system executable was compiled with debug information - generate it for the shared library too.
+		if( compiler::options::generate_debug_info )
+		{
+			compiler_args.push_back( "-g" );
+		}
 
-	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
-	{
-		logger.LogError( "Compiler execution failed." );
-		return ust::null_optional;
+		// Use the same target parameters for the shared library as for the build system executable.
+
+		compiler_args.push_back( "--target-arch" );
+		compiler_args.push_back( compiler::target::arch );
+
+		compiler_args.push_back( "--target-vendor" );
+		compiler_args.push_back( compiler::target::vendor );
+
+		compiler_args.push_back( "--target-os" );
+		compiler_args.push_back( compiler::target::os );
+
+		compiler_args.push_back( "--target-environment" );
+		compiler_args.push_back( compiler::target::environment );
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			// It seems that position-independent code is always enabled on systems except Windows.
+			// So, use this option for building the shared library.
+			compiler_args.push_back( "--relocation-model" );
+			compiler_args.push_back( "pic" );
+		}
+
+		if( ust::string_view8( compiler::target::environment ) == "msvc" )
+		{
+			// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
+			compiler_args.push_back( "-Wl,/NOIMPLIB" );
+		}
+
+		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
+		{
+			logger.LogError( "Compiler execution failed." );
+			return ust::null_optional;
+		}
 	}
 
 	logger.LogInfo( "Loading " + result_shared_library_path );
