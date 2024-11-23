@@ -1,6 +1,8 @@
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "errno.uh"
+import "stat.uh"
+
 
 namespace BK
 {
@@ -110,6 +112,21 @@ fn GetCurrentDirectory() : ust::string8
 
 	// Failed to retrieve current directory.
 	halt;
+}
+
+fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated+= "\0";
+
+	var u64 res= unsafe( BKGetFileModificationTimeImpl( path_null_terminated.data() ) );
+
+	if( res == 0u64 )
+	{
+		return ust::null_optional;
+	}
+
+	return res;
 }
 
 } // namespace BK

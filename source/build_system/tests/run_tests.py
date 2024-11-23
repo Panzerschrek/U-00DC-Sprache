@@ -66,7 +66,8 @@ def MissingBuildFile():
 	res = RunBuildSystemWithErrors( "missing_build_file" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Can not get modification time for" ) != -1 )
+	assert( stderr.find( "file does not exists?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 

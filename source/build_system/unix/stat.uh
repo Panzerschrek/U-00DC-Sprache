@@ -1,0 +1,4 @@
+// Returns 0 on error.
+// This is a wrapper to calling "lstat".
+// We can't call it from Ü, since "struct stat" layout is platform-dependent.
+fn nomangle BKGetFileModificationTimeImpl( $(char8) file_name_null_terminated ) unsafe : u64;
