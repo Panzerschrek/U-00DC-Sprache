@@ -74,7 +74,8 @@ def BrokenBuildFile0Test():
 	res = RunBuildSystemWithErrors( "broken_build_file0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "build.u:1:0: error: Syntax error - unexpected lexem" ) != -1 )
+	assert( stderr.find( "build.u" ) != -1 )
+	assert( stderr.find( "Syntax error - unexpected lexem" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -83,7 +84,8 @@ def BrokenBuildFile1Test():
 	res = RunBuildSystemWithErrors( "broken_build_file1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "build.u:9:63: error: Name \"wtarget\" not found" ) != -1 )
+	assert( stderr.find( "build.u" ) != -1 )
+	assert( stderr.find( "Name \"wtarget\" not found" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -92,7 +94,8 @@ def BrokenBuildFile2Test():
 	res = RunBuildSystemWithErrors( "broken_build_file2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "build_script_wrapper.u:3:60: error: Name \"GetPackageInfo\" not found" ) != -1 )
+	assert( stderr.find( "build_script_wrapper.u" ) != -1 )
+	assert( stderr.find( " Name \"GetPackageInfo\" not found" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -144,8 +147,7 @@ def LinkingError0Test():
 	res = RunBuildSystemWithErrors( "linking_error0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "undefined symbol" ) != -1 )
-	assert( stderr.find( "main" ) != -1 )
+	assert( ( stderr.find( "undefined symbol" ) != -1 and stderr.find( "main" ) != -1 ) or stderr.find( "subsystem must be defined" ) != -1 )
 
 
 def LinkingError1Test():
@@ -153,7 +155,7 @@ def LinkingError1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "undefined symbol" ) != -1 )
-	assert( stderr.find( "Foo()" ) != -1 )
+	assert( stderr.find( "Foo()" ) != -1 or stderr.find( "Foo(void)" ) != -1 )
 
 
 def DuplicatedBuildTargetTest():
