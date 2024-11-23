@@ -1,0 +1,80 @@
+import "/stdout.u"
+import "/string_conversions.u"
+import "../process.uh"
+import "wide_string.uh"
+import "windows.uh"
+
+namespace BK
+{
+
+fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
+{
+	var WideString exe_path_wide = UTF8ToWideString( exe_path );
+
+	var WideString mut exe_path_null_terminated = exe_path_wide;
+
+	// Append exe if necessary.
+	// TODO - do we really need to do this here?
+	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
+	{
+		auto mut extension = UTF8ToWideString( ".exe" );
+		exe_path_null_terminated.append( extension );
+	}
+
+	exe_path_null_terminated.push_back( WCHAR(0) );
+
+	var WideString space = UTF8ToWideString( " " );
+	var WideString quote = UTF8ToWideString( "\"" );
+
+	var WideString mut command_line_combined;
+	command_line_combined.append( quote.iter() );
+	command_line_combined.append( exe_path_wide.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
+	command_line_combined.append( quote.iter() );
+
+	foreach( &arg : command_line )
+	{
+		command_line_combined.append( space.iter() );
+		command_line_combined.append( quote.iter() );
+		command_line_combined.append( UTF8ToWideString( arg ).iter() );
+		command_line_combined.append( quote.iter() );
+	}
+
+	command_line_combined.push_back( WCHAR(0) );
+
+	var ü_STARTUPINFOW mut startup_info = zero_init;
+	startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
+
+	var ü_PROCESS_INFORMATION mut process_information = zero_init;
+
+	var BOOL creation_result = unsafe( CreateProcessW(
+		exe_path_null_terminated.data(),
+		command_line_combined.data(),
+		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		0, // Inherit handles.
+		0u, // Flags
+		ust::nullptr</byte8/>(), // Environment
+		ust::nullptr</WCHAR/>(), // Current directory
+		$<(startup_info),
+		$<(process_information) ) );
+
+	if( creation_result == 0 )
+	{
+		ust::stderr_print( "CreateProcessW error: " + ust::to_string8( unsafe( GetLastError() ) ) + "\n" );
+		return false;
+	}
+
+	// TODO - check if waiting fails.
+	unsafe( WaitForSingleObject( process_information.hProcess, 0xFFFFFFFFu ) );
+
+	var DWORD mut exit_code = 100u;
+	// TODO - check if retrieving exit code fails.
+	unsafe( GetExitCodeProcess( process_information.hProcess, $<(exit_code) ) );
+
+	unsafe( CloseHandle( process_information.hProcess ) );
+	unsafe( CloseHandle( process_information.hThread ) );
+
+	return exit_code == 0u;
+}
+
+} // namespace BK

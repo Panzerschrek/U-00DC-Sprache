@@ -1,0 +1,9 @@
+import "/stdout.u"
+
+// Linking shoud fail because "main" isn't found.
+
+fn nomangle not_a_main() : i32
+{
+	ust::stdout_print( "Hello, world!\n" );
+	return 0;
+}

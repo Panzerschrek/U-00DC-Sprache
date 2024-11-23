@@ -1,0 +1,7 @@
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Привет, Мир!\n" );
+	return 0;
+}

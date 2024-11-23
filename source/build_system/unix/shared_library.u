@@ -1,0 +1,50 @@
+import "../shared_library.uh"
+import "../string_utils.uh"
+
+namespace BK
+{
+
+fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated += "\0";
+
+	// Use RTLD_NODELETE in order to prevent possible later unloading.
+	// For now we do not support unloading, it can break the code.
+	auto handle = unsafe( ::dlopen( path_null_terminated.data(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE ) );
+	if( ust::is_nullptr(handle) )
+	{
+		logger.LogError( ust::string8("dlopen error: ") + unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
+		return ust::null_optional;
+	}
+
+	return unsafe( SharedLibrary(handle) );
+}
+
+fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 symbol_name ) : $(byte8)
+{
+	var ust::string8 mut symbol_null_terminated = symbol_name;
+	symbol_null_terminated+= "\0";
+
+	auto res = unsafe( ::dlsym( system_handle_, symbol_null_terminated.data() ) );
+
+	if( ust::is_nullptr( res ) )
+	{
+		logger.LogError( ust::string8("dlsym error: ") + unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
+	}
+
+	return res;
+}
+
+} // namespace BK
+
+fn nomangle dlopen( $(char8) path_null_terminated, i32 flags ) unsafe : $(byte8);
+
+fn nomangle dlerror() unsafe : $(char8);
+
+fn nomangle dlsym( $(byte8) handle, $(char8) symbol_null_terminated ) unsafe : $(byte8);
+
+// auto constexpr RTLD_LAZY = 0x00001;
+auto constexpr RTLD_NOW	= 0x00002;
+auto constexpr RTLD_GLOBAL = 0x00100;
+auto constexpr RTLD_NODELETE = 0x01000;

@@ -1,0 +1,7 @@
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Target A\n" );
+	return 0;
+}

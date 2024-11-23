@@ -1,0 +1,132 @@
+// This file contains some definitions from windows headers, which are used inside the build system.
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
+
+fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
+
+fn nomangle CreateDirectoryA( LPCSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
+
+fn nomangle CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
+fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
+
+fn nomangle CreateProcessA( LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle CreateProcessW( LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
+
+fn nomangle GetCurrentDirectoryA( DWORD nBufferLength, LPSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
+fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
+
+fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
+
+fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
+
+fn nomangle GetProcAddress( HMODULE hModule, LPCSTR lpProcName ) unsafe call_conv( "system" ) : $(byte8);
+
+fn nomangle LoadLibraryA( LPCSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
+fn nomangle LoadLibraryW( LPCWSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
+
+fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
+
+fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
+
+struct HINSTANCE__ ordered
+{
+	i32 unused;
+}
+
+struct ü_OVERLAPPED ordered
+{
+	// For now disable it.
+	fn constructor() = delete;
+}
+
+struct ü_PROCESS_INFORMATION ordered
+{
+	HANDLE hProcess;
+	HANDLE hThread;
+	DWORD dwProcessId;
+	DWORD dwThreadId;
+}
+
+struct ü_SECURITY_ATTRIBUTES ordered
+{
+	DWORD nLength;
+	LPVOID lpSecurityDescriptor;
+	BOOL bInheritHandle;
+}
+
+struct ü_STARTUPINFOA ordered
+{
+	DWORD cb;
+	LPSTR lpReserved;
+	LPSTR lpDesktop;
+	LPSTR lpTitle;
+	DWORD dwX;
+	DWORD dwY;
+	DWORD dwXSize;
+	DWORD dwYSize;
+	DWORD dwXCountChars;
+	DWORD dwYCountChars;
+	DWORD dwFillAttribute;
+	DWORD dwFlags;
+	WORD wShowWindow;
+	WORD cbReserved2;
+	LPBYTE lpReserved2;
+	HANDLE hStdInput;
+	HANDLE hStdOutput;
+	HANDLE hStdError;
+}
+
+struct ü_STARTUPINFOW ordered
+{
+	DWORD cb;
+	LPWSTR lpReserved;
+	LPWSTR lpDesktop;
+	LPWSTR lpTitle;
+	DWORD dwX;
+	DWORD dwY;
+	DWORD dwXSize;
+	DWORD dwYSize;
+	DWORD dwXCountChars;
+	DWORD dwYCountChars;
+	DWORD dwFillAttribute;
+	DWORD dwFlags;
+	WORD wShowWindow;
+	WORD cbReserved2;
+	LPBYTE lpReserved2;
+	HANDLE hStdInput;
+	HANDLE hStdOutput;
+	HANDLE hStdError;
+}
+
+type wchar_t = u16;
+type BOOL = i32;
+type BYTE = u8;
+type CHAR = char8;
+type DWORD = u32;
+type HANDLE = $(byte8);
+type HINSTANCE = $(HINSTANCE__);
+type HMODULE = HINSTANCE;
+type LPCSTR = $(CHAR);
+type LPCVOID = $(byte8);
+type LPCWSTR = $(WCHAR);
+type LPBYTE = $(BYTE);
+type LPDWORD = $(DWORD);
+type LPOVERLAPPED = $(ü_OVERLAPPED);
+type LPPROCESS_INFORMATION = $(ü_PROCESS_INFORMATION);
+type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
+type LPSTARTUPINFOA = $(ü_STARTUPINFOA);
+type LPSTARTUPINFOW = $(ü_STARTUPINFOW);
+type LPSTR = $(CHAR);
+type LPVOID = $(byte8);
+type LPWSTR = $(WCHAR);
+type ULONG_PTR = size_type;
+type WCHAR = wchar_t;
+type WORD = u16;
+
+auto constexpr ERROR_ALREADY_EXISTS = 183;
+auto constexpr FILE_SHARE_READ = 1;
+auto constexpr GENERIC_READ = 0x80000000u;
+auto constexpr GENERIC_WRITE = 0x40000000u;
+auto constexpr GENERIC_EXECUTE = 0x20000000u;
+auto constexpr GENERIC_ALL = 0x10000000u;
+auto constexpr CREATE_ALWAYS = 2;

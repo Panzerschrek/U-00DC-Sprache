@@ -1,0 +1,130 @@
+import "/string_conversions.u"
+import "../filesystem.uh"
+import "errno.uh"
+
+namespace BK
+{
+
+fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
+{
+	if( !path.empty() && path.front() == "/"c8 )
+	{
+		return path;
+	}
+
+	return GetCurrentDirectory() + "/" + path;
+}
+
+fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
+{
+	// TODO - handle case with composed path name, like some/long/path
+
+	var ust::string8 mut path_null_terminated= path;
+	path_null_terminated+= "\0";
+
+	var i32 res= unsafe( ::mkdir( path_null_terminated.data(), 0o755u ) );
+	if( res == 0 )
+	{
+		return true;
+	}
+
+	var i32 errno = BKGetErrno();
+	if( errno == EEXIST )
+	{
+		// TODO - handle case where the path specified already exists but isn't a directory.
+		return true;
+	}
+
+	logger.LogError( "Failed to create directory \"" + ( path + ( "\": " + ust::to_string8(errno) ) ) );
+	return false;
+}
+
+fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated+= "\0";
+
+	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT, 0o755u ) );
+	if( fd == -1 )
+	{
+		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( BKGetErrno() ) ) ) );
+		return false;
+	}
+
+	// Perform writing in loop in order to handle cases where less than needed bytes were written.
+	for( auto mut offset = 0s; offset < contents.size(); )
+	{
+		var ssize_type write_res = unsafe( ::write(
+			fd,
+			ust::ptr_cast_to_byte8( contents.data() ) + offset,
+			contents.size() - offset ) );
+
+		if( write_res < ssize_type(0) )
+		{
+			// Write failed.
+			logger.LogError( "Failed to write to file \"" + (path + ( "\", error: " + ust::to_string8( BKGetErrno() ) ) ) );
+			unsafe( ::close(fd) );
+			return false;
+		}
+
+		offset+= size_type(write_res);
+	}
+
+	unsafe( ::close(fd) );
+
+	return true;
+}
+
+fn GetCurrentDirectory() : ust::string8
+{
+	var ust::string8 mut res;
+	res.resize( 256s, "\0"c8 );
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
+		if( ust::is_nullptr(call_res) )
+		{
+			if( BKGetErrno() == ERANGE )
+			{
+				// Not enough space - double it and call the function again.
+				auto new_size= res.size() * 2s;
+				res.resize( new_size, "\0"c8 );
+				continue;
+			}
+			else
+			{
+				// "getcwd" failed for some other reason.
+				halt;
+			}
+		}
+
+		var size_type mut len= 0s;
+		while( len < res.size() && res[len] != "\0"c8 )
+		{
+			++len;
+		}
+
+		res.resize( len, " "c8 );
+		return res;
+	}
+
+	// Failed to retrieve current directory.
+	halt;
+}
+
+} // namespace BK
+
+// Unix function for directory creation.
+fn nomangle mkdir( $(char8) path_null_terminated, u32 mode ) unsafe : i32;
+
+fn nomangle open( $(char8) path_null_terminated, i32 flags, u32 mode ) unsafe : i32;
+fn nomangle close( i32 fd ) : i32;
+
+fn nomangle write( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
+
+fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
+
+auto constexpr O_WRONLY = 0o1;
+auto constexpr O_CREAT = 0o100;
+
+auto constexpr ERANGE = 34;

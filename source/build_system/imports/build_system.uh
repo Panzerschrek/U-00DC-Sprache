@@ -1,0 +1,20 @@
+import "/string.u"
+import "/vector.u"
+
+namespace BK
+{
+
+struct BuildTarget
+{
+	ust::vector</ust::string8/> source_files;
+	ust::string8 name;
+}
+
+struct PackageInfo
+{
+	ust::vector</BuildTarget/> build_targets;
+}
+
+type GetPackageInfoFunctionType = fn() : PackageInfo;
+
+} // namespace BK

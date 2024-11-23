@@ -1,0 +1,11 @@
+import "/build_system.uh"
+
+// Should fail to find proper "GetPackageInfo" function.
+fn NotAValidNameForExportedFunction__GetPackageInfo() : BK::PackageInfo
+{
+	var BK::BuildTarget mut target;
+	target.source_files.push_back( "main.u" );
+	target.name= "hello_world";
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

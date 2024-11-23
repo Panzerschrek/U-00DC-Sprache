@@ -221,6 +221,10 @@ endif()
 
 add_subdirectory( compiler0 )
 
+if( U_BUILD_COMPILER )
+	add_subdirectory( build_system )
+endif()
+
 #
 # Compiler1 and other generations
 #

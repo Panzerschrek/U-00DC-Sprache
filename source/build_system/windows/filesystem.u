@@ -1,0 +1,108 @@
+import "/string_conversions.u"
+import "../filesystem.uh"
+import "wide_string.uh"
+import "windows.uh"
+
+namespace BK
+{
+
+fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
+{
+	if( path.size() >= 2s && path[0s] >= "A"c8 && path[0s] <= "Z"c8 && path[1s] == ":"c8 )
+	{
+		// Already an absolute path strting with drive letter.
+		// TODO - support universal paths.
+		return path;
+	}
+
+	return GetCurrentDirectory() + "/" + path;
+}
+
+fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
+{
+	// TODO - handle case with composed path name, like some/long/path
+
+	var WideString mut path_null_terminated= UTF8ToWideString( path );
+	path_null_terminated.push_back( WCHAR(0) );
+
+	var i32 res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+	if( res == 1 )
+	{
+		return true;
+	}
+
+	var DWORD err = unsafe( GetLastError() );
+	if( err == DWORD(ERROR_ALREADY_EXISTS) )
+	{
+		return true;
+	}
+
+	logger.LogError( "Failed to create directory \"" + ( path + ( "\": " + ust::to_string8(err) ) ) );
+
+	return false;
+}
+
+fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
+{
+	var WideString mut path_null_terminated = UTF8ToWideString( path );
+	path_null_terminated.push_back( WCHAR(0) );
+
+	var HANDLE handle = unsafe( ::CreateFileW(
+		path_null_terminated.data(),
+		GENERIC_WRITE,
+		DWORD(FILE_SHARE_READ),
+		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		DWORD(CREATE_ALWAYS),
+		0u,
+		ust::nullptr</byte8/>() ) );
+	if( ust::is_nullptr(handle) )
+	{
+		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( unsafe( GetLastError() ) ) ) ) );
+		return false;
+	}
+
+	// TODO - check for errors.
+	// TODO - write in loop.
+	var DWORD mut bytes_written = 0u;
+	unsafe( ::WriteFile(
+		handle,
+		ust::ptr_cast_to_byte8( contents.data() ),
+		DWORD(contents.size()),
+		$<(bytes_written),
+		ust::nullptr</ü_OVERLAPPED/>() ) );
+
+	unsafe( ::CloseHandle(handle) );
+
+	return true;
+}
+
+fn GetCurrentDirectory() : ust::string8
+{
+	// Perform first call to get required size.
+	auto size_required = unsafe( ::GetCurrentDirectoryW( 0u, ust::nullptr</WCHAR/>() ) );
+	if( size_required == 0u )
+	{
+		halt;
+	}
+
+	var WideString mut res;
+	res.resize( size_type(size_required), WCHAR(0) );
+
+	// Perform second call to get actual data.
+	auto chars_written = unsafe( ::GetCurrentDirectoryW( DWORD(res.size()), res.data() ) );
+	if( chars_written == 0u )
+	{
+		halt;
+	}
+
+	var size_type mut len= 0s;
+	while( len < res.size() && res[len] != WCHAR(0) )
+	{
+		++len;
+	}
+
+	res.resize( len, WCHAR( " "c8 ) );
+	return WideStringToUTF8( res );
+}
+
+} // namespace BK

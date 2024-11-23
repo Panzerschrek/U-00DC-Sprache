@@ -1,0 +1,8 @@
+// Linking shoud fail because "Foo" isn't found.
+fn Foo();
+
+fn nomangle main() : i32
+{
+	Foo();
+	return 0;
+}

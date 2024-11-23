@@ -160,6 +160,11 @@ cl::opt<bool> allow_unused_names(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<std::string> target_arch(
+	"target-arch",
+	cl::desc("Target architecture"),
+	cl::cat(options_category) );
+
 cl::opt<std::string> target_vendor(
 	"target-vendor",
 	cl::desc("Target vendor"),
@@ -343,6 +348,29 @@ void SetupSymbolsVisibility( llvm::Module& module )
 		set_visibility( global_variable );
 }
 
+void SetupDLLExport( llvm::Module& module )
+{
+	const auto set_dllexport=
+		[]( llvm::GlobalValue& v )
+		{
+			if( v.isDeclaration() )
+				return; // Skip declarations.
+
+			const llvm::GlobalValue::LinkageTypes linkage= v.getLinkage();
+			if( linkage == llvm::GlobalValue::InternalLinkage ||
+				linkage == llvm::GlobalValue::PrivateLinkage )
+				return; // Set dllexport only for public symbols.
+
+			v.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
+		};
+
+	for( llvm::Function& function : module.functions() )
+		set_dllexport( function );
+
+	for( llvm::GlobalVariable& global_variable : module.globals() )
+		set_dllexport( global_variable );
+}
+
 int Main( int argc, const char* argv[] )
 {
 	const llvm::InitLLVM llvm_initializer(argc, argv);
@@ -387,6 +415,7 @@ int Main( int argc, const char* argv[] )
 	Options::optimization_level.removeArgument();
 	Options::generate_debug_info.removeArgument();
 	Options::allow_unused_names.removeArgument();
+	Options::target_arch.removeArgument();
 	Options::target_vendor.removeArgument();
 	Options::target_os.removeArgument();
 	Options::target_environment.removeArgument();
@@ -464,6 +493,8 @@ int Main( int argc, const char* argv[] )
 	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
+		if( !Options::target_arch.empty() )
+			target_triple.setArchName( Options::target_arch );
 		if( !Options::target_vendor.empty() )
 			target_triple.setVendorName( Options::target_vendor );
 		if( !Options::target_os.empty() )
@@ -807,6 +838,11 @@ int Main( int argc, const char* argv[] )
 
 	// Set visibility of symbols in the result module.
 	SetupSymbolsVisibility( *result_module );
+
+	// A hacky way to export public functions in Windows DLLs.
+	// TODO - find a better way to do this.
+	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )
+		SetupDLLExport( *result_module );
 
 	// Dump llvm code after optimization passes.
 	if( Options::print_llvm_asm )

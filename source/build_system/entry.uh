@@ -1,0 +1,9 @@
+import "/string.u"
+
+namespace BK
+{
+
+// A platform-independent entry point, designed to be called from some of the platform-dependent entry point functions.
+fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32;
+
+} // namespace BK

@@ -1,0 +1,16 @@
+import "/string.u"
+import "/vector.u"
+
+namespace BK
+{
+
+// Assuming "ptr" is a pointer to a null-terminated C string, convert it into view.
+// Warning, reference checking for result inner reference tag dosn't work!
+fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8;
+
+// Convert args of a C-like "main" function into a vector of string views.
+// "argv" should contain at least "argc" elements, each of them is a null-terminated string.
+// Warning, reference checking for result inner reference tag dosn't work!
+fn MainArgsToStringView( i32 argc, $($(char8)) argv ) unsafe : ust::vector</ust::string_view8/>;
+
+} // namespace BK

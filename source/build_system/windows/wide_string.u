@@ -1,0 +1,167 @@
+import "wide_string.uh"
+
+namespace BK
+{
+
+fn UTF8ToWideString( ust::string_view8 mut v ) : WideString
+{
+	var WideString mut res;
+	while( !v.empty() )
+	{
+		var u32 code_point= ReadNextUTF8Char(v);
+		if(code_point < u32(0xD800) || (code_point > u32(0xDFFF) && code_point < u32(0x10000)))
+		{
+			res.push_back( WCHAR( code_point ) );
+		}
+		else
+		{
+			var u32 c= u32(code_point) - 0x10000u;
+			res.push_back( WCHAR( ( c >> 10u ) + 0xD800u ) );
+			res.push_back( WCHAR( ( c & 0x3FFu ) + 0xDC00u ) );
+		}
+	}
+
+	return res;
+}
+
+fn WideStringToUTF8( WideStringView mut v ) : ust::string8
+{
+	var ust::string8 mut res;
+	while( !v.empty() )
+	{
+		var u32 mut c( v.drop_and_get_front() );
+		if( c >= 0xD800u && c <= 0xDBFFu )
+		{
+			// Surrogate pair.
+			if( !v.empty() )
+			{
+				// TODO - check if this is correct.
+				var u32 paired_c( v.drop_and_get_front() );
+				c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
+			}
+		}
+		PushCharToUTF8String( u32(c), res );
+	}
+
+	return res;
+}
+
+fn ReadNextUTF8Char( ust::string_view8 &mut start ) : u32
+{
+	// c_bit_masks[4] - menas save first 4 bits
+	var [ u32, 9 ] constexpr c_bit_masks
+	[
+		-1u + (1u << 0u),
+		-1u + (1u << 1u),
+		-1u + (1u << 2u),
+		-1u + (1u << 3u),
+		-1u + (1u << 4u),
+		-1u + (1u << 5u),
+		-1u + (1u << 6u),
+		-1u + (1u << 7u),
+		-1u + (1u << 8u),
+	];
+
+	var u32 c( start.front() );
+	var u32 mut code(0);
+
+	if( c < 0b10000000u )
+	{
+		code= u32(c);
+		start.drop_front();
+	}
+	else if( c < 0b11100000u )
+	{
+		if( start.size() < 2s )
+		{
+			return code;
+		}
+
+		code= u32(
+			( (u32(start[0s]) & c_bit_masks[5]) << 6u ) |
+			( (u32(start[1s]) & c_bit_masks[6]) << 0u ) );
+
+		start= start.subrange_start(2s);
+	}
+	else if( c < 0b11110000u )
+	{
+		if( start.size() < 3s )
+		{
+			return code;
+		}
+
+		code= u32(
+			( (u32(start[0s]) & c_bit_masks[4]) << 12u ) |
+			( (u32(start[1s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(start[2s]) & c_bit_masks[6]) <<  0u ) );
+
+		start= start.subrange_start(3s);
+	}
+	else if( c < 0b11111000u )
+	{
+		if( start.size() < 4s )
+		{
+			return code;
+		}
+
+		code= u32(
+			( (u32(start[0s]) & c_bit_masks[3]) << 18u ) |
+			( (u32(start[1s]) & c_bit_masks[6]) << 12u ) |
+			( (u32(start[2s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(start[3s]) & c_bit_masks[6]) <<  0u ) );
+
+		start= start.subrange_start(4s);
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+		start.drop_front();
+	}
+
+	return code;
+}
+
+fn PushCharToUTF8String( u32 c, ust::string8 &mut str )
+{
+	var u32 cc(c);
+	if( cc <= 0x7Fu )
+	{
+		str.push_back( char8(c) );
+	}
+	else if( cc <= 0x7FFu )
+	{
+		var [ char8, 2 ] chars
+		[
+			( 0b11000000u | (cc >>  6u) ),
+			( 0b10000000u | (cc &  63u) ),
+		];
+		str+= chars;
+	}
+	else if( cc <= 0xFFFFu )
+	{
+		var [ char8, 3 ] chars
+		[
+			( 0b11100000u |  (cc >> 12u) ),
+			( 0b10000000u | ((cc >> 6u) & 63u) ),
+			( 0b10000000u |  (cc  & 63u) ),
+		];
+		str+= chars;
+	}
+	else if( cc <= 0x10FFFFu )
+	{
+		var [ char8, 4 ] chars
+		[
+			( 0b11110000u |  (cc >> 18u) ),
+			( 0b10000000u | ((cc >> 12u) & 63u) ),
+			( 0b10000000u | ((cc >>  6u) & 63u) ),
+			( 0b10000000u |  (cc  & 63u) ),
+		];
+		str+= chars;
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+	}
+}
+
+}  // namespace BK

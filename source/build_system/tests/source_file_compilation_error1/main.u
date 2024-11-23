@@ -1,0 +1,5 @@
+fn nomangle main() : i32
+{
+	Foo(); // Calling unknown function.
+	return 0;
+}
