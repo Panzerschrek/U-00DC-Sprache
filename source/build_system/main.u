@@ -314,6 +314,7 @@ fn BuildAndLoadPackageBuildScript(
 	compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
 	compiler_args.push_back( "-o" );
 	compiler_args.push_back( result_shared_library_path );
+	// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 	compiler_args.push_back( "-filetype=dll" );
 	// Run internalization in order to export only entry function.
 	compiler_args.push_back( "--internalize" );
@@ -455,6 +456,7 @@ fn PerformPackageTargetBuild(
 	compiler_args.push_back( "-o" );
 	compiler_args.push_back( result_target_file_path );
 
+	// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 	// TODO - support other target types.
 	compiler_args.push_back( "-filetype=exe" );
 

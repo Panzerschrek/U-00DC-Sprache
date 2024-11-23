@@ -64,7 +64,10 @@ install( TARGETS BuildSystem )
 file( GLOB BUILD_SYSTEM_IMPORTS_SOURCES "imports/*" )
 install( FILES ${BUILD_SYSTEM_IMPORTS_SOURCES} DESTINATION "build_system/imports" )
 
-if( U_BUILD_PY_TESTS )
+# The build system uses the compiler executable itself to produce shared libraries and executables.
+# This requires internal LLD.
+# So, if no LLD is linked, disable build system tests.
+if( U_BUILD_PY_TESTS AND TARGET lldCommon )
 
 	# Run tests for build system.
 	# Do this if the build system executable or some of tests are changed.
