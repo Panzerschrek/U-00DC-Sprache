@@ -1,19 +1,18 @@
 import "../entry.uh"
 import "wide_string.uh"
 
-// use "wmain" in order to obtain command line in proper encoding, unlike "main" where args encoding isn't specified.
-fn nomangle wmain( i32 argc, $($(WCHAR)) argv) : i32
+// Use "wmain" in order to obtain command line in proper encoding, unlike "main" where args encoding isn't specified.
+fn nomangle wmain( i32 argc, $($(WCHAR)) argv ) unsafe : i32
 {
-	auto args= unsafe( BK::WMainArgsToStringView( argc, argv ) );
-
-	var ust::vector</ust::string8/> mut args_utf8;
-	foreach( &arg : args )
-	{
-		args_utf8.push_back( BK::WideStringToUTF8(arg) );
-	}
+	auto args_utf8 =
+		unsafe( BK::WMainArgsToStringView( argc, argv ) )
+		.iter()
+		.map( BK::WideStringToUTF8 )
+		.collect</ ust::vector /> ();
 
 	var ust::vector</ust::string_view8/> mut args_view_utf8;
 
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
 	if( false )
 	{
 		args_view_utf8.push_back( args_utf8.front() );
@@ -38,7 +37,7 @@ fn WMainArgsToStringView( i32 argc, $($(WCHAR)) argv ) unsafe : ust::vector</Wid
 	var ust::vector</WideStringView/> mut res;
 	for( auto mut i= 0; i < argc; ++i )
 	{
-		res.push_back( unsafe( NullTerminatedStringWideToStringView( $>( argv + i ) ) ) );
+		res.push_back( unsafe( NullTerminatedWideStringToStringView( $>( argv + i ) ) ) );
 	}
 
 	return res;
@@ -46,7 +45,7 @@ fn WMainArgsToStringView( i32 argc, $($(WCHAR)) argv ) unsafe : ust::vector</Wid
 
 // Assuming "ptr" is a pointer to a null-terminated C wide string, convert it into view.
 // Warning, reference checking for result inner reference tag dosn't work!
-fn NullTerminatedStringWideToStringView( $(WCHAR) ptr ) unsafe : WideStringView
+fn NullTerminatedWideStringToStringView( $(WCHAR) ptr ) unsafe : WideStringView
 {
 	unsafe
 	{
