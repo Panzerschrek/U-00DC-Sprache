@@ -1,5 +1,6 @@
 import "/string_conversions.u"
 import "../shared_library.uh"
+import "wide_string.uh"
 import "windows.uh"
 
 namespace BK
@@ -7,13 +8,13 @@ namespace BK
 
 fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>
 {
-	var ust::string8 mut path_null_terminated = path;
-	path_null_terminated += "\0";
+	var WideString mut path_null_terminated = UTF8ToWideString( path );
+	path_null_terminated.push_back( WCHAR(0) );
 
-	var HMODULE mut handle = unsafe( ::LoadLibraryA( path_null_terminated.data() ) );
+	var HMODULE mut handle = unsafe( ::LoadLibraryW( path_null_terminated.data() ) );
 	if( ust::is_nullptr(handle) )
 	{
-		logger.LogError( "LoadLibraryA error: " + ust::to_string8( unsafe( GetLastError() ) ) );
+		logger.LogError( "LoadLibraryW error: " + ust::to_string8( unsafe( GetLastError() ) ) );
 		return ust::null_optional;
 	}
 
