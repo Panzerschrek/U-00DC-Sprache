@@ -9,6 +9,8 @@ fn nomangle CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShare
 
 fn nomangle CreateProcessA( LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
 
+fn nomangle GetCurrentDirectoryA( DWORD nBufferLength, LPSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
+
 fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
