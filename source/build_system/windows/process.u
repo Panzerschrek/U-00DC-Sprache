@@ -23,14 +23,20 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	exe_path_null_terminated.push_back( WCHAR(0) );
 
-	var WideString mut command_line_combined;
-	command_line_combined.append( exe_path_wide.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
-
 	var WideString space = UTF8ToWideString( " " );
+	var WideString quote = UTF8ToWideString( "\"" );
+
+	var WideString mut command_line_combined;
+	command_line_combined.append( quote.iter() );
+	command_line_combined.append( exe_path_wide.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
+	command_line_combined.append( quote.iter() );
+
 	foreach( &arg : command_line )
 	{
 		command_line_combined.append( space.iter() );
+		command_line_combined.append( quote.iter() );
 		command_line_combined.append( UTF8ToWideString( arg ).iter() );
+		command_line_combined.append( quote.iter() );
 	}
 
 	command_line_combined.push_back( WCHAR(0) );
