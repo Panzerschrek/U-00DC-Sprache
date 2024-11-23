@@ -285,6 +285,8 @@ fn BuildAndLoadPackageBuildScript(
 	result_shared_library_path+= "/build.";
 	result_shared_library_path+= GetNativeSharedLibraryExtension();
 
+	var ust::string8 result_shared_library_dependency_file_path = result_shared_library_path + ".d";
+
 	auto shared_library_modification_time = GetFileModificationTime( result_shared_library_path );
 
 	if( shared_library_modification_time.empty() || // Result doesn't exists.
@@ -328,9 +330,17 @@ fn BuildAndLoadPackageBuildScript(
 		// Provide path to declarations of the build system interface.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( build_system_paths.build_system_imports_path );
+
 		compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
+
+		// Output.
 		compiler_args.push_back( "-o" );
 		compiler_args.push_back( result_shared_library_path );
+
+		// Produce also a dependency file.
+		compiler_args.push_back( "-MF" );
+		compiler_args.push_back( result_shared_library_dependency_file_path );
+
 		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 		compiler_args.push_back( "-filetype=dll" );
 		// Run internalization in order to export only entry function.
