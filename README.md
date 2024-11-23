@@ -46,6 +46,8 @@ For more information/examples see build scripts in *ci* directory.
 
 [standard library](source/ustlib/README.md)
 
+[build system](source/build_system/README.md)
+
 [C++ header converter](source/cpp_header_converter/README.md)
 
 [interpreter](source/interpreter/README.md)
