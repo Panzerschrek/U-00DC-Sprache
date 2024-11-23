@@ -1278,6 +1278,25 @@ def UnusedFunction_Test14():
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
+def UnusedFunction_Test15():
+	c_program_text= """
+		fn nomangle main()
+		{
+			BK::MainImpl();
+		}
+
+		namespace BK
+		{
+			fn MainImpl(); // This is used.
+			fn SomeFunc(); // This is unused.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "UnusedName", 9 ) )
+	assert( HasError( errors_list, "UnusedName", 10 ) )
+
+
 def UnusedTypeTemplate_Test0():
 	c_program_text= """
 		template</type T/> type Vec3= [ T, 3 ];

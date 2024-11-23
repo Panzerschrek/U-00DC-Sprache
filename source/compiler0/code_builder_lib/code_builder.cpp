@@ -881,6 +881,13 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
 		{
 			const Value& value= names_scope_value.value;
+
+			if( const auto namespace_= value.GetNamespace() )
+			{
+				CheckForUnusedGlobalNamesImpl( *namespace_ ); // Recursively check children.
+				return;
+			}
+
 			if( const auto functions_set= value.GetFunctionsSet() )
 			{
 				// Process each function individually.
@@ -959,8 +966,6 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 				// NamesScope can't contain this.
 				U_ASSERT(false);
 			}
-			else if( const auto namespace_= value.GetNamespace() )
-				CheckForUnusedGlobalNamesImpl( *namespace_ ); // Recursively check children.
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||
