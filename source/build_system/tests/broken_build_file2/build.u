@@ -1,7 +1,7 @@
 import "/build_system.uh"
 
 // Should fail to find proper "GetPackageInfo" function.
-fn NotAValudNameForExportedFunction__GetPackageInfo() : BK::PackageInfo
+fn NotAValidNameForExportedFunction__GetPackageInfo() : BK::PackageInfo
 {
 	var BK::BuildTarget mut target;
 	target.source_files.push_back( "main.u" );

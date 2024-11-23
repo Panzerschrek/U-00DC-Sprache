@@ -25,7 +25,7 @@ function( CompileUSource u_source_file out_object )
 			--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 			--symbols-visibility=hidden # Make functions and variables hidden to avoid exporting them in ELF shared libraries (*.so)
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
 		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
 		)
 	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
@@ -39,10 +39,16 @@ if( WIN32 )
 	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "windows/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
 
+	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "windows/*.uh" )
+	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
+
 	file( GLOB BUILD_SYSTEM_SOURCES_CPP "windows/*.cpp" )
 else()
 	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "unix/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
+
+	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "unix/*.uh" )
+	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
 
 	file( GLOB BUILD_SYSTEM_SOURCES_CPP "unix/*.cpp" )
 endif()
@@ -54,15 +60,14 @@ endforeach()
 
 add_executable( BuildSystem ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
 
-if( WIN32 )
-else()
+if( NOT WIN32 )
 	target_link_libraries( BuildSystem PRIVATE dl )
 endif()
 
 install( TARGETS BuildSystem )
 
-file( GLOB BUILD_SYSTEM_IMPORTS_SOURCES "imports/*" )
-install( FILES ${BUILD_SYSTEM_IMPORTS_SOURCES} DESTINATION "build_system/imports" )
+file( GLOB BUILD_SYSTEM_IMPORTS "imports/*" )
+install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 
 # The build system uses the compiler executable itself to produce shared libraries and executables.
 # This requires internal LLD.
@@ -70,12 +75,12 @@ install( FILES ${BUILD_SYSTEM_IMPORTS_SOURCES} DESTINATION "build_system/imports
 if( U_BUILD_PY_TESTS AND TARGET lldCommon )
 
 	# Run tests for build system.
-	# Do this if the build system executable or some of tests are changed.
-	# Use combination of a custom command and custom target in order to achieve this,.
+	# Do this if the build system executable or some of tests were changed.
+	# Use combination of a custom command and custom target in order to achieve this.
 
 	make_directory( ${CMAKE_CURRENT_BINARY_DIR}/tests )
 
-	file( GLOB_RECURSE TESTS_FILES "tests/*" )
+	file( GLOB_RECURSE TESTS_FILES "tests/*" ) # All files of tests, including the test script file, build scripts, sources, etc.
 
 	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
 
@@ -96,6 +101,7 @@ if( U_BUILD_PY_TESTS AND TARGET lldCommon )
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		)
 
+	# A custom target which is needed only to execute the custom command above.
 	add_custom_target(
 		BuildSystemTestsRun ALL
 		DEPENDS ${TIMESTAMP_FILE} # Depend on the previous custom commadntimestamp file.

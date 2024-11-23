@@ -1,9 +1,7 @@
 import "/stdout.u"
 import "/string_conversions.u"
-import "/vector.u"
 import "entry.uh"
 import "filesystem.uh"
-import "logger.uh"
 import "shared_library.uh"
 import "string_utils.uh"
 import "process.uh"
@@ -100,6 +98,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	// A hacky way to cast byte8 pointer to a function pointer.
 	var GetPackageInfoFunctionType mut func_ptr= zero_init;
 	unsafe( ust::memory_copy(
 		ust::ptr_cast_to_byte8( $<(func_ptr) ),
@@ -145,7 +144,7 @@ struct Options
 }
 
 //
-// Keep this up-to date with the options!
+// Keep this up-to date with the options parsing code!
 //
 
 auto constexpr g_help_message=
@@ -244,7 +243,8 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	return move(res);
 }
 
-fn ExtractExeDirectoryPath( ust::string_view8 exe_path ) : ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+fn ExtractExeDirectoryPath( ust::string_view8 exe_path )
+	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {
 	var ust::string_view8 mut p = exe_path;
 	while( !p.empty() && !( p.back() == "/"c8 || p.back() == "\\"c8 ) )
@@ -469,7 +469,6 @@ fn PerformPackageTargetBuild(
 
 	// TODO - select optimization level based on configuration.
 	compiler_args.push_back( "-O2" );
-
 
 	logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
 
