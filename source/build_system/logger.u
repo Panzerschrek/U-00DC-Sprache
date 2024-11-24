@@ -12,13 +12,18 @@ fn Logger::constructor( Level level )
 
 fn Logger::LogVerbose( mut this, ust::string_view8 message )
 {
-	// TODO - handle verbose level properly.
-	LogInfo( message );
+	if( level_ < Level::Verbose )
+	{
+		return;
+	}
+
+	ust::stdout_print( message );
+	ust::stdout_print( "\n" );
 }
 
 fn Logger::LogInfo( mut this, ust::string_view8 message )
 {
-	if( level_ <= Level::Quiet )
+	if( level_ < Level::Normal )
 	{
 		return;
 	}

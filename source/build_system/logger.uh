@@ -10,6 +10,7 @@ public:
 	{
 		Quiet,
 		Normal,
+		Verbose,
 	}
 
 public:
