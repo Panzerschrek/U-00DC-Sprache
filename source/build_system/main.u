@@ -287,6 +287,12 @@ fn BuildAndLoadPackageBuildScript(
 
 	var ust::string8 result_shared_library_dependency_file_path = result_shared_library_path + ".d";
 
+	if_var( &dependency_file_contents : ReadFile( result_shared_library_dependency_file_path ) )
+	{
+		// TODO
+		ust::ignore_unused(dependency_file_contents);
+	}
+
 	auto shared_library_modification_time = GetFileModificationTime( result_shared_library_path );
 
 	if( shared_library_modification_time.empty() || // Result doesn't exists.

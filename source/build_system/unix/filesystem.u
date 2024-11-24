@@ -77,6 +77,34 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	return true;
 }
 
+fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
+{
+	var ust::string8 mut path_null_terminated = path;
+	path_null_terminated+= "\0";
+
+	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_RDONLY, 0u ) );
+	if( fd == -1 )
+	{
+		return ust::null_optional;
+	}
+
+	var i64 size = unsafe( BKGetFileSize( fd ) );
+	if( size < 0i64 )
+	{
+		unsafe( ::close(fd) );
+		return ust::null_optional;
+	}
+
+	var ust::string8 mut contents( size_type(size), "\0"c8 );
+
+	// TODO - check for errors, read in loop.
+	unsafe( ::read( fd, ust::ptr_cast_to_byte8( contents.data() ), contents.size() ) );
+
+	unsafe( ::close(fd) );
+
+	return move(contents);
+}
+
 fn GetCurrentDirectory() : ust::string8
 {
 	var ust::string8 mut res;
@@ -138,9 +166,11 @@ fn nomangle open( $(char8) path_null_terminated, i32 flags, u32 mode ) unsafe : 
 fn nomangle close( i32 fd ) : i32;
 
 fn nomangle write( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
+fn nomangle read( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
 
 fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
 
+auto constexpr O_RDONLY = 0o0;
 auto constexpr O_WRONLY = 0o1;
 auto constexpr O_CREAT = 0o100;
 

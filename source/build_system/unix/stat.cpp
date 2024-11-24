@@ -12,3 +12,13 @@ extern "C" uint64_t BKGetFileModificationTimeImpl( const char* const file_name_n
 	// Return nanoseconds.
 	return uint64_t( s.st_mtim.tv_sec ) * 1000000000ull + uint64_t( s.st_mtim.tv_nsec );
 }
+
+extern "C" int64_t BKGetFileSize( const int32_t fd )
+{
+	struct stat s{};
+	const auto res= ::fstat( fd, &s );
+	if( res != 0 )
+		return -1;
+
+	return s.st_size;
+}
