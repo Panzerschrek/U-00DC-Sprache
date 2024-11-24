@@ -1,0 +1,16 @@
+import "/string.u"
+import "/vector.u"
+
+namespace BK
+{
+
+struct MakeDepFile
+{
+	ust::string8 destination;
+	ust::vector</ust::string8/> dependencies;
+}
+
+// Actually can parse only dep files produced by the Ü compiler.
+fn ParseMakeDepFileContents( ust::string_view8 file_contents ) : ust::optional</MakeDepFile/>;
+
+} // namespace BK

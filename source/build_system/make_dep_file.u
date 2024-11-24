@@ -1,0 +1,93 @@
+import "make_dep_file.uh"
+
+namespace BK
+{
+
+fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::optional</MakeDepFile/>
+{
+	var MakeDepFile mut res;
+
+	SkipWhitespaces( file_contents );
+	res.destination= ParsePath( file_contents );
+
+	SkipWhitespaces( file_contents );
+	if( file_contents.empty() || file_contents.front() != ":"c8 )
+	{
+		return ust::null_optional;
+	}
+	file_contents.drop_front(); // Skip :
+
+	loop
+	{
+		SkipWhitespaces( file_contents );
+		if( file_contents.empty() )
+		{
+			break;
+		}
+
+		res.dependencies.push_back( ParsePath( file_contents ) );
+	}
+
+	return res;
+}
+
+fn ParsePath( ust::string_view8 &mut s ) : ust::string8
+{
+	var ust::string8 mut res;
+	while( !s.empty() )
+	{
+		var char8 c= s.front();
+		if( IsWhitespaceChar(c) || c == ":"c8 )
+		{
+			break;
+		}
+		else if(c == "\\"c8 && !s.empty() )
+		{
+			if( s[1s] == "\n"c8 )
+			{
+				break;
+			}
+			s.drop_front();
+			res.push_back( s.drop_and_get_front() );
+		}
+		else if( c == "$"c8 && !s.empty() )
+		{
+			s.drop_front();
+			res.push_back( s.drop_and_get_front() );
+		}
+		else
+		{
+			s.drop_front();
+			res.push_back( c );
+		}
+	}
+	return res;
+}
+
+fn SkipWhitespaces( ust::string_view8 &mut s )
+{
+	while( !s.empty() )
+	{
+		var char8 c= s.front();
+		if( IsWhitespaceChar(c) )
+		{
+			s.drop_front();
+		}
+		else if( c == "\\"c8 && s.size() >= 2s && s[1s] == "\n"c8 )
+		{
+			s.drop_front();
+			s.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+fn IsWhitespaceChar( char8 c ) : bool
+{
+	return c == " "c8 || c == "\t"c8 || c == "\n"c8;
+}
+
+} // namespace BK
