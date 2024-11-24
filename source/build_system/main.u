@@ -275,8 +275,8 @@ fn BuildAndLoadPackageBuildScript(
 
 	var ust::string8 build_script_file_full_path= ust::string8(package_source_directory) + "/" + build_script_file;
 
-	auto build_script_modification_time = GetFileModificationTime( build_script_file_full_path );
-	if( build_script_modification_time == ust::null_optional )
+	// TODO - do we need to have this check here?
+	if( GetFileModificationTime( build_script_file_full_path ).empty() )
 	{
 		logger.LogError( "Can not get modification time for \"" + build_script_file_full_path + "\" - file does not exists?" );
 		return ust::null_optional;
@@ -288,23 +288,7 @@ fn BuildAndLoadPackageBuildScript(
 
 	var ust::string8 result_shared_library_dependency_file_path = result_shared_library_path + ".d";
 
-	if_var( &dependency_file_contents : ReadFile( result_shared_library_dependency_file_path ) )
-	{
-		if_var( &dep_file_parsed : ParseMakeDepFileContents( dependency_file_contents ) )
-		{
-			// TODO - process it.
-			ust::ignore_unused( dep_file_parsed );
-		}
-		else
-		{
-			logger.LogError( "Failed to parse dep file \"" + result_shared_library_dependency_file_path + "\"" );
-		}
-	}
-
-	auto shared_library_modification_time = GetFileModificationTime( result_shared_library_path );
-
-	if( shared_library_modification_time.empty() || // Result doesn't exists.
-		shared_library_modification_time.try_deref() <= build_script_modification_time.try_deref() /* result is older than its corresponding source */ )
+	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_shared_library_dependency_file_path ) )
 	{
 		// Rebuild is needed.
 		// TODO - check other dependencies, like imports of the build script. Maybe generate and read dependencies file, produces by the compiler.
@@ -417,6 +401,57 @@ fn BuildAndLoadPackageBuildScript(
 	}
 
 	return shared_library_opt;
+}
+
+fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : bool
+{
+	var ust::optional</ust::string8/> file_contents= ReadFile( dep_file_path );
+	if( file_contents.empty() )
+	{
+		// Dep file is not created yet.
+		logger.LogVerbose( "No dependency file \"" + ust::string8(dep_file_path) + "\" - perform the build." );
+		return true;
+	}
+
+	var ust::optional</MakeDepFile/> dep_file_opt= ParseMakeDepFileContents( file_contents.try_deref() );
+	if( dep_file_opt.empty() )
+	{
+		logger.LogError( "Failed to parse dep file \"" + ust::string8(dep_file_path) + "\"" );
+		return true;
+	}
+
+	var MakeDepFile& dep_file= dep_file_opt.try_deref();
+
+	var ust::optional</FileModificationTime/> dst_modification_time_opt= GetFileModificationTime( dep_file.destination );
+	if( dst_modification_time_opt.empty() )
+	{
+		// Destination deosn't exist.
+		logger.LogVerbose( "No destination file \"" + dep_file.destination  + "\" - perform the build." );
+		return true;
+	}
+
+	auto dst_modification_time = dst_modification_time_opt.try_deref();
+
+	foreach( &dependency : dep_file.dependencies )
+	{
+		var ust::optional</FileModificationTime/> src_modification_time_opt= GetFileModificationTime( dependency );
+		if( src_modification_time_opt.empty() )
+		{
+			// This source file is missing.
+			// In some cases it's ok, like if an imported file was deleted together with deletion of the corresponding "import" directive.
+			logger.LogVerbose( "No source file \"" + dependency  + "\" - perform the build." );
+			return true;
+		}
+		if( src_modification_time_opt.try_deref() >= dst_modification_time )
+		{
+			logger.LogVerbose( "Source file \"" + dependency  + "\" is newer than the destination - perform the build." );
+			return true;
+		}
+	}
+
+	// Rebuild is not required if we reached this point.
+	logger.LogVerbose( "No rebuild is required for dependency of the dep file \"" + ust::string8(dep_file_path) + "\"." );
+	return false;
 }
 
 fn GetNativeSharedLibraryExtension() : ust::string_view8

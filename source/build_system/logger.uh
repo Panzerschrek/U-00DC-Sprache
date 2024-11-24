@@ -15,6 +15,7 @@ public:
 public:
 	fn constructor( Level level );
 
+	fn LogVerbose( mut this, ust::string_view8 message );
 	fn LogInfo( mut this, ust::string_view8 message );
 	fn LogError( mut this, ust::string_view8 message );
 

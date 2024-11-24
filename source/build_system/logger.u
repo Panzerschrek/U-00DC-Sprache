@@ -10,6 +10,12 @@ fn Logger::constructor( Level level )
 {
 }
 
+fn Logger::LogVerbose( mut this, ust::string_view8 message )
+{
+	// TODO - handle verbose level properly.
+	LogInfo( message );
+}
+
 fn Logger::LogInfo( mut this, ust::string_view8 message )
 {
 	if( level_ <= Level::Quiet )
