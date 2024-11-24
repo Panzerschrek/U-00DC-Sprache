@@ -76,6 +76,27 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	return true;
 }
 
+fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
+{
+	var WideString mut path_null_terminated = UTF8ToWideString( path );
+	path_null_terminated.push_back( WCHAR(0) );
+
+	var ü_WIN32_FILE_ATTRIBUTE_DATA mut file_atributes= zero_init;
+
+	auto res =
+		unsafe( ::GetFileAttributesExW(
+			path_null_terminated.data(),
+			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+			ust::ptr_cast_to_byte8( $<(file_atributes) ) ) );
+
+	if( res == 0 )
+	{
+		return ust::null_optional;
+	}
+
+	return (u64(file_atributes.ftLastWriteTime.dwHighDateTime) << 32u) | u64(file_atributes.ftLastWriteTime.dwLowDateTime);
+}
+
 fn GetCurrentDirectory() : ust::string8
 {
 	// Perform first call to get required size.
