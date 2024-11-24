@@ -296,8 +296,9 @@ fn BuildAndLoadPackageBuildScript(
 	result_shared_library_path+= "/build.";
 	result_shared_library_path+= GetNativeSharedLibraryExtension();
 
-	var ust::string8 result_shared_library_dependency_file_path = result_shared_library_path + ".d";
+	var ust::string8 result_shared_library_dependency_file_path = GetDependencyFilePath( result_shared_library_path );
 
+	// TODO - check also if compilation options were changed (including import directories).
 	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_shared_library_dependency_file_path ) )
 	{
 		logger.LogVerbose( "Building \"" + result_shared_library_path + "\"." );
@@ -468,6 +469,13 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 	return( ust::string_view8( compiler::target::os ) == "windows" ? ust::string_view8("dll") : ust::string_view8("so") );
 }
 
+fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
+{
+	var ust::string8 mut res= path;
+	res+= ".d";
+	return res;
+}
+
 fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
 {
 	var bool mut ok= true;
@@ -518,57 +526,71 @@ fn PerformPackageTargetBuild(
 		result_target_file_path+= ".exe";
 	}
 
-	// For now just build all files together into result executable.
-	// TODO - compile each source file individually and support incremental building.
+	var ust::string8 result_dependency_file_path= GetDependencyFilePath( result_target_file_path );
 
-	var ust::vector</ust::string8/> mut source_files_absolute;
-	foreach( &source_file : target.source_files )
+	// TODO - check also if compilation options were changed (including import directories).
+	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_dependency_file_path ) )
 	{
-		source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
+		// For now just build all files together into result executable.
+		// TODO - compile each source file individually and support incremental building for each of them.
+
+		var ust::vector</ust::string8/> mut source_files_absolute;
+		foreach( &source_file : target.source_files )
+		{
+			source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
+		}
+
+		var ust::vector</ust::string_view8/> mut compiler_args;
+		// Provide standard library imports.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_system_paths.ustlib_path );
+
+		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+		if(false)
+		{
+			compiler_args.push_back( cast_imut(source_files_absolute).front() );
+		}
+
+		for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
+		{
+			compiler_args.push_back( cast_imut(source_files_absolute)[i] );
+		}
+
+		compiler_args.push_back( "-o" );
+		compiler_args.push_back( result_target_file_path );
+
+		// Produce also a dependency file.
+		compiler_args.push_back( "-MF" );
+		compiler_args.push_back( result_dependency_file_path );
+
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		// TODO - support other target types.
+		compiler_args.push_back( "-filetype=exe" );
+
+		// Run internalization in order to export only "main".
+		compiler_args.push_back( "--internalize" );
+
+		// TODO - disable "pic" by default for windows target.
+		compiler_args.push_back( "--relocation-model" );
+		compiler_args.push_back( "pic" );
+
+		// TODO - select optimization level based on configuration.
+		compiler_args.push_back( "-O2" );
+
+		logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
+
+		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
+		{
+			logger.LogError( "Compiler execution failed." );
+			return false;
+		}
+
+		logger.LogInfo( "Successfully built \"" + result_target_file_path + "\"" );
 	}
-
-	var ust::vector</ust::string_view8/> mut compiler_args;
-	// Provide standard library imports.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.ustlib_path );
-
-	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-	if(false)
+	else
 	{
-		compiler_args.push_back( cast_imut(source_files_absolute).front() );
+		logger.LogVerbose( "Skip building \"" + result_target_file_path + "\"" );
 	}
-
-	for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
-	{
-		compiler_args.push_back( cast_imut(source_files_absolute)[i] );
-	}
-
-	compiler_args.push_back( "-o" );
-	compiler_args.push_back( result_target_file_path );
-
-	// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-	// TODO - support other target types.
-	compiler_args.push_back( "-filetype=exe" );
-
-	// Run internalization in order to export only "main".
-	compiler_args.push_back( "--internalize" );
-
-	// TODO - disable "pic" by default for windows target.
-	compiler_args.push_back( "--relocation-model" );
-	compiler_args.push_back( "pic" );
-
-	// TODO - select optimization level based on configuration.
-	compiler_args.push_back( "-O2" );
-
-	logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
-
-	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
-	{
-		logger.LogError( "Compiler execution failed." );
-		return false;
-	}
-
-	logger.LogInfo( "Successfully built \"" + result_target_file_path + "\"" );
 
 	return true;
 }
