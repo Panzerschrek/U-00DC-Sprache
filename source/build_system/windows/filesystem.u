@@ -55,7 +55,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 		DWORD(CREATE_ALWAYS),
 		0u,
 		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) )
+	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
 	{
 		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( unsafe( GetLastError() ) ) ) ) );
 		return false;
@@ -74,6 +74,69 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	unsafe( ::CloseHandle(handle) );
 
 	return true;
+}
+
+fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
+{
+	var WideString mut path_null_terminated = UTF8ToWideString( path );
+	path_null_terminated.push_back( WCHAR(0) );
+
+	var HANDLE handle = unsafe( ::CreateFileW(
+		path_null_terminated.data(),
+		GENERIC_READ,
+		DWORD(FILE_SHARE_READ),
+		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		DWORD(OPEN_EXISTING),
+		DWORD(FILE_FLAG_SEQUENTIAL_SCAN),
+		ust::nullptr</byte8/>() ) );
+	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
+	{
+		return ust::null_optional;
+	}
+
+	var LARGE_INTEGER mut file_size= zero_init;
+
+	if( unsafe( ::GetFileSizeEx( handle, $<(file_size) ) ) == 0 )
+	{
+		unsafe( ::CloseHandle(handle) );
+		return ust::null_optional;
+	}
+
+	var ust::string8 mut res( size_type( u64( file_size.union_contents[0] ) ), "\0"c8 );
+
+	// TODO - check for errors.
+	var DWORD mut bytes_read = 0u;
+	unsafe( ::ReadFile(
+		handle,
+		ust::ptr_cast_to_byte8( res.data() ),
+		DWORD(res.size()),
+		$<(bytes_read),
+		ust::nullptr</ü_OVERLAPPED/>() ) );
+
+	unsafe( ::CloseHandle(handle) );
+
+	return move(res);
+}
+
+fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
+{
+	var WideString mut path_null_terminated = UTF8ToWideString( path );
+	path_null_terminated.push_back( WCHAR(0) );
+
+	var ü_WIN32_FILE_ATTRIBUTE_DATA mut file_atributes= zero_init;
+
+	auto res =
+		unsafe( ::GetFileAttributesExW(
+			path_null_terminated.data(),
+			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+			ust::ptr_cast_to_byte8( $<(file_atributes) ) ) );
+
+	if( res == 0 )
+	{
+		return ust::null_optional;
+	}
+
+	return (u64(file_atributes.ftLastWriteTime.dwHighDateTime) << 32u) | u64(file_atributes.ftLastWriteTime.dwLowDateTime);
 }
 
 fn GetCurrentDirectory() : ust::string8
@@ -103,6 +166,25 @@ fn GetCurrentDirectory() : ust::string8
 
 	res.resize( len, WCHAR( " "c8 ) );
 	return WideStringToUTF8( res );
+}
+
+// Produces INVALID_HANDLE_VALUE.
+fn GetInvalidHandle() : HANDLE
+{
+	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
+
+	// Make -1.
+	var size_type mut s(0);
+	--s;
+
+	var HANDLE mut handle= zero_init;
+
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(handle) ),
+		ust::ptr_cast_to_byte8( $<(s) ),
+		typeinfo</ HANDLE />.size_of ) );
+
+	return handle;
 }
 
 } // namespace BK

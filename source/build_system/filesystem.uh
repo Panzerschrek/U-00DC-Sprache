@@ -13,4 +13,15 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool;
 // Create/overwrite a file with specific contents.
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool;
 
+// Read file contents (usually of a text file) into a string.
+// Returns none if can't read.
+fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>;
+
+// A system-dependent timestam in specified form.
+// It's only guaranteed that this value increases in time.
+type FileModificationTime= u64;
+
+// Get modification time for file. Returns empty option if can't find it (probably file doesn't exist).
+fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>;
+
 } // namespace BK

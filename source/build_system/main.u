@@ -2,6 +2,7 @@ import "/stdout.u"
 import "/string_conversions.u"
 import "entry.uh"
 import "filesystem.uh"
+import "make_dep_file.uh"
 import "shared_library.uh"
 import "string_utils.uh"
 import "process.uh"
@@ -28,13 +29,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return 0;
 	}
 
-	var Logger mut logger( ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) );
+	var Logger mut logger(
+		( options.verbose
+			? Logger::Level::Verbose
+			: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) );
 
 	logger.LogInfo( "Bürokratie - the Ü build system!" );
 
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
 
-	logger.LogInfo( "Build system executable directory path: \"" + exe_directory_path + "\"" );
+	logger.LogVerbose( "Build system executable directory path: \"" + exe_directory_path + "\"" );
 
 	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
 	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
@@ -68,7 +72,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			? ( package_source_directory + "/build" )
 			: MakePathAbsolute( options.build_directory ) );
 
-	logger.LogInfo( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
+	logger.LogVerbose( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
 
 	if( !EnsureDirectoryExists( logger, package_build_directory ) )
 	{
@@ -136,6 +140,7 @@ struct Options
 {
 	bool help = false;
 	bool quiet = false;
+	bool verbose = false;
 	ust::string8 compiler_executable_path;
 	ust::string8 build_directory;
 	ust::string8 root_package_directory;
@@ -155,6 +160,7 @@ auto constexpr g_help_message=
 	"OPTIONS:\n" +
 	"\n" +
 	"  -q                                 - be quiet\n" +
+	"  -v                                 - be verbose\n" +
 	"  -h, --help                         - show this message\n" +
 	"  --project-directory <path>         - path to the root package directory. Default is current directory.\n" +
 	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
@@ -176,6 +182,11 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 		if( args[i] == "-q" )
 		{
 			res.quiet= true;
+			++i;
+		}
+		else if( args[i] == "-v" )
+		{
+			res.verbose= true;
 			++i;
 		}
 		else if( args[i] == "-h" || args[i] == "--help" )
@@ -272,96 +283,125 @@ fn BuildAndLoadPackageBuildScript(
 	// TODO - select more catchy name for root build script file.
 	auto constexpr build_script_file= "build.u";
 
-	var ust::string8 build_script_wrapper_file_path= ust::string8(package_build_directory) + "/" + "build_script_wrapper.u";
+	var ust::string8 build_script_file_full_path= ust::string8(package_source_directory) + "/" + build_script_file;
 
-	// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
+	// TODO - do we need to have this check here?
+	if( GetFileModificationTime( build_script_file_full_path ).empty() )
 	{
-		var ust::string8 mut build_script_wrapper_contents = "import \"/";
-		build_script_wrapper_contents+= build_script_file;
-		build_script_wrapper_contents+= "\"\n\n";
-		build_script_wrapper_contents+= "fn nomangle ";
-		build_script_wrapper_contents+= entry_func_name;
-		build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
-		build_script_wrapper_contents+= "\n";
-
-		if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
-		{
-			logger.LogError( "Can't write build script wrapper file." );
-			return ust::null_optional;
-		}
+		logger.LogError( "Can not get modification time for \"" + build_script_file_full_path + "\" - file does not exists?" );
+		return ust::null_optional;
 	}
 
 	var ust::string8 mut result_shared_library_path= package_build_directory;
 	result_shared_library_path+= "/build.";
 	result_shared_library_path+= GetNativeSharedLibraryExtension();
 
-	var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
+	var ust::string8 result_shared_library_dependency_file_path = GetDependencyFilePath( result_shared_library_path );
 
-	// Use optimization level which was used to compile the build system executable.
-	var ust::string8 mut optimization_level= "-O";
-	optimization_level.push_back( compiler::options::optimization_level );
-
-	var ust::vector</ust::string_view8/> mut compiler_args;
-	// Add path to the package directory in order to import "build.u" inside the wrapper.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( package_source_directory );
-	// Provide standard library imports.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.ustlib_path );
-	// Provide path to declarations of the build system interface.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.build_system_imports_path );
-	compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
-	compiler_args.push_back( "-o" );
-	compiler_args.push_back( result_shared_library_path );
-	// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-	compiler_args.push_back( "-filetype=dll" );
-	// Run internalization in order to export only entry function.
-	compiler_args.push_back( "--internalize" );
-	compiler_args.push_back( internalize_preserve_option );
-	compiler_args.push_back( optimization_level );
-
-	// If the build system executable was compiled with debug information - generate it for the shared library too.
-	if( compiler::options::generate_debug_info )
+	// TODO - check also if compilation options were changed (including import directories).
+	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_shared_library_dependency_file_path ) )
 	{
-		compiler_args.push_back( "-g" );
+		logger.LogVerbose( "Building \"" + result_shared_library_path + "\"." );
+
+		var ust::string8 build_script_wrapper_file_path= ust::string8(package_build_directory) + "/" + "build_script_wrapper.u";
+
+		// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
+		{
+			var ust::string8 mut build_script_wrapper_contents = "import \"/";
+			build_script_wrapper_contents+= build_script_file;
+			build_script_wrapper_contents+= "\"\n\n";
+			build_script_wrapper_contents+= "fn nomangle ";
+			build_script_wrapper_contents+= entry_func_name;
+			build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
+			build_script_wrapper_contents+= "\n";
+
+			if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
+			{
+				logger.LogError( "Can't write build script wrapper file." );
+				return ust::null_optional;
+			}
+		}
+
+		var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
+
+		// Use optimization level which was used to compile the build system executable.
+		var ust::string8 mut optimization_level= "-O";
+		optimization_level.push_back( compiler::options::optimization_level );
+
+		var ust::vector</ust::string_view8/> mut compiler_args;
+		// Add path to the package directory in order to import "build.u" inside the wrapper.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( package_source_directory );
+		// Provide standard library imports.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_system_paths.ustlib_path );
+		// Provide path to declarations of the build system interface.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_system_paths.build_system_imports_path );
+
+		compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
+
+		// Output.
+		compiler_args.push_back( "-o" );
+		compiler_args.push_back( result_shared_library_path );
+
+		// Produce also a dependency file.
+		compiler_args.push_back( "-MF" );
+		compiler_args.push_back( result_shared_library_dependency_file_path );
+
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		compiler_args.push_back( "-filetype=dll" );
+		// Run internalization in order to export only entry function.
+		compiler_args.push_back( "--internalize" );
+		compiler_args.push_back( internalize_preserve_option );
+		compiler_args.push_back( optimization_level );
+
+		// If the build system executable was compiled with debug information - generate it for the shared library too.
+		if( compiler::options::generate_debug_info )
+		{
+			compiler_args.push_back( "-g" );
+		}
+
+		// Use the same target parameters for the shared library as for the build system executable.
+
+		compiler_args.push_back( "--target-arch" );
+		compiler_args.push_back( compiler::target::arch );
+
+		compiler_args.push_back( "--target-vendor" );
+		compiler_args.push_back( compiler::target::vendor );
+
+		compiler_args.push_back( "--target-os" );
+		compiler_args.push_back( compiler::target::os );
+
+		compiler_args.push_back( "--target-environment" );
+		compiler_args.push_back( compiler::target::environment );
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			// It seems that position-independent code is always enabled on systems except Windows.
+			// So, use this option for building the shared library.
+			compiler_args.push_back( "--relocation-model" );
+			compiler_args.push_back( "pic" );
+		}
+
+		if( ust::string_view8( compiler::target::environment ) == "msvc" )
+		{
+			// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
+			compiler_args.push_back( "-Wl,/NOIMPLIB" );
+		}
+
+		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
+		{
+			logger.LogError( "Compiler execution failed." );
+			return ust::null_optional;
+		}
+	}
+	else
+	{
+		logger.LogVerbose( "Skip building \"" + result_shared_library_path + "\"." );
 	}
 
-	// Use the same target parameters for the shared library as for the build system executable.
-
-	compiler_args.push_back( "--target-arch" );
-	compiler_args.push_back( compiler::target::arch );
-
-	compiler_args.push_back( "--target-vendor" );
-	compiler_args.push_back( compiler::target::vendor );
-
-	compiler_args.push_back( "--target-os" );
-	compiler_args.push_back( compiler::target::os );
-
-	compiler_args.push_back( "--target-environment" );
-	compiler_args.push_back( compiler::target::environment );
-
-	if( ust::string_view8( compiler::target::os ) != "windows" )
-	{
-		// It seems that position-independent code is always enabled on systems except Windows.
-		// So, use this option for building the shared library.
-		compiler_args.push_back( "--relocation-model" );
-		compiler_args.push_back( "pic" );
-	}
-
-	if( ust::string_view8( compiler::target::environment ) == "msvc" )
-	{
-		// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
-		compiler_args.push_back( "-Wl,/NOIMPLIB" );
-	}
-
-	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
-	{
-		logger.LogError( "Compiler execution failed." );
-		return ust::null_optional;
-	}
-
-	logger.LogInfo( "Loading " + result_shared_library_path );
+	logger.LogVerbose( "Loading " + result_shared_library_path );
 
 	auto shared_library_opt = LoadSharedLibrary( logger, result_shared_library_path );
 	if( shared_library_opt.empty() )
@@ -373,9 +413,67 @@ fn BuildAndLoadPackageBuildScript(
 	return shared_library_opt;
 }
 
+fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : bool
+{
+	var ust::optional</ust::string8/> file_contents= ReadFile( dep_file_path );
+	if( file_contents.empty() )
+	{
+		// Dep file is not created yet.
+		logger.LogVerbose( "No dependency file \"" + ust::string8(dep_file_path) + "\" - perform the build." );
+		return true;
+	}
+
+	var ust::optional</MakeDepFile/> dep_file_opt= ParseMakeDepFileContents( file_contents.try_deref() );
+	if( dep_file_opt.empty() )
+	{
+		logger.LogError( "Failed to parse dep file \"" + ust::string8(dep_file_path) + "\"" );
+		return true;
+	}
+
+	var MakeDepFile& dep_file= dep_file_opt.try_deref();
+
+	var ust::optional</FileModificationTime/> dst_modification_time_opt= GetFileModificationTime( dep_file.destination );
+	if( dst_modification_time_opt.empty() )
+	{
+		// Destination deosn't exist.
+		logger.LogVerbose( "No destination file \"" + dep_file.destination  + "\" - perform the build." );
+		return true;
+	}
+
+	auto dst_modification_time = dst_modification_time_opt.try_deref();
+
+	foreach( &dependency : dep_file.dependencies )
+	{
+		var ust::optional</FileModificationTime/> src_modification_time_opt= GetFileModificationTime( dependency );
+		if( src_modification_time_opt.empty() )
+		{
+			// This source file is missing.
+			// In some cases it's ok, like if an imported file was deleted together with deletion of the corresponding "import" directive.
+			logger.LogVerbose( "No source file \"" + dependency  + "\" - perform the build." );
+			return true;
+		}
+		if( src_modification_time_opt.try_deref() >= dst_modification_time )
+		{
+			logger.LogVerbose( "Source file \"" + dependency  + "\" is newer than the destination - perform the build." );
+			return true;
+		}
+	}
+
+	// Rebuild is not required if we reached this point.
+	logger.LogVerbose( "No rebuild is required for dependency of the dep file \"" + ust::string8(dep_file_path) + "\"." );
+	return false;
+}
+
 fn GetNativeSharedLibraryExtension() : ust::string_view8
 {
 	return( ust::string_view8( compiler::target::os ) == "windows" ? ust::string_view8("dll") : ust::string_view8("so") );
+}
+
+fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
+{
+	var ust::string8 mut res= path;
+	res+= ".d";
+	return res;
 }
 
 fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
@@ -428,54 +526,70 @@ fn PerformPackageTargetBuild(
 		result_target_file_path+= ".exe";
 	}
 
-	// For now just build all files together into result executable.
-	// TODO - compile each source file individually and support incremental building.
+	var ust::string8 result_dependency_file_path= GetDependencyFilePath( result_target_file_path );
 
-	var ust::vector</ust::string8/> mut source_files_absolute;
-	foreach( &source_file : target.source_files )
+	// TODO - check also if compilation options were changed (including import directories).
+	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_dependency_file_path ) )
 	{
-		source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
+		// For now just build all files together into result executable.
+		// TODO - compile each source file individually and support incremental building for each of them.
+
+		var ust::vector</ust::string8/> mut source_files_absolute;
+		foreach( &source_file : target.source_files )
+		{
+			source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
+		}
+
+		var ust::vector</ust::string_view8/> mut compiler_args;
+		// Provide standard library imports.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_system_paths.ustlib_path );
+
+		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+		if(false)
+		{
+			compiler_args.push_back( cast_imut(source_files_absolute).front() );
+		}
+
+		for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
+		{
+			compiler_args.push_back( cast_imut(source_files_absolute)[i] );
+		}
+
+		compiler_args.push_back( "-o" );
+		compiler_args.push_back( result_target_file_path );
+
+		// Produce also a dependency file.
+		compiler_args.push_back( "-MF" );
+		compiler_args.push_back( result_dependency_file_path );
+
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		// TODO - support other target types.
+		compiler_args.push_back( "-filetype=exe" );
+
+		// Run internalization in order to export only "main".
+		compiler_args.push_back( "--internalize" );
+
+		// TODO - disable "pic" by default for windows target.
+		compiler_args.push_back( "--relocation-model" );
+		compiler_args.push_back( "pic" );
+
+		// TODO - select optimization level based on configuration.
+		compiler_args.push_back( "-O2" );
+
+		logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
+
+		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
+		{
+			logger.LogError( "Compiler execution failed." );
+			return false;
+		}
+
+		logger.LogInfo( "Successfully built \"" + result_target_file_path + "\"" );
 	}
-
-	var ust::vector</ust::string_view8/> mut compiler_args;
-	// Provide standard library imports.
-	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.ustlib_path );
-
-	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-	if(false)
+	else
 	{
-		compiler_args.push_back( cast_imut(source_files_absolute).front() );
-	}
-
-	for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
-	{
-		compiler_args.push_back( cast_imut(source_files_absolute)[i] );
-	}
-
-	compiler_args.push_back( "-o" );
-	compiler_args.push_back( result_target_file_path );
-
-	// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-	// TODO - support other target types.
-	compiler_args.push_back( "-filetype=exe" );
-
-	// Run internalization in order to export only "main".
-	compiler_args.push_back( "--internalize" );
-
-	// TODO - disable "pic" by default for windows target.
-	compiler_args.push_back( "--relocation-model" );
-	compiler_args.push_back( "pic" );
-
-	// TODO - select optimization level based on configuration.
-	compiler_args.push_back( "-O2" );
-
-	logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
-
-	if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
-	{
-		logger.LogError( "Compiler execution failed." );
-		return false;
+		logger.LogVerbose( "Skip building \"" + result_target_file_path + "\"" );
 	}
 
 	return true;

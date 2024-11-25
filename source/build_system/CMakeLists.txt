@@ -82,6 +82,8 @@ if( U_BUILD_PY_TESTS AND TARGET lldCommon )
 
 	file( GLOB_RECURSE TESTS_FILES "tests/*" ) # All files of tests, including the test script file, build scripts, sources, etc.
 
+	file( GLOB_RECURSE USTLIB_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/*.u" )
+
 	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
 
 	# Actual command which runs tests.
@@ -98,6 +100,7 @@ if( U_BUILD_PY_TESTS AND TARGET lldCommon )
 		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
 		DEPENDS BuildSystem
 		DEPENDS ${TESTS_FILES}
+		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		)
 
