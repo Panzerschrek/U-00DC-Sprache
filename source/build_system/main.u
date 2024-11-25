@@ -501,9 +501,17 @@ fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
 
 		for( auto mut m= 0s; m < build_target.source_files.size(); ++m )
 		{
+			auto& source_name = build_target.source_files[m];
+			if( !TargetSourceNameIsValid( source_name ) )
+			{
+				logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + current_name + "\"!" );
+				ok= false;
+			}
+
 			for( auto mut n= 0s; n < m; ++n )
 			{
-				if( build_target.source_files[m] == build_target.source_files[n] )
+				// TODO - perform name normalisation before comparing (like changing / with \\)
+				if( source_name == build_target.source_files[n] )
 				{
 					logger.LogError( "Error, duplicated source file \"" + build_target.source_files[m] + "\" of the build target \"" + current_name + "\"!" );
 					ok= false;
@@ -543,6 +551,31 @@ fn TargetNameIsValid( ust::string_view8 name ) : bool
 			default -> {}
 		}
 	}
+
+	return true;
+}
+
+fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
+{
+	if( name.empty() )
+	{
+		return false;
+	}
+
+	if( name.front() == "/"c8 || name.front() == "\\"c8 )
+	{
+		// Do not allow absolute paths.
+		return false;
+	}
+
+	if( name.size() >= 2s && name[0s] >= "A"c8 && name[0s] <= "Z"c8 && name[1s] == ":"c8 )
+	{
+		// Do not allow absolute Windows paths.
+		return false;
+	}
+
+	// Further checks aren't really necessary.
+	// If for example file name is invalid, it will not be found and build will fail.
 
 	return true;
 }

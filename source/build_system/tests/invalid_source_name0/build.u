@@ -1,0 +1,10 @@
+import "/build_system.uh"
+
+fn GetPackageInfo() : BK::PackageInfo
+{
+	var BK::BuildTarget mut target;
+	target.source_files.push_back( "" ); // Empty name - not allowed.
+	target.name= "hello_world";
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

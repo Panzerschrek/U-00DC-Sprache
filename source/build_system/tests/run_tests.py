@@ -210,6 +210,27 @@ def InvalidTargetName4Test():
 	assert( stderr.find( "Error, invalid build target name \"hello" ) != -1 )
 
 
+def InvalidSourceName0Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName1Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"/source.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName2Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"C:/main.u\" of build target \"hello_world\"" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -266,7 +287,10 @@ def main():
 		InvalidTargetName1Test,
 		InvalidTargetName2Test,
 		InvalidTargetName3Test,
-		InvalidTargetName4Test ]
+		InvalidTargetName4Test,
+		InvalidSourceName0Test,
+		InvalidSourceName1Test,
+		InvalidSourceName2Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
