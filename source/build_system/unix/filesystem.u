@@ -97,8 +97,23 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 
 	var ust::string8 mut contents( size_type(size), "\0"c8 );
 
-	// TODO - check for errors, read in loop.
-	unsafe( ::read( fd, ust::ptr_cast_to_byte8( contents.data() ), contents.size() ) );
+	// Perform reading in loop in order to handle cases where less than needed bytes were read.
+	for( auto mut offset = 0s; offset < contents.size(); )
+	{
+		var ssize_type read_res = unsafe( ::read(
+			fd,
+			ust::ptr_cast_to_byte8( contents.data() ) + offset,
+			contents.size() - offset ) );
+
+		if( read_res < ssize_type(0) )
+		{
+			// Read filed.
+			unsafe( ::close(fd) );
+			return ust::null_optional;
+		}
+
+		offset+= size_type(read_res);
+	}
 
 	unsafe( ::close(fd) );
 
