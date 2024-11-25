@@ -574,6 +574,29 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 		return false;
 	}
 
+	// TODO - move components splitting code into another file (create an iterator class).
+	{
+		auto mut prev_component_start = 0s;
+		for( var size_type mut i= 0s; i < name.size(); ++i )
+		{
+			var char8 c= name[i];
+			if( c == "/"c8 || c == "\\"c8 )
+			{
+				auto component = name.subrange( prev_component_start, i );
+				if( component == "." || component == ".." )
+				{
+					return false;
+				}
+				prev_component_start= i + 1s;
+			}
+		}
+		auto last_component = name.subrange( prev_component_start, name.size() );
+		if( last_component == "." || last_component == ".." )
+		{
+			return false;
+		}
+	}
+
 	// Further checks aren't really necessary.
 	// If for example file name is invalid, it will not be found and build will fail.
 

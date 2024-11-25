@@ -231,6 +231,34 @@ def InvalidSourceName2Test():
 	assert( stderr.find( "Invalid, source name \"C:/main.u\" of build target \"hello_world\"" ) != -1 )
 
 
+def InvalidSourceName3Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"./main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName4Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"some_dir/../main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName5Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name5" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"../main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName6Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name6" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -290,7 +318,11 @@ def main():
 		InvalidTargetName4Test,
 		InvalidSourceName0Test,
 		InvalidSourceName1Test,
-		InvalidSourceName2Test ]
+		InvalidSourceName2Test,
+		InvalidSourceName3Test,
+		InvalidSourceName4Test,
+		InvalidSourceName5Test,
+		InvalidSourceName6Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

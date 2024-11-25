@@ -165,7 +165,6 @@ CPP Header converter:
 *) Support generated headers
 *) Cross-compilation support
 *) Multiple packages support
-*) Validation of source files location
 *) Prevent imports ouside allowed import directories
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets
