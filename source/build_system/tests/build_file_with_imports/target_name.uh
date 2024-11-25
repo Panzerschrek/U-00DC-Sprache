@@ -1,0 +1,1 @@
+auto constexpr g_target_name = "build_file_with_imports";

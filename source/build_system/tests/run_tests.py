@@ -44,6 +44,10 @@ def HelloWorldTest():
 	RunExecutable( "hello_world", "hello_world" )
 
 
+def EmptyPackageTest():
+	RunBuildSystem( "empty_package" )
+
+
 def TwoFilesExeTest():
 	RunBuildSystem( "two_files_exe" )
 	RunExecutable( "two_files_exe", "two_files_exe" )
@@ -55,10 +59,26 @@ def TwoTargetsTest():
 	RunExecutable( "two_targets", "target_b" )
 
 
+def TwoTargetsCommonSourceTest():
+	RunBuildSystem( "two_targets_common_source" )
+	RunExecutable( "two_targets_common_source", "target_a" )
+	RunExecutable( "two_targets_common_source", "target_b" )
+
+
+def SourcesInDirectoriesTest():
+	RunBuildSystem( "sources_in_directories" )
+	RunExecutable( "sources_in_directories", "sources_in_directories" )
+
+
 def ТестЮникода():
 	# Non-ASCII project directory name, non-ASCII target name with spaces.
 	RunBuildSystem( "Тест Юникода" )
 	RunExecutable( "Тест Юникода", "Юникодный исполняемый файл - ☦ (православный)" )
+
+
+def BuildFileWithImportsTest():
+	RunBuildSystem( "build_file_with_imports" )
+	RunExecutable( "build_file_with_imports", "build_file_with_imports" )
 
 
 def MissingBuildFile():
@@ -295,9 +315,13 @@ def main():
 
 	test_funcs = [
 		HelloWorldTest,
+		EmptyPackageTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,
+		TwoTargetsCommonSourceTest,
+		SourcesInDirectoriesTest,
 		ТестЮникода,
+		BuildFileWithImportsTest,
 		MissingBuildFile,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,

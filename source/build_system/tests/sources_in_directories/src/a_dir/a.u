@@ -1,0 +1,7 @@
+import "/stdout.u"
+import "../../inc.uh"
+
+fn PrintA()
+{
+	ust::stdout_print( "AAA\n" );
+}

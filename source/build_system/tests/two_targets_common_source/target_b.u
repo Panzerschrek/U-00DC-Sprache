@@ -1,0 +1,9 @@
+import "/stdout.u"
+import "common.uh"
+
+fn nomangle main() : i32
+{
+	CommonPrint();
+	ust::stdout_print( "Target B\n" );
+	return 0;
+}

@@ -1,0 +1,10 @@
+import "/stdout.u"
+import "../inc.uh"
+
+fn nomangle main() : i32
+{
+	PrintA();
+	PrintB();
+	PrintC();
+	return 0;
+}

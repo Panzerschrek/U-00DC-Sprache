@@ -1,0 +1,3 @@
+fn PrintA();
+fn PrintB();
+fn PrintC();

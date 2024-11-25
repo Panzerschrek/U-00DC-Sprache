@@ -1,0 +1,7 @@
+import "/build_system.uh"
+
+fn GetPackageInfo() : BK::PackageInfo
+{
+	// Package with no targets.
+	return BK::PackageInfo{};
+}
