@@ -483,6 +483,13 @@ fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
 	{
 		var BuildTarget& build_target= package_info.build_targets[i];
 		auto& current_name= build_target.name;
+
+		if( !TargetNameIsValid( current_name ) )
+		{
+			logger.LogError( "Error, invalid build target name \"" + current_name + "\"!" );
+			ok= false;
+		}
+
 		for( auto mut j= 0s; j < i; ++j )
 		{
 			if( current_name == package_info.build_targets[j].name )
@@ -506,6 +513,38 @@ fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
 	}
 
 	return ok;
+}
+
+fn TargetNameIsValid( ust::string_view8 name ) : bool
+{
+	if( name.empty() )
+	{
+		return false;
+	}
+
+	foreach( c : name )
+	{
+		// Prevent symbols which may have special meaning in paths.
+		switch(c)
+		{
+			"."c8, // Dots are allowed in paths, but in target names they may be confusing.
+			"/"c8,
+			"\\"c8,
+			":"c8,
+			"\""c8,
+			"'"c8,
+			"<"c8,
+			">"c8,
+			"|"c8,
+			"?"c8,
+			"*"c8,
+			"\0"c8
+			-> { return false; },
+			default -> {}
+		}
+	}
+
+	return true;
 }
 
 // Returns true on success.

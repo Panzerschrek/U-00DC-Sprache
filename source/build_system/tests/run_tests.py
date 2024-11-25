@@ -175,6 +175,41 @@ def DuplicatedSourceFileTest():
 	assert( stderr.find( "Package is invald" ) != -1 )
 
 
+def InvalidTargetName0Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello_world.\"" ) != -1 )
+
+
+def InvalidTargetName1Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"\"" ) != -1 )
+
+
+def InvalidTargetName2Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello/world\"" ) != -1 )
+
+
+def InvalidTargetName3Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello" ) != -1 )
+
+
+def InvalidTargetName4Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -226,7 +261,12 @@ def main():
 		LinkingError0Test,
 		LinkingError1Test,
 		DuplicatedBuildTargetTest,
-		DuplicatedSourceFileTest ]
+		DuplicatedSourceFileTest,
+		InvalidTargetName0Test,
+		InvalidTargetName1Test,
+		InvalidTargetName2Test,
+		InvalidTargetName3Test,
+		InvalidTargetName4Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
