@@ -17,6 +17,7 @@ fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::option
 	}
 	file_contents.drop_front(); // Skip :
 
+	auto mut prev_s = file_contents.size();
 	loop
 	{
 		SkipWhitespaces( file_contents );
@@ -26,6 +27,13 @@ fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::option
 		}
 
 		res.dependencies.push_back( ParsePath( file_contents ) );
+
+		auto new_s = file_contents.size();
+		if( new_s == prev_s )
+		{
+			return ust::null_optional; // Something is really broken, since we can't advance.
+		}
+		prev_s= new_s;
 	}
 
 	return res;
@@ -37,11 +45,17 @@ fn ParsePath( ust::string_view8 &mut s ) : ust::string8
 	while( !s.empty() )
 	{
 		var char8 c= s.front();
-		if( IsWhitespaceChar(c) || c == ":"c8 )
+		if( IsWhitespaceChar(c) )
 		{
 			break;
 		}
-		else if(c == "\\"c8 && !s.empty() )
+		else if( c == ":"c8 && s.size() >= 2s && s[1s] == " "c8 )
+		{
+			// "Allow : inside paths, but skip : at the and (before space).
+			// Do so, since we need to support Windows paths.
+			break;
+		}
+		else if( c == "\\"c8 && s.size() >= 2s )
 		{
 			if( s[1s] == "\n"c8 )
 			{
@@ -50,7 +64,7 @@ fn ParsePath( ust::string_view8 &mut s ) : ust::string8
 			s.drop_front();
 			res.push_back( s.drop_and_get_front() );
 		}
-		else if( c == "$"c8 && !s.empty() )
+		else if( c == "$"c8 && s.size() >= 2s )
 		{
 			s.drop_front();
 			res.push_back( s.drop_and_get_front() );
