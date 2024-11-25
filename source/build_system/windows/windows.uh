@@ -19,12 +19,16 @@ fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe cal
 
 fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 
+fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
+
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 
 fn nomangle GetProcAddress( HMODULE hModule, LPCSTR lpProcName ) unsafe call_conv( "system" ) : $(byte8);
 
 fn nomangle LoadLibraryA( LPCSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
 fn nomangle LoadLibraryW( LPCWSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
+
+fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 
@@ -45,6 +49,11 @@ enum ü_GET_FILEEX_INFO_LEVELS : i32
 {
 	GetFileExInfoStandard,
 	GetFileExMaxInfoLevel,
+}
+
+struct ü_LARGE_INTEGER ordered
+{
+	[ byte64, 1 ] union_contents;
 }
 
 struct ü_OVERLAPPED ordered
@@ -132,6 +141,7 @@ type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
 type HANDLE = $(byte8);
 type HINSTANCE = $(HINSTANCE__);
 type HMODULE = HINSTANCE;
+type LARGE_INTEGER = ü_LARGE_INTEGER;
 type LPCSTR = $(CHAR);
 type LPCVOID = $(byte8);
 type LPCWSTR = $(WCHAR);
@@ -145,14 +155,21 @@ type LPSTARTUPINFOW = $(ü_STARTUPINFOW);
 type LPSTR = $(CHAR);
 type LPVOID = $(byte8);
 type LPWSTR = $(WCHAR);
+type PLARGE_INTEGER = $(LARGE_INTEGER);
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
 type WORD = u16;
 
 auto constexpr ERROR_ALREADY_EXISTS = 183;
+
 auto constexpr FILE_SHARE_READ = 1;
+
 auto constexpr GENERIC_READ = 0x80000000u;
 auto constexpr GENERIC_WRITE = 0x40000000u;
 auto constexpr GENERIC_EXECUTE = 0x20000000u;
 auto constexpr GENERIC_ALL = 0x10000000u;
+
 auto constexpr CREATE_ALWAYS = 2;
+auto constexpr OPEN_ALWAYS = 4;
+
+auto FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000;
