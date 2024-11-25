@@ -55,7 +55,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 		DWORD(CREATE_ALWAYS),
 		0u,
 		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) ) // TODO - check against INVALID_HANDLE_VALUE
+	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
 	{
 		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( unsafe( GetLastError() ) ) ) ) );
 		return false;
@@ -86,10 +86,10 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 		GENERIC_READ,
 		DWORD(FILE_SHARE_READ),
 		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		DWORD(OPEN_ALWAYS),
+		DWORD(OPEN_EXISTING),
 		DWORD(FILE_FLAG_SEQUENTIAL_SCAN),
 		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) ) // TODO - check against INVALID_HANDLE_VALUE
+	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
 	{
 		return ust::null_optional;
 	}
@@ -166,6 +166,25 @@ fn GetCurrentDirectory() : ust::string8
 
 	res.resize( len, WCHAR( " "c8 ) );
 	return WideStringToUTF8( res );
+}
+
+// Produces INVALID_HANDLE_VALUE.
+fn GetInvalidHandle() : HANDLE
+{
+	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
+
+	// Make -1.
+	var size_type mut s(0);
+	--s;
+
+	var HANDLE mut handle= zero_init;
+
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(handle) ),
+		ust::ptr_cast_to_byte8( $<(s) ),
+		typeinfo</ HANDLE />.size_of ) );
+
+	return handle;
 }
 
 } // namespace BK

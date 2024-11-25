@@ -170,6 +170,7 @@ auto constexpr GENERIC_EXECUTE = 0x20000000u;
 auto constexpr GENERIC_ALL = 0x10000000u;
 
 auto constexpr CREATE_ALWAYS = 2;
+auto constexpr OPEN_EXISTING = 3;
 auto constexpr OPEN_ALWAYS = 4;
 
 auto FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000;
