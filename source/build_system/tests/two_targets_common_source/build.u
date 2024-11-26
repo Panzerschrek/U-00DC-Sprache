@@ -5,12 +5,12 @@ fn GetPackageInfo() : BK::PackageInfo
 	// Using the same source file for multiple targets is fine. It will be compiled for each target.
 	auto common_source= "common.u";
 
-	var BK::BuildTarget mut target_a;
+	var BK::BuildTarget mut target_a{ .target_type = BK::BuildTargetType::Executable };
 	target_a.source_files.push_back( "target_a.u" );
 	target_a.source_files.push_back( common_source );
 	target_a.name= "target_a";
 
-	var BK::BuildTarget mut target_b;
+	var BK::BuildTarget mut target_b{ .target_type = BK::BuildTargetType::Executable };
 	target_b.source_files.push_back( "target_b.u" );
 	target_b.source_files.push_back( common_source );
 	target_b.name= "target_b";

@@ -1,0 +1,159 @@
+import "/stdout.u"
+import "options.uh"
+
+namespace BK
+{
+
+fn GetHelpMessage() : ust::string_view8
+{
+	return g_help_message;
+}
+
+//
+// Keep this up-to date with the options parsing code!
+//
+
+auto constexpr g_help_message=
+	"Bürokratie - the Ü build system\n" +
+	"\n" +
+	"USAGE: BuildSystem [options]\n" +
+	"\n" +
+	"OPTIONS:\n" +
+	"\n" +
+	"  -q                                 - be quiet\n" +
+	"  -v                                 - be verbose\n" +
+	"  -h, --help                         - show this message\n" +
+	"  --build-configuration              - select build configuration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
+	"  --project-directory <path>         - path to the root package directory. Default is current directory.\n" +
+	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
+	"  --compiler-executable <path>       - custom path to the compiler executable\n" +
+	"  --ustlib-path <path>               - custom path to the ustlib directory\n" +
+	"  --build-system-imports-path <path> - custom path to the build system imports directory\n"
+	;
+
+fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
+{
+	var Options mut res;
+
+	//
+	// Keep this up-to date with the help message!
+	//
+
+	for( auto mut i= 0s; i < args.size(); )
+	{
+		if( args[i] == "-q" )
+		{
+			res.quiet= true;
+			++i;
+		}
+		else if( args[i] == "-v" )
+		{
+			res.verbose= true;
+			++i;
+		}
+		else if( args[i] == "-h" || args[i] == "--help" )
+		{
+			res.help= true;
+			++i;
+		}
+		else if( args[i] == "--build-configuration" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--build-configuration\".\n" );
+				return ust::null_optional;
+			}
+			auto conf = StringToBuildConfiguration( args[i + 1s] );
+			if( conf.empty() )
+			{
+				ust::stderr_print( "Error, unknown build configuration \"" + ust::string8(args[i + 1s]) + "\".\n" );
+				return ust::null_optional;
+			}
+			res.build_configuration= conf.try_deref();
+			i+= 2s;
+		}
+		else if( args[i] == "--compiler-executable" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--compiler-executable\".\n" );
+				return ust::null_optional;
+			}
+			res.compiler_executable_path= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--build-directory" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--build-directory\".\n" );
+				return ust::null_optional;
+			}
+			res.build_directory= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--project-directory" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--project-directory\".\n" );
+				return ust::null_optional;
+			}
+			res.root_package_directory= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--ustlib-path" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--ustlib-path\".\n" );
+				return ust::null_optional;
+			}
+			res.ustlib_path= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--build-system-imports-path" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--build-system-imports-path\".\n" );
+				return ust::null_optional;
+			}
+			res.build_system_imports_path= args[i + 1s];
+			i+= 2s;
+		}
+		else
+		{
+			ust::stderr_print( "Error, unrecognized option \"" + ust::string8(args[i]) + "\".\n" );
+			return ust::null_optional;
+		}
+	}
+
+	return move(res);
+}
+
+fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>
+{
+	// Use manual conversion because we use different case for string representation.
+	if( s == "debug" )
+	{
+		return BuildConfiguration::Debug;
+	}
+	if( s == "release" )
+	{
+		return BuildConfiguration::Release;
+	}
+	return ust::null_optional;
+}
+
+fn BuildConfigurationToString( BuildConfiguration c ) : ust::string_view8
+{
+	// Use manual conversion because we use different case for string representation.
+	switch(c)
+	{
+		BuildConfiguration::Debug -> { return "debug"; },
+		BuildConfiguration::Release -> { return "release"; },
+	}
+}
+
+} // namespace BK

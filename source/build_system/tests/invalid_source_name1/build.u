@@ -2,7 +2,7 @@ import "/build_system.uh"
 
 fn GetPackageInfo() : BK::PackageInfo
 {
-	var BK::BuildTarget mut target;
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
 	target.source_files.push_back( "/source.u" ); // Absolute path - not allowed
 	target.name= "hello_world";
 

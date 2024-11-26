@@ -1,12 +1,12 @@
 import "/stdout.u"
-import "/string_conversions.u"
 import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
+import "options.uh"
+import "package_validation.uh"
 import "shared_library.uh"
 import "string_utils.uh"
 import "process.uh"
-import "imports/build_system.uh"
 
 namespace BK
 {
@@ -25,7 +25,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	if( options.help )
 	{
-		ust::stdout_print( g_help_message );
+		ust::stdout_print( GetHelpMessage() );
 		return 0;
 	}
 
@@ -67,18 +67,28 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var ust::string8 package_source_directory = MakePathAbsolute( options.root_package_directory );
 
 	// By default use "build" directory within root package directory.
-	var ust::string8 package_build_directory =
+	var ust::string8 package_build_directory_base =
 		( options.build_directory.empty()
 			? ( package_source_directory + "/build" )
 			: MakePathAbsolute( options.build_directory ) );
 
-	logger.LogVerbose( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
+	if( !EnsureDirectoryExists( logger, package_build_directory_base ) )
+	{
+		logger.LogError( "Can't create build directory." );
+		return -1;
+	}
+
+	// Create a subdirectory for configuration specified.
+	var ust::string8 package_build_directory =
+		package_build_directory_base + "/" + BuildConfigurationToString( options.build_configuration );
 
 	if( !EnsureDirectoryExists( logger, package_build_directory ) )
 	{
 		logger.LogError( "Can't create build directory." );
 		return -1;
 	}
+
+	logger.LogVerbose( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
 
 	// TODO - customize it based on package name?
 	auto constexpr entry_func_name = "GetPackageInfoImpl";
@@ -87,6 +97,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		logger,
 		build_system_paths,
 		package_source_directory,
+		// For now use directory for build configuration specified.
+		// TODO - reuse build script shared libraries among configurations and target triples.
 		package_build_directory,
 		entry_func_name );
 	if( shared_library_opt.empty() )
@@ -111,7 +123,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var PackageInfo package_info= func_ptr();
 
-	if( !CheckPackageIsOk( logger, package_info ) )
+	if( !PackageIsValid( logger, package_info ) )
 	{
 		logger.LogError( "Package is invald." );
 		return -1;
@@ -124,6 +136,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			build_system_paths,
 			package_source_directory,
 			package_build_directory,
+			options.build_configuration,
 			build_target ) )
 		{
 			logger.LogError( "Failed to build target " + build_target.name + "!" );
@@ -134,124 +147,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	logger.LogInfo( "Successfully finished the build!" );
 
 	return 0;
-}
-
-struct Options
-{
-	bool help = false;
-	bool quiet = false;
-	bool verbose = false;
-	ust::string8 compiler_executable_path;
-	ust::string8 build_directory;
-	ust::string8 root_package_directory;
-	ust::string8 ustlib_path;
-	ust::string8 build_system_imports_path;
-}
-
-//
-// Keep this up-to date with the options parsing code!
-//
-
-auto constexpr g_help_message=
-	"Bürokratie - the Ü build system\n" +
-	"\n" +
-	"USAGE: BuildSystem [options]\n" +
-	"\n" +
-	"OPTIONS:\n" +
-	"\n" +
-	"  -q                                 - be quiet\n" +
-	"  -v                                 - be verbose\n" +
-	"  -h, --help                         - show this message\n" +
-	"  --project-directory <path>         - path to the root package directory. Default is current directory.\n" +
-	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
-	"  --compiler-executable <path>       - custom path to the compiler executable\n" +
-	"  --ustlib-path <path>               - custom path to the ustlib directory\n" +
-	"  --build-system-imports-path <path> - custom path to the build system imports directory\n"
-	;
-
-fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
-{
-	var Options mut res;
-
-	//
-	// Keep this up-to date with the help message!
-	//
-
-	for( auto mut i= 0s; i < args.size(); )
-	{
-		if( args[i] == "-q" )
-		{
-			res.quiet= true;
-			++i;
-		}
-		else if( args[i] == "-v" )
-		{
-			res.verbose= true;
-			++i;
-		}
-		else if( args[i] == "-h" || args[i] == "--help" )
-		{
-			res.help= true;
-			++i;
-		}
-		else if( args[i] == "--compiler-executable" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--compiler-executable\".\n" );
-				return ust::null_optional;
-			}
-			res.compiler_executable_path= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--build-directory" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--build-directory\".\n" );
-				return ust::null_optional;
-			}
-			res.build_directory= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--project-directory" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--project-directory\".\n" );
-				return ust::null_optional;
-			}
-			res.root_package_directory= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--ustlib-path" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--ustlib-path\".\n" );
-				return ust::null_optional;
-			}
-			res.ustlib_path= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--build-system-imports-path" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--build-system-imports-path\".\n" );
-				return ust::null_optional;
-			}
-			res.build_system_imports_path= args[i + 1s];
-			i+= 2s;
-		}
-		else
-		{
-			ust::stderr_print( "Error, unrecognized option \"" + ust::string8(args[i]) + "\".\n" );
-			return ust::null_optional;
-		}
-	}
-
-	return move(res);
 }
 
 fn ExtractExeDirectoryPath( ust::string_view8 exe_path )
@@ -476,140 +371,14 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 	return res;
 }
 
-fn CheckPackageIsOk( Logger &mut logger, PackageInfo& package_info ) : bool
-{
-	var bool mut ok= true;
-	for( auto mut i= 0s; i < package_info.build_targets.size(); ++i )
-	{
-		var BuildTarget& build_target= package_info.build_targets[i];
-		auto& current_name= build_target.name;
-
-		if( !TargetNameIsValid( current_name ) )
-		{
-			logger.LogError( "Error, invalid build target name \"" + current_name + "\"!" );
-			ok= false;
-		}
-
-		for( auto mut j= 0s; j < i; ++j )
-		{
-			if( current_name == package_info.build_targets[j].name )
-			{
-				logger.LogError( "Error, duplicated build target \"" + current_name + "\"!" );
-				ok= false;
-			}
-		}
-
-		for( auto mut m= 0s; m < build_target.source_files.size(); ++m )
-		{
-			auto& source_name = build_target.source_files[m];
-			if( !TargetSourceNameIsValid( source_name ) )
-			{
-				logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + current_name + "\"!" );
-				ok= false;
-			}
-
-			for( auto mut n= 0s; n < m; ++n )
-			{
-				// TODO - perform name normalisation before comparing (like changing / with \\)
-				if( source_name == build_target.source_files[n] )
-				{
-					logger.LogError( "Error, duplicated source file \"" + build_target.source_files[m] + "\" of the build target \"" + current_name + "\"!" );
-					ok= false;
-				}
-			}
-		}
-	}
-
-	return ok;
-}
-
-fn TargetNameIsValid( ust::string_view8 name ) : bool
-{
-	if( name.empty() )
-	{
-		return false;
-	}
-
-	foreach( c : name )
-	{
-		// Prevent symbols which may have special meaning in paths.
-		switch(c)
-		{
-			"."c8, // Dots are allowed in paths, but in target names they may be confusing.
-			"/"c8,
-			"\\"c8,
-			":"c8,
-			"\""c8,
-			"'"c8,
-			"<"c8,
-			">"c8,
-			"|"c8,
-			"?"c8,
-			"*"c8,
-			"\0"c8
-			-> { return false; },
-			default -> {}
-		}
-	}
-
-	return true;
-}
-
-fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
-{
-	if( name.empty() )
-	{
-		return false;
-	}
-
-	if( name.front() == "/"c8 || name.front() == "\\"c8 )
-	{
-		// Do not allow absolute paths.
-		return false;
-	}
-
-	if( name.size() >= 2s && name[0s] >= "A"c8 && name[0s] <= "Z"c8 && name[1s] == ":"c8 )
-	{
-		// Do not allow absolute Windows paths.
-		return false;
-	}
-
-	// TODO - move components splitting code into another file (create an iterator class).
-	{
-		auto mut prev_component_start = 0s;
-		for( var size_type mut i= 0s; i < name.size(); ++i )
-		{
-			var char8 c= name[i];
-			if( c == "/"c8 || c == "\\"c8 )
-			{
-				auto component = name.subrange( prev_component_start, i );
-				if( component == "." || component == ".." )
-				{
-					return false;
-				}
-				prev_component_start= i + 1s;
-			}
-		}
-		auto last_component = name.subrange( prev_component_start, name.size() );
-		if( last_component == "." || last_component == ".." )
-		{
-			return false;
-		}
-	}
-
-	// Further checks aren't really necessary.
-	// If for example file name is invalid, it will not be found and build will fail.
-
-	return true;
-}
-
 // Returns true on success.
 fn PerformPackageTargetBuild(
 	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
-	BuildTarget& target) : bool
+	BuildConfiguration build_configuration,
+	BuildTarget& target ) : bool
 {
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
@@ -669,8 +438,22 @@ fn PerformPackageTargetBuild(
 		compiler_args.push_back( "--relocation-model" );
 		compiler_args.push_back( "pic" );
 
-		// TODO - select optimization level based on configuration.
-		compiler_args.push_back( "-O2" );
+		// Build configuration-dependent options.
+		switch( build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				compiler_args.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				compiler_args.push_back( "-O0" );
+			},
+			BuildConfiguration::Release ->
+			{
+				// Run full optimization, but not by using O3 - it isn't much better than O2.
+				compiler_args.push_back( "-O2" );
+			},
+		}
 
 		logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
 

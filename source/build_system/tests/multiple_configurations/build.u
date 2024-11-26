@@ -4,7 +4,7 @@ fn GetPackageInfo() : BK::PackageInfo
 {
 	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
 	target.source_files.push_back( "main.u" );
-	target.name= "hello/world"; // Error here - "/" isn't allowed in target names.
+	target.name= "multiple_configurations";
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
 }

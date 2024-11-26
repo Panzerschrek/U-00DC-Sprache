@@ -1,0 +1,34 @@
+import "/string.u"
+
+namespace BK
+{
+
+fn GetHelpMessage() : ust::string_view8;
+
+fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>;
+
+// Command-line options of the build tool.
+struct Options
+{
+	bool help = false;
+	bool quiet = false;
+	bool verbose = false;
+	BuildConfiguration build_configuration= BuildConfiguration::Release;
+	ust::string8 compiler_executable_path;
+	ust::string8 build_directory;
+	ust::string8 root_package_directory;
+	ust::string8 ustlib_path;
+	ust::string8 build_system_imports_path;
+}
+
+enum BuildConfiguration
+{
+	Debug,
+	Release,
+	// TODO - add other configurations
+}
+
+fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>;
+fn BuildConfigurationToString( BuildConfiguration c ) : ust::string_view8;
+
+} // namespace BK

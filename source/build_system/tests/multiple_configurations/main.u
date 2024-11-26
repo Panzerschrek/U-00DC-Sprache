@@ -1,0 +1,14 @@
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	static_if( compiler::options::generate_debug_info )
+	{
+		ust::stdout_print( "Mulitple configurations test - debug.\n" );
+	}
+	else
+	{
+		ust::stdout_print( "Mulitple configurations test - (probably) release.\n" );
+	}
+	return 0;
+}

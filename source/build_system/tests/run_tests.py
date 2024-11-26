@@ -13,13 +13,18 @@ g_build_system_imports_path = ""
 g_ustlib_path = ""
 
 
-def RunBuildSystem( project_subdirectory ):
+def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [ g_build_system_executable, "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
+
+
+# Build for "release" configuration.
+def RunBuildSystem( project_subdirectory ):
+	return RunBuildSystemWithExplicitConfiguration( project_subdirectory, "release" )
 
 
 # Returns subprocess result.
@@ -32,8 +37,13 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 	return subprocess.run( build_system_args, stderr=subprocess.PIPE )
 
 
+def RunExecutableWithExplicitConfiguration( project_subdirectory, executable_name, configuration ):
+	return subprocess.check_call( [ os.path.join( g_tests_build_root_path, project_subdirectory, configuration, executable_name ) ], stdout= subprocess.DEVNULL )
+
+
+# Run for "release" confuguration.
 def RunExecutable( project_subdirectory, executable_name ):
-	subprocess.check_call( [ os.path.join( os.path.join( g_tests_build_root_path, project_subdirectory ), executable_name ) ], stdout= subprocess.DEVNULL )
+	return RunExecutableWithExplicitConfiguration( project_subdirectory, executable_name, "release" )
 
 #
 # Tests itself
@@ -42,6 +52,15 @@ def RunExecutable( project_subdirectory, executable_name ):
 def HelloWorldTest():
 	RunBuildSystem( "hello_world" )
 	RunExecutable( "hello_world", "hello_world" )
+
+
+def MultipleConfigurationsTest():
+	# Build both "debug" and "release".
+	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "debug" )
+	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "release" )
+	# Should get two executables in different subdirectories.
+	RunExecutableWithExplicitConfiguration( "multiple_configurations", "multiple_configurations", "debug" )
+	RunExecutableWithExplicitConfiguration( "multiple_configurations", "multiple_configurations", "release" )
 
 
 def EmptyPackageTest():
@@ -315,6 +334,7 @@ def main():
 
 	test_funcs = [
 		HelloWorldTest,
+		MultipleConfigurationsTest,
 		EmptyPackageTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,

@@ -1,0 +1,9 @@
+import "imports/build_system.uh"
+import "logger.uh"
+
+namespace BK
+{
+
+fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool;
+
+} // namespace BK
