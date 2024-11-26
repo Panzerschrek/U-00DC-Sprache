@@ -3,9 +3,9 @@ import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
 import "options.uh"
+import "package_validation.uh"
 import "shared_library.uh"
 import "string_utils.uh"
-import "package_validation.uh"
 import "process.uh"
 
 namespace BK

@@ -23,7 +23,7 @@ auto constexpr g_help_message=
 	"  -q                                 - be quiet\n" +
 	"  -v                                 - be verbose\n" +
 	"  -h, --help                         - show this message\n" +
-	"  --build-configuration              - select build configaration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
+	"  --build-configuration              - select build configuration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
 	"  --project-directory <path>         - path to the root package directory. Default is current directory.\n" +
 	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
 	"  --compiler-executable <path>       - custom path to the compiler executable\n" +
