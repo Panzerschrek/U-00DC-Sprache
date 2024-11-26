@@ -134,6 +134,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			build_system_paths,
 			package_source_directory,
 			package_build_directory,
+			options.build_configuration,
 			build_target ) )
 		{
 			logger.LogError( "Failed to build target " + build_target.name + "!" );
@@ -668,7 +669,8 @@ fn PerformPackageTargetBuild(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
-	BuildTarget& target) : bool
+	BuildConfiguration build_configuration,
+	BuildTarget& target ) : bool
 {
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
@@ -728,8 +730,22 @@ fn PerformPackageTargetBuild(
 		compiler_args.push_back( "--relocation-model" );
 		compiler_args.push_back( "pic" );
 
-		// TODO - select optimization level based on configuration.
-		compiler_args.push_back( "-O2" );
+		// Build configuration-dependent options.
+		switch( build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				compiler_args.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				compiler_args.push_back( "-O0" );
+			},
+			BuildConfiguration::Release ->
+			{
+				// Run full optimization, but not by using O3 - it isn't much better than O2.
+				compiler_args.push_back( "-O2" );
+			},
+		}
 
 		logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
 
