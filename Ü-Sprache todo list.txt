@@ -152,9 +152,9 @@ CPP Header converter:
 Ü Build system:
 *) Improve build directories creation code - create all directories within given path, handle cases when a directory
 	already exists, handle case where a non-directory object (like a file) with given name exists
-*) Build configurations (debug, release, etc.)
 *) Prevent file name conflicts with build system generated files (like build.so)
 *) Incremental build - trigger rebuild if command line is changed (like import directories, optimization options, etc.)
+*) Provide build configuration and other information as an argument for "GetPackageInfo" function
 *) Ü library target type (bitcode library)
 *) Dependencies between targets
 *) Shared library target type
@@ -166,8 +166,11 @@ CPP Header converter:
 *) Cross-compilation support
 *) Multiple packages support
 *) Prevent imports ouside allowed import directories
+*) Prevent name comflicts in imports (where multiple files exist for the given import path)
+*) Reuse build script shared library among different build confugurations and target triples (build only one copy)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets
+*) A command to build a single-file program with no dependencies
 *) Multithreaded targets building - to utilize all CPU cores and thus speed-up the build
 *) Build the build system itself using the build system (create second build copy)
 *) Build Compiler2 and (possible) Compiler1 using the build system

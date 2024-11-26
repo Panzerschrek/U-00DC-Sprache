@@ -97,6 +97,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		logger,
 		build_system_paths,
 		package_source_directory,
+		// For now use directory for build configuration specified.
+		// TODO - reuse build script shared libraries among configurations and target triples.
 		package_build_directory,
 		entry_func_name );
 	if( shared_library_opt.empty() )
