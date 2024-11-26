@@ -16,7 +16,7 @@ g_ustlib_path = ""
 def RunBuildSystem( project_subdirectory ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [ g_build_system_executable, "-q", "--build-configuration", "release", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
@@ -33,7 +33,7 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 
 
 def RunExecutable( project_subdirectory, executable_name ):
-	subprocess.check_call( [ os.path.join( os.path.join( g_tests_build_root_path, project_subdirectory ), executable_name ) ], stdout= subprocess.DEVNULL )
+	subprocess.check_call( [ os.path.join( g_tests_build_root_path, project_subdirectory, "release", executable_name ) ], stdout= subprocess.DEVNULL )
 
 #
 # Tests itself
