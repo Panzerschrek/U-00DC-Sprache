@@ -44,6 +44,10 @@ def HelloWorldTest():
 	RunExecutable( "hello_world", "hello_world" )
 
 
+def EmptyPackageTest():
+	RunBuildSystem( "empty_package" )
+
+
 def TwoFilesExeTest():
 	RunBuildSystem( "two_files_exe" )
 	RunExecutable( "two_files_exe", "two_files_exe" )
@@ -55,10 +59,26 @@ def TwoTargetsTest():
 	RunExecutable( "two_targets", "target_b" )
 
 
+def TwoTargetsCommonSourceTest():
+	RunBuildSystem( "two_targets_common_source" )
+	RunExecutable( "two_targets_common_source", "target_a" )
+	RunExecutable( "two_targets_common_source", "target_b" )
+
+
+def SourcesInDirectoriesTest():
+	RunBuildSystem( "sources_in_directories" )
+	RunExecutable( "sources_in_directories", "sources_in_directories" )
+
+
 def ТестЮникода():
 	# Non-ASCII project directory name, non-ASCII target name with spaces.
 	RunBuildSystem( "Тест Юникода" )
 	RunExecutable( "Тест Юникода", "Юникодный исполняемый файл - ☦ (православный)" )
+
+
+def BuildFileWithImportsTest():
+	RunBuildSystem( "build_file_with_imports" )
+	RunExecutable( "build_file_with_imports", "build_file_with_imports" )
 
 
 def MissingBuildFile():
@@ -175,6 +195,90 @@ def DuplicatedSourceFileTest():
 	assert( stderr.find( "Package is invald" ) != -1 )
 
 
+def InvalidTargetName0Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello_world.\"" ) != -1 )
+
+
+def InvalidTargetName1Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"\"" ) != -1 )
+
+
+def InvalidTargetName2Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello/world\"" ) != -1 )
+
+
+def InvalidTargetName3Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello" ) != -1 )
+
+
+def InvalidTargetName4Test():
+	res = RunBuildSystemWithErrors( "invalid_target_name4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, invalid build target name \"hello" ) != -1 )
+
+
+def InvalidSourceName0Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName1Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"/source.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName2Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"C:/main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName3Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"./main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName4Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"some_dir/../main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName5Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name5" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \"../main.u\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName6Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name6" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -211,9 +315,13 @@ def main():
 
 	test_funcs = [
 		HelloWorldTest,
+		EmptyPackageTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,
+		TwoTargetsCommonSourceTest,
+		SourcesInDirectoriesTest,
 		ТестЮникода,
+		BuildFileWithImportsTest,
 		MissingBuildFile,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
@@ -226,7 +334,19 @@ def main():
 		LinkingError0Test,
 		LinkingError1Test,
 		DuplicatedBuildTargetTest,
-		DuplicatedSourceFileTest ]
+		DuplicatedSourceFileTest,
+		InvalidTargetName0Test,
+		InvalidTargetName1Test,
+		InvalidTargetName2Test,
+		InvalidTargetName3Test,
+		InvalidTargetName4Test,
+		InvalidSourceName0Test,
+		InvalidSourceName1Test,
+		InvalidSourceName2Test,
+		InvalidSourceName3Test,
+		InvalidSourceName4Test,
+		InvalidSourceName5Test,
+		InvalidSourceName6Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

@@ -1,0 +1,15 @@
+import "/build_system.uh"
+
+fn GetPackageInfo() : BK::PackageInfo
+{
+	var BK::BuildTarget mut target;
+	target.name= "sources_in_directories";
+
+	// It's fine to use directories for source files.
+	target.source_files.push_back( "src/main.u" );
+	target.source_files.push_back( "src/a_dir/a.u" );
+	target.source_files.push_back( "src/b_dir_start/b_dir/b.u" );
+	target.source_files.push_back( "src/b_dir_start/b_dir/c_dir/c.u" );
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

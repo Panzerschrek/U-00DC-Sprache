@@ -1,0 +1,7 @@
+import "/string.u"
+import "/vector.u"
+
+fn GetSources() : ust::vector</ust::string8/>
+{
+	return ust::make_array( ust::string8( "main.u" ) );
+}

@@ -5,13 +5,21 @@ namespace BK
 {
 
 struct BuildTarget
-{
-	ust::vector</ust::string8/> source_files;
+{	
+	// Name of a build target.
+	// Empty names, names with some special characters and path separators aren't allowed.
 	ust::string8 name;
+
+	// List of source files of this build target. Order is irrelevant.
+	// Containts paths relative to the package source directory (where the build script is located).
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	ust::vector</ust::string8/> source_files;
 }
 
 struct PackageInfo
 {
+	// Build targets of a package. Order is irrelevant.
 	ust::vector</BuildTarget/> build_targets;
 }
 

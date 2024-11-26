@@ -1,0 +1,13 @@
+import "/build_system.uh"
+// Use imports relative to the build script file.
+import "sources.uh"
+import "target_name.uh"
+
+fn GetPackageInfo() : BK::PackageInfo
+{
+	var BK::BuildTarget mut target;
+	target.source_files= GetSources();
+	target.name= g_target_name;
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

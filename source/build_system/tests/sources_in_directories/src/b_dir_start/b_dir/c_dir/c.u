@@ -1,0 +1,7 @@
+import "/stdout.u"
+import "../../../../inc.uh"
+
+fn PrintC()
+{
+	ust::stdout_print( "CCCCC\n" );
+}
