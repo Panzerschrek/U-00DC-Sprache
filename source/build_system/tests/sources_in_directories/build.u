@@ -2,7 +2,7 @@ import "/build_system.uh"
 
 fn GetPackageInfo() : BK::PackageInfo
 {
-	var BK::BuildTarget mut target;
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
 	target.name= "sources_in_directories";
 
 	// It's fine to use directories for source files.

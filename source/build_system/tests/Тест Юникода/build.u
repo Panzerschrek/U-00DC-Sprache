@@ -2,7 +2,7 @@ import "/build_system.uh"
 
 fn GetPackageInfo() : BK::PackageInfo
 {
-	var BK::BuildTarget mut цель;
+	var BK::BuildTarget mut цель{ .target_type = BK::BuildTargetType::Executable };
 	// Non-ASCII source file name.
 	цель.source_files.push_back( "исходник.ü" );
 	// Non-ASCII target name with spaces.

@@ -5,7 +5,7 @@ import "target_name.uh"
 
 fn GetPackageInfo() : BK::PackageInfo
 {
-	var BK::BuildTarget mut target;
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
 	target.source_files= GetSources();
 	target.name= g_target_name;
 

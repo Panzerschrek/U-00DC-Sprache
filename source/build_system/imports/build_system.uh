@@ -4,8 +4,17 @@ import "/vector.u"
 namespace BK
 {
 
+enum BuildTargetType
+{
+	Executable,
+	// TODO - add other targets.
+}
+
 struct BuildTarget
-{	
+{
+	// Type of the build target. This should be specified explicitly.
+	BuildTargetType target_type;
+
 	// Name of a build target.
 	// Empty names, names with some special characters and path separators aren't allowed.
 	ust::string8 name;
