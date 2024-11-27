@@ -65,6 +65,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		if( !node.dep_file.empty() && dep_file_opt.empty() )
 		{
 			// No dep file where it shoud be - rebuild is needed.
+			logger.LogVerbose( "No dep file for command \"" + node.comment + "\" - mark for rebuild." );
 			need_to_rebuild= true;
 			continue label nodes_loop;
 		}
@@ -74,6 +75,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			if( files_with_modification_time[dep_file.destination].empty() )
 			{
 				// No destination file - rebuild is needed.
+				logger.LogVerbose( "No destination file \"" + dep_file.destination + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -82,6 +84,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 				if( files_with_modification_time[dependency].empty() )
 				{
 					// No dependency file - rebuild is needed.
+					logger.LogVerbose( "No input file \"" + dependency + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 					need_to_rebuild= true;
 					continue label nodes_loop;
 				}
@@ -93,6 +96,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			if( files_with_modification_time[input_file].empty() )
 			{
 				// No input file - rebuild is needed.
+				logger.LogVerbose( "No input file \"" + input_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -103,6 +107,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			if( files_with_modification_time[output_file].empty() )
 			{
 				// No output file - rebuild is needed.
+				logger.LogVerbose( "No destination file \"" + output_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -137,6 +142,10 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		// Rebuild is requiret if the recently changed input file is newer than the lately changed output file.
 		// Use >= instead of > in order to handle case with not enough precision in timestamps.
 		need_to_rebuild = max_input_modification_time >= min_output_modification_time;
+		if( need_to_rebuild )
+		{
+			logger.LogVerbose( "One of input files of the command \"" + node.comment + "\" is newer than one of output files - mark for rebuild." );
+		}
 	}
 
 	// TODO - check also previous build graph.
@@ -204,6 +213,8 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 
 			var BuildGraph::Node& node= build_graph.nodes[node_id];
 			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[node_id];
+
+			logger.LogVerbose( "Mark command \"" + node.comment + "\" for rebuild, since one of its dependencies is also marked for rebuild." );
 
 			// If this node is marked for rebuild - mark for rebuild also nodes which use outputs of this node as inputs.
 
@@ -336,10 +347,11 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 				command_line.push_back( node_to_rebuild.command_line[i] );
 			}
 
+			logger.LogInfo( "Building \"" + node_to_rebuild.comment + "\"." );
+
 			if( !RunExecutable( node_to_rebuild.program, command_line ) )
 			{
-				// TODO - print command name.
-				logger.LogError( "Command execution failed." );
+				logger.LogError( "Command \"" + node_to_rebuild.comment + "\" execution failed." );
 				return false;
 			}
 

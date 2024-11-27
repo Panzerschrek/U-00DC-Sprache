@@ -16,6 +16,10 @@ struct BuildGraph
 		// Its arguments.
 		ust::vector</ust::string8/> command_line;
 
+		// What is shown to the user during rebuild.
+		// Contains something like command output file name.
+		ust::string8 comment;
+
 		// If non-empty - represents a dependency file.
 		// It's produced during the command execution and may contain implicit input files ( like imports (headers) ).
 		ust::string8 dep_file;

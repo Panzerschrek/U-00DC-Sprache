@@ -409,6 +409,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		.program= build_system_paths.compiler_executable_path,
 		.dep_file= GetDependencyFilePath( result_target_file_path ),
 		.output_files= ust::make_array( result_target_file_path ), // TODO - normalize path.
+		.comment= target.name,
 	};
 
 	foreach( &source_file : target.source_files )
