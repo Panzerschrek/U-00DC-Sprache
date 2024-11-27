@@ -130,6 +130,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	foreach( &build_target : package_info.build_targets )
+	{
+		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target.name );
+		if( !EnsureDirectoryExists( logger, dir_name ) )
+		{
+			logger.LogError( "Can't create build directory for target \"" + build_target.name + "\"." );
+			return -1;
+		}
+	}
+
 	var BuildGraph mut build_graph;
 	foreach( &build_target : package_info.build_targets )
 	{
@@ -375,6 +385,15 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 	return res;
 }
 
+fn GetTargetBuildFilesDirectoryPath( ust::string_view8 package_build_directory, ust::string_view8 target_name ) : ust::string8
+{
+	var ust::string8 mut res= package_build_directory;
+	res+= "/";
+	res+= target_name;
+	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent pssobile file name conflict.
+	return res;
+}
+
 fn CreatePackageTargetBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 package_source_directory,
@@ -388,6 +407,63 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+
+	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
+
+	foreach( &source_file : target.source_files )
+	{
+		// Create nodes for compilation of each source file into a ".bc" file.
+
+		var ust::string8 source_file_absolute= ust::string8(package_source_directory) + "/" + source_file;
+		var ust::string8 bc_file = target_build_files_directory + "/" + source_file + ".bc";
+
+		var BuildGraph::Node mut node
+		{
+			.program= build_system_paths.compiler_executable_path,
+			.dep_file= GetDependencyFilePath( bc_file ),
+			.input_files= ust::make_array( source_file_absolute ),
+			.output_files= ust::make_array( bc_file ), // TODO - normalize path.
+			.comment= source_file + ".bc",
+		};
+
+		node.command_line.push_back( source_file_absolute );
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( bc_file );
+
+		// Produce also a dependency file.
+		node.command_line.push_back( "-MF" );
+		node.command_line.push_back( node.dep_file );
+
+		// Provide standard library imports.
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( build_system_paths.ustlib_path );
+
+		node.command_line.push_back( "-filetype=bc" );
+
+		// TODO - disable "pic" by default for windows target.
+		node.command_line.push_back( "--relocation-model" );
+		node.command_line.push_back( "pic" );
+
+		// Build configuration-dependent options.
+		switch( build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+			},
+			BuildConfiguration::Release ->
+			{
+				// Run full optimization, but not by using O3 - it isn't much better than O2.
+				node.command_line.push_back( "-O2" );
+			},
+		}
+
+		build_graph.nodes.push_back( move(node) );
+	}
 
 	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
 	if( target_is_windows )
