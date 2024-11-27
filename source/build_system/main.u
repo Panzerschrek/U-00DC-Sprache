@@ -142,19 +142,10 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			build_graph );
 	}
 
-	foreach( &build_target : package_info.build_targets )
+	if( !PerformGraphBuild( logger, build_graph ) )
 	{
-		if( !PerformPackageTargetBuild(
-			logger,
-			build_system_paths,
-			package_source_directory,
-			package_build_directory,
-			options.build_configuration,
-			build_target ) )
-		{
-			logger.LogError( "Failed to build target " + build_target.name + "!" );
-			return -1;
-		}
+		logger.LogError( "Build failed" );
+		return -1;
 	}
 
 	logger.LogInfo( "Successfully finished the build!" );
@@ -461,108 +452,6 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	build_graph.nodes.push_back( move(node) );
-}
-
-// Returns true on success.
-fn PerformPackageTargetBuild(
-	Logger &mut logger,
-	BuildSystemPaths& build_system_paths,
-	ust::string_view8 package_source_directory,
-	ust::string_view8 package_build_directory,
-	BuildConfiguration build_configuration,
-	BuildTarget& target ) : bool
-{
-	// TODO - fix this check, do not use host OS.
-	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
-
-	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
-
-	if( target_is_windows )
-	{
-		result_target_file_path+= ".exe";
-	}
-
-	var ust::string8 result_dependency_file_path= GetDependencyFilePath( result_target_file_path );
-
-	// TODO - check also if compilation options were changed (including import directories).
-	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_dependency_file_path ) )
-	{
-		// For now just build all files together into result executable.
-		// TODO - compile each source file individually and support incremental building for each of them.
-
-		var ust::vector</ust::string8/> mut source_files_absolute;
-		foreach( &source_file : target.source_files )
-		{
-			source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
-		}
-
-		var ust::vector</ust::string_view8/> mut compiler_args;
-		// Provide standard library imports.
-		compiler_args.push_back( "--include-dir" );
-		compiler_args.push_back( build_system_paths.ustlib_path );
-
-		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-		if(false)
-		{
-			compiler_args.push_back( cast_imut(source_files_absolute).front() );
-		}
-
-		for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
-		{
-			compiler_args.push_back( cast_imut(source_files_absolute)[i] );
-		}
-
-		compiler_args.push_back( "-o" );
-		compiler_args.push_back( result_target_file_path );
-
-		// Produce also a dependency file.
-		compiler_args.push_back( "-MF" );
-		compiler_args.push_back( result_dependency_file_path );
-
-		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-		// TODO - support other target types.
-		compiler_args.push_back( "-filetype=exe" );
-
-		// Run internalization in order to export only "main".
-		compiler_args.push_back( "--internalize" );
-
-		// TODO - disable "pic" by default for windows target.
-		compiler_args.push_back( "--relocation-model" );
-		compiler_args.push_back( "pic" );
-
-		// Build configuration-dependent options.
-		switch( build_configuration )
-		{
-			BuildConfiguration::Debug ->
-			{
-				// Generate debug information.
-				compiler_args.push_back( "-g" );
-				// No optimization at all - optimization makes debugging hard.
-				compiler_args.push_back( "-O0" );
-			},
-			BuildConfiguration::Release ->
-			{
-				// Run full optimization, but not by using O3 - it isn't much better than O2.
-				compiler_args.push_back( "-O2" );
-			},
-		}
-
-		logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
-
-		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
-		{
-			logger.LogError( "Compiler execution failed." );
-			return false;
-		}
-
-		logger.LogInfo( "Successfully built \"" + result_target_file_path + "\"" );
-	}
-	else
-	{
-		logger.LogVerbose( "Skip building \"" + result_target_file_path + "\"" );
-	}
-
-	return true;
 }
 
 } // namespace BK

@@ -146,6 +146,10 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		{
 			logger.LogVerbose( "One of input files of the command \"" + node.comment + "\" is newer than one of output files - mark for rebuild." );
 		}
+		else
+		{
+			logger.LogVerbose( "No rebuild required for command \"" + node.comment + "\"." );
+		}
 	}
 
 	// TODO - check also previous build graph.
