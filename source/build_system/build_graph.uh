@@ -1,0 +1,35 @@
+import "/string.u"
+import "/vector.u"
+
+namespace BK
+{
+
+// Directed (normally) acyclic graph.
+// Nodes in build graph are commands, edges are files.
+struct BuildGraph
+{
+	struct Node
+	{
+		// Program to run.
+		ust::string8 program;
+		// Its arguments.
+		ust::vector</ust::string8/> command_line;
+
+		// If non-empty - represents a dependency file.
+		// It's produced during the command execution and may contain implicit input files ( like imports (headers) ).
+		ust::string8 dep_file;
+
+		// Files which this command requires.
+		ust::vector</ust::string8/> input_files;
+		// Files which this command produces.
+		ust::vector</ust::string8/> output_files;
+	}
+
+	// Nodes of the graph in some unspecified order.
+	// Use vector to make index-based access possible.
+	ust::vector</Node/> nodes;
+
+	// Edges aren't stored explicitly - input/output edges (files) are stored in nodes.
+}
+
+} // namespace BK
