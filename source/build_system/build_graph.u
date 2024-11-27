@@ -146,10 +146,6 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		{
 			logger.LogVerbose( "One of input files of the command \"" + node.comment + "\" is newer than one of output files - mark for rebuild." );
 		}
-		else
-		{
-			logger.LogVerbose( "No rebuild required for command \"" + node.comment + "\"." );
-		}
 	}
 
 	// TODO - check also previous build graph.
@@ -198,27 +194,35 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		{
 			if( nodes_to_rebuild[i] )
 			{
+				logger.LogVerbose( "Push node \"" + build_graph.nodes[i].comment + "\" to search stack." );
 				stack.push_back(i);
 			}
 		}
 
 		// TODO - detect and report possible dependency loops.
 
+		scoped_array bool mut visited_nodes[ build_graph.nodes.size() ]( false );
 		while( !stack.empty() )
 		{
 			var size_type node_id= stack.pop_back();
 
-			if( nodes_to_rebuild[node_id] )
+			if( visited_nodes[node_id] )
 			{
 				continue;
 			}
-
-			nodes_to_rebuild[node_id]= true;
+			visited_nodes[node_id]= true;
 
 			var BuildGraph::Node& node= build_graph.nodes[node_id];
 			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[node_id];
 
-			logger.LogVerbose( "Mark command \"" + node.comment + "\" for rebuild, since one of its dependencies is also marked for rebuild." );
+			logger.LogVerbose( "Visit node \"" + node.comment + "\"." );
+
+			if( !nodes_to_rebuild[node_id] )
+			{
+				nodes_to_rebuild[node_id]= true;
+
+				logger.LogVerbose( "Mark command \"" + node.comment + "\" for rebuild, since one of its dependencies is also marked for rebuild." );
+			}
 
 			// If this node is marked for rebuild - mark for rebuild also nodes which use outputs of this node as inputs.
 
