@@ -1,6 +1,174 @@
+import "/scoped_array.u"
+import "/unordered_map.u"
 import "build_graph.uh"
+import "filesystem.uh"
+import "make_dep_file.uh"
 
 namespace BK
 {
+
+fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
+{
+	// Collect dep-files.
+	scoped_array ust::optional</MakeDepFile/> mut nodes_dep_files[ build_graph.nodes.size() ];
+	foreach( pair : build_graph.nodes.iter().zip( nodes_dep_files.iter() ) )
+	{
+		pair.second= LoadAndParseDepFile( logger, pair.first.dep_file );
+	}
+
+	// Collect and deduplicate all files.
+	var ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> /> mut files_with_modification_time;
+
+	foreach( &node : build_graph.nodes )
+	{
+		foreach( &file : node.input_files )
+		{
+			files_with_modification_time.insert( file, ust::null_optional );
+		}
+		foreach( &file : node.output_files )
+		{
+			files_with_modification_time.insert( file, ust::null_optional );
+		}
+	}
+
+	foreach( &dep_file_opt : nodes_dep_files )
+	{
+		if_var( &dep_file : dep_file_opt )
+		{
+			// TODO - normalize paths read from dependency files.
+			files_with_modification_time.insert( dep_file.destination, ust::null_optional );
+			foreach( &dependency : dep_file.dependencies )
+			{
+				files_with_modification_time.insert( dependency, ust::null_optional );
+			}
+		}
+	}
+
+	// Get modification times for all files.
+	foreach( &mut map_value : files_with_modification_time )
+	{
+		var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
+		map_value.value() = modification_time;
+	}
+
+	// Mark nodes to rebuild.
+	scoped_array bool mut nodes_to_rebuild[ build_graph.nodes.size() ]( false );
+	for( auto mut i= 0s; i < build_graph.nodes.size(); ++i ) label nodes_loop
+	{
+		var BuildGraph::Node& node= build_graph.nodes[i];
+		var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+		var bool &mut need_to_rebuild = nodes_to_rebuild[i];
+
+		if( !node.dep_file.empty() && dep_file_opt.empty() )
+		{
+			// No dep file where it shoud be - rebuild is needed.
+			need_to_rebuild= true;
+			continue label nodes_loop;
+		}
+
+		if_var( &dep_file : dep_file_opt )
+		{
+			if( files_with_modification_time[dep_file.destination].empty() )
+			{
+				// No destination file - rebuild is needed.
+				need_to_rebuild= true;
+				continue label nodes_loop;
+			}
+			foreach( &dependency : dep_file.dependencies )
+			{
+				if( files_with_modification_time[dependency].empty() )
+				{
+					// No dependency file - rebuild is needed.
+					need_to_rebuild= true;
+					continue label nodes_loop;
+				}
+			}
+		}
+
+		foreach( &input_file : node.input_files )
+		{
+			if( files_with_modification_time[input_file].empty() )
+			{
+				// No input file - rebuild is needed.
+				need_to_rebuild= true;
+				continue label nodes_loop;
+			}
+		}
+
+		foreach( &output_file : node.output_files )
+		{
+			if( files_with_modification_time[output_file].empty() )
+			{
+				// No output file - rebuild is needed.
+				need_to_rebuild= true;
+				continue label nodes_loop;
+			}
+		}
+
+		// At this point we have all files needed present. Compare their timesmaps.
+
+		var FileModificationTime mut min_output_modification_time(0);
+		--min_output_modification_time; // Trigger underflow to maximum value.
+
+		var FileModificationTime mut max_input_modification_time(0);
+
+		foreach( &output_file : node.output_files )
+		{
+			min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[output_file].try_deref() );
+		}
+
+		foreach( &input_file : node.input_files )
+		{
+			max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[input_file].try_deref() );
+		}
+
+		if_var( &dep_file : dep_file_opt )
+		{
+			min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[dep_file.destination].try_deref() );
+			foreach( &dependency : dep_file.dependencies )
+			{
+				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[dependency].try_deref() );
+			}
+		}
+
+		// Rebuild is requiret if the recently changed input file is newer than the lately changed output file.
+		// Use >= instead of > in order to handle case with not enough precision in timestamps.
+		need_to_rebuild = max_input_modification_time >= min_output_modification_time;
+	}
+
+	// TODO - check also previous build graph.
+	// If a node is new - command/command line and/or input/output files were changed - require rebuild for this node.
+
+	// TODO - mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
+
+	// TODO - perform actual commands execution.
+
+	return true;
+}
+
+fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : ust::optional</MakeDepFile/>
+{
+	if( dep_file_path.empty() )
+	{
+		return ust::null_optional;
+
+	}
+	var ust::optional</ust::string8/> file_contents= ReadFile( dep_file_path );
+	if( file_contents.empty() )
+	{
+		// Dep file is not created yet.
+		logger.LogVerbose( "No dependency file \"" + ust::string8(dep_file_path) + "\"." );
+		return ust::null_optional;
+	}
+
+	var ust::optional</MakeDepFile/> dep_file_opt= ParseMakeDepFileContents( file_contents.try_deref() );
+	if( dep_file_opt.empty() )
+	{
+		logger.LogError( "Failed to parse dep file \"" + ust::string8(dep_file_path) + "\"" );
+	}
+	return dep_file_opt;
+}
+
 
 } // namespace BK

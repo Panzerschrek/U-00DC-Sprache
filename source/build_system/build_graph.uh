@@ -1,5 +1,6 @@
 import "/string.u"
 import "/vector.u"
+import "logger.uh"
 
 namespace BK
 {
@@ -31,5 +32,7 @@ struct BuildGraph
 
 	// Edges aren't stored explicitly - input/output edges (files) are stored in nodes.
 }
+
+fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool;
 
 } // namespace BK
