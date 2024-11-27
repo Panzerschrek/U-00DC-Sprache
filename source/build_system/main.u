@@ -122,14 +122,17 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
 		typeinfo</ typeof(func_ptr) />.size_of ) );
 
+	// Obtain package info by calling a shared library function.
 	var PackageInfo package_info= func_ptr();
 
+	// Make sure package is valid and may be built. If it's not - do not bother performing further steps.
 	if( !PackageIsValid( logger, package_info ) )
 	{
 		logger.LogError( "Package is invald." );
 		return -1;
 	}
 
+	// Create directories for intermediate files for each build target.
 	foreach( &build_target : package_info.build_targets )
 	{
 		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target.name );
@@ -140,6 +143,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
+	// Build the build graph for the whole project.
 	var BuildGraph mut build_graph;
 	foreach( &build_target : package_info.build_targets )
 	{
@@ -152,9 +156,10 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			build_graph );
 	}
 
+	// This executes the build.
 	if( !PerformGraphBuild( logger, build_graph ) )
 	{
-		logger.LogError( "Build failed" );
+		logger.LogError( "Build failed." );
 		return -1;
 	}
 
@@ -390,7 +395,7 @@ fn GetTargetBuildFilesDirectoryPath( ust::string_view8 package_build_directory, 
 	var ust::string8 mut res= package_build_directory;
 	res+= "/";
 	res+= target_name;
-	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent pssobile file name conflict.
+	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
 	return res;
 }
 
@@ -402,12 +407,6 @@ fn CreatePackageTargetBuildGraphNodes(
 	BuildTarget& target,
 	BuildGraph &mut build_graph )
 {
-	// For now just build all files together into result executable.
-	// TODO - compile each source file individually and support incremental building for each of them.
-
-	// TODO - fix this check, do not use host OS.
-	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
-
 	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
 
 	var ust::vector</ust::string8/> mut bc_files;
@@ -443,6 +442,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.command_line.push_back( "--include-dir" );
 		node.command_line.push_back( build_system_paths.ustlib_path );
 
+		// Produce an LLVM bitcode file.
 		node.command_line.push_back( "-filetype=bc" );
 
 		// TODO - disable "pic" by default for windows target.
@@ -471,6 +471,9 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	// Combine multiple ".bc" files into single result.
 
+	// TODO - fix this check, do not use host OS.
+	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+
 	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
 	if( target_is_windows )
 	{
@@ -496,6 +499,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	node.command_line.push_back( "-o" );
 	node.command_line.push_back( result_target_file_path );
 
+	// Read LLVM bitcode files (use the Ü compiler as bitcode files compiler).
 	node.command_line.push_back( "--input-filetype=bc" );
 
 	switch( target.target_type )

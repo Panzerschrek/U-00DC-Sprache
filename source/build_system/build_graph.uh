@@ -38,6 +38,8 @@ struct BuildGraph
 	ust::vector</Node/> nodes;
 
 	// Edges aren't stored explicitly - input/output edges (files) are stored in nodes.
+	// Edges without start nodes are possible - like for source files.
+	// Edges witohut end nodes are possible too - like for result files (executables, shared libraries, etc.).
 }
 
 fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool;

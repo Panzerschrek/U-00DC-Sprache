@@ -74,8 +74,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		{
 			if( files_with_modification_time[dep_file.destination].empty() )
 			{
-				// No destination file - rebuild is needed.
-				logger.LogVerbose( "No destination file \"" + dep_file.destination + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+				logger.LogVerbose( "No output file \"" + dep_file.destination + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -83,7 +82,6 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			{
 				if( files_with_modification_time[dependency].empty() )
 				{
-					// No dependency file - rebuild is needed.
 					logger.LogVerbose( "No input file \"" + dependency + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 					need_to_rebuild= true;
 					continue label nodes_loop;
@@ -95,7 +93,6 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		{
 			if( files_with_modification_time[input_file].empty() )
 			{
-				// No input file - rebuild is needed.
 				logger.LogVerbose( "No input file \"" + input_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 				need_to_rebuild= true;
 				continue label nodes_loop;
@@ -106,8 +103,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		{
 			if( files_with_modification_time[output_file].empty() )
 			{
-				// No output file - rebuild is needed.
-				logger.LogVerbose( "No destination file \"" + output_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+				logger.LogVerbose( "No output file \"" + output_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -139,7 +135,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			}
 		}
 
-		// Rebuild is requiret if the recently changed input file is newer than the lately changed output file.
+		// Rebuild is requiret if the newest changed input file is newer than the oldest changed output file.
 		// Use >= instead of > in order to handle case with not enough precision in timestamps.
 		need_to_rebuild = max_input_modification_time >= min_output_modification_time;
 		if( need_to_rebuild )
@@ -278,11 +274,10 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			}
 		}
 
-		scoped_array BuildGraphNodeRebuildState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeRebuildState::Ready );
-
+		scoped_array BuildGraphNodeState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeState::Ready );
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 		{
-			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeRebuildState::RebuildRequired : BuildGraphNodeRebuildState::Ready );
+			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeState::RebuildRequired : BuildGraphNodeState::Ready );
 		}
 
 		loop
@@ -292,7 +287,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			var size_type mut node_to_rebuild_index = build_graph.nodes.size();
 			for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 			{
-				if( nodes_state[i] == BuildGraphNodeRebuildState::RebuildRequired )
+				if( nodes_state[i] == BuildGraphNodeState::RebuildRequired )
 				{
 					var BuildGraph::Node& node= build_graph.nodes[i];
 					var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
@@ -305,7 +300,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 						{
 							foreach( input_node : input_nodes )
 							{
-								can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeRebuildState::Ready;
+								can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeState::Ready;
 							}
 						}
 					}
@@ -318,7 +313,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 							{
 								foreach( input_node : input_nodes )
 								{
-									can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeRebuildState::Ready;
+									can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeState::Ready;
 								}
 							}
 						}
@@ -339,7 +334,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 				break;
 			}
 
-			nodes_state[node_to_rebuild_index]= BuildGraphNodeRebuildState::RebuildInProgress;
+			nodes_state[node_to_rebuild_index]= BuildGraphNodeState::RebuildInProgress;
 
 			var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
 
@@ -363,7 +358,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 				return false;
 			}
 
-			nodes_state[node_to_rebuild_index]= BuildGraphNodeRebuildState::Ready;
+			nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
 		}
 	}
 
@@ -393,7 +388,7 @@ fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : 
 	return dep_file_opt;
 }
 
-enum BuildGraphNodeRebuildState
+enum BuildGraphNodeState
 {
 	Ready,
 	RebuildRequired,
