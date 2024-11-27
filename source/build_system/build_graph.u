@@ -3,6 +3,8 @@ import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
+import "process.uh"
+
 
 namespace BK
 {
@@ -223,7 +225,127 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		}
 	}
 
-	// TODO - perform actual commands execution.
+	// Perform rebuild.
+	{
+		// Create a map for graph traversal speed-up.
+		var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut output_file_to_node_id_map;
+		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+		{
+			var BuildGraph::Node& node= build_graph.nodes[i];
+			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+			foreach( &output_file : node.output_files )
+			{
+				if( output_file_to_node_id_map.exists( output_file ) )
+				{
+					output_file_to_node_id_map[output_file].push_back(i);
+				}
+				else
+				{
+					output_file_to_node_id_map.insert( output_file, ust::make_array(i) );
+				}
+			}
+
+			if_var( &dep_file : dep_file_opt )
+			{
+				if( output_file_to_node_id_map.exists( dep_file.destination ) )
+				{
+					output_file_to_node_id_map[dep_file.destination].push_back(i);
+				}
+				else
+				{
+					output_file_to_node_id_map.insert( dep_file.destination, ust::make_array(i) );
+				}
+			}
+		}
+
+		scoped_array BuildGraphNodeRebuildState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeRebuildState::Ready );
+
+		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
+		{
+			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeRebuildState::RebuildRequired : BuildGraphNodeRebuildState::Ready );
+		}
+
+		loop
+		{
+			// Select a node to rebuild - which dependencies are all ready.
+			// TODO - speed-up this, replace linear search with something more satisfying.
+			var size_type mut node_to_rebuild_index = build_graph.nodes.size();
+			for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
+			{
+				if( nodes_state[i] == BuildGraphNodeRebuildState::RebuildRequired )
+				{
+					var BuildGraph::Node& node= build_graph.nodes[i];
+					var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+					var bool mut can_start_rebuild= true;
+
+					foreach( &input_file : node.input_files )
+					{
+						if_var( &input_nodes : output_file_to_node_id_map.find( input_file ) )
+						{
+							foreach( input_node : input_nodes )
+							{
+								can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeRebuildState::Ready;
+							}
+						}
+					}
+
+					if_var( &dep_file : dep_file_opt )
+					{
+						foreach( &dependency : dep_file.dependencies )
+						{
+							if_var( &input_nodes : output_file_to_node_id_map.find( dependency ) )
+							{
+								foreach( input_node : input_nodes )
+								{
+									can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeRebuildState::Ready;
+								}
+							}
+						}
+					}
+
+					if( can_start_rebuild )
+					{
+						node_to_rebuild_index= i;
+						break;
+					}
+				}
+			}
+
+			if( node_to_rebuild_index >= build_graph.nodes.size() )
+			{
+				// Nothing left to rebuild.
+				// TODO - detect also possible errors with circular dependencies.
+				break;
+			}
+
+			nodes_state[node_to_rebuild_index]= BuildGraphNodeRebuildState::RebuildInProgress;
+
+			var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
+
+			var ust::vector</ust::string_view8/> mut command_line;
+
+			// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+			if(false)
+			{
+				command_line.push_back( node_to_rebuild.command_line.front() );
+			}
+			for( auto mut i= 0s; i < node_to_rebuild.command_line.size(); ++i )
+			{
+				command_line.push_back( node_to_rebuild.command_line[i] );
+			}
+
+			if( !RunExecutable( node_to_rebuild.program, command_line ) )
+			{
+				// TODO - print command name.
+				logger.LogError( "Command execution failed." );
+				return false;
+			}
+
+			nodes_state[node_to_rebuild_index]= BuildGraphNodeRebuildState::Ready;
+		}
+	}
 
 	return true;
 }
@@ -251,5 +373,11 @@ fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : 
 	return dep_file_opt;
 }
 
+enum BuildGraphNodeRebuildState
+{
+	Ready,
+	RebuildRequired,
+	RebuildInProgress,
+}
 
 } // namespace BK
