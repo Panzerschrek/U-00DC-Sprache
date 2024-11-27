@@ -410,19 +410,22 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
 
+	var ust::vector</ust::string8/> mut bc_files;
 	foreach( &source_file : target.source_files )
 	{
 		// Create nodes for compilation of each source file into a ".bc" file.
 
-		var ust::string8 source_file_absolute= ust::string8(package_source_directory) + "/" + source_file;
-		var ust::string8 bc_file = target_build_files_directory + "/" + source_file + ".bc";
+		var ust::string8 source_file_absolute= ust::string8(package_source_directory) + "/" + source_file;  // TODO - normalize path.
+		var ust::string8 bc_file = target_build_files_directory + "/" + source_file + ".bc";  // TODO - normalize path.
+
+		bc_files.push_back( bc_file );
 
 		var BuildGraph::Node mut node
 		{
 			.program= build_system_paths.compiler_executable_path,
 			.dep_file= GetDependencyFilePath( bc_file ),
 			.input_files= ust::make_array( source_file_absolute ),
-			.output_files= ust::make_array( bc_file ), // TODO - normalize path.
+			.output_files= ust::make_array( bc_file ),
 			.comment= source_file + ".bc",
 		};
 
@@ -465,6 +468,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		build_graph.nodes.push_back( move(node) );
 	}
 
+	// Combine multiple ".bc" files into single result.
+
 	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
 	if( target_is_windows )
 	{
@@ -479,23 +484,21 @@ fn CreatePackageTargetBuildGraphNodes(
 		.comment= target.name,
 	};
 
-	foreach( &source_file : target.source_files )
+	foreach( &bc_file : bc_files )
 	{
-		var ust::string8 source_file_absolute= ust::string8(package_source_directory) + "/" + source_file;
-		node.command_line.push_back( source_file_absolute );
-		node.input_files.push_back( source_file_absolute ); // TODO - normalize path.
+		node.command_line.push_back( bc_file );
+		node.input_files.push_back( bc_file );
 	}
 
 	node.command_line.push_back( "-o" );
 	node.command_line.push_back( result_target_file_path );
 
+	node.command_line.push_back( "--input-filetype=bc" );
+
 	// Produce also a dependency file.
 	node.command_line.push_back( "-MF" );
 	node.command_line.push_back( node.dep_file );
 
-	// Provide standard library imports.
-	node.command_line.push_back( "--include-dir" );
-	node.command_line.push_back( build_system_paths.ustlib_path );
 
 	switch( target.target_type )
 	{
