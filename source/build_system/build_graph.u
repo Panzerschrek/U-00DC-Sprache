@@ -140,7 +140,88 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 	// TODO - check also previous build graph.
 	// If a node is new - command/command line and/or input/output files were changed - require rebuild for this node.
 
-	// TODO - mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
+	// Mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
+	{
+		// Create a map for graph traversal speed-up.
+		var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut input_file_to_node_id_map;
+		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+		{
+			var BuildGraph::Node& node= build_graph.nodes[i];
+			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+			foreach( &input_file : node.input_files )
+			{
+				if( input_file_to_node_id_map.exists( input_file ) )
+				{
+					input_file_to_node_id_map[input_file].push_back(i);
+				}
+				else
+				{
+					input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
+				}
+			}
+
+			if_var( &dep_file : dep_file_opt )
+			{
+				foreach( &dependency : dep_file.dependencies )
+				{
+					if( input_file_to_node_id_map.exists( dependency ) )
+					{
+						input_file_to_node_id_map[dependency].push_back(i);
+					}
+					else
+					{
+						input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
+					}
+				}
+			}
+		}
+
+		// Push initial nodes to rebuild to stack.
+		var ust::vector</size_type/> mut stack;
+		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+		{
+			if( nodes_to_rebuild[i] )
+			{
+				stack.push_back(i);
+			}
+		}
+
+		// TODO - detect and report possible dependency loops.
+
+		while( !stack.empty() )
+		{
+			var size_type node_id= stack.pop_back();
+
+			if( nodes_to_rebuild[node_id] )
+			{
+				continue;
+			}
+
+			nodes_to_rebuild[node_id]= true;
+
+			var BuildGraph::Node& node= build_graph.nodes[node_id];
+			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[node_id];
+
+			// If this node is marked for rebuild - mark for rebuild also nodes which use outputs of this node as inputs.
+
+			foreach( &output_file : node.output_files )
+			{
+				if_var( &nodes : input_file_to_node_id_map.find( output_file ) )
+				{
+					stack.append( nodes.iter() );
+				}
+			}
+
+			if_var( &dep_file : dep_file_opt )
+			{
+				if_var( &nodes : input_file_to_node_id_map.find( dep_file.destination ) )
+				{
+					stack.append( nodes.iter() );
+				}
+			}
+		}
+	}
 
 	// TODO - perform actual commands execution.
 
