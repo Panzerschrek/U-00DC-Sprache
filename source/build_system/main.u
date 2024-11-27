@@ -423,6 +423,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		var BuildGraph::Node mut node
 		{
 			.program= build_system_paths.compiler_executable_path,
+			// Use a dep-file to track changes in imported files and trigger rebuild if one of them is changed.
 			.dep_file= GetDependencyFilePath( bc_file ),
 			.input_files= ust::make_array( source_file_absolute ),
 			.output_files= ust::make_array( bc_file ),
@@ -479,7 +480,9 @@ fn CreatePackageTargetBuildGraphNodes(
 	var BuildGraph::Node mut node
 	{
 		.program= build_system_paths.compiler_executable_path,
-		.dep_file= GetDependencyFilePath( result_target_file_path ),
+		// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
+		// For an end-target like an executable dep-files isn't necessary.
+		.dep_file= "",
 		.output_files= ust::make_array( result_target_file_path ), // TODO - normalize path.
 		.comment= target.name,
 	};
@@ -494,11 +497,6 @@ fn CreatePackageTargetBuildGraphNodes(
 	node.command_line.push_back( result_target_file_path );
 
 	node.command_line.push_back( "--input-filetype=bc" );
-
-	// Produce also a dependency file.
-	node.command_line.push_back( "-MF" );
-	node.command_line.push_back( node.dep_file );
-
 
 	switch( target.target_type )
 	{
