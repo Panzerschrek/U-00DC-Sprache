@@ -1,12 +1,13 @@
 import "/stdout.u"
+import "build_graph.uh"
 import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_validation.uh"
+import "process.uh"
 import "shared_library.uh"
 import "string_utils.uh"
-import "process.uh"
 
 namespace BK
 {
@@ -127,6 +128,18 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		logger.LogError( "Package is invald." );
 		return -1;
+	}
+
+	var BuildGraph mut build_graph;
+	foreach( &build_target : package_info.build_targets )
+	{
+		CreatePackageTargetBuildGraphNodes(
+			build_system_paths,
+			package_source_directory,
+			package_build_directory,
+			options.build_configuration,
+			build_target,
+			build_graph );
 	}
 
 	foreach( &build_target : package_info.build_targets )
@@ -369,6 +382,84 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 	var ust::string8 mut res= path;
 	res+= ".d";
 	return res;
+}
+
+fn CreatePackageTargetBuildGraphNodes(
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 package_source_directory,
+	ust::string_view8 package_build_directory,
+	BuildConfiguration build_configuration,
+	BuildTarget& target,
+	BuildGraph &mut build_graph )
+{
+	// For now just build all files together into result executable.
+	// TODO - compile each source file individually and support incremental building for each of them.
+
+	// TODO - fix this check, do not use host OS.
+	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+
+	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
+	if( target_is_windows )
+	{
+		result_target_file_path+= ".exe";
+	}
+
+	var BuildGraph::Node mut node
+	{
+		.program= build_system_paths.compiler_executable_path,
+		.dep_file= GetDependencyFilePath( result_target_file_path ),
+		.output_files= ust::make_array( result_target_file_path ), // TODO - normalize path.
+	};
+
+	foreach( &source_file : target.source_files )
+	{
+		var ust::string8 source_file_absolute= ust::string8(package_source_directory) + "/" + source_file;
+		node.command_line.push_back( source_file_absolute );
+		node.input_files.push_back( source_file_absolute ); // TODO - normalize path.
+	}
+
+	node.command_line.push_back( "-o" );
+	node.command_line.push_back( result_target_file_path );
+
+	// Produce also a dependency file.
+	node.command_line.push_back( "-MF" );
+	node.command_line.push_back( node.dep_file );
+
+	// Provide standard library imports.
+	node.command_line.push_back( "--include-dir" );
+	node.command_line.push_back( build_system_paths.ustlib_path );
+
+	switch( target.target_type )
+	{
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		BuildTargetType::Executable ->{ node.command_line.push_back( "-filetype=exe" ); },
+	}
+
+	// Run internalization in order to export only "main".
+	node.command_line.push_back( "--internalize" );
+
+	// TODO - disable "pic" by default for windows target.
+	node.command_line.push_back( "--relocation-model" );
+	node.command_line.push_back( "pic" );
+
+	// Build configuration-dependent options.
+	switch( build_configuration )
+	{
+		BuildConfiguration::Debug ->
+		{
+			// Generate debug information.
+			node.command_line.push_back( "-g" );
+			// No optimization at all - optimization makes debugging hard.
+			node.command_line.push_back( "-O0" );
+		},
+		BuildConfiguration::Release ->
+		{
+			// Run full optimization, but not by using O3 - it isn't much better than O2.
+			node.command_line.push_back( "-O2" );
+		},
+	}
+
+	build_graph.nodes.push_back( move(node) );
 }
 
 // Returns true on success.
