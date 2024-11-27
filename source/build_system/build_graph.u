@@ -195,8 +195,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			}
 		}
 
-		// TODO - detect and report possible dependency loops.
-
+		// Since we mark visited nodes and thus visit them only once, infinite loop isn't possible here - in case of bad graph with cycles.
 		scoped_array bool mut visited_nodes[ build_graph.nodes.size() ]( false );
 		while( !stack.empty() )
 		{
@@ -329,8 +328,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 
 			if( node_to_rebuild_index >= build_graph.nodes.size() )
 			{
-				// Nothing left to rebuild.
-				// TODO - detect also possible errors with circular dependencies.
+				// Nothing left to rebuild or we have dependency loops (check them later).
 				break;
 			}
 
@@ -360,8 +358,19 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 
 			nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
 		}
+
+		// Last check to be sure all was really built (may not be true for bad graphs with cycles).
+		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
+		{
+			if( nodes_state[i] != BuildGraphNodeState::Ready )
+			{
+				logger.LogError( "Broken build graph - node \"" + build_graph.nodes[i].comment + "\" was not built." );
+				return false;
+			}
+		}
 	}
 
+	// Succcessfuly performed the build.
 	return true;
 }
 
