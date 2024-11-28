@@ -1,8 +1,10 @@
 import "/build_system.uh"
 
 // Should fail to find proper "GetPackageInfo" function.
-fn NotAValidNameForExportedFunction__GetPackageInfo() : BK::PackageInfo
+fn NotAValidNameForExportedFunction__GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
+	ust::ignore_unused( build_system_interface );
+
 	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
 	target.source_files.push_back( "main.u" );
 	target.name= "hello_world";

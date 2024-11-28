@@ -154,11 +154,13 @@ CPP Header converter:
 	already exists, handle case where a non-directory object (like a file) with given name exists
 *) Incremental build - trigger rebuild if command line is changed (like import directories, optimization options, etc.)
 *) Build graph - store it on disk and read it to compare its state against previous version
-*) Provide build configuration and other information as an argument for "GetPackageInfo" function
+*) Build graph - support for a command execution of an abitrary function, not only external executable
 *) Ü library target type (bitcode library)
 *) Dependencies between targets
 *) Shared library target type
 *) C static library target type
+*) Allow linking against an external static C library
+*) Allow linking against an external shared library
 *) Custom target type
 *) Run link-time optimization for native targets (executables, shared libraries, C static libraries)
 *) Support generated sources

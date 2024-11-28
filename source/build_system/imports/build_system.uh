@@ -32,6 +32,28 @@ struct PackageInfo
 	ust::vector</BuildTarget/> build_targets;
 }
 
-type GetPackageInfoFunctionType = fn() : PackageInfo;
+type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_interface ) : PackageInfo;
+
+// A class which provides necessary information for "GetPackageInfo" function and also contains some helper functions.
+// Use inheritance to avoid exposing build system internals to the build script.
+//
+// Also it helps to import necessary build functions into the build script shared library.
+// Otherwise it would be necessary to mark each exported from the build system executable function as "dllexport" or "visibility(default)".
+// Making all functions virtual and thus forcing call via the virtual table solves this problem.
+class BuildSystemInterface interface
+{
+	fn virtual pure GetBuildConfiguration(this) : BuildConfiguration;
+
+	fn virtual pure LogVerbose( mut this, ust::string_view8 message );
+	fn virtual pure LogInfo( mut this, ust::string_view8 message );
+	fn virtual pure LogError( mut this, ust::string_view8 message );
+}
+
+enum BuildConfiguration
+{
+	Debug,
+	Release,
+	// TODO - add other configurations
+}
 
 } // namespace BK

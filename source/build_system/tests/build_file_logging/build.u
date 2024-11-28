@@ -1,0 +1,11 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	build_system_interface.LogVerbose( "Test build script verbose logging" );
+	build_system_interface.LogInfo( "Test build script info logging" );
+	build_system_interface.LogError( "Test build script error logging" );
+
+	// Package with no targets.
+	return BK::PackageInfo{};
+}

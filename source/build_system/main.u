@@ -123,8 +123,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
 		typeinfo</ typeof(func_ptr) />.size_of ) );
 
+	var BuildSystemInterfaceImplementation mut build_system_interface( logger, options.build_configuration );
+
 	// Obtain package info by calling a shared library function.
-	var PackageInfo package_info= func_ptr();
+	var PackageInfo package_info= func_ptr( build_system_interface );
+
+	move(build_system_interface);
 
 	// Make sure package is valid and may be built. If it's not - do not bother performing further steps.
 	if( !PackageIsValid( logger, package_info ) )
@@ -227,7 +231,8 @@ fn BuildAndLoadPackageBuildScript(
 			build_script_wrapper_contents+= "\"\n\n";
 			build_script_wrapper_contents+= "fn nomangle ";
 			build_script_wrapper_contents+= entry_func_name;
-			build_script_wrapper_contents+= "() : BK::PackageInfo { return GetPackageInfo(); }";
+			build_script_wrapper_contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo\n";
+			build_script_wrapper_contents += "{ return GetPackageInfo( build_system_interface ); }";
 			build_script_wrapper_contents+= "\n";
 
 			if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
@@ -534,6 +539,40 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	build_graph.nodes.push_back( move(node) );
+}
+
+class BuildSystemInterfaceImplementation final : BuildSystemInterface
+{
+public:
+	fn constructor( Logger &mut logger, BuildConfiguration build_configuration )
+		@( ust::reference_notation::pollution::param0_param_1_reference )
+		( logger_= logger, build_configuration_= build_configuration )
+	{}
+
+public:
+	fn virtual final GetBuildConfiguration(this) : BuildConfiguration
+	{
+		return build_configuration_;
+	}
+
+	fn virtual final LogVerbose( mut this, ust::string_view8 message )
+	{
+		logger_.LogVerbose( message );
+	}
+
+	fn virtual final LogInfo( mut this, ust::string_view8 message )
+	{
+		logger_.LogInfo( message );
+	}
+
+	fn virtual final LogError( mut this, ust::string_view8 message )
+	{
+		logger_.LogError( message );
+	}
+
+private:
+	Logger &mut logger_;
+	BuildConfiguration build_configuration_;
 }
 
 } // namespace BK
