@@ -1,7 +1,9 @@
 import "/build_system.uh"
 
-fn GetPackageInfo() : BK::PackageInfo
+fn GetPackageInfo( BK::BuildSystemInterface &mut интерфейс_сборочной_системы ) : BK::PackageInfo
 {
+	ust::ignore_unused( интерфейс_сборочной_системы );
+
 	var BK::BuildTarget mut цель{ .target_type = BK::BuildTargetType::Executable };
 	// Non-ASCII source file name.
 	цель.source_files.push_back( "исходник.ü" );

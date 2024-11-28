@@ -1,7 +1,9 @@
 import "/build_system.uh"
 
-fn GetPackageInfo() : BK::PackageInfo
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
+	ust::ignore_unused( build_system_interface );
+
 	// Using the same source file for multiple targets is fine. It will be compiled for each target.
 	auto common_source= "common.u";
 
