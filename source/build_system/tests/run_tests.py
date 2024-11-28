@@ -72,6 +72,10 @@ def EmptyPackageTest():
 	RunBuildSystem( "empty_package" )
 
 
+def BuildFileLoggingTest():
+	RunBuildSystem( "build_file_logging" )
+
+
 def TwoFilesExeTest():
 	RunBuildSystem( "two_files_exe" )
 	RunExecutable( "two_files_exe", "two_files_exe" )
@@ -343,6 +347,7 @@ def main():
 		MultipleConfigurationsTest,
 		DebugOnlyProjectTest,
 		EmptyPackageTest,
+		BuildFileLoggingTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,
 		TwoTargetsCommonSourceTest,

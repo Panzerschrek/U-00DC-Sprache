@@ -42,6 +42,10 @@ type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_int
 class BuildSystemInterface interface
 {
 	fn virtual pure GetBuildConfiguration(this) : BuildConfiguration;
+
+	fn virtual pure LogVerbose( mut this, ust::string_view8 message );
+	fn virtual pure LogInfo( mut this, ust::string_view8 message );
+	fn virtual pure LogError( mut this, ust::string_view8 message );
 }
 
 enum BuildConfiguration
