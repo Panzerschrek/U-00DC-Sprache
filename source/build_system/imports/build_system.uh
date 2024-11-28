@@ -38,7 +38,8 @@ type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_int
 // Use inheritance to avoid exposing build system internals to the build script.
 //
 // Also it helps to import necessary build functions into the build script shared library.
-// Otherwise each exported from the build system executable function should be marked as "dllexport" or "visibility(default)".
+// Otherwise it would be necessary to mark each exported from the build system executable function as "dllexport" or "visibility(default)".
+// Making all functions virtual and thus forcing call via the virtual table solves this problem.
 class BuildSystemInterface interface
 {
 	fn virtual pure GetBuildConfiguration(this) : BuildConfiguration;

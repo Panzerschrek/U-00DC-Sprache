@@ -541,7 +541,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	build_graph.nodes.push_back( move(node) );
 }
 
-class BuildSystemInterfaceImplementation : BuildSystemInterface
+class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {
 public:
 	fn constructor( Logger &mut logger, BuildConfiguration build_configuration )
@@ -550,22 +550,22 @@ public:
 	{}
 
 public:
-	fn virtual override GetBuildConfiguration(this) : BuildConfiguration
+	fn virtual final GetBuildConfiguration(this) : BuildConfiguration
 	{
 		return build_configuration_;
 	}
 
-	fn virtual override LogVerbose( mut this, ust::string_view8 message )
+	fn virtual final LogVerbose( mut this, ust::string_view8 message )
 	{
 		logger_.LogVerbose( message );
 	}
 
-	fn virtual override LogInfo( mut this, ust::string_view8 message )
+	fn virtual final LogInfo( mut this, ust::string_view8 message )
 	{
 		logger_.LogInfo( message );
 	}
 
-	fn virtual override LogError( mut this, ust::string_view8 message )
+	fn virtual final LogError( mut this, ust::string_view8 message )
 	{
 		logger_.LogError( message );
 	}
