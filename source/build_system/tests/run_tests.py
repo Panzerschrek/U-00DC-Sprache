@@ -68,6 +68,16 @@ def DebugOnlyProjectTest():
 	RunExecutableWithExplicitConfiguration( "debug_only_project", "debug_only_target", "debug" )
 
 
+def ConfigurationDependentTargetTest():
+	# Build both "debug" and "release".
+	RunBuildSystemWithExplicitConfiguration( "configuration_dependent_target", "debug" )
+	RunBuildSystemWithExplicitConfiguration( "configuration_dependent_target", "release" )
+	# Should get two executables in different subdirectories.
+	# Debug executable name is different.
+	RunExecutableWithExplicitConfiguration( "configuration_dependent_target", "configuration_dependent_target_d", "debug" )
+	RunExecutableWithExplicitConfiguration( "configuration_dependent_target", "configuration_dependent_target", "release" )
+
+
 def EmptyPackageTest():
 	RunBuildSystem( "empty_package" )
 
@@ -346,6 +356,7 @@ def main():
 		HelloWorldTest,
 		MultipleConfigurationsTest,
 		DebugOnlyProjectTest,
+		ConfigurationDependentTargetTest,
 		EmptyPackageTest,
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
