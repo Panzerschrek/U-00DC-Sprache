@@ -37,7 +37,6 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 	{
 		if_var( &dep_file : dep_file_opt )
 		{
-			// TODO - normalize paths read from dependency files.
 			files_with_modification_time.insert( dep_file.destination, ust::null_optional );
 			foreach( &dependency : dep_file.dependencies )
 			{
@@ -64,7 +63,7 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 
 		if( !node.dep_file.empty() && dep_file_opt.empty() )
 		{
-			// No dep file where it shoud be - rebuild is needed.
+			// No dep file where it should be - rebuild is needed.
 			logger.LogVerbose( "No dep file for command \"" + node.comment + "\" - mark for rebuild." );
 			need_to_rebuild= true;
 			continue label nodes_loop;

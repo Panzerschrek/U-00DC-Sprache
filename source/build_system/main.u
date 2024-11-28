@@ -5,6 +5,7 @@ import "filesystem.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_validation.uh"
+import "path.uh"
 import "process.uh"
 import "shared_library.uh"
 import "string_utils.uh"
@@ -414,8 +415,8 @@ fn CreatePackageTargetBuildGraphNodes(
 	{
 		// Create nodes for compilation of each source file into a ".bc" file.
 
-		var ust::string8 source_file_absolute= ust::string8(package_source_directory) + "/" + source_file;  // TODO - normalize path.
-		var ust::string8 bc_file = target_build_files_directory + "/" + source_file + ".bc";  // TODO - normalize path.
+		var ust::string8 source_file_absolute= NormalizePath( ust::string8(package_source_directory) + "/" + source_file );
+		var ust::string8 bc_file = NormalizePath( target_build_files_directory + "/" + source_file + ".bc" );
 
 		bc_files.push_back( bc_file );
 
@@ -474,7 +475,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
 
-	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
+	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target.name );
 	if( target_is_windows )
 	{
 		result_target_file_path+= ".exe";
@@ -486,7 +487,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
 		// For an end-target like an executable dep-files isn't necessary.
 		.dep_file= "",
-		.output_files= ust::make_array( result_target_file_path ), // TODO - normalize path.
+		.output_files= ust::make_array( result_target_file_path ),
 		.comment= target.name,
 	};
 
