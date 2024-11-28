@@ -1,0 +1,41 @@
+import "path.uh"
+
+namespace BK
+{
+
+fn SplitPathIntoComponents( ust::string_view8 path )
+	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var ust::vector</ust::string_view8/> mut res;
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if(false)
+	{
+		res.push_back(path);
+	}
+
+	auto mut prev_component_start = 0s;
+	for( var size_type mut i= 0s; i < path.size(); ++i )
+	{
+		var char8 c= path[i];
+		if( c == "/"c8 || c == "\\"c8 )
+		{
+			auto component = path.subrange( prev_component_start, i );
+			if( !component.empty() )
+			{
+				res.push_back( component );
+			}
+			prev_component_start= i + 1s;
+		}
+	}
+
+	auto last_component = path.subrange( prev_component_start, path.size() );
+	if( !last_component.empty() )
+	{
+		res.push_back( last_component );
+	}
+
+	return res;
+}
+
+} // namespace BK

@@ -1,0 +1,12 @@
+import "/string.u"
+import "/vector.u"
+
+namespace BK
+{
+
+// Split into components - for each directory and (possible) file name at end.
+// Preserves "." and ".." as components.
+fn SplitPathIntoComponents( ust::string_view8 path )
+	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
+
+} // namespace BK
