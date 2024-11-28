@@ -25,7 +25,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var Options& options= options_opt.try_deref();
 
-	if( options.help )
+	if( options.command == Options::Command::Help || options.help )
 	{
 		ust::stdout_print( GetHelpMessage() );
 		return 0;

@@ -11,9 +11,16 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 // Command-line options of the build tool.
 struct Options
 {
+	enum Command
+	{
+		Help,
+		Build,
+	}
+
 	bool help = false;
 	bool quiet = false;
 	bool verbose = false;
+	Command command = Command::Help;
 	BuildConfiguration build_configuration= BuildConfiguration::Release;
 	ust::string8 compiler_executable_path;
 	ust::string8 build_directory;

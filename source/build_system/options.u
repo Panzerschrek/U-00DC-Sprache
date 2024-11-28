@@ -16,7 +16,11 @@ fn GetHelpMessage() : ust::string_view8
 auto constexpr g_help_message=
 	"Bürokratie - the Ü build system\n" +
 	"\n" +
-	"USAGE: BuildSystem [options]\n" +
+	"USAGE: BuildSystem [command] [options]\n" +
+	"\n" +
+	"COMMANDS:\n" +
+	"  build                              - perform the build\n" +
+	"  help                               - show this message\n" +
 	"\n" +
 	"OPTIONS:\n" +
 	"\n" +
@@ -33,13 +37,36 @@ auto constexpr g_help_message=
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
 {
-	var Options mut res;
-
 	//
 	// Keep this up-to date with the help message!
 	//
 
-	for( auto mut i= 0s; i < args.size(); )
+	if( args.empty() )
+	{
+		ust::stderr_print( "Error, expected command as first command-line parameter.\n" );
+		return ust::null_optional;
+	}
+
+	var Options mut res;
+
+	// Command should be always at first place.
+	var ust::string_view8 command= args.front();
+	if( command == "help" || command == "--help" )
+	{
+		res.command= Options::Command::Help;
+	}
+	else if( command == "build" )
+	{
+		res.command= Options::Command::Build;
+	}
+	else
+	{
+		ust::stderr_print( ust::string8( "Error, unknown command \"" ) +command  + "\".\n" );
+		return ust::null_optional;
+	}
+
+	// Parse options after command.
+	for( auto mut i= 1s; i < args.size(); )
 	{
 		if( args[i] == "-q" )
 		{

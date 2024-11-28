@@ -16,7 +16,7 @@ g_ustlib_path = ""
 def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [ g_build_system_executable, "build", "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
@@ -31,7 +31,7 @@ def RunBuildSystem( project_subdirectory ):
 def RunBuildSystemWithErrors( project_subdirectory ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	# Run the build.
 	return subprocess.run( build_system_args, stderr=subprocess.PIPE )
