@@ -1,4 +1,4 @@
-// Linking shoud fail because "Foo" isn't found.
+// Linking should fail because "Foo" isn't found.
 fn Foo();
 
 fn nomangle main() : i32

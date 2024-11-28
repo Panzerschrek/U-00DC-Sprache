@@ -214,7 +214,7 @@ def GlobalMutableVariableIsNotConstexpr_Test2():
 	assert( HasError( errors_list, "ExpectedConstantExpression", 5 ) )
 
 
-def GobalMutableVariableShoudHaveConstexprType_Test0():
+def GobalMutableVariableShouldHaveConstexprType_Test0():
 	c_program_text= """
 		struct S
 		{
@@ -226,7 +226,7 @@ def GobalMutableVariableShoudHaveConstexprType_Test0():
 	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
 
 
-def GobalMutableVariableShoudHaveConstexprType_Test1():
+def GobalMutableVariableShouldHaveConstexprType_Test1():
 	c_program_text= """
 		class C{ }
 		var C mut c; // Class is not "constexpr".
@@ -235,7 +235,7 @@ def GobalMutableVariableShoudHaveConstexprType_Test1():
 	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
 
 
-def GobalMutableVariableShoudHaveConstexprType_Test2():
+def GobalMutableVariableShouldHaveConstexprType_Test2():
 	c_program_text= """
 		// Raw pointer type is not "constexpr" type.
 		// So, now it's not possible to use raw pointers in global variables.

@@ -70,7 +70,7 @@ enum LLVMIntPredicate : u32
 	Dummy10, Dummy11, Dummy12, Dummy13, Dummy14, Dummy15, Dummy16, Dummy17,
 	Dummy18, Dummy19, Dummy1A, Dummy1B, Dummy1C, Dummy1D, Dummy1E, Dummy1F,
 
-	// Shoud start with 32
+	// Should start with 32
 	EQ      , /**< equal */
 	NE,      /**< not equal */
 	UGT,     /**< unsigned greater than */

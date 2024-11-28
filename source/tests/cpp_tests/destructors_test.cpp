@@ -3036,7 +3036,7 @@ U_TEST(CoroutineDestruction_Test9)
 			var S s1( 543 );
 			// Destroy s1.
 			// Destroy s0.
-			// Destroy f without reaching the end. Its current locals and arguments shoudl be destroyed here.
+			// Destroy f without reaching the end. Its current locals and arguments should be destroyed here.
 		}
 	)";
 

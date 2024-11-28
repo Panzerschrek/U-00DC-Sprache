@@ -1,6 +1,6 @@
 import "/stdout.u"
 
-// Linking shoud fail because "main" isn't found.
+// Linking should fail because "main" isn't found.
 
 fn nomangle not_a_main() : i32
 {
