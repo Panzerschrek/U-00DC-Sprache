@@ -9,4 +9,7 @@ namespace BK
 fn SplitPathIntoComponents( ust::string_view8 path )
 	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
 
+// Replaces separators with preferrable, removes duplicated separators, removes trailing separator (if present), performs (if possible) relative paths resolution.
+fn NormalizePath( ust::string_view8 path ) : ust::string8;
+
 } // namespace BK

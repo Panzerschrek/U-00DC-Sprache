@@ -211,6 +211,7 @@ def DuplicatedSourceFileTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
+	assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Package is invald" ) != -1 )
 
 
