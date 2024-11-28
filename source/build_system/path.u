@@ -75,9 +75,16 @@ fn NormalizePath( ust::string_view8 path ) : ust::string8
 	}
 
 	var ust::string8 mut res;
+
+	if( !path.empty() && path.front() == "/"c8 )
+	{
+		// Input path is absolute Unix path. Output should be absolute too.
+		res+= "/";
+	}
+
 	foreach( &component : components_normalized )
 	{
-		if( !res.empty() )
+		if( !res.empty() && res.back() != "/"c8 )
 		{
 			res+= "/";
 		}
