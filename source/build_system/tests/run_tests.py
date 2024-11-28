@@ -63,6 +63,11 @@ def MultipleConfigurationsTest():
 	RunExecutableWithExplicitConfiguration( "multiple_configurations", "multiple_configurations", "release" )
 
 
+def DebugOnlyProjectTest():
+	RunBuildSystemWithExplicitConfiguration( "debug_only_project", "debug" )
+	RunExecutableWithExplicitConfiguration( "debug_only_project", "debug_only_target", "debug" )
+
+
 def EmptyPackageTest():
 	RunBuildSystem( "empty_package" )
 
@@ -336,6 +341,7 @@ def main():
 	test_funcs = [
 		HelloWorldTest,
 		MultipleConfigurationsTest,
+		DebugOnlyProjectTest,
 		EmptyPackageTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,

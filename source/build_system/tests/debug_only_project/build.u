@@ -1,0 +1,13 @@
+import "/assert.u"
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	assert( build_system_interface.GetBuildConfiguration() == BK::BuildConfiguration::Debug, "This project supports only debug configuration!" );
+
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
+	target.source_files.push_back( "main.u" );
+	target.name= "debug_only_target";
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}
