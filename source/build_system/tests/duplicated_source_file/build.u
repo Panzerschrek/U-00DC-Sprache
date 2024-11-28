@@ -6,6 +6,9 @@ fn GetPackageInfo() : BK::PackageInfo
 	// Add the same source file two times.
 	target.source_files.push_back( "main.u" );
 	target.source_files.push_back( "main.u" );
+	// Add the same file two files, with non-identical path.
+	target.source_files.push_back( "dir/other.u" );
+	target.source_files.push_back( "dir\\other.u" );
 	target.name= "hello_world";
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };

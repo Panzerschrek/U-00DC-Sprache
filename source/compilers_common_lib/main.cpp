@@ -24,6 +24,7 @@
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
@@ -849,6 +850,17 @@ int Main( int argc, const char* argv[] )
 	{
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
+	}
+
+	if( !Options::output_file_name.empty() && file_type != FileType::Null )
+	{
+		// Create directories for output file.
+		const llvm::StringRef parent_dir= llvm::sys::path::parent_path( Options::output_file_name );
+		if( !parent_dir.empty() )
+		{
+			// Ignore errors here. If something goes wrong, an error will be generated later - on attempt to create output file.
+			llvm::sys::fs::create_directories( parent_dir, /* IgnoreExisting */ true );
+		}
 	}
 
 	switch( file_type )

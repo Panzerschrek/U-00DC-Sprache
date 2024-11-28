@@ -155,7 +155,7 @@ def MissingSourceFileTest():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not read file" ) != -1 )
 	assert( stderr.find( "this_file_does_not_exist.u" ) != -1 )
-	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Command \"this_file_does_not_exist.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError0Test():
@@ -163,7 +163,7 @@ def SourceFileCompilationError0Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Syntax error" ) != -1 )
-	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError1Test():
@@ -171,7 +171,7 @@ def SourceFileCompilationError1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Name \"Foo\" not found" ) != -1 )
-	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError2Test():
@@ -180,7 +180,7 @@ def SourceFileCompilationError2Test():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not read file" ) != -1 )
 	assert( stderr.find( "non_existing_imported_file.uh" ) != -1 )
-	assert( stderr.find( "Compiler execution failed" ) != -1 )
+	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
 def LinkingError0Test():
@@ -211,6 +211,7 @@ def DuplicatedSourceFileTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
+	assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Package is invald" ) != -1 )
 
 

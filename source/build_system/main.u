@@ -1,12 +1,14 @@
 import "/stdout.u"
+import "build_graph.uh"
 import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_validation.uh"
+import "path.uh"
+import "process.uh"
 import "shared_library.uh"
 import "string_utils.uh"
-import "process.uh"
 
 namespace BK
 {
@@ -121,27 +123,45 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
 		typeinfo</ typeof(func_ptr) />.size_of ) );
 
+	// Obtain package info by calling a shared library function.
 	var PackageInfo package_info= func_ptr();
 
+	// Make sure package is valid and may be built. If it's not - do not bother performing further steps.
 	if( !PackageIsValid( logger, package_info ) )
 	{
 		logger.LogError( "Package is invald." );
 		return -1;
 	}
 
+	// Create directories for intermediate files for each build target.
 	foreach( &build_target : package_info.build_targets )
 	{
-		if( !PerformPackageTargetBuild(
-			logger,
+		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target.name );
+		if( !EnsureDirectoryExists( logger, dir_name ) )
+		{
+			logger.LogError( "Can't create build directory for target \"" + build_target.name + "\"." );
+			return -1;
+		}
+	}
+
+	// Build the build graph for the whole project.
+	var BuildGraph mut build_graph;
+	foreach( &build_target : package_info.build_targets )
+	{
+		CreatePackageTargetBuildGraphNodes(
 			build_system_paths,
 			package_source_directory,
 			package_build_directory,
 			options.build_configuration,
-			build_target ) )
-		{
-			logger.LogError( "Failed to build target " + build_target.name + "!" );
-			return -1;
-		}
+			build_target,
+			build_graph );
+	}
+
+	// This executes the build.
+	if( !PerformGraphBuild( logger, build_graph ) )
+	{
+		logger.LogError( "Build failed." );
+		return -1;
 	}
 
 	logger.LogInfo( "Successfully finished the build!" );
@@ -371,72 +391,64 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 	return res;
 }
 
-// Returns true on success.
-fn PerformPackageTargetBuild(
-	Logger &mut logger,
+fn GetTargetBuildFilesDirectoryPath( ust::string_view8 package_build_directory, ust::string_view8 target_name ) : ust::string8
+{
+	var ust::string8 mut res= package_build_directory;
+	res+= "/";
+	res+= target_name;
+	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
+	return res;
+}
+
+fn CreatePackageTargetBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
 	BuildConfiguration build_configuration,
-	BuildTarget& target ) : bool
+	BuildTarget& target,
+	BuildGraph &mut build_graph )
 {
-	// TODO - fix this check, do not use host OS.
-	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
 
-	var ust::string8 mut result_target_file_path = ust::string8(package_build_directory) + "/" + target.name;
-
-	if( target_is_windows )
+	var ust::vector</ust::string8/> mut bc_files;
+	foreach( &source_file : target.source_files )
 	{
-		result_target_file_path+= ".exe";
-	}
+		// Create nodes for compilation of each source file into a ".bc" file.
 
-	var ust::string8 result_dependency_file_path= GetDependencyFilePath( result_target_file_path );
+		var ust::string8 source_file_absolute= NormalizePath( ust::string8(package_source_directory) + "/" + source_file );
+		var ust::string8 bc_file = NormalizePath( target_build_files_directory + "/" + source_file + ".bc" );
 
-	// TODO - check also if compilation options were changed (including import directories).
-	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_dependency_file_path ) )
-	{
-		// For now just build all files together into result executable.
-		// TODO - compile each source file individually and support incremental building for each of them.
+		bc_files.push_back( bc_file );
 
-		var ust::vector</ust::string8/> mut source_files_absolute;
-		foreach( &source_file : target.source_files )
+		var BuildGraph::Node mut node
 		{
-			source_files_absolute.push_back( ust::string8(package_source_directory) + "/" + source_file );
-		}
+			.program= build_system_paths.compiler_executable_path,
+			// Use a dep-file to track changes in imported files and trigger rebuild if one of them is changed.
+			.dep_file= GetDependencyFilePath( bc_file ),
+			.input_files= ust::make_array( source_file_absolute ),
+			.output_files= ust::make_array( bc_file ),
+			.comment= source_file + ".bc",
+		};
 
-		var ust::vector</ust::string_view8/> mut compiler_args;
-		// Provide standard library imports.
-		compiler_args.push_back( "--include-dir" );
-		compiler_args.push_back( build_system_paths.ustlib_path );
+		node.command_line.push_back( source_file_absolute );
 
-		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-		if(false)
-		{
-			compiler_args.push_back( cast_imut(source_files_absolute).front() );
-		}
-
-		for( auto mut i = 0s; i < source_files_absolute.size(); ++i )
-		{
-			compiler_args.push_back( cast_imut(source_files_absolute)[i] );
-		}
-
-		compiler_args.push_back( "-o" );
-		compiler_args.push_back( result_target_file_path );
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( bc_file );
 
 		// Produce also a dependency file.
-		compiler_args.push_back( "-MF" );
-		compiler_args.push_back( result_dependency_file_path );
+		node.command_line.push_back( "-MF" );
+		node.command_line.push_back( node.dep_file );
 
-		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-		// TODO - support other target types.
-		compiler_args.push_back( "-filetype=exe" );
+		// Provide standard library imports.
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( build_system_paths.ustlib_path );
 
-		// Run internalization in order to export only "main".
-		compiler_args.push_back( "--internalize" );
+		// Produce an LLVM bitcode file.
+		node.command_line.push_back( "-filetype=bc" );
 
 		// TODO - disable "pic" by default for windows target.
-		compiler_args.push_back( "--relocation-model" );
-		compiler_args.push_back( "pic" );
+		node.command_line.push_back( "--relocation-model" );
+		node.command_line.push_back( "pic" );
 
 		// Build configuration-dependent options.
 		switch( build_configuration )
@@ -444,33 +456,84 @@ fn PerformPackageTargetBuild(
 			BuildConfiguration::Debug ->
 			{
 				// Generate debug information.
-				compiler_args.push_back( "-g" );
+				node.command_line.push_back( "-g" );
 				// No optimization at all - optimization makes debugging hard.
-				compiler_args.push_back( "-O0" );
+				node.command_line.push_back( "-O0" );
 			},
 			BuildConfiguration::Release ->
 			{
 				// Run full optimization, but not by using O3 - it isn't much better than O2.
-				compiler_args.push_back( "-O2" );
+				node.command_line.push_back( "-O2" );
 			},
 		}
 
-		logger.LogInfo( "Building \"" + result_target_file_path + "\"" );
-
-		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
-		{
-			logger.LogError( "Compiler execution failed." );
-			return false;
-		}
-
-		logger.LogInfo( "Successfully built \"" + result_target_file_path + "\"" );
+		build_graph.nodes.push_back( move(node) );
 	}
-	else
+
+	// Combine multiple ".bc" files into single result.
+
+	// TODO - fix this check, do not use host OS.
+	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+
+	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target.name );
+	if( target_is_windows )
 	{
-		logger.LogVerbose( "Skip building \"" + result_target_file_path + "\"" );
+		result_target_file_path+= ".exe";
 	}
 
-	return true;
+	var BuildGraph::Node mut node
+	{
+		.program= build_system_paths.compiler_executable_path,
+		// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
+		// For an end-target like an executable dep-files isn't necessary.
+		.dep_file= "",
+		.output_files= ust::make_array( result_target_file_path ),
+		.comment= target.name,
+	};
+
+	foreach( &bc_file : bc_files )
+	{
+		node.command_line.push_back( bc_file );
+		node.input_files.push_back( bc_file );
+	}
+
+	node.command_line.push_back( "-o" );
+	node.command_line.push_back( result_target_file_path );
+
+	// Read LLVM bitcode files (use the Ü compiler as bitcode files compiler).
+	node.command_line.push_back( "--input-filetype=bc" );
+
+	switch( target.target_type )
+	{
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		BuildTargetType::Executable ->{ node.command_line.push_back( "-filetype=exe" ); },
+	}
+
+	// Run internalization in order to export only "main".
+	node.command_line.push_back( "--internalize" );
+
+	// TODO - disable "pic" by default for windows target.
+	node.command_line.push_back( "--relocation-model" );
+	node.command_line.push_back( "pic" );
+
+	// Build configuration-dependent options.
+	switch( build_configuration )
+	{
+		BuildConfiguration::Debug ->
+		{
+			// Generate debug information.
+			node.command_line.push_back( "-g" );
+			// No optimization at all - optimization makes debugging hard.
+			node.command_line.push_back( "-O0" );
+		},
+		BuildConfiguration::Release ->
+		{
+			// Run full optimization, but not by using O3 - it isn't much better than O2.
+			node.command_line.push_back( "-O2" );
+		},
+	}
+
+	build_graph.nodes.push_back( move(node) );
 }
 
 } // namespace BK

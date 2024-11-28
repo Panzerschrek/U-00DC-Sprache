@@ -1,0 +1,97 @@
+import "path.uh"
+
+namespace BK
+{
+
+fn SplitPathIntoComponents( ust::string_view8 path )
+	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var ust::vector</ust::string_view8/> mut res;
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if(false)
+	{
+		res.push_back(path);
+	}
+
+	auto mut prev_component_start = 0s;
+	for( var size_type mut i= 0s; i < path.size(); ++i )
+	{
+		var char8 c= path[i];
+		if( c == "/"c8 || c == "\\"c8 )
+		{
+			auto component = path.subrange( prev_component_start, i );
+			if( !component.empty() )
+			{
+				res.push_back( component );
+			}
+			prev_component_start= i + 1s;
+		}
+	}
+
+	auto last_component = path.subrange( prev_component_start, path.size() );
+	if( !last_component.empty() )
+	{
+		res.push_back( last_component );
+	}
+
+	return res;
+}
+
+fn NormalizePath( ust::string_view8 path ) : ust::string8
+{
+	auto components = SplitPathIntoComponents( path );
+
+	var ust::vector</ust::string_view8/> mut components_normalized;
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if(false)
+	{
+		components_normalized.push_back( components.front() );
+	}
+
+	foreach( &component : components )
+	{
+		if( component == "." )
+		{} // Ignore it.
+		else if( component == ".." )
+		{
+			if( !components_normalized.empty() )
+			{
+				// Remove last component.
+				components_normalized.drop_back();
+			}
+			else
+			{
+				// Wrong path with too much "..".
+				// We have nothing to do here - just preserve "..".
+				components_normalized.push_back( component );
+			}
+		}
+		else
+		{
+			components_normalized.push_back( component );
+		}
+	}
+
+	var ust::string8 mut res;
+
+	if( !path.empty() && path.front() == "/"c8 )
+	{
+		// Input path is absolute Unix path. Output should be absolute too.
+		res+= "/";
+	}
+
+	foreach( &component : components_normalized )
+	{
+		if( !res.empty() && res.back() != "/"c8 )
+		{
+			res+= "/";
+		}
+		res+= component;
+	}
+
+	return res;
+}
+
+} // namespace BK

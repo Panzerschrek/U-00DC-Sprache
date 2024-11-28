@@ -1,4 +1,5 @@
 import "package_validation.uh"
+import "path.uh"
 
 namespace BK
 {
@@ -26,24 +27,28 @@ fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
 			}
 		}
 
-		for( auto mut m= 0s; m < build_target.source_files.size(); ++m )
+		var ust::vector</ust::string8/> mut prev_sources_normalized;
+		foreach( source_name : build_target.source_files )
 		{
-			auto& source_name = build_target.source_files[m];
 			if( !TargetSourceNameIsValid( source_name ) )
 			{
 				logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + current_name + "\"!" );
 				ok= false;
+				continue;
 			}
 
-			for( auto mut n= 0s; n < m; ++n )
+			var ust::string8 mut source_name_normalized = NormalizePath( source_name );
+
+			foreach( &prev_source_name : prev_sources_normalized )
 			{
-				// TODO - perform name normalisation before comparing (like changing / with \\)
-				if( source_name == build_target.source_files[n] )
+				if( source_name_normalized == prev_source_name )
 				{
-					logger.LogError( "Error, duplicated source file \"" + build_target.source_files[m] + "\" of the build target \"" + current_name + "\"!" );
+					logger.LogError( "Error, duplicated source file \"" + source_name_normalized + "\" of the build target \"" + current_name + "\"!" );
 					ok= false;
 				}
 			}
+			prev_sources_normalized.push_back( move(source_name_normalized) );
+
 		}
 	}
 
@@ -101,24 +106,10 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 		return false;
 	}
 
-	// TODO - move components splitting code into another file (create an iterator class).
+	// Disable "." and ".." in source file names.
+	foreach( &component : SplitPathIntoComponents( name ) )
 	{
-		auto mut prev_component_start = 0s;
-		for( var size_type mut i= 0s; i < name.size(); ++i )
-		{
-			var char8 c= name[i];
-			if( c == "/"c8 || c == "\\"c8 )
-			{
-				auto component = name.subrange( prev_component_start, i );
-				if( component == "." || component == ".." )
-				{
-					return false;
-				}
-				prev_component_start= i + 1s;
-			}
-		}
-		auto last_component = name.subrange( prev_component_start, name.size() );
-		if( last_component == "." || last_component == ".." )
+		if( component == "." || component == ".." )
 		{
 			return false;
 		}

@@ -6,6 +6,7 @@ namespace BK
 
 struct MakeDepFile
 {
+	// All path are normalized.
 	ust::string8 destination;
 	ust::vector</ust::string8/> dependencies;
 }

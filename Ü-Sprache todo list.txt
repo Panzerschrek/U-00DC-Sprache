@@ -152,8 +152,8 @@ CPP Header converter:
 Ü Build system:
 *) Improve build directories creation code - create all directories within given path, handle cases when a directory
 	already exists, handle case where a non-directory object (like a file) with given name exists
-*) Prevent file name conflicts with build system generated files (like build.so)
 *) Incremental build - trigger rebuild if command line is changed (like import directories, optimization options, etc.)
+*) Build graph - store it on disk and read it to compare its state against previous version
 *) Provide build configuration and other information as an argument for "GetPackageInfo" function
 *) Ü library target type (bitcode library)
 *) Dependencies between targets
