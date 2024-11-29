@@ -914,3 +914,34 @@ def BaseUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "BaseUnavailable", 10 ) )
+
+
+def BreakReferenceIndirectionDepthExceededWithInheritance_Test0():
+	c_program_text= """
+		class A interface
+		{
+		}
+		class B : A
+		{
+			A& a_;
+			fn constructor( A& a ) @(pollution)
+				( a_= a )
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] constexpr pollution[ [ "0a", "1_" ] ];
+		}
+		class C : A {}
+		fn Foo()
+		{
+			// It shouldn't be possible to create a linked-list of arbitrary size in Ü, using only references.
+			// But this code creates such list and this is an language defect.
+			var C c;
+			var B b0(c);
+			var B b1(b0);
+			var B b2(b1);
+			var B b3(b2);
+			var B b4(b3), b5(b4), b6(b5);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
