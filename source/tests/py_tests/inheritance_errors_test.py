@@ -1018,3 +1018,44 @@ def BreakReferenceIndirectionDepthExceededWithInheritance_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+
+
+def BreakReferenceIndirectionDepthExceededWithInheritance_Test3():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Some( this );
+		}
+		class B : A
+		{
+			i32 &mut x_;
+			fn constructor( i32 &mut x ) @(pollution)
+				( x_= x )
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] constexpr pollution[ [ "0a", "1_" ] ];
+			var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+
+			fn virtual override Some( this )
+			{
+				++x_; // Modify referenced variable, when another mutable reference to it exists.
+			}
+
+			fn GetX( this ) : i32 &mut @(return_references)
+			{
+				return x_;
+			}
+		}
+		static_assert( typeinfo</B/>.reference_tag_count == 1s );
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var B b( x );
+			var A& a= b;
+			var i32 &mut x_ref= b.GetX();
+			a.Some(); // Call a virtual method, which has access to internal mutable reference "x_", when a derived reference to it exists.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
