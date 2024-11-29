@@ -117,6 +117,468 @@ fn JsonValue::AsObject( imut this ) : ust::optional_ref_imut</Object/> @( return
 	return ust::null_optional_ref;
 }
 
+fn ParseJson( ust::string_view8 mut json_text ) : ust::optional</JsonValue/>
+{
+	return ParseJsonImpl( json_text );
+}
+
+fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
+{
+	SkipWhitespaces( text );
+	if( text.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	switch( text.front() )
+	{
+		"n"c8 ->
+		{
+			// Null
+			auto &constexpr expected= "null";
+			auto s= typeinfo</typeof(expected)/>.element_count;
+			if( text.size() <= s || text.subrange_end(s) != expected )
+			{
+				return ust::null_optional;
+			}
+			text= text.subrange_end(s);
+			return JsonValue( JsonValue::Null() );
+		},
+		"f"c8 ->
+		{
+			// Bool false
+			auto &constexpr expected= "false";
+			auto s= typeinfo</typeof(expected)/>.element_count;
+			if( text.size() <= s || text.subrange_end(s) != expected )
+			{
+				return ust::null_optional;
+			}
+			text= text.subrange_end(s);
+			return JsonValue( false );
+		},
+		"t"c8 ->
+		{
+			// Bool true
+			auto &constexpr expected= "true";
+			auto s= typeinfo</typeof(expected)/>.element_count;
+			if( text.size() <= s || text.subrange_end(s) != expected )
+			{
+				return ust::null_optional;
+			}
+			text= text.subrange_end(s);
+			return JsonValue( true );
+		},
+		"0"c8 ... "9"c8, "-"c8 ->
+		{
+			// Number
+			auto mut num= ParseJsonNumber( text );
+			if( num.empty() )
+			{
+				return ust::null_optional;
+			}
+			return JsonValue( num.try_take() );
+		},
+		"\""c8 ->
+		{
+			auto mut str= ParseJsonString( text );
+			if( str.empty() )
+			{
+				return ust::null_optional;
+			}
+			return JsonValue( str.try_take() );
+		},
+		"["c8 ->
+		{
+			// Array
+			text.drop_front();
+
+			SkipWhitespaces( text );
+			if( text.empty() )
+			{
+				return ust::null_optional;
+			}
+
+			var JsonValue::Array mut array;
+
+			if( text.front() == "]"c8 )
+			{
+				text.drop_front();
+			}
+			else
+			{
+				loop
+				{
+					auto mut sub_value= ParseJsonImpl( text );
+					if( sub_value.empty() )
+					{
+						return ust::null_optional;
+					}
+					array.push_back( sub_value.try_take() );
+
+					SkipWhitespaces( text );
+					if( text.empty() )
+					{
+						return ust::null_optional;
+					}
+					if( text.front() == ","c8 )
+					{
+						text.drop_front();
+						continue;
+					}
+					if( text.front() == "]"c8 )
+					{
+						text.drop_front();
+						break;
+					}
+					return ust::null_optional;
+				}
+			}
+
+			return JsonValue( move(array) );
+		},
+		"{"c8 ->
+		{
+			// Object
+			text.drop_front();
+
+			SkipWhitespaces( text );
+			if( text.empty() )
+			{
+				return ust::null_optional;
+			}
+
+			var JsonValue::Object mut object;
+
+			if( text.front() == "}"c8 )
+			{
+				text.drop_front();
+			}
+			else
+			{
+				loop
+				{
+					SkipWhitespaces( text );
+					auto mut key= ParseJsonString( text );
+					if( key.empty() )
+					{
+						return ust::null_optional;
+					}
+
+					if( text.empty() || text.front() != ":"c8 )
+					{
+						return ust::null_optional;
+					}
+					text.drop_front();
+
+					auto mut value= ParseJsonImpl( text );
+					if( value.empty() )
+					{
+						return ust::null_optional;
+					}
+					object.insert( key.try_take(), value.try_take() );
+
+					SkipWhitespaces( text );
+					if( text.empty() )
+					{
+						return ust::null_optional;
+					}
+					if( text.front() == ","c8 )
+					{
+						text.drop_front();
+						continue;
+					}
+					if( text.front() == "}"c8 )
+					{
+						text.drop_front();
+						break;
+					}
+					return ust::null_optional;
+				}
+			}
+
+			return JsonValue( move(object) );
+		},
+		default -> { return ust::null_optional; },
+	}
+}
+
+fn SkipWhitespaces( ust::string_view8 &mut text )
+{
+	while( !text.empty() )
+	{
+		switch(text.front())
+		{
+			" "c8, "\t"c8, "\r"c8, "\n"c8 -> { text.drop_front(); },
+			default -> { break; }
+		}
+	}
+}
+
+fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Number/>
+{
+	var f64 mut sign= 1.0;
+	if( text.front() == "-"c8 )
+	{
+		sign= -1.0;
+		text.drop_front();
+	}
+
+	if( text.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	var f64 mut num(0);
+	while( !text.empty() )
+	{
+		var char8 c= text.front();
+		if( c >= "0"c8 && c <= "9"c8 )
+		{
+			num= num * 10.0 + f64( u32(c) - u32( "0"c8 ) );
+			text.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	var i32 mut decimal_point_position= 0;
+	if( !text.empty() && text.front() == "."c8 )
+	{
+		text.drop_front();
+
+		if( text.empty() )
+		{
+			return ust::null_optional;
+		}
+
+		while( !text.empty() )
+		{
+			var char8 c= text.front();
+			if( c >= "0"c8 && c <= "9"c8 )
+			{
+				num= num * 10.0 + f64( u32(c) - u32( "0"c8 ) );
+				++decimal_point_position;
+				text.drop_front();
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	if( !text.empty() && ( text.front() == "e"c8 || text.front() == "E"c8 ) )
+	{
+		text.drop_front();
+
+		if( text.empty() )
+		{
+			return ust::null_optional;
+		}
+
+		var bool mut exponent_is_negative= false;
+		if( text.front() == "-"c8 )
+		{
+			exponent_is_negative= true;
+			text.drop_front();
+		}
+		else if( text.front() == "+"c8 )
+		{
+			exponent_is_negative= false;
+			text.drop_front();
+		}
+
+		if( text.empty() )
+		{
+			return ust::null_optional;
+		}
+
+		var i32 mut exponent= 0;
+		while( !text.empty() )
+		{
+			var char8 c= text.front();
+			if( c >= "0"c8 && c <= "9"c8 )
+			{
+				exponent= exponent * 10 + ( i32(c) - i32( "0"c8 ) );
+				text.drop_front();
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if( exponent_is_negative )
+		{
+			exponent = -exponent;
+		}
+		decimal_point_position-= exponent;
+	}
+
+	// For double calculate only powers > 0, because pow( base, positive ) is always integer and has exact double representation.
+	// pow( base, negative ) may have not exact double representation (1/10 for example).
+	// Example:
+	// 3 / 10 - right
+	// 3 * (1/10) - wrong
+	if( decimal_point_position >= 0 )
+	{
+		return sign * (num / PowI( u64(10), u64(decimal_point_position) ) );
+	}
+	else
+	{
+		return sign * (num * PowI( u64(10), u64(-decimal_point_position) ) );
+	}
+}
+
+fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::String/>
+{
+	if( text.empty() || text.front() != "\""c8 )
+	{
+		return ust::null_optional;
+	}
+	text.drop_front();
+
+	var ust::string8 mut res;
+
+	if( text.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	loop
+	{
+		if( text.empty() )
+		{
+			return ust::null_optional;
+		}
+
+		var char8 c= text.drop_and_get_front();
+
+		switch( c )
+		{
+			"\""c8 -> { break; },
+			"\\"c8 ->
+			{
+				if( text.empty() )
+				{
+					return ust::null_optional;
+				}
+				var char8 c_escaped= text.drop_and_get_front();
+				switch( c_escaped )
+				{
+					"\""c8, "\\"c8, "/"c8 -> { res.push_back( c_escaped ); },
+					"b"c8 -> { res.push_back( "\b"c8 ); },
+					"f"c8 -> { res.push_back( "\f"c8 ); },
+					"n"c8 -> { res.push_back( "\n"c8 ); },
+					"r"c8 -> { res.push_back( "\r"c8 ); },
+					"t"c8 -> { res.push_back( "\t"c8 ); },
+					"u"c8 ->
+					{
+						// A hex number.
+						if( text.size() < 4s )
+						{
+							return ust::null_optional;
+						}
+						var u32 mut cc= 0u;
+						for( auto mut i= 0u; i < 4u; ++i )
+						{
+							var char8 c= text.drop_and_get_front();
+							if( c >= "0"c8 && c <= "9"c8 )
+							{
+								cc|= (u32(c) - u32("0"c8)) << ( ( 3u - i ) * 4u );
+							}
+							else if( c >= "a"c8 && c <= "f"c8 )
+							{
+								cc|= (u32(c) + 10u - u32("a"c8)) << ( ( 3u - i ) * 4u );
+							}
+							else if( c >= "A"c8 && c <= "F"c8 )
+							{
+								cc|= (u32(c) + 10u - u32("A"c8)) << ( ( 3u - i ) * 4u );
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+						if( cc <= 0x7Fu )
+						{
+							res.push_back( char8(c) );
+						}
+						else if( cc <= 0x7FFu )
+						{
+							var [ char8, 2 ] chars
+							[
+								( 0b11000000u | (cc >>  6u) ),
+								( 0b10000000u | (cc &  63u) ),
+							];
+							res+= chars;
+						}
+						else if( cc <= 0xFFFFu )
+						{
+							var [ char8, 3 ] chars
+							[
+								( 0b11100000u |  (cc >> 12u) ),
+								( 0b10000000u | ((cc >> 6u) & 63u) ),
+								( 0b10000000u |  (cc  & 63u) ),
+							];
+							res+= chars;
+						}
+						else if( cc <= 0x10FFFFu )
+						{
+							var [ char8, 4 ] chars
+							[
+								( 0b11110000u |  (cc >> 18u) ),
+								( 0b10000000u | ((cc >> 12u) & 63u) ),
+								( 0b10000000u | ((cc >>  6u) & 63u) ),
+								( 0b10000000u |  (cc  & 63u) ),
+							];
+							res+= chars;
+						}
+						else
+						{
+							// Codes above unicode range - wtf?
+						}
+					},
+					// Unknown escape sequence.
+					default -> { return ust::null_optional; },
+				}
+			},
+			// TODO - check for control characters.
+			default -> { res.push_back( c ); },
+		}
+	}
+
+	return res;
+}
+
+fn PowI( u64 base_, u64 pow ) : f64
+{
+	if( pow == 0u64 )
+	{
+		return 1.0;
+	}
+	if( pow == 1u64 )
+	{
+		return f64(base_);
+	}
+	if( pow == 2u64 )
+	{
+		return f64(base_ * base_);
+	}
+
+	auto half_pow= pow >> 1u;
+	auto mut res= PowI( base_, half_pow );
+	res= res * res;
+	if( half_pow * 2u64 != pow )
+	{
+		res*= f64(base_);
+	}
+	return res;
+}
+
+
 fn SerializeJsonValue( JsonValue& value ) : ust::string8
 {
 	var ust::string8 mut res;

@@ -2,6 +2,7 @@ import "/stdout.u"
 import "build_graph.uh"
 import "entry.uh"
 import "filesystem.uh"
+import "json.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_validation.uh"
@@ -148,6 +149,25 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
+	var ust::string8 build_graph_state_file_path= package_build_directory + "/build_graph.json";
+
+	if_var( &prev_build_graph_file : ReadFile( build_graph_state_file_path ) )
+	{
+		var ust::optional</JsonValue/> json_parsed= ParseJson( prev_build_graph_file );
+		if( json_parsed.empty() )
+		{
+			logger.LogError( "Failed to parse build graph JSON." );
+		}
+		else
+		{
+			logger.LogError( SerializeJsonValuePretty( json_parsed.try_deref() ) );
+		}
+	}
+	else
+	{
+		logger.LogInfo( "Can't load previous build graph state" );
+	}
+
 	// Build the build graph for the whole project.
 	var BuildGraph mut build_graph;
 	foreach( &build_target : package_info.build_targets )
@@ -173,7 +193,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// TODO - maybe fail the build if failed to serialize the build graph?
 	WriteFile(
 		logger,
-		package_build_directory + "/build_graph.json",
+		build_graph_state_file_path,
 		SerializeBuildGraph( build_graph ) );
 
 	return 0;

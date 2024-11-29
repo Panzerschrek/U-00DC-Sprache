@@ -60,6 +60,9 @@ private:
 	ust::variant</ tup[ Null, Bool, Number, String, ust::box</Array/>, ust::box</Object/> ] /> contents_;
 }
 
+// Returns empty optional if failed to parse.
+fn ParseJson( ust::string_view8 json_text ) : ust::optional</JsonValue/>;
+
 // Create text representation for this value.
 fn SerializeJsonValue( JsonValue& value ) : ust::string8;
 
