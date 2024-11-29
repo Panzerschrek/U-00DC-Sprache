@@ -66,4 +66,6 @@ fn SerializeJsonValue( JsonValue& value ) : ust::string8;
 // Append text repreentation to given string.
 fn SerializeJsonValue( ust::string8 &mut out, JsonValue& value );
 
+fn SerializeJsonValuePretty( JsonValue& value ) : ust::string8;
+
 } // namespace BK

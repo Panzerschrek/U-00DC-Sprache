@@ -453,7 +453,7 @@ fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
 		build_graph_object.insert( "nodes", move(nodes_array) );
 	}
 
-	return SerializeJsonValue( move(build_graph_object) );
+	return SerializeJsonValuePretty( move(build_graph_object) );
 }
 
 } // namespace BK
