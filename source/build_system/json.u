@@ -137,7 +137,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			// Null
 			auto &constexpr expected= "null";
 			auto s= typeinfo</typeof(expected)/>.element_count;
-			if( text.size() <= s || text.subrange_end(s) != expected )
+			if( text.size() < s || text.subrange_end(s) != expected )
 			{
 				return ust::null_optional;
 			}
@@ -149,7 +149,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			// Bool false
 			auto &constexpr expected= "false";
 			auto s= typeinfo</typeof(expected)/>.element_count;
-			if( text.size() <= s || text.subrange_end(s) != expected )
+			if( text.size() < s || text.subrange_end(s) != expected )
 			{
 				return ust::null_optional;
 			}
@@ -161,7 +161,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			// Bool true
 			auto &constexpr expected= "true";
 			auto s= typeinfo</typeof(expected)/>.element_count;
-			if( text.size() <= s || text.subrange_end(s) != expected )
+			if( text.size() < s || text.subrange_end(s) != expected )
 			{
 				return ust::null_optional;
 			}
@@ -264,6 +264,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 						return ust::null_optional;
 					}
 
+					SkipWhitespaces( text );
 					if( text.empty() || text.front() != ":"c8 )
 					{
 						return ust::null_optional;
@@ -306,7 +307,7 @@ fn SkipWhitespaces( ust::string_view8 &mut text )
 {
 	while( !text.empty() )
 	{
-		switch(text.front())
+		switch( text.front() )
 		{
 			" "c8, "\t"c8, "\r"c8, "\n"c8 -> { text.drop_front(); },
 			default -> { break; }

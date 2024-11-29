@@ -158,10 +158,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		{
 			logger.LogError( "Failed to parse build graph JSON." );
 		}
-		else
-		{
-			logger.LogError( SerializeJsonValuePretty( json_parsed.try_deref() ) );
-		}
 	}
 	else
 	{
