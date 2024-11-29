@@ -170,6 +170,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	logger.LogInfo( "Successfully finished the build!" );
 
+	// TODO - maybe fail the build if failed to serialize the build graph?
+	WriteFile(
+		logger,
+		package_build_directory + "/build_graph.json",
+		SerializeBuildGraph( build_graph ) );
+
 	return 0;
 }
 

@@ -46,4 +46,6 @@ struct BuildGraph
 
 fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool;
 
+fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
+
 } // namespace BK
