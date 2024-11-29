@@ -945,3 +945,76 @@ def BreakReferenceIndirectionDepthExceededWithInheritance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+
+
+def BreakReferenceIndirectionDepthExceededWithInheritance_Test1():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Some( this, A& other );
+			fn virtual pure MutateReferencedVariable( this );
+		}
+		class B : A
+		{
+			i32 &mut x_;
+			fn constructor( i32 &mut x ) @(pollution)
+				( x_= x )
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] constexpr pollution[ [ "0a", "1_" ] ];
+
+			fn virtual override Some( this, A& other )
+			{
+				var i32 &mut x_ref= x_; // Hold a mutable reference to this reference field.
+				other.MutateReferencedVariable(); // Mutate referenced variable of "other". This may lead to a potenital shared mutable access, if "this" and "other" is the same object.
+			}
+			fn virtual override MutateReferencedVariable( this )
+			{
+				++x_;
+			}
+		}
+		static_assert( typeinfo</B/>.reference_tag_count == 1s );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var B b(x);
+			// Pass "b" two times into the same function.
+			// This doesn't trigger a reference protection error for inner reference tag of "b", since it's casted to "A" with no references indide.
+			b.Some( b );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+
+
+def BreakReferenceIndirectionDepthExceededWithInheritance_Test2():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Some( this );
+			fn virtual pure MutateReferencedVariable( this );
+		}
+		class B : A
+		{
+			i32 &mut x_;
+			fn constructor( i32 &mut x ) @(pollution)
+				( x_= x )
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] constexpr pollution[ [ "0a", "1_" ] ];
+
+			fn virtual override Some( this )
+			{
+				var i32 &mut x_ref= x_; // Hold a mutable reference to this reference field.
+				var A& a= this; // Perform reference cast here.
+				a.MutateReferencedVariable(); // Get the second mutable access to the stored inner reference, which violates single mutable reference rule.
+			}
+			fn virtual override MutateReferencedVariable( this )
+			{
+				++x_; // Modify referenced variable, when another mutable reference to it exists.
+			}
+		}
+		static_assert( typeinfo</B/>.reference_tag_count == 1s );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
