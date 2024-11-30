@@ -151,10 +151,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var ust::string8 build_graph_state_file_path= package_build_directory + "/build_graph.json";
 
+	// Load previous build graph state.
+	var ust::optional</BuildGraph/> mut prev_build_graph;
 	if_var( &prev_build_graph_file : ReadFile( build_graph_state_file_path ) )
 	{
-		auto prev_build_graph_opt= DeserializeBuildGraph( prev_build_graph_file );
-		if( prev_build_graph_opt.empty() )
+		prev_build_graph= DeserializeBuildGraph( prev_build_graph_file );
+		if( prev_build_graph.empty() )
 		{
 			logger.LogError( "Failed to deserialize previous build graph state" );
 		}
@@ -186,11 +188,22 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	logger.LogInfo( "Successfully finished the build!" );
 
-	// TODO - maybe fail the build if failed to serialize the build graph?
-	WriteFile(
-		logger,
-		build_graph_state_file_path,
-		SerializeBuildGraph( build_graph ) );
+	if( prev_build_graph.empty() || prev_build_graph.try_deref() != build_graph )
+	{
+		// If build graph on disk is equal to what we have now, avoid re-writing it.
+
+		logger.LogVerbose( "Build graph seems to be updated. Rewrite it." );
+
+		// TODO - maybe fail the build if failed to serialize the build graph?
+		WriteFile(
+			logger,
+			build_graph_state_file_path,
+			SerializeBuildGraph( build_graph ) );
+	}
+	else
+	{
+		logger.LogVerbose( "Skip updating on-disk build graph state." );
+	}
 
 	return 0;
 }

@@ -40,6 +40,7 @@ struct BuildGraph
 
 	// Nodes of the graph in some unspecified order.
 	// Use vector to make index-based access possible.
+	// Generally this order should be deterministic in order to allow fast build graph change check by just comparing its list of nodes.
 	ust::vector</Node/> nodes;
 
 	// Edges aren't stored explicitly - input/output edges (files) are stored in nodes.
