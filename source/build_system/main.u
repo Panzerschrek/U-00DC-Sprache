@@ -153,10 +153,10 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	if_var( &prev_build_graph_file : ReadFile( build_graph_state_file_path ) )
 	{
-		var ust::optional</JsonValue/> json_parsed= ParseJson( prev_build_graph_file );
-		if( json_parsed.empty() )
+		auto prev_build_graph_opt= DeserializeBuildGraph( prev_build_graph_file );
+		if( prev_build_graph_opt.empty() )
 		{
-			logger.LogError( "Failed to parse build graph JSON." );
+			logger.LogError( "Failed to deserialize previous build graph state" );
 		}
 	}
 	else

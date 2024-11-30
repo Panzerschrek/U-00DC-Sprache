@@ -8,8 +8,11 @@ namespace BK
 // Directed (normally) acyclic graph.
 // Nodes in build graph are commands, edges are files.
 // Caution! File paths should be normalized!
+//
+// If this is changed, serialization/deserialization code must be changed too!
 struct BuildGraph
 {
+	// If this is changed, serialization/deserialization code must be changed too!
 	struct Node
 	{
 		// Program to run.
@@ -47,5 +50,6 @@ struct BuildGraph
 fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool;
 
 fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
+fn DeserializeBuildGraph( ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>;
 
 } // namespace BK
