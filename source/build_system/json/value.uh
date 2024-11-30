@@ -60,18 +60,4 @@ private:
 	ust::variant</ tup[ Null, Bool, Number, String, ust::box</Array/>, ust::box</Object/> ] /> contents_;
 }
 
-// Returns empty optional if failed to parse.
-// WARNING! This code is very poorly tested!
-fn ParseJson( ust::string_view8 json_text ) : ust::optional</JsonValue/>;
-
-// Create text representation for this value.
-// WARNING! This code is very poorly tested!
-fn SerializeJsonValue( JsonValue& value ) : ust::string8;
-
-// Append text repreentation to given string.
-// WARNING! This code is very poorly tested!
-fn SerializeJsonValue( ust::string8 &mut out, JsonValue& value );
-
-fn SerializeJsonValuePretty( JsonValue& value ) : ust::string8;
-
 } // namespace BK

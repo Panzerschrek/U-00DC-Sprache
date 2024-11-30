@@ -1,0 +1,16 @@
+import "value.uh"
+
+namespace BK
+{
+
+// Create text representation for this value.
+// WARNING! This code is very poorly tested!
+fn SerializeJsonValue( JsonValue& value ) : ust::string8;
+
+// Append text repreentation to given string.
+// WARNING! This code is very poorly tested!
+fn SerializeJsonValue( ust::string8 &mut out, JsonValue& value );
+
+fn SerializeJsonValuePretty( JsonValue& value ) : ust::string8;
+
+} // namespace BK

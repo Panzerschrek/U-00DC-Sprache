@@ -1,0 +1,263 @@
+import "/string_conversions.u"
+import "serialization.uh"
+
+namespace BK
+{
+
+fn SerializeJsonValue( JsonValue& value ) : ust::string8
+{
+	var ust::string8 mut res;
+	SerializeJsonValue( res, value );
+	return res;
+}
+
+fn SerializeJsonValue( ust::string8 &mut out, JsonValue& value )
+{
+	if_var( &null_value : value.AsNull() )
+	{
+		SerializeJsonValueImpl( out, null_value );
+	}
+	else if_var( &bool_value : value.AsBool() )
+	{
+		SerializeJsonValueImpl( out, bool_value );
+	}
+	else if_var( &number_value : value.AsNumber() )
+	{
+		SerializeJsonValueImpl( out, number_value );
+	}
+	else if_var( &string_value : value.AsString() )
+	{
+		SerializeJsonValueImpl( out, string_value );
+	}
+	else if_var( &array_value : value.AsArray() )
+	{
+		SerializeJsonValueImpl( out, array_value );
+	}
+	else if_var( &object_value : value.AsObject() )
+	{
+		SerializeJsonValueImpl( out, object_value );
+	}
+}
+
+fn SerializeJsonValuePretty( JsonValue& value ) : ust::string8
+{
+	var ust::string8 mut res;
+	SerializeJsonValuePrettyImpl( res, 0u, value );
+	return res;
+}
+
+fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Null null_value )
+{
+	SerializeJsonNull( out, null_value );
+}
+
+fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Bool bool_value )
+{
+	SerializeJsonBool( out, bool_value );
+}
+
+fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Number number_value )
+{
+	SerializeJsonNumber( out, number_value );
+}
+
+fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::String& string_value )
+{
+	SerializeJsonString( out, string_value );
+}
+
+fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Array& array_value )
+{
+	out.push_back( "["c8 );
+
+	foreach( &sub_value : array_value )
+	{
+		SerializeJsonValue( out, sub_value );
+		out.push_back( ","c8 );
+	}
+
+	if( !array_value.empty() )
+	{
+		out.pop_back(); // Remove trailing comma
+	}
+
+	out.push_back( "]"c8 );
+}
+
+fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Object& object_value )
+{
+	out.push_back( "{"c8 );
+
+	foreach( &pair : object_value )
+	{
+		SerializeJsonString( out, pair.key() );
+		out.push_back( ":"c8 );
+		SerializeJsonValue( out, pair.value() );
+		out.push_back( ","c8 );
+	}
+
+	if( !object_value.empty() )
+	{
+		out.pop_back(); // Remove trailing comma
+	}
+
+	out.push_back( "}"c8 );
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue& value )
+{
+	if_var( &null_value : value.AsNull() )
+	{
+		SerializeJsonValuePrettyImpl( out, indentation, null_value );
+	}
+	else if_var( &bool_value : value.AsBool() )
+	{
+		SerializeJsonValuePrettyImpl( out, indentation, bool_value );
+	}
+	else if_var( &number_value : value.AsNumber() )
+	{
+		SerializeJsonValuePrettyImpl( out, indentation, number_value );
+	}
+	else if_var( &string_value : value.AsString() )
+	{
+		SerializeJsonValuePrettyImpl( out, indentation, string_value );
+	}
+	else if_var( &array_value : value.AsArray() )
+	{
+		SerializeJsonValuePrettyImpl( out, indentation, array_value );
+	}
+	else if_var( &object_value : value.AsObject() )
+	{
+		SerializeJsonValuePrettyImpl( out, indentation, object_value );
+	}
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue::Null null_value )
+{
+	ust::ignore_unused( indentation );
+	SerializeJsonNull( out, null_value );
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue::Bool bool_value )
+{
+	ust::ignore_unused( indentation );
+	SerializeJsonBool( out, bool_value );
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue::Number number_value )
+{
+	ust::ignore_unused( indentation );
+	SerializeJsonNumber( out, number_value );
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue::String& string_value )
+{
+	ust::ignore_unused( indentation );
+	SerializeJsonString( out, string_value );
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue::Array& array_value )
+{
+	if( array_value.empty() )
+	{
+		out += "[]";
+	}
+	else
+	{
+		out += "[\n";
+
+		var size_type mut index= 0s;
+		foreach( &sub_value : array_value )
+		{
+			out.push_back( size_type(indentation + 1u), "\t"c8 );
+
+			SerializeJsonValuePrettyImpl( out, indentation + 1u, sub_value );
+
+			++index;
+			if( index < array_value.size() )
+			{
+				out.push_back( ","c8 );
+			}
+			out.push_back( "\n"c8 );
+		}
+
+		out.push_back( size_type(indentation), "\t"c8 );
+		out.push_back( "]"c8 );
+	}
+}
+
+fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue::Object& object_value )
+{
+	if( object_value.empty() )
+	{
+		out += "{}";
+	}
+	else
+	{
+		out += "{\n";
+
+		var size_type mut index= 0s;
+		foreach( &pair : object_value )
+		{
+			out.push_back( size_type(indentation + 1u), "\t"c8 );
+
+			SerializeJsonString( out, pair.key() );
+
+			out+= " : ";
+			SerializeJsonValuePrettyImpl( out, indentation + 1u, pair.value() );
+
+			++index;
+			if( index < object_value.size() )
+			{
+				out.push_back( ","c8 );
+			}
+			out.push_back( "\n"c8 );
+		}
+
+		out.push_back( size_type(indentation ), "\t"c8 );
+		out.push_back( "}"c8 );
+	}
+}
+
+fn SerializeJsonNull( ust::string8 &mut out, JsonValue::Null null_value )
+{
+	ust::ignore_unused( null_value );
+	out+= "null";
+}
+
+fn SerializeJsonBool( ust::string8 &mut out, JsonValue::Bool bool_value )
+{
+	if( bool_value )
+	{
+		out+= "true";
+	}
+	else
+	{
+		out+= "false";
+	}
+}
+
+fn SerializeJsonNumber( ust::string8 &mut out, JsonValue::Number number_value )
+{
+	// TODO - perform proper float serialization.
+	out+= ust::to_string8( i64(number_value) );
+}
+
+fn SerializeJsonString( ust::string8 &mut out, JsonValue::String& string_value )
+{
+	out.push_back( "\""c8 );
+
+	foreach( c : string_value )
+	{
+		switch(c)
+		{
+			"\""c8, "\\"c8, "/"c8, "\b"c8, "\f"c8, "\n"c8, "\r"c8, "\t"c8 -> { out.push_back( "\\"c8 ); },
+			default -> {}
+		}
+		 out.push_back(c);
+	}
+
+	out.push_back( "\""c8 );
+}
+
+} // namespace BK

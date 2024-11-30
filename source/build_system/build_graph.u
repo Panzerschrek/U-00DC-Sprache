@@ -2,7 +2,7 @@ import "/scoped_array.u"
 import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
-import "json.uh"
+import "json/serialization.uh"
 import "make_dep_file.uh"
 import "process.uh"
 
