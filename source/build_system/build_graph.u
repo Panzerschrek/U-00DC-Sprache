@@ -389,19 +389,7 @@ fn PerformGraphBuild(
 
 			logger.LogInfo( "[" + ust::to_string8(displayed_build_step_index) + "/" + num_nodes_to_rebuild_str + "] Building \"" + node_to_rebuild.comment + "\"." );
 
-			var ust::vector</ust::string_view8/> mut command_line;
-
-			// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-			if(false)
-			{
-				command_line.push_back( node_to_rebuild.command_line.front() );
-			}
-			for( auto mut i= 0s; i < node_to_rebuild.command_line.size(); ++i )
-			{
-				command_line.push_back( node_to_rebuild.command_line[i] );
-			}
-
-			if( !RunExecutable( node_to_rebuild.program, command_line ) )
+			if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
 			{
 				logger.LogError( "Command \"" + node_to_rebuild.comment + "\" execution failed." );
 				return false;
@@ -453,6 +441,24 @@ enum BuildGraphNodeState
 	Ready,
 	RebuildRequired,
 	RebuildInProgress,
+}
+
+fn ViewOfStringsToVectorOfViews( ust::array_view_imut</ust::string8/> strings )
+	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var ust::vector</ust::string_view8/> mut res;
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if(false)
+	{
+		res.push_back( strings.front() );
+	}
+	for( auto mut i= 0s; i < strings.size(); ++i )
+	{
+		res.push_back( strings[i] );
+	}
+
+	return res;
 }
 
 fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
