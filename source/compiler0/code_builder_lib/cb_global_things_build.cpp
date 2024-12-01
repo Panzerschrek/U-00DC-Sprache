@@ -808,6 +808,28 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				REPORT_ERROR( UnusedReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 			}
 		}
+
+		// Forbid changing inner references in inheritance.
+		// Otherwise it may be possible to break reference checking rules by using virtual methods.
+		// Forbidding changing inner references ensures that no control for inner references can be skipped by casting a reference to a base with less inner references.
+		for( const Class::Parent& parent : the_class.parents )
+		{
+			const Class& parent_class= *parent.class_;
+			if( the_class.inner_references.size() != parent_class.inner_references.size() )
+			{
+				REPORT_ERROR( NotImplemented, the_class.members->GetErrors(), class_declaration.src_loc, "changing number of inner references in inheritance" );
+			}
+			else
+			{
+				for( size_t i= 0; i < the_class.inner_references.size(); ++i )
+				{
+					if( the_class.inner_references[i].kind != parent_class.inner_references[i].kind )
+						REPORT_ERROR( NotImplemented, the_class.members->GetErrors(), class_declaration.src_loc, "changing inner reference kind in inheritance." );
+					if( the_class.inner_references[i].second_order_kind != parent_class.inner_references[i].second_order_kind )
+						REPORT_ERROR( NotImplemented, the_class.members->GetErrors(), class_declaration.src_loc, "changing second order inner reference kind in inheritance" );
+				}
+			}
+		}
 	}
 
 	// Fill llvm struct type fields
