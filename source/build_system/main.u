@@ -180,7 +180,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	// This executes the build.
-	if( !PerformGraphBuild( logger, build_graph ) )
+	if( !PerformGraphBuild( logger, build_graph, prev_build_graph.as_ref() ) )
 	{
 		logger.LogError( "Build failed." );
 		return -1;

@@ -48,7 +48,13 @@ struct BuildGraph
 	// Edges witohut end nodes are possible too - like for result files (executables, shared libraries, etc.).
 }
 
-fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool;
+// Perform the build, possibly rebuilding only necessary parts of the graph.
+// Optional previous graph state may be provided. If it's empty, the full build will be triggered.
+// Returns true on success.
+fn PerformGraphBuild(
+	Logger &mut logger,
+	BuildGraph& build_graph,
+	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt ) : bool;
 
 fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
 fn DeserializeBuildGraph( ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>;
