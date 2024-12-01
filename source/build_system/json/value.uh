@@ -1,0 +1,71 @@
+import "/box.u"
+import "/string.u"
+import "/unordered_map.u"
+import "/variant.u"
+import "/vector.u"
+
+namespace BK
+{
+
+class JsonValue
+{
+public:
+	struct Null{}
+
+	type Bool = bool;
+
+	type Number= f64; // Json numbers are 64-bit floats.
+
+	type String= ust::string8;
+
+	type Array= ust::vector</JsonValue/>;
+
+	type Object= ust::unordered_map</String, JsonValue/>;
+
+public:
+	fn constructor() = delete; // Prevent default construction. If needed, construct a null value instead.
+
+	// Copy methods. Perform deep copy, so, it's better to avoid using them.
+	fn constructor( mut this, JsonValue& other );
+	op=(mut this, JsonValue& other );
+
+	// Convert from specific value kind.
+	fn conversion_constructor( Null null_value );
+	fn conversion_constructor( Bool bool_value );
+	fn conversion_constructor( Number number_value );
+	fn conversion_constructor( String string_value );
+	fn conversion_constructor( ust::string_view8 string_value );
+	fn conversion_constructor( Array array_value );
+	fn conversion_constructor( Object object_value );
+
+	// Equality-compare. Two values are the same, if they have the same kind and contents.
+	op==( JsonValue& l, JsonValue& r ) : bool;
+
+	// Access methods.
+
+	fn AsNull(  mut this ) : ust::optional_ref_mut </Null/> @( return_inner_references );
+	fn AsNull( imut this ) : ust::optional_ref_imut</Null/> @( return_inner_references );
+
+	fn AsBool(  mut this ) : ust::optional_ref_mut </Bool/> @( return_inner_references );
+	fn AsBool( imut this ) : ust::optional_ref_imut</Bool/> @( return_inner_references );
+
+	fn AsNumber(  mut this ) : ust::optional_ref_mut </Number/> @( return_inner_references );
+	fn AsNumber( imut this ) : ust::optional_ref_imut</Number/> @( return_inner_references );
+
+	fn AsString(  mut this ) : ust::optional_ref_mut </String/> @( return_inner_references );
+	fn AsString( imut this ) : ust::optional_ref_imut</String/> @( return_inner_references );
+
+	fn AsArray(  mut this ) : ust::optional_ref_mut </Array/> @( return_inner_references );
+	fn AsArray( imut this ) : ust::optional_ref_imut</Array/> @( return_inner_references );
+
+	fn AsObject(  mut this ) : ust::optional_ref_mut </Object/> @( return_inner_references );
+	fn AsObject( imut this ) : ust::optional_ref_imut</Object/> @( return_inner_references );
+
+private:
+	auto constexpr return_inner_references= ust::reference_notation::return_inner_references::param0;
+
+private:
+	ust::variant</ tup[ Null, Bool, Number, String, ust::box</Array/>, ust::box</Object/> ] /> contents_;
+}
+
+} // namespace BK

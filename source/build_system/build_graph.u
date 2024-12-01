@@ -1,7 +1,10 @@
 import "/scoped_array.u"
+import "/string_conversions.u"
 import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
+import "json/parsing.uh"
+import "json/serialization.uh"
 import "make_dep_file.uh"
 import "process.uh"
 
@@ -9,7 +12,10 @@ import "process.uh"
 namespace BK
 {
 
-fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
+fn PerformGraphBuild(
+	Logger &mut logger,
+	BuildGraph& build_graph,
+	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt ) : bool
 {
 	// Collect dep-files.
 	scoped_array ust::optional</MakeDepFile/> mut nodes_dep_files[ build_graph.nodes.size() ];
@@ -18,223 +24,257 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 		pair.second= LoadAndParseDepFile( logger, pair.first.dep_file );
 	}
 
-	// Collect and deduplicate all files.
-	var ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> /> mut files_with_modification_time;
-
-	foreach( &node : build_graph.nodes )
-	{
-		foreach( &file : node.input_files )
-		{
-			files_with_modification_time.insert( file, ust::null_optional );
-		}
-		foreach( &file : node.output_files )
-		{
-			files_with_modification_time.insert( file, ust::null_optional );
-		}
-	}
-
-	foreach( &dep_file_opt : nodes_dep_files )
-	{
-		if_var( &dep_file : dep_file_opt )
-		{
-			files_with_modification_time.insert( dep_file.destination, ust::null_optional );
-			foreach( &dependency : dep_file.dependencies )
-			{
-				files_with_modification_time.insert( dependency, ust::null_optional );
-			}
-		}
-	}
-
-	// Get modification times for all files.
-	foreach( &mut map_value : files_with_modification_time )
-	{
-		var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
-		map_value.value() = modification_time;
-	}
-
-	// Mark nodes to rebuild.
 	scoped_array bool mut nodes_to_rebuild[ build_graph.nodes.size() ]( false );
-	for( auto mut i= 0s; i < build_graph.nodes.size(); ++i ) label nodes_loop
+
+	if_var( &prev_build_graph : prev_build_graph_opt )
 	{
-		var BuildGraph::Node& node= build_graph.nodes[i];
-		var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+		// Has previous graph state. Determine nodes to rebuild based on file modification times.
 
-		var bool &mut need_to_rebuild = nodes_to_rebuild[i];
+		// Collect and deduplicate all files.
+		var ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> /> mut files_with_modification_time;
 
-		if( !node.dep_file.empty() && dep_file_opt.empty() )
+		foreach( &node : build_graph.nodes )
 		{
-			// No dep file where it should be - rebuild is needed.
-			logger.LogVerbose( "No dep file for command \"" + node.comment + "\" - mark for rebuild." );
-			need_to_rebuild= true;
-			continue label nodes_loop;
+			foreach( &file : node.input_files )
+			{
+				files_with_modification_time.insert( file, ust::null_optional );
+			}
+			foreach( &file : node.output_files )
+			{
+				files_with_modification_time.insert( file, ust::null_optional );
+			}
 		}
 
-		if_var( &dep_file : dep_file_opt )
+		foreach( &dep_file_opt : nodes_dep_files )
 		{
-			if( files_with_modification_time[dep_file.destination].empty() )
+			if_var( &dep_file : dep_file_opt )
 			{
-				logger.LogVerbose( "No output file \"" + dep_file.destination + "\" for command \"" + node.comment + "\" - mark for rebuild." );
-				need_to_rebuild= true;
-				continue label nodes_loop;
-			}
-			foreach( &dependency : dep_file.dependencies )
-			{
-				if( files_with_modification_time[dependency].empty() )
+				files_with_modification_time.insert( dep_file.destination, ust::null_optional );
+				foreach( &dependency : dep_file.dependencies )
 				{
-					logger.LogVerbose( "No input file \"" + dependency + "\" for command \"" + node.comment + "\" - mark for rebuild." );
-					need_to_rebuild= true;
-					continue label nodes_loop;
+					files_with_modification_time.insert( dependency, ust::null_optional );
 				}
 			}
 		}
 
-		foreach( &input_file : node.input_files )
+		// Get modification times for all files.
+		foreach( &mut map_value : files_with_modification_time )
 		{
-			if( files_with_modification_time[input_file].empty() )
-			{
-				logger.LogVerbose( "No input file \"" + input_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
-				need_to_rebuild= true;
-				continue label nodes_loop;
-			}
+			var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
+			map_value.value() = modification_time;
 		}
 
-		foreach( &output_file : node.output_files )
-		{
-			if( files_with_modification_time[output_file].empty() )
-			{
-				logger.LogVerbose( "No output file \"" + output_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
-				need_to_rebuild= true;
-				continue label nodes_loop;
-			}
-		}
-
-		// At this point we have all files needed present. Compare their timesmaps.
-
-		var FileModificationTime mut min_output_modification_time(0);
-		--min_output_modification_time; // Trigger underflow to maximum value.
-
-		var FileModificationTime mut max_input_modification_time(0);
-
-		foreach( &output_file : node.output_files )
-		{
-			min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[output_file].try_deref() );
-		}
-
-		foreach( &input_file : node.input_files )
-		{
-			max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[input_file].try_deref() );
-		}
-
-		if_var( &dep_file : dep_file_opt )
-		{
-			min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[dep_file.destination].try_deref() );
-			foreach( &dependency : dep_file.dependencies )
-			{
-				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[dependency].try_deref() );
-			}
-		}
-
-		// Rebuild is requiret if the newest changed input file is newer than the oldest changed output file.
-		// Use >= instead of > in order to handle case with not enough precision in timestamps.
-		need_to_rebuild = max_input_modification_time >= min_output_modification_time;
-		if( need_to_rebuild )
-		{
-			logger.LogVerbose( "One of input files of the command \"" + node.comment + "\" is newer than one of output files - mark for rebuild." );
-		}
-	}
-
-	// TODO - check also previous build graph.
-	// If a node is new - command/command line and/or input/output files were changed - require rebuild for this node.
-
-	// Mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
-	{
-		// Create a map for graph traversal speed-up.
-		var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut input_file_to_node_id_map;
-		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+		// Mark nodes to rebuild.
+		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i ) label nodes_loop
 		{
 			var BuildGraph::Node& node= build_graph.nodes[i];
 			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
 
-			foreach( &input_file : node.input_files )
+			var bool &mut need_to_rebuild = nodes_to_rebuild[i];
+
+			// Check if we have this node in the previous build graph state.
+			// If not - rebuild is required.
+			// This may be if for example a new file to build was added, or if command line was changed.
+			// TODO - speed-up this, avoid using linear search.
+			var bool mut has_this_node_in_prev_build_graph = false;
+			foreach( &prev_node : prev_build_graph.nodes )
 			{
-				if( input_file_to_node_id_map.exists( input_file ) )
+				if( prev_node == node ) // Compare all, including even command-line args, comment, input/output files.
 				{
-					input_file_to_node_id_map[input_file].push_back(i);
+					has_this_node_in_prev_build_graph= true;
+					break;
 				}
-				else
-				{
-					input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
-				}
+			}
+
+			if( !has_this_node_in_prev_build_graph )
+			{
+				logger.LogVerbose( "Command \"" + node.comment + "\" seems to be missing in the previous build graph - mark for rebuild." );
+				need_to_rebuild= true;
+				continue label nodes_loop;
+			}
+
+			if( !node.dep_file.empty() && dep_file_opt.empty() )
+			{
+				// No dep file where it should be - rebuild is needed.
+				logger.LogVerbose( "No dep file for command \"" + node.comment + "\" - mark for rebuild." );
+				need_to_rebuild= true;
+				continue label nodes_loop;
 			}
 
 			if_var( &dep_file : dep_file_opt )
 			{
+				if( files_with_modification_time[dep_file.destination].empty() )
+				{
+					logger.LogVerbose( "No output file \"" + dep_file.destination + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+					need_to_rebuild= true;
+					continue label nodes_loop;
+				}
 				foreach( &dependency : dep_file.dependencies )
 				{
-					if( input_file_to_node_id_map.exists( dependency ) )
+					if( files_with_modification_time[dependency].empty() )
 					{
-						input_file_to_node_id_map[dependency].push_back(i);
-					}
-					else
-					{
-						input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
+						logger.LogVerbose( "No input file \"" + dependency + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+						need_to_rebuild= true;
+						continue label nodes_loop;
 					}
 				}
 			}
-		}
 
-		// Push initial nodes to rebuild to stack.
-		var ust::vector</size_type/> mut stack;
-		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
-		{
-			if( nodes_to_rebuild[i] )
+			foreach( &input_file : node.input_files )
 			{
-				logger.LogVerbose( "Push node \"" + build_graph.nodes[i].comment + "\" to search stack." );
-				stack.push_back(i);
+				if( files_with_modification_time[input_file].empty() )
+				{
+					logger.LogVerbose( "No input file \"" + input_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+					need_to_rebuild= true;
+					continue label nodes_loop;
+				}
 			}
-		}
-
-		// Since we mark visited nodes and thus visit them only once, infinite loop isn't possible here - in case of bad graph with cycles.
-		scoped_array bool mut visited_nodes[ build_graph.nodes.size() ]( false );
-		while( !stack.empty() )
-		{
-			var size_type node_id= stack.pop_back();
-
-			if( visited_nodes[node_id] )
-			{
-				continue;
-			}
-			visited_nodes[node_id]= true;
-
-			var BuildGraph::Node& node= build_graph.nodes[node_id];
-			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[node_id];
-
-			logger.LogVerbose( "Visit node \"" + node.comment + "\"." );
-
-			if( !nodes_to_rebuild[node_id] )
-			{
-				nodes_to_rebuild[node_id]= true;
-
-				logger.LogVerbose( "Mark command \"" + node.comment + "\" for rebuild, since one of its dependencies is also marked for rebuild." );
-			}
-
-			// If this node is marked for rebuild - mark for rebuild also nodes which use outputs of this node as inputs.
 
 			foreach( &output_file : node.output_files )
 			{
-				if_var( &nodes : input_file_to_node_id_map.find( output_file ) )
+				if( files_with_modification_time[output_file].empty() )
 				{
-					stack.append( nodes.iter() );
+					logger.LogVerbose( "No output file \"" + output_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+					need_to_rebuild= true;
+					continue label nodes_loop;
 				}
+			}
+
+			// At this point we have all files needed present. Compare their timesmaps.
+
+			var FileModificationTime mut min_output_modification_time(0);
+			--min_output_modification_time; // Trigger underflow to maximum value.
+
+			var FileModificationTime mut max_input_modification_time(0);
+
+			foreach( &output_file : node.output_files )
+			{
+				min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[output_file].try_deref() );
+			}
+
+			foreach( &input_file : node.input_files )
+			{
+				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[input_file].try_deref() );
 			}
 
 			if_var( &dep_file : dep_file_opt )
 			{
-				if_var( &nodes : input_file_to_node_id_map.find( dep_file.destination ) )
+				min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[dep_file.destination].try_deref() );
+				foreach( &dependency : dep_file.dependencies )
 				{
-					stack.append( nodes.iter() );
+					max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[dependency].try_deref() );
 				}
 			}
+
+			// Rebuild is requiret if the newest changed input file is newer than the oldest changed output file.
+			// Use >= instead of > in order to handle case with not enough precision in timestamps.
+			need_to_rebuild = max_input_modification_time >= min_output_modification_time;
+			if( need_to_rebuild )
+			{
+				logger.LogVerbose( "One of input files of the command \"" + node.comment + "\" is newer than one of output files - mark for rebuild." );
+			}
+		}
+
+		// Mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
+		{
+			// Create a map for graph traversal speed-up.
+			var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut input_file_to_node_id_map;
+			for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+			{
+				var BuildGraph::Node& node= build_graph.nodes[i];
+				var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+				foreach( &input_file : node.input_files )
+				{
+					if( input_file_to_node_id_map.exists( input_file ) )
+					{
+						input_file_to_node_id_map[input_file].push_back(i);
+					}
+					else
+					{
+						input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
+					}
+				}
+
+				if_var( &dep_file : dep_file_opt )
+				{
+					foreach( &dependency : dep_file.dependencies )
+					{
+						if( input_file_to_node_id_map.exists( dependency ) )
+						{
+							input_file_to_node_id_map[dependency].push_back(i);
+						}
+						else
+						{
+							input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
+						}
+					}
+				}
+			}
+
+			// Push initial nodes to rebuild to stack.
+			var ust::vector</size_type/> mut stack;
+			for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+			{
+				if( nodes_to_rebuild[i] )
+				{
+					logger.LogVerbose( "Push node \"" + build_graph.nodes[i].comment + "\" to search stack." );
+					stack.push_back(i);
+				}
+			}
+
+			// Since we mark visited nodes and thus visit them only once, infinite loop isn't possible here - in case of bad graph with cycles.
+			scoped_array bool mut visited_nodes[ build_graph.nodes.size() ]( false );
+			while( !stack.empty() )
+			{
+				var size_type node_id= stack.pop_back();
+
+				if( visited_nodes[node_id] )
+				{
+					continue;
+				}
+				visited_nodes[node_id]= true;
+
+				var BuildGraph::Node& node= build_graph.nodes[node_id];
+				var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[node_id];
+
+				logger.LogVerbose( "Visit node \"" + node.comment + "\"." );
+
+				if( !nodes_to_rebuild[node_id] )
+				{
+					nodes_to_rebuild[node_id]= true;
+
+					logger.LogVerbose( "Mark command \"" + node.comment + "\" for rebuild, since one of its dependencies is also marked for rebuild." );
+				}
+
+				// If this node is marked for rebuild - mark for rebuild also nodes which use outputs of this node as inputs.
+
+				foreach( &output_file : node.output_files )
+				{
+					if_var( &nodes : input_file_to_node_id_map.find( output_file ) )
+					{
+						stack.append( nodes.iter() );
+					}
+				}
+
+				if_var( &dep_file : dep_file_opt )
+				{
+					if_var( &nodes : input_file_to_node_id_map.find( dep_file.destination ) )
+					{
+						stack.append( nodes.iter() );
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// No previous build graph. Rebuild all.
+		logger.LogVerbose( "No previous build graph state - perform full rebuild." );
+
+		foreach( &mut need_to_rebuild : nodes_to_rebuild )
+		{
+			need_to_rebuild= true;
 		}
 	}
 
@@ -278,7 +318,18 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeState::RebuildRequired : BuildGraphNodeState::Ready );
 		}
 
-		loop
+		var size_type mut num_nodes_to_rebuild= 0s;
+		foreach( need_to_rebuild : nodes_to_rebuild )
+		{
+			if( need_to_rebuild )
+			{
+				++num_nodes_to_rebuild;
+			}
+		}
+		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
+		logger.LogVerbose( "Has " + num_nodes_to_rebuild_str + " nodes to rebuild." );
+
+		for( var size_type mut displayed_build_step_index= 1s; displayed_build_step_index <= num_nodes_to_rebuild; ++displayed_build_step_index )
 		{
 			// Select a node to rebuild - which dependencies are all ready.
 			// TODO - speed-up this, replace linear search with something more satisfying.
@@ -335,21 +386,9 @@ fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool
 
 			var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
 
-			var ust::vector</ust::string_view8/> mut command_line;
+			logger.LogInfo( "[" + ust::to_string8(displayed_build_step_index) + "/" + num_nodes_to_rebuild_str + "] Building \"" + node_to_rebuild.comment + "\"." );
 
-			// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-			if(false)
-			{
-				command_line.push_back( node_to_rebuild.command_line.front() );
-			}
-			for( auto mut i= 0s; i < node_to_rebuild.command_line.size(); ++i )
-			{
-				command_line.push_back( node_to_rebuild.command_line[i] );
-			}
-
-			logger.LogInfo( "Building \"" + node_to_rebuild.comment + "\"." );
-
-			if( !RunExecutable( node_to_rebuild.program, command_line ) )
+			if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
 			{
 				logger.LogError( "Command \"" + node_to_rebuild.comment + "\" execution failed." );
 				return false;
@@ -401,6 +440,229 @@ enum BuildGraphNodeState
 	Ready,
 	RebuildRequired,
 	RebuildInProgress,
+}
+
+fn ViewOfStringsToVectorOfViews( ust::array_view_imut</ust::string8/> strings )
+	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var ust::vector</ust::string_view8/> mut res;
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if(false)
+	{
+		res.push_back( strings.front() );
+	}
+	for( auto mut i= 0s; i < strings.size(); ++i )
+	{
+		res.push_back( strings[i] );
+	}
+
+	return res;
+}
+
+fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
+{
+	// TODO - automate this (somehow).
+
+	var JsonValue::Object mut build_graph_object;
+
+	{
+		var JsonValue::Array mut nodes_array;
+		foreach( &node : build_graph.nodes )
+		{
+			var JsonValue::Object mut node_value;
+
+			node_value.insert( "program", node.program );
+
+			{
+				var JsonValue::Array mut command_line_array;
+				foreach( &command_line_argument : node.command_line )
+				{
+					command_line_array.push_back( command_line_argument );
+				}
+				node_value.insert( "command_line", move(command_line_array) );
+			}
+
+			node_value.insert( "comment", node.comment );
+
+			node_value.insert( "dep_file", node.dep_file );
+
+			{
+				var JsonValue::Array mut input_files_array;
+				foreach( &input_file : node.input_files )
+				{
+					input_files_array.push_back( input_file );
+				}
+				node_value.insert( "input_files", move(input_files_array) );
+			}
+
+			{
+				var JsonValue::Array mut output_files_array;
+				foreach( &output_file : node.output_files )
+				{
+					output_files_array.push_back( output_file );
+				}
+				node_value.insert( "output_files", move(output_files_array) );
+			}
+
+			nodes_array.push_back( move(node_value) );
+		}
+
+		build_graph_object.insert( "nodes", move(nodes_array) );
+	}
+
+	// TODO - compress result string somohow.
+	// It should contain a lot of duplicated paths or at least path prefixes.
+	// Compresion is needed to speed-up writing build graph state on disk.
+	return SerializeJsonValuePretty( move(build_graph_object) );
+}
+
+fn DeserializeBuildGraph(  ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>
+{
+	// TODO - automate this (somehow).
+
+	var ust::optional</JsonValue/> json_parsed_opt= ParseJson( build_graph_serialized );
+	if( json_parsed_opt.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	var JsonValue& json_parsed= json_parsed_opt.try_deref();
+
+	var BuildGraph mut build_graph;
+
+	if_var( &build_graph_object : json_parsed.AsObject() )
+	{
+		if_var( &nodes : build_graph_object.find( "nodes" ) )
+		{
+			if_var( &nodes_array : nodes.AsArray() )
+			{
+				foreach( &node_json : nodes_array )
+				{
+					if_var( &node_object : node_json.AsObject() )
+					{
+						var BuildGraph::Node mut out_node;
+
+						if_var( &program : node_object.find( "program" ) )
+						{
+							if_var( &program_string : program.AsString() )
+							{
+								out_node.program= program_string;
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+
+						if_var( &command_line : node_object.find( "command_line" ) )
+						{
+							auto mut command_line_opt= DeserializeStringList( command_line );
+							if( command_line_opt.empty() )
+							{
+								return ust::null_optional;
+							}
+							out_node.command_line= command_line_opt.try_take();
+						}
+
+						if_var( &comment : node_object.find( "comment" ) )
+						{
+							if_var( &comment_string : comment.AsString() )
+							{
+								out_node.comment= comment_string;
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+
+						if_var( &dep_file : node_object.find( "dep_file" ) )
+						{
+							if_var( &dep_file_string : dep_file.AsString() )
+							{
+								out_node.dep_file= dep_file_string;
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+
+						if_var( &input_files : node_object.find( "input_files" ) )
+						{
+							auto mut input_files_opt= DeserializeStringList( input_files );
+							if( input_files_opt.empty() )
+							{
+								return ust::null_optional;
+							}
+							out_node.input_files= input_files_opt.try_take();
+						}
+
+						if_var( &output_files : node_object.find( "output_files" ) )
+						{
+							auto mut output_files_opt= DeserializeStringList( output_files );
+							if( output_files_opt.empty() )
+							{
+								return ust::null_optional;
+							}
+							out_node.output_files= output_files_opt.try_take();
+						}
+
+						build_graph.nodes.push_back( move(out_node) );
+					}
+					else
+					{
+						// Node isn't object.
+						return ust::null_optional;
+					}
+				} // for nodes array.
+			}
+			else
+			{
+				// Nodes isn't array.
+				return ust::null_optional;
+			}
+		}
+		else
+		{
+			// No nodes.
+			return ust::null_optional;
+		}
+	}
+	else
+	{
+		// Not an object.
+		return ust::null_optional;
+	}
+
+	return move(build_graph);
+}
+
+fn DeserializeStringList( JsonValue& value ) : ust::optional</ ust::vector</ ust::string8 /> />
+{
+	if_var( &value_array : value.AsArray() )
+	{
+		var ust::vector</ ust::string8 /> mut res;
+
+		foreach( &array_element : value_array )
+		{
+			if_var( &string : array_element.AsString() )
+			{
+				res.push_back( string );
+			}
+			else
+			{
+				return ust::null_optional;
+			}
+		}
+
+		return move(res);
+	}
+	else
+	{
+		return ust::null_optional;
+	}
 }
 
 } // namespace BK

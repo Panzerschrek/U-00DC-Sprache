@@ -1,0 +1,211 @@
+import "value.uh"
+
+namespace BK
+{
+
+fn JsonValue::constructor( mut this, JsonValue& other )
+{
+	// Implement copy constructor via assignment operator.
+	this= other;
+}
+
+op JsonValue::=( mut this, JsonValue& other )
+{
+	if_var( &null_value : other.AsNull() )
+	{
+		contents_= null_value;
+	}
+	else if_var( &bool_value : other.AsBool() )
+	{
+		contents_= bool_value;
+	}
+	else if_var( &number_value : other.AsNumber() )
+	{
+		contents_= number_value;
+	}
+	else if_var( &string_value : other.AsString() )
+	{
+		contents_= string_value;
+	}
+	else if_var( &array_value : other.AsArray() )
+	{
+		contents_= ust::make_box( array_value );
+	}
+	else if_var( &object_value : other.AsObject() )
+	{
+		contents_= ust::make_box( object_value );
+	}
+}
+
+fn JsonValue::conversion_constructor( Null null_value )
+	( contents_( null_value ) )
+{
+}
+
+fn JsonValue::conversion_constructor( Bool bool_value )
+	( contents_( bool_value ) )
+{
+}
+
+fn JsonValue::conversion_constructor( Number number_value )
+	( contents_( number_value ) )
+{
+}
+
+fn JsonValue::conversion_constructor( String mut string_value )
+	( contents_( move(string_value) ) )
+{
+}
+
+fn JsonValue::conversion_constructor( ust::string_view8 string_value )
+	( contents_( String(string_value) ) )
+{
+}
+
+fn JsonValue::conversion_constructor( Array mut array_value )
+	( contents_( ust::make_box( move(array_value) ) ) )
+{
+}
+
+fn JsonValue::conversion_constructor( Object mut object_value )
+	( contents_( ust::make_box( move(object_value) ) ) )
+{
+}
+
+op JsonValue::==( JsonValue& l, JsonValue& r ) : bool
+{
+	if( l.contents_.index() != r.contents_.index() )
+	{
+		return false;
+	}
+
+	if_var( &null_value : l.AsNull() )
+	{
+		return null_value == r.AsNull().try_deref();
+	}
+	else if_var( &bool_value : l.AsBool() )
+	{
+		return bool_value == r.AsBool().try_deref();
+	}
+	else if_var( &number_value : l.AsNumber() )
+	{
+		return number_value == r.AsNumber().try_deref();
+	}
+	else if_var( &string_value : l.AsString() )
+	{
+		return string_value == r.AsString().try_deref();
+	}
+	else if_var( &array_value : l.AsArray() )
+	{
+		return array_value == r.AsArray().try_deref();
+	}
+	else if_var( &l_object_value : l.AsObject() )
+	{
+		// TODO - implement proper ust::unordered_map::op==
+
+		var Object& r_object_value= r.AsObject().try_deref();
+		if( l_object_value.size() != r_object_value.size() )
+		{
+			return false; // Different size - maps aren't equal.
+		}
+
+		foreach( &l_pair : l_object_value )
+		{
+			if_var( r_value : r_object_value.find( l_pair.key() ) )
+			{
+				if( l_pair.value() != r_value )
+				{
+					return false; // Values with the same key different - maps aren't equal.
+				}
+			}
+			else
+			{
+				return false; // No value in the right map - maps aren't equal.
+			}
+		}
+
+		return true;
+	}
+	else
+	{
+		halt; // Unhandled kind.
+	}
+}
+
+fn JsonValue::AsNull(  mut this ) : ust::optional_ref_mut </Null/> @( return_inner_references )
+{
+	return contents_.get</Null/>();
+}
+
+fn JsonValue::AsNull( imut this ) : ust::optional_ref_imut</Null/> @( return_inner_references )
+{
+	return contents_.get</Null/>();
+}
+
+fn JsonValue::AsBool(  mut this ) : ust::optional_ref_mut </Bool/> @( return_inner_references )
+{
+	return contents_.get</Bool/>();
+}
+
+fn JsonValue::AsBool( imut this ) : ust::optional_ref_imut</Bool/> @( return_inner_references )
+{
+	return contents_.get</Bool/>();
+}
+
+fn JsonValue::AsNumber(  mut this ) : ust::optional_ref_mut </Number/> @( return_inner_references )
+{
+	return contents_.get</Number/>();
+}
+
+fn JsonValue::AsNumber( imut this ) : ust::optional_ref_imut</Number/> @( return_inner_references )
+{
+	return contents_.get</Number/>();
+}
+
+fn JsonValue::AsString(  mut this ) : ust::optional_ref_mut </String/> @( return_inner_references )
+{
+	return contents_.get</String/>();
+}
+
+fn JsonValue::AsString( imut this ) : ust::optional_ref_imut</String/> @( return_inner_references )
+{
+	return contents_.get</String/>();
+}
+
+fn JsonValue::AsArray(  mut this ) : ust::optional_ref_mut </Array/> @( return_inner_references )
+{
+	if_var( &mut arr : contents_.get</ ust::box</Array/> />() )
+	{
+		return arr.deref();
+	}
+	return ust::null_optional_ref;
+}
+
+fn JsonValue::AsArray( imut this ) : ust::optional_ref_imut</Array/> @( return_inner_references )
+{
+	if_var( &arr : contents_.get</ ust::box</Array/> />() )
+	{
+		return arr.deref();
+	}
+	return ust::null_optional_ref;
+}
+
+fn JsonValue::AsObject(  mut this ) : ust::optional_ref_mut </Object/> @( return_inner_references )
+{
+	if_var( &mut obj : contents_.get</ ust::box</Object/> />() )
+	{
+		return obj.deref();
+	}
+	return ust::null_optional_ref;
+}
+
+fn JsonValue::AsObject( imut this ) : ust::optional_ref_imut</Object/> @( return_inner_references )
+{
+	if_var( &obj : contents_.get</ ust::box</Object/> />() )
+	{
+		return obj.deref();
+	}
+	return ust::null_optional_ref;
+}
+
+} // namespace BK

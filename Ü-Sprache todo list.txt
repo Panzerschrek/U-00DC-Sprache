@@ -152,8 +152,6 @@ CPP Header converter:
 Ü Build system:
 *) Improve build directories creation code - create all directories within given path, handle cases when a directory
 	already exists, handle case where a non-directory object (like a file) with given name exists
-*) Incremental build - trigger rebuild if command line is changed (like import directories, optimization options, etc.)
-*) Build graph - store it on disk and read it to compare its state against previous version
 *) Build graph - support for a command execution of an abitrary function, not only external executable
 *) Ü library target type (bitcode library)
 *) Dependencies between targets
@@ -167,6 +165,8 @@ CPP Header converter:
 *) Support generated headers
 *) Cross-compilation support
 *) Multiple packages support
+*) Fix JSON floats serialization
+*) Simplify structs to/from json conversion by using template code with typeinfo and mixins usage
 *) Prevent imports ouside allowed import directories
 *) Prevent name comflicts in imports (where multiple files exist for the given import path)
 *) Reuse build script shared library among different build confugurations and target triples (build only one copy)
