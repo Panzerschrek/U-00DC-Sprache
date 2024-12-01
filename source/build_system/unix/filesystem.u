@@ -46,7 +46,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated+= "\0";
 
-	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT, 0o755u ) );
+	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
 	if( fd == -1 )
 	{
 		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( BKGetErrno() ) ) ) );
@@ -188,5 +188,6 @@ fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
 auto constexpr O_RDONLY = 0o0;
 auto constexpr O_WRONLY = 0o1;
 auto constexpr O_CREAT = 0o100;
+auto constexpr O_TRUNC = 0o1000;
 
 auto constexpr ERANGE = 34;

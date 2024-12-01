@@ -8,8 +8,11 @@ namespace BK
 // Directed (normally) acyclic graph.
 // Nodes in build graph are commands, edges are files.
 // Caution! File paths should be normalized!
+//
+// If this is changed, serialization/deserialization code must be changed too!
 struct BuildGraph
 {
+	// If this is changed, serialization/deserialization code must be changed too!
 	struct Node
 	{
 		// Program to run.
@@ -37,6 +40,7 @@ struct BuildGraph
 
 	// Nodes of the graph in some unspecified order.
 	// Use vector to make index-based access possible.
+	// Generally this order should be deterministic in order to allow fast build graph change check by just comparing its list of nodes.
 	ust::vector</Node/> nodes;
 
 	// Edges aren't stored explicitly - input/output edges (files) are stored in nodes.
@@ -44,6 +48,15 @@ struct BuildGraph
 	// Edges witohut end nodes are possible too - like for result files (executables, shared libraries, etc.).
 }
 
-fn PerformGraphBuild( Logger &mut logger, BuildGraph& build_graph ) : bool;
+// Perform the build, possibly rebuilding only necessary parts of the graph.
+// Optional previous graph state may be provided. If it's empty, the full build will be triggered.
+// Returns true on success.
+fn PerformGraphBuild(
+	Logger &mut logger,
+	BuildGraph& build_graph,
+	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt ) : bool;
+
+fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
+fn DeserializeBuildGraph( ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>;
 
 } // namespace BK
