@@ -1,4 +1,5 @@
 import "/scoped_array.u"
+import "/string_conversions.u"
 import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
@@ -311,13 +312,25 @@ fn PerformGraphBuild(
 			}
 		}
 
+
 		scoped_array BuildGraphNodeState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeState::Ready );
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 		{
 			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeState::RebuildRequired : BuildGraphNodeState::Ready );
 		}
 
-		loop
+		var size_type mut num_nodes_to_rebuild= 0s;
+		foreach( need_to_rebuild : nodes_to_rebuild )
+		{
+			if( need_to_rebuild )
+			{
+				++num_nodes_to_rebuild;
+			}
+		}
+		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
+		logger.LogVerbose( "Has " + num_nodes_to_rebuild_str + " nodes to rebuild." );
+
+		for( var size_type mut displayed_build_step_index= 1s; displayed_build_step_index <= num_nodes_to_rebuild; ++displayed_build_step_index )
 		{
 			// Select a node to rebuild - which dependencies are all ready.
 			// TODO - speed-up this, replace linear search with something more satisfying.
@@ -374,6 +387,8 @@ fn PerformGraphBuild(
 
 			var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
 
+			logger.LogInfo( "[" + ust::to_string8(displayed_build_step_index) + "/" + num_nodes_to_rebuild_str + "] Building \"" + node_to_rebuild.comment + "\"." );
+
 			var ust::vector</ust::string_view8/> mut command_line;
 
 			// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
@@ -385,8 +400,6 @@ fn PerformGraphBuild(
 			{
 				command_line.push_back( node_to_rebuild.command_line[i] );
 			}
-
-			logger.LogInfo( "Building \"" + node_to_rebuild.comment + "\"." );
 
 			if( !RunExecutable( node_to_rebuild.program, command_line ) )
 			{
