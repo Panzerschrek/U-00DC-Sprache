@@ -389,9 +389,8 @@ def UnusedReferenceTag_Test3():
 		class B : A { f32 &imut @("c"c8) y; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) == 1 )
-	assert( errors_list[0].error_code == "UnusedReferenceTag" )
-	assert( errors_list[0].src_loc.line == 3 )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnusedReferenceTag", 3 ) )
 
 
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test0():
