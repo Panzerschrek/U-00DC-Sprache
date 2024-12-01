@@ -11,6 +11,7 @@ fn SerializeJsonValue( JsonValue& value ) : ust::string8;
 // WARNING! This code is very poorly tested!
 fn SerializeJsonValue( ust::string8 &mut out, JsonValue& value );
 
+// Create text representation for this value with somewhat nice formatting - newlines and tabs.
 fn SerializeJsonValuePretty( JsonValue& value ) : ust::string8;
 
 } // namespace BK

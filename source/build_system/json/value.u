@@ -38,38 +38,38 @@ op JsonValue::=( mut this, JsonValue& other )
 }
 
 fn JsonValue::conversion_constructor( Null null_value )
+	( contents_( null_value ) )
 {
-	contents_= null_value;
 }
 
 fn JsonValue::conversion_constructor( Bool bool_value )
+	( contents_( bool_value ) )
 {
-	contents_= bool_value;
 }
 
 fn JsonValue::conversion_constructor( Number number_value )
+	( contents_( number_value ) )
 {
-	contents_= number_value;
 }
 
 fn JsonValue::conversion_constructor( String mut string_value )
+	( contents_( move(string_value) ) )
 {
-	contents_= move(string_value);
 }
 
 fn JsonValue::conversion_constructor( ust::string_view8 string_value )
+	( contents_( String(string_value) ) )
 {
-	contents_= String(string_value);
 }
 
 fn JsonValue::conversion_constructor( Array mut array_value )
+	( contents_( ust::make_box( move(array_value) ) ) )
 {
-	contents_= ust::make_box( move(array_value) );
 }
 
 fn JsonValue::conversion_constructor( Object mut object_value )
+	( contents_( ust::make_box( move(object_value) ) ) )
 {
-	contents_= ust::make_box( move(object_value) );
 }
 
 op JsonValue::==( JsonValue& l, JsonValue& r ) : bool
@@ -142,7 +142,6 @@ fn JsonValue::AsNull( imut this ) : ust::optional_ref_imut</Null/> @( return_inn
 	return contents_.get</Null/>();
 }
 
-
 fn JsonValue::AsBool(  mut this ) : ust::optional_ref_mut </Bool/> @( return_inner_references )
 {
 	return contents_.get</Bool/>();
@@ -190,7 +189,6 @@ fn JsonValue::AsArray( imut this ) : ust::optional_ref_imut</Array/> @( return_i
 	}
 	return ust::null_optional_ref;
 }
-
 
 fn JsonValue::AsObject(  mut this ) : ust::optional_ref_mut </Object/> @( return_inner_references )
 {

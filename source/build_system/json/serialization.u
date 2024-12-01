@@ -251,10 +251,16 @@ fn SerializeJsonString( ust::string8 &mut out, JsonValue::String& string_value )
 	{
 		switch(c)
 		{
-			"\""c8, "\\"c8, "/"c8, "\b"c8, "\f"c8, "\n"c8, "\r"c8, "\t"c8 -> { out.push_back( "\\"c8 ); },
-			default -> {}
+			"\""c8 -> { out+= "\\\"" ; },
+			"\\"c8 -> { out+= "\\\\" ; },
+			"/"c8  -> { out+= "\\/" ; },
+			"\b"c8 -> { out+= "\\b" ; },
+			"\f"c8 -> { out+= "\\f" ; },
+			"\n"c8 -> { out+= "\\n" ; },
+			"\r"c8 -> { out+= "\\r" ; },
+			"\t"c8 -> { out+= "\\t" ; },
+			default -> { out.push_back(c); }
 		}
-		 out.push_back(c);
 	}
 
 	out.push_back( "\""c8 );

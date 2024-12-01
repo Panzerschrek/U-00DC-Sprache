@@ -391,7 +391,7 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 						}
 						if( cc <= 0x7Fu )
 						{
-							res.push_back( char8(c) );
+							res.push_back( char8(cc) );
 						}
 						else if( cc <= 0x7FFu )
 						{

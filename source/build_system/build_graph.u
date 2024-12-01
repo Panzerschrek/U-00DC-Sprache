@@ -312,7 +312,6 @@ fn PerformGraphBuild(
 			}
 		}
 
-
 		scoped_array BuildGraphNodeState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeState::Ready );
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 		{
