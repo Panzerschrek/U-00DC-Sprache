@@ -3,6 +3,40 @@ import "value.uh"
 namespace BK
 {
 
+fn JsonValue::constructor( mut this, JsonValue& other )
+{
+	// Implement copy constructor via assignment operator.
+	this= other;
+}
+
+op JsonValue::=( mut this, JsonValue& other )
+{
+	if_var( &null_value : other.AsNull() )
+	{
+		contents_= null_value;
+	}
+	else if_var( &bool_value : other.AsBool() )
+	{
+		contents_= bool_value;
+	}
+	else if_var( &number_value : other.AsNumber() )
+	{
+		contents_= number_value;
+	}
+	else if_var( &string_value : other.AsString() )
+	{
+		contents_= string_value;
+	}
+	else if_var( &array_value : other.AsArray() )
+	{
+		contents_= ust::make_box( array_value );
+	}
+	else if_var( &object_value : other.AsObject() )
+	{
+		contents_= ust::make_box( object_value );
+	}
+}
+
 fn JsonValue::conversion_constructor( Null null_value )
 {
 	contents_= null_value;

@@ -23,8 +23,13 @@ public:
 	type Object= ust::unordered_map</String, JsonValue/>;
 
 public:
-	fn constructor() = delete; // Prevent default construction. If needed, construct a null value.
+	fn constructor() = delete; // Prevent default construction. If needed, construct a null value instead.
 
+	// Copy methods. Perform deep copy, so, it's better to avoid using them.
+	fn constructor( mut this, JsonValue& other );
+	op=(mut this, JsonValue& other );
+
+	// Convert from specific value kind.
 	fn conversion_constructor( Null null_value );
 	fn conversion_constructor( Bool bool_value );
 	fn conversion_constructor( Number number_value );
@@ -33,7 +38,7 @@ public:
 	fn conversion_constructor( Array array_value );
 	fn conversion_constructor( Object object_value );
 
-	// TODO - add copy constructor.
+	// Access methods.
 
 	fn AsNull(  mut this ) : ust::optional_ref_mut </Null/> @( return_inner_references );
 	fn AsNull( imut this ) : ust::optional_ref_imut</Null/> @( return_inner_references );
