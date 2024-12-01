@@ -38,6 +38,9 @@ public:
 	fn conversion_constructor( Array array_value );
 	fn conversion_constructor( Object object_value );
 
+	// Equality-compare. Two values are the same, if they have the same kind and contents.
+	op==( JsonValue& l, JsonValue& r ) : bool;
+
 	// Access methods.
 
 	fn AsNull(  mut this ) : ust::optional_ref_mut </Null/> @( return_inner_references );

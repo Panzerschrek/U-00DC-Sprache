@@ -72,6 +72,66 @@ fn JsonValue::conversion_constructor( Object mut object_value )
 	contents_= ust::make_box( move(object_value) );
 }
 
+op JsonValue::==( JsonValue& l, JsonValue& r ) : bool
+{
+	if( l.contents_.index() != r.contents_.index() )
+	{
+		return false;
+	}
+
+	if_var( &null_value : l.AsNull() )
+	{
+		return null_value == r.AsNull().try_deref();
+	}
+	else if_var( &bool_value : l.AsBool() )
+	{
+		return bool_value == r.AsBool().try_deref();
+	}
+	else if_var( &number_value : l.AsNumber() )
+	{
+		return number_value == r.AsNumber().try_deref();
+	}
+	else if_var( &string_value : l.AsString() )
+	{
+		return string_value == r.AsString().try_deref();
+	}
+	else if_var( &array_value : l.AsArray() )
+	{
+		return array_value == r.AsArray().try_deref();
+	}
+	else if_var( &l_object_value : l.AsObject() )
+	{
+		// TODO - implement proper ust::unordered_map::op==
+
+		var Object& r_object_value= r.AsObject().try_deref();
+		if( l_object_value.size() != r_object_value.size() )
+		{
+			return false; // Different size - maps aren't equal.
+		}
+
+		foreach( &l_pair : l_object_value )
+		{
+			if_var( r_value : r_object_value.find( l_pair.key() ) )
+			{
+				if( l_pair.value() != r_value )
+				{
+					return false; // Values with the same key different - maps aren't equal.
+				}
+			}
+			else
+			{
+				return false; // No value in the right map - maps aren't equal.
+			}
+		}
+
+		return true;
+	}
+	else
+	{
+		halt; // Unhandled kind.
+	}
+}
+
 fn JsonValue::AsNull(  mut this ) : ust::optional_ref_mut </Null/> @( return_inner_references )
 {
 	return contents_.get</Null/>();
