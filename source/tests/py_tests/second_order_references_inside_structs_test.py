@@ -2963,6 +2963,24 @@ def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test6():
 	assert( HasError( errors_list, "MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag", 5 ) )
 
 
+def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test7():
+	c_program_text= """
+		struct A { i32 &imut r; }
+		struct B { i32 &mut  r; }
+		class C polymorph
+		{
+			A & @("a"c8) a;
+		}
+		class D : C // Inherit field with tag "a" with immutable second order inner reference.
+		{
+			B & @("a"c8) b; // Add field with tag "a" with mutable second order inner reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag", 8 ) )
+
+
 def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInside_Test0():
 	c_program_text= """
 		struct A{ i32 &mut x; }

@@ -816,24 +816,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		{
 			const Class& parent_class= *parent.class_;
 			if( the_class.inner_references.size() != parent_class.inner_references.size() )
-			{
 				REPORT_ERROR(
 					ChangingReferenceTagCountInInheritance,
 					the_class.members->GetErrors(),
 					class_declaration.src_loc,
 					parent_class.inner_references.size(),
 					the_class.inner_references.size() );
-			}
-			else
-			{
-				for( size_t i= 0; i < the_class.inner_references.size(); ++i )
-				{
-					if( the_class.inner_references[i].kind != parent_class.inner_references[i].kind )
-						REPORT_ERROR( NotImplemented, the_class.members->GetErrors(), class_declaration.src_loc, "changing inner reference kind in inheritance." );
-					if( the_class.inner_references[i].second_order_kind != parent_class.inner_references[i].second_order_kind )
-						REPORT_ERROR( NotImplemented, the_class.members->GetErrors(), class_declaration.src_loc, "changing second order inner reference kind in inheritance" );
-				}
-			}
+
+			// Inner reference kind mismatch/second order inner reference kind mismatch for each tag should be already checked.
 		}
 	}
 
