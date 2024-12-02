@@ -1059,3 +1059,63 @@ def BreakReferenceIndirectionDepthExceededWithInheritance_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+
+
+def ChangingReferenceTagCountInInheritance_Test0():
+	c_program_text= """
+		class A interface
+		{}
+		class B : A // Parent has no references, child has 1 reference inside.
+		{
+			i32& x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ChangingReferenceTagCountInInheritance", 4 ) )
+
+
+def ChangingReferenceTagCountInInheritance_Test1():
+	c_program_text= """
+		class A polymorph
+		{}
+		class B : A // Parent has no references, child has 1 reference inside.
+		{
+			i32& x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ChangingReferenceTagCountInInheritance", 4 ) )
+
+
+def ChangingReferenceTagCountInInheritance_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 & @("a"c8) x;
+		}
+		class B : A // Parent has 1 reference, child has 2 references inside.
+		{
+			i32 & @("b"c8) y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ChangingReferenceTagCountInInheritance", 6 ) )
+
+
+def ChangingReferenceTagCountInInheritance_Test3():
+	c_program_text= """
+		class A interface {}
+		class B polymorph
+		{
+			i32 & @("a"c8) x;
+		}
+		class C : A, B // Parent "A" has no references, child has 1 reference inside.
+		{
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ChangingReferenceTagCountInInheritance", 7 ) )

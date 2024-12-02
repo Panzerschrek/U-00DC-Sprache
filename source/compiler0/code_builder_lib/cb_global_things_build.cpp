@@ -817,7 +817,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			const Class& parent_class= *parent.class_;
 			if( the_class.inner_references.size() != parent_class.inner_references.size() )
 			{
-				REPORT_ERROR( NotImplemented, the_class.members->GetErrors(), class_declaration.src_loc, "changing number of inner references in inheritance" );
+				REPORT_ERROR(
+					ChangingReferenceTagCountInInheritance,
+					the_class.members->GetErrors(),
+					class_declaration.src_loc,
+					parent_class.inner_references.size(),
+					the_class.inner_references.size() );
 			}
 			else
 			{
