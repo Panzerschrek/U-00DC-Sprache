@@ -988,6 +988,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			{
 				with( &parent_class : parent.class_.lock_imut().deref() )
 				{
+					if( class_.inner_references.size() != parent_class.inner_references.size() )
+					{
+						// Forbid changing inner references in inheritance.
+						// Otherwise it may be possible to break reference checking rules by using virtual methods.
+						// Forbidding changing inner references ensures that no control for inner references can be skipped by casting a reference to a base with less inner references.
+						REPORT_ERROR(
+							ChangingReferenceTagCountInInheritance,
+							class_.members,
+							syntax_element.src_loc,
+							parent_class.inner_references.size(),
+							class_.inner_references.size() )
+					}
+
 					for( auto mut i= 0s; i < parent_class.inner_references.size(); ++i )
 					{
 						reference_tags_usage_flags[i]= true;
