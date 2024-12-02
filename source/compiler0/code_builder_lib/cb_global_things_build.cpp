@@ -747,10 +747,23 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 		for( const Class::Parent& parent : the_class.parents )
 		{
-			for( size_t i= 0; i < parent.class_->inner_references.size(); ++i )
+			const Class& parent_class= *parent.class_;
+
+			// Forbid changing inner references in inheritance.
+			// Otherwise it may be possible to break reference checking rules by using virtual methods.
+			// Forbidding changing inner references ensures that no control for inner references can be skipped by casting a reference to a base with less inner references.
+			if( the_class.inner_references.size() != parent_class.inner_references.size() )
+				REPORT_ERROR(
+					ChangingReferenceTagCountInInheritance,
+					the_class.members->GetErrors(),
+					class_declaration.src_loc,
+					parent_class.inner_references.size(),
+					the_class.inner_references.size() );
+
+			for( size_t i= 0; i < parent_class.inner_references.size(); ++i )
 			{
 				reference_tags_usage_flags[i]= true;
-				if( parent.class_->inner_references[i].kind != the_class.inner_references[i].kind )
+				if( parent_class.inner_references[i].kind != the_class.inner_references[i].kind )
 				{
 					std::string s;
 					s.push_back( char( 'a' + i ) );
@@ -807,23 +820,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				s.push_back( char( 'a' + i ) );
 				REPORT_ERROR( UnusedReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
 			}
-		}
-
-		// Forbid changing inner references in inheritance.
-		// Otherwise it may be possible to break reference checking rules by using virtual methods.
-		// Forbidding changing inner references ensures that no control for inner references can be skipped by casting a reference to a base with less inner references.
-		for( const Class::Parent& parent : the_class.parents )
-		{
-			const Class& parent_class= *parent.class_;
-			if( the_class.inner_references.size() != parent_class.inner_references.size() )
-				REPORT_ERROR(
-					ChangingReferenceTagCountInInheritance,
-					the_class.members->GetErrors(),
-					class_declaration.src_loc,
-					parent_class.inner_references.size(),
-					the_class.inner_references.size() );
-
-			// Inner reference kind mismatch/second order inner reference kind mismatch for each tag should be already checked.
 		}
 	}
 
