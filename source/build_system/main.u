@@ -31,16 +31,13 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return 0;
 	}
 
-	var Logger mut logger(
-		( options.verbose
-			? Logger::Level::Verbose
-			: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) );
+	var BuildSystemInterfaceImplementation mut bsi( options );
 
-	logger.LogInfo( "Bürokratie - the Ü build system!" );
+	bsi.logger_.LogInfo( "Bürokratie - the Ü build system!" );
 
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
 
-	logger.LogVerbose( "Build system executable directory path: \"" + exe_directory_path + "\"" );
+	bsi.logger_.LogVerbose( "Build system executable directory path: \"" + exe_directory_path + "\"" );
 
 	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
 	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
@@ -74,9 +71,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			? ( package_source_directory + "/build" )
 			: MakePathAbsolute( options.build_directory ) );
 
-	if( !EnsureDirectoryExists( logger, package_build_directory_base ) )
+	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory_base ) )
 	{
-		logger.LogError( "Can't create build directory." );
+		bsi.logger_.LogError( "Can't create build directory." );
 		return -1;
 	}
 
@@ -84,19 +81,19 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var ust::string8 package_build_directory =
 		package_build_directory_base + "/" + BuildConfigurationToString( options.build_configuration );
 
-	if( !EnsureDirectoryExists( logger, package_build_directory ) )
+	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory ) )
 	{
-		logger.LogError( "Can't create build directory." );
+		bsi.logger_.LogError( "Can't create build directory." );
 		return -1;
 	}
 
-	logger.LogVerbose( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
+	bsi.logger_.LogVerbose( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
 
 	// TODO - customize it based on package name?
 	auto constexpr entry_func_name = "GetPackageInfoImpl";
 
 	auto shared_library_opt = BuildAndLoadPackageBuildScript(
-		logger,
+		bsi.logger_,
 		build_system_paths,
 		package_source_directory,
 		// For now use directory for build configuration specified.
@@ -105,14 +102,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		entry_func_name );
 	if( shared_library_opt.empty() )
 	{
-		logger.LogError( "Failed to load/build the build script shared library." );
+		bsi.logger_.LogError( "Failed to load/build the build script shared library." );
 		return -1;
 	}
 
-	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( logger, entry_func_name );
+	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
 	if( ust::is_nullptr(func_raw_ptr) )
 	{
-		logger.LogError( "Failed to load function " + entry_func_name );
+		bsi.logger_.LogError( "Failed to load function " + entry_func_name );
 		return -1;
 	}
 
@@ -123,17 +120,13 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
 		typeinfo</ typeof(func_ptr) />.size_of ) );
 
-	var BuildSystemInterfaceImplementation mut build_system_interface( logger, options.build_configuration );
-
 	// Obtain package info by calling a shared library function.
-	var PackageInfo package_info= func_ptr( build_system_interface );
-
-	move(build_system_interface);
+	var PackageInfo package_info= func_ptr( bsi );
 
 	// Make sure package is valid and may be built. If it's not - do not bother performing further steps.
-	if( !PackageIsValid( logger, package_info ) )
+	if( !PackageIsValid( bsi.logger_, package_info ) )
 	{
-		logger.LogError( "Package is invald." );
+		bsi.logger_.LogError( "Package is invald." );
 		return -1;
 	}
 
@@ -141,9 +134,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	foreach( &build_target : package_info.build_targets )
 	{
 		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target.name );
-		if( !EnsureDirectoryExists( logger, dir_name ) )
+		if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
 		{
-			logger.LogError( "Can't create build directory for target \"" + build_target.name + "\"." );
+			bsi.logger_.LogError( "Can't create build directory for target \"" + build_target.name + "\"." );
 			return -1;
 		}
 	}
@@ -157,12 +150,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		prev_build_graph= DeserializeBuildGraph( prev_build_graph_file );
 		if( prev_build_graph.empty() )
 		{
-			logger.LogError( "Failed to deserialize previous build graph state" );
+			bsi.logger_.LogError( "Failed to deserialize previous build graph state" );
 		}
 	}
 	else
 	{
-		logger.LogInfo( "Can't load previous build graph state" );
+		bsi.logger_.LogInfo( "Can't load previous build graph state" );
 	}
 
 	// Build the build graph for the whole project.
@@ -179,29 +172,29 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	// This executes the build.
-	if( !PerformGraphBuild( logger, build_graph, prev_build_graph.as_ref() ) )
+	if( !PerformGraphBuild( bsi.logger_, build_graph, prev_build_graph.as_ref() ) )
 	{
-		logger.LogError( "Build failed." );
+		bsi.logger_.LogError( "Build failed." );
 		return -1;
 	}
 
-	logger.LogInfo( "Successfully finished the build!" );
+	bsi.logger_.LogInfo( "Successfully finished the build!" );
 
 	if( prev_build_graph.empty() || prev_build_graph.try_deref() != build_graph )
 	{
 		// If build graph on disk is equal to what we have now, avoid re-writing it.
 
-		logger.LogVerbose( "Build graph seems to be updated. Rewrite it." );
+		bsi.logger_.LogVerbose( "Build graph seems to be updated. Rewrite it." );
 
 		// TODO - maybe fail the build if failed to serialize the build graph?
 		WriteFile(
-			logger,
+			bsi.logger_,
 			build_graph_state_file_path,
 			SerializeBuildGraph( build_graph ) );
 	}
 	else
 	{
-		logger.LogVerbose( "Skip updating on-disk build graph state." );
+		bsi.logger_.LogVerbose( "Skip updating on-disk build graph state." );
 	}
 
 	return 0;
@@ -578,12 +571,15 @@ fn CreatePackageTargetBuildGraphNodes(
 class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {
 public:
-	fn constructor( Logger &mut logger, BuildConfiguration build_configuration )
-		@( ust::reference_notation::pollution::param0_param_1_reference )
-		( logger_= logger, build_configuration_= build_configuration )
+	fn constructor( Options& options )
+		( logger_(
+			( options.verbose
+				? Logger::Level::Verbose
+				: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) ),
+		build_configuration_= options.build_configuration )
 	{}
 
-public:
+public: // BuildSystemInterface
 	fn virtual final GetBuildConfiguration(this) : BuildConfiguration
 	{
 		return build_configuration_;
@@ -604,9 +600,12 @@ public:
 		logger_.LogError( message );
 	}
 
+public: // Provide direct access for some fields where it's safe to use them directly.
+	Logger logger_;
+
+	BuildConfiguration imut build_configuration_;
+
 private:
-	Logger &mut logger_;
-	BuildConfiguration build_configuration_;
 }
 
 } // namespace BK
