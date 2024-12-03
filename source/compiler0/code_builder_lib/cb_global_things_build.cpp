@@ -759,15 +759,23 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					class_declaration.src_loc,
 					parent_class.inner_references.size(),
 					the_class.inner_references.size() );
-
-			for( size_t i= 0; i < parent_class.inner_references.size(); ++i )
+			else
 			{
-				reference_tags_usage_flags[i]= true;
-				if( parent_class.inner_references[i].kind != the_class.inner_references[i].kind )
+				for( size_t i= 0; i < parent_class.inner_references.size(); ++i )
 				{
-					std::string s;
-					s.push_back( char( 'a' + i ) );
-					REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					reference_tags_usage_flags[i]= true;
+					if( parent_class.inner_references[i].kind != the_class.inner_references[i].kind )
+					{
+						std::string s;
+						s.push_back( char( 'a' + i ) );
+						REPORT_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					}
+					if( parent_class.inner_references[i].second_order_kind != the_class.inner_references[i].second_order_kind )
+					{
+						std::string s;
+						s.push_back( char( 'a' + i ) );
+						REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, the_class.members->GetErrors(), class_declaration.src_loc, s );
+					}
 				}
 			}
 		}
