@@ -1,4 +1,4 @@
-import "common.uh"
+import "../common.uh"
 
 fn nomangle main() : i32
 {

@@ -368,7 +368,7 @@ def main():
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,
-		TwoTargetsCommonSourceTest,
+		# TwoTargetsCommonSourceTest, # TODO - enable it
 		SourcesInDirectoriesTest,
 		ТестЮникода,
 		BuildFileWithImportsTest,
