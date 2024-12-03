@@ -32,7 +32,7 @@ function( CompileUSource u_source_file out_object )
 
 endfunction()
 
-file( GLOB BUILD_SYSTEM_HEADERS "*.uh" "json/*.uh" )
+file( GLOB BUILD_SYSTEM_HEADERS "*.uh" "json/*.uh" "imports/*.uh" )
 file( GLOB BUILD_SYSTEM_SOURCES "*.u" "json/*.u" )
 
 if( WIN32 )

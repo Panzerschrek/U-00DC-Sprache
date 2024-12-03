@@ -129,6 +129,13 @@ def MissingBuildFile():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
+def BuildScriptNullResultTest():
+	res = RunBuildSystemWithErrors( "build_script_null_result" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Failed to get package info - build script returned empty optional" ) != -1 )
+
+
 def BrokenBuildFile0Test():
 	res = RunBuildSystemWithErrors( "broken_build_file0" )
 	assert( res.returncode != 0 )
@@ -366,6 +373,7 @@ def main():
 		ТестЮникода,
 		BuildFileWithImportsTest,
 		MissingBuildFile,
+		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
 		BrokenBuildFile2Test,

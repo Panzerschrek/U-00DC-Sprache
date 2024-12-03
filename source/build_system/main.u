@@ -121,7 +121,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		typeinfo</ typeof(func_ptr) />.size_of ) );
 
 	// Obtain package info by calling a shared library function.
-	var PackageInfo package_info= func_ptr( bsi );
+	var ust::optional</PackageInfo/> package_info_opt= func_ptr( bsi );
+	if( package_info_opt.empty() )
+	{
+		bsi.logger_.LogError( "Failed to get package info - build script returned empty optional." );
+		return -1;
+	}
+
+	var PackageInfo& package_info= package_info_opt.try_deref();
 
 	// Make sure package is valid and may be built. If it's not - do not bother performing further steps.
 	if( !PackageIsValid( bsi.logger_, package_info ) )
@@ -258,7 +265,8 @@ fn BuildAndLoadPackageBuildScript(
 			build_script_wrapper_contents+= "\"\n\n";
 			build_script_wrapper_contents+= "fn nomangle ";
 			build_script_wrapper_contents+= entry_func_name;
-			build_script_wrapper_contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo\n";
+			build_script_wrapper_contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>\n";
+			// "GetPackageInfo" function itself may return "BK::PackageInfo", not optional of this type.
 			build_script_wrapper_contents += "{ return GetPackageInfo( build_system_interface ); }";
 			build_script_wrapper_contents+= "\n";
 

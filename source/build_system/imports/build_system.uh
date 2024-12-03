@@ -32,7 +32,9 @@ struct PackageInfo
 	ust::vector</BuildTarget/> build_targets;
 }
 
-type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_interface ) : PackageInfo;
+// Signature of a function that should return package info.
+// Returns empty optional in case of error.
+type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_interface ) : ust::optional</PackageInfo/>;
 
 // A class which provides necessary information for "GetPackageInfo" function and also contains some helper functions.
 // Use inheritance to avoid exposing build system internals to the build script.

@@ -46,6 +46,3 @@ For more info, run the build system executable using ``--help`` option.
 
 Since build scripts are normal Ü programs it's possible to trigger crash by using `halt` or by messing with unsafe code.
 Since build script code is running inside the build system process, the whole process is terminated if an error in one of build script occurs.
-
-For now there is no way to fail a build script gracefully.
-The only way is to use `halt` and thus trigger hard crash of the build system process.
