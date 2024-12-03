@@ -675,69 +675,6 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 15u );
 }
 
-U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		class A polymorph
-		{
-			fn constructor( A &imut other )= default;
-		}
-		class B : A
-		{
-			i32 &mut x;
-			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this, i32 & mut in_x ) @(pollution)
-			( x(in_x) )
-			{}
-			fn constructor( B &imut other )= default;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var A a= B(x); // Save refernce to 'x' in temp variable, but in initialization we loss this reference.
-			++x; // Ok,
-		}
-	)";
-
-	BuildProgram( c_program_text );
-}
-
-U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
-{
-	static const char c_program_text[]=
-	R"(
-		class A polymorph
-		{
-			fn constructor( A &imut other )= default;
-			op=( mut this, A &imut other )= default;
-		}
-		class B : A
-		{
-			i32 &mut x;
-			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-			fn constructor( this, i32 & mut in_x ) @(pollution)
-			( x(in_x) )
-			{}
-			fn constructor( B &imut other )= default;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var A mut a;
-			{
-				var B b(x); // Save reference to 'x' in 'b'.
-				a= b; // This assignment must not transfer reference fro 'b' to 'a'.
-			}
-			++x; // Ok,
-		}
-	)";
-
-	BuildProgram( c_program_text );
-}
-
 U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 {
 	static const char c_program_text[]=

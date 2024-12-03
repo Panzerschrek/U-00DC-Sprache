@@ -30,6 +30,8 @@ General:
 *) Functions with named parameters and ability to specify arguments in any order at call side usinig such names
 *) Create for each function a string variable constant like "__PRETTY_FUNCTION__" in order to fetch function
 	name inside it
+*) Allow default constructors for interfaces
+*) Allow zero-sized fields for interfaces (to create inner reference tags, for example)
 
 References:
 *) Support second order inner references for coroutine types
