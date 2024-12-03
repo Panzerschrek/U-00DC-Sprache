@@ -1,0 +1,55 @@
+### Idea
+
+It's necessary to isolate source and header files of different build targets from each other, in order to prevent possible mistakes.
+Such isolation may be achieved by ensuring source and header directories of each target are different.
+
+Isolation between packages seems to be easy.
+It's not possible to specify source files outside current package directory.
+The same thing is true for import directories.
+So, the isolation within a single package will be described below.
+
+Sources for a build target are provided as a list of individual files (using relative to the package root path).
+A common prefix (directory path) may be calculated based on sources list of a target.
+It should be forbidden for two targets to have common path prefix, including cases where one prefix is sub-prefix of another.
+Also it should be forbidden to place source files in the package root directory if this package contains more than one build target.
+
+Additionally to the list of source files a build target has a list of zero or many public imports paths - relative paths to directories containing public headers of this build target.
+The same rule as for source directories should be applied for public import directories - no two paths may be the same or be prefix of one another.
+Also source and public import paths of a single build target should be different.
+
+There is no (for now) plans to specify somehow private header directories of a target.
+It's unnecessary, since relative imports may be used to import headers from the sources directory of a build target.
+
+Generated sources and headers are managed differently.
+For each build target two directories are created within the build subdirectory of this build target - one for generated sources and private headers, one for generated public headers.
+They are (obviously) different and aren't subpaths of each other.
+
+
+### Compiler improvements
+
+The Ü compiler should be modified to enforce the model described above.
+
+There should be added an option for forbidding import of files outside specified import directories.
+If something is imported via misusing relative imports and "..", a compilation error should be generated.
+
+Also an option for specifying the build target source directories should be added.
+Importing files from these directories should be allowed.
+The build system should specify for this option the build target's source directory and generated sources directory.
+
+
+### Further enhancements
+
+An option for the compiler may be added for specifying which of imported directories are _public_.
+If a function is implemented whose prototype exists in an imported file from a _public_ directory, this function should be marked specially as imported function, using something like "default" visibility style from LLVM.
+Other functions (which implement prototypes from a _private_ header) should have "hidden" visibility.
+
+While linking an Ü library (LLVM bitcode file) all functions with "hidden" visibility should be internalized (made private in terms of LLVM).
+Only functions with "default" visibility should be preserved.
+
+While linking a native static library (archive), only functions with "default" visibility are allowed to have non-private linkage.
+
+While linking a native shared library (DLL, SO) only functions with "default" visibility should be exported.
+
+It's for now unclear what to do with executables.
+Generally the shouldn't export nothing except "main".
+But it may be needed for rare cases to export functions from executables.
