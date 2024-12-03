@@ -750,8 +750,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			const Class& parent_class= *parent.class_;
 
 			// Forbid changing inner references in inheritance.
-			// Otherwise it may be possible to break reference checking rules by using virtual methods.
-			// Forbidding changing inner references ensures that no control for inner references can be skipped by casting a reference to a base with less inner references.
+			// Otherwise it may be possible to break reference-checking rules by using virtual methods.
+			// Forbidding changing inner references ensures that no control for inner references can be skipped by casting a reference to a parent with less inner references.
 			if( the_class.inner_references.size() != parent_class.inner_references.size() )
 				REPORT_ERROR(
 					ChangingReferenceTagCountInInheritance,
