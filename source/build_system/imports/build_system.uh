@@ -15,6 +15,12 @@ enum BuildTargetType
 	// NativeStaticLibrary,
 }
 
+struct BuildTargetFullName
+{
+	// TODO - add package prefix.
+	ust::string8 name;
+}
+
 struct BuildTarget
 {
 	// Type of the build target. This should be specified explicitly.
@@ -29,6 +35,9 @@ struct BuildTarget
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
 	ust::vector</ust::string8/> source_files;
+
+	// List of dependencies, which should be also dependencies of build target dependent on this build target.
+	ust::vector</ BuildTargetFullName /> public_dependencies;
 }
 
 struct PackageInfo

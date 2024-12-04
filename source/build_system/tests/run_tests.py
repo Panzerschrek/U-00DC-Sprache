@@ -123,6 +123,11 @@ def LibraryTargetTest():
 	RunBuildSystem( "library_target" )
 
 
+def ExeDependsOnLibrartTest():
+	RunBuildSystem( "exe_depends_on_library" )
+	RunExecutable( "exe_depends_on_library", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -405,6 +410,7 @@ def main():
 		ТестЮникода,
 		BuildFileWithImportsTest,
 		LibraryTargetTest,
+		ExeDependsOnLibrartTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
