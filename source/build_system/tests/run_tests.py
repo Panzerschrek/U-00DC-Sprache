@@ -325,6 +325,34 @@ def InvalidSourceName6Test():
 	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
 
 
+def SourceDirectoriesConflict0Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+
+
+def SourceDirectoriesConflict1Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+
+
+def SourceDirectoriesConflict2Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"sub_dir\" of the build target \"target_b\" is located within the source directory of some another target." ) != -1 )
+
+
+def SourceDirectoriesConflict3Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is a prefix of the source directory of some another target." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -397,7 +425,11 @@ def main():
 		InvalidSourceName3Test,
 		InvalidSourceName4Test,
 		InvalidSourceName5Test,
-		InvalidSourceName6Test ]
+		InvalidSourceName6Test,
+		SourceDirectoriesConflict0Test,
+		SourceDirectoriesConflict1Test,
+		SourceDirectoriesConflict2Test,
+		SourceDirectoriesConflict3Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
