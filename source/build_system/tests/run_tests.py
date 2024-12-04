@@ -362,6 +362,20 @@ def SourceDirectoriesConflict3Test():
 	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is a prefix of the source directory of some another target." ) != -1 )
 
 
+def SelfDependencyTest():
+	res = RunBuildSystemWithErrors( "self_dependency" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"library_target\" depends on itself." ) != -1 )
+
+
+def MissingDependencyTest():
+	res = RunBuildSystemWithErrors( "missing_dependency" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency \"unknown_dependency\" of a build target \"hello_world\" not found." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -440,7 +454,9 @@ def main():
 		SourceDirectoriesConflict0Test,
 		SourceDirectoriesConflict1Test,
 		SourceDirectoriesConflict2Test,
-		SourceDirectoriesConflict3Test ]
+		SourceDirectoriesConflict3Test,
+		SelfDependencyTest,
+		MissingDependencyTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

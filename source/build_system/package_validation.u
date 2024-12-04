@@ -91,6 +91,34 @@ fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
 
 			prev_targets_source_directories.push_back( move(sources_directory) );
 		}
+
+		// Check if dependencies are correct.
+
+		// TODO - analyze also other packages.
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			if( public_dependency.name == build_target.name )
+			{
+				logger.LogError( "Build target \"" + target_name + "\" depends on itself." );
+				ok= false;
+			}
+
+			var bool mut found= false;
+			for( auto mut j= 0s; j < package_info.build_targets.size(); ++j )
+			{
+				if( package_info.build_targets[j].name == public_dependency.name )
+				{
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				logger.LogError( "Dependency \"" + public_dependency.name + "\" of a build target \"" + target_name + "\" not found." );
+				ok= false;
+			}
+		}
 	}
 
 	return ok;

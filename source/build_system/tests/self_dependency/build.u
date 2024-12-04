@@ -1,0 +1,12 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut target{ .name= "library_target", .target_type = BK::BuildTargetType::Library };
+	target.source_files.push_back( "lib.u" );
+	target.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "library_target" } );
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

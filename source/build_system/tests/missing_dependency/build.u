@@ -1,0 +1,13 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut target{ .name= "hello_world", .target_type = BK::BuildTargetType::Executable };
+	target.source_files.push_back( "main.u" );
+
+	target.public_dependencies.push_back( BK::BuildTargetFullName{ .name= "unknown_dependency" } );
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}
