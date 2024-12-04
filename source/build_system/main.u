@@ -516,9 +516,19 @@ fn CreatePackageTargetBuildGraphNodes(
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
 
 	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target.name );
-	if( target_is_windows )
+	switch( target.target_type )
 	{
-		result_target_file_path+= ".exe";
+		BuildTargetType::Executable ->
+		{
+			if( target_is_windows )
+			{
+				result_target_file_path+= ".exe";
+			}
+		},
+		BuildTargetType::Library ->
+		{
+			result_target_file_path+= ".bc";
+		},
 	}
 
 	var BuildGraph::Node mut node
@@ -545,12 +555,20 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	switch( target.target_type )
 	{
-		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-		BuildTargetType::Executable ->{ node.command_line.push_back( "-filetype=exe" ); },
+		BuildTargetType::Executable ->
+		{
+			// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+			node.command_line.push_back( "-filetype=exe" );
+			// Run internalization in order to export only "main".
+			node.command_line.push_back( "--internalize" );
+		},
+		BuildTargetType::Library ->
+		{
+			// Produce bitcode file.
+			node.command_line.push_back( "-filetype=bc" );
+			// TODO - run internalization, if necessary.
+		},
 	}
-
-	// Run internalization in order to export only "main".
-	node.command_line.push_back( "--internalize" );
 
 	// TODO - disable "pic" by default for windows target.
 	node.command_line.push_back( "--relocation-model" );

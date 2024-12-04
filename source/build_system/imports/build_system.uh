@@ -6,8 +6,13 @@ namespace BK
 
 enum BuildTargetType
 {
+	// Normal executable, which can be launched.
 	Executable,
-	// TODO - add other targets.
+	// Ü library, which can be used by other targets.
+	Library,
+	// TODO - enable these target types.
+	// SharedLibrary,
+	// NativeStaticLibrary,
 }
 
 struct BuildTarget

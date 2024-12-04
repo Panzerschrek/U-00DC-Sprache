@@ -119,7 +119,11 @@ def BuildFileWithImportsTest():
 	RunExecutable( "build_file_with_imports", "build_file_with_imports" )
 
 
-def MissingBuildFile():
+def LibraryTargetTest():
+	RunBuildSystem( "library_target" )
+
+
+def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
 	assert( res.returncode != 0 )
@@ -400,7 +404,8 @@ def main():
 		SourcesInDirectoriesTest,
 		ТестЮникода,
 		BuildFileWithImportsTest,
-		MissingBuildFile,
+		LibraryTargetTest,
+		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
