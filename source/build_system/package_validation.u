@@ -200,17 +200,12 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	var ust::vector</ust::vector</ust::string8/>/> mut sources_splitted_per_component;
 	foreach( &source : sources )
 	{
-		var ust::vector</ust::string8/> mut source_splitted;
-		foreach( &component : SplitPathIntoComponents(source) )
-		{
-			source_splitted.push_back( component );
-		}
-		sources_splitted_per_component.push_back( source_splitted );
+		sources_splitted_per_component.push_back( SplitPathIntoComponents(source).iter().collect</ ust::vector</ ust::string8 /> />() );
 	}
 
 	if( sources_splitted_per_component.size() == 1s )
 	{
-		// Special case - remove last component (presumably file name) and return it.
+		// Special case with only one file - remove last component (presumably file name) and return it.
 		var ust::vector</ust::string8/> mut result= sources_splitted_per_component.pop_back();
 		if( !result.empty() )
 		{
