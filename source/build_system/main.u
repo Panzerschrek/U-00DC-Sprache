@@ -547,15 +547,30 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.input_files.push_back( bc_file );
 	}
 
-	foreach( &public_dependency : target.public_dependencies )
+	switch( target.target_type )
 	{
-		// Assume this is a library dependency.
-		// TODO - process specially public dependencies of executables.
-		// TODO - check existence of a dependency first.
-		var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+		BuildTargetType::Executable ->
+		{
+			// For executables perform linking with public dependencies.
+			// TODO - link also private dependencies.
+			// TODO - link also transitive public dependencies.
+			foreach( &public_dependency : target.public_dependencies )
+			{
+				// Assume this is a library dependency.
+				// TODO - process specially public dependencies of executables.
+				// TODO - check if dependent target can be dependency (not an executable, for example).
+				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
 
-		node.command_line.push_back( lib_file );
-		node.input_files.push_back( lib_file );
+				node.command_line.push_back( lib_file );
+				node.input_files.push_back( lib_file );
+			}
+		},
+		BuildTargetType::Library ->
+		{
+			// Do not link public dependencies in libraries.
+			// Instead propatage them to the terminal target - executable or shared library.
+			// TODO - link private dependencies.
+		}
 	}
 
 	node.command_line.push_back( "-o" );
