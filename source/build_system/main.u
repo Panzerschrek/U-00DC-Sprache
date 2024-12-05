@@ -48,28 +48,28 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var BuildSystemPaths build_system_paths
 	{
-		.compiler_executable_path=
+		.compiler_executable_path= NormalizePath(
 			( options.compiler_executable_path.empty()
 				? default_compiler_executable_path
-				: MakePathAbsolute(options.compiler_executable_path) ),
-		.ustlib_path=
+				: MakePathAbsolute(options.compiler_executable_path) ) ),
+		.ustlib_path= NormalizePath(
 			( options.ustlib_path.empty()
 				? default_ustlib_path
-				: MakePathAbsolute(options.ustlib_path) ),
-		.build_system_imports_path=
+				: MakePathAbsolute(options.ustlib_path) ) ),
+		.build_system_imports_path= NormalizePath(
 			( options.build_system_imports_path.empty()
 				? default_build_system_imports_path
-				: MakePathAbsolute(options.build_system_imports_path) ),
+				: MakePathAbsolute(options.build_system_imports_path) ) ),
 	};
 
 	// If "options.root_package_directory" is empty this will become current directory.
-	var ust::string8 package_source_directory = MakePathAbsolute( options.root_package_directory );
+	var ust::string8 package_source_directory = NormalizePath( MakePathAbsolute( options.root_package_directory ) );
 
 	// By default use "build" directory within root package directory.
 	var ust::string8 package_build_directory_base =
 		( options.build_directory.empty()
 			? ( package_source_directory + "/build" )
-			: MakePathAbsolute( options.build_directory ) );
+			: NormalizePath( MakePathAbsolute( options.build_directory ) ) );
 
 	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory_base ) )
 	{
