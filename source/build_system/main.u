@@ -170,13 +170,20 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var BuildGraph mut build_graph;
 	foreach( &build_target : package_info.build_targets )
 	{
+		auto dependencies_opt= GetAllTargetPublicDependencies( bsi.logger_, package_info, build_target );
+		if( dependencies_opt.empty() )
+		{
+			bsi.logger_.LogError( "Failed to get list of dependencies for build target \"" + build_target.name + "\"." );
+			return -1;
+		}
+
 		CreatePackageTargetBuildGraphNodes(
 			build_system_paths,
 			package_source_directory,
 			package_build_directory,
 			options.build_configuration,
 			build_target,
-			GetAllTargetPublicDependencies( package_info, build_target ),
+			dependencies_opt.try_deref(),
 			build_graph );
 	}
 
@@ -623,21 +630,56 @@ fn CreatePackageTargetBuildGraphNodes(
 }
 
 // Returns all public dependencies, including transitive.
-fn GetAllTargetPublicDependencies( PackageInfo& package_info, BuildTarget& build_target ) : ust::vector</BuildTargetFullName/>
+// Returns null optional on error, like curcular dependency.
+fn GetAllTargetPublicDependencies(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>
 {
-	var ust::vector</BuildTargetFullName/> mut result;
-	GetAllTargetPublicDependencies_r( package_info, build_target, result );
+	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
+	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target, call_stack, result ) )
+	{
+		return ust::null_optional;
+	}
 
 	// Prevent duplicates.
 	ust::sort( result );
 	result.remove_adjacent_duplicates();
 
-	return result;
+	return move(result);
 }
 
-// TODO - detect dependency cycles.
-fn GetAllTargetPublicDependencies_r( PackageInfo& package_info, BuildTarget& build_target, ust::vector</BuildTargetFullName/> &mut result )
+// Returns true on success.
+fn GetAllTargetPublicDependencies_r(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	BuildTarget& build_target,
+	ust::vector</BuildTargetFullName/> &mut call_stack,
+	ust::vector</BuildTargetFullName/> &mut result ) : bool
 {
+	for( auto mut i= 0s; i < call_stack.size(); ++i )
+	{
+		if( build_target.name == call_stack[i].name )
+		{
+			var ust::string8 mut message= "Dependency loop detected: ";
+			for( auto mut j= i; j < call_stack.size(); ++j )
+			{
+				message += "\"";
+				message += call_stack[j].name;
+				message += "\"";
+				message += " -> ";
+			}
+			message += "\"";
+			message += build_target.name;
+			message += "\"";
+
+			logger.LogError( message );
+
+			return false;
+		}
+	}
+	call_stack.push_back( BuildTargetFullName{ .name= build_target.name } );
+
 	foreach( &public_dependency : build_target.public_dependencies )
 	{
 		result.push_back(public_dependency);
@@ -647,10 +689,17 @@ fn GetAllTargetPublicDependencies_r( PackageInfo& package_info, BuildTarget& bui
 		{
 			if( other_build_target.name == public_dependency.name )
 			{
-				GetAllTargetPublicDependencies_r( package_info, other_build_target, result );
+				if( !GetAllTargetPublicDependencies_r( logger, package_info, other_build_target, call_stack, result ) )
+				{
+					call_stack.pop_back();
+					return false;
+				}
 			}
 		}
 	}
+
+	call_stack.pop_back();
+	return true;
 }
 
 class BuildSystemInterfaceImplementation final : BuildSystemInterface

@@ -381,6 +381,20 @@ def MissingDependencyTest():
 	assert( stderr.find( "Dependency \"unknown_dependency\" of a build target \"hello_world\" not found." ) != -1 )
 
 
+def DependencyLoop0Test():
+	res = RunBuildSystemWithErrors( "dependency_loop0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyLoop1Test():
+	res = RunBuildSystemWithErrors( "dependency_loop1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -462,7 +476,9 @@ def main():
 		SourceDirectoriesConflict2Test,
 		SourceDirectoriesConflict3Test,
 		SelfDependencyTest,
-		MissingDependencyTest ]
+		MissingDependencyTest,
+		DependencyLoop0Test,
+		DependencyLoop1Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
