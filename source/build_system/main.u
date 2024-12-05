@@ -621,8 +621,17 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 		BuildConfiguration::Release ->
 		{
-			// Run full optimization, but not by using O3 - it isn't much better than O2.
-			node.command_line.push_back( "-O2" );
+			if( target.target_type == BuildTargetType::Library )
+			{
+				// Do not run optimization for library targets.
+				// Individual optimization of their source files was erformed earlier.
+				// Full optimization will be performed while using this library in some other target kind, like in executable.
+			}
+			else
+			{
+				// Run full optimization, but not by using O3 - it isn't much better than O2.
+				node.command_line.push_back( "-O2" );
+			}
 		},
 	}
 
