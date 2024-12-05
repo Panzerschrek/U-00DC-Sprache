@@ -1,0 +1,6 @@
+import "../imports/lib_a.uh"
+
+fn FloatInv( Float f ) : Float
+{
+	return FloatDiv( Float(1), f );
+}

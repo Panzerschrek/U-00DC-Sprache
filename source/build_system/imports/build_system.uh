@@ -19,6 +19,11 @@ struct BuildTargetFullName
 {
 	// TODO - add package prefix.
 	ust::string8 name;
+
+	op<=>( BuildTargetFullName& l, BuildTargetFullName& r ) : i32
+	{
+		return l.name <=> r.name;
+	}
 }
 
 struct BuildTarget

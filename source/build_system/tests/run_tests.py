@@ -128,6 +128,11 @@ def ExeDependsOnLibrartTest():
 	RunExecutable( "exe_depends_on_library", "exe" )
 
 
+def TransitiveLibraryDependencyTest():
+	RunBuildSystem( "transitive_library_dependency" )
+	RunExecutable( "transitive_library_dependency", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -425,6 +430,7 @@ def main():
 		BuildFileWithImportsTest,
 		LibraryTargetTest,
 		ExeDependsOnLibrartTest,
+		TransitiveLibraryDependencyTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
