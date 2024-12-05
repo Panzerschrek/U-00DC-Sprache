@@ -1,3 +1,4 @@
+import "/sort.u"
 import "package_validation.uh"
 import "path.uh"
 
@@ -91,36 +92,94 @@ fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
 
 			prev_targets_source_directories.push_back( move(sources_directory) );
 		}
+	}
 
-		// Check if dependencies are correct.
+	return ok;
+}
 
-		// TODO - analyze also other packages.
-		foreach( &public_dependency : build_target.public_dependencies )
+fn GetAllTargetPublicDependencies(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>
+{
+	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
+	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target, call_stack, result ) )
+	{
+		return ust::null_optional;
+	}
+
+	// Remove possible duplicates.
+	ust::sort( result );
+	result.remove_adjacent_duplicates();
+
+	return move(result);
+}
+
+// Returns true on success.
+fn GetAllTargetPublicDependencies_r(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	BuildTarget& build_target,
+	ust::vector</BuildTargetFullName/> &mut call_stack,
+	ust::vector</BuildTargetFullName/> &mut result ) : bool
+{
+	for( auto mut i= 0s; i < call_stack.size(); ++i )
+	{
+		if( build_target.name == call_stack[i].name )
 		{
-			if( public_dependency.name == build_target.name )
+			var ust::string8 mut message= "Dependency loop detected: ";
+			for( auto mut j= i; j < call_stack.size(); ++j )
 			{
-				logger.LogError( "Build target \"" + target_name + "\" depends on itself." );
-				ok= false;
+				message += "\"";
+				message += call_stack[j].name;
+				message += "\"";
+				message += " -> ";
 			}
+			message += "\"";
+			message += build_target.name;
+			message += "\"";
 
-			var bool mut found= false;
-			for( auto mut j= 0s; j < package_info.build_targets.size(); ++j )
-			{
-				if( package_info.build_targets[j].name == public_dependency.name )
-				{
-					found= true;
-					break;
-				}
-			}
+			logger.LogError( message );
 
-			if( !found )
-			{
-				logger.LogError( "Dependency \"" + public_dependency.name + "\" of a build target \"" + target_name + "\" not found." );
-				ok= false;
-			}
+			return false;
 		}
 	}
 
+	call_stack.push_back( BuildTargetFullName{ .name= build_target.name } );
+
+	var bool mut ok= true;
+
+	foreach( &public_dependency : build_target.public_dependencies )
+	{
+		if( public_dependency.name == build_target.name )
+		{
+			logger.LogError( "Build target \"" + build_target.name + "\" depends on itself." );
+			ok= false;
+			continue;
+		}
+
+		result.push_back(public_dependency);
+
+		var bool mut found= false;
+		// TODO - take dependencies from other packages too.
+		foreach( &other_build_target : package_info.build_targets )
+		{
+			if( other_build_target.name == public_dependency.name )
+			{
+				ok&= GetAllTargetPublicDependencies_r( logger, package_info, other_build_target, call_stack, result );
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			logger.LogError( "Dependency \"" + public_dependency.name + "\" of a build target \"" + build_target.name + "\" not found." );
+			ok= false;
+		}
+	}
+
+	call_stack.pop_back();
 	return ok;
 }
 

@@ -1,4 +1,3 @@
-import "/sort.u"
 import "/stdout.u"
 import "build_graph.uh"
 import "entry.uh"
@@ -636,79 +635,6 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	build_graph.nodes.push_back( move(node) );
-}
-
-// Returns all public dependencies, including transitive.
-// Returns null optional on error, like curcular dependency.
-fn GetAllTargetPublicDependencies(
-	Logger &mut logger,
-	PackageInfo& package_info,
-	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>
-{
-	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
-	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target, call_stack, result ) )
-	{
-		return ust::null_optional;
-	}
-
-	// Prevent duplicates.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
-
-	return move(result);
-}
-
-// Returns true on success.
-fn GetAllTargetPublicDependencies_r(
-	Logger &mut logger,
-	PackageInfo& package_info,
-	BuildTarget& build_target,
-	ust::vector</BuildTargetFullName/> &mut call_stack,
-	ust::vector</BuildTargetFullName/> &mut result ) : bool
-{
-	for( auto mut i= 0s; i < call_stack.size(); ++i )
-	{
-		if( build_target.name == call_stack[i].name )
-		{
-			var ust::string8 mut message= "Dependency loop detected: ";
-			for( auto mut j= i; j < call_stack.size(); ++j )
-			{
-				message += "\"";
-				message += call_stack[j].name;
-				message += "\"";
-				message += " -> ";
-			}
-			message += "\"";
-			message += build_target.name;
-			message += "\"";
-
-			logger.LogError( message );
-
-			return false;
-		}
-	}
-	call_stack.push_back( BuildTargetFullName{ .name= build_target.name } );
-
-	foreach( &public_dependency : build_target.public_dependencies )
-	{
-		result.push_back(public_dependency);
-
-		// TODO - take dependencies from other packages too.
-		foreach( &other_build_target : package_info.build_targets )
-		{
-			if( other_build_target.name == public_dependency.name )
-			{
-				if( !GetAllTargetPublicDependencies_r( logger, package_info, other_build_target, call_stack, result ) )
-				{
-					call_stack.pop_back();
-					return false;
-				}
-			}
-		}
-	}
-
-	call_stack.pop_back();
-	return true;
 }
 
 class BuildSystemInterfaceImplementation final : BuildSystemInterface

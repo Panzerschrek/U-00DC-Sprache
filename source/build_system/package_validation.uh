@@ -6,4 +6,11 @@ namespace BK
 
 fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool;
 
+// Returns all public dependencies, including transitive.
+// Returns null optional on error, like circular dependency or missing dependency.
+fn GetAllTargetPublicDependencies(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>;
+
 } // namespace BK
