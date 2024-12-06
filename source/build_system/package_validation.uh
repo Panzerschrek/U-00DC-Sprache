@@ -7,6 +7,7 @@ namespace BK
 fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool;
 
 // Returns all public dependencies, including transitive.
+// Result list has stable order of elements and contains no duplicates.
 // Returns null optional on error, like circular dependency or missing dependency.
 fn GetAllTargetPublicDependencies(
 	Logger &mut logger,

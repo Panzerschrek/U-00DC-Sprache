@@ -1,3 +1,4 @@
+import "/sort.u"
 import "/stdout.u"
 import "build_graph.uh"
 import "entry.uh"
@@ -518,6 +519,11 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		build_graph.nodes.push_back( move(node) );
 	}
+
+	// Sort list of input files to achieve some stable order.
+	// Stable order is important since build graph nodes including lists of files and command line
+	// are compared by equality in order to check node presense if previous graph state.
+	ust::sort( bc_files );
 
 	// Combine multiple ".bc" files into single result.
 
