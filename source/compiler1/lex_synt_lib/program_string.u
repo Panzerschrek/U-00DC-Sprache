@@ -3,6 +3,7 @@ import "program_string.uh"
 
 namespace U1
 {
+
 fn ConvertUTF8ToUTF16( ust::string_view8 mut s ) : ust::string16
 {
 	var ust::string16 mut res;
