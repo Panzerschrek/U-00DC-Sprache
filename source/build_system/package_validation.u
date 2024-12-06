@@ -64,6 +64,7 @@ fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
 			foreach( &component : sources_directory )
 			{
 				sources_directory_str+= component;
+				sources_directory_str+= "/";
 			}
 
 			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + sources_directory_str + "\"." );

@@ -354,7 +354,7 @@ def SourceDirectoriesConflict0Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is already used for some another target." ) != -1 )
 
 
 def SourceDirectoriesConflict1Test():
@@ -368,14 +368,14 @@ def SourceDirectoriesConflict2Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"sub_dir\" of the build target \"target_b\" is located within the source directory of some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"sub_dir/\" of the build target \"target_b\" is located within the source directory of some another target." ) != -1 )
 
 
 def SourceDirectoriesConflict3Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict3" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is a prefix of the source directory of some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is a prefix of the source directory of some another target." ) != -1 )
 
 
 def SelfDependencyTest():
