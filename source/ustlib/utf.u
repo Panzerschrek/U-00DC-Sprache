@@ -53,6 +53,28 @@ fn push_code_point_to_string( ust::string8 &mut str, char32 code_point )
 	}
 }
 
+// Push a code point into an UTF-16 sequence.
+// TODO - add a version of this function which checks for errors.
+fn push_code_point_to_string( ust::string16 &mut str, char32 code_point )
+{
+	if(code_point < char32(0xD800) || (code_point > char32(0xDFFF) && code_point < char32(0x10000)))
+	{
+		str.push_back( char16( code_point ) );
+	}
+	else
+	{
+		var u32 c= u32(code_point) - 0x10000u;
+		str.push_back( char16( ( c >> 10u ) + 0xD800u ) );
+		str.push_back( char16( ( c & 0x3FFu ) + 0xDC00u ) );
+	}
+}
+
+// Push a code point into an UTF-32 sequence.
+fn push_code_point_to_string( ust::string32 &mut str, char32 code_point )
+{
+	str.push_back( code_point );
+}
+
 // Extract a code point from an UTF-8 sequence (if can) and modify input string view (remove bytes at front forming this code point).
 // If can't extract, returns null symbol.
 fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32

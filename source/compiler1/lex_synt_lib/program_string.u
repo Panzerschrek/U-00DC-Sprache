@@ -8,17 +8,7 @@ fn ConvertUTF8ToUTF16( ust::string_view8 mut s ) : ust::string16
 	var ust::string16 mut res;
 	while( !s.empty() )
 	{
-		var char32 code_point= ust::utf::extract_code_point_or_null_from_string(s);
-		if(code_point < char32(0xD800) || (code_point > char32(0xDFFF) && code_point < char32(0x10000)))
-		{
-			res.push_back( char16( code_point ) );
-		}
-		else
-		{
-			var u32 c= u32(code_point) - 0x10000u;
-			res.push_back( char16( ( c >> 10u ) + 0xD800u ) );
-			res.push_back( char16( ( c & 0x3FFu ) + 0xDC00u ) );
-		}
+		ust::utf::push_code_point_to_string( res, ust::utf::extract_code_point_or_null_from_string(s) );
 	}
 
 	return res;
@@ -29,12 +19,7 @@ fn ConvertUTF8ToUTF32( ust::string_view8 mut s ) : ust::string32
 	var ust::string32 mut res;
 	while( !s.empty() )
 	{
-		var char32 c= ust::utf::extract_code_point_or_null_from_string( s ) ;
-		if( c == char32(0) )
-		{
-			break; // TODO - handle such case wisely.
-		}
-		res.push_back( c );
+		ust::utf::push_code_point_to_string( res, ust::utf::extract_code_point_or_null_from_string( s ) );
 	}
 
 	return res;
