@@ -575,7 +575,11 @@ int Main( int argc, const char* argv[] )
 	{
 		// Compile multiple input files and link them together.
 
-		const IVfsSharedPtr vfs= CreateVfsOverSystemFS( Options::include_dir );
+		const IVfsSharedPtr vfs=
+			Options::include_dir_prefixed.empty()
+				? CreateVfsOverSystemFS( Options::include_dir )
+				: CreateVfsOverSystemFSWithPrefixedPaths( Options::include_dir_prefixed );
+
 		if( vfs == nullptr )
 			return 1u;
 
