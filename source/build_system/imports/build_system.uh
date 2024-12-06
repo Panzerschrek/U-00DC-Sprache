@@ -41,7 +41,7 @@ struct BuildTarget
 	// Duplicates aren't allowed.
 	ust::vector</ust::string8/> source_files;
 
-	// List of dependencies, which should be also dependencies of build target dependent on this build target.
+	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
 	ust::vector</ BuildTargetFullName /> public_dependencies;
 }
 
