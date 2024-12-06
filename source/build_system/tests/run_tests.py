@@ -133,6 +133,17 @@ def TransitiveLibraryDependencyTest():
 	RunExecutable( "transitive_library_dependency", "exe" )
 
 
+def LibraryUsedInTwoExecutablesTest():
+	RunBuildSystem( "library_used_in_two_executables" )
+	RunExecutable( "library_used_in_two_executables", "exe_a" )
+	RunExecutable( "library_used_in_two_executables", "exe_b" )
+
+
+def CommonTransitiveDependencyTest():
+	RunBuildSystem( "common_transitive_dependency" )
+	RunExecutable( "common_transitive_dependency", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -445,6 +456,8 @@ def main():
 		LibraryTargetTest,
 		ExeDependsOnLibrartTest,
 		TransitiveLibraryDependencyTest,
+		LibraryUsedInTwoExecutablesTest,
+		CommonTransitiveDependencyTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

@@ -1,0 +1,9 @@
+import "/stdout.u"
+import "/string_conversions.u"
+import "../lib/imports/lib.uh"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "exe_a: " + ust::to_string8( GetX() ) + "\n" );
+	return 0;
+}

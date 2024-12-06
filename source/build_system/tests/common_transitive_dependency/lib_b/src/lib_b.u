@@ -1,0 +1,6 @@
+import "../imports/lib_b.uh"
+
+fn Square( Num x ) : Num
+{
+	return Mul( x, x );
+}
