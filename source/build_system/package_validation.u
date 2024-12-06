@@ -197,12 +197,23 @@ fn TargetNameIsValid( ust::string_view8 name ) : bool
 		return false;
 	}
 
+	if( name.back() == " "c8 )
+	{
+		return false; // Prevent names ending with space (Windows limitation).
+	}
+	if( name.front() == " "c8 )
+	{
+		return false; // Just to be sure prevent leading spaces.
+	}
+
 	foreach( c : name )
 	{
 		// Prevent symbols which may have special meaning in paths.
 		switch(c)
 		{
-			"."c8, // Dots are allowed in paths, but in target names they may be confusing.
+			// Dots are allowed in paths, but in target names they may be confusing.
+			// Using dots is legal for file extension, but we don't need they in target names.
+			"."c8,
 			"/"c8,
 			"\\"c8,
 			":"c8,
@@ -213,7 +224,7 @@ fn TargetNameIsValid( ust::string_view8 name ) : bool
 			"|"c8,
 			"?"c8,
 			"*"c8,
-			"\0"c8
+			char8(0) ... char8(31) // Forbid binary null and all control characters.
 			-> { return false; },
 			default -> {}
 		}
