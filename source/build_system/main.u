@@ -1,3 +1,4 @@
+import "/sort.u"
 import "/stdout.u"
 import "build_graph.uh"
 import "entry.uh"
@@ -48,28 +49,28 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var BuildSystemPaths build_system_paths
 	{
-		.compiler_executable_path=
+		.compiler_executable_path= NormalizePath(
 			( options.compiler_executable_path.empty()
 				? default_compiler_executable_path
-				: MakePathAbsolute(options.compiler_executable_path) ),
-		.ustlib_path=
+				: MakePathAbsolute(options.compiler_executable_path) ) ),
+		.ustlib_path= NormalizePath(
 			( options.ustlib_path.empty()
 				? default_ustlib_path
-				: MakePathAbsolute(options.ustlib_path) ),
-		.build_system_imports_path=
+				: MakePathAbsolute(options.ustlib_path) ) ),
+		.build_system_imports_path= NormalizePath(
 			( options.build_system_imports_path.empty()
 				? default_build_system_imports_path
-				: MakePathAbsolute(options.build_system_imports_path) ),
+				: MakePathAbsolute(options.build_system_imports_path) ) ),
 	};
 
 	// If "options.root_package_directory" is empty this will become current directory.
-	var ust::string8 package_source_directory = MakePathAbsolute( options.root_package_directory );
+	var ust::string8 package_source_directory = NormalizePath( MakePathAbsolute( options.root_package_directory ) );
 
 	// By default use "build" directory within root package directory.
 	var ust::string8 package_build_directory_base =
 		( options.build_directory.empty()
 			? ( package_source_directory + "/build" )
-			: MakePathAbsolute( options.build_directory ) );
+			: NormalizePath( MakePathAbsolute( options.build_directory ) ) );
 
 	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory_base ) )
 	{
@@ -169,12 +170,20 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var BuildGraph mut build_graph;
 	foreach( &build_target : package_info.build_targets )
 	{
+		auto dependencies_opt= GetAllTargetPublicDependencies( bsi.logger_, package_info, build_target );
+		if( dependencies_opt.empty() )
+		{
+			bsi.logger_.LogError( "Failed to get list of dependencies for build target \"" + build_target.name + "\"." );
+			return -1;
+		}
+
 		CreatePackageTargetBuildGraphNodes(
 			build_system_paths,
 			package_source_directory,
 			package_build_directory,
 			options.build_configuration,
 			build_target,
+			dependencies_opt.try_deref(),
 			build_graph );
 	}
 
@@ -446,6 +455,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	ust::string_view8 package_build_directory,
 	BuildConfiguration build_configuration,
 	BuildTarget& target,
+	ust::array_view_imut</BuildTargetFullName/> all_public_dependencies,
 	BuildGraph &mut build_graph )
 {
 	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
@@ -510,15 +520,30 @@ fn CreatePackageTargetBuildGraphNodes(
 		build_graph.nodes.push_back( move(node) );
 	}
 
+	// Sort list of input files to achieve some stable order.
+	// Stable order is important since build graph nodes including lists of files and command line
+	// are compared by equality in order to check node presense if previous graph state.
+	ust::sort( bc_files );
+
 	// Combine multiple ".bc" files into single result.
 
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
 
 	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target.name );
-	if( target_is_windows )
+	switch( target.target_type )
 	{
-		result_target_file_path+= ".exe";
+		BuildTargetType::Executable ->
+		{
+			if( target_is_windows )
+			{
+				result_target_file_path+= ".exe";
+			}
+		},
+		BuildTargetType::Library ->
+		{
+			result_target_file_path+= ".bc";
+		},
 	}
 
 	var BuildGraph::Node mut node
@@ -537,6 +562,30 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.input_files.push_back( bc_file );
 	}
 
+	switch( target.target_type )
+	{
+		BuildTargetType::Executable ->
+		{
+			// For executables perform linking with all public dependencies.
+			// TODO - link also private dependencies.
+			foreach( &public_dependency : all_public_dependencies )
+			{
+				// Assume this is a library dependency (this should be validated before).
+				// TODO - process specially public dependencies of executables.
+				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+
+				node.command_line.push_back( lib_file );
+				node.input_files.push_back( lib_file );
+			}
+		},
+		BuildTargetType::Library ->
+		{
+			// Do not link public dependencies in libraries.
+			// Instead propatage them to the terminal target - executable or shared library.
+			// TODO - link private dependencies.
+		}
+	}
+
 	node.command_line.push_back( "-o" );
 	node.command_line.push_back( result_target_file_path );
 
@@ -545,12 +594,20 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	switch( target.target_type )
 	{
-		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-		BuildTargetType::Executable ->{ node.command_line.push_back( "-filetype=exe" ); },
+		BuildTargetType::Executable ->
+		{
+			// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+			node.command_line.push_back( "-filetype=exe" );
+			// Run internalization in order to export only "main".
+			node.command_line.push_back( "--internalize" );
+		},
+		BuildTargetType::Library ->
+		{
+			// Produce bitcode file.
+			node.command_line.push_back( "-filetype=bc" );
+			// TODO - run internalization, if necessary.
+		},
 	}
-
-	// Run internalization in order to export only "main".
-	node.command_line.push_back( "--internalize" );
 
 	// TODO - disable "pic" by default for windows target.
 	node.command_line.push_back( "--relocation-model" );
@@ -568,8 +625,17 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 		BuildConfiguration::Release ->
 		{
-			// Run full optimization, but not by using O3 - it isn't much better than O2.
-			node.command_line.push_back( "-O2" );
+			if( target.target_type == BuildTargetType::Library )
+			{
+				// Do not run optimization for library targets.
+				// Individual optimization of their source files was performed earlier.
+				// Full optimization will be performed while using this library in some other target kind, like in executable.
+			}
+			else
+			{
+				// Run full optimization, but not by using O3 - it isn't much better than O2.
+				node.command_line.push_back( "-O2" );
+			}
 		},
 	}
 

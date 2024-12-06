@@ -1,0 +1,6 @@
+import "../imports/lib_b.uh"
+
+fn FloatDiv( Float a, Float b ) : Float
+{
+	return a / b;
+}

@@ -1,0 +1,11 @@
+import "/stdout.u"
+import "/string_conversions.u"
+import "../lib_a/imports/lib_a.uh"
+
+fn nomangle main() : i32
+{
+	auto inv_8= FloatInv( 8.0f );
+	auto inv_8_scaled= inv_8 * 100.0f;
+	ust::stdout_print( "Inv 8 scaled: " + ust::to_string8( i32(inv_8_scaled) ) + "\n" );
+	return 0;
+}

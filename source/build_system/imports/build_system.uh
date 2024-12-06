@@ -6,8 +6,24 @@ namespace BK
 
 enum BuildTargetType
 {
+	// Normal executable, which can be launched.
 	Executable,
-	// TODO - add other targets.
+	// Ü library, which can be used by other targets.
+	Library,
+	// TODO - enable these target types.
+	// SharedLibrary,
+	// NativeStaticLibrary,
+}
+
+struct BuildTargetFullName
+{
+	// TODO - add package prefix.
+	ust::string8 name;
+
+	op<=>( BuildTargetFullName& l, BuildTargetFullName& r ) : i32
+	{
+		return l.name <=> r.name;
+	}
 }
 
 struct BuildTarget
@@ -24,6 +40,9 @@ struct BuildTarget
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
 	ust::vector</ust::string8/> source_files;
+
+	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
+	ust::vector</ BuildTargetFullName /> public_dependencies;
 }
 
 struct PackageInfo

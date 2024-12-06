@@ -1,0 +1,6 @@
+import "../imports/lib.uh"
+
+fn GetX() : i32
+{
+	return 567456;
+}

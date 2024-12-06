@@ -97,12 +97,6 @@ def TwoTargetsTest():
 	RunExecutable( "two_targets", "target_b" )
 
 
-def TwoTargetsCommonSourceTest():
-	RunBuildSystem( "two_targets_common_source" )
-	RunExecutable( "two_targets_common_source", "target_a" )
-	RunExecutable( "two_targets_common_source", "target_b" )
-
-
 def SourcesInDirectoriesTest():
 	RunBuildSystem( "sources_in_directories" )
 	RunExecutable( "sources_in_directories", "sources_in_directories" )
@@ -119,7 +113,32 @@ def BuildFileWithImportsTest():
 	RunExecutable( "build_file_with_imports", "build_file_with_imports" )
 
 
-def MissingBuildFile():
+def LibraryTargetTest():
+	RunBuildSystem( "library_target" )
+
+
+def ExeDependsOnLibrartTest():
+	RunBuildSystem( "exe_depends_on_library" )
+	RunExecutable( "exe_depends_on_library", "exe" )
+
+
+def TransitiveLibraryDependencyTest():
+	RunBuildSystem( "transitive_library_dependency" )
+	RunExecutable( "transitive_library_dependency", "exe" )
+
+
+def LibraryUsedInTwoExecutablesTest():
+	RunBuildSystem( "library_used_in_two_executables" )
+	RunExecutable( "library_used_in_two_executables", "exe_a" )
+	RunExecutable( "library_used_in_two_executables", "exe_b" )
+
+
+def CommonTransitiveDependencyTest():
+	RunBuildSystem( "common_transitive_dependency" )
+	RunExecutable( "common_transitive_dependency", "exe" )
+
+
+def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
 	assert( res.returncode != 0 )
@@ -325,6 +344,69 @@ def InvalidSourceName6Test():
 	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
 
 
+def SourceDirectoriesConflict0Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+
+
+def SourceDirectoriesConflict1Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+
+
+def SourceDirectoriesConflict2Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"sub_dir/\" of the build target \"target_b\" is located within the source directory of some another target." ) != -1 )
+
+
+def SourceDirectoriesConflict3Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is a prefix of the source directory of some another target." ) != -1 )
+
+
+def SelfDependencyTest():
+	res = RunBuildSystemWithErrors( "self_dependency" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"library_target\" depends on itself." ) != -1 )
+
+
+def MissingDependencyTest():
+	res = RunBuildSystemWithErrors( "missing_dependency" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency \"unknown_dependency\" of a build target \"hello_world\" not found." ) != -1 )
+
+
+def DependencyLoop0Test():
+	res = RunBuildSystemWithErrors( "dependency_loop0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyLoop1Test():
+	res = RunBuildSystemWithErrors( "dependency_loop1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyOnExeTest():
+	res = RunBuildSystemWithErrors( "dependency_on_exe" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -368,11 +450,15 @@ def main():
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,
-		TwoTargetsCommonSourceTest,
 		SourcesInDirectoriesTest,
 		ТестЮникода,
 		BuildFileWithImportsTest,
-		MissingBuildFile,
+		LibraryTargetTest,
+		ExeDependsOnLibrartTest,
+		TransitiveLibraryDependencyTest,
+		LibraryUsedInTwoExecutablesTest,
+		CommonTransitiveDependencyTest,
+		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
@@ -397,7 +483,16 @@ def main():
 		InvalidSourceName3Test,
 		InvalidSourceName4Test,
 		InvalidSourceName5Test,
-		InvalidSourceName6Test ]
+		InvalidSourceName6Test,
+		SourceDirectoriesConflict0Test,
+		SourceDirectoriesConflict1Test,
+		SourceDirectoriesConflict2Test,
+		SourceDirectoriesConflict3Test,
+		SelfDependencyTest,
+		MissingDependencyTest,
+		DependencyLoop0Test,
+		DependencyLoop1Test,
+		DependencyOnExeTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

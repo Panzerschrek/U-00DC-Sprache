@@ -1,0 +1,16 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// Use a common directory for sources of two targets.
+
+	var BK::BuildTarget mut target_a{ .name= "target_a", .target_type = BK::BuildTargetType::Executable };
+	target_a.source_files.push_back( "some_dir/target_a_file.u" );
+
+	var BK::BuildTarget mut target_b{ .name= "target_b", .target_type = BK::BuildTargetType::Executable };
+	target_b.source_files.push_back( "some_dir/target_b_file.u" );
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target_a), move(target_b) ) };
+}
