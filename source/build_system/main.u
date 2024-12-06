@@ -570,9 +570,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			// TODO - link also private dependencies.
 			foreach( &public_dependency : all_public_dependencies )
 			{
-				// Assume this is a library dependency.
+				// Assume this is a library dependency (this should be validated before).
 				// TODO - process specially public dependencies of executables.
-				// TODO - check if dependent target can be dependency (not an executable, for example).
 				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
 
 				node.command_line.push_back( lib_file );

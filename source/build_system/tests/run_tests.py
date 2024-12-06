@@ -400,6 +400,13 @@ def DependencyLoop1Test():
 	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
 
 
+def DependencyOnExeTest():
+	res = RunBuildSystemWithErrors( "dependency_on_exe" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -484,7 +491,8 @@ def main():
 		SelfDependencyTest,
 		MissingDependencyTest,
 		DependencyLoop0Test,
-		DependencyLoop1Test ]
+		DependencyLoop1Test,
+		DependencyOnExeTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

@@ -167,6 +167,12 @@ fn GetAllTargetPublicDependencies_r(
 		{
 			if( other_build_target.name == public_dependency.name )
 			{
+				if( other_build_target.target_type != BuildTargetType::Library )
+				{
+					logger.LogError( "Build target \"" + build_target.name + "\" depends on non-library build target \"" + other_build_target.name + "\"." );
+					ok= false;
+				}
+
 				ok&= GetAllTargetPublicDependencies_r( logger, package_info, other_build_target, call_stack, result );
 				found= true;
 				break;
