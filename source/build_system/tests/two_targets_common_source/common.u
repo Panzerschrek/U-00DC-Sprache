@@ -1,7 +1,0 @@
-import "/stdout.u"
-import "common.uh"
-
-fn CommonPrint()
-{
-	ust::stdout_print( "Common\n" );
-}

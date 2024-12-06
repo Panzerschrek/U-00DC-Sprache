@@ -97,12 +97,6 @@ def TwoTargetsTest():
 	RunExecutable( "two_targets", "target_b" )
 
 
-def TwoTargetsCommonSourceTest():
-	RunBuildSystem( "two_targets_common_source" )
-	RunExecutable( "two_targets_common_source", "target_a" )
-	RunExecutable( "two_targets_common_source", "target_b" )
-
-
 def SourcesInDirectoriesTest():
 	RunBuildSystem( "sources_in_directories" )
 	RunExecutable( "sources_in_directories", "sources_in_directories" )
@@ -449,7 +443,6 @@ def main():
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
 		TwoTargetsTest,
-		# TwoTargetsCommonSourceTest, # TODO - enable it
 		SourcesInDirectoriesTest,
 		ТестЮникода,
 		BuildFileWithImportsTest,
