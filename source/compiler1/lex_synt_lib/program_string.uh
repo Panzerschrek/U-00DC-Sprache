@@ -4,8 +4,6 @@ namespace U1
 {
 
 type sprache_char = char32;
-fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char;
-fn GetUTF8FirstChar( ust::string_view8 start ) : sprache_char;
 
 fn ConvertUTF8ToUTF16( ust::string_view8 s ) : ust::string16;
 fn ConvertUTF8ToUTF32( ust::string_view8 s ) : ust::string32;

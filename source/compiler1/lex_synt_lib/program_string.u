@@ -1,96 +1,15 @@
+import "/utf.u"
 import "program_string.uh"
 
 namespace U1
 {
-
-fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
-{
-	// c_bit_masks[4] - menas save first 4 bits
-	var [ u32, 9 ] constexpr c_bit_masks
-	[
-		-1u + (1u << 0u),
-		-1u + (1u << 1u),
-		-1u + (1u << 2u),
-		-1u + (1u << 3u),
-		-1u + (1u << 4u),
-		-1u + (1u << 5u),
-		-1u + (1u << 6u),
-		-1u + (1u << 7u),
-		-1u + (1u << 8u),
-	];
-
-	var u32 c( start.front() );
-	var sprache_char mut code(0);
-
-	if( c < 0b10000000u )
-	{
-		code= sprache_char(c);
-		start.drop_front();
-	}
-	else if( c < 0b11100000u )
-	{
-		if( start.size() < 2s )
-		{
-			return code;
-		}
-
-		code= sprache_char(
-			( (u32(start[0s]) & c_bit_masks[5]) << 6u ) |
-			( (u32(start[1s]) & c_bit_masks[6]) << 0u ) );
-
-		start= start.subrange_start(2s);
-	}
-	else if( c < 0b11110000u )
-	{
-		if( start.size() < 3s )
-		{
-			return code;
-		}
-
-		code= sprache_char(
-			( (u32(start[0s]) & c_bit_masks[4]) << 12u ) |
-			( (u32(start[1s]) & c_bit_masks[6]) <<  6u ) |
-			( (u32(start[2s]) & c_bit_masks[6]) <<  0u ) );
-
-		start= start.subrange_start(3s);
-	}
-	else if( c < 0b11111000u )
-	{
-		if( start.size() < 4s )
-		{
-			return code;
-		}
-
-		code= sprache_char(
-			( (u32(start[0s]) & c_bit_masks[3]) << 18u ) |
-			( (u32(start[1s]) & c_bit_masks[6]) << 12u ) |
-			( (u32(start[2s]) & c_bit_masks[6]) <<  6u ) |
-			( (u32(start[3s]) & c_bit_masks[6]) <<  0u ) );
-
-		start= start.subrange_start(4s);
-	}
-	else
-	{
-		// Codes above unicode range - wtf?
-		start.drop_front();
-	}
-
-	return code;
-}
-
-fn GetUTF8FirstChar( ust::string_view8 start ) : sprache_char
-{
-	auto mut range_copy= start;
-	return ReadNextUTF8Char( range_copy );
-}
-
 fn ConvertUTF8ToUTF16( ust::string_view8 mut s ) : ust::string16
 {
 	var ust::string16 mut res;
 	while( !s.empty() )
 	{
-		var sprache_char code_point= ReadNextUTF8Char(s);
-		if(code_point < sprache_char(0xD800) || (code_point > sprache_char(0xDFFF) && code_point < sprache_char(0x10000)))
+		var char32 code_point= ust::utf::extract_code_point_or_null_from_string(s);
+		if(code_point < char32(0xD800) || (code_point > char32(0xDFFF) && code_point < char32(0x10000)))
 		{
 			res.push_back( char16( code_point ) );
 		}
@@ -110,7 +29,12 @@ fn ConvertUTF8ToUTF32( ust::string_view8 mut s ) : ust::string32
 	var ust::string32 mut res;
 	while( !s.empty() )
 	{
-		res.push_back( ReadNextUTF8Char(s) );
+		var char32 c= ust::utf::extract_code_point_or_null_from_string( s ) ;
+		if( c == char32(0) )
+		{
+			break; // TODO - handle such case wisely.
+		}
+		res.push_back( c );
 	}
 
 	return res;

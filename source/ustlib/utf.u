@@ -53,6 +53,95 @@ fn push_code_point_to_string( ust::string8 &mut str, char32 code_point )
 	}
 }
 
+// Extract a code point from an UTF-8 sequence (if can) and modify input string view (remove bytes at front forming this code point).
+// If can't extract, returns null symbol.
+fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32
+{
+	if( str.empty() )
+	{
+		return char32(0);
+	}
+
+	// c_bit_masks[4] - menas save first 4 bits
+	var [ u32, 9 ] constexpr c_bit_masks
+	[
+		-1u + (1u << 0u),
+		-1u + (1u << 1u),
+		-1u + (1u << 2u),
+		-1u + (1u << 3u),
+		-1u + (1u << 4u),
+		-1u + (1u << 5u),
+		-1u + (1u << 6u),
+		-1u + (1u << 7u),
+		-1u + (1u << 8u),
+	];
+
+	var u32 c( str.front() );
+	var char32 mut code(0);
+
+	if( c < 0b10000000u )
+	{
+		code= char32(c);
+		str.drop_front();
+	}
+	else if( c < 0b11100000u )
+	{
+		if( str.size() < 2s )
+		{
+			return char32(0);
+		}
+
+		code= char32(
+			( (u32(str[0s]) & c_bit_masks[5]) << 6u ) |
+			( (u32(str[1s]) & c_bit_masks[6]) << 0u ) );
+
+		str= str.subrange_start(2s);
+	}
+	else if( c < 0b11110000u )
+	{
+		if( str.size() < 3s )
+		{
+			return char32(0);
+		}
+
+		code= char32(
+			( (u32(str[0s]) & c_bit_masks[4]) << 12u ) |
+			( (u32(str[1s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(str[2s]) & c_bit_masks[6]) <<  0u ) );
+
+		str= str.subrange_start(3s);
+	}
+	else if( c < 0b11111000u )
+	{
+		if( str.size() < 4s )
+		{
+			return char32(0);
+		}
+
+		code= char32(
+			( (u32(str[0s]) & c_bit_masks[3]) << 18u ) |
+			( (u32(str[1s]) & c_bit_masks[6]) << 12u ) |
+			( (u32(str[2s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(str[3s]) & c_bit_masks[6]) <<  0u ) );
+
+		str= str.subrange_start(4s);
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+		str.drop_front();
+	}
+
+	return code;
+}
+
+// Get a code point from an UTF-8 sequence (if can).
+// If can't get, returns null symbol.
+fn get_code_point_or_null_from_string( ust::string_view8 mut str ) : char32
+{
+	return extract_code_point_or_null_from_string(str);
+}
+
 } // namespace utf
 
 } // namespace ust
