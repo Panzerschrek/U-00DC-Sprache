@@ -1,0 +1,58 @@
+import "string.u"
+
+// Utilities for working with utf-8, utf-16, utf-32.
+
+namespace ust
+{
+
+namespace utf
+{
+
+// Push a code point into an UTF-8 sequence.
+// TODO - add a version of this function which checks for errors.
+fn push_code_point_to_string( ust::string8 &mut str, char32 code_point )
+{
+	var u32 cc(code_point);
+	if( cc <= 0x7Fu )
+	{
+		str.push_back( char8(cc) );
+	}
+	else if( cc <= 0x7FFu )
+	{
+		var [ char8, 2 ] chars
+		[
+			( 0b11000000u | (cc >>  6u) ),
+			( 0b10000000u | (cc &  63u) ),
+		];
+		str+= chars;
+	}
+	else if( cc <= 0xFFFFu )
+	{
+		var [ char8, 3 ] chars
+		[
+			( 0b11100000u |  (cc >> 12u) ),
+			( 0b10000000u | ((cc >> 6u) & 63u) ),
+			( 0b10000000u |  (cc  & 63u) ),
+		];
+		str+= chars;
+	}
+	else if( cc <= 0x10FFFFu )
+	{
+		var [ char8, 4 ] chars
+		[
+			( 0b11110000u |  (cc >> 18u) ),
+			( 0b10000000u | ((cc >> 12u) & 63u) ),
+			( 0b10000000u | ((cc >>  6u) & 63u) ),
+			( 0b10000000u |  (cc  & 63u) ),
+		];
+		str+= chars;
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+	}
+}
+
+} // namespace utf
+
+} // namespace ust

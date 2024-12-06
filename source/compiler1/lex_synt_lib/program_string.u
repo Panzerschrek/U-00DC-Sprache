@@ -84,49 +84,6 @@ fn GetUTF8FirstChar( ust::string_view8 start ) : sprache_char
 	return ReadNextUTF8Char( range_copy );
 }
 
-fn PushCharToUTF8String( sprache_char c, ust::string8 &mut str )
-{
-	var u32 cc(c);
-	if( cc <= 0x7Fu )
-	{
-		str.push_back( char8(c) );
-	}
-	else if( cc <= 0x7FFu )
-	{
-		var [ char8, 2 ] chars
-		[
-			( 0b11000000u | (cc >>  6u) ),
-			( 0b10000000u | (cc &  63u) ),
-		];
-		str+= chars;
-	}
-	else if( cc <= 0xFFFFu )
-	{
-		var [ char8, 3 ] chars
-		[
-			( 0b11100000u |  (cc >> 12u) ),
-			( 0b10000000u | ((cc >> 6u) & 63u) ),
-			( 0b10000000u |  (cc  & 63u) ),
-		];
-		str+= chars;
-	}
-	else if( cc <= 0x10FFFFu )
-	{
-		var [ char8, 4 ] chars
-		[
-			( 0b11110000u |  (cc >> 18u) ),
-			( 0b10000000u | ((cc >> 12u) & 63u) ),
-			( 0b10000000u | ((cc >>  6u) & 63u) ),
-			( 0b10000000u |  (cc  & 63u) ),
-		];
-		str+= chars;
-	}
-	else
-	{
-		// Codes above unicode range - wtf?
-	}
-}
-
 fn ConvertUTF8ToUTF16( ust::string_view8 mut s ) : ust::string16
 {
 	var ust::string16 mut res;

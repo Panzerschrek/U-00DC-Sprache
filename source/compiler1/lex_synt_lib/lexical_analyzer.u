@@ -1,4 +1,5 @@
 import "/string_conversions.u"
+import "/utf.u"
 import "lexical_analyzer.uh"
 import "program_string.uh"
 
@@ -138,7 +139,7 @@ fn ParseIdentifier( Iterator &mut it ) : Lexem
 			break;
 		}
 
-		PushCharToUTF8String( c, result.text );
+		ust::utf::push_code_point_to_string( result.text, c );
 		it= it_next;
 	}
 
@@ -161,7 +162,7 @@ fn ParseMacroUniqueIdentifier( Iterator &mut it ) : Lexem
 			break;
 		}
 
-		PushCharToUTF8String( c, result.text );
+		ust::utf::push_code_point_to_string( result.text, c );
 		it= it_next;
 	}
 
@@ -186,7 +187,7 @@ fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 			break;
 		}
 
-		PushCharToUTF8String( c, result.text );
+		ust::utf::push_code_point_to_string( result.text, c );
 		it= it_next;
 	}
 
@@ -486,7 +487,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 							char_code|= u32(digit) << ( ( 3u - i ) * 4u );
 							it.drop_front();
 						}
-						PushCharToUTF8String( sprache_char(char_code), result_lexem.text );
+						ust::utf::push_code_point_to_string( result_lexem.text, char32(char_code) );
 					},
 					default ->
 					{
