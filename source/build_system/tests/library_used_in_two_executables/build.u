@@ -4,6 +4,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	ust::ignore_unused( build_system_interface );
 
+	// "lib" is used in "exe_a" and "exe_b".
+
 	var BK::BuildTarget mut lib
 	{
 		.name= "lib",

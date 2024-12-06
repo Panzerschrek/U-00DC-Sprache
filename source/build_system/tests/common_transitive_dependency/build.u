@@ -4,6 +4,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	ust::ignore_unused( build_system_interface );
 
+	// "exe" depends on libs "lib_a" and "lib_b", which both depend on "lib_c".
+
 	var BK::BuildTarget mut exe
 	{
 		.name= "exe",

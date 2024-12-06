@@ -12,5 +12,5 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	exe_target.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib" } );
 
-	return BK::PackageInfo{ .build_targets= ust::make_array( library_target, exe_target ) };
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(library_target), move(exe_target) ) };
 }

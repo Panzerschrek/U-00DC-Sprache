@@ -628,7 +628,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			if( target.target_type == BuildTargetType::Library )
 			{
 				// Do not run optimization for library targets.
-				// Individual optimization of their source files was erformed earlier.
+				// Individual optimization of their source files was performed earlier.
 				// Full optimization will be performed while using this library in some other target kind, like in executable.
 			}
 			else
