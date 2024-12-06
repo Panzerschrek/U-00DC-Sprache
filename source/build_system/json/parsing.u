@@ -1,3 +1,4 @@
+import "/utf.u"
 import "parsing.uh"
 
 namespace BK
@@ -389,44 +390,7 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 								return ust::null_optional;
 							}
 						}
-						if( cc <= 0x7Fu )
-						{
-							res.push_back( char8(cc) );
-						}
-						else if( cc <= 0x7FFu )
-						{
-							var [ char8, 2 ] chars
-							[
-								( 0b11000000u | (cc >>  6u) ),
-								( 0b10000000u | (cc &  63u) ),
-							];
-							res+= chars;
-						}
-						else if( cc <= 0xFFFFu )
-						{
-							var [ char8, 3 ] chars
-							[
-								( 0b11100000u |  (cc >> 12u) ),
-								( 0b10000000u | ((cc >> 6u) & 63u) ),
-								( 0b10000000u |  (cc  & 63u) ),
-							];
-							res+= chars;
-						}
-						else if( cc <= 0x10FFFFu )
-						{
-							var [ char8, 4 ] chars
-							[
-								( 0b11110000u |  (cc >> 18u) ),
-								( 0b10000000u | ((cc >> 12u) & 63u) ),
-								( 0b10000000u | ((cc >>  6u) & 63u) ),
-								( 0b10000000u |  (cc  & 63u) ),
-							];
-							res+= chars;
-						}
-						else
-						{
-							// Codes above unicode range - wtf?
-						}
+						ust::utf::push_code_point_to_string( res, char32(cc) );
 					},
 					// Unknown escape sequence.
 					default -> { return ust::null_optional; },

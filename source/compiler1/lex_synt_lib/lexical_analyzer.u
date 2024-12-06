@@ -1,4 +1,5 @@
 import "/string_conversions.u"
+import "/utf.u"
 import "lexical_analyzer.uh"
 import "program_string.uh"
 
@@ -59,7 +60,7 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 
 type Iterator= ust::string_view8;
 
-fn IsWhitespace( sprache_char c ) : bool
+fn IsWhitespace( char32 c ) : bool
 {
 	switch(c)
 	{
@@ -68,36 +69,36 @@ fn IsWhitespace( sprache_char c ) : bool
 		// "\n"c32,
 		// "\r"c32,
 		// "\t"c32,
-		... sprache_char(0x1Fu),
-		sprache_char(0x7Fu) -> { return true; },
+		... char32(0x1Fu),
+		char32(0x7Fu) -> { return true; },
 		default -> { return false; }
 	}
 }
 
-fn IsNewline( sprache_char c ) : bool
+fn IsNewline( char32 c ) : bool
 {
 	// See https://en.wikipedia.org/wiki/Newline#Unicode.
 	return
 		c == "\n"c32 || // line feed
 		c == "\r"c32 || // carriage return
 		c == "\f"c32 || // form feed
-		c == sprache_char(0x000B) || // vertical tab
-		c == sprache_char(0x0085) || // Next line
-		c == sprache_char(0x2028) || // line separator
-		c == sprache_char(0x2029) ;  // paragraph separator
+		c == char32(0x000B) || // vertical tab
+		c == char32(0x0085) || // Next line
+		c == char32(0x2028) || // line separator
+		c == char32(0x2029) ;  // paragraph separator
 }
 
-fn IsNewlineSequence( sprache_char c0, sprache_char c1 ) : bool
+fn IsNewlineSequence( char32 c0, char32 c1 ) : bool
 {
 	return c0 == "\r"c32 && c1 == "\n"c32;
 }
 
-fn IsNumberStartChar( sprache_char c ) : bool
+fn IsNumberStartChar( char32 c ) : bool
 {
 	return c >= "0"c32 && c <= "9"c32;
 }
 
-fn IsIdentifierStartChar( sprache_char c ) : bool
+fn IsIdentifierStartChar( char32 c ) : bool
 {
 	// HACK - manually define allowed "letters".
 	// TODO - use something, like symbol category from unicode.
@@ -105,19 +106,19 @@ fn IsIdentifierStartChar( sprache_char c ) : bool
 	{
 		"a"c32 ... "z"c32,
 		"A"c32 ... "Z"c32,
-		sprache_char(0x0400u) ... sprache_char(0x04FFu), // Cyrillic
-		sprache_char(0x0500u) ... sprache_char(0x0527u), // Extended cyrillic
-		sprache_char(0x00C0u) ... sprache_char(0x00D6u), // Additional latin symbols
-		sprache_char(0x00D8u) ... sprache_char(0x00F6u), // Additional latin symbols
-		sprache_char(0x00F8u) ... sprache_char(0x00FFu), // Additional latin symbols
-		sprache_char(0x0100u) ... sprache_char(0x017Fu), // Extended latin part A
-		sprache_char(0x0180u) ... sprache_char(0x024Fu)  // Extended latin part B
+		char32(0x0400u) ... char32(0x04FFu), // Cyrillic
+		char32(0x0500u) ... char32(0x0527u), // Extended cyrillic
+		char32(0x00C0u) ... char32(0x00D6u), // Additional latin symbols
+		char32(0x00D8u) ... char32(0x00F6u), // Additional latin symbols
+		char32(0x00F8u) ... char32(0x00FFu), // Additional latin symbols
+		char32(0x0100u) ... char32(0x017Fu), // Extended latin part A
+		char32(0x0180u) ... char32(0x024Fu)  // Extended latin part B
 		-> { return true; },
 		default -> { return false; },
 	}
 }
 
-fn IsIdentifierChar( sprache_char c ) : bool
+fn IsIdentifierChar( char32 c ) : bool
 {
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == "_"c32;
 }
@@ -132,13 +133,13 @@ fn ParseIdentifier( Iterator &mut it ) : Lexem
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
-		auto c = ReadNextUTF8Char( it_next );
+		auto c = ust::utf::extract_code_point_or_null_from_string( it_next );
 		if( !IsIdentifierChar( c ) )
 		{
 			break;
 		}
 
-		PushCharToUTF8String( c, result.text );
+		ust::utf::push_code_point_to_string( result.text, c );
 		it= it_next;
 	}
 
@@ -155,13 +156,13 @@ fn ParseMacroUniqueIdentifier( Iterator &mut it ) : Lexem
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
-		auto c = ReadNextUTF8Char( it_next );
+		auto c = ust::utf::extract_code_point_or_null_from_string( it_next );
 		if( !IsIdentifierChar( c ) )
 		{
 			break;
 		}
 
-		PushCharToUTF8String( c, result.text );
+		ust::utf::push_code_point_to_string( result.text, c );
 		it= it_next;
 	}
 
@@ -180,13 +181,13 @@ fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
-		auto c = ReadNextUTF8Char( it_next );
+		auto c = ust::utf::extract_code_point_or_null_from_string( it_next );
 		if( !IsIdentifierChar( c ) )
 		{
 			break;
 		}
 
-		PushCharToUTF8String( c, result.text );
+		ust::utf::push_code_point_to_string( result.text, c );
 		it= it_next;
 	}
 
@@ -414,7 +415,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	result.value_int+= fractional_part_corrected;
 	result.has_fractional_point= has_fraction_point;
 
-	if( !it.empty() && IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+	if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
 	{
 		auto max_size= typeinfo</ typeof(result.type_suffix) />.element_count;
 		var Lexem type_suffix= ParseIdentifier( it );
@@ -486,7 +487,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 							char_code|= u32(digit) << ( ( 3u - i ) * 4u );
 							it.drop_front();
 						}
-						PushCharToUTF8String( sprache_char(char_code), result_lexem.text );
+						ust::utf::push_code_point_to_string( result_lexem.text, char32(char_code) );
 					},
 					default ->
 					{
@@ -510,7 +511,7 @@ fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 	while(start.size() > end.size())
 	{
 		++r;
-		ReadNextUTF8Char(start);
+		ust::utf::extract_code_point_or_null_from_string(start);
 	}
 	return r;
 }
@@ -594,9 +595,9 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 
 	it= Iterator(it); // Workaround for "reference pollution for outer variables inside loop" error.
 
-	if( !it.empty() && GetUTF8FirstChar(it) == char32(0xFEFF) )
+	if( !it.empty() && ust::utf::get_code_point_or_null_from_string(it) == char32(0xFEFF) )
 	{
-		ReadNextUTF8Char(it); // Skip UTF-8 byte order mark.
+		ust::utf::extract_code_point_or_null_from_string(it); // Skip UTF-8 byte order mark.
 	}
 
 	auto mut prev_it= it;
@@ -610,10 +611,10 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		prev_it= it;
 		var SrcLoc src_loc( 0u, line, column );
 
-		auto c= GetUTF8FirstChar(it);
+		auto c= ust::utf::get_code_point_or_null_from_string(it);
 
-		var sprache_char mut next_c= zero_init;
-		if( it.size() > 1s ) { next_c= GetUTF8FirstChar( it.subrange_start( 1s ) ); }
+		var char32 mut next_c= zero_init;
+		if( it.size() > 1s ) { next_c= ust::utf::get_code_point_or_null_from_string( it.subrange_start( 1s ) ); }
 
 		var Lexem mut lexem;
 
@@ -624,7 +625,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 			while( !it.empty() )
 			{
 				auto mut it_copy= it;
-				var sprache_char c= ReadNextUTF8Char(it_copy);
+				var char32 c= ust::utf::extract_code_point_or_null_from_string(it_copy);
 				if( IsNewline(c) )
 				{
 					break;
@@ -653,7 +654,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				}
 				else
 				{
-					var sprache_char comment_c= ReadNextUTF8Char( it );
+					var char32 comment_c= ust::utf::extract_code_point_or_null_from_string( it );
 					if( IsNewline(comment_c) )
 					{
 						++line;
@@ -663,7 +664,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 						if( !it.empty() )
 						{
 							auto mut it_copy= it;
-							var sprache_char next_c= ReadNextUTF8Char( it_copy );
+							var char32 next_c= ust::utf::extract_code_point_or_null_from_string( it_copy );
 							if( IsNewlineSequence( comment_c, next_c ) )
 							{
 								it= it_copy;
@@ -685,13 +686,13 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 			++line;
 			column= 0u;
 
-			ReadNextUTF8Char(it); // Consume this line ending symbol.
+			ust::utf::extract_code_point_or_null_from_string(it); // Consume this line ending symbol.
 
 			// Handle case with two-symbol line ending.
 			if( !it.empty() )
 			{
 				auto mut it_copy= it;
-				var sprache_char next_c= ReadNextUTF8Char( it_copy );
+				var char32 next_c= ust::utf::extract_code_point_or_null_from_string( it_copy );
 				if( IsNewlineSequence( c, next_c ) )
 				{
 					it= it_copy;
@@ -725,7 +726,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		else if( c == "\""c32 )
 		{
 			lexem= ParseString( it, result.errors, src_loc );
-			if( !it.empty() && IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+			if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
 			{
 				lexem.src_loc= src_loc;
 				result.lexems.push_back( take(lexem) );
