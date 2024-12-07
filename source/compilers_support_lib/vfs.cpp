@@ -29,7 +29,7 @@ class VfsOverSystemFS final : public IVfs
 {
 public:
 	explicit VfsOverSystemFS( std::vector<PrefixedIncludeDir> prefixed_include_dirs )
-		: prefixed_include_dirs_(std::move(prefixed_include_dirs))
+		: include_dirs_(std::move(prefixed_include_dirs))
 	{}
 
 public: // IVfs
@@ -57,28 +57,28 @@ public: // IVfs
 		{
 			// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
 			// Return real file system path to first existent file.
-			for( const PrefixedIncludeDir& prefixed_include_dir : prefixed_include_dirs_ )
+			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 			{
-				auto src_it= llvm::sys::path::begin(file_path);
-				++src_it; // Skip first "/".
-				const auto src_it_end= llvm::sys::path::end(file_path);
+				auto given_path_it= llvm::sys::path::begin(file_path);
+				++given_path_it; // Skip first "/".
+				const auto given_path_it_end= llvm::sys::path::end(file_path);
 
-				auto dst_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
-				const auto dst_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+				auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
+				const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
 
-				while( dst_it != dst_it_end && src_it != src_it_end )
+				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
 				{
-					if( *src_it != *dst_it )
+					if( *given_path_it != *prefix_it )
 						break;
-					++src_it;
-					++dst_it;
+					++given_path_it;
+					++prefix_it;
 				}
 
-				if( dst_it == dst_it_end )
+				if( prefix_it == prefix_it_end )
 				{
 					// Given path is a subdirectory inside "vfs_path".
 					fs_path full_file_path= prefixed_include_dir.host_fs_path;
-					fsp::append( full_file_path, src_it, src_it_end );
+					fsp::append( full_file_path, given_path_it, given_path_it_end );
 					if( fs::exists( full_file_path ) && fs::is_regular_file( full_file_path ) )
 					{
 						result_path= full_file_path;
@@ -113,7 +113,7 @@ private:
 	}
 
 private:
-	const std::vector<PrefixedIncludeDir> prefixed_include_dirs_;
+	const std::vector<PrefixedIncludeDir> include_dirs_;
 };
 
 } // namespace
