@@ -1,0 +1,4 @@
+fn BFunc( i32 x ) : i32
+{
+	return x / 2;
+}

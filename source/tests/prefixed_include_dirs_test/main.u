@@ -1,9 +1,25 @@
 import "/qwerty/some.uh"
-
+import "/qwe/rty/another.uh"
+import "/ach/wie/gut/dass/niemand/weiss/wer/ich/bin/und/wie/ich/heiss/rumpelstilzchen.uh"
+import "/d/krupps.uh"
+import "/root_import.uh"
 
 fn nomangle main() : i32
 {
 	auto a= AFunc( 77 );
 	halt if( a != 154 );
+
+	auto b= BFunc( 32 );
+	halt if( b != 16 );
+
+	auto c= CFunc( 3 );
+	halt if( c != 27 );
+
+	auto d= DFunc( 986 );
+	halt if( d != 200 );
+
+	auto e= EFunc( 7 );
+	halt if( e != 28 );
+
 	return 0;
 }

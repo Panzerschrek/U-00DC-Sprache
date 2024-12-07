@@ -1,0 +1,4 @@
+fn EFunc( i32 x ) : i32
+{
+	return x * x - 3 * x;
+}
