@@ -118,7 +118,7 @@ private:
 
 } // namespace
 
-std::unique_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs )
+std::unique_ptr<IVfs> CreateVfsOverSystemFS( const llvm::ArrayRef<std::string> include_dirs )
 {
 	std::vector<PrefixedIncludeDir> result_include_dirs;
 	result_include_dirs.reserve( include_dirs.size() );
@@ -150,7 +150,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& inc
 	return std::make_unique<VfsOverSystemFS>( std::move(result_include_dirs) );
 }
 
-std::unique_ptr<IVfs> CreateVfsOverSystemFSWithPrefixedPaths( const std::vector<std::string>& include_dirs_prefixed )
+std::unique_ptr<IVfs> CreateVfsOverSystemFSWithPrefixedPaths( const llvm::ArrayRef<std::string> include_dirs_prefixed )
 {
 	const char* const separator= "::";
 	const size_t separator_size= std::strlen( separator );
