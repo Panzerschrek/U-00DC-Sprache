@@ -28,10 +28,6 @@ struct PrefixedIncludeDir
 class VfsOverSystemFS final : public IVfs
 {
 public:
-	explicit VfsOverSystemFS( std::vector<fs_path> include_dirs )
-		: include_dirs_(std::move(include_dirs))
-	{}
-
 	explicit VfsOverSystemFS( std::vector<PrefixedIncludeDir> prefixed_include_dirs )
 		: prefixed_include_dirs_(std::move(prefixed_include_dirs))
 	{}
@@ -61,17 +57,6 @@ public: // IVfs
 		{
 			// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
 			// Return real file system path to first existent file.
-			for( const fs_path& include_dir : include_dirs_ )
-			{
-				fs_path full_file_path= include_dir;
-				fsp::append( full_file_path, file_path_r );
-				if( fs::exists( full_file_path ) && fs::is_regular_file( full_file_path ) )
-				{
-					result_path= full_file_path;
-					break;
-				}
-			}
-
 			for( const PrefixedIncludeDir& prefixed_include_dir : prefixed_include_dirs_ )
 			{
 				auto src_it= llvm::sys::path::begin(file_path);
@@ -128,7 +113,6 @@ private:
 	}
 
 private:
-	const std::vector<fs_path> include_dirs_;
 	const std::vector<PrefixedIncludeDir> prefixed_include_dirs_;
 };
 
@@ -136,7 +120,7 @@ private:
 
 std::unique_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs )
 {
-	std::vector<fs_path> result_include_dirs;
+	std::vector<PrefixedIncludeDir> result_include_dirs;
 	result_include_dirs.reserve( include_dirs.size() );
 
 	bool all_ok= true;
@@ -157,7 +141,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& inc
 			continue;
 		}
 
-		result_include_dirs.push_back( std::move(dir_path) );
+		result_include_dirs.push_back( PrefixedIncludeDir{ fs_path(""), std::move(dir_path) } );
 	}
 
 	if( !all_ok )
