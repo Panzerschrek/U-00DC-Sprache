@@ -1,10 +1,18 @@
-import "/ustlib_macros.u"
+?macro <? foreach:block ?b:block ?>
+->
+<?
+	?b
+	if( true )
+	{
+		?b
+	}
+?>
 
 fn Foo()
 {
-	foreach( b : a )
+	foreach
 	{
-		foreach( c : b )
+		foreach
 		{
 			www
 		}
