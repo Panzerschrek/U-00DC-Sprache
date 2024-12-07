@@ -1,4 +1,4 @@
-import "../imports/lib_c.uh"
+import "/lib_c/lib_c.uh"
 
 fn Mul( Num x, Num y ) : Num
 {

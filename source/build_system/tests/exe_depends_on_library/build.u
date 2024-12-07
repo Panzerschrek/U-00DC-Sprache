@@ -6,6 +6,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	var BK::BuildTarget mut library_target{ .name= "lib", .target_type = BK::BuildTargetType::Library };
 	library_target.source_files.push_back( "lib/lib.u" );
+	library_target.public_include_directories.push_back( "lib_imports" );
 
 	var BK::BuildTarget mut exe_target{ .name= "exe", .target_type = BK::BuildTargetType::Executable };
 	exe_target.source_files.push_back( "exe/main.u" );

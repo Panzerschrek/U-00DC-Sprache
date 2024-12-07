@@ -460,6 +460,19 @@ fn CreatePackageTargetBuildGraphNodes(
 {
 	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
 
+	// Retrieve include directories.
+	// TODO - add also public include directories of public dependencies.
+	var ust::vector</ust::string8/> mut include_directories_prefixed;
+	foreach( &public_include_directory : target.public_include_directories )
+	{
+		var ust::string8 dir_absolute= NormalizePath( ust::string8(package_source_directory) + "/" + public_include_directory );
+		// Prefix this directory with target name.
+		// So, using
+		//    import "some_target/some_file.uh"
+		// will work.
+		include_directories_prefixed.push_back( dir_absolute + g_include_dir_prefix_separator + target.name );
+	}
+
 	var ust::vector</ust::string8/> mut bc_files;
 	foreach( &source_file : target.source_files )
 	{
@@ -490,8 +503,14 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.command_line.push_back( node.dep_file );
 
 		// Provide standard library imports.
-		node.command_line.push_back( "--include-dir" );
-		node.command_line.push_back( build_system_paths.ustlib_path );
+		node.command_line.push_back( "--include-dir-prefixed" );
+		node.command_line.push_back( build_system_paths.ustlib_path + g_include_dir_prefix_separator );
+
+		foreach( &include_dir_prefixed : include_directories_prefixed )
+		{
+			node.command_line.push_back( "--include-dir-prefixed" );
+			node.command_line.push_back( include_dir_prefixed );
+		}
 
 		// Produce an LLVM bitcode file.
 		node.command_line.push_back( "-filetype=bc" );
@@ -641,6 +660,8 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	build_graph.nodes.push_back( move(node) );
 }
+
+auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constants as within the compiler.
 
 class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {

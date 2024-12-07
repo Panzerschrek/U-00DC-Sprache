@@ -1,4 +1,4 @@
-import "../imports/lib_a.uh"
+import "/lib_a/lib_a.uh"
 
 fn ThirdPower( Num x ) : Num
 {

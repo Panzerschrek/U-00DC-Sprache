@@ -5,8 +5,9 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	ust::ignore_unused( build_system_interface );
 
 	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Library };
-	target.source_files.push_back( "lib.u" );
+	target.source_files.push_back( "src/lib.u" );
 	target.name= "library_target";
+	target.public_include_directories.push_back( "imports" );
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
 }

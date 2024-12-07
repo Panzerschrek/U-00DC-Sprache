@@ -1,4 +1,4 @@
-import "../lib_imports/lib.uh"
+import "/lib/lib.uh"
 
 fn Div( u32 x, u32 y ) : u32
 {

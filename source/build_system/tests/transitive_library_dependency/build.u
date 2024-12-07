@@ -17,6 +17,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "lib_a",
 		.target_type = BK::BuildTargetType::Library,
 		.source_files= ust::make_array</ust::string8/>( "lib_a/src/lib_a.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "lib_a/imports" ),
 		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib_b" } )
 	};
 
@@ -24,6 +25,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	{
 		.name= "lib_b",
 		.target_type = BK::BuildTargetType::Library,
+		.public_include_directories= ust::make_array</ust::string8/>( "lib_b/imports" ),
 		.source_files= ust::make_array</ust::string8/>( "lib_b/src/lib_b.u" ),
 	};
 
