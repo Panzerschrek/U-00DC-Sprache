@@ -1,0 +1,24 @@
+import "package_validation.uh"
+
+namespace BK
+{
+
+fn CollectPublicDependenciesIncludeDirectories(
+	PackageInfo& package_info,
+	ust::array_view_imut</BuildTargetFullName/> public_dependencies )
+{
+	var ust::vector</ust::string8/> mut result;
+	foreach( &build_target_name : public_dependencies )
+	{
+		// TODO - speed-up this, avoid linear search.
+		foreach( &build_target : package_info.build_targets )
+		{
+			// Suka blat.
+			// Jebath.
+			www
+		}
+	}
+}
+
+
+} // namespace BK
