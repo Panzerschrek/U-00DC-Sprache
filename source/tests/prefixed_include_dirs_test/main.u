@@ -1,0 +1,9 @@
+import "/qwerty/some.uh"
+
+
+fn nomangle main() : i32
+{
+	auto a= AFunc( 77 );
+	halt if( a != 154 );
+	return 0;
+}

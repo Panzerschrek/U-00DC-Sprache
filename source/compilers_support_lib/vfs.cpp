@@ -19,11 +19,21 @@ namespace fsp= llvm::sys::path;
 
 using fs_path= llvm::SmallString<256>;
 
+struct PrefixedIncludeDir
+{
+	fs_path vfs_path;
+	fs_path host_fs_path;
+};
+
 class VfsOverSystemFS final : public IVfs
 {
 public:
 	explicit VfsOverSystemFS( std::vector<fs_path> include_dirs )
 		: include_dirs_(std::move(include_dirs))
+	{}
+
+	explicit VfsOverSystemFS( std::vector<PrefixedIncludeDir> prefixed_include_dirs )
+		: prefixed_include_dirs_(std::move(prefixed_include_dirs))
 	{}
 
 public: // IVfs
@@ -61,6 +71,36 @@ public: // IVfs
 					break;
 				}
 			}
+
+			for( const PrefixedIncludeDir& prefixed_include_dir : prefixed_include_dirs_ )
+			{
+				auto src_it= llvm::sys::path::begin(file_path);
+				++src_it; // Skip first "/".
+				const auto src_it_end= llvm::sys::path::end(file_path);
+
+				auto dst_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
+				const auto dst_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+
+				while( dst_it != dst_it_end && src_it != src_it_end )
+				{
+					if( *src_it != *dst_it )
+						break;
+					++src_it;
+					++dst_it;
+				}
+
+				if( dst_it == dst_it_end )
+				{
+					// Given path is a subdirectory inside "vfs_path".
+					fs_path full_file_path= prefixed_include_dir.host_fs_path;
+					fsp::append( full_file_path, src_it, src_it_end );
+					if( fs::exists( full_file_path ) && fs::is_regular_file( full_file_path ) )
+					{
+						result_path= full_file_path;
+						break;
+					}
+				}
+			}
 		}
 		else
 		{
@@ -89,6 +129,7 @@ private:
 
 private:
 	const std::vector<fs_path> include_dirs_;
+	const std::vector<PrefixedIncludeDir> prefixed_include_dirs_;
 };
 
 } // namespace
@@ -130,7 +171,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFSWithPrefixedPaths( const std::vector<
 	const char* const separator= "::";
 	const size_t separator_size= std::strlen( separator );
 
-	std::vector<fs_path> result_include_dirs;
+	std::vector<PrefixedIncludeDir> result_include_dirs;
 	result_include_dirs.reserve( include_dirs_prefixed.size() );
 
 	bool all_ok= true;
@@ -151,7 +192,13 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFSWithPrefixedPaths( const std::vector<
 		}
 
 		const std::string fs_dir= include_dir.substr( 0, separator_pos );
-		const std::string vfs_mount_path= include_dir.substr( separator_pos + separator_size ); // TODO - use it.
+		std::string vfs_mount_path= include_dir.substr( separator_pos + separator_size );
+
+		// Remove trailing/leading slashes.
+		while( !vfs_mount_path.empty() && (vfs_mount_path.front() == '/' || vfs_mount_path.front() == '\\' ) )
+			vfs_mount_path.erase(vfs_mount_path.begin());
+		while( !vfs_mount_path.empty() && (vfs_mount_path.back() == '/' || vfs_mount_path.back() == '\\' ) )
+			vfs_mount_path.pop_back();
 
 		fs_path dir_path= llvm::StringRef( fs_dir );
 		fs::make_absolute(dir_path);
@@ -168,7 +215,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFSWithPrefixedPaths( const std::vector<
 			continue;
 		}
 
-		result_include_dirs.push_back( std::move(dir_path) );
+		result_include_dirs.push_back( PrefixedIncludeDir{ fs_path( llvm::StringRef(vfs_mount_path) ), std::move(dir_path) } );
 	}
 
 	if( !all_ok )
