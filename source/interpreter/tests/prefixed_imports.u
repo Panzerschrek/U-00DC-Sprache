@@ -1,0 +1,7 @@
+import "/fancy/path/a.uh"
+
+fn nomangle main() : i32
+{
+	halt if( Foo( 42.0f ) != -42.0f );
+	return 0;
+}

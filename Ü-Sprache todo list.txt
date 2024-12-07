@@ -81,8 +81,6 @@ Standart library:
 *) Detachable thread
 
 Compiler:
-*) Support import directories with mapping to an arbitraty path in the result virtual file system,
-	not only with mapping to the root
 *) Fix possible overflows in numeric literals
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
@@ -128,6 +126,7 @@ Language server:
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)
 *) Declarations search
+*) Support include directories with prefixed paths
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
 *) SignatureHelp - filter suggested functions based on already provided arguments

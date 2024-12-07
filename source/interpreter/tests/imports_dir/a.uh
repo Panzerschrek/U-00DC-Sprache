@@ -1,0 +1,4 @@
+fn Foo( f32 x ) : f32
+{
+	return -x;
+}

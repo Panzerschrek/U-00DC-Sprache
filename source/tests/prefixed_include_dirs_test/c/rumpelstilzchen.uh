@@ -1,0 +1,4 @@
+fn CFunc( i32 x ) : i32
+{
+	return x * x * x;
+}
