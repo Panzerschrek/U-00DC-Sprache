@@ -273,6 +273,21 @@ private:
 			return T();
 		}
 
+		// Prevent too many expansions.
+		auto constexpr total_expansions_limit= 32767s;
+		if( macro_expansion_contexts_.lock_imut().deref().size() >= total_expansions_limit )
+		{
+			NextLexem(); // Advance parsing position, in order to avoid entering this function again.
+
+			errors_.push_back(
+				LexSyntError(
+					expansion_src_loc,
+					"Macro expansions limit " + ust::to_string8(total_expansions_limit) + " reached"
+				) );
+
+			return T();
+		}
+
 		// Append expansion point line/column in order to make macro unique identifiers unique in different macto expansions.
 		// Use only line/column and not use file index/macro expansion index, bacause we need to produce same result for file imported in different files.
 		var ust::string8 mut macro_unique_identifiers_base_name= macro_unique_identifiers_base_name_;

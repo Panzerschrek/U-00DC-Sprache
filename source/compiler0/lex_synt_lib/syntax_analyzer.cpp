@@ -4160,6 +4160,19 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 		return ParseFnResult();
 	}
 
+	// Prevent too many expansions.
+	const size_t total_expansions_limit= 32767;
+	if( macro_expansion_contexts_->size() >= total_expansions_limit )
+	{
+		LexSyntError error_message;
+		error_message.src_loc= expansion_src_loc;
+		error_message.text= "Macro expansions limit " + std::to_string(total_expansions_limit) + " reached";
+
+		error_messages_.push_back( std::move(error_message) );
+
+		return ParseFnResult();
+	}
+
 	auto elements_map= MatchMacroBlock( macro.match_template_elements, macro.name );
 	if( !elements_map.has_value() )
 		return ParseFnResult();

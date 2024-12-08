@@ -378,3 +378,18 @@ def MacroErrorsTest_MacroExpansionDepthReached0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].text.find( "Macro expansion depth 10 reached" ) != -1 )
+
+
+def MacroErrorsTest_MacroExpansionsLimitReached0():
+	c_program_text= """
+		?macro <? MUL:block ?b:block ?>
+		->
+		<? { ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b ?b } ?> // Expands block multiple times.
+
+		fn Foo()
+		{
+			MUL{ MUL{ MUL{ MUL{ MUL{} } } } }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( errors_list[0].text.find( "Macro expansions limit 32767 reached" ) != -1 )
