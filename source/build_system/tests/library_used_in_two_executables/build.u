@@ -10,7 +10,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	{
 		.name= "lib",
 		.target_type = BK::BuildTargetType::Library,
-		.source_files= ust::make_array</ust::string8/>( "lib/src/lib.u" )
+		.source_files= ust::make_array</ust::string8/>( "lib/src/lib.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "lib/imports" )
 	};
 
 	var BK::BuildTarget mut exe_a
