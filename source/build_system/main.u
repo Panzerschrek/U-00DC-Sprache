@@ -190,14 +190,19 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			build_graph );
 	}
 
+	var i32 mut main_result= 0;
+
 	// This executes the build.
 	if( !PerformGraphBuild( bsi.logger_, build_graph, prev_build_graph.as_ref() ) )
 	{
 		bsi.logger_.LogError( "Build failed." );
-		return -1;
+		main_result= -1;
+		// Do not return here, save build graph in case of build fail to reuse parts which were susscessfully built.
 	}
-
-	bsi.logger_.LogInfo( "Successfully finished the build!" );
+	else
+	{
+		bsi.logger_.LogInfo( "Successfully finished the build!" );
+	}
 
 	if( prev_build_graph.empty() || prev_build_graph.try_deref() != build_graph )
 	{
@@ -216,7 +221,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		bsi.logger_.LogVerbose( "Skip updating on-disk build graph state." );
 	}
 
-	return 0;
+	return main_result;
 }
 
 fn ExtractExeDirectoryPath( ust::string_view8 exe_path )
