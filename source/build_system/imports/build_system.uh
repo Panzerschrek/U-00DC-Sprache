@@ -41,6 +41,15 @@ struct BuildTarget
 	// Duplicates aren't allowed.
 	ust::vector</ust::string8/> source_files;
 
+	// Publuc include directories of this build target.
+	// They are used in this target and in all build targets dependent on it.
+	// Imports like
+	//    import "some_target/some_file.uh"
+	// will lead to these directories - some_file.uh will be searched within them.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	ust::vector</ust::string8/> public_include_directories;
+
 	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
 	ust::vector</ BuildTargetFullName /> public_dependencies;
 }

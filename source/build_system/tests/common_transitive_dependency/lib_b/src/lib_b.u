@@ -1,4 +1,4 @@
-import "../imports/lib_b.uh"
+import "/lib_b/lib_b.uh"
 
 fn Square( Num x ) : Num
 {

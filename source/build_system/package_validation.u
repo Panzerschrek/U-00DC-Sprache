@@ -9,7 +9,7 @@ fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
 {
 	var bool mut ok= true;
 
-	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_source_directories;
+	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_directories;
 
 	for( auto mut i= 0s; i < package_info.build_targets.size(); ++i )
 	{
@@ -70,28 +70,64 @@ fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
 			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + sources_directory_str + "\"." );
 
 			// Check for source directory conflict.
-			foreach( &prev_source_directory : prev_targets_source_directories )
+			foreach( &prev_source_directory : prev_targets_directories )
 			{
 				if( prev_source_directory == sources_directory )
 				{
-					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is already used for some another target." );
+					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is already in use." );
 					ok= false;
 				}
 				else if( sources_directory.size() < prev_source_directory.size() &&
 					sources_directory == prev_source_directory.range().subrange_end( sources_directory.size() ) )
 				{
-					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is a prefix of the source directory of some another target." );
+					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
 					ok= false;
 				}
 				else if( sources_directory.size() > prev_source_directory.size() &&
 					prev_source_directory == cast_imut(sources_directory).range().subrange_end( prev_source_directory.size() ) )
 				{
-					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is located within the source directory of some another target." );
+					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is located within another used directory." );
 					ok= false;
 				}
 			}
 
-			prev_targets_source_directories.push_back( move(sources_directory) );
+			prev_targets_directories.push_back( move(sources_directory) );
+		}
+
+		foreach( &public_include_directory : build_target.public_include_directories )
+		{
+			if( !TargetSourceNameIsValid( public_include_directory ) )
+			{
+				logger.LogError( "Invalid path of a public source directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\"." );
+				ok= false;
+				continue;
+			}
+			auto mut public_include_directory_component_splitted=
+				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
+
+			// Check for directory conflict.
+			foreach( &prev_source_directory : prev_targets_directories )
+			{
+				if( prev_source_directory == public_include_directory_component_splitted )
+				{
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is already in use." );
+					ok= false;
+				}
+				else if( public_include_directory_component_splitted.size() < prev_source_directory.size() &&
+					public_include_directory_component_splitted == prev_source_directory.range().subrange_end( public_include_directory_component_splitted.size() ) )
+				{
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
+					ok= false;
+				}
+				else if( public_include_directory_component_splitted.size() > prev_source_directory.size() &&
+					prev_source_directory == cast_imut(public_include_directory_component_splitted).range().subrange_end( prev_source_directory.size() ) )
+				{
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is located within another used directory." );
+					ok= false;
+				}
+			}
+
+			prev_targets_directories.push_back( public_include_directory_component_splitted );
 		}
 	}
 

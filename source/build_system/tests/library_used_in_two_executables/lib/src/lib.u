@@ -1,4 +1,4 @@
-import "../imports/lib.uh"
+import "/lib/lib.uh"
 
 fn GetX() : i32
 {
