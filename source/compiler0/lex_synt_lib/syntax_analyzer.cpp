@@ -137,7 +137,8 @@ public:
 		const Lexems& lexems,
 		MacrosPtr macros,
 		MacroExpansionContextsPtr macro_expansion_contexts,
-		std::string macro_unique_identifiers_base_name );
+		std::string macro_unique_identifiers_base_name,
+		size_t macro_expansion_depth= 0 );
 
 	SyntaxAnalysisResult DoAnalyzis();
 	std::vector<Import> ParseImports();
@@ -307,13 +308,15 @@ private:
 
 	const MacrosPtr macros_;
 	const MacroExpansionContextsPtr macro_expansion_contexts_;
+	const size_t macro_expansion_depth_= 0;
 };
 
 SyntaxAnalyzer::SyntaxAnalyzer(
 	const Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts,
-	std::string macro_unique_identifiers_base_name )
+	std::string macro_unique_identifiers_base_name,
+	const size_t macro_expansion_depth )
 	: it_(lexems.begin())
 	, it_end_(lexems.end())
 	, macro_unique_identifiers_base_name_(std::move(macro_unique_identifiers_base_name))
@@ -321,6 +324,7 @@ SyntaxAnalyzer::SyntaxAnalyzer(
 	, last_error_repeats_(0u)
 	, macros_(std::move(macros))
 	, macro_expansion_contexts_(std::move(macro_expansion_contexts))
+	, macro_expansion_depth_(macro_expansion_depth)
 {
 }
 
@@ -4143,6 +4147,32 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == macro.name );
 	NextLexem();
 
+	// Prevent macro expansion infinite recursion.
+	const size_t depth_limit= 10; // Small, but reasonable limit.
+	if( macro_expansion_depth_ >= depth_limit )
+	{
+		LexSyntError error_message;
+		error_message.src_loc= expansion_src_loc;
+		error_message.text= "Macro expansion depth " + std::to_string(depth_limit) + " reached";
+
+		error_messages_.push_back( std::move(error_message) );
+
+		return ParseFnResult();
+	}
+
+	// Prevent too many expansions.
+	const size_t total_expansions_limit= 32767;
+	if( macro_expansion_contexts_->size() >= total_expansions_limit )
+	{
+		LexSyntError error_message;
+		error_message.src_loc= expansion_src_loc;
+		error_message.text= "Macro expansions limit " + std::to_string(total_expansions_limit) + " reached";
+
+		error_messages_.push_back( std::move(error_message) );
+
+		return ParseFnResult();
+	}
+
 	auto elements_map= MatchMacroBlock( macro.match_template_elements, macro.name );
 	if( !elements_map.has_value() )
 		return ParseFnResult();
@@ -4185,7 +4215,8 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 		result_lexems,
 		macros_,
 		macro_expansion_contexts_,
-		macro_unique_identifiers_base_name );
+		macro_unique_identifiers_base_name,
+		macro_expansion_depth_ + 1 );
 
 	auto element= (result_analyzer.*parse_fn)();
 	error_messages_.insert( error_messages_.end(), result_analyzer.error_messages_.begin(), result_analyzer.error_messages_.end() );

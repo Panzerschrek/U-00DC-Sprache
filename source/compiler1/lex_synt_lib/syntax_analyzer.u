@@ -104,7 +104,8 @@ public:
 		Lexems& lexems,
 		MacrosPtr mut macros,
 		MacroExpansionContextsPtr mut macro_expansion_contexts,
-		ust::string8 macro_unique_identifiers_base_name ) @(constructor_pollution);
+		ust::string8 macro_unique_identifiers_base_name,
+		size_type macro_expansion_depth ) @(constructor_pollution);
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 	fn ParseStandaloneNamespaceElements( mut this ) : NamespaceParsingResult;
@@ -257,6 +258,36 @@ private:
 	{
 		var SrcLoc expansion_src_loc= it_.front().src_loc;
 
+		// Prevent macro expansion infinite recursion.
+		auto constexpr depth_limit= 10s; // Small, but reasonable limit.
+		if( macro_expansion_depth_ >= depth_limit )
+		{
+			NextLexem(); // Advance parsing position, in order to avoid entering this function again.
+
+			errors_.push_back(
+				LexSyntError(
+					expansion_src_loc,
+					"Macro expansion depth " + ust::to_string8(depth_limit) + " reached"
+				) );
+
+			return T();
+		}
+
+		// Prevent too many expansions.
+		auto constexpr total_expansions_limit= 32767s;
+		if( macro_expansion_contexts_.lock_imut().deref().size() >= total_expansions_limit )
+		{
+			NextLexem(); // Advance parsing position, in order to avoid entering this function again.
+
+			errors_.push_back(
+				LexSyntError(
+					expansion_src_loc,
+					"Macro expansions limit " + ust::to_string8(total_expansions_limit) + " reached"
+				) );
+
+			return T();
+		}
+
 		// Append expansion point line/column in order to make macro unique identifiers unique in different macto expansions.
 		// Use only line/column and not use file index/macro expansion index, bacause we need to produce same result for file imported in different files.
 		var ust::string8 mut macro_unique_identifiers_base_name= macro_unique_identifiers_base_name_;
@@ -271,7 +302,8 @@ private:
 			lexems_expanded,
 			macros_,
 			macro_expansion_contexts_,
-			move(macro_unique_identifiers_base_name) );
+			move(macro_unique_identifiers_base_name),
+			macro_expansion_depth_ + 1s );
 
 		auto result= parse_method( syntax_analyzer );
 
@@ -319,6 +351,7 @@ private:
 	MacrosPtr imut macros_;
 	MacroExpansionContextsPtr imut macro_expansion_contexts_;
 	ust::string8 imut macro_unique_identifiers_base_name_;
+	size_type imut macro_expansion_depth_;
 }
 
 fn SyntaxAnalyzer::constructor(
@@ -326,14 +359,16 @@ fn SyntaxAnalyzer::constructor(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut macro_unique_identifiers_base_name ) @(constructor_pollution)
+	ust::string8 mut macro_unique_identifiers_base_name,
+	size_type macro_expansion_depth ) @(constructor_pollution)
 	(
 		it_initial_= lexems,
 		it_= lexems,
 		last_error_it_= it_,
 		macros_(move(macros)),
 		macro_expansion_contexts_(move(macro_expansion_contexts)),
-		macro_unique_identifiers_base_name_(move(macro_unique_identifiers_base_name))
+		macro_unique_identifiers_base_name_(move(macro_unique_identifiers_base_name)),
+		macro_expansion_depth_= macro_expansion_depth
 	)
 {
 }
@@ -4390,7 +4425,8 @@ fn SyntaxAnalysis(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash) );
+		move(source_file_contents_hash),
+		0s );
 
 	return analyzer.DoAnalyzis();
 }
@@ -4405,7 +4441,8 @@ fn ParseNamespaceElements(
 		lexems,
 		MacrosPtr( move(macros) ),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash) );
+		move(source_file_contents_hash),
+		0s );
 
 	return analyzer.ParseStandaloneNamespaceElements();
 }
@@ -4420,7 +4457,8 @@ fn ParseClassElements(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash) );
+		move(source_file_contents_hash),
+		0s );
 
 	return analyzer.ParseStandaloneClassElements();
 }
@@ -4435,7 +4473,8 @@ fn ParseBlockElements(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash) );
+		move(source_file_contents_hash),
+		0s );
 
 	return analyzer.ParseStandaloneBlockElements();
 }
@@ -4450,7 +4489,8 @@ fn ParseTypeName(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash) );
+		move(source_file_contents_hash),
+		0s );
 
 	return analyzer.ParseStandaloneTypeName();
 }
@@ -4465,7 +4505,8 @@ fn ParseExpression(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash) );
+		move(source_file_contents_hash),
+		0s );
 
 	return analyzer.ParseStandaloneExpression();
 }
@@ -4476,7 +4517,8 @@ fn ParseImports( Lexems& lexems ) : ImportsList
 		lexems,
 		MacrosPtr( MacrosByContextMap() ),
 		MacroExpansionContextsPtr( MacroExpansionContexts() ),
-		"" );
+		"",
+		0s );
 	return analyzer.ParseImports();
 }
 
