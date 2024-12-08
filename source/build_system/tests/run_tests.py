@@ -348,28 +348,63 @@ def SourceDirectoriesConflict0Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is already in use." ) != -1 )
 
 
 def SourceDirectoriesConflict1Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"\" of the build target \"target_b\" is already used for some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"\" of the build target \"target_b\" is already in use." ) != -1 )
 
 
 def SourceDirectoriesConflict2Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"sub_dir/\" of the build target \"target_b\" is located within the source directory of some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"sub_dir/\" of the build target \"target_b\" is located within another used directory." ) != -1 )
 
 
 def SourceDirectoriesConflict3Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict3" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is a prefix of the source directory of some another target." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
+
+
+def SourceDirectoriesConflict4Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Public include directory \"some_dir\" of the build target \"target_a\" is already in use." ) != -1 )
+
+
+def SourceDirectoriesConflict5Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict5" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Public include directory \"include_dir\" of the build target \"target_a\" is already in use." ) != -1 )
+
+
+def SourceDirectoriesConflict6Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict6" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Public include directory \"include_dir\" of the build target \"target_b\" is already in use." ) != -1 )
+
+
+def SourceDirectoriesConflict7Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict7" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Public include directory \"target_a/include\" of the build target \"target_b\" is located within another used directory." ) != -1 )
+
+
+def SourceDirectoriesConflict8Test():
+	res = RunBuildSystemWithErrors( "source_directories_conflict8" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Public include directory \"common_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
 def SelfDependencyTest():
@@ -488,6 +523,11 @@ def main():
 		SourceDirectoriesConflict1Test,
 		SourceDirectoriesConflict2Test,
 		SourceDirectoriesConflict3Test,
+		SourceDirectoriesConflict4Test,
+		SourceDirectoriesConflict5Test,
+		SourceDirectoriesConflict6Test,
+		SourceDirectoriesConflict7Test,
+		SourceDirectoriesConflict8Test,
 		SelfDependencyTest,
 		MissingDependencyTest,
 		DependencyLoop0Test,

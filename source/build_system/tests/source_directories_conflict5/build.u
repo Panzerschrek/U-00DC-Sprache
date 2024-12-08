@@ -1,0 +1,15 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+
+	var BK::BuildTarget mut target{ .name= "target_a", .target_type = BK::BuildTargetType::Executable };
+	target.source_files.push_back( "some_dir/target_a_file.u" );
+	// Duplicate directory.
+	target.public_include_directories.push_back( "include_dir" );
+	target.public_include_directories.push_back( "include_dir" );
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}
