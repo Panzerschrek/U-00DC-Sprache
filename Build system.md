@@ -154,13 +154,8 @@ For example, it should be possible to build a shared library for Android with 64
 
 Target system (precisely target triple in LLVM terms) is specified as an option for the build system executable execution.
 
-In single build each target may be built for:
-
-* target system
-* host system (in order to use it in build process)
-* (maybe) both target and host systems
-
-If host and target systems are identical, there should be no duplicated builds if a build target is is specified both as target system and host system build target.
+There should be a possibility to build some parts of a project (maybe separate packages) for the host system in order to use some executables as commands for compilation itself.
+One of possible approaches to achieve this is to specify host package dependencies to trigger building them for the host system.
 
 
 ### Packages dependency resolution
