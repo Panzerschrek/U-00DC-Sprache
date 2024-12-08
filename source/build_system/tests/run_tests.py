@@ -138,6 +138,11 @@ def CommonTransitiveDependencyTest():
 	RunExecutable( "common_transitive_dependency", "exe" )
 
 
+def MultipleTargetIncludeDirectoriesTest():
+	RunBuildSystem( "multiple_target_include_directories" )
+	RunExecutable( "multiple_target_include_directories", "multiple_target_include_directories" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -493,6 +498,7 @@ def main():
 		TransitiveLibraryDependencyTest,
 		LibraryUsedInTwoExecutablesTest,
 		CommonTransitiveDependencyTest,
+		MultipleTargetIncludeDirectoriesTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
