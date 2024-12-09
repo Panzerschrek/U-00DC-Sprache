@@ -226,6 +226,18 @@ fn GetAllTargetPublicDependencies_r(
 	return ok;
 }
 
+fn GetBuildTargetRelativeSourceDirectory( BuildTarget& build_target ) : ust::string8
+{
+	var ust::string8 mut res;
+	foreach( &component : CalculateBuildTargetSourceFilesCommonDirectory( build_target.source_files ) )
+	{
+		res+= component;
+		res+= "/";
+	}
+
+	return res;
+}
+
 fn TargetNameIsValid( ust::string_view8 name ) : bool
 {
 	if( name.empty() )

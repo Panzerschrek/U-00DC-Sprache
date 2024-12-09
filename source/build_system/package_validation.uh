@@ -14,4 +14,7 @@ fn GetAllTargetPublicDependencies(
 	PackageInfo& package_info,
 	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>;
 
+// Returns directory relative to the package root.
+fn GetBuildTargetRelativeSourceDirectory( BuildTarget& build_target ) : ust::string8;
+
 } // namespace BK

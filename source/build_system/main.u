@@ -486,6 +486,8 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Include directories of public dependencies.
 	include_directories_prefixed.append( public_dependencies_prefixed_include_directories.iter() );
 
+	var ust::string8 source_dir= NormalizePath( package_source_directory + ( "/" + GetBuildTargetRelativeSourceDirectory( target ) ) );
+
 	var ust::vector</ust::string8/> mut bc_files;
 	foreach( &source_file : target.source_files )
 	{
@@ -524,6 +526,10 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( "--include-dir" );
 			node.command_line.push_back( include_dir_prefixed );
 		}
+
+		// Provide path to source directory, in order to allow relative imports.
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( source_dir );
 
 		// Forbid importing anything outside include directories and source directories.
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );

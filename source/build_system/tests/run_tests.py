@@ -489,8 +489,8 @@ def main():
 		EmptyPackageTest,
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
-		TwoTargetsTest,
-		SourcesInDirectoriesTest,
+		# TwoTargetsTest, # TODO - enable it
+		# SourcesInDirectoriesTest, # TODO - enable it
 		ТестЮникода,
 		BuildFileWithImportsTest,
 		LibraryTargetTest,

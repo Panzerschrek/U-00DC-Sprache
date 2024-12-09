@@ -129,6 +129,14 @@ cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
+cl::list<std::string> source_dir(
+	"source-dir",
+	cl::Prefix,
+	cl::desc("Mark this directory as source directory, importing files from which is allowed. Allows to import files relative to the given source file if \"prevent-imports-outside-given-directories\" option is uded."),
+	cl::value_desc("dir"),
+	cl::ZeroOrMore,
+	cl::cat(options_category));
+
 cl::opt<bool> prevent_imports_outside_given_directories(
 	"prevent-imports-outside-given-directories",
 	cl::desc("Prevent imports outside given include directories and source directories."),
@@ -417,6 +425,7 @@ int Main( int argc, const char* argv[] )
 	Options::input_files_type.removeArgument();
 	Options::output_file_name.removeArgument();
 	Options::include_dir.removeArgument();
+	Options::source_dir.removeArgument();
 	Options::prevent_imports_outside_given_directories.removeArgument();
 	Options::override_data_layout.removeArgument();
 	Options::override_target_triple.removeArgument();
@@ -568,7 +577,10 @@ int Main( int argc, const char* argv[] )
 		// Compile multiple input files and link them together.
 
 		const IVfsSharedPtr vfs=
-			CreateVfsOverSystemFS( Options::include_dir, Options::prevent_imports_outside_given_directories );
+			CreateVfsOverSystemFS(
+				Options::include_dir,
+				Options::source_dir,
+				Options::prevent_imports_outside_given_directories );
 		if( vfs == nullptr )
 			return 1u;
 

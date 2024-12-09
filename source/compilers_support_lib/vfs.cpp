@@ -29,8 +29,11 @@ class VfsOverSystemFS final : public IVfs
 {
 public:
 	VfsOverSystemFS(
-		std::vector<PrefixedIncludeDir> prefixed_include_dirs, bool prevent_imports_outside_given_directories )
+		std::vector<PrefixedIncludeDir> prefixed_include_dirs,
+		std::vector<std::string> source_dirs,
+		bool prevent_imports_outside_given_directories )
 		: include_dirs_(std::move(prefixed_include_dirs))
+		, source_dirs_(std::move(source_dirs))
 		, prevent_imports_outside_given_directories_(prevent_imports_outside_given_directories)
 	{}
 
@@ -102,24 +105,35 @@ public: // IVfs
 		if( !prevent_imports_outside_given_directories_ )
 			return true; // Importing anything is allowed.
 
+		const auto is_within=
+			[&](const llvm::StringRef allowed_path )
+			{
+				auto given_path_it= llvm::sys::path::begin(full_file_path);
+				const auto given_path_it_end= llvm::sys::path::end(full_file_path);
+
+				auto allowed_path_it= llvm::sys::path::begin(allowed_path);
+				const auto allowed_path_it_end= llvm::sys::path::end(allowed_path);
+				while( allowed_path_it != allowed_path_it_end && given_path_it != given_path_it_end )
+				{
+					if( *given_path_it != *allowed_path_it )
+						break;
+					++given_path_it;
+					++allowed_path_it;
+				}
+
+				return allowed_path_it == allowed_path_it_end;
+			};
+
 		for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 		{
-			auto given_path_it= llvm::sys::path::begin(full_file_path);
-			++given_path_it; // Skip first "/".
-			const auto given_path_it_end= llvm::sys::path::end(full_file_path);
+			if( is_within( prefixed_include_dir.host_fs_path ) )
+				return true;
+		}
 
-			auto allowed_path_it= llvm::sys::path::begin(prefixed_include_dir.host_fs_path);
-			const auto allowed_path_it_end= llvm::sys::path::end(prefixed_include_dir.host_fs_path);
-			while( allowed_path_it != allowed_path_it_end && given_path_it != given_path_it_end )
-			{
-				if( *given_path_it != *allowed_path_it )
-					break;
-				++given_path_it;
-				++allowed_path_it;
-			}
-
-			if( allowed_path_it == allowed_path_it_end )
-				return true; // Given full file path is inside this include directory.
+		for( const std::string& source_dir : source_dirs_ )
+		{
+			if( is_within( source_dir ) )
+				return true;
 		}
 
 		// Import outside allowed directories.
@@ -145,6 +159,7 @@ private:
 
 private:
 	const std::vector<PrefixedIncludeDir> include_dirs_;
+	const std::vector<std::string> source_dirs_;
 	const bool prevent_imports_outside_given_directories_;
 };
 
@@ -152,6 +167,7 @@ private:
 
 std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 	const llvm::ArrayRef<std::string> include_dirs,
+	const llvm::ArrayRef<std::string> source_dirs,
 	const bool prevent_imports_outside_given_directories )
 {
 	const char* const separator= "::";
@@ -215,6 +231,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 	return
 		std::make_unique<VfsOverSystemFS>(
 			std::move(result_include_dirs),
+			source_dirs,
 			prevent_imports_outside_given_directories );
 }
 
