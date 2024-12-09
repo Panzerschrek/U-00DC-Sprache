@@ -129,6 +129,12 @@ cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
+cl::opt<bool> prevent_imports_outside_given_directories(
+	"prevent-imports-outside-given-directories",
+	cl::desc("Prevent imports outside given include directories and source directories."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<bool> override_data_layout(
 	"override-data-layout",
 	cl::desc("Override data layout of input LL or BC module."),
@@ -411,6 +417,7 @@ int Main( int argc, const char* argv[] )
 	Options::input_files_type.removeArgument();
 	Options::output_file_name.removeArgument();
 	Options::include_dir.removeArgument();
+	Options::prevent_imports_outside_given_directories.removeArgument();
 	Options::override_data_layout.removeArgument();
 	Options::override_target_triple.removeArgument();
 	Options::optimization_level.removeArgument();
@@ -560,7 +567,8 @@ int Main( int argc, const char* argv[] )
 	{
 		// Compile multiple input files and link them together.
 
-		const IVfsSharedPtr vfs= CreateVfsOverSystemFS( Options::include_dir );
+		const IVfsSharedPtr vfs=
+			CreateVfsOverSystemFS( Options::include_dir, Options::prevent_imports_outside_given_directories );
 		if( vfs == nullptr )
 			return 1u;
 

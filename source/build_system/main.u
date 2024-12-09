@@ -525,6 +525,9 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( include_dir_prefixed );
 		}
 
+		// Forbid importing anything outside include directories and source directories.
+		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
 		// Produce an LLVM bitcode file.
 		node.command_line.push_back( "-filetype=bc" );
 

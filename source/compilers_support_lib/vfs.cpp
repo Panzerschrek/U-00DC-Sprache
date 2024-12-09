@@ -28,8 +28,10 @@ struct PrefixedIncludeDir
 class VfsOverSystemFS final : public IVfs
 {
 public:
-	explicit VfsOverSystemFS( std::vector<PrefixedIncludeDir> prefixed_include_dirs )
+	VfsOverSystemFS(
+		std::vector<PrefixedIncludeDir> prefixed_include_dirs, bool prevent_imports_outside_given_directories )
 		: include_dirs_(std::move(prefixed_include_dirs))
+		, prevent_imports_outside_given_directories_(prevent_imports_outside_given_directories)
 	{}
 
 public: // IVfs
@@ -97,9 +99,31 @@ public: // IVfs
 
 	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
 	{
-		// TODO
-		(void) full_file_path;
-		return true;
+		if( !prevent_imports_outside_given_directories_ )
+			return true; // Importing anything is allowed.
+
+		for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
+		{
+			auto given_path_it= llvm::sys::path::begin(full_file_path);
+			++given_path_it; // Skip first "/".
+			const auto given_path_it_end= llvm::sys::path::end(full_file_path);
+
+			auto allowed_path_it= llvm::sys::path::begin(prefixed_include_dir.host_fs_path);
+			const auto allowed_path_it_end= llvm::sys::path::end(prefixed_include_dir.host_fs_path);
+			while( allowed_path_it != allowed_path_it_end && given_path_it != given_path_it_end )
+			{
+				if( *given_path_it != *allowed_path_it )
+					break;
+				++given_path_it;
+				++allowed_path_it;
+			}
+
+			if( allowed_path_it == allowed_path_it_end )
+				return true; // Given full file path is inside this include directory.
+		}
+
+		// Import outside allowed directories.
+		return false;
 	}
 
 private:
@@ -121,11 +145,14 @@ private:
 
 private:
 	const std::vector<PrefixedIncludeDir> include_dirs_;
+	const bool prevent_imports_outside_given_directories_;
 };
 
 } // namespace
 
-std::unique_ptr<IVfs> CreateVfsOverSystemFS( const llvm::ArrayRef<std::string> include_dirs )
+std::unique_ptr<IVfs> CreateVfsOverSystemFS(
+	const llvm::ArrayRef<std::string> include_dirs,
+	const bool prevent_imports_outside_given_directories )
 {
 	const char* const separator= "::";
 	const size_t separator_size= std::strlen( separator );
@@ -185,7 +212,10 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS( const llvm::ArrayRef<std::string> i
 	if( !all_ok )
 		return nullptr;
 
-	return std::make_unique<VfsOverSystemFS>( std::move(result_include_dirs) );
+	return
+		std::make_unique<VfsOverSystemFS>(
+			std::move(result_include_dirs),
+			prevent_imports_outside_given_directories );
 }
 
 } // namespace U

@@ -8,6 +8,8 @@
 namespace U
 {
 
-std::unique_ptr<IVfs> CreateVfsOverSystemFS( llvm::ArrayRef<std::string> include_dirs );
+std::unique_ptr<IVfs> CreateVfsOverSystemFS(
+	llvm::ArrayRef<std::string> include_dirs,
+	bool prevent_imports_outside_given_directories= false );
 
 } // namespace U

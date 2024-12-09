@@ -44,6 +44,14 @@ size_t LoadNode_r(
 	result.nodes_storage.emplace_back();
 	result.nodes_storage[node_index].file_path= full_file_path;
 
+	if( !vfs.IsImportingFileAllowed( full_file_path ) )
+	{
+		result.errors.emplace_back(
+			"Importing file \"" + (full_file_path.empty() ? file_path : full_file_path) + "\" isn't allowed.",
+			import_src_loc );
+		return ~0u;
+	}
+
 	const std::optional<IVfs::FileContent> loaded_file= vfs.LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
