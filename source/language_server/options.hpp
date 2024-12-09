@@ -35,7 +35,7 @@ inline cl::opt<uint32_t> num_threads(
 inline cl::list<std::string> include_dir(
 	"include-dir",
 	cl::Prefix,
-	cl::desc("Add directory for search of \"import\" files. This affects all files, opened within this instance of the LanguageServer."),
+	cl::desc("Add directory for search of \"import\" files. A prefix within the compiler VFS is specified after ::. This affects all files, opened within this instance of the LanguageServer."),
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));

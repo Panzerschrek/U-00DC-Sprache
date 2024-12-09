@@ -220,14 +220,6 @@ int Main( int argc, const char* argv[] )
 	cl::list<std::string> include_dir(
 		"include-dir",
 		cl::Prefix,
-		cl::desc("Add directory for search of \"import\" files"),
-		cl::value_desc("dir"),
-		cl::ZeroOrMore,
-		cl::cat(options_category));
-
-	cl::list<std::string> include_dir_prefixed(
-		"include-dir-prefixed",
-		cl::Prefix,
 		cl::desc("Add directory for search of \"import\" files. A prefix within the compiler VFS is specified after ::."),
 		cl::value_desc("dir"),
 		cl::ZeroOrMore,
@@ -257,12 +249,6 @@ int Main( int argc, const char* argv[] )
 		"Ü-Sprache interpreter.\n"
 		"Compiles provided files and emmideately executes result.\n";
 	llvm::cl::ParseCommandLineOptions( argc, argv, description );
-
-	if( !include_dir.empty() && !include_dir_prefixed.empty() )
-	{
-		std::cerr << "Specifying both --include-dir and --include-dir-prefixed isn't allowed!" << std::endl;
-		return 1;
-	}
 
 	std::string target_triple_str;
 	llvm::Triple target_triple( llvm::sys::getProcessTriple() );
@@ -312,10 +298,7 @@ int Main( int argc, const char* argv[] )
 	else
 		data_layout= llvm::DataLayout( GetTestsDataLayout() );
 
-	const IVfsSharedPtr vfs=
-		include_dir_prefixed.empty()
-			? CreateVfsOverSystemFS( include_dir )
-			: CreateVfsOverSystemFSWithPrefixedPaths( include_dir_prefixed );
+	const IVfsSharedPtr vfs= CreateVfsOverSystemFS( include_dir );
 	if( vfs == nullptr )
 		return 1u;
 

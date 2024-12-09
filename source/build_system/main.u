@@ -516,12 +516,12 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.command_line.push_back( node.dep_file );
 
 		// Provide standard library imports.
-		node.command_line.push_back( "--include-dir-prefixed" );
+		node.command_line.push_back( "--include-dir" );
 		node.command_line.push_back( build_system_paths.ustlib_path + g_include_dir_prefix_separator );
 
 		foreach( &include_dir_prefixed : include_directories_prefixed )
 		{
-			node.command_line.push_back( "--include-dir-prefixed" );
+			node.command_line.push_back( "--include-dir" );
 			node.command_line.push_back( include_dir_prefixed );
 		}
 

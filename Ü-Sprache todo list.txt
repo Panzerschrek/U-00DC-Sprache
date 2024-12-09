@@ -126,7 +126,6 @@ Language server:
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)
 *) Declarations search
-*) Support include directories with prefixed paths
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
 *) SignatureHelp - filter suggested functions based on already provided arguments
