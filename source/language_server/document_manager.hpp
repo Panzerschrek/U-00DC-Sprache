@@ -67,6 +67,13 @@ private:
 		// Empty "full_parent_file_path" means root file.
 		IVfs::Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override;
 
+		virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
+		{
+			// For now allow importing anything in language server.
+			(void) full_file_path;
+			return true;
+		}
+
 	private:
 		DocumentManager& document_manager_;
 	};

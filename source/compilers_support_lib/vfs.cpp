@@ -95,6 +95,13 @@ public: // IVfs
 		return NormalizePath( result_path ).str().str();
 	}
 
+	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
+	{
+		// TODO
+		(void) full_file_path;
+		return true;
+	}
+
 private:
 	static fs_path NormalizePath( const fs_path& p )
 	{

@@ -48,6 +48,12 @@ public:
 		return file_path;
 	}
 
+	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
+	{
+		(void) full_file_path;
+		return true;
+	}
+
 private:
 	const std::vector<SourceEntry> sources_;
 };

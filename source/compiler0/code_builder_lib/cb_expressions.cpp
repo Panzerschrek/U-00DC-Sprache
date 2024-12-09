@@ -1738,6 +1738,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	auto cache_it= embed_files_cache_.find( full_file_path );
 	if( cache_it == embed_files_cache_.end() )
 	{
+		if( !vfs_->IsImportingFileAllowed( full_file_path ) )
+			REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope.GetErrors(), embed.src_loc, full_file_path );
+
 		std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
 		cache_it= embed_files_cache_.emplace( std::move(full_file_path), std::move(loaded_file) ).first;
 	}
