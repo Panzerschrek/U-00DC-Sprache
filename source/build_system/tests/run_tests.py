@@ -489,7 +489,7 @@ def main():
 		EmptyPackageTest,
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
-		# TwoTargetsTest, # TODO - enable it
+		TwoTargetsTest,
 		SourcesInDirectoriesTest,
 		ТестЮникода,
 		BuildFileWithImportsTest,
