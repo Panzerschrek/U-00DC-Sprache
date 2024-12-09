@@ -48,6 +48,13 @@ bool LoadFileContent(
 	return true;
 }
 
+bool IsImportingFileAllowed(
+	const U1_UserHandle this_,
+	const U1_StringView& path_normalized )
+{
+	return reinterpret_cast<IVfs*>(this_)->IsImportingFileAllowed( StringViewToString(path_normalized) );
+}
+
 U1_UserHandle ErrorHanlder(
 	const U1_UserHandle data, // should be "CodeBuilderErrorsContainer"
 	const uint32_t file_index,
@@ -123,7 +130,11 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 	const LLVMModuleRef llvm_module=
 		U1_BuildProgramUsingVFS(
-			U1_IVfsInterface{ reinterpret_cast<U1_UserHandle>(vfs.get()), GetFullFilePath, LoadFileContent },
+			U1_IVfsInterface{
+				reinterpret_cast<U1_UserHandle>(vfs.get()),
+				GetFullFilePath,
+				LoadFileContent,
+				IsImportingFileAllowed },
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),

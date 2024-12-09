@@ -29,6 +29,7 @@ struct U1_IVfsInterface ordered
 	U1_UserHandle this_;
 	( fn( U1_UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data ) unsafe ) normalize_path_function;
 	( fn( U1_UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data ) unsafe : bool ) load_file_content_function;
+	( fn( U1_UserHandle this_, U1_StringView& full_file_path ) unsafe : bool ) is_importing_file_allowed_function;
 }
 
 type U1_SourceFilePathCallback= fn( U1_UserHandle data, U1_StringView& file_path_normalized ) unsafe;
