@@ -30,7 +30,7 @@ class VfsOverSystemFS final : public IVfs
 public:
 	VfsOverSystemFS(
 		std::vector<PrefixedIncludeDir> prefixed_include_dirs,
-		std::vector<std::string> source_dirs,
+		std::vector<fs_path> source_dirs,
 		bool prevent_imports_outside_given_directories )
 		: include_dirs_(std::move(prefixed_include_dirs))
 		, source_dirs_(std::move(source_dirs))
@@ -106,7 +106,7 @@ public: // IVfs
 			return true; // Importing anything is allowed.
 
 		const auto is_within=
-			[&](const llvm::StringRef allowed_path )
+			[&](const fs_path& allowed_path )
 			{
 				auto given_path_it= llvm::sys::path::begin(full_file_path);
 				const auto given_path_it_end= llvm::sys::path::end(full_file_path);
@@ -130,7 +130,7 @@ public: // IVfs
 				return true;
 		}
 
-		for( const std::string& source_dir : source_dirs_ )
+		for( const fs_path& source_dir : source_dirs_ )
 		{
 			if( is_within( source_dir ) )
 				return true;
@@ -159,7 +159,7 @@ private:
 
 private:
 	const std::vector<PrefixedIncludeDir> include_dirs_;
-	const std::vector<std::string> source_dirs_;
+	const std::vector<fs_path> source_dirs_;
 	const bool prevent_imports_outside_given_directories_;
 };
 
@@ -208,6 +208,11 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 		}
 
 		fs_path dir_path= llvm::StringRef( fs_dir );
+
+		// Remove trailing slashes.
+		while( !dir_path.empty() && (dir_path.back() == '/' || dir_path.back() == '\\' ) )
+			dir_path.pop_back();
+
 		fs::make_absolute(dir_path);
 		if( !fs::exists(dir_path) )
 		{
@@ -228,10 +233,24 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 	if( !all_ok )
 		return nullptr;
 
+	std::vector<fs_path> source_dirs_normalized;
+	source_dirs_normalized.reserve( source_dirs.size() );
+	for( const std::string& source_dir : source_dirs )
+	{
+		fs_path path= llvm::StringRef( source_dir );
+
+		// Remove trailing slashes.
+		while( !path.empty() && (path.back() == '/' || path.back() == '\\' ) )
+			path.pop_back();
+
+		fs::make_absolute(path);
+		source_dirs_normalized.push_back( std::move(path) );
+	}
+
 	return
 		std::make_unique<VfsOverSystemFS>(
 			std::move(result_include_dirs),
-			source_dirs,
+			std::move(source_dirs_normalized),
 			prevent_imports_outside_given_directories );
 }
 
