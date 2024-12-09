@@ -519,7 +519,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		// Provide standard library imports.
 		node.command_line.push_back( "--include-dir" );
-		node.command_line.push_back( build_system_paths.ustlib_path + g_include_dir_prefix_separator );
+		node.command_line.push_back( build_system_paths.ustlib_path );
 
 		foreach( &include_dir_prefixed : include_directories_prefixed )
 		{
