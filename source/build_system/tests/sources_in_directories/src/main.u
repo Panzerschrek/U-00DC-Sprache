@@ -1,5 +1,5 @@
 import "/stdout.u"
-import "../inc.uh"
+import "inc.uh"
 
 fn nomangle main() : i32
 {

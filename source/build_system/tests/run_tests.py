@@ -490,7 +490,7 @@ def main():
 		BuildFileLoggingTest,
 		TwoFilesExeTest,
 		# TwoTargetsTest, # TODO - enable it
-		# SourcesInDirectoriesTest, # TODO - enable it
+		SourcesInDirectoriesTest,
 		ТестЮникода,
 		BuildFileWithImportsTest,
 		LibraryTargetTest,
