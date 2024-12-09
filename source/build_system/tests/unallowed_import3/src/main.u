@@ -1,0 +1,3 @@
+// Error here - this file is located outside source/header directories accessible by this build target.
+auto contents= embed( "../inc.uh" );
+
