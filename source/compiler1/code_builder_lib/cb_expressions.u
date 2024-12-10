@@ -806,6 +806,12 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		if( prev_cache_value.empty() )
 		{
 			move(prev_cache_value);
+
+			if( !vfs.IsImportingFileAllowed( full_file_path ) )
+			{
+				REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope, embed_.src_loc, full_file_path )
+			}
+
 			loaded_file_opt= vfs.LoadFile( full_file_path );
 			embed_cache_.insert( full_file_path, loaded_file_opt );
 		}

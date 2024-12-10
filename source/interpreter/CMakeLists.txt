@@ -35,7 +35,7 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DI
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prelude_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/intrinsics_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/intrinsics_test.u --use-jit )
-add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prefixed_imports.u --include-dir-prefixed ${TESTS_DIR}/imports_dir::fancy/path )
+add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prefixed_imports.u --include-dir ${TESTS_DIR}/imports_dir::fancy/path )
 
 # Run some ustlib tests. It is important, since there tests contain some intrinsics, that need to be tested.
 set( USTLIB_TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib_test )

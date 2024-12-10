@@ -126,7 +126,6 @@ Language server:
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)
 *) Declarations search
-*) Support include directories with prefixed paths
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
 *) SignatureHelp - filter suggested functions based on already provided arguments
@@ -168,8 +167,7 @@ CPP Header converter:
 *) Multiple packages support
 *) Fix JSON floats serialization
 *) Simplify structs to/from json conversion by using template code with typeinfo and mixins usage
-*) Prevent imports ouside allowed import directories
-*) Prevent name comflicts in imports (where multiple files exist for the given import path)
+*) Prevent at leasto some name comflicts in imports (where multiple files exist for the given import path)
 *) Reuse build script shared library among different build confugurations and target triples (build only one copy)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets

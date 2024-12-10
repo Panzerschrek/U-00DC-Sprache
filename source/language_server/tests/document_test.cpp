@@ -67,6 +67,12 @@ public:
 		return "/" + file_path;
 	}
 
+	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
+	{
+		U_UNUSED(full_file_path);
+		return true;
+	}
+
 private:
 	DocumentsContainer& documents_;
 };

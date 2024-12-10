@@ -464,6 +464,12 @@ public:
 		return ust::null_optional;
 	}
 
+	fn virtual override IsImportingFileAllowed( this, ust::string8& full_file_path ) : bool
+	{
+		ust::ignore_unused(full_file_path);
+		return true;
+	}
+
 private:
 	SourceEntries source_entries_;
 }
@@ -517,6 +523,13 @@ public:
 			}
 		}
 		return ust::null_optional;
+	}
+
+	fn virtual override IsImportingFileAllowed( this, ust::string8& full_file_path ) : bool
+	{
+		return unsafe( vfs_interface_.is_importing_file_allowed_function(
+			vfs_interface_.this_,
+			U1_StringView{ .data= cast_mut(full_file_path).data(), .size= full_file_path.size() } ) );
 	}
 
 private:

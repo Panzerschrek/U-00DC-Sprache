@@ -124,18 +124,24 @@ cl::opt<std::string> output_file_name(
 cl::list<std::string> include_dir(
 	"include-dir",
 	cl::Prefix,
-	cl::desc("Add directory for search of \"import\" files"),
-	cl::value_desc("dir"),
-	cl::ZeroOrMore,
-	cl::cat(options_category));
-
-cl::list<std::string> include_dir_prefixed(
-	"include-dir-prefixed",
-	cl::Prefix,
 	cl::desc("Add directory for search of \"import\" files. A prefix within the compiler VFS is specified after ::."),
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
+
+cl::list<std::string> source_dir(
+	"source-dir",
+	cl::Prefix,
+	cl::desc("Mark this directory as source directory, importing files from which is allowed. Allows to import files relative to the given source file if \"prevent-imports-outside-given-directories\" option is used."),
+	cl::value_desc("dir"),
+	cl::ZeroOrMore,
+	cl::cat(options_category));
+
+cl::opt<bool> prevent_imports_outside_given_directories(
+	"prevent-imports-outside-given-directories",
+	cl::desc("Prevent imports outside given include directories and source directories."),
+	cl::init(false),
+	cl::cat(options_category) );
 
 cl::opt<bool> override_data_layout(
 	"override-data-layout",
@@ -419,7 +425,8 @@ int Main( int argc, const char* argv[] )
 	Options::input_files_type.removeArgument();
 	Options::output_file_name.removeArgument();
 	Options::include_dir.removeArgument();
-	Options::include_dir_prefixed.removeArgument();
+	Options::source_dir.removeArgument();
+	Options::prevent_imports_outside_given_directories.removeArgument();
 	Options::override_data_layout.removeArgument();
 	Options::override_target_triple.removeArgument();
 	Options::optimization_level.removeArgument();
@@ -448,12 +455,6 @@ int Main( int argc, const char* argv[] )
 	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
 		std::cerr << "No output file specified" << std::endl;
-		return 1;
-	}
-
-	if( !Options::include_dir.empty() && !Options::include_dir_prefixed.empty() )
-	{
-		std::cerr << "Specifying both --include-dir and --include-dir-prefixed isn't allowed!" << std::endl;
 		return 1;
 	}
 
@@ -576,10 +577,10 @@ int Main( int argc, const char* argv[] )
 		// Compile multiple input files and link them together.
 
 		const IVfsSharedPtr vfs=
-			Options::include_dir_prefixed.empty()
-				? CreateVfsOverSystemFS( Options::include_dir )
-				: CreateVfsOverSystemFSWithPrefixedPaths( Options::include_dir_prefixed );
-
+			CreateVfsOverSystemFS(
+				Options::include_dir,
+				Options::source_dir,
+				Options::prevent_imports_outside_given_directories );
 		if( vfs == nullptr )
 			return 1u;
 

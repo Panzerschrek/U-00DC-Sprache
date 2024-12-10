@@ -1,0 +1,39 @@
+import "/unordered_map.u"
+import "imports/build_system.uh"
+import "logger.uh"
+
+namespace BK
+{
+
+// Package info in form which is much better to work with.
+struct PackageInfoTransformed
+{
+	struct BuildTarget
+	{
+		BuildTargetType target_type;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> source_files;
+
+		// Calculated based on source file paths.
+		ust::string8 sources_directory;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> public_include_directories;
+
+		// List of direct public dependencies. It's sorted and deduplicated.
+		ust::vector</BuildTargetFullName/> public_dependencies;
+
+		// List of all public dependencies, including transitive public dependencies. It's sorted and deduplicated.
+		ust::vector</BuildTargetFullName/> public_dependencies_including_transitive;
+	}
+
+	ust::unordered_map</ust::string8, BuildTarget/> build_targets;
+}
+
+// Performs package info transformation, normalization and validation.
+// Returns empty optional if package isn't valid.
+fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_info )
+	: ust::optional</PackageInfoTransformed/>;
+
+} // namespace BK

@@ -5,7 +5,7 @@ import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
 import "options.uh"
-import "package_validation.uh"
+import "package_transformation.uh"
 import "path.uh"
 import "process.uh"
 import "shared_library.uh"
@@ -129,22 +129,24 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	var PackageInfo& package_info= package_info_opt.try_deref();
-
-	// Make sure package is valid and may be built. If it's not - do not bother performing further steps.
-	if( !PackageIsValid( bsi.logger_, package_info ) )
+	var ust::optional</PackageInfoTransformed/> package_info_transformed_opt=
+		TransformAndValidatePackageInfo( bsi.logger_, package_info_opt.try_deref() );
+	if( package_info_transformed_opt.empty() )
 	{
 		bsi.logger_.LogError( "Package is invald." );
 		return -1;
 	}
 
+	var PackageInfoTransformed& package_info_transformed= package_info_transformed_opt.try_deref();
+
 	// Create directories for intermediate files for each build target.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_pair : package_info_transformed.build_targets )
 	{
-		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target.name );
+		auto& build_target_name= build_target_pair.key();
+		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target_name );
 		if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
 		{
-			bsi.logger_.LogError( "Can't create build directory for target \"" + build_target.name + "\"." );
+			bsi.logger_.LogError( "Can't create build directory for target \"" + build_target_name + "\"." );
 			return -1;
 		}
 	}
@@ -168,26 +170,35 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
-	foreach( &build_target : package_info.build_targets )
+
 	{
-		auto dependencies_opt= GetAllTargetPublicDependencies( bsi.logger_, package_info, build_target );
-		if( dependencies_opt.empty() )
+		// Collect and sort a list of build target names,
+		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
+		var ust::vector</ust::string8/> mut build_target_names;
+		foreach( &build_target_pair : package_info_transformed.build_targets )
 		{
-			bsi.logger_.LogError( "Failed to get list of dependencies for build target \"" + build_target.name + "\"." );
-			return -1;
+			build_target_names.push_back( build_target_pair.key() );
 		}
+		ust::sort( build_target_names );
 
-		auto& dependencies= dependencies_opt.try_deref();
+		foreach( &build_target_name : build_target_names )
+		{
+			var PackageInfoTransformed::BuildTarget& build_target=
+				cast_imut(package_info_transformed).build_targets[ build_target_name ];
 
-		CreatePackageTargetBuildGraphNodes(
-			build_system_paths,
-			package_source_directory,
-			package_build_directory,
-			options.build_configuration,
-			build_target,
-			dependencies,
-			CollectPublicDependenciesPrefixedIncludeDirectories( package_info, package_source_directory, dependencies ),
-			build_graph );
+			CreatePackageTargetBuildGraphNodes(
+				build_system_paths,
+				package_source_directory,
+				package_build_directory,
+				options.build_configuration,
+				build_target_name,
+				build_target,
+				CollectPublicDependenciesPrefixedIncludeDirectories(
+					package_info_transformed,
+					package_source_directory,
+					build_target.public_dependencies_including_transitive ),
+				build_graph );
+		}
 	}
 
 	var i32 mut main_result= 0;
@@ -462,12 +473,12 @@ fn CreatePackageTargetBuildGraphNodes(
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
 	BuildConfiguration build_configuration,
-	BuildTarget& target,
-	ust::array_view_imut</BuildTargetFullName/> all_public_dependencies,
+	ust::string_view8 target_name,
+	PackageInfoTransformed::BuildTarget& target,
 	ust::array_view_imut</ust::string8/> public_dependencies_prefixed_include_directories,
 	BuildGraph &mut build_graph )
 {
-	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target.name );
+	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target_name );
 
 	// Retrieve include directories.
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
@@ -480,11 +491,13 @@ fn CreatePackageTargetBuildGraphNodes(
 		// So, using
 		//    import "some_target/some_file.uh"
 		// will work.
-		include_directories_prefixed.push_back( dir_absolute + g_include_dir_prefix_separator + target.name );
+		include_directories_prefixed.push_back( dir_absolute + g_include_dir_prefix_separator + target_name );
 	}
 
 	// Include directories of public dependencies.
 	include_directories_prefixed.append( public_dependencies_prefixed_include_directories.iter() );
+
+	var ust::string8 source_dir= NormalizePath( package_source_directory + ( "/" + target.sources_directory ) );
 
 	var ust::vector</ust::string8/> mut bc_files;
 	foreach( &source_file : target.source_files )
@@ -516,14 +529,21 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.command_line.push_back( node.dep_file );
 
 		// Provide standard library imports.
-		node.command_line.push_back( "--include-dir-prefixed" );
-		node.command_line.push_back( build_system_paths.ustlib_path + g_include_dir_prefix_separator );
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( build_system_paths.ustlib_path );
 
 		foreach( &include_dir_prefixed : include_directories_prefixed )
 		{
-			node.command_line.push_back( "--include-dir-prefixed" );
+			node.command_line.push_back( "--include-dir" );
 			node.command_line.push_back( include_dir_prefixed );
 		}
+
+		// Provide path to source directory, in order to allow relative imports.
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( source_dir );
+
+		// Forbid importing anything outside include directories and source directories.
+		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
 		// Produce an LLVM bitcode file.
 		node.command_line.push_back( "-filetype=bc" );
@@ -552,17 +572,12 @@ fn CreatePackageTargetBuildGraphNodes(
 		build_graph.nodes.push_back( move(node) );
 	}
 
-	// Sort list of input files to achieve some stable order.
-	// Stable order is important since build graph nodes including lists of files and command line
-	// are compared by equality in order to check node presense if previous graph state.
-	ust::sort( bc_files );
-
 	// Combine multiple ".bc" files into single result.
 
 	// TODO - fix this check, do not use host OS.
 	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
 
-	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target.name );
+	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target_name );
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable ->
@@ -585,7 +600,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		// For an end-target like an executable dep-files isn't necessary.
 		.dep_file= "",
 		.output_files= ust::make_array( result_target_file_path ),
-		.comment= target.name,
+		.comment= target_name,
 	};
 
 	foreach( &bc_file : bc_files )
@@ -600,7 +615,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// For executables perform linking with all public dependencies.
 			// TODO - link also private dependencies.
-			foreach( &public_dependency : all_public_dependencies )
+			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
 				// Assume this is a library dependency (this should be validated before).
 				// TODO - process specially public dependencies of executables.
@@ -675,33 +690,26 @@ fn CreatePackageTargetBuildGraphNodes(
 }
 
 fn CollectPublicDependenciesPrefixedIncludeDirectories(
-	PackageInfo& package_info,
+	PackageInfoTransformed& package_info,
 	ust::string_view8 package_source_directory,
 	ust::array_view_imut</BuildTargetFullName/> public_dependencies ) : ust::vector</ust::string8/>
 {
 	var ust::vector</ust::string8/> mut result;
 	foreach( &build_target_name : public_dependencies )
 	{
-		// TODO - speed-up this, avoid linear search.
 		// TODO - fetch other packages.
-		foreach( &build_target : package_info.build_targets )
+		if_var( &build_target : package_info.build_targets.find( build_target_name.name ) )
 		{
-			if( build_target.name == build_target_name.name )
+			foreach( &public_include_directory : build_target.public_include_directories )
 			{
-				// Found it.
-
-				foreach( &public_include_directory : build_target.public_include_directories )
-				{
-					// Prefix this directory with target name.
-					// So, using
-					//    import "some_target/some_file.uh"
-					// will work.
-					var ust::string8 mut path= NormalizePath( package_source_directory + ( "/" + public_include_directory ) );
-					path+= g_include_dir_prefix_separator;
-					path+= build_target.name;
-					result.push_back( move(path) );
-				}
-				break;
+				// Prefix this directory with target name.
+				// So, using
+				//    import "some_target/some_file.uh"
+				// will work.
+				var ust::string8 mut path= NormalizePath( package_source_directory + ( "/" + public_include_directory ) );
+				path+= g_include_dir_prefix_separator;
+				path+= build_target_name.name;
+				result.push_back( move(path) );
 			}
 		}
 	}

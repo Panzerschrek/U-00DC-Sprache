@@ -271,3 +271,4 @@ PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence.
 
 // Embed
 PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
+PROCESS_ERROR( EmbeddingThisFileIsNotAllowed, "It's not allowed to embed file \"{0}\"." )

@@ -423,7 +423,7 @@ def MissingDependencyTest():
 	res = RunBuildSystemWithErrors( "missing_dependency" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Dependency \"unknown_dependency\" of a build target \"hello_world\" not found." ) != -1 )
+	assert( stderr.find( "Dependency \"unknown_dependency\" not found." ) != -1 )
 
 
 def DependencyLoop0Test():
@@ -445,6 +445,37 @@ def DependencyOnExeTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
+
+
+def UnallowedImport0():
+	res = RunBuildSystemWithErrors( "unallowed_import0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Importing file \"" ) != -1 )
+	assert( stderr.find( "t allowed." ) != -1 )
+
+
+def UnallowedImport1():
+	res = RunBuildSystemWithErrors( "unallowed_import1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Importing file \"" ) != -1 )
+	assert( stderr.find( "t allowed." ) != -1 )
+
+
+def UnallowedImport2():
+	res = RunBuildSystemWithErrors( "unallowed_import2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Importing file \"" ) != -1 )
+	assert( stderr.find( "t allowed." ) != -1 )
+
+
+def UnallowedImport3():
+	res = RunBuildSystemWithErrors( "unallowed_import3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "not allowed to embed file \"" ) != -1 )
 
 
 #
@@ -538,7 +569,11 @@ def main():
 		MissingDependencyTest,
 		DependencyLoop0Test,
 		DependencyLoop1Test,
-		DependencyOnExeTest ]
+		DependencyOnExeTest,
+		UnallowedImport0,
+		UnallowedImport1,
+		UnallowedImport2,
+		UnallowedImport3 ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
