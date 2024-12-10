@@ -25,6 +25,23 @@ struct PrefixedIncludeDir
 	fs_path host_fs_path;
 };
 
+fs_path NormalizePath( const fs_path& p )
+{
+	fs_path result;
+	for( auto it= llvm::sys::path::begin(p), it_end= llvm::sys::path::end(p); it != it_end; ++it)
+	{
+		if( it->size() == 1 && *it == "." )
+			continue;
+		if( it->size() == 2 && *it == ".." )
+			llvm::sys::path::remove_filename( result );
+		else
+			llvm::sys::path::append( result, *it );
+	}
+	llvm::sys::path::native(result);
+	return result;
+}
+
+
 class VfsOverSystemFS final : public IVfs
 {
 public:
@@ -141,23 +158,6 @@ public: // IVfs
 	}
 
 private:
-	static fs_path NormalizePath( const fs_path& p )
-	{
-		fs_path result;
-		for( auto it= llvm::sys::path::begin(p), it_end= llvm::sys::path::end(p); it != it_end; ++it)
-		{
-			if( it->size() == 1 && *it == "." )
-				continue;
-			if( it->size() == 2 && *it == ".." )
-				llvm::sys::path::remove_filename( result );
-			else
-				llvm::sys::path::append( result, *it );
-		}
-		llvm::sys::path::native(result);
-		return result;
-	}
-
-private:
 	const std::vector<PrefixedIncludeDir> include_dirs_;
 	const std::vector<fs_path> source_dirs_;
 	const bool prevent_imports_outside_given_directories_;
@@ -227,6 +227,8 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 			continue;
 		}
 
+		dir_path= NormalizePath( dir_path );
+
 		result_include_dirs.push_back( PrefixedIncludeDir{ fs_path( llvm::StringRef(vfs_mount_path) ), std::move(dir_path) } );
 	}
 
@@ -244,6 +246,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 			path.pop_back();
 
 		fs::make_absolute(path);
+		path= NormalizePath(path);
 		source_dirs_normalized.push_back( std::move(path) );
 	}
 
